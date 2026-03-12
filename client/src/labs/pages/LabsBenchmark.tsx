@@ -231,7 +231,7 @@ export default function LabsBenchmark() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <Link href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Back</button>
+          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Taste</button>
         </Link>
         <div className="labs-empty" data-testid="text-access-denied">
           <AlertCircle className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
@@ -254,7 +254,7 @@ export default function LabsBenchmark() {
     <div className="px-5 py-6 max-w-[900px] mx-auto" data-testid="labs-benchmark">
       <Link href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-benchmark">
-          <ChevronLeft className="w-4 h-4" /> Back
+          <ChevronLeft className="w-4 h-4" /> Taste
         </button>
       </Link>
 

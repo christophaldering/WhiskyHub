@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
-import { Heart, Info, ArrowLeft } from "lucide-react";
+import { Heart, Info, ChevronLeft } from "lucide-react";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
 type Block = { heading?: string; lines: string[]; italic?: boolean; accent?: boolean };
@@ -13,12 +13,12 @@ export default function LabsAbout() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-about-page">
       <button
-        onClick={() => window.history.back()}
-        className="flex items-center gap-1.5 text-xs mb-4"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
+        onClick={() => navigate("/labs/discover")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-about-back"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <ChevronLeft className="w-4 h-4" /> Discover
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

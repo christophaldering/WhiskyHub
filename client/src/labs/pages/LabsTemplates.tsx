@@ -42,7 +42,7 @@ export default function LabsTemplates() {
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-templates-page">
       <Link href="/labs/discover" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-templates">
-          <ChevronLeft className="w-4 h-4" /> Back
+          <ChevronLeft className="w-4 h-4" /> Discover
         </button>
       </Link>
 

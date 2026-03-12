@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
-import { Wine, ArrowRight, AlertCircle, LogIn } from "lucide-react";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft } from "lucide-react";
 import { useSession, getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
@@ -282,6 +282,15 @@ export default function LabsJoin() {
 
   return (
     <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+      <button
+        onClick={() => navigate("/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-join-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tastings
+      </button>
       <div className="text-center mb-8">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"

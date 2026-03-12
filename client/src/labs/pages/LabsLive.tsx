@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, Volume2, VolumeX } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, Volume2, VolumeX } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -842,12 +842,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
       <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
         <button
           onClick={() => navigate(`/labs/tastings/${tastingId}`)}
-          className="flex items-center gap-1.5 mb-5 text-sm transition-colors"
-          style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
           data-testid="labs-live-back"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to tasting
+          <ChevronLeft className="w-4 h-4" />
+          Tasting
         </button>
 
         {isSessionComplete ? (
@@ -874,12 +874,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
       <button
         onClick={() => navigate(`/labs/tastings/${tastingId}`)}
-        className="flex items-center gap-1.5 mb-5 text-sm transition-colors"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-live-back"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to tasting
+        <ChevronLeft className="w-4 h-4" />
+        Tasting
       </button>
 
       <div className="mb-5">

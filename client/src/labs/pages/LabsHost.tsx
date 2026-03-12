@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
-  Users, Calendar, MapPin, ArrowLeft, Loader2,
+  Users, Calendar, MapPin, ChevronLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, ChevronRight, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
@@ -1046,10 +1046,11 @@ function MobileCompanion({
     <div className="px-4 py-5 labs-fade-in" style={{ paddingBottom: 120 }} data-testid="labs-mobile-companion">
       <button
         onClick={() => navigate("/labs/tastings")}
-        className="flex items-center gap-1.5 mb-4 text-sm labs-btn-ghost px-0"
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-mobile-back"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" />
         Tastings
       </button>
 
@@ -3515,10 +3516,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
       <button
         onClick={() => navigate("/labs/tastings")}
-        className="flex items-center gap-1.5 mb-4 text-sm labs-btn-ghost px-0"
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-host-back"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" />
         Tastings
       </button>
 

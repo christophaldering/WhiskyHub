@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Mail, Linkedin, ArrowLeft } from "lucide-react";
+import { Mail, Linkedin, ChevronLeft } from "lucide-react";
 
 export default function LabsImpressum() {
   const { t } = useTranslation();
@@ -7,12 +7,12 @@ export default function LabsImpressum() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-impressum-page">
       <button
-        onClick={() => window.history.back()}
+        onClick={() => navigate("/labs/about")}
         className="flex items-center gap-1.5 text-xs mb-4"
         style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
         data-testid="labs-impressum-back"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <ChevronLeft className="w-3.5 h-3.5" /> About
       </button>
 
       <h1 className="labs-serif text-2xl font-bold mb-8" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-title">

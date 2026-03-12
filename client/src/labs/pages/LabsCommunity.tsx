@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { communityApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
-import { Users, ArrowLeft } from "lucide-react";
+import { Users, ChevronLeft } from "lucide-react";
 
 type Tab = "twins" | "rankings" | "leaderboard";
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
@@ -43,12 +43,12 @@ export default function LabsCommunity() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-community-page">
       <button
-        onClick={() => window.history.back()}
+        onClick={() => navigate("/labs/circle")}
         className="flex items-center gap-1.5 text-xs mb-4"
         style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
         data-testid="labs-community-back"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <ChevronLeft className="w-3.5 h-3.5" /> Circle
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

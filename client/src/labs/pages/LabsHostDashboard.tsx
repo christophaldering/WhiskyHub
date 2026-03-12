@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -447,6 +447,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
 
 export default function LabsHostDashboard() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
   const pid = currentParticipant?.id;
 
@@ -501,6 +502,15 @@ export default function LabsHostDashboard() {
 
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-host-dashboard">
+      <button
+        onClick={() => navigate("/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-host-dashboard-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tastings
+      </button>
       <h1
         className="labs-serif"
         style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}

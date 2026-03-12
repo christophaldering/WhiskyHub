@@ -1,16 +1,17 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, useSearch } from "wouter";
+import { useRoute, useSearch, useLocation } from "wouter";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import {
-  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User
+  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User, ChevronLeft
 } from "lucide-react";
 
 type ScanStep = "select-participant" | "confirm" | "capture" | "scanning" | "review" | "success";
 
 export default function LabsPaperScan() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const [, params] = useRoute("/labs/tastings/:id/scan");
   const search = useSearch();
   const tastingId = params?.id || "";
@@ -140,6 +141,15 @@ export default function LabsPaperScan() {
       maxWidth: 480,
       margin: "0 auto",
     }} data-testid="labs-paper-scan-page">
+      <button
+        onClick={() => navigate(tastingId ? `/labs/tastings/${tastingId}` : "/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-paper-scan-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        {tasting?.name || "Tasting"}
+      </button>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{
           width: 48,

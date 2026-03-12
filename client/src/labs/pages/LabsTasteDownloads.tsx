@@ -7,10 +7,10 @@ import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
-import { Link } from "wouter";
+import { Link , useLocation } from "wouter";
 import {
   Download, FileText, FileSpreadsheet, ClipboardList, Loader2,
-  User, NotebookPen, Star, Archive, Users, Wine, ArrowLeft, Package,
+  User, NotebookPen, Star, Archive, Users, Wine, ChevronLeft, Package,
 } from "lucide-react";
 
 type AccessLevel = "own" | "extended" | "admin";
@@ -27,6 +27,7 @@ const EXPORT_CARDS: ExportCard[] = [
 
 export default function LabsTasteDownloads() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const session = useSession();
   const participantId = session.pid;
@@ -88,7 +89,7 @@ export default function LabsTasteDownloads() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste"><ArrowLeft className="w-4 h-4" /></button></Link>
+        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <div className="flex items-center gap-2">
           <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">Downloads & Export</h1>

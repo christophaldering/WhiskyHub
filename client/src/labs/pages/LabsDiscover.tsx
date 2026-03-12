@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Compass, BookOpen, Building2, Package, FileText, Map,
   FlaskConical, BookMarked, MessageSquare, ChevronRight, ChevronLeft,
@@ -32,13 +32,12 @@ const LINKS: DiscoverLink[] = [
 ];
 
 export default function LabsDiscover() {
+  const [, navigate] = useLocation();
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-page">
-      <Link href="/labs" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-discover">
-          <ChevronLeft className="w-4 h-4" /> Back
-        </button>
-      </Link>
+      <button onClick={() => navigate("/labs/home")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-discover">
+        <ChevronLeft className="w-4 h-4" /> Home
+      </button>
 
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 6 }}>

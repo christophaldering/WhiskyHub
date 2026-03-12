@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ChevronLeft } from "lucide-react";
 
 const SECTIONS = [
   "overview", "dataCollected", "purpose", "localStorage", "aiProcessing",
@@ -13,12 +13,12 @@ export default function LabsPrivacy() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-privacy-page">
       <button
-        onClick={() => window.history.back()}
+        onClick={() => navigate("/labs/about")}
         className="flex items-center gap-1.5 text-xs mb-4"
         style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
         data-testid="labs-privacy-back"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <ChevronLeft className="w-3.5 h-3.5" /> About
       </button>
 
       <div className="flex items-center gap-3 mb-2">

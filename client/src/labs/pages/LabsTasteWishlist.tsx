@@ -9,7 +9,7 @@ import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Star, Wine, Flame, Sparkles, Clock,
-  Camera, Loader2, ScanLine, Send, GlassWater, ArrowLeft,
+  Camera, Loader2, ScanLine, Send, GlassWater, ChevronLeft,
 } from "lucide-react";
 import type { WishlistEntry } from "@shared/schema";
 
@@ -57,7 +57,7 @@ export default function LabsTasteWishlist() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
-          <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}><ArrowLeft className="w-4 h-4" /></button></Link>
+          <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
         </div>
         <div className="labs-empty" style={{ minHeight: 200 }}>
@@ -83,7 +83,7 @@ export default function LabsTasteWishlist() {
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
-                <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste"><ArrowLeft className="w-4 h-4" /></button></Link>
+                <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
                 <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">Wishlist</h1>
               </div>
               <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">
@@ -246,7 +246,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   return (
     <div style={{ marginTop: 16 }}>
       <button onClick={onBack} className="flex items-center gap-1.5 mb-5" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 0 }} data-testid="button-labs-back-form">
-        <ArrowLeft className="w-4 h-4" /> Back
+        <ChevronLeft className="w-4 h-4" /> Back
       </button>
 
       <h2 className="labs-serif text-lg font-bold mb-5" style={{ color: "var(--labs-text)" }} data-testid="text-labs-wishlist-form-title">

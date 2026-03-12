@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Calendar,
   MapPin,
   Users,
@@ -171,11 +171,11 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
       <button
         onClick={() => navigate("/labs/tastings")}
-        className="flex items-center gap-1.5 mb-5 text-sm transition-colors"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-detail-back"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" />
         Tastings
       </button>
 

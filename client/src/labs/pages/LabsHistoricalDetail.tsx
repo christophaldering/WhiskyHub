@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { getParticipantId } from "@/lib/api";
 import {
   Trophy, Wine, Calendar, Flame,
-  Sparkles, BarChart3, RefreshCw, Lock, ArrowLeft,
+  Sparkles, BarChart3, RefreshCw, Lock, ChevronLeft,
 } from "lucide-react";
 
 interface HistoricalEntry {
@@ -231,6 +231,7 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: (k: 
 
 export default function LabsHistoricalDetail() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const lang = i18n.language;
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
@@ -270,9 +271,15 @@ export default function LabsHistoricalDetail() {
 
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }} data-testid="labs-historical-detail">
-      <Link href="/labs/host/history" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--labs-text-secondary)", fontSize: 13, marginBottom: 12, textDecoration: "none" }} data-testid="button-back">
-        <ArrowLeft size={16} /> {t("common.back", "Back")}
-      </Link>
+      <button
+        onClick={() => navigate("/labs/host/history")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="button-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        History
+      </button>
 
       {isLoading && (
         <div style={{ textAlign: "center", padding: "60px 16px" }} data-testid="detail-loading">

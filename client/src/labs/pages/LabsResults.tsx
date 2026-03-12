@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
@@ -485,7 +485,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
           onClick={() => navigate("/labs/tastings")}
           data-testid="results-error-back"
         >
-          Back to Tastings
+          Tastings
         </button>
       </div>
     );
@@ -514,7 +514,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
           onClick={() => navigate("/labs/tastings")}
           data-testid="results-back-tastings"
         >
-          Back to Tastings
+          Tastings
         </button>
       </div>
     );
@@ -566,13 +566,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
       <button
-        onClick={() => navigate(`/labs/tastings/${tastingId}`)}
-        className="flex items-center gap-1.5 mb-5 text-sm transition-colors"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+        onClick={() => navigate("/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="results-back-btn"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Tasting
+        <ChevronLeft className="w-4 h-4" />
+        Tastings
       </button>
 
       <div className="mb-6 labs-stagger-1 labs-fade-in">

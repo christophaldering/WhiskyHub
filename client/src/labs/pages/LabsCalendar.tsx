@@ -75,6 +75,7 @@ function getTastingRoute(ev: CalendarEvent, participantId?: string): string {
 
 export default function LabsCalendar() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
@@ -158,6 +159,15 @@ export default function LabsCalendar() {
 
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-calendar-page">
+      <button
+        onClick={() => navigate("/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-calendar-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tastings
+      </button>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <CalendarIcon style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1

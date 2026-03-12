@@ -25,7 +25,39 @@ function mapRouteToCounterpart(path: string): { target: string; isLabs: boolean 
     "/m2/tastings/join": "/labs/join",
     "/m2/taste/historical": "/labs/host/history",
     "/m2/taste/historical/insights": "/labs/host/history/insights",
+    "/m2/taste/profile": "/labs/taste/profile",
+    "/m2/taste/analytics": "/labs/taste/analytics",
+    "/m2/taste/drams": "/labs/taste/drams",
+    "/m2/taste/collection": "/labs/taste/collection",
+    "/m2/taste/compare": "/labs/taste/compare",
+    "/m2/taste/pairings": "/labs/taste/pairings",
+    "/m2/taste/wheel": "/labs/taste/wheel",
+    "/m2/taste/downloads": "/labs/taste/downloads",
+    "/m2/taste/recommendations": "/labs/taste/recommendations",
+    "/m2/taste/benchmark": "/labs/taste/benchmark",
+    "/m2/taste/collection-analysis": "/labs/taste/collection-analysis",
+    "/m2/taste/connoisseur": "/labs/taste/connoisseur",
+    "/m2/taste/wishlist": "/labs/taste/wishlist",
+    "/m2/taste/settings": "/labs/taste/settings",
+    "/m2/taste": "/labs/taste",
     "/m2/discover/about": "/labs/about",
+    "/m2/discover/lexicon": "/labs/discover/lexicon",
+    "/m2/discover/distilleries": "/labs/discover/distilleries",
+    "/m2/discover/bottlers": "/labs/discover/bottlers",
+    "/m2/discover/templates": "/labs/discover/templates",
+    "/m2/discover/guide": "/labs/discover/guide",
+    "/m2/discover/ai-curation": "/labs/taste/ai-curation",
+    "/m2/discover/research": "/labs/discover/research",
+    "/m2/discover/rabbit-hole": "/labs/discover/rabbit-hole",
+    "/m2/discover/vocabulary": "/labs/discover/vocabulary",
+    "/m2/discover/activity": "/labs/activity",
+    "/m2/discover/community": "/labs/community",
+    "/m2/discover/donate": "/labs/donate",
+    "/m2/discover": "/labs/discover",
+    "/m2/impressum": "/labs/impressum",
+    "/m2/privacy": "/labs/privacy",
+    "/m2/making-of": "/labs/making-of",
+    "/m2/admin": "/labs/admin",
     "/m2/circle": "/labs/circle",
   };
 
@@ -34,14 +66,21 @@ function mapRouteToCounterpart(path: string): { target: string; isLabs: boolean 
     specialLabsToM2[labs] = m2;
   }
 
+  const knownM2Prefixes = ["/m2/tastings", "/m2/taste", "/m2/discover", "/m2/circle", "/m2/admin", "/m2/impressum", "/m2/privacy", "/m2/making-of"];
+  const knownLabsPrefixes = ["/labs/home", "/labs/tastings", "/labs/host", "/labs/solo", "/labs/join", "/labs/live", "/labs/taste", "/labs/discover", "/labs/explore", "/labs/circle", "/labs/admin", "/labs/about", "/labs/activity", "/labs/community", "/labs/donate", "/labs/impressum", "/labs/privacy", "/labs/making-of"];
+
   if (isLabs) {
     if (specialLabsToM2[path]) return { target: specialLabsToM2[path], isLabs: true };
     const sub = path.replace(/^\/labs/, "");
-    return { target: "/m2" + (sub || ""), isLabs: true };
+    const candidate = "/m2" + (sub || "");
+    if (knownM2Prefixes.some(p => candidate.startsWith(p))) return { target: candidate, isLabs: true };
+    return { target: "/m2/tastings", isLabs: true };
   } else {
     if (specialM2ToLabs[path]) return { target: specialM2ToLabs[path], isLabs: false };
     const sub = path.replace(/^\/m2/, "");
-    return { target: "/labs" + (sub || "/home"), isLabs: false };
+    const candidate = "/labs" + (sub || "/home");
+    if (knownLabsPrefixes.some(p => candidate.startsWith(p))) return { target: candidate, isLabs: false };
+    return { target: "/labs/home", isLabs: false };
   }
 }
 
@@ -694,21 +733,23 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         onClick={() => { onClose(); navigate("/m2/taste/settings"); }}
         testId="m2-profile-settings"
       />
-      <MenuButton
-        icon={currentTheme === "dark-warm"
-          ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
-          : <Moon style={{ width: 18, height: 18, color: v.accent }} />}
-        label={t("m2.profile.theme", "Theme")}
-        onClick={toggleTheme}
-        suffix={
-          <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>
-            {currentTheme === "dark-warm"
-              ? t("m2.profile.themeLight", "Light")
-              : t("m2.profile.themeDark", "Dark")}
-          </span>
-        }
-        testId="m2-profile-theme"
-      />
+      {!location.startsWith("/labs") && (
+        <MenuButton
+          icon={currentTheme === "dark-warm"
+            ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
+            : <Moon style={{ width: 18, height: 18, color: v.accent }} />}
+          label={t("m2.profile.theme", "Theme")}
+          onClick={toggleTheme}
+          suffix={
+            <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>
+              {currentTheme === "dark-warm"
+                ? t("m2.profile.themeLight", "Light")
+                : t("m2.profile.themeDark", "Dark")}
+            </span>
+          }
+          testId="m2-profile-theme"
+        />
+      )}
       <MenuButton
         icon={<Globe style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.language", "Language")}
@@ -925,33 +966,35 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button
-          onClick={toggleTheme}
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: "14px 16px",
-            background: "transparent",
-            border: `1px solid ${v.border}`,
-            borderRadius: 12,
-            cursor: "pointer",
-            color: v.text,
-            fontSize: 14,
-            fontWeight: 500,
-            fontFamily: "system-ui, sans-serif",
-          }}
-          data-testid="m2-profile-theme"
-        >
-          {currentTheme === "dark-warm"
-            ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
-            : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
-          {currentTheme === "dark-warm"
-            ? t("m2.profile.themeLight", "Light")
-            : t("m2.profile.themeDark", "Dark")}
-        </button>
+        {!location.startsWith("/labs") && (
+          <button
+            onClick={toggleTheme}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "14px 16px",
+              background: "transparent",
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              cursor: "pointer",
+              color: v.text,
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-profile-theme"
+          >
+            {currentTheme === "dark-warm"
+              ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
+              : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
+            {currentTheme === "dark-warm"
+              ? t("m2.profile.themeLight", "Light")
+              : t("m2.profile.themeDark", "Dark")}
+          </button>
+        )}
         <button
           onClick={toggleLanguage}
           style={{

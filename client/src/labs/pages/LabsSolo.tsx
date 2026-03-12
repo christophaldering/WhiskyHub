@@ -6,7 +6,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar
+  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
@@ -1180,7 +1180,7 @@ export default function LabsSolo() {
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 12, justifyContent: "flex-start" }}
           data-testid="button-capture-back"
         >
-          <ArrowLeft style={{ width: 16, height: 16 }} />
+          <ChevronLeft style={{ width: 16, height: 16 }} />
           {t("m2.common.back", "Back")}
         </button>
 
@@ -1249,7 +1249,7 @@ export default function LabsSolo() {
               data-testid="button-capture-skip"
             >
               {t("m2.solo.captureSkip", "Continue without scan")}
-              <ArrowLeft style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
+              <ChevronLeft style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
             </button>
           </div>
         </div>
@@ -1302,9 +1302,9 @@ export default function LabsSolo() {
   if (soloView === "hub") {
     return (
       <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
-        <button onClick={() => navigate("/labs")} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 12 }} data-testid="button-back-labs">
-          <ArrowLeft style={{ width: 16, height: 16 }} />
-          {t("m2.common.back", "Back")}
+        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-labs">
+          <ChevronLeft className="w-4 h-4" />
+          Taste
         </button>
         <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-text)", margin: "16px 0 4px" }} data-testid="text-hub-title">
           {t("m2.solo.hubTitle", "Your Drams")}
@@ -1638,7 +1638,7 @@ export default function LabsSolo() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "12px 0 8px", gap: 8 }} data-testid="editor-action-bar">
         <button onClick={handleBackToHub} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 0" }} data-testid="button-back-to-hub">
-          <ArrowLeft style={{ width: 16, height: 16 }} />
+          <ChevronLeft style={{ width: 16, height: 16 }} />
           {t("m2.solo.backToOverview", "Back to overview")}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2086,7 +2086,7 @@ export default function LabsSolo() {
         }} data-testid="sheet-barcode-scanner">
           <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--labs-border)" }}>
             <button onClick={() => { stopBarcodeScanner(); setSheetView("none"); }} data-testid="button-close-barcode" className="labs-btn-ghost" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
-              <ArrowLeft style={{ width: 16, height: 16 }} strokeWidth={2} />
+              <ChevronLeft style={{ width: 16, height: 16 }} strokeWidth={2} />
               {t("common.back", "Zur\u00fcck")}
             </button>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</h3>

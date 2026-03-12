@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Wine,
   Star,
   MapPin,
@@ -96,11 +96,11 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
       <button
-        className="labs-btn-ghost flex items-center gap-1.5 -ml-3 mb-4 labs-fade-in"
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4 labs-fade-in"
         onClick={() => navigate("/labs/explore")}
         data-testid="labs-bottle-back"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" />
         Explore
       </button>
 

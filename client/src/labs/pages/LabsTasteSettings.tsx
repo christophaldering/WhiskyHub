@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { downloadBlob } from "@/lib/download";
 import {
-  ArrowLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
+  ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
   Loader2, Eye, EyeOff, Camera, ExternalLink,
 } from "lucide-react";
 
@@ -138,7 +138,7 @@ export default function LabsTasteSettings() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
-          <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}><ArrowLeft className="w-4 h-4" /></button></Link>
+          <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }}>Settings</h1>
         </div>
         <div className="labs-empty" style={{ minHeight: 200 }}>
@@ -159,7 +159,7 @@ export default function LabsTasteSettings() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto flex flex-col gap-6" data-testid="labs-taste-settings">
       <div className="flex items-center gap-3">
-        <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste"><ArrowLeft className="w-4 h-4" /></button></Link>
+        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <div>
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-settings-title">Settings & Profile</h1>
           <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Manage your account, preferences & taste defaults</p>

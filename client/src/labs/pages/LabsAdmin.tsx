@@ -13,7 +13,7 @@ import {
   Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
   MessageSquarePlus, Rocket, AlertTriangle,
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
-  BookOpen, ExternalLink, Activity, ArrowLeft,
+  BookOpen, ExternalLink, Activity, ChevronLeft,
 } from "lucide-react";
 
 type AdminTab = "participants" | "tastings" | "online" | "activity" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
@@ -136,8 +136,8 @@ export default function LabsAdmin() {
 
   return (
     <div className="px-4 py-6 labs-fade-in" data-testid="labs-admin-page">
-      <button onClick={() => window.history.back()} className="flex items-center gap-1.5 text-xs mb-4" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-back">
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+      <button onClick={() => navigate("/labs/home")} className="flex items-center gap-1.5 text-xs mb-4" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-back">
+        <ChevronLeft className="w-3.5 h-3.5" /> Home
       </button>
 
       <h1 className="labs-serif text-xl font-bold mb-3" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>

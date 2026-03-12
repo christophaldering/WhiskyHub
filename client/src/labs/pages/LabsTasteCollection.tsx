@@ -4,11 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Link } from "wouter";
+import { Link , useLocation } from "wouter";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check, ArrowUpDown,
   BarChart3, Star, RefreshCw, Sparkles, X, CheckSquare,
-  FileSpreadsheet, FileText, Download, ChevronDown, ChevronUp, ArrowLeft,
+  FileSpreadsheet, FileText, Download, ChevronDown, ChevronUp, ChevronLeft,
 } from "lucide-react";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 
@@ -17,6 +17,7 @@ type StatusFilter = "all" | "open" | "closed" | "empty";
 
 export default function LabsTasteCollection() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const session = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const syncFileInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +126,7 @@ export default function LabsTasteCollection() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-collection">
         <div className="flex items-center gap-3 mb-4">
-          <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}><ArrowLeft className="w-4 h-4" /></button></Link>
+          <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }}>Collection</h1>
         </div>
         <div className="labs-empty" style={{ minHeight: 200 }}>
@@ -143,7 +144,7 @@ export default function LabsTasteCollection() {
       <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} data-testid="input-labs-sync-file" />
 
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/labs/taste"><button style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste"><ArrowLeft className="w-4 h-4" /></button></Link>
+        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">Collection</h1>
       </div>
       {items.length > 0 && <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{items.length} bottles</p>}

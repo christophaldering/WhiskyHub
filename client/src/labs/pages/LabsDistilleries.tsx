@@ -58,7 +58,7 @@ export default function LabsDistilleries() {
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
       <Link href="/labs/discover" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
-          <ChevronLeft className="w-4 h-4" /> Back
+          <ChevronLeft className="w-4 h-4" /> Discover
         </button>
       </Link>
 

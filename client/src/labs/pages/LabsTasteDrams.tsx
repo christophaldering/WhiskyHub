@@ -7,7 +7,7 @@ import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation, Link } from "wouter";
 import type { JournalEntry } from "@shared/schema";
 import {
-  BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2, Check,
+  BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
 } from "lucide-react";
@@ -257,7 +257,7 @@ export default function LabsTasteDrams() {
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-dram-detail">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-labs-back-drams">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ChevronLeft className="w-4 h-4" /> Back
           </button>
           {isSoloEntry(selectedEntry) && (
             <div className="flex gap-2">
@@ -349,7 +349,7 @@ export default function LabsTasteDrams() {
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-dram-edit">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-labs-cancel-edit">
-            <ArrowLeft className="w-4 h-4" /> Cancel
+            <ChevronLeft className="w-4 h-4" /> Cancel
           </button>
           <button onClick={handleSaveEdit} disabled={updateMutation.isPending} className="labs-btn-primary" style={{ padding: "8px 20px", fontSize: 14, opacity: updateMutation.isPending ? 0.6 : 1 }} data-testid="button-labs-save-dram">
             {updateMutation.isPending ? "Saving..." : "Save"}
@@ -437,7 +437,7 @@ export default function LabsTasteDrams() {
         <div className="flex items-center gap-3">
           <Link href="/labs/taste">
             <button className="flex items-center" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste">
-              <ArrowLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
           </Link>
           <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-drams-title">Drams Journal</h1>

@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { getParticipantId } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import {
   Search, Wine, Trophy, Calendar, BarChart3,
-  ArrowUpDown, ChevronRight, Archive, Sparkles, RefreshCw,
+  ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
   Lock, LogIn, MapPin, Flame, Droplets, TrendingUp,
   Loader2,
 } from "lucide-react";
@@ -568,9 +568,19 @@ function EmptyState() {
 
 export default function LabsHistory() {
   const [isInsights] = useRoute("/labs/host/history/insights");
+  const [, navigate] = useLocation();
 
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-history-page">
+      <button
+        onClick={() => navigate("/labs/tastings")}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-history-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tastings
+      </button>
       <h1
         className="labs-serif"
         style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}

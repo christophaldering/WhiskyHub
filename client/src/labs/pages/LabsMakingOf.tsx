@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { getSession } from "@/lib/session";
 import {
   Wine, GitCommit, Layers, Calendar, Code2, Languages,
-  AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Lock, ArrowLeft,
+  AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Lock, ChevronLeft,
 } from "lucide-react";
 
 interface ChapterData {
@@ -248,14 +249,15 @@ export default function LabsMakingOf() {
 }
 
 function BackBtn() {
+  const [, navigate] = useLocation();
   return (
     <button
-      onClick={() => window.history.back()}
-      className="flex items-center gap-1.5 text-xs mb-4"
-      style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
+      onClick={() => navigate("/labs/home")}
+      className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+      style={{ color: "var(--labs-text-muted)" }}
       data-testid="labs-makingof-back"
     >
-      <ArrowLeft className="w-3.5 h-3.5" /> Back
+      <ChevronLeft className="w-4 h-4" /> Home
     </button>
   );
 }

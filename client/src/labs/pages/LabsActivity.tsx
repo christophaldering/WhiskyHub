@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
-import { FileText, Wine, Star, Activity, ArrowLeft } from "lucide-react";
+import { FileText, Wine, Star, Activity, ChevronLeft } from "lucide-react";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -39,12 +39,12 @@ export default function LabsActivity() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-activity-page">
       <button
-        onClick={() => window.history.back()}
+        onClick={() => navigate("/labs/home")}
         className="flex items-center gap-1.5 text-xs mb-4"
         style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
         data-testid="labs-activity-back"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <ChevronLeft className="w-3.5 h-3.5" /> Home
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

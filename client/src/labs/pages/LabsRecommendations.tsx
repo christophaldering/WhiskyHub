@@ -162,7 +162,7 @@ export default function LabsRecommendations() {
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-recommendations">
       <Link href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-recommendations">
-          <ChevronLeft className="w-4 h-4" /> Back
+          <ChevronLeft className="w-4 h-4" /> Taste
         </button>
       </Link>
 

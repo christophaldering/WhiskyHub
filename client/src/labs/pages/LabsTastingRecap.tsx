@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { recapApi } from "@/lib/api";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
-  Loader2, ArrowLeft, AlertCircle
+  Loader2, ChevronLeft, AlertCircle
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
@@ -27,6 +27,7 @@ const BAR_COLORS = ["#D9A15B", "#C97845", "#9C6A5E", "#7F8C5A", "#d4a256"];
 
 export default function LabsTastingRecap() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
 
@@ -319,12 +320,15 @@ export default function LabsTastingRecap() {
         }
       `}</style>
 
-      <Link href={`/labs/tastings/${tastingId}`} style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }} data-testid="button-recap-back">
-          <ArrowLeft style={{ width: 16, height: 16 }} />
-          {t("common.back", "Back")}
-        </button>
-      </Link>
+      <button
+        onClick={() => navigate(`/labs/tastings/${tastingId}`)}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="button-recap-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tasting
+      </button>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
