@@ -699,6 +699,7 @@ export default function LabsSolo() {
     setWhiskyName(cand.name);
     setDistillery(cand.distillery);
     setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
+    setUnknownRegion(""); setUnknownCountry(""); setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler("");
     if (cand.age) setUnknownAge(cand.age);
     if (cand.abv) setUnknownAbv(cand.abv);
     if (cand.caskType) setUnknownCask(cand.caskType);
@@ -1539,7 +1540,7 @@ export default function LabsSolo() {
 
   if (saved && draftStatus === "finalized") {
     const lastPrev = previousRatings.length > 0 ? previousRatings[0] : null;
-    const currentOverall = detailTouched ? calcOverall(detailedScores) : score;
+    const currentOverall = overrideActive ? score : (detailTouched ? calcOverall(detailedScores) : score);
     const dims: { key: DimKey; label: string }[] = [{ key: "nose", label: "Nose" }, { key: "taste", label: "Taste" }, { key: "finish", label: "Finish" }, { key: "balance", label: "Balance" }];
     const renderDelta = (curr: number, prev: number) => {
       const d = curr - prev;
