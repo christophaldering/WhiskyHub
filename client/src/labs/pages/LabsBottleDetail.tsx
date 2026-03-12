@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { exploreApi } from "@/lib/api";
+import WhiskyAvatar from "@/labs/components/WhiskyAvatar";
 
 interface LabsBottleDetailProps {
   params: { id: string };
@@ -106,22 +107,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
 
       <div className="labs-fade-in labs-stagger-1">
         <div className="flex items-start gap-4 mb-6">
-          {whisky.imageUrl ? (
-            <img
-              src={whisky.imageUrl}
-              alt={whisky.name}
-              className="w-14 h-14 rounded-2xl object-cover flex-shrink-0"
-              style={{ border: "1px solid var(--labs-border)" }}
-              data-testid="labs-bottle-image"
-            />
-          ) : (
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "var(--labs-accent-muted)" }}
-            >
-              <Wine className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
-            </div>
-          )}
+          <WhiskyAvatar imageUrl={whisky.imageUrl} name={whisky.name} region={whisky.region} size={56} testId="labs-bottle-image" />
           <div className="flex-1 min-w-0">
             <h1
               className="labs-serif text-xl font-semibold leading-tight"

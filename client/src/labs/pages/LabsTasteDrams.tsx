@@ -11,6 +11,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
 } from "lucide-react";
+import WhiskyAvatar from "@/labs/components/WhiskyAvatar";
 
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
