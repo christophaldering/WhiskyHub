@@ -79,6 +79,7 @@ export default function LabsRatingPanel({
   const [showDetailed, setShowDetailed] = useState(defaultOpen);
   const [activeTab, setActiveTab] = useState<DimKey>("nose");
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const [showFlavors, setShowFlavors] = useState(false);
   const isDE = i18n.language === "de";
   const [customInput, setCustomInput] = useState("");
 
@@ -234,13 +235,8 @@ export default function LabsRatingPanel({
           type="button"
           onClick={() => {
             if (disabled) return;
-            const allCollapsed = Object.values(expandedCats).every((v) => !v);
-            if (allCollapsed) {
-              const first = categories[0];
-              if (first) setExpandedCats({ [first.id]: true });
-            } else {
-              setExpandedCats({});
-            }
+            setShowFlavors((prev) => !prev);
+            if (showFlavors) setExpandedCats({});
           }}
           style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -252,7 +248,7 @@ export default function LabsRatingPanel({
           data-testid="button-toggle-flavors"
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            {Object.values(expandedCats).some((v) => v) ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
+            {showFlavors ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
             {t("m2.rating.addFlavors", "Add flavors")}
           </span>
           {activeChips.length > 0 && (
@@ -291,6 +287,7 @@ export default function LabsRatingPanel({
           </div>
         )}
 
+        {showFlavors && (
         <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border-subtle)" }}>
           {categories.map((cat) => {
             const isExpanded = expandedCats[cat.id] || false;
@@ -406,6 +403,7 @@ export default function LabsRatingPanel({
             <Plus style={{ width: 16, height: 16 }} />
           </button>
         </div>
+        )}
       </div>
     );
   };
