@@ -215,8 +215,10 @@ export default function LabsSolo() {
 
   useEffect(() => {
     if (localDraftRestoredRef.current) return;
+    if (hubLoading) return;
     localDraftRestoredRef.current = true;
     if (draftEntryId) return;
+    if (hubDrafts.length > 0) return;
     try {
       const raw = localStorage.getItem(SOLO_DRAFT_KEY);
       if (!raw) return;
@@ -245,7 +247,7 @@ export default function LabsSolo() {
       if (d.detailTexts) setDetailTexts(d.detailTexts);
       if (d.soloView === "editor") setSoloView("editor");
     } catch {}
-  }, [draftEntryId]);
+  }, [draftEntryId, hubLoading, hubDrafts.length]);
 
   const fetchHubDrafts = useCallback(async () => {
     if (!unlocked || !pid) { setHubLoading(false); return; }
@@ -1896,8 +1898,8 @@ export default function LabsSolo() {
                       <input
                         type="text"
                         value={unknownWbId}
-                        onChange={(e) => { setUnknownWbId(e.target.value); setWbLookupResult(""); }}
-                        onBlur={() => { if (unknownWbId.trim() && !wbLookupResult) lookupWhiskybaseId(unknownWbId); }}
+                        onChange={(e) => { setUnknownWbId(e.target.value.replace(/^[Ww][Bb]\s*/i, "")); setWbLookupResult(""); }}
+                        onBlur={() => { const cleaned = unknownWbId.trim().replace(/^[Ww][Bb]\s*/i, ""); if (cleaned !== unknownWbId) setUnknownWbId(cleaned); if (cleaned && !wbLookupResult) lookupWhiskybaseId(cleaned); }}
                         className="labs-input"
                         style={{ paddingRight: 40 }}
                         data-testid="input-manual-wbid"
