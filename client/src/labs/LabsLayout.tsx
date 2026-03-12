@@ -176,6 +176,11 @@ function LabsNotificationBell() {
     } catch { return 0; }
   });
   const [open, setOpen] = useState(false);
+  const [location] = useLocation();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location]);
 
   return (
     <div className="relative">
@@ -203,9 +208,9 @@ function LabsNotificationBell() {
       </button>
       {open && (
         <>
-          <div onClick={() => setOpen(false)} className="fixed inset-0 z-[99]" />
+          <div onClick={() => setOpen(false)} className="fixed inset-0 z-40" />
           <div
-            className="fixed top-14 left-4 right-4 max-w-[340px] ml-auto rounded-2xl p-4 z-[100]"
+            className="absolute right-0 top-full mt-2 w-72 rounded-2xl p-4 z-50"
             style={{
               background: "var(--labs-surface)",
               border: "1px solid var(--labs-border)",
