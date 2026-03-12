@@ -9,13 +9,15 @@ import {
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
-  Download, ExternalLink, Lock,
+  Download, ExternalLink, Lock, Printer,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
+import { generateTastingMenu } from "@/components/tasting-menu-pdf";
+import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import QRCode from "qrcode";
 
 interface LabsHostProps {
@@ -464,6 +466,387 @@ function HostRatingPanel({
           data-testid="host-rating-notes"
         />
       </div>
+    </div>
+  );
+}
+
+function PrintMaterialsSection({
+  tasting,
+  whiskies,
+  participants,
+  currentParticipant,
+}: {
+  tasting: Record<string, unknown>;
+  whiskies: Array<Record<string, unknown>>;
+  participants: Array<Record<string, unknown>>;
+  currentParticipant: Record<string, unknown>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
+  const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(tasting.coverImageUrl as string || null);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [aiCoverLoading, setAiCoverLoading] = useState(false);
+
+  const whiskyCount = whiskies.length;
+  if (whiskyCount === 0) return null;
+
+  const handleGenerateMenu = async () => {
+    setGenerating("menu");
+    try {
+      const pList = participants.map((p: any) => ({ name: p.name || p.participant?.name || "Unknown" }));
+      const hostName = participants.find((p: any) => (p.participantId || p.id) === tasting.hostId)?.name
+        || (currentParticipant as any)?.name || "Host";
+      await generateTastingMenu({
+        tasting: tasting as any,
+        whiskies: whiskies as any,
+        participants: pList as any,
+        hostName: hostName as string,
+        coverImageBase64: coverImage || null,
+        orientation,
+        blindMode,
+        language: "de",
+      });
+    } catch (e) {
+      console.error("Menu generation failed:", e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateBatchSheets = async () => {
+    setGenerating("sheets");
+    try {
+      const jsPDF = (await import("jspdf")).default;
+      const { saveOrPrintJsPdf } = await import("@/lib/pdf");
+      const QR = (await import("qrcode")).default;
+
+      const pList = participants.map((p: any) => ({
+        id: p.participantId || p.id,
+        name: p.name || p.participant?.name || "Unknown",
+      }));
+      if (pList.length === 0) return;
+
+      const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
+      const isBlind = blindMode;
+      const pageW = orientation === "portrait" ? 210 : 297;
+      const pageH = orientation === "portrait" ? 297 : 210;
+      const mx = 15;
+      const cw = pageW - 2 * mx;
+      const NAVY: [number, number, number] = [26, 32, 44];
+      const SLATE: [number, number, number] = [100, 116, 139];
+      const LINE: [number, number, number] = [226, 232, 240];
+      const ACCENT: [number, number, number] = [180, 140, 60];
+      const title = (tasting.title as string) || "Tasting";
+
+      for (let pIdx = 0; pIdx < pList.length; pIdx++) {
+        if (pIdx > 0) doc.addPage();
+        const p = pList[pIdx];
+
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, 0, pageW, pageH, "F");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.setTextColor(...NAVY);
+        doc.text(title, pageW / 2, 30, { align: "center" });
+
+        doc.setFontSize(11);
+        doc.setTextColor(...SLATE);
+        doc.text(p.name, pageW / 2, 40, { align: "center" });
+
+        if (tasting.date) {
+          doc.setFontSize(9);
+          doc.text(new Date(tasting.date as string).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }), pageW / 2, 47, { align: "center" });
+        }
+
+        try {
+          const joinUrl = `${window.location.origin}/labs/live/${tasting.id}?pid=${p.id}`;
+          const qrDataUrl = await QR.toDataURL(joinUrl, { width: 200, margin: 1 });
+          doc.addImage(qrDataUrl, "PNG", pageW - mx - 25, 18, 22, 22);
+        } catch {}
+
+        let y = 58;
+        const slots = whiskies.length;
+        const slotH = Math.min(38, (pageH - y - 15) / slots);
+
+        for (let i = 0; i < slots; i++) {
+          const sy = y + i * slotH;
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(mx, sy, cw, slotH - 3, 2, 2, "F");
+          doc.setDrawColor(...LINE);
+          doc.roundedRect(mx, sy, cw, slotH - 3, 2, 2, "S");
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setTextColor(...ACCENT);
+          const label = isBlind ? `Dram ${String.fromCharCode(65 + i)}` : `#${i + 1}  ${(whiskies[i] as any).name || ""}`;
+          doc.text(label, mx + 5, sy + 6);
+
+          if (!isBlind) {
+            const w = whiskies[i] as any;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(...SLATE);
+            const detail = [w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ");
+            if (detail) doc.text(detail, mx + 5, sy + 11);
+          }
+
+          const dims = ["Nose", "Palate", "Finish", "Overall"];
+          const dimY = sy + (isBlind ? 12 : 16);
+          const dimSpacing = (slotH - (isBlind ? 17 : 21)) / dims.length;
+          dims.forEach((dim, di) => {
+            const ly = dimY + di * dimSpacing;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(...SLATE);
+            doc.text(dim, mx + 5, ly);
+            doc.setDrawColor(...LINE);
+            doc.line(mx + 25, ly + 1, mx + cw - 5, ly + 1);
+          });
+        }
+
+        doc.setFontSize(7);
+        doc.setTextColor(180, 180, 180);
+        doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
+      }
+
+      const suffix = isBlind ? "Bewertungsbogen" : "Notizblatt";
+      saveOrPrintJsPdf(doc, `${title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_${suffix}_Alle.pdf`, "download");
+    } catch (e) {
+      console.error("Batch sheets failed:", e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateMat = () => {
+    setGenerating("mat");
+    try {
+      generateBlankTastingMat("de", whiskyCount);
+    } catch (e) {
+      console.error("Mat generation failed:", e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateBlankSheet = () => {
+    setGenerating("blank");
+    try {
+      generateBlankTastingSheet("de", whiskyCount);
+    } catch (e) {
+      console.error("Sheet generation failed:", e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setCoverImage(base64);
+      setCoverPreview(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAiCover = async () => {
+    setAiCoverLoading(true);
+    try {
+      const pid = (currentParticipant as any)?.id;
+      const res = await fetch(`/api/tastings/${tasting.id}/menu-cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.imageUrl) {
+          setCoverPreview(data.imageUrl);
+          try {
+            const imgRes = await fetch(data.imageUrl);
+            const blob = await imgRes.blob();
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            setCoverImage(base64);
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.error("AI cover generation failed:", e);
+    } finally {
+      setAiCoverLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: 0, fontFamily: "inherit" }}
+        data-testid="toggle-print-materials"
+      >
+        <h2 className="labs-section-label mb-0 flex items-center gap-2">
+          <Printer className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          Print & Materials
+        </h2>
+        <ChevronDown
+          className="w-4 h-4"
+          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+        />
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-4">
+          <div className="labs-card p-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
+
+            <div className="flex gap-4 mb-3">
+              <div className="flex-1">
+                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Orientation</p>
+                <div className="flex gap-1">
+                  <button
+                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${orientation === "portrait" ? "ring-1" : ""}`}
+                    style={orientation === "portrait" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    onClick={() => setOrientation("portrait")}
+                    data-testid="print-orientation-portrait"
+                  >
+                    Portrait
+                  </button>
+                  <button
+                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${orientation === "landscape" ? "ring-1" : ""}`}
+                    style={orientation === "landscape" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    onClick={() => setOrientation("landscape")}
+                    data-testid="print-orientation-landscape"
+                  >
+                    Landscape
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Content Mode</p>
+                <div className="flex gap-1">
+                  <button
+                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${!blindMode ? "ring-1" : ""}`}
+                    style={!blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    onClick={() => setBlindMode(false)}
+                    data-testid="print-mode-open"
+                  >
+                    Open
+                  </button>
+                  <button
+                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${blindMode ? "ring-1" : ""}`}
+                    style={blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    onClick={() => setBlindMode(true)}
+                    data-testid="print-mode-blind"
+                  >
+                    Blind
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Cover Image</p>
+              <div className="flex gap-2 items-center">
+                <label
+                  className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
+                  data-testid="print-upload-cover"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} data-testid="input-print-cover-file" />
+                </label>
+                <button
+                  className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
+                  onClick={handleAiCover}
+                  disabled={aiCoverLoading}
+                  data-testid="print-ai-cover"
+                >
+                  {aiCoverLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {aiCoverLoading ? "Generating..." : "AI Cover"}
+                </button>
+                {coverPreview && (
+                  <button
+                    className="labs-btn-ghost text-xs px-2 py-1"
+                    onClick={() => { setCoverImage(null); setCoverPreview(null); }}
+                    data-testid="print-remove-cover"
+                  >
+                    <X className="w-3 h-3" style={{ color: "var(--labs-danger)" }} />
+                  </button>
+                )}
+              </div>
+              {coverPreview && (
+                <div className="mt-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)", maxHeight: 120 }}>
+                  <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" style={{ maxHeight: 120 }} data-testid="print-cover-preview" />
+                </div>
+              )}
+            </div>
+
+            <button
+              className="labs-btn-primary text-sm flex items-center gap-2 w-full justify-center"
+              onClick={handleGenerateMenu}
+              disabled={generating === "menu"}
+              data-testid="print-generate-menu"
+            >
+              {generating === "menu" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              {generating === "menu" ? "Generating..." : "Generate Menu Card"}
+            </button>
+          </div>
+
+          <div className="labs-card p-4">
+            <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Participant Score Sheets</p>
+            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+              Personalized sheets with QR codes for {participants.length} participant{participants.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex gap-2">
+              <button
+                className="labs-btn-primary text-sm flex items-center gap-2 flex-1 justify-center"
+                onClick={handleGenerateBatchSheets}
+                disabled={generating === "sheets" || participants.length === 0}
+                data-testid="print-generate-sheets"
+              >
+                {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+                {generating === "sheets" ? "Generating..." : `All Sheets (${participants.length})`}
+              </button>
+              <button
+                className="labs-btn-secondary text-sm flex items-center gap-2 justify-center"
+                onClick={handleGenerateBlankSheet}
+                disabled={generating === "blank"}
+                data-testid="print-generate-blank-sheet"
+              >
+                {generating === "blank" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                Blank
+              </button>
+            </div>
+          </div>
+
+          <div className="labs-card p-4">
+            <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Tasting Mat</p>
+            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+              A4 landscape mat with {whiskyCount} numbered positions for your lineup
+            </p>
+            <button
+              className="labs-btn-secondary text-sm flex items-center gap-2 w-full justify-center"
+              onClick={handleGenerateMat}
+              disabled={generating === "mat"}
+              data-testid="print-generate-mat"
+            >
+              {generating === "mat" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {generating === "mat" ? "Generating..." : "Download Tasting Mat"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1114,6 +1497,15 @@ function MobileCompanion({
           </div>
         );
       })()}
+
+      {pid && whiskies.length > 0 && (
+        <PrintMaterialsSection
+          tasting={tasting as any}
+          whiskies={whiskies as any}
+          participants={participants as any}
+          currentParticipant={{ id: pid, name: (currentParticipant as any)?.name || "Host" } as any}
+        />
+      )}
 
       {pid && whiskies.length > 0 && (
         <div style={{ marginTop: 16 }}>
@@ -3949,6 +4341,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ratings={ratings}
           whiskies={whiskies}
           whiskyCount={whiskyCount}
+        />
+      )}
+
+      {currentParticipant && whiskyCount > 0 && (
+        <PrintMaterialsSection
+          tasting={tasting}
+          whiskies={whiskies || []}
+          participants={participants || []}
+          currentParticipant={currentParticipant}
         />
       )}
 
