@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Sun, Moon } from "lucide-react";
+import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -248,7 +248,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   useFriendOnlineNotifications();
-  const { theme, toggle: toggleTheme } = useLabsTheme();
+  const { theme } = useLabsTheme();
 
   useEffect(() => {
     const session = getSession();
@@ -284,22 +284,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </Link>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center rounded-full transition-all"
-            style={{
-              width: 32,
-              height: 32,
-              background: "var(--labs-accent-muted)",
-              color: "var(--labs-accent)",
-              border: "none",
-              cursor: "pointer",
-            }}
-            title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
-            data-testid="labs-theme-toggle"
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
           <LabsNotificationBell />
           <button
             onClick={() => setProfileOpen(true)}
