@@ -203,7 +203,7 @@ export default function LabsSolo() {
           detailChips, detailTexts,
           soloView, ts: Date.now(),
         };
-        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 50 && !notes) return;
+        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 50 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
         localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
       } catch {}
     }, 500);
