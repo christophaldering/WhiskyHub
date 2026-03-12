@@ -274,6 +274,47 @@ export default function LabsCircle() {
   function renderPeopleTab() {
     if (isLoading) return <LoadingSkeleton count={3} />;
 
+    const AVATAR_COLORS = [
+      ["#C27B3E", "#8B5E3C"],
+      ["#7A6B5D", "#5C4F42"],
+      ["#9B7B5B", "#6D5A44"],
+      ["#6B7F6B", "#4A5D4A"],
+      ["#7B6B8B", "#5A4D6A"],
+      ["#8B6B6B", "#6A4D4D"],
+    ];
+
+    const getAvatarColor = (name: string) => {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+    };
+
+    const getInitials = (name: string) => {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    };
+
+    const MatchRing = ({ pct, size = 44 }: { pct: number; size?: number }) => {
+      const r = (size - 4) / 2;
+      const circ = 2 * Math.PI * r;
+      const filled = circ * (pct / 100);
+      const ringColor = pct >= 70 ? "var(--labs-success)" : pct >= 45 ? "var(--labs-accent)" : "var(--labs-text-muted)";
+      return (
+        <svg width={size} height={size} style={{ position: "absolute", inset: 0 }}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--labs-border)" strokeWidth={2} />
+          <circle
+            cx={size / 2} cy={size / 2} r={r} fill="none"
+            stroke={ringColor} strokeWidth={2.5}
+            strokeDasharray={`${filled} ${circ - filled}`}
+            strokeDashoffset={circ / 4}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dasharray 0.6s ease" }}
+          />
+        </svg>
+      );
+    };
+
     return (
       <div className="labs-fade-in">
         {twinsList.length > 0 && (
@@ -287,6 +328,9 @@ export default function LabsCircle() {
                 const matchPct = Math.round(((twin.correlation ?? twin.similarity ?? 0) as number) * 100);
                 const sharedWhiskies = (twin.sharedWhiskies || 0) as number;
                 const twinSessions = (twin.sharedSessions || twin.sharedTastings || 0) as number;
+                const twinName = (twin.participantName || twin.name || "Unknown") as string;
+                const [bgFrom, bgTo] = getAvatarColor(twinName);
+                const initials = getInitials(twinName);
                 return (
                   <div
                     key={(twin.participantId as string) || idx}
@@ -294,40 +338,68 @@ export default function LabsCircle() {
                     data-testid={`labs-circle-twin-${(twin.participantId as string) || idx}`}
                   >
                     <div className="flex items-center gap-4">
-                      <div
-                        className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "var(--labs-accent-muted)" }}
-                      >
-                        <Heart className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+                      <div className="relative flex-shrink-0" style={{ width: 44, height: 44 }}>
+                        <MatchRing pct={matchPct} />
+                        <div
+                          className="absolute flex items-center justify-center rounded-full"
+                          style={{
+                            inset: 3,
+                            background: `linear-gradient(135deg, ${bgFrom}, ${bgTo})`,
+                            color: "rgba(255,255,255,0.9)",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          {initials}
+                        </div>
+                        {matchPct >= 60 && (
+                          <div
+                            className="absolute flex items-center justify-center rounded-full"
+                            style={{
+                              width: 16, height: 16,
+                              bottom: -2, right: -2,
+                              background: "var(--labs-bg)",
+                              border: "2px solid var(--labs-bg)",
+                            }}
+                          >
+                            <Heart
+                              className="w-2.5 h-2.5"
+                              style={{ color: "var(--labs-accent)", fill: "var(--labs-accent)" }}
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                          {(twin.participantName || twin.name || "Unknown") as string}
+                          {twinName}
                         </p>
-                        <div className="flex items-center gap-3 mt-0.5">
+                        <div className="flex items-center gap-3 mt-1">
                           {sharedWhiskies > 0 && (
-                            <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
                               <GlassWater className="w-3 h-3" />
                               {sharedWhiskies} shared
                             </span>
                           )}
                           {twinSessions > 0 && (
-                            <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
                               <Calendar className="w-3 h-3" />
                               {twinSessions} sessions
                             </span>
                           )}
                         </div>
                       </div>
-                      <span
-                        className="labs-badge"
-                        style={{
-                          background: matchPct >= 80 ? "var(--labs-success-muted)" : matchPct >= 50 ? "var(--labs-accent-muted)" : "var(--labs-info-muted)",
-                          color: matchPct >= 80 ? "var(--labs-success)" : matchPct >= 50 ? "var(--labs-accent)" : "var(--labs-info)",
-                        }}
-                      >
-                        {matchPct}% match
-                      </span>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span
+                          className="text-base font-bold tabular-nums"
+                          style={{
+                            color: matchPct >= 70 ? "var(--labs-success)" : matchPct >= 45 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                          }}
+                        >
+                          {matchPct}%
+                        </span>
+                        <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>match</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -343,34 +415,42 @@ export default function LabsCircle() {
               Tasting Partners
             </p>
             <div className="space-y-2">
-              {peopleFromTastings.slice(0, 10).map((person) => (
-                <div
-                  key={person.id}
-                  className="labs-card p-4 flex items-center gap-4"
-                  data-testid={`labs-circle-partner-${person.id}`}
-                >
+              {peopleFromTastings.slice(0, 10).map((person) => {
+                const [pBgFrom, pBgTo] = getAvatarColor(person.name);
+                const pInitials = getInitials(person.name);
+                return (
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold"
-                    style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}
+                    key={person.id}
+                    className="labs-card p-4 flex items-center gap-4"
+                    data-testid={`labs-circle-partner-${person.id}`}
                   >
-                    {person.name.charAt(0).toUpperCase()}
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold"
+                      style={{
+                        background: `linear-gradient(135deg, ${pBgFrom}, ${pBgTo})`,
+                        color: "rgba(255,255,255,0.9)",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {pInitials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                        {person.name}
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                        {person.sharedCount} shared tasting{person.sharedCount !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <span
+                      className="text-xs px-2.5 py-1 rounded-full flex-shrink-0 font-semibold tabular-nums"
+                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                    >
+                      {person.sharedCount}×
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                      {person.name}
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {person.sharedCount} shared tasting{person.sharedCount !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <span
-                    className="text-xs px-2.5 py-1 rounded-full flex-shrink-0"
-                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontWeight: 600 }}
-                  >
-                    {person.sharedCount}×
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -385,6 +465,9 @@ export default function LabsCircle() {
               {friendsList.map((friend, idx) => {
                 const fid = friend.id as string;
                 const isOnline = onlineFriendIds.has(fid);
+                const friendName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
+                const [fBgFrom, fBgTo] = getAvatarColor(friendName);
+                const fInitials = getInitials(friendName);
                 return (
                   <div
                     key={fid || idx}
@@ -394,10 +477,14 @@ export default function LabsCircle() {
                   >
                     <div className="relative flex-shrink-0">
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center"
-                        style={{ background: "var(--labs-info-muted)" }}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold"
+                        style={{
+                          background: `linear-gradient(135deg, ${fBgFrom}, ${fBgTo})`,
+                          color: "rgba(255,255,255,0.9)",
+                          letterSpacing: "0.02em",
+                        }}
                       >
-                        <Users className="w-4 h-4" style={{ color: "var(--labs-info)" }} />
+                        {fInitials}
                       </div>
                       {isOnline && (
                         <div
@@ -409,10 +496,10 @@ export default function LabsCircle() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                        {[friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend"}
+                        {friendName}
                       </p>
                       {typeof friend.email === "string" && friend.email && (
-                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                        <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
                           {friend.email}
                         </p>
                       )}
