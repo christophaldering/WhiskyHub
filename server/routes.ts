@@ -6728,24 +6728,81 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       });
 
       const maxScore = Math.max(...scored.map(s => s.score), 1);
-      const top = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-      const suggestions = top.map(s => ({
+      const top = scored.sort((a, b) => b.score - a.score).slice(0, 8);
+      const ruleBasedSuggestions = top.map(s => ({
         name: s.name,
         distillery: s.distillery || "",
         region: s.region || "",
         caskInfluence: s.caskInfluence || "",
         peatLevel: s.peatLevel || "",
+        abv: s.abv || "",
+        age: s.age || "",
+        imageUrl: s.imageUrl || "",
         score: Math.round((s.score / maxScore) * 100),
         reason: s.reasons.join(". "),
       }));
 
+      const lineupData = {
+        regions: Array.from(lineupRegions),
+        caskTypes: Array.from(lineupCasks),
+        peatLevels: Array.from(lineupPeats),
+      };
+
+      let aiAnalysis: string | null = null;
+      try {
+        const { getAIClient } = await import("./ai-client");
+        const { client } = await getAIClient(null, "curation");
+        if (client) {
+          const lineupSummary = lineupWhiskies.map(w =>
+            `${w.name} (${w.distillery || "?"}, ${w.region || "?"}, ${w.caskInfluence || "?"}, ${w.peatLevel || "?"}, ABV ${w.abv || "?"})`
+          ).join("\n");
+          const candidateSummary = ruleBasedSuggestions.map(s =>
+            `${s.name} (${s.distillery}, ${s.region}, ${s.caskInfluence}, ${s.peatLevel})`
+          ).join("\n");
+
+          const completion = await client.chat.completions.create({
+            model: "gpt-4o-mini",
+            temperature: 0.7,
+            max_tokens: 600,
+            messages: [
+              {
+                role: "system",
+                content: `You are a whisky sommelier AI for CaskSense. Analyse a tasting lineup and provide a brief analysis plus improved reasons for suggested additions. Be concise, knowledgeable, and speak from a flavour perspective. Respond in valid JSON only.`
+              },
+              {
+                role: "user",
+                content: `Current lineup:\n${lineupSummary}\n\nCandidate additions (pre-scored by diversity algorithm):\n${candidateSummary}\n\nRespond with JSON: {"analysis":"<2-3 sentence analysis of the current lineup's flavour profile and what's missing>","suggestions":[{"name":"<exact whisky name>","reason":"<1 sentence flavour-focused reason why this addition would enhance the lineup>","fit":85}]} — fit is 0-100 how well this complements the lineup. Include top 5 candidates.`
+              }
+            ],
+          });
+
+          const raw = completion.choices[0]?.message?.content?.trim();
+          if (raw) {
+            const jsonStr = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+            const parsed = JSON.parse(jsonStr);
+            aiAnalysis = parsed.analysis || null;
+            if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+              for (const aiSug of parsed.suggestions) {
+                const match = ruleBasedSuggestions.find(s => s.name === aiSug.name);
+                if (match) {
+                  match.reason = aiSug.reason;
+                  match.score = aiSug.fit ?? match.score;
+                }
+              }
+              ruleBasedSuggestions.sort((a, b) => b.score - a.score);
+            }
+          }
+        }
+      } catch (aiErr: any) {
+        console.error("AI curation enhancement failed, using rule-based:", aiErr.message);
+      }
+
+      const suggestions = ruleBasedSuggestions.slice(0, 5);
+
       res.json({
-        lineup: {
-          regions: Array.from(lineupRegions),
-          caskTypes: Array.from(lineupCasks),
-          peatLevels: Array.from(lineupPeats),
-        },
+        lineup: lineupData,
         suggestions,
+        aiAnalysis,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

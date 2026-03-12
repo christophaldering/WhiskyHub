@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import {
-  ChevronLeft, Wine, Sparkles, MapPin, Flame, Package, ChevronDown,
+  ChevronLeft, Sparkles, MapPin, Flame, Package, ChevronDown, BrainCircuit,
 } from "lucide-react";
 
 interface Suggestion {
@@ -13,6 +14,9 @@ interface Suggestion {
   region: string;
   caskInfluence: string;
   peatLevel: string;
+  abv?: string;
+  age?: string;
+  imageUrl?: string;
   score: number;
   reason: string;
 }
@@ -20,6 +24,7 @@ interface Suggestion {
 interface PairingData {
   lineup: { regions: string[]; caskTypes: string[]; peatLevels: string[] };
   suggestions: Suggestion[];
+  aiAnalysis?: string | null;
 }
 
 interface TastingItem {
@@ -74,6 +79,7 @@ export default function LabsAICuration() {
 
   const lineup = pData?.lineup;
   const suggestions = pData?.suggestions || [];
+  const aiAnalysis = pData?.aiAnalysis;
 
   if (!session.signedIn || !pid) {
     return (
@@ -126,8 +132,9 @@ export default function LabsAICuration() {
 
       {selectedId && pL && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ height: 60, background: "var(--labs-surface)", borderRadius: 10, animation: "pulse 1.5s ease-in-out infinite" }} />
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} style={{ height: 70, background: "var(--labs-surface)", borderRadius: 10, animation: "pulse 1.5s ease-in-out infinite" }} />
+            <div key={i} style={{ height: 90, background: "var(--labs-surface)", borderRadius: 10, animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.2}s` }} />
           ))}
         </div>
       )}
@@ -143,6 +150,16 @@ export default function LabsAICuration() {
         </div>
       )}
 
+      {aiAnalysis && (
+        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-curation-analysis" style={{ borderLeft: "3px solid var(--labs-accent)" }}>
+          <div className="flex items-center gap-2 mb-2">
+            <BrainCircuit className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            <p className="labs-section-label" style={{ margin: 0 }}>AI Analysis</p>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>{aiAnalysis}</p>
+        </div>
+      )}
+
       {suggestions.length > 0 && (
         <div className="labs-fade-in">
           <p className="labs-section-label mb-2">Curated Suggestions</p>
@@ -150,21 +167,26 @@ export default function LabsAICuration() {
             {suggestions.map((s, i) => (
               <div key={`${s.name}-${i}`} className="labs-card" style={{ padding: "14px 16px" }} data-testid={`card-curation-${i}`}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <ScoreRing score={s.score} />
+                  <WhiskyImage imageUrl={s.imageUrl} name={s.name} size={48} height={64} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{s.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>{s.distillery}</div>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                      {s.distillery}
+                      {s.age && <span> · {s.age}y</span>}
+                      {s.abv && <span> · {s.abv}%</span>}
+                    </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {s.region && <Tag icon={MapPin} label={s.region} variant="accent" />}
                       {s.caskInfluence && <Tag icon={Package} label={s.caskInfluence} variant="gold" />}
                       {s.peatLevel && <Tag icon={Flame} label={s.peatLevel} variant="red" />}
                     </div>
                     {s.reason && (
-                      <div style={{ marginTop: 6, fontSize: 11, color: "var(--labs-text-muted)", borderLeft: "2px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)", paddingLeft: 8, lineHeight: 1.5 }}>
-                        <span style={{ fontWeight: 600, color: "var(--labs-text-secondary)" }}>Why: </span>{s.reason}
+                      <div style={{ marginTop: 8, fontSize: 12, color: "var(--labs-text-secondary)", borderLeft: "2px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)", paddingLeft: 8, lineHeight: 1.5 }}>
+                        {s.reason}
                       </div>
                     )}
                   </div>
+                  <ScoreRing score={s.score} />
                 </div>
               </div>
             ))}

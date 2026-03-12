@@ -17,6 +17,7 @@ type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
+type SortBy = "date" | "score" | "name";
 
 const FILTERS: { key: FilterValue; label: string }[] = [
   { key: "all", label: "All" },
@@ -75,6 +76,7 @@ export default function LabsTasteDrams() {
   const [filterRegion, setFilterRegion] = useState("all");
   const [filterCaskType, setFilterCaskType] = useState("all");
   const [scoreRange, setScoreRange] = useState<ScoreRange>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("date");
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -129,11 +131,11 @@ export default function LabsTasteDrams() {
   const uniqueCaskTypes = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.caskType).filter(Boolean))).sort(), [allItems]);
 
   const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all";
-  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters;
+  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "date";
 
   const resetAllFilters = () => {
     setActiveFilter("all"); setDatePeriod("all"); setSearch("");
-    setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all");
+    setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("date");
   };
 
   const filteredEntries = useMemo(() => {
@@ -172,10 +174,20 @@ export default function LabsTasteDrams() {
       const da = a.status === "draft" ? 0 : 1;
       const db = b.status === "draft" ? 0 : 1;
       if (da !== db) return da - db;
+      if (sortBy === "score") {
+        const sa = a.personalScore ?? -1;
+        const sb = b.personalScore ?? -1;
+        return sb - sa;
+      }
+      if (sortBy === "name") {
+        const na = (a.whiskyName || a.title || "").toLowerCase();
+        const nb = (b.whiskyName || b.title || "").toLowerCase();
+        return na.localeCompare(nb);
+      }
       return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
     });
     return items;
-  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange]);
+  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
@@ -483,6 +495,13 @@ export default function LabsTasteDrams() {
                 style={{ padding: "5px 12px", fontSize: 11, fontWeight: scoreRange === sr ? 600 : 400, color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)", background: scoreRange === sr ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${scoreRange === sr ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
                 data-testid={`labs-score-${sr}`}>{sr === "all" ? "Score" : sr}</button>
             ))}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+              {(["date", "score", "name"] as SortBy[]).map(sk => (
+                <button key={sk} onClick={() => setSortBy(sk)}
+                  style={{ padding: "5px 10px", fontSize: 10, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer" }}
+                  data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : "Name"}</button>
+              ))}
+            </div>
           </div>
 
           <div className="flex gap-2 mb-3 flex-wrap">

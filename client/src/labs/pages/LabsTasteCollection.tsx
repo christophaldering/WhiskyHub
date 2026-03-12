@@ -246,11 +246,17 @@ export default function LabsTasteCollection() {
           <button onClick={() => refetch()} className="labs-btn-secondary" data-testid="button-labs-retry-collection">Retry</button>
         </div>
       ) : items.length === 0 ? (
-        <div className="labs-empty" style={{ minHeight: 200 }}>
+        <div className="labs-empty" style={{ minHeight: 280 }}>
           <Archive className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <h3 className="text-base font-semibold mb-1" style={{ color: "var(--labs-text)" }}>No bottles yet</h3>
-          <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>Import your Whiskybase collection</p>
-          <button onClick={() => fileInputRef.current?.click()} className="labs-btn-primary flex items-center gap-2" data-testid="button-labs-import-empty"><Upload className="w-4 h-4" /> Import CSV/Excel</button>
+          <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", maxWidth: 320, lineHeight: 1.5 }}>Import your collection from Whiskybase or any spreadsheet with whisky data.</p>
+          <button onClick={() => fileInputRef.current?.click()} className="labs-btn-primary flex items-center gap-2" style={{ marginBottom: 12 }} data-testid="button-labs-import-empty"><Upload className="w-4 h-4" /> Import CSV / Excel</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)", maxWidth: 280, lineHeight: 1.5, textAlign: "center" }}>
+              Export your collection from <a href="https://www.whiskybase.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "underline" }}>Whiskybase.com</a> as CSV, then import it here.
+            </p>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }}>Supported formats: CSV, XLS, XLSX</p>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

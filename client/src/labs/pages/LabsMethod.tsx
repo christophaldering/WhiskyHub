@@ -40,79 +40,79 @@ export default function LabsMethod() {
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Section title={t("methodPage.forEnthusiasts", "For Enthusiasts")}>
           <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-            {t("methodPage.introText")}
+            {t("methodPage.introText", "CaskSense builds your taste profile from your actual tasting behaviour — your scores, your notes, and the whiskies you choose. There are no quizzes, no self-assessments, and no assumptions. Everything is derived from real data you generate during tastings.")}
           </p>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-            {t("methodPage.whatProfileShows")}
+            {t("methodPage.whatProfileShows", "What your profile shows:")}
           </p>
           <ul style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
-            <li>{t("methodPage.noTypologies")}</li>
-            <li>{t("methodPage.multidimensional")}</li>
-            <li>{t("methodPage.behaviorOnly")}</li>
-            <li>{t("methodPage.comparisonsOptIn")}</li>
-            <li>{t("methodPage.sampleSize")}</li>
+            <li>{t("methodPage.noTypologies", "No typologies — we don't label you as a \"peat lover\" or \"sherry head\".")}</li>
+            <li>{t("methodPage.multidimensional", "Multidimensional radar — your preferences across nose, taste, finish, and balance dimensions.")}</li>
+            <li>{t("methodPage.behaviorOnly", "Behaviour only — derived purely from your scores and tasting notes, never from questionnaires.")}</li>
+            <li>{t("methodPage.comparisonsOptIn", "Comparisons are opt-in — see how you relate to the community average, but only if you choose to.")}</li>
+            <li>{t("methodPage.sampleSize", "Sample size matters — your profile becomes more stable and reliable as you taste more whiskies.")}</li>
           </ul>
           <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-            {t("methodPage.livingDocument")}
+            {t("methodPage.livingDocument", "This methodology is a living document. As CaskSense evolves, so does the way we analyse and present your data — always transparently.")}
           </p>
         </Section>
 
         <Section title={t("methodPage.forExperts", "For Experts")} defaultOpen={false}>
           {[
-            { title: "dimensionalModel", text: "dimensionalModelText" },
-            { title: "platformBasis", text: "platformBasisText" },
-            { title: "iqr", text: "iqrText" },
-          ].map(({ title, text }) => (
+            { title: "dimensionalModel", titleFb: "Dimensional Scoring Model", text: "dimensionalModelText", textFb: "Each whisky is scored across four dimensions: Nose, Taste, Finish, and Balance. These are not arbitrary — they reflect the standard evaluation framework used by professional blenders and competition judges." },
+            { title: "platformBasis", titleFb: "Platform-Wide Basis", text: "platformBasisText", textFb: "Your scores are compared against the platform median for each whisky. This gives you a relative positioning without imposing any 'correct' way to taste." },
+            { title: "iqr", titleFb: "Interquartile Range (IQR)", text: "iqrText", textFb: "We use IQR-based outlier detection to flag scores that deviate significantly from the community distribution, helping identify unique preferences rather than errors." },
+          ].map(({ title, titleFb, text, textFb }) => (
             <div key={title}>
               <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
-                {t(`methodPage.${title}`)}
+                {t(`methodPage.${title}`, titleFb)}
               </h3>
               <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-                {t(`methodPage.${text}`)}
+                {t(`methodPage.${text}`, textFb)}
               </p>
             </div>
           ))}
 
           <div>
             <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
-              {t("methodPage.systematicDeviation")}
+              {t("methodPage.systematicDeviation", "Systematic Deviation")}
             </h3>
             <p style={{ fontSize: 11, fontFamily: "monospace", padding: 8, borderRadius: 6, background: "var(--labs-surface-elevated)", color: "var(--labs-accent)", margin: "0 0 6px" }}>
-              avg_delta = mean(UserScore_i − PlatformMedian_i) {t("methodPage.systematicDeviationFormula")}
+              avg_delta = mean(UserScore_i − PlatformMedian_i) {t("methodPage.systematicDeviationFormula", "for all whiskies i = 1..N")}
             </p>
             <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-              {t("methodPage.systematicDeviationText")}
+              {t("methodPage.systematicDeviationText", "If you consistently score higher or lower than the platform median, this offset is applied to normalise your scores for fair comparison — without changing your actual ratings.")}
             </p>
           </div>
 
           <div>
             <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
-              {t("methodPage.stabilityLogic")}
+              {t("methodPage.stabilityLogic", "Profile Stability Logic")}
             </h3>
             <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: "0 0 6px" }}>
-              {t("methodPage.stabilityLogicText")}
+              {t("methodPage.stabilityLogicText", "Your profile stability depends on how many whiskies you have rated. More data points lead to a more reliable representation of your preferences.")}
             </p>
             <ul style={{ fontSize: 11, fontFamily: "monospace", color: "var(--labs-accent)", margin: "0 0 6px", paddingLeft: 20 }}>
-              <li>{t("methodPage.preliminary")}: N &lt; 5</li>
-              <li>{t("methodPage.tendency")}: 5 ≤ N &lt; 15</li>
-              <li>{t("methodPage.stable")}: N ≥ 15</li>
+              <li>{t("methodPage.preliminary", "Preliminary")}: N &lt; 5</li>
+              <li>{t("methodPage.tendency", "Tendency")}: 5 ≤ N &lt; 15</li>
+              <li>{t("methodPage.stable", "Stable")}: N ≥ 15</li>
             </ul>
             <p style={{ fontSize: 11, fontFamily: "monospace", padding: 8, borderRadius: 6, background: "var(--labs-surface-elevated)", color: "var(--labs-accent)", margin: 0 }}>
-              {t("methodPage.stabilityPercent")} = min(100, N × 6.67)
+              {t("methodPage.stabilityPercent", "Stability %")} = min(100, N × 6.67)
             </p>
           </div>
 
           {[
-            { title: "normalization", text: "normalizationText" },
-            { title: "platformPopulation", text: "platformPopulationText" },
-            { title: "noNormativeEvaluation", text: "noNormativeEvaluationText" },
-          ].map(({ title, text }) => (
+            { title: "normalization", titleFb: "Score Normalisation", text: "normalizationText", textFb: "Normalisation adjusts for systematic scoring bias. If you tend to score 5 points above average, that offset is factored in so your profile accurately reflects preferences, not just generosity." },
+            { title: "platformPopulation", titleFb: "Platform Population", text: "platformPopulationText", textFb: "Comparisons are made against all active CaskSense users. As the community grows, statistical confidence increases for each whisky's median and distribution." },
+            { title: "noNormativeEvaluation", titleFb: "No Normative Evaluation", text: "noNormativeEvaluationText", textFb: "CaskSense does not tell you what is 'good' or 'bad'. Your profile describes your behaviour — not a judgement. There is no correct palate." },
+          ].map(({ title, titleFb, text, textFb }) => (
             <div key={title}>
               <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
-                {t(`methodPage.${title}`)}
+                {t(`methodPage.${title}`, titleFb)}
               </h3>
               <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-                {t(`methodPage.${text}`)}
+                {t(`methodPage.${text}`, textFb)}
               </p>
             </div>
           ))}
