@@ -850,8 +850,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
           Back to tasting
         </button>
 
-        <LabsAmbientPanel />
-
         {isSessionComplete ? (
           <GuidedComplete tastingId={tastingId} />
         ) : isLobby ? (
@@ -883,8 +881,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
         <ArrowLeft className="w-4 h-4" />
         Back to tasting
       </button>
-
-      <LabsAmbientPanel />
 
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">
@@ -952,6 +948,15 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 <p className="text-[11px] mb-1 font-medium" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.05em" }}>
                   {currentIndex + 1} / {totalWhiskies}
                 </p>
+                {currentWhisky?.imageUrl && !isBlind && (
+                  <img
+                    src={currentWhisky.imageUrl}
+                    alt={displayName}
+                    className="mx-auto mb-2 rounded-xl object-cover"
+                    style={{ width: 56, height: 56, border: "1px solid var(--labs-border)" }}
+                    data-testid="labs-live-whisky-thumb"
+                  />
+                )}
                 <h2
                   className="labs-serif text-base font-semibold"
                   data-testid="labs-live-whisky-name"

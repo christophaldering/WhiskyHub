@@ -191,12 +191,22 @@ export default function LabsExplore() {
               onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
               data-testid={`labs-explore-whisky-${w.id}`}
             >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--labs-accent-muted)" }}
-              >
-                <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-              </div>
+              {w.imageUrl ? (
+                <img
+                  src={w.imageUrl}
+                  alt={w.name}
+                  className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
+                  style={{ border: "1px solid var(--labs-border)" }}
+                  data-testid={`labs-explore-whisky-img-${w.id}`}
+                />
+              ) : (
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "var(--labs-accent-muted)" }}
+                >
+                  <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
                   {w.name}

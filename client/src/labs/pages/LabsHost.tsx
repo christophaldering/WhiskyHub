@@ -1313,12 +1313,16 @@ function MobileCompanion({
                     </>
                   ) : (
                     <>
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </div>
+                      {w.imageUrl ? (
+                        <img src={w.imageUrl} alt={w.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid var(--labs-border)" }} />
+                      ) : (
+                        <div
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                        >
+                          {String.fromCharCode(65 + i)}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
                         <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
@@ -1557,15 +1561,19 @@ function MobileCompanion({
                 const showDetails = isRevealed || isFieldRevealed(itemRv, ["distillery", "age", "abv"]);
                 return (
                   <div key={w.id} className="labs-card p-3 flex items-center gap-2" style={{ opacity: isHidden ? 0.4 : 1, transition: "opacity 300ms" }} data-testid={`mobile-whisky-readonly-${w.id}`}>
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{
-                        background: isRevealed ? "var(--labs-success-muted)" : isActive ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                        color: isRevealed ? "var(--labs-success)" : isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                      }}
-                    >
-                      {isRevealed ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
-                    </div>
+                    {w.imageUrl && (isRevealed || isFieldRevealed(itemRv, "image")) ? (
+                      <img src={w.imageUrl} alt={w.name || `Whisky ${i + 1}`} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid var(--labs-border)" }} />
+                    ) : (
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{
+                          background: isRevealed ? "var(--labs-success-muted)" : isActive ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                          color: isRevealed ? "var(--labs-success)" : isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                        }}
+                      >
+                        {isRevealed ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{showName ? (w.name || `Whisky ${i + 1}`) : `Dram ${String.fromCharCode(65 + i)}`}</p>
                       <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
