@@ -7,6 +7,8 @@ import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
+import FlavorTagStrip from "@/labs/components/FlavorTagStrip";
+import { detectFlavorProfile } from "@/labs/data/flavor-data";
 
 interface LabsLiveProps {
   params: { id: string };
@@ -529,6 +531,15 @@ function GuidedStepView({
               <span>{Math.round(maxScore / 2)}</span>
               <span>{maxScore}</span>
             </div>
+          </div>
+
+          <div className="mb-4 labs-fade-in labs-stagger-3">
+            <FlavorTagStrip
+              notes={notes}
+              onNotesChange={updateNotes}
+              flavorProfile={whisky?.flavorProfile || (isBlindStep ? null : detectFlavorProfile(whisky || {}))}
+              isBlind={isBlindStep}
+            />
           </div>
 
           <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
@@ -1059,6 +1070,15 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   <span>{Math.round(maxScore / 2)}</span>
                   <span>{maxScore}</span>
                 </div>
+              </div>
+
+              <div className="mb-4 labs-fade-in labs-stagger-3">
+                <FlavorTagStrip
+                  notes={notes}
+                  onNotesChange={updateNotes}
+                  flavorProfile={currentWhisky?.flavorProfile || (isBlind ? null : detectFlavorProfile(currentWhisky || {}))}
+                  isBlind={!!isBlind}
+                />
               </div>
 
               <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">

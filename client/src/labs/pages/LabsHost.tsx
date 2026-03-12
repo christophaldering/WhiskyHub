@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FLAVOR_PROFILES, type FlavorProfileId } from "@/labs/data/flavor-data";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import QRCode from "qrcode";
@@ -2791,6 +2792,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
       hostSummary: extFields.hostSummary || "",
       notes: extFields.notes || "",
+      flavorProfile: extFields.flavorProfile || null,
       sortOrder: (whiskies?.length || 0) + 1,
     });
   };
@@ -2821,6 +2823,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       price: w.price ? String(w.price) : "",
       hostSummary: w.hostSummary || "",
       notes: w.notes || "",
+      flavorProfile: w.flavorProfile || "",
     });
   };
 
@@ -3772,6 +3775,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder="Price" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
                 <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
+                <select className="labs-input col-span-2" value={extFields.flavorProfile || ""} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
+                  <option value="">Flavor Profile (auto-detect)</option>
+                  {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
+                </select>
                 <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
                 <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
               </div>
@@ -3817,6 +3824,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
                       <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
                       <input className="labs-input" placeholder="Price" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <select className="labs-input col-span-2" value={editFields.flavorProfile || ""} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
+                        <option value="">Flavor Profile (auto-detect)</option>
+                        {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
+                      </select>
                       <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
                       <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
                     </div>

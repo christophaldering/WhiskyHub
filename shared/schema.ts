@@ -125,6 +125,7 @@ export const whiskies = pgTable("whiskies", {
   distilleryUrl: text("distillery_url"), // Distillery homepage URL
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)
   aiInsightsCache: text("ai_insights_cache"), // Cached AI-generated whisky insights (text)
+  flavorProfile: text("flavor_profile"), // Host-set flavor profile for guided tasting tags
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
