@@ -91,6 +91,48 @@ interface M2ProfileMenuProps {
   onClose: () => void;
 }
 
+const labsV: typeof v = {
+  bg: "var(--labs-bg)",
+  card: "var(--labs-surface)",
+  elevated: "var(--labs-surface-elevated)",
+  text: "var(--labs-text)",
+  textSecondary: "var(--labs-text-secondary)",
+  muted: "var(--labs-text-muted)",
+  mutedLight: "var(--labs-text-muted)",
+  accent: "var(--labs-accent)",
+  accentDim: "var(--labs-accent-muted)",
+  accentInk: "var(--labs-on-accent)",
+  border: "var(--labs-border)",
+  success: "var(--labs-success)",
+  danger: "var(--labs-danger)",
+  error: "var(--labs-danger)",
+  inputBg: "var(--labs-surface-elevated)",
+  inputBorder: "var(--labs-border)",
+  inputText: "var(--labs-text)",
+  placeholder: "var(--labs-text-muted)",
+  gold: "var(--labs-accent)",
+  silver: "var(--labs-text-muted)",
+  bronze: "var(--labs-accent)",
+  high: "var(--labs-success)",
+  medium: "var(--labs-accent)",
+  low: "var(--labs-danger)",
+  tagline: "var(--labs-text-secondary)",
+  subtleBorder: "var(--labs-border-subtle)",
+  subtleText: "var(--labs-text-muted)",
+  sessionSigned: "var(--labs-success)",
+  sessionUnsigned: "var(--labs-text-muted)",
+  shadow: "0 2px 12px rgba(0,0,0,0.15)",
+  divider: "var(--labs-border-subtle)",
+  sliderTrack: "var(--labs-border)",
+  sliderThumb: "var(--labs-accent)",
+  deltaPositive: "var(--labs-success)",
+  deltaNegative: "var(--labs-danger)",
+  tableRowHover: "var(--labs-surface-hover)",
+  pillBg: "var(--labs-accent-muted)",
+  pillText: "var(--labs-accent)",
+  focusRing: "var(--labs-accent)",
+};
+
 export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const { t } = useTranslation();
   const [location, navigate] = useLocation();
@@ -216,6 +258,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   };
 
   const isLabs = location.startsWith("/labs");
+  const tv = isLabs ? labsV : v;
 
   const handleRegister = async () => {
     if (!regName.trim() || !regEmail.trim() || !regPin.trim()) {
@@ -396,7 +439,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         background: "none",
         border: "none",
         cursor: "pointer",
-        color: v.accent,
+        color: tv.accent,
         fontSize: 14,
         fontWeight: 500,
         padding: 0,
@@ -414,9 +457,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     width: "100%",
     padding: "12px",
     borderRadius: 10,
-    border: `1px solid ${hasError ? v.danger : v.border}`,
-    background: v.elevated,
-    color: v.text,
+    border: `1px solid ${hasError ? tv.danger : tv.border}`,
+    background: tv.elevated,
+    color: tv.text,
     fontSize: 15,
     fontFamily: "system-ui, sans-serif",
     outline: "none",
@@ -428,8 +471,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     padding: "14px",
     borderRadius: 12,
     border: "none",
-    background: disabled ? v.muted : v.accent,
-    color: v.bg,
+    background: disabled ? tv.muted : tv.accent,
+    color: tv.bg,
     fontWeight: 700,
     fontSize: 15,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -441,13 +484,13 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const renderRegisterView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.register.back", "Back to Sign In"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
         {t("m2.register.title", "Create Account")}
       </h3>
       {regSuccess ? (
         <div style={{ textAlign: "center", padding: 20 }}>
-          <CheckCircle2 style={{ width: 48, height: 48, color: v.success, margin: "0 auto 12px" }} />
-          <div style={{ fontSize: 15, color: v.text, fontWeight: 600 }}>
+          <CheckCircle2 style={{ width: 48, height: 48, color: tv.success, margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 15, color: tv.text, fontWeight: 600 }}>
             {t("m2.register.success", "Account created successfully!")}
           </div>
         </div>
@@ -484,7 +527,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             <button
               type="button"
               onClick={() => setRegShowPin(!regShowPin)}
-              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: v.muted, padding: 0 }}
+              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 0 }}
               data-testid="m2-register-toggle-password"
             >
               {regShowPin ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
@@ -500,7 +543,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             data-testid="m2-register-confirm-password"
           />
           {error && (
-            <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-register-error">
+            <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-register-error">
               {error}
             </div>
           )}
@@ -520,10 +563,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const renderForgotPinView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.forgotPin.back", "Back to Sign In"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
         {t("m2.forgotPin.title", "Reset Password")}
       </h3>
-      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 4px" }}>
+      <p style={{ fontSize: 13, color: tv.muted, margin: "0 0 4px" }}>
         {t("m2.forgotPin.description", "Enter your email and we'll send you a verification code.")}
       </p>
       <input
@@ -536,7 +579,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         data-testid="m2-forgot-email"
       />
       {error && (
-        <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-forgot-error">
+        <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-forgot-error">
           {error}
         </div>
       )}
@@ -554,19 +597,19 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const renderResetPinView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.resetPin.back", "Back"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
         {t("m2.resetPin.title", "Enter Reset Code")}
       </h3>
       {resetSuccess ? (
         <div style={{ textAlign: "center", padding: 20 }}>
-          <CheckCircle2 style={{ width: 48, height: 48, color: v.success, margin: "0 auto 12px" }} />
-          <div style={{ fontSize: 15, color: v.text, fontWeight: 600 }}>
+          <CheckCircle2 style={{ width: 48, height: 48, color: tv.success, margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 15, color: tv.text, fontWeight: 600 }}>
             {t("m2.resetPin.success", "Password reset successfully! You can now sign in.")}
           </div>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: 13, color: v.muted, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 13, color: tv.muted, margin: "0 0 4px" }}>
             {t("m2.resetPin.description", "Check your email for the 6-digit code.")}
           </p>
           <input
@@ -588,7 +631,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             data-testid="m2-reset-new-pin"
           />
           {error && (
-            <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-reset-error">
+            <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-reset-error">
               {error}
             </div>
           )}
@@ -608,19 +651,19 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const renderVerifyEmailView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.verify.back", "Back"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
         {t("m2.verify.title", "Verify Email")}
       </h3>
       {verifySuccess ? (
         <div style={{ textAlign: "center", padding: 20 }}>
-          <CheckCircle2 style={{ width: 48, height: 48, color: v.success, margin: "0 auto 12px" }} />
-          <div style={{ fontSize: 15, color: v.text, fontWeight: 600 }}>
+          <CheckCircle2 style={{ width: 48, height: 48, color: tv.success, margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 15, color: tv.text, fontWeight: 600 }}>
             {t("m2.verify.success", "Email verified successfully!")}
           </div>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: 13, color: v.muted, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 13, color: tv.muted, margin: "0 0 4px" }}>
             {t("m2.verify.description", "Enter the 6-digit code sent to your email.")}
           </p>
           <input
@@ -633,7 +676,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             data-testid="m2-verify-code"
           />
           {error && (
-            <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-verify-error">
+            <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-verify-error">
               {error}
             </div>
           )}
@@ -652,9 +695,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               width: "100%",
               padding: "12px",
               borderRadius: 10,
-              border: `1px solid ${v.border}`,
+              border: `1px solid ${tv.border}`,
               background: "transparent",
-              color: v.accent,
+              color: tv.accent,
               fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
@@ -672,10 +715,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const renderGuestView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.guest.back", "Back to Sign In"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
         {t("m2.guest.title", "Joyn as Guest")}
       </h3>
-      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 4px" }}>
+      <p style={{ fontSize: 13, color: tv.muted, margin: "0 0 4px" }}>
         {t("m2.guest.description", "Enter your name and the tasting code to join without an account.")}
       </p>
       <input
@@ -695,7 +738,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         data-testid="m2-guest-code"
       />
       {error && (
-        <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-guest-error">
+        <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-guest-error">
           {error}
         </div>
       )}
@@ -712,15 +755,15 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderSignedInView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ background: v.elevated, borderRadius: 12, padding: "16px", marginBottom: 4 }}>
+      <div style={{ background: tv.elevated, borderRadius: 12, padding: "16px", marginBottom: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <User style={{ width: 32, height: 32, color: v.accent }} />
+          <User style={{ width: 32, height: 32, color: tv.accent }} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: v.text }} data-testid="m2-profile-display-name">
+            <div style={{ fontSize: 16, fontWeight: 600, color: tv.text }} data-testid="m2-profile-display-name">
               {session.name || "—"}
             </div>
             {participantEmail && (
-              <div style={{ fontSize: 12, color: v.muted }}>{participantEmail}</div>
+              <div style={{ fontSize: 12, color: tv.muted }}>{participantEmail}</div>
             )}
           </div>
         </div>
@@ -729,10 +772,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       {(() => {
         const ri = mapRouteToCounterpart(location);
         return (
-          <MenuButton
+          <MenuButton theme={tv}
             icon={ri.isLabs
-              ? <Layout style={{ width: 18, height: 18, color: v.accent }} />
-              : <FlaskConical style={{ width: 18, height: 18, color: v.accent }} />}
+              ? <Layout style={{ width: 18, height: 18, color: tv.accent }} />
+              : <FlaskConical style={{ width: 18, height: 18, color: tv.accent }} />}
             label={ri.isLabs
               ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
               : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
@@ -742,23 +785,23 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         );
       })()}
 
-      <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
 
-      <MenuButton
-        icon={<Settings style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<Settings style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.settings", "Settings")}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/settings" : "/m2/taste/settings"); }}
         testId="m2-profile-settings"
       />
       {isLabs ? (
-        <MenuButton
+        <MenuButton theme={tv}
           icon={labsTheme === "dark"
-            ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
-            : <Moon style={{ width: 18, height: 18, color: v.accent }} />}
+            ? <Sun style={{ width: 18, height: 18, color: tv.accent }} />
+            : <Moon style={{ width: 18, height: 18, color: tv.accent }} />}
           label={t("m2.profile.theme", "Theme")}
           onClick={toggleLabsTheme}
           suffix={
-            <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>
               {labsTheme === "dark"
                 ? t("m2.profile.themeLight", "Light")
                 : t("m2.profile.themeDark", "Dark")}
@@ -767,14 +810,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           testId="m2-profile-theme"
         />
       ) : (
-        <MenuButton
+        <MenuButton theme={tv}
           icon={currentTheme === "dark-warm"
-            ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
-            : <Moon style={{ width: 18, height: 18, color: v.accent }} />}
+            ? <Sun style={{ width: 18, height: 18, color: tv.accent }} />
+            : <Moon style={{ width: 18, height: 18, color: tv.accent }} />}
           label={t("m2.profile.theme", "Theme")}
           onClick={toggleTheme}
           suffix={
-            <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>
               {currentTheme === "dark-warm"
                 ? t("m2.profile.themeLight", "Light")
                 : t("m2.profile.themeDark", "Dark")}
@@ -783,35 +826,35 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           testId="m2-profile-theme"
         />
       )}
-      <MenuButton
-        icon={<Globe style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<Globe style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.language", "Language")}
         onClick={toggleLanguage}
-        suffix={<span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>{i18n.language.toUpperCase()}</span>}
+        suffix={<span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>{i18n.language.toUpperCase()}</span>}
         testId="m2-profile-language"
       />
-      <MenuButton
-        icon={<Mail style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.verifyEmail", "Verify Email")}
         onClick={() => { setView("verify-email"); setError(""); }}
         testId="m2-profile-verify-email"
       />
-      <MenuButton
-        icon={<Download style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<Download style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.dataExport", "Data & Export")}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/downloads" : "/m2/taste/downloads"); }}
         testId="m2-profile-data"
       />
       {session.role === "admin" && !isLabs && (
         <>
-          <MenuButton
-            icon={<Shield style={{ width: 18, height: 18, color: v.accent }} />}
+          <MenuButton theme={tv}
+            icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
             label={t("m2.profile.admin", "Admin")}
             onClick={() => { onClose(); navigate("/m2/admin"); }}
             testId="m2-profile-admin"
           />
-          <MenuButton
-            icon={<ArrowLeftRight style={{ width: 18, height: 18, color: v.accent }} />}
+          <MenuButton theme={tv}
+            icon={<ArrowLeftRight style={{ width: 18, height: 18, color: tv.accent }} />}
             label={t("m2.profile.switchClassic", "Switch to Classic UI")}
             onClick={() => { onClose(); window.location.href = "/tasting"; }}
             testId="m2-profile-classic"
@@ -819,16 +862,16 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </>
       )}
 
-      <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
 
-      <MenuButton
-        icon={<Info style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.about", "About CaskSense")}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/about" : "/m2/discover/about"); }}
         testId="m2-profile-about"
       />
-      <MenuButton
-        icon={<HandHeart style={{ width: 18, height: 18, color: v.accent }} />}
+      <MenuButton theme={tv}
+        icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.support", "Support Us")}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/donate" : "/m2/discover/donate"); }}
         testId="m2-profile-support"
@@ -845,10 +888,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           gap: 10,
           padding: "14px 16px",
           background: "transparent",
-          border: `1px solid ${v.border}`,
+          border: `1px solid ${tv.border}`,
           borderRadius: 12,
           cursor: "pointer",
-          color: v.danger,
+          color: tv.danger,
           fontSize: 14,
           fontWeight: 500,
           fontFamily: "system-ui, sans-serif",
@@ -877,10 +920,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               padding: "14px 16px",
               marginBottom: 12,
               background: "transparent",
-              border: `1px solid ${v.border}`,
+              border: `1px solid ${tv.border}`,
               borderRadius: 12,
               cursor: "pointer",
-              color: v.text,
+              color: tv.text,
               fontSize: 14,
               fontWeight: 500,
               fontFamily: "system-ui, sans-serif",
@@ -888,8 +931,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             data-testid="m2-profile-switch-version-signedout"
           >
             {ri.isLabs
-              ? <Layout style={{ width: 16, height: 16, color: v.accent }} />
-              : <FlaskConical style={{ width: 16, height: 16, color: v.accent }} />}
+              ? <Layout style={{ width: 16, height: 16, color: tv.accent }} />
+              : <FlaskConical style={{ width: 16, height: 16, color: tv.accent }} />}
             {ri.isLabs
               ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
               : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
@@ -917,7 +960,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           data-testid="m2-profile-password"
         />
         {error && (
-          <div style={{ fontSize: 13, color: v.danger, padding: "4px 2px" }} data-testid="m2-profile-error">
+          <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-profile-error">
             {error}
           </div>
         )}
@@ -935,7 +978,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           style={{
             background: "none",
             border: "none",
-            color: v.accent,
+            color: tv.accent,
             cursor: "pointer",
             fontSize: 13,
             fontWeight: 500,
@@ -959,18 +1002,18 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             justifyContent: "center",
             gap: 8,
             padding: "14px 16px",
-            background: v.elevated,
-            border: `1px solid ${v.border}`,
+            background: tv.elevated,
+            border: `1px solid ${tv.border}`,
             borderRadius: 12,
             cursor: "pointer",
-            color: v.text,
+            color: tv.text,
             fontSize: 14,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
           }}
           data-testid="m2-profile-register"
         >
-          <UserPlus style={{ width: 16, height: 16, color: v.accent }} />
+          <UserPlus style={{ width: 16, height: 16, color: tv.accent }} />
           {t("m2.profile.createAccount", "Register")}
         </button>
         <button
@@ -982,18 +1025,18 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             justifyContent: "center",
             gap: 8,
             padding: "14px 16px",
-            background: v.elevated,
-            border: `1px solid ${v.border}`,
+            background: tv.elevated,
+            border: `1px solid ${tv.border}`,
             borderRadius: 12,
             cursor: "pointer",
-            color: v.text,
+            color: tv.text,
             fontSize: 14,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
           }}
           data-testid="m2-profile-guest-mode"
         >
-          <Shield style={{ width: 16, height: 16, color: v.accent }} />
+          <Shield style={{ width: 16, height: 16, color: tv.accent }} />
           {t("m2.profile.guestMode", "Guest")}
         </button>
       </div>
@@ -1009,10 +1052,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             gap: 8,
             padding: "14px 16px",
             background: "transparent",
-            border: `1px solid ${v.border}`,
+            border: `1px solid ${tv.border}`,
             borderRadius: 12,
             cursor: "pointer",
-            color: v.text,
+            color: tv.text,
             fontSize: 14,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
@@ -1022,8 +1065,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           {isLabs ? (
             <>
               {labsTheme === "dark"
-                ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
-                : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
+                ? <Sun style={{ width: 16, height: 16, color: tv.accent }} />
+                : <Moon style={{ width: 16, height: 16, color: tv.accent }} />}
               {labsTheme === "dark"
                 ? t("m2.profile.themeLight", "Light")
                 : t("m2.profile.themeDark", "Dark")}
@@ -1031,8 +1074,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           ) : (
             <>
               {currentTheme === "dark-warm"
-                ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
-                : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
+                ? <Sun style={{ width: 16, height: 16, color: tv.accent }} />
+                : <Moon style={{ width: 16, height: 16, color: tv.accent }} />}
               {currentTheme === "dark-warm"
                 ? t("m2.profile.themeLight", "Light")
                 : t("m2.profile.themeDark", "Dark")}
@@ -1049,17 +1092,17 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             gap: 8,
             padding: "14px 16px",
             background: "transparent",
-            border: `1px solid ${v.border}`,
+            border: `1px solid ${tv.border}`,
             borderRadius: 12,
             cursor: "pointer",
-            color: v.text,
+            color: tv.text,
             fontSize: 14,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
           }}
           data-testid="m2-profile-language"
         >
-          <Globe style={{ width: 16, height: 16, color: v.accent }} />
+          <Globe style={{ width: 16, height: 16, color: tv.accent }} />
           {i18n.language === "de" ? "English" : "Deutsch"}
         </button>
       </div>
@@ -1098,7 +1141,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         style={{
           width: "100%",
           maxWidth: 420,
-          background: v.card,
+          background: tv.card,
           borderRadius: "16px 16px 0 0",
           padding: "20px 16px calc(80px + env(safe-area-inset-bottom, 0px))",
           maxHeight: "85vh",
@@ -1108,7 +1151,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         data-testid="m2-profile-menu"
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: v.text, margin: 0 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: tv.text, margin: 0 }}>
             {view === "main"
               ? t("m2.profile.label", "Profile")
               : view === "register"
@@ -1123,7 +1166,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           </h2>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, padding: 4 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 4 }}
             data-testid="m2-profile-close"
           >
             <X style={{ width: 20, height: 20 }} />
@@ -1136,13 +1179,15 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   );
 }
 
-function MenuButton({ icon, label, onClick, suffix, testId }: {
+function MenuButton({ icon, label, onClick, suffix, testId, theme }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
   suffix?: React.ReactNode;
   testId: string;
+  theme?: typeof v;
 }) {
+  const t = theme || v;
   return (
     <button
       onClick={onClick}
@@ -1152,11 +1197,11 @@ function MenuButton({ icon, label, onClick, suffix, testId }: {
         alignItems: "center",
         gap: 10,
         padding: "14px 16px",
-        background: v.elevated,
-        border: `1px solid ${v.border}`,
+        background: t.elevated,
+        border: `1px solid ${t.border}`,
         borderRadius: 12,
         cursor: "pointer",
-        color: v.text,
+        color: t.text,
         fontSize: 14,
         fontWeight: 500,
         fontFamily: "system-ui, sans-serif",
