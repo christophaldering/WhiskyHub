@@ -14,7 +14,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId, getEffectiveProfile } from "@/labs/data/flavor-data";
-import FlavorTagStrip from "@/labs/components/FlavorTagStrip";
+import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -113,6 +113,7 @@ function HostRatingPanel({
 }) {
   const queryClient = useQueryClient();
   const [activeIdx, setActiveIdx] = useState(0);
+  const [hostFlavorExpanded, setHostFlavorExpanded] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, HostRatingState>>({});
   const [flavorNotes, setFlavorNotes] = useState<Record<string, string>>({});
   const [balanceChips, setBalanceChips] = useState<Record<string, string[]>>({});
@@ -403,6 +404,18 @@ function HostRatingPanel({
                 }}
                 data-testid={`host-rating-slider-${dim}`}
               />
+              {(dim === "nose" || dim === "taste" || dim === "finish") && (
+                <div style={{ marginTop: 6 }}>
+                  <InlineFlavorTags
+                    notes={currentFlavorNotes}
+                    onNotesChange={(newNotes) => updateFlavorNotes(currentWhisky.id, newNotes)}
+                    profileId={profileId}
+                    phase={dim}
+                    expanded={hostFlavorExpanded === dim}
+                    onToggle={() => setHostFlavorExpanded(hostFlavorExpanded === dim ? null : dim)}
+                  />
+                </div>
+              )}
               {dim === "balance" && (
                 <>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
@@ -456,12 +469,6 @@ function HostRatingPanel({
             </div>
           );
         })}
-
-        <FlavorTagStrip
-          notes={currentFlavorNotes}
-          onNotesChange={(newNotes) => updateFlavorNotes(currentWhisky.id, newNotes)}
-          profileId={profileId}
-        />
 
         <div style={{ marginTop: 16, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>

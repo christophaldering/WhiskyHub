@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
-import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { ChevronDown, ChevronUp, Plus, X, Tag } from "lucide-react";
 import {
   getSortedCategories,
 } from "@/labs/data/flavor-data";
@@ -15,6 +15,8 @@ interface FlavorTagStripProps {
   notes: string;
   onNotesChange: (notes: string) => void;
   profileId: string | null;
+  phase?: Phase;
+  inline?: boolean;
 }
 
 function parseTagsFromNotes(notes: string): Record<Phase, string[]> {
@@ -54,14 +56,111 @@ function replaceTagsInNotes(
   return notes ? `${notes.trimEnd()}\n${newLine}` : newLine;
 }
 
+export function InlineFlavorTags({
+  notes,
+  onNotesChange,
+  profileId,
+  phase,
+  expanded,
+  onToggle,
+}: {
+  notes: string;
+  onNotesChange: (notes: string) => void;
+  profileId: string | null;
+  phase: Phase;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const tagsByPhase = useMemo(() => parseTagsFromNotes(notes), [notes]);
+  const count = tagsByPhase[phase].length;
+
+  return (
+    <div data-testid={`inline-flavor-${phase}`}>
+      <button
+        onClick={onToggle}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          width: "100%",
+          padding: "8px 0",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+        data-testid={`inline-flavor-toggle-${phase}`}
+      >
+        <Tag className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+        <span
+          style={{
+            flex: 1,
+            textAlign: "left",
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--labs-text-muted)",
+          }}
+        >
+          Add flavors
+        </span>
+        {count > 0 && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--labs-accent)",
+              background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+              borderRadius: 9999,
+              padding: "2px 8px",
+            }}
+            data-testid={`inline-flavor-count-${phase}`}
+          >
+            {count}
+          </span>
+        )}
+        {expanded ? (
+          <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+        )}
+      </button>
+
+      {expanded && (
+        <div
+          style={{
+            paddingTop: 4,
+            paddingBottom: 4,
+            animation: "fadeIn 150ms ease-out",
+          }}
+        >
+          <FlavorTagStrip
+            notes={notes}
+            onNotesChange={onNotesChange}
+            profileId={profileId}
+            phase={phase}
+            inline
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FlavorTagStrip({
   notes,
   onNotesChange,
   profileId,
+  phase,
+  inline,
 }: FlavorTagStripProps) {
-  const [activePhase, setActivePhase] = useState<Phase>("nose");
+  const isSinglePhase = !!phase;
+  const [activePhase, setActivePhase] = useState<Phase>(phase || "nose");
   const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
   const [customInput, setCustomInput] = useState("");
+
+  useEffect(() => {
+    if (phase) setActivePhase(phase);
+  }, [phase]);
 
   const sortedCategories = useMemo(
     () => getSortedCategories(profileId),
@@ -102,81 +201,91 @@ export default function FlavorTagStrip({
   const allTagCount =
     tagsByPhase.nose.length + tagsByPhase.taste.length + tagsByPhase.finish.length;
 
+  const wrapperStyle: React.CSSProperties = inline
+    ? {}
+    : { padding: "12px 14px" };
+
+  const wrapperClass = inline ? "labs-fade-in" : "labs-card labs-fade-in";
+
   return (
     <div
-      className="labs-card labs-fade-in"
-      style={{ padding: "12px 14px" }}
-      data-testid="flavor-tag-strip"
+      className={wrapperClass}
+      style={wrapperStyle}
+      data-testid={isSinglePhase ? `flavor-tag-strip-${phase}` : "flavor-tag-strip"}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 10,
-        }}
-      >
-        <span
-          className="text-xs font-medium"
-          style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
-        >
-          Flavor Tags
-        </span>
-        {allTagCount > 0 && (
-          <span
-            className="text-[10px]"
+      {!isSinglePhase && (
+        <>
+          <div
             style={{
-              color: "var(--labs-accent)",
-              background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
-              borderRadius: 9999,
-              padding: "2px 8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 10,
             }}
-            data-testid="flavor-tag-count"
           >
-            {allTagCount} selected
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        {PHASES.map((p) => {
-          const count = tagsByPhase[p.id].length;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setActivePhase(p.id)}
-              style={{
-                flex: 1,
-                padding: "6px 0",
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                border:
-                  activePhase === p.id
-                    ? "1px solid var(--labs-accent)"
-                    : "1px solid var(--labs-border)",
-                background:
-                  activePhase === p.id
-                    ? "color-mix(in srgb, var(--labs-accent) 10%, transparent)"
-                    : "var(--labs-surface)",
-                color:
-                  activePhase === p.id
-                    ? "var(--labs-accent)"
-                    : "var(--labs-text-muted)",
-                transition: "all 150ms",
-              }}
-              data-testid={`flavor-phase-${p.id}`}
+            <span
+              className="text-xs font-medium"
+              style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
             >
-              {p.en}
-              {count > 0 && (
-                <span style={{ marginLeft: 4, opacity: 0.7 }}>({count})</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              Flavor Tags
+            </span>
+            {allTagCount > 0 && (
+              <span
+                className="text-[10px]"
+                style={{
+                  color: "var(--labs-accent)",
+                  background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+                  borderRadius: 9999,
+                  padding: "2px 8px",
+                }}
+                data-testid="flavor-tag-count"
+              >
+                {allTagCount} selected
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            {PHASES.map((p) => {
+              const count = tagsByPhase[p.id].length;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePhase(p.id)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 0",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border:
+                      activePhase === p.id
+                        ? "1px solid var(--labs-accent)"
+                        : "1px solid var(--labs-border)",
+                    background:
+                      activePhase === p.id
+                        ? "color-mix(in srgb, var(--labs-accent) 10%, transparent)"
+                        : "var(--labs-surface)",
+                    color:
+                      activePhase === p.id
+                        ? "var(--labs-accent)"
+                        : "var(--labs-text-muted)",
+                    transition: "all 150ms",
+                  }}
+                  data-testid={`flavor-phase-${p.id}`}
+                >
+                  {p.en}
+                  {count > 0 && (
+                    <span style={{ marginLeft: 4, opacity: 0.7 }}>({count})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {activeTags.length > 0 && (
         <div
@@ -186,7 +295,7 @@ export default function FlavorTagStrip({
             gap: 6,
             marginBottom: 10,
           }}
-          data-testid="flavor-selected-tags"
+          data-testid={isSinglePhase ? `flavor-selected-tags-${phase}` : "flavor-selected-tags"}
         >
           {activeTags.map((tag) => (
             <button

@@ -6,7 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
-import FlavorTagStrip from "@/labs/components/FlavorTagStrip";
+import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 
 interface LabsLiveProps {
@@ -156,6 +156,7 @@ function GuidedStepView({
   tastingId: string;
 }) {
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
+  const [flavorExpanded, setFlavorExpanded] = useState(false);
   const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
   const [notes, setNotes] = useState("");
   const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
@@ -361,7 +362,7 @@ function GuidedStepView({
                     cursor: "pointer",
                     fontFamily: "inherit",
                   }}
-                  onClick={() => setActiveDim(dim)}
+                  onClick={() => { setActiveDim(dim); setFlavorExpanded(false); }}
                   data-testid={`guided-dim-${dim}`}
                 >
                   {dim.charAt(0).toUpperCase() + dim.slice(1)}
@@ -412,14 +413,19 @@ function GuidedStepView({
               <span>{Math.round(maxScore / 2)}</span>
               <span>{maxScore}</span>
             </div>
-          </div>
 
-          <div className="mb-4 labs-fade-in labs-stagger-3">
-            <FlavorTagStrip
-              notes={notes}
-              onNotesChange={updateNotes}
-              profileId={getEffectiveProfile(whisky || {}, isBlindStep).profileId}
-            />
+            {(activeDim === "nose" || activeDim === "taste" || activeDim === "finish") && (
+              <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
+                <InlineFlavorTags
+                  notes={notes}
+                  onNotesChange={updateNotes}
+                  profileId={getEffectiveProfile(whisky || {}, isBlindStep).profileId}
+                  phase={activeDim as "nose" | "taste" | "finish"}
+                  expanded={flavorExpanded}
+                  onToggle={() => setFlavorExpanded(!flavorExpanded)}
+                />
+              </div>
+            )}
           </div>
 
           <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
@@ -543,6 +549,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [, navigate] = useLocation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
+  const [flavorExpanded, setFlavorExpanded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
@@ -904,7 +911,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                         cursor: "pointer",
                         fontFamily: "inherit",
                       }}
-                      onClick={() => setActiveDim(dim)}
+                      onClick={() => { setActiveDim(dim); setFlavorExpanded(false); }}
                       data-testid={`labs-live-dim-${dim}`}
                     >
                       {dim.charAt(0).toUpperCase() + dim.slice(1)}
@@ -955,14 +962,19 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   <span>{Math.round(maxScore / 2)}</span>
                   <span>{maxScore}</span>
                 </div>
-              </div>
 
-              <div className="mb-4 labs-fade-in labs-stagger-3">
-                <FlavorTagStrip
-                  notes={notes}
-                  onNotesChange={updateNotes}
-                  profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
-                />
+                {(activeDim === "nose" || activeDim === "taste" || activeDim === "finish") && (
+                  <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
+                    <InlineFlavorTags
+                      notes={notes}
+                      onNotesChange={updateNotes}
+                      profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
+                      phase={activeDim as "nose" | "taste" | "finish"}
+                      expanded={flavorExpanded}
+                      onToggle={() => setFlavorExpanded(!flavorExpanded)}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
