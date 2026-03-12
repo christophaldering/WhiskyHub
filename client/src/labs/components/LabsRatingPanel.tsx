@@ -22,14 +22,6 @@ function normalizeLegacyChip(chip: string): string {
   return LEGACY_CHIP_MAP[chip] || chip;
 }
 
-const allSubEnLower = new Set(
-  FLAVOR_CATEGORIES.flatMap((c) => c.subcategories.map((s) => s.en.toLowerCase()))
-);
-
-export function chipMatchesSubcategory(chip: string): boolean {
-  const normalized = normalizeLegacyChip(chip);
-  return allSubEnLower.has(normalized.toLowerCase());
-}
 
 const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
 
@@ -241,6 +233,7 @@ export default function LabsRatingPanel({
         <button
           type="button"
           onClick={() => {
+            if (disabled) return;
             const allCollapsed = Object.values(expandedCats).every((v) => !v);
             if (allCollapsed) {
               const first = categories[0];
@@ -251,8 +244,9 @@ export default function LabsRatingPanel({
           }}
           style={{
             display: "flex", alignItems: "center", gap: 6,
-            background: "none", border: "none", cursor: "pointer",
+            background: "none", border: "none", cursor: disabled ? "default" : "pointer",
             color: "var(--labs-text-muted)", fontSize: 12, fontFamily: "inherit",
+            opacity: disabled ? 0.5 : 1,
             padding: "4px 0", marginBottom: 6,
           }}
           data-testid="button-toggle-flavors"
