@@ -324,10 +324,23 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
   const isLoading = loadingTasting || loadingWhiskies;
 
+  const isRevealed = tasting?.status === "reveal" || tasting?.status === "archived" || tasting?.status === "completed";
+
+  const { data: tastingHistoryData } = useQuery({
+    queryKey: ["tasting-history", currentParticipant?.id],
+    queryFn: async () => {
+      const pid = currentParticipant!.id;
+      const res = await fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } });
+      if (!res.ok) return { tastings: [] };
+      const resp = await res.json();
+      return Array.isArray(resp) ? { tastings: resp } : resp;
+    },
+    enabled: !!currentParticipant?.id && !!isRevealed && !!whiskies?.length,
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!currentParticipant?.id || !whiskies?.length || !tastingId) return;
-    if (tasting?.status !== "reveal" && tasting?.status !== "archived" && tasting?.status !== "completed") return;
-    const pid = currentParticipant.id;
+    if (!tastingHistoryData?.tastings?.length || !whiskies?.length || !tastingId) return;
 
     const fingerprint = (w: any) => {
       if (w.whiskybaseId) return `wb:${w.whiskybaseId}`;
@@ -340,37 +353,31 @@ export default function LabsResults({ params }: LabsResultsProps) {
       if (fp !== "fp:|") currentFpToId[fp] = w.id;
     }
 
-    fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } })
-      .then(r => r.ok ? r.json() : { tastings: [] })
-      .then((resp: any) => {
-        const history: any[] = Array.isArray(resp) ? resp : (resp.tastings || []);
-        const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]> = {};
-        for (const t of history) {
-          if (t.id === tastingId) continue;
-          for (const w of t.whiskies || []) {
-            if (!w.myRating) continue;
-            const fp = fingerprint(w);
-            const currentId = currentFpToId[fp];
-            if (!currentId) continue;
-            if (!map[currentId]) map[currentId] = [];
-            map[currentId].push({
-              date: t.date || "",
-              tastingTitle: t.title || "",
-              nose: w.myRating.nose,
-              taste: w.myRating.taste,
-              finish: w.myRating.finish,
-              balance: w.myRating.balance,
-              overall: w.myRating.overall,
-            });
-          }
-        }
-        for (const wid of Object.keys(map)) {
-          map[wid].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-        setPreviousRatingsMap(map);
-      })
-      .catch(() => {});
-  }, [currentParticipant?.id, whiskies, tastingId, tasting?.status]);
+    const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]> = {};
+    for (const t of tastingHistoryData.tastings) {
+      if (t.id === tastingId) continue;
+      for (const w of t.whiskies || []) {
+        if (!w.myRating) continue;
+        const fp = fingerprint(w);
+        const currentId = currentFpToId[fp];
+        if (!currentId) continue;
+        if (!map[currentId]) map[currentId] = [];
+        map[currentId].push({
+          date: t.date || "",
+          tastingTitle: t.title || "",
+          nose: w.myRating.nose,
+          taste: w.myRating.taste,
+          finish: w.myRating.finish,
+          balance: w.myRating.balance,
+          overall: w.myRating.overall,
+        });
+      }
+    }
+    for (const wid of Object.keys(map)) {
+      map[wid].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    setPreviousRatingsMap(map);
+  }, [tastingHistoryData, whiskies, tastingId]);
 
   const whiskyResults = useMemo(() => {
     return (whiskies || []).map((w: any) => {
@@ -788,7 +795,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       {w.name || "Unknown"}
                     </p>
                     <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
-                    {previousRatingsMap[w.id]?.length > 0 && (tasting?.status === "reveal" || tasting?.status === "archived" || tasting?.status === "completed") && (
+                    {previousRatingsMap[w.id]?.length > 0 && isRevealed && (
                       <span className="inline-flex items-center gap-0.5 text-[10px]" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid={`badge-prev-${w.id}`}>
                         <Clock className="w-3 h-3" />
                         {(() => {
@@ -939,7 +946,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   {(() => {
                     const prevList = previousRatingsMap[w.id];
                     if (!prevList || prevList.length === 0) return null;
-                    if (tasting?.status !== "reveal" && tasting?.status !== "archived" && tasting?.status !== "completed") return null;
+                    if (!isRevealed) return null;
                     const isHistExpanded = historyExpanded[w.id] || false;
                     const mostRecent = prevList[0];
                     const histDelta = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
