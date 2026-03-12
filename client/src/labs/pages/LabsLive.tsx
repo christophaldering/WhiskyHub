@@ -8,7 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import FlavorTagStrip from "@/labs/components/FlavorTagStrip";
-import { detectFlavorProfile } from "@/labs/data/flavor-data";
+import { getEffectiveProfile } from "@/labs/data/flavor-data";
 
 interface LabsLiveProps {
   params: { id: string };
@@ -537,8 +537,7 @@ function GuidedStepView({
             <FlavorTagStrip
               notes={notes}
               onNotesChange={updateNotes}
-              flavorProfile={whisky?.flavorProfile || (isBlindStep ? null : detectFlavorProfile(whisky || {}))}
-              isBlind={isBlindStep}
+              profileId={getEffectiveProfile(whisky || {}, isBlindStep).profileId}
             />
           </div>
 
@@ -1076,8 +1075,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 <FlavorTagStrip
                   notes={notes}
                   onNotesChange={updateNotes}
-                  flavorProfile={currentWhisky?.flavorProfile || (isBlind ? null : detectFlavorProfile(currentWhisky || {}))}
-                  isBlind={!!isBlind}
+                  profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
                 />
               </div>
 

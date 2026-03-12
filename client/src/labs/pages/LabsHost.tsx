@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { FLAVOR_PROFILES, type FlavorProfileId } from "@/labs/data/flavor-data";
+import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import QRCode from "qrcode";
@@ -2792,7 +2792,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
       hostSummary: extFields.hostSummary || "",
       notes: extFields.notes || "",
-      flavorProfile: extFields.flavorProfile || null,
+      flavorProfile: extFields.flavorProfile === "auto" || !extFields.flavorProfile ? null : extFields.flavorProfile,
       sortOrder: (whiskies?.length || 0) + 1,
     });
   };
@@ -2804,6 +2804,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     if (coerced.ppm !== undefined) coerced.ppm = coerced.ppm ? parseFloat(coerced.ppm as string) || null : null;
     if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
     if (coerced.caskType !== undefined) { coerced.caskInfluence = coerced.caskType; delete coerced.caskType; }
+    if (coerced.flavorProfile !== undefined) { coerced.flavorProfile = coerced.flavorProfile === "auto" || !coerced.flavorProfile ? null : coerced.flavorProfile; }
     updateWhiskyMutation.mutate({ id: whiskyId, data: coerced });
   };
 
@@ -3775,8 +3776,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder="Price" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
                 <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
-                <select className="labs-input col-span-2" value={extFields.flavorProfile || ""} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
-                  <option value="">Flavor Profile (auto-detect)</option>
+                <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
+                  <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskInfluence: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
+                  <option value="none">None (no ordering)</option>
                   {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                 </select>
                 <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
@@ -3824,8 +3826,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
                       <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
                       <input className="labs-input" placeholder="Price" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
-                      <select className="labs-input col-span-2" value={editFields.flavorProfile || ""} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
-                        <option value="">Flavor Profile (auto-detect)</option>
+                      <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
+                        <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
+                        <option value="none">None (no ordering)</option>
                         {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                       </select>
                       <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />

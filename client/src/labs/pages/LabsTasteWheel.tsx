@@ -5,68 +5,9 @@ import { useSession } from "@/lib/session";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
+import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 
-interface FlavorCategory {
-  id: string; en: string; de: string; color: string;
-  subcategories: { id: string; en: string; de: string; keywords: string[] }[];
-}
-
-const FLAVOR_WHEEL_DATA: FlavorCategory[] = [
-  { id: "fruity", en: "Fruity", de: "Fruchtig", color: "#e07b4c", subcategories: [
-    { id: "apple", en: "Apple", de: "Apfel", keywords: ["apple", "apfel", "green apple", "grüner apfel"] },
-    { id: "pear", en: "Pear", de: "Birne", keywords: ["pear", "birne"] },
-    { id: "citrus", en: "Citrus", de: "Zitrus", keywords: ["citrus", "zitrus", "lemon", "zitrone", "orange", "lime", "grapefruit"] },
-    { id: "berry", en: "Berry", de: "Beere", keywords: ["berry", "beere", "berries", "strawberry", "raspberry", "blackberry", "blueberry"] },
-    { id: "tropical", en: "Tropical", de: "Tropisch", keywords: ["tropical", "tropisch", "mango", "pineapple", "banana", "coconut", "passion fruit"] },
-    { id: "dried-fruit", en: "Dried Fruit", de: "Trockenfrüchte", keywords: ["dried fruit", "trockenfrüchte", "raisin", "date", "fig", "prune", "sultana"] },
-  ]},
-  { id: "floral", en: "Floral", de: "Blumig", color: "#c77dba", subcategories: [
-    { id: "rose", en: "Rose", de: "Rose", keywords: ["rose"] },
-    { id: "lavender", en: "Lavender", de: "Lavendel", keywords: ["lavender", "lavendel"] },
-    { id: "heather", en: "Heather", de: "Heidekraut", keywords: ["heather", "heidekraut"] },
-    { id: "elderflower", en: "Elderflower", de: "Holunderblüte", keywords: ["elderflower", "holunderblüte"] },
-  ]},
-  { id: "sweet", en: "Sweet", de: "Süß", color: "#d4a853", subcategories: [
-    { id: "honey", en: "Honey", de: "Honig", keywords: ["honey", "honig"] },
-    { id: "vanilla", en: "Vanilla", de: "Vanille", keywords: ["vanilla", "vanille"] },
-    { id: "caramel", en: "Caramel", de: "Karamell", keywords: ["caramel", "karamell", "butterscotch"] },
-    { id: "toffee", en: "Toffee", de: "Toffee", keywords: ["toffee", "fudge"] },
-    { id: "chocolate", en: "Chocolate", de: "Schokolade", keywords: ["chocolate", "schokolade", "cocoa", "kakao"] },
-    { id: "marzipan", en: "Marzipan", de: "Marzipan", keywords: ["marzipan", "almond", "mandel"] },
-  ]},
-  { id: "spicy", en: "Spicy", de: "Würzig", color: "#c04e3e", subcategories: [
-    { id: "cinnamon", en: "Cinnamon", de: "Zimt", keywords: ["cinnamon", "zimt"] },
-    { id: "pepper", en: "Pepper", de: "Pfeffer", keywords: ["pepper", "pfeffer", "black pepper"] },
-    { id: "ginger", en: "Ginger", de: "Ingwer", keywords: ["ginger", "ingwer"] },
-    { id: "clove", en: "Clove", de: "Nelke", keywords: ["clove", "nelke", "gewürznelke"] },
-    { id: "nutmeg", en: "Nutmeg", de: "Muskatnuss", keywords: ["nutmeg", "muskatnuss"] },
-  ]},
-  { id: "woody", en: "Woody", de: "Holzig", color: "#8b6f47", subcategories: [
-    { id: "oak", en: "Oak", de: "Eiche", keywords: ["oak", "eiche", "eichenholz"] },
-    { id: "cedar", en: "Cedar", de: "Zeder", keywords: ["cedar", "zeder"] },
-    { id: "sandalwood", en: "Sandalwood", de: "Sandelholz", keywords: ["sandalwood", "sandelholz"] },
-    { id: "pine", en: "Pine", de: "Kiefer", keywords: ["pine", "kiefer", "resin", "harz"] },
-  ]},
-  { id: "smoky", en: "Smoky", de: "Rauchig", color: "#6b7280", subcategories: [
-    { id: "peat", en: "Peat", de: "Torf", keywords: ["peat", "torf", "peaty", "torfig"] },
-    { id: "campfire", en: "Campfire", de: "Lagerfeuer", keywords: ["campfire", "lagerfeuer", "bonfire", "smoke", "rauch"] },
-    { id: "charcoal", en: "Charcoal", de: "Holzkohle", keywords: ["charcoal", "holzkohle"] },
-    { id: "ash", en: "Ash", de: "Asche", keywords: ["ash", "asche"] },
-    { id: "tar", en: "Tar", de: "Teer", keywords: ["tar", "teer"] },
-  ]},
-  { id: "malty", en: "Malty", de: "Malzig", color: "#b8934a", subcategories: [
-    { id: "cereal", en: "Cereal", de: "Getreide", keywords: ["cereal", "getreide", "grain", "barley", "malt", "malz"] },
-    { id: "biscuit", en: "Biscuit", de: "Keks", keywords: ["biscuit", "keks", "cookie", "shortbread"] },
-    { id: "bread", en: "Bread", de: "Brot", keywords: ["bread", "brot", "dough", "teig"] },
-    { id: "toast", en: "Toast", de: "Toast", keywords: ["toast", "toasted", "geröstet"] },
-  ]},
-  { id: "maritime", en: "Maritime", de: "Maritim", color: "#4a90a4", subcategories: [
-    { id: "sea-salt", en: "Sea Salt", de: "Meersalz", keywords: ["sea salt", "meersalz", "salt", "salz", "salty", "brine"] },
-    { id: "brine", en: "Brine", de: "Salzlake", keywords: ["brine", "salzlake", "briny"] },
-    { id: "iodine", en: "Iodine", de: "Jod", keywords: ["iodine", "jod", "medicinal"] },
-    { id: "seaweed", en: "Seaweed", de: "Seetang", keywords: ["seaweed", "seetang", "kelp", "algae"] },
-  ]},
-];
+const FLAVOR_WHEEL_DATA = FLAVOR_CATEGORIES;
 
 interface JournalEntry {
   id: string; noseNotes?: string | null; tasteNotes?: string | null; finishNotes?: string | null; body?: string | null;

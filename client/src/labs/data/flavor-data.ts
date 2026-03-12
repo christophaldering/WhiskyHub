@@ -17,12 +17,12 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
   {
     id: "fruity", en: "Fruity", de: "Fruchtig", color: "#e07b4c",
     subcategories: [
-      { id: "apple", en: "Apple", de: "Apfel", keywords: ["apple", "apfel"] },
+      { id: "apple", en: "Apple", de: "Apfel", keywords: ["apple", "apfel", "green apple", "grüner apfel"] },
       { id: "pear", en: "Pear", de: "Birne", keywords: ["pear", "birne"] },
-      { id: "citrus", en: "Citrus", de: "Zitrus", keywords: ["citrus", "zitrus", "lemon", "orange", "lime"] },
-      { id: "berry", en: "Berry", de: "Beere", keywords: ["berry", "beere", "strawberry", "raspberry"] },
-      { id: "tropical", en: "Tropical", de: "Tropisch", keywords: ["tropical", "tropisch", "mango", "pineapple", "banana"] },
-      { id: "dried-fruit", en: "Dried Fruit", de: "Trockenfrüchte", keywords: ["dried fruit", "raisin", "date", "fig"] },
+      { id: "citrus", en: "Citrus", de: "Zitrus", keywords: ["citrus", "zitrus", "lemon", "zitrone", "orange", "lime", "grapefruit"] },
+      { id: "berry", en: "Berry", de: "Beere", keywords: ["berry", "beere", "berries", "strawberry", "raspberry", "blackberry", "blueberry"] },
+      { id: "tropical", en: "Tropical", de: "Tropisch", keywords: ["tropical", "tropisch", "mango", "pineapple", "banana", "coconut", "passion fruit"] },
+      { id: "dried-fruit", en: "Dried Fruit", de: "Trockenfrüchte", keywords: ["dried fruit", "trockenfrüchte", "raisin", "date", "fig", "prune", "sultana"] },
     ],
   },
   {
@@ -31,7 +31,8 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "rose", en: "Rose", de: "Rose", keywords: ["rose"] },
       { id: "lavender", en: "Lavender", de: "Lavendel", keywords: ["lavender", "lavendel"] },
       { id: "heather", en: "Heather", de: "Heidekraut", keywords: ["heather", "heidekraut"] },
-      { id: "elderflower", en: "Elderflower", de: "Holunderblüte", keywords: ["elderflower", "holunderblüte"] },
+      { id: "elderflower", en: "Elderflower", de: "Holunderblüte", keywords: ["elderflower", "holunderblüte", "holunder"] },
+      { id: "jasmine", en: "Jasmine", de: "Jasmin", keywords: ["jasmine", "jasmin"] },
     ],
   },
   {
@@ -41,54 +42,61 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "vanilla", en: "Vanilla", de: "Vanille", keywords: ["vanilla", "vanille"] },
       { id: "caramel", en: "Caramel", de: "Karamell", keywords: ["caramel", "karamell", "butterscotch"] },
       { id: "toffee", en: "Toffee", de: "Toffee", keywords: ["toffee", "fudge"] },
-      { id: "chocolate", en: "Chocolate", de: "Schokolade", keywords: ["chocolate", "schokolade", "cocoa"] },
-      { id: "marzipan", en: "Marzipan", de: "Marzipan", keywords: ["marzipan", "almond"] },
+      { id: "chocolate", en: "Chocolate", de: "Schokolade", keywords: ["chocolate", "schokolade", "cocoa", "kakao"] },
+      { id: "marzipan", en: "Marzipan", de: "Marzipan", keywords: ["marzipan", "almond paste", "mandel"] },
+      { id: "brown-sugar", en: "Brown Sugar", de: "Brauner Zucker", keywords: ["brown sugar", "brauner zucker", "molasses", "melasse", "treacle"] },
     ],
   },
   {
     id: "spicy", en: "Spicy", de: "Würzig", color: "#c04e3e",
     subcategories: [
       { id: "cinnamon", en: "Cinnamon", de: "Zimt", keywords: ["cinnamon", "zimt"] },
-      { id: "pepper", en: "Pepper", de: "Pfeffer", keywords: ["pepper", "pfeffer"] },
+      { id: "pepper", en: "Pepper", de: "Pfeffer", keywords: ["pepper", "pfeffer", "black pepper"] },
       { id: "ginger", en: "Ginger", de: "Ingwer", keywords: ["ginger", "ingwer"] },
-      { id: "clove", en: "Clove", de: "Nelke", keywords: ["clove", "nelke"] },
+      { id: "clove", en: "Clove", de: "Nelke", keywords: ["clove", "nelke", "gewürznelke"] },
       { id: "nutmeg", en: "Nutmeg", de: "Muskatnuss", keywords: ["nutmeg", "muskatnuss"] },
+      { id: "anise", en: "Anise", de: "Anis", keywords: ["anise", "anis", "liquorice", "licorice", "lakritz"] },
     ],
   },
   {
     id: "woody", en: "Woody", de: "Holzig", color: "#8b6f47",
     subcategories: [
-      { id: "oak", en: "Oak", de: "Eiche", keywords: ["oak", "eiche"] },
+      { id: "oak", en: "Oak", de: "Eiche", keywords: ["oak", "eiche", "eichenholz"] },
       { id: "cedar", en: "Cedar", de: "Zeder", keywords: ["cedar", "zeder"] },
       { id: "sandalwood", en: "Sandalwood", de: "Sandelholz", keywords: ["sandalwood", "sandelholz"] },
-      { id: "pine", en: "Pine", de: "Kiefer", keywords: ["pine", "kiefer", "resin"] },
+      { id: "pine", en: "Pine", de: "Kiefer", keywords: ["pine", "kiefer", "resin", "harz"] },
+      { id: "sawdust", en: "Sawdust", de: "Sägemehl", keywords: ["sawdust", "sägemehl", "wood shavings"] },
     ],
   },
   {
     id: "smoky", en: "Smoky", de: "Rauchig", color: "#6b7280",
     subcategories: [
-      { id: "peat", en: "Peat", de: "Torf", keywords: ["peat", "torf"] },
-      { id: "campfire", en: "Campfire", de: "Lagerfeuer", keywords: ["campfire", "lagerfeuer", "smoke"] },
+      { id: "peat", en: "Peat", de: "Torf", keywords: ["peat", "torf", "peaty", "torfig"] },
+      { id: "campfire", en: "Campfire", de: "Lagerfeuer", keywords: ["campfire", "lagerfeuer", "bonfire", "smoke", "rauch"] },
       { id: "charcoal", en: "Charcoal", de: "Holzkohle", keywords: ["charcoal", "holzkohle"] },
       { id: "ash", en: "Ash", de: "Asche", keywords: ["ash", "asche"] },
       { id: "tar", en: "Tar", de: "Teer", keywords: ["tar", "teer"] },
+      { id: "bbq", en: "BBQ", de: "Grill", keywords: ["bbq", "grill", "smoked meat", "bacon", "speck"] },
     ],
   },
   {
     id: "malty", en: "Malty", de: "Malzig", color: "#b8934a",
     subcategories: [
-      { id: "cereal", en: "Cereal", de: "Getreide", keywords: ["cereal", "getreide", "grain", "malt"] },
-      { id: "biscuit", en: "Biscuit", de: "Keks", keywords: ["biscuit", "keks", "shortbread"] },
-      { id: "bread", en: "Bread", de: "Brot", keywords: ["bread", "brot", "dough"] },
-      { id: "toast", en: "Toast", de: "Toast", keywords: ["toast", "toasted"] },
+      { id: "cereal", en: "Cereal", de: "Getreide", keywords: ["cereal", "getreide", "grain", "barley", "malt", "malz"] },
+      { id: "biscuit", en: "Biscuit", de: "Keks", keywords: ["biscuit", "keks", "cookie", "shortbread"] },
+      { id: "bread", en: "Bread", de: "Brot", keywords: ["bread", "brot", "dough", "teig"] },
+      { id: "toast", en: "Toast", de: "Toast", keywords: ["toast", "toasted", "geröstet"] },
+      { id: "oatmeal", en: "Oatmeal", de: "Haferflocken", keywords: ["oatmeal", "haferflocken", "oat", "hafer", "porridge"] },
     ],
   },
   {
     id: "maritime", en: "Maritime", de: "Maritim", color: "#4a90a4",
     subcategories: [
-      { id: "sea-salt", en: "Sea Salt", de: "Meersalz", keywords: ["sea salt", "meersalz", "salt", "brine"] },
+      { id: "sea-salt", en: "Sea Salt", de: "Meersalz", keywords: ["sea salt", "meersalz", "salt", "salz", "salty", "brine"] },
+      { id: "brine", en: "Brine", de: "Salzlake", keywords: ["brine", "salzlake", "briny"] },
       { id: "iodine", en: "Iodine", de: "Jod", keywords: ["iodine", "jod", "medicinal"] },
-      { id: "seaweed", en: "Seaweed", de: "Seetang", keywords: ["seaweed", "seetang", "kelp"] },
+      { id: "seaweed", en: "Seaweed", de: "Seetang", keywords: ["seaweed", "seetang", "kelp", "algae"] },
+      { id: "oyster", en: "Oyster", de: "Auster", keywords: ["oyster", "auster", "shellfish"] },
     ],
   },
   {
@@ -96,8 +104,9 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
     subcategories: [
       { id: "walnut", en: "Walnut", de: "Walnuss", keywords: ["walnut", "walnuss"] },
       { id: "hazelnut", en: "Hazelnut", de: "Haselnuss", keywords: ["hazelnut", "haselnuss"] },
-      { id: "coconut", en: "Coconut", de: "Kokosnuss", keywords: ["coconut", "kokosnuss"] },
-      { id: "almond", en: "Almond", de: "Mandel", keywords: ["almond", "mandel"] },
+      { id: "coconut", en: "Coconut", de: "Kokosnuss", keywords: ["coconut", "kokosnuss", "kokos"] },
+      { id: "almond", en: "Almond", de: "Mandel", keywords: ["almond", "mandel", "almond"] },
+      { id: "pecan", en: "Pecan", de: "Pekannuss", keywords: ["pecan", "pekannuss"] },
     ],
   },
   {
@@ -105,26 +114,29 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
     subcategories: [
       { id: "mint", en: "Mint", de: "Minze", keywords: ["mint", "minze", "menthol"] },
       { id: "eucalyptus", en: "Eucalyptus", de: "Eukalyptus", keywords: ["eucalyptus", "eukalyptus"] },
-      { id: "grass", en: "Grass", de: "Gras", keywords: ["grass", "gras", "hay", "heu"] },
-      { id: "tea", en: "Tea", de: "Tee", keywords: ["tea", "tee"] },
+      { id: "grass", en: "Grass", de: "Gras", keywords: ["grass", "gras", "hay", "heu", "freshly cut"] },
+      { id: "tea", en: "Tea", de: "Tee", keywords: ["tea", "tee", "green tea", "grüner tee"] },
+      { id: "thyme", en: "Thyme", de: "Thymian", keywords: ["thyme", "thymian", "rosemary", "rosmarin"] },
     ],
   },
   {
     id: "earthy", en: "Earthy", de: "Erdig", color: "#7a6855",
     subcategories: [
       { id: "leather", en: "Leather", de: "Leder", keywords: ["leather", "leder"] },
-      { id: "tobacco", en: "Tobacco", de: "Tabak", keywords: ["tobacco", "tabak"] },
-      { id: "mushroom", en: "Mushroom", de: "Pilz", keywords: ["mushroom", "pilz"] },
-      { id: "moss", en: "Moss", de: "Moos", keywords: ["moss", "moos"] },
+      { id: "tobacco", en: "Tobacco", de: "Tabak", keywords: ["tobacco", "tabak", "cigar", "zigarre"] },
+      { id: "mushroom", en: "Mushroom", de: "Pilz", keywords: ["mushroom", "pilz", "truffle", "trüffel"] },
+      { id: "moss", en: "Moss", de: "Moos", keywords: ["moss", "moos", "forest floor", "waldboden"] },
+      { id: "soil", en: "Soil", de: "Erde", keywords: ["soil", "erde", "earth", "loam"] },
     ],
   },
   {
     id: "creamy", en: "Creamy", de: "Cremig", color: "#d4b896",
     subcategories: [
-      { id: "butter", en: "Butter", de: "Butter", keywords: ["butter", "buttery"] },
-      { id: "cream", en: "Cream", de: "Sahne", keywords: ["cream", "sahne", "creamy"] },
-      { id: "custard", en: "Custard", de: "Pudding", keywords: ["custard", "pudding"] },
-      { id: "milk-choc", en: "Milk Chocolate", de: "Vollmilchschokolade", keywords: ["milk chocolate", "vollmilch"] },
+      { id: "butter", en: "Butter", de: "Butter", keywords: ["butter", "buttery", "buttrig"] },
+      { id: "cream", en: "Cream", de: "Sahne", keywords: ["cream", "sahne", "creamy", "cremig"] },
+      { id: "custard", en: "Custard", de: "Pudding", keywords: ["custard", "pudding", "crème brûlée"] },
+      { id: "milk-choc", en: "Milk Chocolate", de: "Vollmilchschokolade", keywords: ["milk chocolate", "vollmilch", "vollmilchschokolade"] },
+      { id: "yoghurt", en: "Yoghurt", de: "Joghurt", keywords: ["yoghurt", "joghurt", "yogurt"] },
     ],
   },
   {
@@ -132,13 +144,16 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
     subcategories: [
       { id: "flint", en: "Flint", de: "Feuerstein", keywords: ["flint", "feuerstein"] },
       { id: "chalk", en: "Chalk", de: "Kreide", keywords: ["chalk", "kreide"] },
-      { id: "sulfur", en: "Sulfur", de: "Schwefel", keywords: ["sulfur", "schwefel", "sulphur"] },
-      { id: "iron", en: "Iron", de: "Eisen", keywords: ["iron", "eisen", "metallic"] },
+      { id: "sulfur", en: "Sulfur", de: "Schwefel", keywords: ["sulfur", "schwefel", "sulphur", "match", "streichholz"] },
+      { id: "iron", en: "Iron", de: "Eisen", keywords: ["iron", "eisen", "metallic", "metallisch", "copper", "kupfer"] },
+      { id: "slate", en: "Slate", de: "Schiefer", keywords: ["slate", "schiefer", "granite", "granit"] },
     ],
   },
 ];
 
 export type FlavorProfileId =
+  | "none"
+  | "auto"
   | "sherried-rich"
   | "bourbon-classic"
   | "peated-maritime"
@@ -209,6 +224,33 @@ export function detectFlavorProfile(whisky: {
   if (region.includes("highland") || region.includes("japan")) return "highland-elegant";
 
   return null;
+}
+
+export function getEffectiveProfile(
+  whisky: { flavorProfile?: string | null; region?: string | null; peatLevel?: string | null; caskInfluence?: string | null },
+  isBlind: boolean
+): { profileId: FlavorProfileId | null; detectedLabel: string | null } {
+  const explicit = whisky.flavorProfile as FlavorProfileId | null | undefined;
+
+  if (explicit && explicit !== "auto" && explicit !== "none") {
+    return { profileId: explicit, detectedLabel: null };
+  }
+
+  if (explicit === "none") {
+    return { profileId: null, detectedLabel: null };
+  }
+
+  if (isBlind) {
+    return { profileId: null, detectedLabel: null };
+  }
+
+  const detected = detectFlavorProfile(whisky);
+  if (detected) {
+    const label = FLAVOR_PROFILES.find((p) => p.id === detected)?.en || null;
+    return { profileId: detected, detectedLabel: label };
+  }
+
+  return { profileId: null, detectedLabel: null };
 }
 
 export function getSortedCategories(profileId: string | null): FlavorCategory[] {

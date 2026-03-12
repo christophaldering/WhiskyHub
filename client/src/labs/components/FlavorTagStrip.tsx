@@ -1,9 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import {
-  FLAVOR_CATEGORIES,
   getSortedCategories,
-  type FlavorCategory,
 } from "@/labs/data/flavor-data";
 
 type Phase = "nose" | "taste" | "finish";
@@ -16,8 +14,7 @@ const PHASES: { id: Phase; en: string }[] = [
 interface FlavorTagStripProps {
   notes: string;
   onNotesChange: (notes: string) => void;
-  flavorProfile: string | null;
-  isBlind?: boolean;
+  profileId: string | null;
 }
 
 function parseTagsFromNotes(notes: string): Record<Phase, string[]> {
@@ -60,18 +57,15 @@ function replaceTagsInNotes(
 export default function FlavorTagStrip({
   notes,
   onNotesChange,
-  flavorProfile,
-  isBlind,
+  profileId,
 }: FlavorTagStripProps) {
   const [activePhase, setActivePhase] = useState<Phase>("nose");
   const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
   const [customInput, setCustomInput] = useState("");
 
-  const effectiveProfile = isBlind ? null : flavorProfile;
-
   const sortedCategories = useMemo(
-    () => getSortedCategories(effectiveProfile),
-    [effectiveProfile]
+    () => getSortedCategories(profileId),
+    [profileId]
   );
 
   const tagsByPhase = useMemo(() => parseTagsFromNotes(notes), [notes]);
