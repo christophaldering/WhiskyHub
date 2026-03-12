@@ -88,7 +88,7 @@ type DimKey = "nose" | "taste" | "finish" | "balance";
 const BALANCE_CHIPS: string[] = ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"];
 
 const DIM_LABELS: Record<DimKey, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance" };
-const DIM_COLORS: Record<DimKey, string> = { nose: "#D9A15B", taste: "#C97845", finish: "#9C6A5E", balance: "#7F8C5A" };
+const DIM_COLORS: Record<DimKey, string> = { nose: "var(--labs-dim-nose)", taste: "var(--labs-dim-taste)", finish: "var(--labs-dim-finish)", balance: "var(--labs-dim-balance)" };
 const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
 
 interface HostRatingState {
@@ -417,9 +417,9 @@ function HostRatingPanel({
                             fontSize: 11,
                             fontWeight: 500,
                             borderRadius: 16,
-                            border: `1px solid ${selected ? dimColor : "var(--labs-border)"}`,
-                            background: selected ? `${dimColor}20` : "transparent",
-                            color: selected ? dimColor : "var(--labs-text-muted)",
+                            border: selected ? `1px solid var(--labs-dim-balance)` : "1px solid var(--labs-border)",
+                            background: selected ? "color-mix(in srgb, var(--labs-dim-balance) 12%, transparent)" : "transparent",
+                            color: selected ? "var(--labs-dim-balance)" : "var(--labs-text-muted)",
                             cursor: "pointer",
                             fontFamily: "inherit",
                             transition: "all 0.15s",

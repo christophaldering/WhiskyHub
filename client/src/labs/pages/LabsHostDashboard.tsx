@@ -362,7 +362,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
             </div>
             {qrDataUrl ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{ background: "#f5f0e8", borderRadius: 10, padding: 8, display: "inline-block" }}>
+                <div style={{ background: "var(--labs-surface)", borderRadius: 10, padding: 8, display: "inline-block" }}>
                   <img src={qrDataUrl} alt="QR Code" style={{ width: 140, height: 140 }} data-testid="invite-qr-image" />
                 </div>
                 <div style={{ display: "flex", gap: 8, width: "100%" }}>

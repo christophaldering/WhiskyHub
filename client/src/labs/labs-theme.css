@@ -24,6 +24,8 @@
   --labs-dim-balance: #7F8C5A;
   --labs-accent-dark: #1a1410;
   --labs-on-accent: #ffffff;
+  --labs-header-bg: rgba(26, 23, 20, 0.88);
+  --labs-nav-bg: rgba(26, 23, 20, 0.92);
   --labs-radius: 16px;
   --labs-radius-sm: 10px;
   --labs-radius-lg: 22px;
@@ -63,6 +65,8 @@
   --labs-dim-balance: #6a7a48;
   --labs-accent-dark: #f5f0e8;
   --labs-on-accent: #ffffff;
+  --labs-header-bg: rgba(245, 240, 232, 0.92);
+  --labs-nav-bg: rgba(245, 240, 232, 0.95);
 }
 
 .labs-shell.labs-light .labs-card {

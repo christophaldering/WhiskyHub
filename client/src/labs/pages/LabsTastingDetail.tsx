@@ -351,7 +351,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
           {showQr && qrDataUrl && (
             <div className="flex flex-col items-center gap-3 mt-4">
-              <div style={{ background: "#f5f0e8", padding: 12, borderRadius: 12 }}>
+              <div style={{ background: "var(--labs-surface)", padding: 12, borderRadius: 12 }}>
                 <img src={qrDataUrl} alt="QR Code" style={{ width: 180, height: 180 }} data-testid="img-labs-qr-code" />
               </div>
               <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Scan to join this tasting</p>

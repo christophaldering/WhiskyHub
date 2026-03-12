@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, ArrowLeft, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
+import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -387,7 +387,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-5 py-3"
         style={{
-          background: theme === "light" ? "rgba(245, 240, 232, 0.92)" : "rgba(26, 23, 20, 0.88)",
+          background: "var(--labs-header-bg)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid var(--labs-border-subtle)",
@@ -507,7 +507,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
           style={{
-            background: theme === "light" ? "rgba(245, 240, 232, 0.95)" : "rgba(26, 23, 20, 0.92)",
+            background: "var(--labs-nav-bg)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             borderTop: "1px solid var(--labs-border-subtle)",
@@ -559,24 +559,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           })}
         </nav>
       )}
-
-      <Link href="/m2/tastings">
-        <div
-          className="fixed top-[13px] z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all"
-          style={{
-            background: "var(--labs-surface)",
-            border: "1px solid var(--labs-border)",
-            color: "var(--labs-text-muted)",
-            fontSize: 11,
-            fontWeight: 500,
-            right: "clamp(80px, 30vw, 140px)",
-          }}
-          data-testid="labs-exit-btn"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Exit Labs
-        </div>
-      </Link>
 
       <M2ProfileMenu open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
