@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -10,6 +11,7 @@ import {
   BarChart3,
   Users,
   User,
+  ChevronDown,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { exploreApi } from "@/lib/api";
@@ -79,8 +81,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
     : [];
   const tastings: any[] = whisky.relatedTastings || [];
 
-  const distribution = computeDistribution(ratings);
-  const maxBucket = Math.max(...Object.values(distribution), 1);
+  const overallValues = extractOverallValues(ratings);
 
   const infoItems = [
     whisky.distillery && { label: "Distillery", value: whisky.distillery },
@@ -195,36 +196,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
       {ratingCount > 0 && (
         <div className="mb-6 labs-fade-in labs-stagger-3">
           <p className="labs-section-label">Rating Distribution</p>
-          <div className="labs-card p-4" data-testid="labs-bottle-distribution">
-            <div className="space-y-2">
-              {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((bucket) => {
-                const bucketLabel = bucket === 1 ? "1–10" : `${(bucket - 1) * 10 + 1}–${bucket * 10}`;
-                const score = bucket;
-                const count = distribution[score] || 0;
-                const pct = (count / maxBucket) * 100;
-                return (
-                  <div key={score} className="flex items-center gap-3">
-                    <span className="text-xs w-14 text-right font-medium" style={{ color: "var(--labs-text-secondary)" }}>
-                      {bucketLabel}
-                    </span>
-                    <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: "var(--labs-border)" }}>
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${pct}%`,
-                          background: "var(--labs-accent)",
-                          minWidth: count > 0 ? "4px" : "0",
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs w-6 font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                      {count}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <RatingDistributionChart values={overallValues} data-testid="labs-bottle-distribution" />
         </div>
       )}
 
@@ -342,16 +314,246 @@ function DimensionBar({ label, value }: { label: string; value: string }) {
   );
 }
 
-function computeDistribution(ratings: any[]): Record<number, number> {
-  const dist: Record<number, number> = {};
-  for (let i = 1; i <= 10; i++) dist[i] = 0;
+function extractOverallValues(ratings: any[]): number[] {
+  const vals: number[] = [];
   for (const r of ratings) {
     if (r.overall != null) {
-      const val = Number(r.overall);
-      if (isNaN(val) || val <= 0) continue;
-      const bucket = Math.min(Math.max(Math.ceil(val / 10), 1), 10);
-      dist[bucket]++;
+      const v = Number(r.overall);
+      if (!isNaN(v) && v > 0) vals.push(v);
     }
   }
-  return dist;
+  return vals.sort((a, b) => a - b);
+}
+
+interface DescriptiveStats {
+  mean: number;
+  median: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  count: number;
+  q1: number;
+  q3: number;
+  iqr: number;
+}
+
+function computeStats(sorted: number[]): DescriptiveStats {
+  const n = sorted.length;
+  const sum = sorted.reduce((a, b) => a + b, 0);
+  const mean = sum / n;
+  const variance = sorted.reduce((acc, v) => acc + (v - mean) ** 2, 0) / n;
+  const stdDev = Math.sqrt(variance);
+  const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
+  const q1Idx = (n - 1) * 0.25;
+  const q3Idx = (n - 1) * 0.75;
+  const q1 = sorted[Math.floor(q1Idx)] + (q1Idx % 1) * ((sorted[Math.ceil(q1Idx)] ?? sorted[Math.floor(q1Idx)]) - sorted[Math.floor(q1Idx)]);
+  const q3 = sorted[Math.floor(q3Idx)] + (q3Idx % 1) * ((sorted[Math.ceil(q3Idx)] ?? sorted[Math.floor(q3Idx)]) - sorted[Math.floor(q3Idx)]);
+  return { mean, median, stdDev, min: sorted[0], max: sorted[n - 1], count: n, q1, q3, iqr: q3 - q1 };
+}
+
+function gaussianPdf(x: number, mean: number, stdDev: number): number {
+  if (stdDev === 0) return x === mean ? 1 : 0;
+  const exp = -0.5 * ((x - mean) / stdDev) ** 2;
+  return (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(exp);
+}
+
+function RatingDistributionChart({ values, ...rest }: { values: number[]; "data-testid"?: string }) {
+  const [showStats, setShowStats] = useState(false);
+
+  if (values.length < 3) {
+    const distribution: Record<number, number> = {};
+    for (let i = 1; i <= 10; i++) distribution[i] = 0;
+    for (const v of values) {
+      const bucket = Math.min(Math.max(Math.ceil(v / 10), 1), 10);
+      distribution[bucket]++;
+    }
+    const maxBucket = Math.max(...Object.values(distribution), 1);
+    return (
+      <div className="labs-card p-4" data-testid={rest["data-testid"]}>
+        <div className="space-y-2">
+          {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((bucket) => {
+            const bucketLabel = bucket === 1 ? "1–10" : `${(bucket - 1) * 10 + 1}–${bucket * 10}`;
+            const count = distribution[bucket] || 0;
+            const pct = (count / maxBucket) * 100;
+            return (
+              <div key={bucket} className="flex items-center gap-3">
+                <span className="text-xs w-14 text-right font-medium" style={{ color: "var(--labs-text-secondary)" }}>
+                  {bucketLabel}
+                </span>
+                <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: "var(--labs-border)" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, background: "var(--labs-accent)", minWidth: count > 0 ? "4px" : "0" }}
+                  />
+                </div>
+                <span className="text-xs w-6 font-medium" style={{ color: "var(--labs-text-muted)" }}>{count}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs mt-3 text-center" style={{ color: "var(--labs-text-muted)" }}>
+          Need 3+ ratings for distribution curve
+        </p>
+      </div>
+    );
+  }
+
+  const stats = computeStats(values);
+  const { mean, stdDev, min, max } = stats;
+
+  const W = 320;
+  const H = 140;
+  const PAD_L = 5;
+  const PAD_R = 5;
+  const PAD_T = 12;
+  const PAD_B = 28;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const isDegenerate = stdDev < 0.5;
+
+  const rangeMin = 0;
+  const rangeMax = 100;
+  const steps = 100;
+  const dx = (rangeMax - rangeMin) / steps;
+
+  const points: [number, number][] = [];
+  let peakY = 0;
+  const effectiveStdDev = isDegenerate ? 2 : stdDev;
+  for (let i = 0; i <= steps; i++) {
+    const x = rangeMin + i * dx;
+    const y = gaussianPdf(x, mean, effectiveStdDev);
+    if (y > peakY) peakY = y;
+    points.push([x, y]);
+  }
+
+  const toSvgX = (x: number) => PAD_L + ((x - rangeMin) / (rangeMax - rangeMin)) * plotW;
+  const toSvgY = (y: number) => PAD_T + plotH - (y / peakY) * plotH;
+
+  const pathD = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`).join(" ");
+  const fillD = `${pathD} L${toSvgX(rangeMax).toFixed(1)},${(PAD_T + plotH).toFixed(1)} L${toSvgX(rangeMin).toFixed(1)},${(PAD_T + plotH).toFixed(1)} Z`;
+
+  const dotPositions = values.map((v, i) => ({
+    x: toSvgX(v),
+    y: PAD_T + plotH + 2 + ((((v * 7 + i * 13) % 17) / 17) * 4),
+  }));
+
+  const meanX = toSvgX(mean);
+  const medianX = toSvgX(stats.median);
+  const q1X = toSvgX(stats.q1);
+  const q3X = toSvgX(stats.q3);
+
+  const xLabels = [0, 20, 40, 60, 80, 100];
+
+  return (
+    <div className="labs-card overflow-hidden" data-testid={rest["data-testid"]}>
+      <div
+        className="p-4 cursor-pointer"
+        onClick={() => setShowStats(!showStats)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") setShowStats(!showStats); }}
+        data-testid="labs-distribution-chart-toggle"
+      >
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full"
+          style={{ display: "block" }}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--labs-accent)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--labs-accent)" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+
+          <line x1={PAD_L} y1={PAD_T + plotH} x2={PAD_L + plotW} y2={PAD_T + plotH} stroke="var(--labs-border)" strokeWidth="1" />
+
+          {xLabels.map(v => (
+            <g key={v}>
+              <line x1={toSvgX(v)} y1={PAD_T + plotH} x2={toSvgX(v)} y2={PAD_T + plotH + 4} stroke="var(--labs-border)" strokeWidth="0.5" />
+              <text x={toSvgX(v)} y={H - 6} textAnchor="middle" fill="var(--labs-text-muted)" fontSize="9" fontFamily="inherit">
+                {v}
+              </text>
+            </g>
+          ))}
+
+          <rect x={q1X} y={PAD_T} width={q3X - q1X} height={plotH} fill="var(--labs-accent)" opacity="0.06" rx="2" />
+
+          <path d={fillD} fill="url(#curveFill)" />
+          <path d={pathD} fill="none" stroke="var(--labs-accent)" strokeWidth="2" strokeLinejoin="round" />
+
+          <line x1={meanX} y1={PAD_T} x2={meanX} y2={PAD_T + plotH} stroke="var(--labs-accent)" strokeWidth={isDegenerate ? 2.5 : 1.5} strokeDasharray={isDegenerate ? undefined : "4 3"} opacity="0.8" />
+          <text x={meanX} y={PAD_T - 2} textAnchor="middle" fill="var(--labs-accent)" fontSize="9" fontWeight="600" fontFamily="inherit">
+            {isDegenerate ? `≈ ${mean.toFixed(1)}` : `μ ${mean.toFixed(1)}`}
+          </text>
+
+          {Math.abs(medianX - meanX) > 6 && (
+            <>
+              <line x1={medianX} y1={PAD_T + plotH * 0.3} x2={medianX} y2={PAD_T + plotH} stroke="var(--labs-text-muted)" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+              <text x={medianX} y={PAD_T + plotH * 0.25} textAnchor="middle" fill="var(--labs-text-muted)" fontSize="8" fontFamily="inherit">
+                Med
+              </text>
+            </>
+          )}
+
+          {dotPositions.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r="2.5" fill="var(--labs-accent)" opacity="0.5" />
+          ))}
+
+          <line x1={toSvgX(min)} y1={PAD_T + plotH + 10} x2={toSvgX(max)} y2={PAD_T + plotH + 10} stroke="var(--labs-text-muted)" strokeWidth="0.5" opacity="0.4" />
+          <circle cx={toSvgX(min)} cy={PAD_T + plotH + 10} r="2" fill="var(--labs-text-muted)" opacity="0.4" />
+          <circle cx={toSvgX(max)} cy={PAD_T + plotH + 10} r="2" fill="var(--labs-text-muted)" opacity="0.4" />
+        </svg>
+
+        <div className="flex items-center justify-center gap-1 mt-1">
+          <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+            {showStats ? "Hide statistics" : "Tap for statistics"}
+          </span>
+          <ChevronDown
+            className="w-3 h-3 transition-transform"
+            style={{
+              color: "var(--labs-text-muted)",
+              transform: showStats ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+        </div>
+      </div>
+
+      {showStats && (
+        <div
+          className="px-4 pb-4 pt-0"
+          style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}
+          data-testid="labs-distribution-stats"
+        >
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <StatItem label="Mean" value={stats.mean.toFixed(1)} accent />
+            <StatItem label="Median" value={stats.median.toFixed(1)} accent />
+            <StatItem label="Std Dev" value={stats.stdDev.toFixed(2)} />
+            <StatItem label="Count" value={String(stats.count)} />
+            <StatItem label="Min" value={stats.min.toFixed(1)} />
+            <StatItem label="Max" value={stats.max.toFixed(1)} />
+            <StatItem label="Q1 (25%)" value={stats.q1.toFixed(1)} />
+            <StatItem label="Q3 (75%)" value={stats.q3.toFixed(1)} />
+          </div>
+          <div className="mt-3 pt-2" style={{ borderTop: "1px solid var(--labs-border)" }}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>IQR (Q3 − Q1)</span>
+              <span className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>{stats.iqr.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatItem({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{label}</p>
+      <p className="text-sm font-semibold" style={{ color: accent ? "var(--labs-accent)" : "var(--labs-text)" }}>{value}</p>
+    </div>
+  );
 }
