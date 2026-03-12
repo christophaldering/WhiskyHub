@@ -17,7 +17,7 @@ import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/la
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
-import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
+import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
 import QRCode from "qrcode";
 
 interface LabsHostProps {
@@ -492,17 +492,25 @@ function PrintMaterialsSection({
   const whiskyCount = whiskies.length;
   if (whiskyCount === 0) return null;
 
+  const resolveHostName = (): string => {
+    const found = participants.find((p: Record<string, unknown>) =>
+      (p.participantId || p.id) === tasting.hostId
+    );
+    return ((found?.name as string) || (currentParticipant as Record<string, unknown>)?.name as string) || "Host";
+  };
+
   const handleGenerateMenu = async () => {
     setGenerating("menu");
     try {
-      const pList = participants.map((p: any) => ({ name: p.name || p.participant?.name || "Unknown" }));
-      const hostName = participants.find((p: any) => (p.participantId || p.id) === tasting.hostId)?.name
-        || (currentParticipant as any)?.name || "Host";
+      const pList = participants.map((p: Record<string, unknown>) => ({
+        name: ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
+      }));
+      const hostName = resolveHostName();
       await generateTastingMenu({
-        tasting: tasting as any,
-        whiskies: whiskies as any,
-        participants: pList as any,
-        hostName: hostName as string,
+        tasting: tasting as unknown as import("@shared/schema").Tasting,
+        whiskies: whiskies as unknown as import("@shared/schema").Whisky[],
+        participants: pList,
+        hostName,
         coverImageBase64: coverImage || null,
         orientation,
         blindMode,
@@ -518,104 +526,48 @@ function PrintMaterialsSection({
   const handleGenerateBatchSheets = async () => {
     setGenerating("sheets");
     try {
-      const jsPDF = (await import("jspdf")).default;
-      const { saveOrPrintJsPdf } = await import("@/lib/pdf");
-      const QR = (await import("qrcode")).default;
-
-      const pList = participants.map((p: any) => ({
-        id: p.participantId || p.id,
-        name: p.name || p.participant?.name || "Unknown",
+      const pList = participants.map((p: Record<string, unknown>) => ({
+        id: (p.participantId || p.id) as string,
+        name: ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
       }));
       if (pList.length === 0) return;
-
-      const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
-      const isBlind = blindMode;
-      const pageW = orientation === "portrait" ? 210 : 297;
-      const pageH = orientation === "portrait" ? 297 : 210;
-      const mx = 15;
-      const cw = pageW - 2 * mx;
-      const NAVY: [number, number, number] = [26, 32, 44];
-      const SLATE: [number, number, number] = [100, 116, 139];
-      const LINE: [number, number, number] = [226, 232, 240];
-      const ACCENT: [number, number, number] = [180, 140, 60];
-      const title = (tasting.title as string) || "Tasting";
-
-      for (let pIdx = 0; pIdx < pList.length; pIdx++) {
-        if (pIdx > 0) doc.addPage();
-        const p = pList[pIdx];
-
-        doc.setFillColor(248, 250, 252);
-        doc.rect(0, 0, pageW, pageH, "F");
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(20);
-        doc.setTextColor(...NAVY);
-        doc.text(title, pageW / 2, 30, { align: "center" });
-
-        doc.setFontSize(11);
-        doc.setTextColor(...SLATE);
-        doc.text(p.name, pageW / 2, 40, { align: "center" });
-
-        if (tasting.date) {
-          doc.setFontSize(9);
-          doc.text(new Date(tasting.date as string).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }), pageW / 2, 47, { align: "center" });
-        }
-
-        try {
-          const joinUrl = `${window.location.origin}/labs/live/${tasting.id}?pid=${p.id}`;
-          const qrDataUrl = await QR.toDataURL(joinUrl, { width: 200, margin: 1 });
-          doc.addImage(qrDataUrl, "PNG", pageW - mx - 25, 18, 22, 22);
-        } catch {}
-
-        let y = 58;
-        const slots = whiskies.length;
-        const slotH = Math.min(38, (pageH - y - 15) / slots);
-
-        for (let i = 0; i < slots; i++) {
-          const sy = y + i * slotH;
-          doc.setFillColor(255, 255, 255);
-          doc.roundedRect(mx, sy, cw, slotH - 3, 2, 2, "F");
-          doc.setDrawColor(...LINE);
-          doc.roundedRect(mx, sy, cw, slotH - 3, 2, 2, "S");
-
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.setTextColor(...ACCENT);
-          const label = isBlind ? `Dram ${String.fromCharCode(65 + i)}` : `#${i + 1}  ${(whiskies[i] as any).name || ""}`;
-          doc.text(label, mx + 5, sy + 6);
-
-          if (!isBlind) {
-            const w = whiskies[i] as any;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
-            doc.setTextColor(...SLATE);
-            const detail = [w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ");
-            if (detail) doc.text(detail, mx + 5, sy + 11);
-          }
-
-          const dims = ["Nose", "Palate", "Finish", "Overall"];
-          const dimY = sy + (isBlind ? 12 : 16);
-          const dimSpacing = (slotH - (isBlind ? 17 : 21)) / dims.length;
-          dims.forEach((dim, di) => {
-            const ly = dimY + di * dimSpacing;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
-            doc.setTextColor(...SLATE);
-            doc.text(dim, mx + 5, ly);
-            doc.setDrawColor(...LINE);
-            doc.line(mx + 25, ly + 1, mx + cw - 5, ly + 1);
-          });
-        }
-
-        doc.setFontSize(7);
-        doc.setTextColor(180, 180, 180);
-        doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
-      }
-
-      const suffix = isBlind ? "Bewertungsbogen" : "Notizblatt";
-      saveOrPrintJsPdf(doc, `${title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_${suffix}_Alle.pdf`, "download");
+      const type = blindMode ? "blind" : "tasting";
+      const hostName = resolveHostName();
+      await generateBatchPersonalizedPdf(
+        tasting as unknown as import("@shared/schema").Tasting,
+        whiskies as unknown as import("@shared/schema").Whisky[],
+        pList,
+        "de",
+        type,
+        "download",
+        hostName,
+        orientation,
+        null,
+      );
     } catch (e) {
       console.error("Batch sheets failed:", e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateMasterSheet = async () => {
+    setGenerating("master");
+    try {
+      const hostName = resolveHostName();
+      const sheetFn = blindMode ? generateBlindEvaluationSheet : generateTastingNotesSheet;
+      await sheetFn(
+        tasting as unknown as import("@shared/schema").Tasting,
+        whiskies as unknown as import("@shared/schema").Whisky[],
+        "de",
+        undefined,
+        "download",
+        hostName,
+        orientation,
+        null,
+      );
+    } catch (e) {
+      console.error("Master sheet failed:", e);
     } finally {
       setGenerating(null);
     }
@@ -658,7 +610,7 @@ function PrintMaterialsSection({
   const handleAiCover = async () => {
     setAiCoverLoading(true);
     try {
-      const pid = (currentParticipant as any)?.id;
+      const pid = (currentParticipant as Record<string, unknown>)?.id as string | undefined;
       const res = await fetch(`/api/tastings/${tasting.id}/menu-cover`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
@@ -806,8 +758,36 @@ function PrintMaterialsSection({
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Participant Score Sheets</p>
             <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-              Personalized sheets with QR codes for {participants.length} participant{participants.length !== 1 ? "s" : ""}
+              Personalized sheets with QR codes for each participant
             </p>
+
+            {participants.length > 0 && (
+              <div className="mb-3 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
+                {participants.map((p: Record<string, unknown>, idx: number) => {
+                  const pName = ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
+                  return (
+                    <div
+                      key={(p.participantId || p.id) as string}
+                      className="flex items-center gap-2 px-3 py-2"
+                      style={{
+                        background: idx % 2 === 0 ? "var(--labs-surface-elevated)" : "transparent",
+                        borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border-subtle)" : "none",
+                      }}
+                      data-testid={`print-participant-${idx}`}
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {pName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-xs truncate" style={{ color: "var(--labs-text)" }}>{pName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 className="labs-btn-primary text-sm flex items-center gap-2 flex-1 justify-center"
@@ -820,6 +800,15 @@ function PrintMaterialsSection({
               </button>
               <button
                 className="labs-btn-secondary text-sm flex items-center gap-2 justify-center"
+                onClick={handleGenerateMasterSheet}
+                disabled={generating === "master"}
+                data-testid="print-generate-master-sheet"
+              >
+                {generating === "master" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                Master
+              </button>
+              <button
+                className="labs-btn-ghost text-sm flex items-center gap-2 justify-center"
                 onClick={handleGenerateBlankSheet}
                 disabled={generating === "blank"}
                 data-testid="print-generate-blank-sheet"
@@ -1500,10 +1489,10 @@ function MobileCompanion({
 
       {pid && whiskies.length > 0 && (
         <PrintMaterialsSection
-          tasting={tasting as any}
-          whiskies={whiskies as any}
-          participants={participants as any}
-          currentParticipant={{ id: pid, name: (currentParticipant as any)?.name || "Host" } as any}
+          tasting={tasting as Record<string, unknown>}
+          whiskies={whiskies as Array<Record<string, unknown>>}
+          participants={participants as Array<Record<string, unknown>>}
+          currentParticipant={{ id: pid, name: (currentParticipant as Record<string, unknown>)?.name || "Host" }}
         />
       )}
 

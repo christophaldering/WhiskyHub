@@ -696,7 +696,7 @@ async function drawScoringPage(
   }
 }
 
-async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
+export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
   if (whiskies.length === 0) return;
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
@@ -712,7 +712,7 @@ async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], l
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
 
-async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
+export async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
   if (whiskies.length === 0) return;
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
@@ -728,7 +728,7 @@ async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[]
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
 
-async function generateBatchPersonalizedPdf(
+export async function generateBatchPersonalizedPdf(
   tasting: Tasting,
   whiskies: Whisky[],
   participants: { id: string; name: string }[],
