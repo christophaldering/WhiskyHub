@@ -256,8 +256,8 @@ export default function LabsTasteDrams() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-dram-detail">
         <div className="flex items-center justify-between mb-5">
-          <button onClick={handleBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-labs-back-drams">
-            <ChevronLeft className="w-4 h-4" /> Back
+          <button onClick={handleBack} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-drams">
+            <ChevronLeft className="w-4 h-4" /> Drams
           </button>
           {isSoloEntry(selectedEntry) && (
             <div className="flex gap-2">
@@ -433,15 +433,11 @@ export default function LabsTasteDrams() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-drams">
+      <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
+        <ChevronLeft className="w-4 h-4" /> Taste
+      </button>
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-3">
-          <Link href="/labs/taste">
-            <button className="flex items-center" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-back-taste">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </Link>
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-drams-title">Drams Journal</h1>
-        </div>
+        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-drams-title">Drams Journal</h1>
         <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-dram">
           <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
         </button>
