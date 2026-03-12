@@ -341,8 +341,9 @@ export default function LabsResults({ params }: LabsResultsProps) {
     }
 
     fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } })
-      .then(r => r.ok ? r.json() : [])
-      .then((history: any[]) => {
+      .then(r => r.ok ? r.json() : { tastings: [] })
+      .then((resp: any) => {
+        const history: any[] = Array.isArray(resp) ? resp : (resp.tastings || []);
         const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]> = {};
         for (const t of history) {
           if (t.id === tastingId) continue;
