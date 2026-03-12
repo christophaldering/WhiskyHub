@@ -670,6 +670,24 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </div>
       </div>
 
+      {(() => {
+        const ri = mapRouteToCounterpart(location);
+        return (
+          <MenuButton
+            icon={ri.isLabs
+              ? <Layout style={{ width: 18, height: 18, color: v.accent }} />
+              : <FlaskConical style={{ width: 18, height: 18, color: v.accent }} />}
+            label={ri.isLabs
+              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
+              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
+            onClick={() => { onClose(); navigate(ri.target); }}
+            testId="m2-profile-switch-version"
+          />
+        );
+      })()}
+
+      <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
+
       <MenuButton
         icon={<Settings style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.settings", "Settings")}
@@ -726,22 +744,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           />
         </>
       )}
-
-      {(() => {
-        const ri = mapRouteToCounterpart(location);
-        return (
-          <MenuButton
-            icon={ri.isLabs
-              ? <Layout style={{ width: 18, height: 18, color: v.accent }} />
-              : <FlaskConical style={{ width: 18, height: 18, color: v.accent }} />}
-            label={ri.isLabs
-              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
-              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
-            onClick={() => { onClose(); navigate(ri.target); }}
-            testId="m2-profile-switch-version"
-          />
-        );
-      })()}
 
       <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
 
