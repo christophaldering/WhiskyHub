@@ -52,7 +52,7 @@ function NavItem({ icon: Icon, label, description, href, testId, badge, locked }
 export default function LabsTaste() {
   const { currentParticipant } = useAppStore();
   const session = useSession();
-  const pid = session.pid;
+  const pid = currentParticipant?.id || session.pid;
   const [, navigate] = useLocation();
 
   const { data: tastings } = useQuery({
