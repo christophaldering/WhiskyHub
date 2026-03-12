@@ -280,7 +280,7 @@ export default function LabsTasteDrams() {
 
         <div className="labs-card p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.whiskyName || selectedEntry.title || ""} size={64} className="flex-shrink-0" />
+            <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.whiskyName || selectedEntry.title || ""} size={64} height={88} className="flex-shrink-0" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)", margin: 0 }}>
                 {selectedEntry.whiskyName || selectedEntry.title || "—"}
@@ -532,7 +532,7 @@ export default function LabsTasteDrams() {
               {filteredEntries.map((entry: any) => (
                 <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "14px 16px", cursor: "pointer" }} data-testid={`labs-dram-${entry.id}`}>
                   <div className="flex justify-between items-start gap-3">
-                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={40} className="flex-shrink-0" />
+                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={40} height={52} className="flex-shrink-0" />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="flex items-center gap-1.5">
                         <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.whiskyName || entry.title || "—"}</div>

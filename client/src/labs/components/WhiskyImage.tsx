@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Wine } from "lucide-react";
 
 const GRADIENTS = [
@@ -23,16 +24,23 @@ interface WhiskyImageProps {
   imageUrl?: string | null;
   name: string;
   size?: number;
+  height?: number;
   className?: string;
   testId?: string;
 }
 
-export default function WhiskyImage({ imageUrl, name, size = 44, className = "", testId }: WhiskyImageProps) {
-  const radius = size >= 40 ? 12 : 8;
-  const iconSize = Math.max(16, Math.round(size * 0.4));
-  const fontSize = Math.max(12, Math.round(size * 0.35));
+export default function WhiskyImage({ imageUrl, name, size = 44, height, className = "", testId }: WhiskyImageProps) {
+  const [broken, setBroken] = useState(false);
+  const h = height ?? size;
+  const radius = Math.min(size, h) >= 40 ? 12 : 8;
+  const iconSize = Math.max(16, Math.round(Math.min(size, h) * 0.4));
+  const fontSize = Math.max(12, Math.round(Math.min(size, h) * 0.35));
 
-  if (imageUrl) {
+  const idx = hashName(name) % GRADIENTS.length;
+  const [from, to] = GRADIENTS[idx];
+  const initial = (name || "?").charAt(0).toUpperCase();
+
+  if (imageUrl && !broken) {
     return (
       <img
         src={imageUrl}
@@ -40,32 +48,29 @@ export default function WhiskyImage({ imageUrl, name, size = 44, className = "",
         className={`flex-shrink-0 object-cover ${className}`}
         style={{
           width: size,
-          height: size,
+          height: h,
           borderRadius: radius,
           border: "1px solid var(--labs-border)",
         }}
+        onError={() => setBroken(true)}
         data-testid={testId}
       />
     );
   }
-
-  const idx = hashName(name) % GRADIENTS.length;
-  const [from, to] = GRADIENTS[idx];
-  const initial = (name || "?").charAt(0).toUpperCase();
 
   return (
     <div
       className={`flex-shrink-0 flex items-center justify-center ${className}`}
       style={{
         width: size,
-        height: size,
+        height: h,
         borderRadius: radius,
         background: `linear-gradient(135deg, ${from}, ${to})`,
         border: "1px solid var(--labs-border)",
       }}
       data-testid={testId}
     >
-      {size >= 32 ? (
+      {Math.min(size, h) >= 32 ? (
         <span
           style={{
             fontSize,
