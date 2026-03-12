@@ -190,6 +190,8 @@ export default function LabsSolo() {
 
   const localDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localDraftRestoredRef = useRef(false);
+  const formSnapshotRef = useRef({ whiskyName: "", distillery: "", unknownAge: "", unknownAbv: "", unknownCask: "", unknownRegion: "", unknownCountry: "", unknownPeatLevel: "", unknownVintage: "", unknownBottler: "", unknownPrice: "" });
+  useEffect(() => { formSnapshotRef.current = { whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownPrice }; });
 
   const saveLocalDraft = useCallback(() => {
     if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
@@ -545,19 +547,20 @@ export default function LabsSolo() {
         return;
       }
       const data = await res.json();
-      if (data.name) setWhiskyName(data.name);
-      if (data.distillery) setDistillery(data.distillery);
-      if (data.age) setUnknownAge(String(data.age));
-      if (data.abv) setUnknownAbv(data.abv);
-      if (data.caskType) setUnknownCask(data.caskType);
-      if (data.price) setUnknownPrice(data.price);
-      if (data.region) { setMatchedWhiskyRegion(data.region); setUnknownRegion(data.region); }
-      if (data.country) { setMatchedWhiskyCountry(data.country); setUnknownCountry(data.country); }
-      if (data.peatLevel) setUnknownPeatLevel(data.peatLevel);
-      if (data.vintage) setUnknownVintage(String(data.vintage));
-      if (data.bottler) setUnknownBottler(data.bottler);
+      const cur = formSnapshotRef.current;
+      if (data.name && !cur.whiskyName) setWhiskyName(data.name);
+      if (data.distillery && !cur.distillery) setDistillery(data.distillery);
+      if (data.age && !cur.unknownAge) setUnknownAge(String(data.age));
+      if (data.abv && !cur.unknownAbv) setUnknownAbv(data.abv);
+      if (data.caskType && !cur.unknownCask) setUnknownCask(data.caskType);
+      if (data.price && !cur.unknownPrice) setUnknownPrice(data.price);
+      if (data.region) { setMatchedWhiskyRegion(data.region); if (!cur.unknownRegion) setUnknownRegion(data.region); }
+      if (data.country) { setMatchedWhiskyCountry(data.country); if (!cur.unknownCountry) setUnknownCountry(data.country); }
+      if (data.peatLevel && !cur.unknownPeatLevel) setUnknownPeatLevel(data.peatLevel);
+      if (data.vintage && !cur.unknownVintage) setUnknownVintage(String(data.vintage));
+      if (data.bottler && !cur.unknownBottler) setUnknownBottler(data.bottler);
       setWbLookupResult(data.source === "collection" ? "collection" : "ai");
-      if (data.name && pid) fetchPreviousRatings("", data.name);
+      if (data.name && pid) fetchPreviousRatings("", data.name || cur.whiskyName);
     } catch {
       setWbLookupResult("error");
     } finally {
