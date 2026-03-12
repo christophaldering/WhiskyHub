@@ -151,6 +151,11 @@ export default function LabsSolo() {
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
   const [unknownCask, setUnknownCask] = useState("");
+  const [unknownRegion, setUnknownRegion] = useState("");
+  const [unknownCountry, setUnknownCountry] = useState("");
+  const [unknownPeatLevel, setUnknownPeatLevel] = useState("");
+  const [unknownVintage, setUnknownVintage] = useState("");
+  const [unknownBottler, setUnknownBottler] = useState("");
   const [unknownWbId, setUnknownWbId] = useState("");
   const [unknownPrice, setUnknownPrice] = useState("");
   const [wbLookupLoading, setWbLookupLoading] = useState(false);
@@ -320,7 +325,11 @@ export default function LabsSolo() {
     if (unknownAge.trim()) body.age = unknownAge.trim();
     if (unknownAbv.trim()) body.abv = unknownAbv.trim();
     if (unknownCask.trim()) body.caskType = unknownCask.trim();
-    if (matchedWhiskyRegion) body.region = matchedWhiskyRegion;
+    if (unknownRegion.trim()) body.region = unknownRegion.trim();
+    if (unknownCountry.trim()) body.country = unknownCountry.trim();
+    if (unknownPeatLevel.trim()) body.peatLevel = unknownPeatLevel.trim();
+    if (unknownVintage.trim()) body.vintage = unknownVintage.trim();
+    if (unknownBottler.trim()) body.bottler = unknownBottler.trim();
     if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
     if (soloVoiceMemo) {
       if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
@@ -480,8 +489,11 @@ export default function LabsSolo() {
       if (data.abv && !unknownAbv) setUnknownAbv(data.abv);
       if (data.caskType && !unknownCask) setUnknownCask(data.caskType);
       if (data.price && !unknownPrice) setUnknownPrice(data.price);
-      if (data.region) setMatchedWhiskyRegion(data.region);
-      if (data.country) setMatchedWhiskyCountry(data.country);
+      if (data.region) { setMatchedWhiskyRegion(data.region); if (!unknownRegion) setUnknownRegion(data.region); }
+      if (data.country) { setMatchedWhiskyCountry(data.country); if (!unknownCountry) setUnknownCountry(data.country); }
+      if (data.peatLevel && !unknownPeatLevel) setUnknownPeatLevel(data.peatLevel);
+      if (data.vintage && !unknownVintage) setUnknownVintage(String(data.vintage));
+      if (data.bottler && !unknownBottler) setUnknownBottler(data.bottler);
       setWbLookupResult(data.source === "collection" ? "collection" : "ai");
       if (data.name && pid) fetchPreviousRatings("", data.name);
     } catch {
@@ -489,7 +501,7 @@ export default function LabsSolo() {
     } finally {
       setWbLookupLoading(false);
     }
-  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, wbLookupLoading, fetchPreviousRatings]);
+  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, wbLookupLoading, fetchPreviousRatings]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -690,7 +702,7 @@ export default function LabsSolo() {
     if (cand.age) setUnknownAge(cand.age);
     if (cand.abv) setUnknownAbv(cand.abv);
     if (cand.caskType) setUnknownCask(cand.caskType);
-    if (cand.region) setMatchedWhiskyRegion(cand.region);
+    if (cand.region) { setMatchedWhiskyRegion(cand.region); setUnknownRegion(cand.region); }
     setSelectedCandidate(cand);
     setSheetView("none");
     setShowManual(true);
@@ -703,11 +715,14 @@ export default function LabsSolo() {
         .then(r => r.ok ? r.json() : null)
         .then(w => {
           if (!w) return;
-          if (w.region && !cand.region) setMatchedWhiskyRegion(w.region);
-          if (w.country) setMatchedWhiskyCountry(w.country);
+          if (w.region && !cand.region) { setMatchedWhiskyRegion(w.region); setUnknownRegion(w.region); }
+          if (w.country) { setMatchedWhiskyCountry(w.country); setUnknownCountry(w.country); }
           if (w.age && !cand.age) setUnknownAge(String(w.age));
           if (w.abv && !cand.abv) setUnknownAbv(String(w.abv));
           if (w.caskInfluence && !cand.caskType) setUnknownCask(w.caskInfluence);
+          if (w.peatLevel) setUnknownPeatLevel(w.peatLevel);
+          if (w.vintage) setUnknownVintage(String(w.vintage));
+          if (w.bottler) setUnknownBottler(w.bottler);
         })
         .catch(() => {});
     } else {
@@ -748,11 +763,15 @@ export default function LabsSolo() {
       if (data.name) setWhiskyName(data.name);
       if (data.distillery) setDistillery(data.distillery);
       setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
+      setUnknownRegion(""); setUnknownCountry(""); setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler("");
       if (data.age) setUnknownAge(String(data.age));
       if (data.abv) setUnknownAbv(data.abv);
       if (data.caskType) setUnknownCask(data.caskType);
-      if (data.region) setMatchedWhiskyRegion(data.region);
-      if (data.country) setMatchedWhiskyCountry(data.country);
+      if (data.region) { setMatchedWhiskyRegion(data.region); setUnknownRegion(data.region); }
+      if (data.country) { setMatchedWhiskyCountry(data.country); setUnknownCountry(data.country); }
+      if (data.peatLevel) setUnknownPeatLevel(data.peatLevel);
+      if (data.vintage) setUnknownVintage(String(data.vintage));
+      if (data.bottler) setUnknownBottler(data.bottler);
       if (data.whiskybaseId) setUnknownWbId(String(data.whiskybaseId));
       if (data.price) setUnknownPrice(String(data.price));
       setShowManual(true);
@@ -895,6 +914,11 @@ export default function LabsSolo() {
         age: unknownAge,
         abv: unknownAbv,
         caskType: unknownCask,
+        region: unknownRegion,
+        country: unknownCountry,
+        peatLevel: unknownPeatLevel,
+        vintage: unknownVintage,
+        bottler: unknownBottler,
         whiskybaseId: unknownWbId,
         price: unknownPrice,
         date: new Date().toISOString(),
@@ -952,7 +976,8 @@ export default function LabsSolo() {
   const handleReset = (goToHub = false) => {
     setWhiskyName(""); setDistillery(""); setScore(50); setNotes(""); setSaved(false);
     setError(""); setShowManual(false);
-    setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownWbId(""); setUnknownPrice("");
+    setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
+    setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
     setPhotoUrl(""); setCandidates([]); setSelectedCandidate(null); setIsMenuMode(false);
     setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
     setDetailTouched(false); setOverrideActive(false);
@@ -1699,10 +1724,10 @@ export default function LabsSolo() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2 }} data-testid="text-whisky-name">{whiskyName}</div>
               {distillery && <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }} data-testid="text-whisky-distillery">{distillery}</div>}
-              {(matchedWhiskyRegion || matchedWhiskyCountry || unknownAge || unknownAbv) && (
+              {(unknownRegion || unknownCountry || unknownAge || unknownAbv) && (
                 <div style={{ fontSize: 11, marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {matchedWhiskyRegion && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-region">{matchedWhiskyRegion}</span>}
-                  {matchedWhiskyCountry && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-country">{matchedWhiskyCountry}</span>}
+                  {unknownRegion && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-region">{unknownRegion}</span>}
+                  {unknownCountry && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-country">{unknownCountry}</span>}
                   {unknownAge && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAge}y</span>}
                   {unknownAbv && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAbv}%</span>}
                 </div>
@@ -1777,16 +1802,30 @@ export default function LabsSolo() {
                   <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.caskType", "Cask type")}</label>
                   <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} className="labs-input" data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
                 </div>
-                {(matchedWhiskyRegion || matchedWhiskyCountry) && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {matchedWhiskyRegion && (
-                      <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-region">{matchedWhiskyRegion}</span>
-                    )}
-                    {matchedWhiskyCountry && (
-                      <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-country">{matchedWhiskyCountry}</span>
-                    )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.region", "Region")}</label>
+                    <input type="text" value={unknownRegion} onChange={(e) => { setUnknownRegion(e.target.value); setMatchedWhiskyRegion(e.target.value); }} className="labs-input" data-testid="input-manual-region" placeholder="e.g. Islay" autoComplete="off" />
                   </div>
-                )}
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.country", "Country")}</label>
+                    <input type="text" value={unknownCountry} onChange={(e) => { setUnknownCountry(e.target.value); setMatchedWhiskyCountry(e.target.value); }} className="labs-input" data-testid="input-manual-country" placeholder="e.g. Scotland" autoComplete="off" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.peatLevel", "Peat level")}</label>
+                    <input type="text" value={unknownPeatLevel} onChange={(e) => setUnknownPeatLevel(e.target.value)} className="labs-input" data-testid="input-manual-peat" placeholder="e.g. Heavy" autoComplete="off" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.vintage", "Vintage")}</label>
+                    <input type="text" value={unknownVintage} onChange={(e) => setUnknownVintage(e.target.value)} className="labs-input" data-testid="input-manual-vintage" placeholder="e.g. 2010" autoComplete="off" />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.bottler", "Bottler")}</label>
+                  <input type="text" value={unknownBottler} onChange={(e) => setUnknownBottler(e.target.value)} className="labs-input" data-testid="input-manual-bottler" placeholder="e.g. Gordon & MacPhail" autoComplete="off" />
+                </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.whiskybaseId", "Whiskybase ID")}</label>

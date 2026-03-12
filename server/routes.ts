@@ -5225,7 +5225,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.post("/api/journal/:participantId", async (req, res) => {
     try {
-      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "personalScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "personalScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
       const entry = await storage.createJournalEntry(parsed);
       res.status(201).json(entry);
@@ -5237,8 +5237,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status"];
-      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion"];
+      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status"];
+      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion", "region", "country", "peatLevel", "vintage", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) {
