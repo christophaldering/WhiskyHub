@@ -1423,7 +1423,17 @@ export async function registerRoutes(
 
   app.post("/api/whiskies", async (req, res) => {
     try {
-      const data = insertWhiskySchema.parse(req.body);
+      const body = { ...req.body };
+      if (body.abv !== undefined && body.abv !== null) body.abv = typeof body.abv === "string" ? (parseFloat(body.abv) || null) : body.abv;
+      if (body.abv === "" || body.abv === 0) body.abv = null;
+      if (body.ppm !== undefined && body.ppm !== null) body.ppm = typeof body.ppm === "string" ? (parseFloat(body.ppm) || null) : body.ppm;
+      if (body.ppm === "" || body.ppm === 0) body.ppm = null;
+      if (body.price !== undefined && body.price !== null) body.price = typeof body.price === "string" ? (parseFloat(body.price) || null) : body.price;
+      if (body.price === "") body.price = null;
+      if (body.wbScore !== undefined && body.wbScore !== null) body.wbScore = typeof body.wbScore === "string" ? (parseFloat(body.wbScore) || null) : body.wbScore;
+      if (body.wbScore === "") body.wbScore = null;
+      if (body.caskType !== undefined && !body.caskInfluence) { body.caskInfluence = body.caskType; delete body.caskType; }
+      const data = insertWhiskySchema.parse(body);
       const whisky = await storage.createWhisky(data);
       if (!whisky.imageUrl && whisky.whiskybaseId) {
         const wbImage = await tryFetchWhiskybaseImage(whisky.whiskybaseId, objectStorage);
@@ -1439,7 +1449,17 @@ export async function registerRoutes(
   });
 
   app.patch("/api/whiskies/:id", async (req, res) => {
-    const updated = await storage.updateWhisky(req.params.id, req.body);
+    const body = { ...req.body };
+    if (body.abv !== undefined) body.abv = (typeof body.abv === "string" ? parseFloat(body.abv) : body.abv) || null;
+    if (body.abv === "" || body.abv === 0) body.abv = null;
+    if (body.ppm !== undefined) body.ppm = (typeof body.ppm === "string" ? parseFloat(body.ppm) : body.ppm) || null;
+    if (body.ppm === "") body.ppm = null;
+    if (body.price !== undefined) body.price = (typeof body.price === "string" ? parseFloat(body.price) : body.price) || null;
+    if (body.price === "") body.price = null;
+    if (body.wbScore !== undefined) body.wbScore = (typeof body.wbScore === "string" ? parseFloat(body.wbScore) : body.wbScore) || null;
+    if (body.wbScore === "") body.wbScore = null;
+    if (body.caskType !== undefined && !body.caskInfluence) { body.caskInfluence = body.caskType; delete body.caskType; }
+    const updated = await storage.updateWhisky(req.params.id, body);
     if (!updated) return res.status(404).json({ message: "Not found" });
     if (!updated.imageUrl && updated.whiskybaseId) {
       const wbImage = await tryFetchWhiskybaseImage(updated.whiskybaseId, objectStorage);

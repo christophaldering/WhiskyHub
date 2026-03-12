@@ -540,12 +540,16 @@ function MobileCompanion({
             tastingId,
             name: w.name || "",
             distillery: w.distillery || "",
-            abv: w.abv ? String(w.abv) : "",
-            caskType: w.caskType || w.cask || "",
+            abv: w.abv ? parseFloat(w.abv) || null : null,
+            caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
             country: w.country || "",
             region: w.region || "",
+            bottler: w.bottler || "",
+            peatLevel: w.peatLevel || "",
+            ppm: w.ppm ? parseFloat(w.ppm) || null : null,
+            price: w.price ? parseFloat(w.price) || null : null,
             sortOrder: whiskyCount + idx + 1,
           });
           ok++;
@@ -2575,12 +2579,16 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             tastingId,
             name: w.name || "",
             distillery: w.distillery || "",
-            abv: w.abv ? String(w.abv) : "",
-            caskType: w.caskType || w.cask || "",
+            abv: w.abv ? parseFloat(w.abv) || null : null,
+            caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
             country: w.country || "",
             region: w.region || "",
+            bottler: w.bottler || "",
+            peatLevel: w.peatLevel || "",
+            ppm: w.ppm ? parseFloat(w.ppm) || null : null,
+            price: w.price ? parseFloat(w.price) || null : null,
             sortOrder: (whiskies?.length || 0) + added + 1,
           });
           added++;
@@ -2607,8 +2615,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       tastingId,
       name: newWhiskyName.trim(),
       distillery: extFields.distillery || "",
-      abv: extFields.abv || "",
-      caskType: extFields.caskType || "",
+      abv: extFields.abv ? parseFloat(extFields.abv) || null : null,
+      caskInfluence: extFields.caskType || "",
       age: extFields.age || "",
       category: extFields.category || "",
       country: extFields.country || "",
@@ -2616,10 +2624,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       bottler: extFields.bottler || "",
       vintage: extFields.vintage || "",
       whiskybaseId: extFields.whiskybaseId || "",
-      wbScore: extFields.wbScore || "",
-      price: extFields.price || "",
+      wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
+      price: extFields.price ? parseFloat(extFields.price) || null : null,
       peatLevel: extFields.peatLevel || "",
-      ppm: extFields.ppm || "",
+      ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
       hostSummary: extFields.hostSummary || "",
       notes: extFields.notes || "",
       sortOrder: (whiskies?.length || 0) + 1,
@@ -2627,7 +2635,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   };
 
   const handleSaveEditWhisky = (whiskyId: string) => {
-    updateWhiskyMutation.mutate({ id: whiskyId, data: editFields });
+    const coerced: Record<string, unknown> = { ...editFields };
+    if (coerced.abv !== undefined) coerced.abv = coerced.abv ? parseFloat(coerced.abv as string) || null : null;
+    if (coerced.price !== undefined) coerced.price = coerced.price ? parseFloat(coerced.price as string) || null : null;
+    if (coerced.ppm !== undefined) coerced.ppm = coerced.ppm ? parseFloat(coerced.ppm as string) || null : null;
+    if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
+    if (coerced.caskType !== undefined) { coerced.caskInfluence = coerced.caskType; delete coerced.caskType; }
+    updateWhiskyMutation.mutate({ id: whiskyId, data: coerced });
   };
 
   const startEditWhisky = (w: any) => {
@@ -2636,7 +2650,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       name: w.name || "",
       distillery: w.distillery || "",
       abv: w.abv ? String(w.abv) : "",
-      caskType: w.caskType || "",
+      caskType: w.caskInfluence || "",
       age: w.age ? String(w.age) : "",
       category: w.category || "",
       country: w.country || "",
