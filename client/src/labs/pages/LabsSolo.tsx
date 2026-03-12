@@ -161,6 +161,8 @@ export default function LabsSolo() {
   const [unknownPrice, setUnknownPrice] = useState("");
   const [wbLookupLoading, setWbLookupLoading] = useState(false);
   const [wbLookupResult, setWbLookupResult] = useState("");
+  const [autofillLoading, setAutofillLoading] = useState(false);
+  const [autofillResult, setAutofillResult] = useState("");
 
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
   const [detailTouched, setDetailTouched] = useState(false);
@@ -190,8 +192,8 @@ export default function LabsSolo() {
 
   const localDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localDraftRestoredRef = useRef(false);
-  const formSnapshotRef = useRef({ whiskyName: "", distillery: "", unknownAge: "", unknownAbv: "", unknownCask: "", unknownRegion: "", unknownCountry: "", unknownPeatLevel: "", unknownVintage: "", unknownBottler: "", unknownPrice: "" });
-  useEffect(() => { formSnapshotRef.current = { whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownPrice }; });
+  const formSnapshotRef = useRef({ whiskyName: "", distillery: "", unknownAge: "", unknownAbv: "", unknownCask: "", unknownRegion: "", unknownCountry: "", unknownPeatLevel: "", unknownVintage: "", unknownBottler: "", unknownWbId: "", unknownPrice: "" });
+  useEffect(() => { formSnapshotRef.current = { whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice }; });
 
   const saveLocalDraft = useCallback(() => {
     if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
@@ -568,6 +570,54 @@ export default function LabsSolo() {
       setWbLookupLoading(false);
     }
   }, [pid, wbLookupLoading, fetchPreviousRatings]);
+
+  const autofillEmptyFields = useCallback(async () => {
+    const cur = formSnapshotRef.current;
+    if (!cur.whiskyName && !cur.distillery) return;
+    const emptyFields: string[] = [];
+    if (!cur.unknownAge) emptyFields.push("age");
+    if (!cur.unknownAbv) emptyFields.push("abv");
+    if (!cur.unknownCask) emptyFields.push("caskType");
+    if (!cur.unknownRegion) emptyFields.push("region");
+    if (!cur.unknownCountry) emptyFields.push("country");
+    if (!cur.unknownPeatLevel) emptyFields.push("peatLevel");
+    if (!cur.unknownVintage) emptyFields.push("vintage");
+    if (!cur.unknownBottler) emptyFields.push("bottler");
+    if (!cur.unknownPrice) emptyFields.push("price");
+    if (emptyFields.length === 0) { setAutofillResult("complete"); setTimeout(() => setAutofillResult(""), 2000); return; }
+    setAutofillLoading(true);
+    setAutofillResult("");
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch("/api/whisky-autofill", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ whiskyName: cur.whiskyName, distillery: cur.distillery, emptyFields }),
+      });
+      if (!res.ok) {
+        if (res.status === 429) { setAutofillResult("rate_limit"); return; }
+        if (res.status === 503) { setAutofillResult("ai_unavailable"); return; }
+        setAutofillResult("error"); return;
+      }
+      const data = await res.json();
+      let filled = 0;
+      if (data.age && !cur.unknownAge) { setUnknownAge(String(data.age)); filled++; }
+      if (data.abv && !cur.unknownAbv) { setUnknownAbv(data.abv); filled++; }
+      if (data.caskType && !cur.unknownCask) { setUnknownCask(data.caskType); filled++; }
+      if (data.region && !cur.unknownRegion) { setUnknownRegion(data.region); filled++; }
+      if (data.country && !cur.unknownCountry) { setUnknownCountry(data.country); filled++; }
+      if (data.peatLevel && !cur.unknownPeatLevel) { setUnknownPeatLevel(data.peatLevel); filled++; }
+      if (data.vintage && !cur.unknownVintage) { setUnknownVintage(String(data.vintage)); filled++; }
+      if (data.bottler && !cur.unknownBottler) { setUnknownBottler(data.bottler); filled++; }
+      if (data.price && !cur.unknownPrice) { setUnknownPrice(data.price); filled++; }
+      setAutofillResult(filled > 0 ? "filled" : "no_data");
+    } catch {
+      setAutofillResult("error");
+    } finally {
+      setAutofillLoading(false);
+    }
+  }, [pid]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -1051,7 +1101,7 @@ export default function LabsSolo() {
     setDetailTouched(false); setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
-    setSoloVoiceMemo(null); stopVoice(); setWbLookupResult("");
+    setSoloVoiceMemo(null); stopVoice(); setWbLookupResult(""); setAutofillResult("");
     setPreviousRatings([]); setPrevRatingsExpanded(false);
     setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
     setDraftEntryId(null); setDraftStatus("idle"); setAutoSaveStatus("idle");
@@ -1853,6 +1903,36 @@ export default function LabsSolo() {
                   <span className="labs-badge labs-badge-accent">✎ {t("m2.solo.manualEntry", "Manual entry")}</span>
                   <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 11, fontFamily: "inherit" }} data-testid="button-hide-manual">{t("m2.solo.collapse", "Collapse")}</button>
                 </div>
+                {(whiskyName.trim() || distillery.trim()) && (
+                  <button
+                    type="button"
+                    onClick={autofillEmptyFields}
+                    disabled={autofillLoading}
+                    data-testid="button-autofill"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      width: "100%", padding: "8px 12px", borderRadius: 8,
+                      background: "var(--labs-surface-alt, rgba(255,255,255,0.06))", border: "1px solid var(--labs-border)",
+                      color: "var(--labs-accent)", fontSize: 12, fontFamily: "inherit", cursor: autofillLoading ? "wait" : "pointer",
+                      opacity: autofillLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {autofillLoading ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Search style={{ width: 14, height: 14 }} />}
+                    {autofillLoading
+                      ? t("m2.solo.autofilling", "Looking up details...")
+                      : t("m2.solo.autofill", "Auto-fill empty fields with AI")}
+                  </button>
+                )}
+                {autofillResult && (
+                  <p style={{ fontSize: 10, margin: 0, color: autofillResult === "filled" || autofillResult === "complete" ? "var(--labs-success)" : autofillResult === "no_data" ? "var(--labs-text-muted)" : "var(--labs-danger)" }} data-testid="text-autofill-result">
+                    {autofillResult === "filled" ? t("m2.solo.autofillDone", "✓ Fields filled") :
+                     autofillResult === "complete" ? t("m2.solo.autofillComplete", "✓ All fields already filled") :
+                     autofillResult === "no_data" ? t("m2.solo.autofillNoData", "No additional data found") :
+                     autofillResult === "rate_limit" ? t("m2.solo.autofillRateLimit", "Rate limited, please wait") :
+                     autofillResult === "ai_unavailable" ? t("m2.solo.autofillAiUnavailable", "AI unavailable") :
+                     t("m2.solo.autofillError", "Error")}
+                  </p>
+                )}
                 <div>
                   <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.distillery", "Distillery")}</label>
                   <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} className="labs-input" data-testid="labs-solo-distillery" autoComplete="off" />

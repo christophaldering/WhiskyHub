@@ -4361,7 +4361,7 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
         messages: [
           {
             role: "system",
-            content: `You are a whisky expert with extensive knowledge of the Whiskybase.com database. Given a Whiskybase ID number, return what you know about this whisky. Return JSON with fields: name (full product name), distillery, age (just the number or empty string), abv (with % sign or empty string), caskType, region, price (estimated retail price in EUR with € sign, or empty string). If you don't know a field, return an empty string. If you cannot identify the whisky at all, return {"found": false}.`,
+            content: `You are a whisky expert with extensive knowledge of the Whiskybase.com database. Given a Whiskybase ID number, return what you know about this whisky. Return JSON with fields: name (full product name), distillery, age (just the number, or "NAS" if no age statement, or empty string if unknown), abv (with % sign or empty string), caskType (e.g. Bourbon, Sherry, Port Pipe, etc.), region (e.g. Islay, Speyside, Highland, Lowland, Islands, Campbeltown, or equivalent for non-Scottish whiskies), country (e.g. Scotland, Ireland, Japan, Germany, USA, etc.), peatLevel (None, Light, Medium, or Heavy), vintage (year as number or empty string), bottler (bottling company name, or "OB" for official bottling, or empty string), price (estimated retail price in EUR with € sign, or empty string). If you don't know a field, return an empty string. If you cannot identify the whisky at all, return {"found": false}.`,
           },
           {
             role: "user",
@@ -4386,6 +4386,10 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
         abv: parsed.abv || "",
         caskType: parsed.caskType || parsed.cask_type || "",
         region: parsed.region || "",
+        country: parsed.country || "",
+        peatLevel: parsed.peatLevel || parsed.peat_level || "",
+        vintage: parsed.vintage ? String(parsed.vintage) : "",
+        bottler: parsed.bottler || "",
         price: parsed.price || "",
       };
 
@@ -4394,6 +4398,83 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
     } catch (error: any) {
       console.error("Whiskybase lookup error:", error.message);
       res.status(500).json({ error: "Lookup failed" });
+    }
+  });
+
+  // --- Auto-fill empty whisky fields using AI ---
+  app.post("/api/whisky-autofill", async (req: Request, res: Response) => {
+    try {
+      const { whiskyName, distillery, emptyFields } = req.body;
+      if (!whiskyName && !distillery) {
+        return res.status(400).json({ error: "Need at least a whisky name or distillery" });
+      }
+
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      const rateKey = participantId || req.ip || "anon";
+      const now = Date.now();
+      const history = (wbLookupRateMap.get(rateKey) || []).filter(t => now - t < WB_RATE_WINDOW);
+      if (history.length >= WB_RATE_LIMIT) {
+        return res.status(429).json({ error: "Too many lookups, please wait" });
+      }
+      history.push(now);
+      wbLookupRateMap.set(rateKey, history);
+
+      const { client } = await getAIClient(participantId || undefined, "whisky_autofill");
+      if (!client) {
+        return res.status(503).json({ error: "ai_unavailable" });
+      }
+
+      const fieldsToFill = (emptyFields || []).filter((f: string) =>
+        ["age", "abv", "caskType", "region", "country", "peatLevel", "vintage", "bottler", "price"].includes(f)
+      );
+      if (fieldsToFill.length === 0) {
+        return res.json({});
+      }
+
+      const fieldDescriptions: Record<string, string> = {
+        age: 'age (just the number, or "NAS" if no age statement)',
+        abv: "abv (with % sign)",
+        caskType: "caskType (e.g. Bourbon, Sherry, Port Pipe)",
+        region: "region (e.g. Islay, Speyside, Highland, Thuringia, etc.)",
+        country: "country (e.g. Scotland, Ireland, Japan, Germany, USA)",
+        peatLevel: "peatLevel (None, Light, Medium, or Heavy)",
+        vintage: "vintage (year as number)",
+        bottler: 'bottler (company name, or "OB" for official bottling)',
+        price: "price (estimated retail price in EUR with € sign)",
+      };
+
+      const requestedFields = fieldsToFill.map((f: string) => fieldDescriptions[f] || f).join(", ");
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky expert. Given a whisky name and/or distillery, return your best knowledge about the requested fields. Return JSON with only the requested fields. If you don't know a field, return an empty string. Fields requested: ${requestedFields}`,
+          },
+          {
+            role: "user",
+            content: `Whisky: ${whiskyName || "unknown"}${distillery ? `, Distillery: ${distillery}` : ""}`,
+          },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content || "{}";
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+
+      const result: Record<string, string> = {};
+      for (const field of fieldsToFill) {
+        const val = parsed[field] || parsed[field.replace(/([A-Z])/g, "_$1").toLowerCase()] || "";
+        if (val) result[field] = String(val);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Whisky autofill error:", error.message);
+      res.status(500).json({ error: "Autofill failed" });
     }
   });
 
