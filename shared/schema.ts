@@ -259,6 +259,7 @@ export const journalEntries = pgTable("journal_entries", {
   personalScore: real("personal_score"),
   whiskybaseId: text("whiskybase_id"),
   wbScore: real("wb_score"),
+  price: text("price"),
   mood: text("mood"),
   occasion: text("occasion"),
   imageUrl: text("image_url"),

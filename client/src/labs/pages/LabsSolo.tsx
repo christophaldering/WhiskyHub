@@ -285,7 +285,7 @@ export default function LabsSolo() {
       setUnknownAbv(d.abv ? String(d.abv) : "");
       setUnknownCask(d.caskType || "");
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
-      setUnknownPrice("");
+      setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
       setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
       setDetailTouched(false);
@@ -395,6 +395,7 @@ export default function LabsSolo() {
     if (unknownVintage.trim()) body.vintage = unknownVintage.trim();
     if (unknownBottler.trim()) body.bottler = unknownBottler.trim();
     if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
+    if (unknownPrice.trim()) body.price = unknownPrice.trim();
     if (soloVoiceMemo) {
       if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
       if (soloVoiceMemo.transcript) body.voiceMemoTranscript = soloVoiceMemo.transcript;
