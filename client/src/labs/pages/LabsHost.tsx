@@ -3460,7 +3460,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
         <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-host-error-back">
-          Back to Tastings
+          Tastings
         </button>
       </div>
     );
@@ -3484,7 +3484,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Tasting not found</p>
         <button className="labs-btn-ghost mt-4" onClick={() => navigate("/labs/tastings")} data-testid="labs-host-back-to-tastings">
-          Back to Tastings
+          Tastings
         </button>
       </div>
     );

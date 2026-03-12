@@ -86,9 +86,9 @@ export default function LabsTastings() {
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
           Sign in to see your sessions and join new ones
         </p>
-        <Link href="/labs">
+        <Link href="/labs/home">
           <button className="labs-btn-secondary" data-testid="labs-tastings-goto-home">
-            Back to Labs
+            Home
           </button>
         </Link>
       </div>

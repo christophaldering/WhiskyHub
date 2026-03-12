@@ -46,7 +46,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
           onClick={() => navigate("/labs/explore")}
           data-testid="labs-bottle-back-btn"
         >
-          Back to Explore
+          Explore
         </button>
       </div>
     );

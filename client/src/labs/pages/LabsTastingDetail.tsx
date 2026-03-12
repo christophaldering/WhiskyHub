@@ -139,7 +139,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-not-found-back">Back to Tastings</button>
+        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-not-found-back">Tastings</button>
       </div>
     );
   }
@@ -162,7 +162,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-notfound-back">Back to Tastings</button>
+        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-notfound-back">Tastings</button>
       </div>
     );
   }

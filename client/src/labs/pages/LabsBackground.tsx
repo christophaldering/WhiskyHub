@@ -5,7 +5,7 @@ import {
   SlidersHorizontal, Eye, PartyPopper, Radar, NotebookPen,
   Award, Heart, BarChart3, Activity, TrendingUp, ShieldCheck, Ban, ChevronLeft
 } from "lucide-react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import type { ElementType } from "react";
 
 interface StepCard { key: string; icon: ElementType; num: string; }
@@ -27,6 +27,7 @@ function SectionHeader({ icon: Icon, title, tagline, color }: { icon: ElementTyp
 }
 
 export default function LabsBackground() {
+  const [, navigate] = useLocation();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -61,11 +62,9 @@ export default function LabsBackground() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-background-page">
-      <Link href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-background">
-          <ChevronLeft className="w-4 h-4" /> Discover
-        </button>
-      </Link>
+      <button onClick={() => navigate("/labs/discover")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-background">
+        <ChevronLeft className="w-4 h-4" /> Discover
+      </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
