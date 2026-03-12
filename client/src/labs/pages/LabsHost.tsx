@@ -506,12 +506,27 @@ function PrintMaterialsSection({
         name: ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
       }));
       const hostName = resolveHostName();
+
+      let finalCover = coverImage;
+      if (!finalCover && coverPreview) {
+        try {
+          const imgRes = await fetch(coverPreview);
+          const blob = await imgRes.blob();
+          finalCover = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          setCoverImage(finalCover);
+        } catch {}
+      }
+
       await generateTastingMenu({
         tasting: tasting as unknown as import("@shared/schema").Tasting,
         whiskies: whiskies as unknown as import("@shared/schema").Whisky[],
         participants: pList,
         hostName,
-        coverImageBase64: coverImage || null,
+        coverImageBase64: finalCover || null,
         orientation,
         blindMode,
         language: "de",
