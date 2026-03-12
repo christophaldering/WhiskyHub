@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Mic } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, Plus } from "lucide-react";
+import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 
 export const ATTRIBUTES = {
   nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
@@ -24,22 +25,6 @@ const SpeechRecognitionAPI =
   typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
-
-function chipStyle(selected: boolean, dimColor: string): React.CSSProperties {
-  return {
-    padding: "6px 14px",
-    fontSize: 12,
-    fontWeight: 500,
-    borderRadius: 20,
-    border: `1px solid ${selected ? dimColor : "var(--labs-border)"}`,
-    background: selected ? `${dimColor}24` : "transparent",
-    color: selected ? dimColor : "var(--labs-text-muted)",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    transition: "all 0.15s",
-    whiteSpace: "nowrap" as const,
-  };
-}
 
 export interface LabsRatingPanelProps {
   scores: Record<DimKey, number>;
@@ -80,13 +65,11 @@ export default function LabsRatingPanel({
 }: LabsRatingPanelProps) {
   const { t, i18n } = useTranslation();
 
-  const [showDetailed, setShowDetailed] = useState(true);
-  const [expandedModules, setExpandedModules] = useState<Record<DimKey, boolean>>({
-    nose: defaultOpen,
-    taste: false,
-    finish: false,
-    balance: false,
-  });
+  const [showDetailed, setShowDetailed] = useState(defaultOpen);
+  const [activeTab, setActiveTab] = useState<DimKey>("nose");
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const isDE = i18n.language === "de";
+  const [customInput, setCustomInput] = useState("");
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | null>(null);
@@ -139,8 +122,17 @@ export default function LabsRatingPanel({
     }
   }, [voiceListening, voiceTarget, stopVoice, startVoice]);
 
-  const toggleModule = (dim: DimKey) => {
-    setExpandedModules((prev) => ({ ...prev, [dim]: !prev[dim] }));
+  const toggleCat = (catId: string) => {
+    setExpandedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  const addCustomTag = () => {
+    const tag = customInput.trim();
+    if (!tag) return;
+    if (!chips[activeTab].some((c) => c.toLowerCase() === tag.toLowerCase())) {
+      onChipToggle(activeTab, tag);
+    }
+    setCustomInput("");
   };
 
   const detailTouched = DIM_KEYS.some((k) => scores[k] !== Math.round(scale / 2));
@@ -152,141 +144,301 @@ export default function LabsRatingPanel({
     balance: t("m2.rating.balance", "Balance"),
   };
 
-  const chipLabel = (attr: string) => t(`m2.chips.${attr}`, attr);
+  const activeChips = chips[activeTab];
 
-  const fontSize = compact ? { label: 11, chip: 11, score: 12, overall: 22, section: 10 } : { label: 13, chip: 12, score: 14, overall: 28, section: 12 };
-  const spacing = compact ? { dimPad: "8px 0", chipGap: 4, chipPad: "4px 10px", textRows: 1, sliderMb: 8 } : { dimPad: "12px 0", chipGap: 6, chipPad: "6px 14px", textRows: 2, sliderMb: 14 };
-
-  const renderDimensions = () => (
-    <div style={{ paddingTop: 8, marginTop: 4 }} data-testid="section-detailed-scoring">
+  const renderTabBar = () => (
+    <div style={{ display: "flex", gap: 0, marginBottom: 16, borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)" }} data-testid="rating-tab-bar">
       {DIM_KEYS.map((key) => {
-        const attrs = ATTRIBUTES[key];
-        const expanded = expandedModules[key];
-        const dc = DIM_COLORS[key];
+        const isActive = activeTab === key;
         return (
-          <div key={key} style={{
-            borderBottom: "1px solid var(--labs-border-subtle)",
-            borderLeft: `3px solid ${dc}`,
-            marginLeft: -16,
-            paddingLeft: 13,
-            background: expanded ? `${dc}14` : "transparent",
-            transition: "background 0.2s",
-          }}>
-            <button
-              type="button"
-              onClick={() => toggleModule(key)}
-              data-testid={`button-expand-${key}`}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: spacing.dimPad,
-                background: "none",
-                border: "none",
-                cursor: disabled ? "default" : "pointer",
-                fontFamily: "inherit",
-                opacity: disabled ? 0.5 : 1,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: fontSize.label, fontWeight: 600, color: "var(--labs-text)" }}>{dimLabels[key]}</span>
-                {chips[key].length > 0 && (
-                  <span style={{ fontSize: 10, color: dc, background: `${dc}26`, padding: "2px 8px", borderRadius: 10 }}>
-                    {chips[key].length}
-                  </span>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: fontSize.score, fontWeight: 600, color: dc, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" as const }}>{scores[key]}</span>
-                <ChevronDown style={{ width: 16, height: 16, color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
-              </div>
-            </button>
-
-            {expanded && (
-              <div style={{ paddingTop: compact ? 8 : 12, paddingBottom: compact ? 10 : 16 }}>
-                <input
-                  type="range"
-                  min={0}
-                  max={scale}
-                  value={scores[key]}
-                  onChange={(e) => onScoreChange(key, Number(e.target.value))}
-                  disabled={disabled}
-                  data-testid={`input-score-${key}`}
-                  style={{ width: "100%", accentColor: dc, display: "block", marginBottom: spacing.sliderMb, cursor: disabled ? "not-allowed" : "pointer" }}
-                />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.chipGap, marginBottom: compact ? 8 : 12 }} data-testid={`chips-${key}`}>
-                  {attrs.map((attr) => {
-                    const sel = chips[key].includes(attr);
-                    return (
-                      <button
-                        key={attr}
-                        type="button"
-                        onClick={() => !disabled && onChipToggle(key, attr)}
-                        data-testid={`chip-${key}-${attr.toLowerCase()}`}
-                        style={{
-                          ...chipStyle(sel, dc),
-                          padding: spacing.chipPad,
-                          fontSize: fontSize.chip,
-                          opacity: disabled ? 0.5 : 1,
-                          cursor: disabled ? "default" : "pointer",
-                        }}
-                      >
-                        {chipLabel(attr)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ position: "relative" }}>
-                  <textarea
-                    value={texts[key]}
-                    onChange={(e) => onTextChange(key, e.target.value)}
-                    placeholder={t("m2.rating.describePlaceholder", "Describe the {{dim}}...", { dim: dimLabels[key].toLowerCase() })}
-                    rows={spacing.textRows}
-                    disabled={disabled}
-                    data-testid={`input-text-${key}`}
-                    className="labs-input"
-                    style={{
-                      resize: "vertical" as const,
-                      minHeight: compact ? 36 : 56,
-                      paddingRight: hasSpeechAPI && !compact ? 44 : (compact ? 10 : 14),
-                      borderColor: (voiceListening && voiceTarget === key) ? "var(--labs-danger)" : undefined,
-                      opacity: disabled ? 0.5 : 1,
-                    }}
-                  />
-                  {hasSpeechAPI && !compact && (
-                    <button
-                      type="button"
-                      onClick={() => !disabled && toggleVoice(key)}
-                      data-testid={`button-voice-${key}`}
-                      style={{
-                        position: "absolute",
-                        right: 8,
-                        top: 8,
-                        background: (voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "var(--labs-accent-muted)",
-                        border: `1px solid ${(voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "color-mix(in srgb, var(--labs-accent) 42%, transparent)"}`,
-                        borderRadius: 999,
-                        cursor: disabled ? "default" : "pointer",
-                        width: 30,
-                        height: 30,
-                        padding: 0,
-                        color: (voiceListening && voiceTarget === key) ? "var(--labs-bg)" : "var(--labs-accent)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: (voiceListening && voiceTarget === key) ? "0 0 0 4px color-mix(in srgb, var(--labs-danger) 25%, transparent)" : "0 2px 8px rgba(0,0,0,0.22)",
-                        transition: "all 200ms ease",
-                      }}
-                    >
-                      <Mic style={{ width: 14, height: 14 }} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            key={key}
+            type="button"
+            onClick={() => { if (disabled) return; setActiveTab(key); setExpandedCats({}); setCustomInput(""); }}
+            data-testid={`tab-${key}`}
+            style={{
+              flex: 1,
+              padding: compact ? "7px 0" : "10px 0",
+              background: isActive ? "var(--labs-accent)" : "transparent",
+              border: "none",
+              color: isActive ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              fontSize: compact ? 12 : 13,
+              fontWeight: isActive ? 700 : 500,
+              fontFamily: "inherit",
+              cursor: disabled ? "default" : "pointer",
+              transition: "all 0.15s",
+              opacity: disabled ? 0.5 : 1,
+              borderRight: key !== "balance" ? "1px solid var(--labs-border)" : "none",
+            }}
+          >
+            {dimLabels[key]}
+          </button>
         );
       })}
+    </div>
+  );
+
+  const renderSliderWithMarkers = (key: DimKey) => {
+    const dc = DIM_COLORS[key];
+    return (
+      <div style={{ marginBottom: compact ? 10 : 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: compact ? 14 : 16, fontWeight: 600, color: "var(--labs-text)" }}>{dimLabels[key]}</span>
+          <span className="labs-serif" style={{ fontSize: compact ? 22 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid={`text-score-${key}`}>
+            {scores[key]}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={scale}
+          value={scores[key]}
+          onChange={(e) => onScoreChange(key, Number(e.target.value))}
+          disabled={disabled}
+          data-testid={`input-score-${key}`}
+          style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>0</span>
+          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{Math.round(scale / 2)}</span>
+          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{scale}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFlavorCategories = () => {
+    const categories: FlavorCategory[] = FLAVOR_CATEGORIES;
+    return (
+      <div style={{ marginBottom: compact ? 8 : 14 }}>
+        <button
+          type="button"
+          onClick={() => {
+            const allCollapsed = Object.values(expandedCats).every((v) => !v);
+            if (allCollapsed) {
+              const first = categories[0];
+              if (first) setExpandedCats({ [first.id]: true });
+            } else {
+              setExpandedCats({});
+            }
+          }}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--labs-text-muted)", fontSize: 12, fontFamily: "inherit",
+            padding: "4px 0", marginBottom: 6,
+          }}
+          data-testid="button-toggle-flavors"
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            {Object.values(expandedCats).some((v) => v) ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
+            {t("m2.rating.addFlavors", "Add flavors")}
+          </span>
+          {activeChips.length > 0 && (
+            <span style={{ fontSize: 10, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>
+              {activeChips.length}
+            </span>
+          )}
+        </button>
+
+        {activeChips.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }} data-testid={`selected-chips-${activeTab}`}>
+            {activeChips.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => !disabled && onChipToggle(activeTab, tag)}
+                data-testid={`chip-selected-${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: 9999,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  cursor: disabled ? "default" : "pointer",
+                  border: "none",
+                  background: "var(--labs-accent)",
+                  color: "var(--labs-bg)",
+                  transition: "all 150ms",
+                  display: "flex", alignItems: "center", gap: 4,
+                }}
+              >
+                {tag}
+                <span style={{ fontSize: 10, opacity: 0.7 }}>×</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border-subtle)" }}>
+          {categories.map((cat) => {
+            const isExpanded = expandedCats[cat.id] || false;
+            const catTagCount = cat.subcategories.filter((sub) =>
+              activeChips.some((c) => c.toLowerCase() === sub.en.toLowerCase())
+            ).length;
+
+            return (
+              <div key={cat.id} style={{ borderBottom: "1px solid var(--labs-border-subtle)" }}>
+                <button
+                  type="button"
+                  onClick={() => !disabled && toggleCat(cat.id)}
+                  data-testid={`cat-toggle-${cat.id}`}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: compact ? "8px 10px" : "10px 12px",
+                    background: "none",
+                    border: "none",
+                    cursor: disabled ? "default" : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 999, background: cat.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: compact ? 12 : 13, fontWeight: 500, color: "var(--labs-text)" }}>{isDE ? cat.de : cat.en}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {catTagCount > 0 && (
+                      <span style={{
+                        fontSize: 10, padding: "1px 7px", borderRadius: 10,
+                        background: `${cat.color}26`, color: cat.color, fontWeight: 600,
+                      }}>
+                        {catTagCount}
+                      </span>
+                    )}
+                    {isExpanded
+                      ? <ChevronUp style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
+                      : <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, padding: "8px 10px" }}>
+                    {cat.subcategories.map((sub) => {
+                      const isSelected = activeChips.some((c) => c.toLowerCase() === sub.en.toLowerCase());
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => !disabled && onChipToggle(activeTab, sub.en)}
+                          data-testid={`flavor-tag-${activeTab}-${sub.id}`}
+                          style={{
+                            padding: compact ? "3px 8px" : "4px 10px",
+                            borderRadius: 9999,
+                            fontSize: compact ? 10 : 11,
+                            fontWeight: 500,
+                            fontFamily: "inherit",
+                            cursor: disabled ? "default" : "pointer",
+                            border: isSelected ? "none" : `1px solid ${cat.color}44`,
+                            background: isSelected ? cat.color : `${cat.color}18`,
+                            color: isSelected ? "var(--labs-bg)" : "var(--labs-text)",
+                            transition: "all 150ms",
+                          }}
+                        >
+                          {isDE ? sub.de : sub.en}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          <input
+            className="labs-input"
+            placeholder={t("m2.rating.customDescriptor", "Custom descriptor...")}
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+            disabled={disabled}
+            style={{ flex: 1, fontSize: 12, padding: "6px 10px" }}
+            data-testid={`custom-input-${activeTab}`}
+          />
+          <button
+            type="button"
+            onClick={addCustomTag}
+            disabled={!customInput.trim() || disabled}
+            data-testid={`custom-add-${activeTab}`}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 32, height: 32, borderRadius: 8,
+              border: "1px solid var(--labs-border)",
+              background: customInput.trim() ? "var(--labs-accent)" : "var(--labs-surface)",
+              color: customInput.trim() ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              cursor: customInput.trim() && !disabled ? "pointer" : "default",
+              fontFamily: "inherit",
+            }}
+          >
+            <Plus style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTextArea = (key: DimKey) => (
+    <div style={{ position: "relative", marginTop: compact ? 4 : 8 }}>
+      <textarea
+        value={texts[key]}
+        onChange={(e) => onTextChange(key, e.target.value)}
+        placeholder={t("m2.rating.describePlaceholder", "Describe the {{dim}}...", { dim: dimLabels[key].toLowerCase() })}
+        rows={compact ? 1 : 2}
+        disabled={disabled}
+        data-testid={`input-text-${key}`}
+        className="labs-input"
+        style={{
+          resize: "vertical" as const,
+          minHeight: compact ? 36 : 56,
+          paddingRight: hasSpeechAPI && !compact ? 44 : (compact ? 10 : 14),
+          borderColor: (voiceListening && voiceTarget === key) ? "var(--labs-danger)" : undefined,
+          opacity: disabled ? 0.5 : 1,
+        }}
+      />
+      {hasSpeechAPI && !compact && (
+        <button
+          type="button"
+          onClick={() => !disabled && toggleVoice(key)}
+          data-testid={`button-voice-${key}`}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            background: (voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "var(--labs-accent-muted)",
+            border: `1px solid ${(voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "color-mix(in srgb, var(--labs-accent) 42%, transparent)"}`,
+            borderRadius: 999,
+            cursor: disabled ? "default" : "pointer",
+            width: 30,
+            height: 30,
+            padding: 0,
+            color: (voiceListening && voiceTarget === key) ? "var(--labs-bg)" : "var(--labs-accent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: (voiceListening && voiceTarget === key) ? "0 0 0 4px color-mix(in srgb, var(--labs-danger) 25%, transparent)" : "0 2px 8px rgba(0,0,0,0.22)",
+            transition: "all 200ms ease",
+          }}
+        >
+          <Mic style={{ width: 14, height: 14 }} />
+        </button>
+      )}
+    </div>
+  );
+
+  const renderActiveTabContent = () => (
+    <div style={{
+      padding: compact ? 12 : 16,
+      background: "var(--labs-surface-alt, rgba(255,255,255,0.03))",
+      borderRadius: 10,
+      border: "1px solid var(--labs-border-subtle)",
+    }} data-testid="section-detailed-scoring">
+      {renderSliderWithMarkers(activeTab)}
+      {renderFlavorCategories()}
+      {renderTextArea(activeTab)}
     </div>
   );
 
@@ -295,7 +447,7 @@ export default function LabsRatingPanel({
       {detailTouched && (
         <div style={{ marginBottom: compact ? 8 : 14, borderTop: "1px solid var(--labs-border-subtle)", paddingTop: compact ? 8 : 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: fontSize.section, fontWeight: 600, color: "var(--labs-text-muted)" }}>{t("m2.rating.suggestedScore", "Suggested Score")}</span>
+            <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text-muted)" }}>{t("m2.rating.suggestedScore", "Suggested Score")}</span>
             <span className="labs-serif" style={{ fontSize: compact ? 16 : 22, fontWeight: 700, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }} data-testid="text-suggested-score">
               {overallAuto}
             </span>
@@ -304,7 +456,7 @@ export default function LabsRatingPanel({
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: fontSize.section, fontWeight: 600, color: "var(--labs-text)" }}>
+        <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)" }}>
           {t("m2.rating.overall", "Overall")}
           {overrideActive && (
             <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }} data-testid="badge-override">
@@ -312,7 +464,7 @@ export default function LabsRatingPanel({
             </span>
           )}
         </span>
-        <span className="labs-serif" style={{ fontSize: fontSize.overall, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid="text-score-value">
+        <span className="labs-serif" style={{ fontSize: compact ? 18 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid="text-score-value">
           {overall}
         </span>
       </div>
@@ -378,7 +530,12 @@ export default function LabsRatingPanel({
         </button>
       )}
 
-      {(!showToggle || showDetailed) && renderDimensions()}
+      {(!showToggle || showDetailed) && (
+        <div style={{ paddingTop: 8, marginTop: 4 }}>
+          {renderTabBar()}
+          {renderActiveTabContent()}
+        </div>
+      )}
       {renderOverall()}
     </div>
   );
