@@ -1,10 +1,9 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
+import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
-import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
 import { queryClient } from "@/lib/queryClient";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
@@ -34,12 +33,6 @@ const NAV_ITEMS = [
   { href: "/labs/circle", icon: "circle" as const, label: "Circle" },
 ];
 
-const SOUNDSCAPE_ICONS: Record<Soundscape, string> = {
-  fireplace: "\uD83D\uDD25",
-  rain: "\uD83C\uDF27",
-  night: "\uD83C\uDF19",
-  bagpipe: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",
-};
 
 function usePwaInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
@@ -233,119 +226,6 @@ function LabsNotificationBell() {
   );
 }
 
-function LabsAmbientToggle() {
-  const {
-    ambientPlaying, ambientSoundscape, ambientVolume,
-    setAmbientPlaying, setAmbientSoundscape, setAmbientVolume,
-  } = useAppStore();
-  const [open, setOpen] = useState(false);
-
-  const start = useCallback((soundscape: Soundscape, vol: number) => {
-    playSoundscape(soundscape);
-    setVolume(vol);
-    setAmbientPlaying(true);
-    setAmbientSoundscape(soundscape);
-  }, [setAmbientPlaying, setAmbientSoundscape]);
-
-  const stop = useCallback(() => {
-    stopSoundscape();
-    setAmbientPlaying(false);
-  }, [setAmbientPlaying]);
-
-  const togglePlay = () => {
-    if (ambientPlaying) stop();
-    else start(ambientSoundscape, ambientVolume);
-  };
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-center w-9 h-9 rounded-full transition-all"
-        style={{
-          background: ambientPlaying ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-          border: `1px solid ${ambientPlaying ? "var(--labs-accent)" : "var(--labs-border)"}`,
-          color: ambientPlaying ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-          cursor: "pointer",
-        }}
-        data-testid="labs-ambient-toggle"
-      >
-        {ambientPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-      </button>
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} className="fixed inset-0 z-[99]" />
-          <div
-            className="fixed top-14 right-4 w-56 rounded-2xl p-4 z-[100] space-y-4"
-            style={{
-              background: "var(--labs-surface)",
-              border: "1px solid var(--labs-border)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            }}
-            data-testid="labs-ambient-popover"
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>
-              Ambient Sound
-            </p>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(["fireplace", "rain", "night", "bagpipe"] as Soundscape[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setAmbientSoundscape(s);
-                    if (ambientPlaying) start(s, ambientVolume);
-                  }}
-                  className="flex flex-col items-center gap-1 py-2 rounded-xl text-[10px] transition-all"
-                  style={{
-                    background: ambientSoundscape === s ? "var(--labs-accent-muted)" : "transparent",
-                    border: `1px solid ${ambientSoundscape === s ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    color: ambientSoundscape === s ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                    cursor: "pointer",
-                  }}
-                  data-testid={`labs-ambient-${s}`}
-                >
-                  <span className="text-base">{SOUNDSCAPE_ICONS[s]}</span>
-                  <span className="capitalize">{s === "bagpipe" ? "Pipes" : s}</span>
-                </button>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Volume</p>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={ambientVolume}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  setAmbientVolume(v);
-                  setVolume(v);
-                }}
-                className="w-full accent-[var(--labs-accent)]"
-                style={{ height: 4 }}
-                data-testid="labs-ambient-volume"
-              />
-            </div>
-            <button
-              onClick={togglePlay}
-              className="w-full py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{
-                background: ambientPlaying ? "var(--labs-surface-elevated)" : "var(--labs-accent)",
-                color: ambientPlaying ? "var(--labs-text)" : "var(--labs-bg)",
-                border: ambientPlaying ? "1px solid var(--labs-border)" : "none",
-                cursor: "pointer",
-              }}
-              data-testid="labs-ambient-play"
-            >
-              {ambientPlaying ? "Stop" : "Play"}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 function useLabsTheme() {
   const [theme, setThemeState] = useState<"dark" | "light">(() => {
