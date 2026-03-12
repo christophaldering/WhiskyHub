@@ -1637,9 +1637,9 @@ export default function LabsSolo() {
       {hiddenFileInputs}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "12px 0 8px", gap: 8 }} data-testid="editor-action-bar">
-        <button onClick={handleBackToHub} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 0" }} data-testid="button-back-to-hub">
-          <ChevronLeft style={{ width: 16, height: 16 }} />
-          {t("m2.solo.backToOverview", "Back to overview")}
+        <button onClick={handleBackToHub} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-to-hub">
+          <ChevronLeft className="w-4 h-4" />
+          Your Drams
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {autoSaveStatus === "saving" && (

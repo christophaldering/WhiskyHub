@@ -148,7 +148,7 @@ export default function LabsPaperScan() {
         data-testid="labs-paper-scan-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        {tasting?.name || "Tasting"}
+        {tasting?.title || "Tasting"}
       </button>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{
