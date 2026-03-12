@@ -188,50 +188,54 @@ export default function LabsExplore() {
           {sortedWhiskies.map((w: any) => (
             <div
               key={w.id}
-              className="labs-card labs-card-interactive flex items-center gap-4 p-4"
+              className="labs-card labs-card-interactive"
+              style={{ padding: "12px 14px", overflow: "hidden" }}
               onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
               data-testid={`labs-explore-whisky-${w.id}`}
             >
-              <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                  {w.name}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {w.distillery && (
-                    <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
-                      {w.distillery}
-                    </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+                <div style={{ flexShrink: 0 }}>
+                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <p className="text-sm font-medium" style={{ color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>
+                    {w.name}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
+                    {w.distillery && (
+                      <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                        {w.distillery}
+                      </span>
+                    )}
+                    {w.region && (
+                      <span
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, padding: "1px 6px", borderRadius: 4 }}
+                      >
+                        {w.region}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                  {w.avgOverall != null && w.avgOverall > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>
+                        {Number(w.avgOverall).toFixed(1)}
+                      </span>
+                    </div>
                   )}
-                  {w.region && (
-                    <span
-                      className="text-xs px-1.5 py-0.5 rounded"
-                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: "10px" }}
-                    >
-                      {w.region}
-                    </span>
+                  {w.ratingCount != null && w.ratingCount > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <Hash style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}
+                      </span>
+                    </div>
                   )}
                 </div>
+                <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)" }} />
               </div>
-              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                {w.avgOverall != null && w.avgOverall > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                    <span className="text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>
-                      {Number(w.avgOverall).toFixed(1)}
-                    </span>
-                  </div>
-                )}
-                {w.ratingCount != null && w.ratingCount > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Hash className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
-                    <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
             </div>
           ))}
         </div>
