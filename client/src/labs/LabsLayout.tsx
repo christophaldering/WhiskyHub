@@ -420,7 +420,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <LabsAmbientToggle />
           <LabsNotificationBell />
           <button
             onClick={() => setProfileOpen(true)}

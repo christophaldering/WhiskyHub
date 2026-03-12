@@ -5,7 +5,7 @@ import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
-  ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
+  ChevronDown, ChevronUp, ChevronRight, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
@@ -1086,136 +1086,185 @@ function MobileCompanion({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
-            <div className="flex items-center gap-1">
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={() => { setMobileAiImport(!mobileAiImport); setMobileShowAdd(false); }}
-                data-testid="mobile-ai-import-toggle"
-              >
-                <Sparkles className="w-3 h-3" />
-                AI
-              </button>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={() => { setMobileShowAdd(!mobileShowAdd); setMobileAiImport(false); }}
-                data-testid="mobile-add-whisky-toggle"
-              >
-                {mobileShowAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                {mobileShowAdd ? "Close" : "Add"}
-              </button>
-            </div>
+            <button
+              className="labs-btn-ghost flex items-center gap-1 text-xs"
+              onClick={() => { setMobileShowAdd(!mobileShowAdd); setMobileAiImport(false); }}
+              data-testid="mobile-add-whisky-toggle"
+            >
+              {mobileShowAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              {mobileShowAdd ? "Close" : "Add"}
+            </button>
           </div>
 
-          {mobileAiImport && (
-            <div className="labs-card p-3 mb-3 space-y-2" data-testid="mobile-ai-import-panel">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>AI Import</span>
-              </div>
+          {!mobileAiImport && !mobileShowAdd && whiskyCount === 0 && (
+            <button
+              onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
+              className="w-full mb-3 p-4 rounded-2xl flex items-center gap-4 transition-all"
+              style={{
+                background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 12%, transparent), color-mix(in srgb, var(--labs-accent) 6%, transparent))",
+                border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+              data-testid="mobile-ai-import-hero"
+            >
               <div
-                className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg text-sm"
-                style={{
-                  border: `2px dashed ${mobileDragOver ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                  color: "var(--labs-text-muted)",
-                  background: mobileDragOver ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-                }}
-                onDragOver={e => { e.preventDefault(); setMobileDragOver(true); }}
-                onDragLeave={() => setMobileDragOver(false)}
-                onDrop={e => {
-                  e.preventDefault();
-                  setMobileDragOver(false);
-                  const files = Array.from(e.dataTransfer.files);
-                  if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
-                }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--labs-accent-muted)" }}
               >
-                <Upload className="w-5 h-5" />
-                <div className="flex gap-2">
-                  <label className="labs-btn-ghost text-xs cursor-pointer">
-                    <Camera className="w-3 h-3 inline mr-1" />
-                    Camera
-                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
-                  </label>
-                  <label className="labs-btn-ghost text-xs cursor-pointer">
-                    <Upload className="w-3 h-3 inline mr-1" />
-                    Browse
-                    <input type="file" accept="image/*,.pdf,.csv,.txt,.xlsx" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
-                  </label>
-                </div>
+                <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
               </div>
-              {mobileAiFiles.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {mobileAiFiles.map((f, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
-                      {f.name.length > 15 ? f.name.slice(0, 12) + "..." : f.name}
-                      <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <textarea
-                className="labs-input w-full"
-                rows={2}
-                placeholder="Or paste whisky names, menu text..."
-                value={mobileAiText}
-                onChange={e => setMobileAiText(e.target.value)}
-                style={{ resize: "none", fontSize: 13 }}
-                data-testid="mobile-ai-import-text"
-              />
-              <div className="flex gap-2 justify-end">
-                <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); }}>Cancel</button>
-                <button
-                  className="labs-btn-primary text-xs flex items-center gap-1"
-                  onClick={handleMobileAiImport}
-                  disabled={mobileAiLoading || (mobileAiFiles.length === 0 && !mobileAiText.trim())}
-                  data-testid="mobile-ai-import-analyze"
-                >
-                  {mobileAiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {mobileAiLoading ? "..." : "Analyze"}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
+                  AI Import
+                </p>
+                <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                  Snap a menu, paste a list — AI fills in everything
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+            </button>
+          )}
+
+          {!mobileAiImport && (whiskyCount > 0 || mobileShowAdd) && (
+            <div className="flex items-center mb-2">
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5 text-xs"
+                onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
+                style={{ color: "var(--labs-accent)" }}
+                data-testid="mobile-ai-import-toggle"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Import
+              </button>
+            </div>
+          )}
+
+          {mobileAiImport && (
+            <div className="labs-card mb-3 overflow-hidden" data-testid="mobile-ai-import-panel" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }}>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
+                <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                <span className="text-sm font-semibold flex-1" style={{ color: "var(--labs-text)" }}>AI Import</span>
+                <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); setMobileAiError(""); }} style={{ padding: "2px 6px" }}>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-
-              {mobileAiError && (
-                <div className="text-xs p-2 rounded" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }}>
-                  {mobileAiError}
-                </div>
-              )}
-
-              {mobileAiConfirmMsg && (
-                <div className="text-xs p-2 rounded" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)" }}>
-                  {mobileAiConfirmMsg}
-                </div>
-              )}
-
-              {mobileAiResults.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {mobileAiResults.length}</span>
-                    <button
-                      className="labs-btn-ghost text-xs"
-                      onClick={() => setMobileAiSelected(mobileAiSelected.size === mobileAiResults.length ? new Set() : new Set(mobileAiResults.map((_, i) => i)))}
-                      data-testid="mobile-ai-select-all"
-                    >
-                      {mobileAiSelected.size === mobileAiResults.length ? "Deselect" : "Select All"}
-                    </button>
-                  </div>
-                  {mobileAiResults.map((w: any, i: number) => (
-                    <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : 0.5 }}>
-                      <input type="checkbox" checked={mobileAiSelected.has(i)} onChange={() => { const s = new Set(mobileAiSelected); s.has(i) ? s.delete(i) : s.add(i); setMobileAiSelected(s); }} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{w.name}</p>
-                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                          {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
-                        </p>
-                      </div>
+              <div className="p-3 space-y-3">
+                <div
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl text-sm"
+                  style={{
+                    border: `2px dashed ${mobileDragOver ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                    color: "var(--labs-text-muted)",
+                    background: mobileDragOver ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                    transition: "all 0.2s",
+                  }}
+                  onDragOver={e => { e.preventDefault(); setMobileDragOver(true); }}
+                  onDragLeave={() => setMobileDragOver(false)}
+                  onDrop={e => {
+                    e.preventDefault();
+                    setMobileDragOver(false);
+                    const files = Array.from(e.dataTransfer.files);
+                    if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
+                  }}
+                >
+                  <Camera className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
+                  <p className="text-xs text-center" style={{ color: "var(--labs-text-secondary)" }}>
+                    Photo a menu or tasting sheet
+                  </p>
+                  <div className="flex gap-2">
+                    <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1.5" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none" }}>
+                      <Camera className="w-3 h-3" />
+                      Camera
+                      <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
                     </label>
-                  ))}
-                  <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
+                    <label className="labs-btn-ghost text-xs cursor-pointer flex items-center gap-1.5">
+                      <Upload className="w-3 h-3" />
+                      Browse
+                      <input type="file" accept="image/*,.pdf,.csv,.txt,.xlsx" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                    </label>
+                  </div>
+                </div>
+                {mobileAiFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {mobileAiFiles.map((f, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                        {f.name.length > 15 ? f.name.slice(0, 12) + "..." : f.name}
+                        <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ position: "relative" }}>
+                  <textarea
+                    className="labs-input w-full"
+                    rows={2}
+                    placeholder="Or paste whisky names, menu text..."
+                    value={mobileAiText}
+                    onChange={e => setMobileAiText(e.target.value)}
+                    style={{ resize: "none", fontSize: 13 }}
+                    data-testid="mobile-ai-import-text"
+                  />
+                </div>
+                <button
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+                  onClick={handleMobileAiImport}
+                  disabled={mobileAiLoading || (mobileAiFiles.length === 0 && !mobileAiText.trim())}
+                  style={{
+                    background: (mobileAiFiles.length > 0 || mobileAiText.trim()) ? "var(--labs-accent)" : "var(--labs-surface-elevated)",
+                    color: (mobileAiFiles.length > 0 || mobileAiText.trim()) ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                    border: "none",
+                    cursor: (mobileAiFiles.length > 0 || mobileAiText.trim()) ? "pointer" : "not-allowed",
+                    opacity: mobileAiLoading ? 0.7 : 1,
+                  }}
+                  data-testid="mobile-ai-import-analyze"
+                >
+                  {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {mobileAiLoading ? "Analyzing..." : "Analyze with AI"}
+                </button>
+
+                {mobileAiError && (
+                  <div className="text-xs p-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }}>
+                    {mobileAiError}
+                  </div>
+                )}
+
+                {mobileAiConfirmMsg && (
+                  <div className="text-xs p-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)" }}>
+                    {mobileAiConfirmMsg}
+                  </div>
+                )}
+
+                {mobileAiResults.length > 0 && (
+                  <div className="space-y-2 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {mobileAiResults.length}</span>
+                      <button
+                        className="labs-btn-ghost text-xs"
+                        onClick={() => setMobileAiSelected(mobileAiSelected.size === mobileAiResults.length ? new Set() : new Set(mobileAiResults.map((_, i) => i)))}
+                        data-testid="mobile-ai-select-all"
+                      >
+                        {mobileAiSelected.size === mobileAiResults.length ? "Deselect" : "Select All"}
+                      </button>
+                    </div>
+                    {mobileAiResults.map((w: any, i: number) => (
+                      <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : 0.5 }}>
+                        <input type="checkbox" checked={mobileAiSelected.has(i)} onChange={() => { const s = new Set(mobileAiSelected); s.has(i) ? s.delete(i) : s.add(i); setMobileAiSelected(s); }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{w.name}</p>
+                          <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                    <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
                     Add {mobileAiSelected.size} Whiskies
                   </button>
                 </div>
               )}
+            </div>
             </div>
           )}
 
@@ -4010,16 +4059,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           {tasting.status === "draft" && (
             <div className="flex items-center gap-1">
               <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={() => setShowAiImport(!showAiImport)}
+                className="labs-btn-ghost flex items-center gap-1.5 text-xs"
+                onClick={() => { setShowAiImport(!showAiImport); if (!showAiImport) setShowAddWhisky(false); }}
+                style={{ color: "var(--labs-accent)" }}
                 data-testid="labs-host-ai-import-toggle"
               >
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-3.5 h-3.5" />
                 AI Import
               </button>
               <button
                 className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={() => setShowAddWhisky(!showAddWhisky)}
+                onClick={() => { setShowAddWhisky(!showAddWhisky); if (!showAddWhisky) setShowAiImport(false); }}
                 data-testid="labs-host-add-whisky-toggle"
               >
                 {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
@@ -4028,6 +4078,36 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             </div>
           )}
         </div>
+
+        {tasting.status === "draft" && whiskyCount === 0 && !showAiImport && !showAddWhisky && (
+          <button
+            onClick={() => { setShowAiImport(true); setShowAddWhisky(false); }}
+            className="w-full mb-3 p-4 rounded-2xl flex items-center gap-4 transition-all"
+            style={{
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 12%, transparent), color-mix(in srgb, var(--labs-accent) 6%, transparent))",
+              border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+            data-testid="desktop-ai-import-hero"
+          >
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--labs-accent-muted)" }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
+                AI Import
+              </p>
+              <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                Snap a menu photo or paste text — AI extracts all whiskies with details
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+          </button>
+        )}
 
         {showAiImport && tasting.status === "draft" && (
           <div className="labs-card p-4 mb-3 space-y-3" data-testid="labs-ai-import-panel">
