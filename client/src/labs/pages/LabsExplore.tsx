@@ -113,7 +113,7 @@ export default function LabsExplore() {
         <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
           {sortedWhiskies.length} {sortedWhiskies.length === 1 ? "whisky" : "whiskies"}
         </p>
-        <div className="relative">
+        <div style={{ position: "relative", zIndex: 30 }}>
           <button
             className="labs-btn-ghost flex items-center gap-1.5 text-xs py-1.5 px-3"
             onClick={() => setShowSortMenu(!showSortMenu)}
@@ -124,10 +124,15 @@ export default function LabsExplore() {
           </button>
           {showSortMenu && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
+              <div className="fixed inset-0" style={{ zIndex: 40 }} onClick={() => setShowSortMenu(false)} />
               <div
-                className="absolute right-0 top-full mt-1 z-20 py-1 min-w-[140px]"
+                className="py-1 min-w-[140px]"
                 style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "100%",
+                  marginTop: 4,
+                  zIndex: 50,
                   background: "var(--labs-surface-elevated)",
                   border: "1px solid var(--labs-border)",
                   borderRadius: "var(--labs-radius-sm)",
