@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -407,6 +407,31 @@ export default function LabsSolo() {
   const barcodeScannerRef = useRef<any>(null);
   const barcodeVideoRef = useRef<HTMLDivElement>(null);
 
+  const [previousRatings, setPreviousRatings] = useState<{ date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>([]);
+  const [prevRatingsExpanded, setPrevRatingsExpanded] = useState(false);
+  const [matchedWhiskyRegion, setMatchedWhiskyRegion] = useState("");
+  const [matchedWhiskyCountry, setMatchedWhiskyCountry] = useState("");
+
+  const fetchPreviousRatings = useCallback(async (whiskyId: string) => {
+    if (!pid) { setPreviousRatings([]); return; }
+    try {
+      const res = await fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } });
+      if (!res.ok) { setPreviousRatings([]); return; }
+      const history = await res.json();
+      const prev: typeof previousRatings = [];
+      for (const tasting of history) {
+        for (const w of tasting.whiskies || []) {
+          if (w.id === whiskyId && w.myRating) {
+            prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
+          }
+        }
+      }
+      prev.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setPreviousRatings(prev);
+      if (prev.length > 0) setPrevRatingsExpanded(true);
+    } catch { setPreviousRatings([]); }
+  }, [pid]);
+
   const calcOverall = (scores: typeof detailedScores) =>
     Math.round((scores.nose + scores.taste + scores.finish + scores.balance) / 4);
 
@@ -636,15 +661,33 @@ export default function LabsSolo() {
   const handleSelectCandidate = (cand: Candidate) => {
     setWhiskyName(cand.name);
     setDistillery(cand.distillery);
+    setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
     if (cand.age) setUnknownAge(cand.age);
     if (cand.abv) setUnknownAbv(cand.abv);
     if (cand.caskType) setUnknownCask(cand.caskType);
+    if (cand.region) setMatchedWhiskyRegion(cand.region);
     setSelectedCandidate(cand);
     setSheetView("none");
     setShowManual(true);
     setAcceptedBanner(true);
     setTimeout(() => setAcceptedBanner(false), 3500);
     setTimeout(() => { ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
+    if (cand.whiskyId) {
+      fetchPreviousRatings(cand.whiskyId);
+      fetch(`/api/labs/explore/whiskies/${cand.whiskyId}`, { headers: pid ? { "x-participant-id": pid } : {} })
+        .then(r => r.ok ? r.json() : null)
+        .then(w => {
+          if (!w) return;
+          if (w.region && !cand.region) setMatchedWhiskyRegion(w.region);
+          if (w.country) setMatchedWhiskyCountry(w.country);
+          if (w.age && !cand.age) setUnknownAge(String(w.age));
+          if (w.abv && !cand.abv) setUnknownAbv(String(w.abv));
+          if (w.caskInfluence && !cand.caskType) setUnknownCask(w.caskInfluence);
+        })
+        .catch(() => {});
+    } else {
+      setPreviousRatings([]);
+    }
   };
 
   const handleCreateUnknown = () => {
@@ -876,6 +919,8 @@ export default function LabsSolo() {
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
     setSoloVoiceMemo(null); stopVoice(); setWbLookupResult("");
+    setPreviousRatings([]); setPrevRatingsExpanded(false);
+    setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
     setDraftEntryId(null); setDraftStatus("idle"); setAutoSaveStatus("idle");
     setFinalizedAt(null); setLastSavedTime(null); setDeleteConfirmId(null);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -1428,6 +1473,14 @@ export default function LabsSolo() {
   }
 
   if (saved && draftStatus === "finalized") {
+    const lastPrev = previousRatings.length > 0 ? previousRatings[0] : null;
+    const currentOverall = detailTouched ? calcOverall(detailedScores) : score;
+    const dims: { key: DimKey; label: string }[] = [{ key: "nose", label: "Nose" }, { key: "taste", label: "Taste" }, { key: "finish", label: "Finish" }, { key: "balance", label: "Balance" }];
+    const renderDelta = (curr: number, prev: number) => {
+      const d = curr - prev;
+      if (d === 0) return <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>=</span>;
+      return <span style={{ color: d > 0 ? "var(--labs-success)" : "var(--labs-danger)", fontSize: 11, fontWeight: 600 }}>{d > 0 ? `+${d}` : d}</span>;
+    };
     return (
       <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
         <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
@@ -1439,10 +1492,41 @@ export default function LabsSolo() {
           </h2>
           <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", margin: "0 0 4px" }} data-testid="text-saved-name">{whiskyName}</p>
           {finalizedAt && (
-            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 28px" }} data-testid="text-finalized-at">
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }} data-testid="text-finalized-at">
               {t("m2.solo.finalizedAt", { defaultValue: "Completed on {{date}}", date: finalizedAt })}
             </p>
           )}
+
+          {lastPrev && (
+            <div className="labs-card" style={{ padding: "16px", marginBottom: 20, textAlign: "left" }} data-testid="card-comparison">
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                {t("m2.solo.comparisonTitle", "Compared to your last tasting")}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: "6px 12px", fontSize: 12, alignItems: "center" }}>
+                <span style={{ color: "var(--labs-text-muted)", fontWeight: 500 }}></span>
+                <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "right" }}>{t("m2.solo.now", "Now")}</span>
+                <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "right" }}>{t("m2.solo.before", "Before")}</span>
+                <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "center" }}></span>
+                {detailTouched && dims.map(d => (
+                  <React.Fragment key={d.key}>
+                    <span style={{ color: "var(--labs-text-secondary)" }}>{d.label}</span>
+                    <span style={{ color: "var(--labs-text)", fontWeight: 600, textAlign: "right" }}>{detailedScores[d.key]}</span>
+                    <span style={{ color: "var(--labs-text-secondary)", textAlign: "right" }}>{lastPrev[d.key]}</span>
+                    <span style={{ textAlign: "center" }}>{renderDelta(detailedScores[d.key], lastPrev[d.key])}</span>
+                  </React.Fragment>
+                ))}
+                <span style={{ color: "var(--labs-text)", fontWeight: 700, borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>Overall</span>
+                <span style={{ color: "var(--labs-accent)", fontWeight: 700, textAlign: "right", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{currentOverall}</span>
+                <span style={{ color: "var(--labs-text-secondary)", textAlign: "right", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{lastPrev.overall}</span>
+                <span style={{ textAlign: "center", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{renderDelta(currentOverall, lastPrev.overall)}</span>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 8 }}>
+                {lastPrev.tastingTitle || new Date(lastPrev.date).toLocaleDateString()}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => handleReset()} className="labs-btn-primary" style={{ flex: 1 }} data-testid="labs-solo-again">
               {t("m2.solo.startNewAfterFinish", "Start new dram")}
@@ -1573,6 +1657,14 @@ export default function LabsSolo() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2 }} data-testid="text-whisky-name">{whiskyName}</div>
               {distillery && <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }} data-testid="text-whisky-distillery">{distillery}</div>}
+              {(matchedWhiskyRegion || matchedWhiskyCountry || unknownAge || unknownAbv) && (
+                <div style={{ fontSize: 11, marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  {matchedWhiskyRegion && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-region">{matchedWhiskyRegion}</span>}
+                  {matchedWhiskyCountry && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-country">{matchedWhiskyCountry}</span>}
+                  {unknownAge && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAge}y</span>}
+                  {unknownAbv && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAbv}%</span>}
+                </div>
+              )}
               {selectedCandidate && (
                 <span className="labs-badge" style={{ marginTop: 4, display: "inline-block", background: `color-mix(in srgb, ${confidenceLabel(selectedCandidate.confidence).color} 20%, transparent)`, color: confidenceLabel(selectedCandidate.confidence).color }} data-testid="badge-confidence">
                   {confidenceLabel(selectedCandidate.confidence, t).text} {t("m2.solo.match", "match")}
@@ -1643,6 +1735,16 @@ export default function LabsSolo() {
                   <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.caskType", "Cask type")}</label>
                   <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} className="labs-input" data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
                 </div>
+                {(matchedWhiskyRegion || matchedWhiskyCountry) && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {matchedWhiskyRegion && (
+                      <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-region">{matchedWhiskyRegion}</span>
+                    )}
+                    {matchedWhiskyCountry && (
+                      <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-country">{matchedWhiskyCountry}</span>
+                    )}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.whiskybaseId", "Whiskybase ID")}</label>
@@ -1709,6 +1811,44 @@ export default function LabsSolo() {
           </>
         )}
       </div>
+
+      {previousRatings.length > 0 && (
+        <div className="labs-card labs-fade-in" style={{ padding: "14px 16px", marginBottom: 16 }} data-testid="card-previous-ratings">
+          <button
+            type="button"
+            onClick={() => setPrevRatingsExpanded(!prevRatingsExpanded)}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: 0, fontFamily: "inherit" }}
+            data-testid="button-toggle-previous"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Clock style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+                {t("m2.solo.previouslyTasted", { defaultValue: "Previously tasted ({{count}})", count: previousRatings.length })}
+              </span>
+            </div>
+            <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", transform: prevRatingsExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
+          {prevRatingsExpanded && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {previousRatings.map((pr, idx) => (
+                <div key={idx} style={{ padding: "10px 12px", borderRadius: 8, background: "color-mix(in srgb, var(--labs-accent) 6%, transparent)", border: "1px solid var(--labs-border)" }} data-testid={`prev-rating-${idx}`}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{pr.tastingTitle || new Date(pr.date).toLocaleDateString()}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{pr.overall}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--labs-text-secondary)" }}>
+                    <span>N {pr.nose}</span>
+                    <span>T {pr.taste}</span>
+                    <span>F {pr.finish}</span>
+                    <span>B {pr.balance}</span>
+                  </div>
+                  {pr.date && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {acceptedBanner && (
         <div style={{
