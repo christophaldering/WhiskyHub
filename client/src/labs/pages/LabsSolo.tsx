@@ -417,29 +417,37 @@ export default function LabsSolo() {
     if (!pid) { setPreviousRatings([]); return; }
     try {
       const prev: typeof previousRatings = [];
-      const [historyRes, journalRes] = await Promise.all([
-        fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } }),
-        fetch(`/api/journal/${pid}?status=final`, { headers: { "x-participant-id": pid } }),
-      ]);
-      if (historyRes.ok) {
-        const history = await historyRes.json();
-        for (const tasting of history) {
-          for (const w of tasting.whiskies || []) {
-            if (w.id === whiskyId && w.myRating) {
-              prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", source: "tasting", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
-            }
-          }
-        }
+      const fetches: Promise<void>[] = [];
+      if (whiskyId) {
+        fetches.push(
+          fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } })
+            .then(r => r.ok ? r.json() : [])
+            .then((history: any[]) => {
+              for (const tasting of history) {
+                for (const w of tasting.whiskies || []) {
+                  if (w.id === whiskyId && w.myRating) {
+                    prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", source: "tasting", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
+                  }
+                }
+              }
+            })
+        );
       }
-      if (journalRes.ok && whiskyNameForJournal) {
-        const entries = await journalRes.json();
-        const nameNorm = whiskyNameForJournal.trim().toLowerCase();
-        for (const e of entries) {
-          if ((e.whiskyName || e.title || "").trim().toLowerCase() === nameNorm && e.personalScore != null) {
-            prev.push({ date: e.createdAt || e.updatedAt || "", tastingTitle: e.title || "Solo dram", source: "journal", nose: 0, taste: 0, finish: 0, balance: 0, overall: Math.round(e.personalScore) });
-          }
-        }
+      if (whiskyNameForJournal) {
+        fetches.push(
+          fetch(`/api/journal/${pid}?status=final`, { headers: { "x-participant-id": pid } })
+            .then(r => r.ok ? r.json() : [])
+            .then((entries: any[]) => {
+              const nameNorm = whiskyNameForJournal.trim().toLowerCase();
+              for (const e of entries) {
+                if ((e.whiskyName || e.title || "").trim().toLowerCase() === nameNorm && e.personalScore != null) {
+                  prev.push({ date: e.createdAt || e.updatedAt || "", tastingTitle: e.title || "Solo dram", source: "journal", nose: 0, taste: 0, finish: 0, balance: 0, overall: Math.round(e.personalScore) });
+                }
+              }
+            })
+        );
       }
+      await Promise.all(fetches);
       prev.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setPreviousRatings(prev);
       if (prev.length > 0) setPrevRatingsExpanded(true);
@@ -472,13 +480,16 @@ export default function LabsSolo() {
       if (data.abv && !unknownAbv) setUnknownAbv(data.abv);
       if (data.caskType && !unknownCask) setUnknownCask(data.caskType);
       if (data.price && !unknownPrice) setUnknownPrice(data.price);
+      if (data.region) setMatchedWhiskyRegion(data.region);
+      if (data.country) setMatchedWhiskyCountry(data.country);
       setWbLookupResult(data.source === "collection" ? "collection" : "ai");
+      if (data.name && pid) fetchPreviousRatings("", data.name);
     } catch {
       setWbLookupResult("error");
     } finally {
       setWbLookupLoading(false);
     }
-  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, wbLookupLoading]);
+  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, wbLookupLoading, fetchPreviousRatings]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -736,19 +747,34 @@ export default function LabsSolo() {
       const data = await res.json();
       if (data.name) setWhiskyName(data.name);
       if (data.distillery) setDistillery(data.distillery);
+      setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
       if (data.age) setUnknownAge(String(data.age));
       if (data.abv) setUnknownAbv(data.abv);
       if (data.caskType) setUnknownCask(data.caskType);
+      if (data.region) setMatchedWhiskyRegion(data.region);
+      if (data.country) setMatchedWhiskyCountry(data.country);
       if (data.whiskybaseId) setUnknownWbId(String(data.whiskybaseId));
       if (data.price) setUnknownPrice(String(data.price));
       setShowManual(true);
       setSheetView("none");
+      if (data.whiskyId && pid) {
+        fetchPreviousRatings(data.whiskyId, data.name);
+        fetch(`/api/labs/explore/whiskies/${data.whiskyId}`, { headers: { "x-participant-id": pid } })
+          .then(r => r.ok ? r.json() : null)
+          .then(w => {
+            if (!w) return;
+            if (w.region && !data.region) setMatchedWhiskyRegion(w.region);
+            if (w.country && !data.country) setMatchedWhiskyCountry(w.country);
+          }).catch(() => {});
+      } else if (data.name && pid) {
+        fetchPreviousRatings("", data.name);
+      }
     } catch {
       setBarcodeStatus("error");
       setBarcodeError(t("m2.solo.connectionError", "Connection error"));
       barcodeProcessedRef.current = false;
     }
-  }, [pid]);
+  }, [pid, fetchPreviousRatings]);
 
   const stopBarcodeScanner = useCallback(async () => {
     const scanner = barcodeScannerRef.current;
@@ -1722,7 +1748,7 @@ export default function LabsSolo() {
             </div>
 
             {!showManual && (
-              <button type="button" onClick={() => { setShowManual(true); setSelectedCandidate(null); }} data-testid="button-add-details" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 11, fontFamily: "inherit", padding: "8px 0 0", textDecoration: "underline" }}>
+              <button type="button" onClick={() => { setShowManual(true); setSelectedCandidate(null); if (whiskyName.trim() && pid) fetchPreviousRatings("", whiskyName.trim()); }} data-testid="button-add-details" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 11, fontFamily: "inherit", padding: "8px 0 0", textDecoration: "underline" }}>
                 {t("m2.solo.addDetails", "Add details manually")}
               </button>
             )}
