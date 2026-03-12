@@ -13,6 +13,7 @@ import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
+const SOLO_DRAFT_KEY = "cs_solo_draft";
 
 interface OfflineQueueItem {
   pid: string;
@@ -186,6 +187,65 @@ export default function LabsSolo() {
     window.addEventListener("online", trySync);
     return () => window.removeEventListener("online", trySync);
   }, []);
+
+  const localDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localDraftRestoredRef = useRef(false);
+
+  const saveLocalDraft = useCallback(() => {
+    if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
+    localDraftTimerRef.current = setTimeout(() => {
+      try {
+        const draft = {
+          whiskyName, distillery, score, notes,
+          unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry,
+          unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice,
+          photoUrl, showManual, detailedScores, detailTouched, overrideActive,
+          detailChips, detailTexts,
+          soloView, ts: Date.now(),
+        };
+        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 50 && !notes) return;
+        localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
+      } catch {}
+    }, 500);
+  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice, photoUrl, showManual, detailedScores, detailTouched, overrideActive, detailChips, detailTexts, soloView]);
+
+  useEffect(() => {
+    if (soloView === "editor" && draftStatus !== "finalized") saveLocalDraft();
+  }, [saveLocalDraft, soloView, draftStatus]);
+
+  useEffect(() => {
+    if (localDraftRestoredRef.current) return;
+    localDraftRestoredRef.current = true;
+    if (draftEntryId) return;
+    try {
+      const raw = localStorage.getItem(SOLO_DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.ts || 0) > 7 * 24 * 60 * 60 * 1000) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
+      if (d.whiskyName) setWhiskyName(d.whiskyName);
+      if (d.distillery) setDistillery(d.distillery);
+      if (d.score != null) setScore(d.score);
+      if (d.notes) setNotes(d.notes);
+      if (d.unknownAge) setUnknownAge(d.unknownAge);
+      if (d.unknownAbv) setUnknownAbv(d.unknownAbv);
+      if (d.unknownCask) setUnknownCask(d.unknownCask);
+      if (d.unknownRegion) setUnknownRegion(d.unknownRegion);
+      if (d.unknownCountry) setUnknownCountry(d.unknownCountry);
+      if (d.unknownPeatLevel) setUnknownPeatLevel(d.unknownPeatLevel);
+      if (d.unknownVintage) setUnknownVintage(d.unknownVintage);
+      if (d.unknownBottler) setUnknownBottler(d.unknownBottler);
+      if (d.unknownWbId) setUnknownWbId(d.unknownWbId);
+      if (d.unknownPrice) setUnknownPrice(d.unknownPrice);
+      if (d.photoUrl) setPhotoUrl(d.photoUrl);
+      if (d.showManual) setShowManual(true);
+      if (d.detailedScores) setDetailedScores(d.detailedScores);
+      if (d.detailTouched) setDetailTouched(true);
+      if (d.overrideActive) setOverrideActive(true);
+      if (d.detailChips) setDetailChips(d.detailChips);
+      if (d.detailTexts) setDetailTexts(d.detailTexts);
+      if (d.soloView === "editor") setSoloView("editor");
+    } catch {}
+  }, [draftEntryId]);
 
   const fetchHubDrafts = useCallback(async () => {
     if (!unlocked || !pid) { setHubLoading(false); return; }
@@ -467,7 +527,7 @@ export default function LabsSolo() {
     Math.round((scores.nose + scores.taste + scores.finish + scores.balance) / 4);
 
   const lookupWhiskybaseId = useCallback(async (wbId: string) => {
-    const id = wbId.trim();
+    const id = wbId.trim().replace(/^[Ww][Bb]\s*/i, "");
     if (!id || wbLookupLoading) return;
     setWbLookupLoading(true);
     setWbLookupResult("");
@@ -960,6 +1020,7 @@ export default function LabsSolo() {
       setFinalizedAt(new Date().toLocaleString());
       setDraftStatus("finalized");
       setSaved(true);
+      try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
     } catch {
       persistLocal();
       if (pid) {
@@ -990,6 +1051,7 @@ export default function LabsSolo() {
     setDraftEntryId(null); setDraftStatus("idle"); setAutoSaveStatus("idle");
     setFinalizedAt(null); setLastSavedTime(null); setDeleteConfirmId(null);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
     if (goToHub) { setSoloView("hub"); fetchHubDrafts(); }
   };
 
