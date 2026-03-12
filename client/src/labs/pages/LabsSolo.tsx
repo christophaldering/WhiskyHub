@@ -210,7 +210,7 @@ export default function LabsSolo() {
   }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice, photoUrl, showManual, detailedScores, detailTouched, overrideActive, detailChips, detailTexts, soloView]);
 
   useEffect(() => {
-    if (soloView === "editor" && draftStatus !== "finalized") saveLocalDraft();
+    if ((soloView === "editor" || soloView === "capture") && draftStatus !== "finalized") saveLocalDraft();
   }, [saveLocalDraft, soloView, draftStatus]);
 
   useEffect(() => {
@@ -545,17 +545,17 @@ export default function LabsSolo() {
         return;
       }
       const data = await res.json();
-      if (data.name && !whiskyName) setWhiskyName(data.name);
-      if (data.distillery && !distillery) setDistillery(data.distillery);
-      if (data.age && !unknownAge) setUnknownAge(String(data.age));
-      if (data.abv && !unknownAbv) setUnknownAbv(data.abv);
-      if (data.caskType && !unknownCask) setUnknownCask(data.caskType);
-      if (data.price && !unknownPrice) setUnknownPrice(data.price);
-      if (data.region) { setMatchedWhiskyRegion(data.region); if (!unknownRegion) setUnknownRegion(data.region); }
-      if (data.country) { setMatchedWhiskyCountry(data.country); if (!unknownCountry) setUnknownCountry(data.country); }
-      if (data.peatLevel && !unknownPeatLevel) setUnknownPeatLevel(data.peatLevel);
-      if (data.vintage && !unknownVintage) setUnknownVintage(String(data.vintage));
-      if (data.bottler && !unknownBottler) setUnknownBottler(data.bottler);
+      if (data.name) setWhiskyName(data.name);
+      if (data.distillery) setDistillery(data.distillery);
+      if (data.age) setUnknownAge(String(data.age));
+      if (data.abv) setUnknownAbv(data.abv);
+      if (data.caskType) setUnknownCask(data.caskType);
+      if (data.price) setUnknownPrice(data.price);
+      if (data.region) { setMatchedWhiskyRegion(data.region); setUnknownRegion(data.region); }
+      if (data.country) { setMatchedWhiskyCountry(data.country); setUnknownCountry(data.country); }
+      if (data.peatLevel) setUnknownPeatLevel(data.peatLevel);
+      if (data.vintage) setUnknownVintage(String(data.vintage));
+      if (data.bottler) setUnknownBottler(data.bottler);
       setWbLookupResult(data.source === "collection" ? "collection" : "ai");
       if (data.name && pid) fetchPreviousRatings("", data.name);
     } catch {
@@ -563,7 +563,7 @@ export default function LabsSolo() {
     } finally {
       setWbLookupLoading(false);
     }
-  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, wbLookupLoading, fetchPreviousRatings]);
+  }, [pid, wbLookupLoading, fetchPreviousRatings]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -1949,7 +1949,7 @@ export default function LabsSolo() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginBottom: 2 }}>{t("m2.solo.price", "Price")}</label>
-                    <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} className="labs-input" data-testid="input-manual-price" placeholder="e.g. \u20AC65" autoComplete="off" />
+                    <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} className="labs-input" data-testid="input-manual-price" placeholder="e.g. €65" autoComplete="off" />
                   </div>
                 </div>
               </div>
