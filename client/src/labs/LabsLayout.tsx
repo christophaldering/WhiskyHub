@@ -210,8 +210,12 @@ function LabsNotificationBell() {
         <>
           <div onClick={() => setOpen(false)} className="fixed inset-0 z-40" />
           <div
-            className="absolute right-0 top-full mt-2 w-72 rounded-2xl p-4 z-50"
+            className="rounded-2xl p-4 z-50"
             style={{
+              position: "fixed",
+              top: 56,
+              right: 12,
+              width: 288,
               background: "var(--labs-surface)",
               border: "1px solid var(--labs-border)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
