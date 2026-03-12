@@ -11,6 +11,7 @@ import {
   BarChart3, Check, Send, Loader2, Download,
   Link as LinkIcon, ChevronDown, ClipboardList, Archive, Sparkles,
 } from "lucide-react";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
 
@@ -607,9 +608,7 @@ export default function LabsHostDashboard() {
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "4px 0" }} data-testid={`top-whisky-${i}`}>
                       <span style={{ width: 20, textAlign: "right", color: medalColor, fontWeight: i < 3 ? 700 : 400, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{i + 1}.</span>
-                      {w.imageUrl && (
-                        <img src={w.imageUrl} alt={w.name || `Whisky ${i + 1}`} style={{ width: 24, height: 24, borderRadius: 6, objectFit: "cover" as const, flexShrink: 0, border: "1px solid var(--labs-border)" }} />
-                      )}
+                      <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={24} />
                       <span style={{ flex: 1, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {[w.distillery, w.name].filter(Boolean).join(" — ")}
                       </span>

@@ -7,6 +7,7 @@ import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
   Loader2, ChevronLeft, AlertCircle
 } from "lucide-react";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
 import { Link } from "wouter";
@@ -408,9 +409,7 @@ export default function LabsTastingRecap() {
                     <span className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text-muted)" }}>{i + 1}</span>
                   )}
                 </div>
-                {w.imageUrl && (
-                  <img src={w.imageUrl} alt={w.name} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} />
-                )}
+                <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`text-labs-top-rated-name-${i}`}>
                     {w.name}

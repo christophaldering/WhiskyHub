@@ -11,6 +11,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
 } from "lucide-react";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
@@ -279,15 +280,7 @@ export default function LabsTasteDrams() {
 
         <div className="labs-card p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
-            {selectedEntry.imageUrl ? (
-              <div style={{ width: 64, height: 88, borderRadius: 10, overflow: "hidden", border: "1px solid var(--labs-border)", flexShrink: 0 }}>
-                <img src={selectedEntry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-            ) : (
-              <div style={{ width: 64, height: 88, borderRadius: 10, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--labs-border)" }}>
-                <Wine className="w-7 h-7" style={{ color: "var(--labs-accent)", opacity: 0.5 }} />
-              </div>
-            )}
+            <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.whiskyName || selectedEntry.title || ""} size={64} className="flex-shrink-0" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)", margin: 0 }}>
                 {selectedEntry.whiskyName || selectedEntry.title || "—"}
@@ -539,15 +532,7 @@ export default function LabsTasteDrams() {
               {filteredEntries.map((entry: any) => (
                 <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "14px 16px", cursor: "pointer" }} data-testid={`labs-dram-${entry.id}`}>
                   <div className="flex justify-between items-start gap-3">
-                    {entry.imageUrl ? (
-                      <div style={{ width: 40, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)", flexShrink: 0 }}>
-                        <img src={entry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      </div>
-                    ) : (
-                      <div style={{ width: 40, height: 52, borderRadius: 8, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--labs-border)" }}>
-                        <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)", opacity: 0.5 }} />
-                      </div>
-                    )}
+                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={40} className="flex-shrink-0" />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="flex items-center gap-1.5">
                         <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.whiskyName || entry.title || "—"}</div>

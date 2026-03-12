@@ -11709,6 +11709,7 @@ Rules:
           if (!existing.country && w.country) existing.country = w.country;
           if (!existing.category && w.category) existing.category = w.category;
           if (!existing.caskType && w.caskType) existing.caskType = w.caskType;
+          if (!existing.imageUrl && w.imageUrl) existing.imageUrl = w.imageUrl;
         } else {
           whiskyMap.set(key, {
             id: w.id,
@@ -11720,10 +11721,27 @@ Rules:
             age: w.age || null,
             abv: w.abv || null,
             caskType: w.caskType || null,
+            imageUrl: w.imageUrl || null,
             avgOverall,
             ratingCount: overallScores.length,
             tastingCount: 1,
           });
+        }
+      }
+
+      const journalEntries = await storage.getAllJournalEntries();
+      const journalImageMap = new Map<string, string>();
+      for (const je of journalEntries) {
+        if (je.imageUrl && je.whiskyName) {
+          const jeKey = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
+          if (!journalImageMap.has(jeKey)) journalImageMap.set(jeKey, je.imageUrl);
+        }
+      }
+
+      for (const [key, entry] of whiskyMap) {
+        if (!entry.imageUrl) {
+          const journalImg = journalImageMap.get(key);
+          if (journalImg) entry.imageUrl = journalImg;
         }
       }
 
