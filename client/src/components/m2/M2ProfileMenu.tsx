@@ -200,6 +200,22 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     setCurrentTheme(newTheme);
   };
 
+  const [labsTheme, setLabsThemeState] = useState<"dark" | "light">(() => {
+    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+  });
+  const toggleLabsTheme = () => {
+    const next = labsTheme === "dark" ? "light" : "dark";
+    setLabsThemeState(next);
+    try { localStorage.setItem("cs_labs_theme", next); } catch {}
+    const shell = document.querySelector(".labs-shell");
+    if (shell) {
+      if (next === "light") shell.classList.add("labs-light");
+      else shell.classList.remove("labs-light");
+    }
+  };
+
+  const isLabs = location.startsWith("/labs");
+
   const handleRegister = async () => {
     if (!regName.trim() || !regEmail.trim() || !regPin.trim()) {
       setError(t("m2.register.allFieldsRequired", "All fields are required"));
@@ -730,10 +746,26 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       <MenuButton
         icon={<Settings style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.settings", "Settings")}
-        onClick={() => { onClose(); navigate("/m2/taste/settings"); }}
+        onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/settings" : "/m2/taste/settings"); }}
         testId="m2-profile-settings"
       />
-      {!location.startsWith("/labs") && (
+      {isLabs ? (
+        <MenuButton
+          icon={labsTheme === "dark"
+            ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
+            : <Moon style={{ width: 18, height: 18, color: v.accent }} />}
+          label={t("m2.profile.theme", "Theme")}
+          onClick={toggleLabsTheme}
+          suffix={
+            <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>
+              {labsTheme === "dark"
+                ? t("m2.profile.themeLight", "Light")
+                : t("m2.profile.themeDark", "Dark")}
+            </span>
+          }
+          testId="m2-profile-theme"
+        />
+      ) : (
         <MenuButton
           icon={currentTheme === "dark-warm"
             ? <Sun style={{ width: 18, height: 18, color: v.accent }} />
@@ -766,10 +798,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       <MenuButton
         icon={<Download style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.dataExport", "Data & Export")}
-        onClick={() => { onClose(); navigate("/m2/taste/downloads"); }}
+        onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/downloads" : "/m2/taste/downloads"); }}
         testId="m2-profile-data"
       />
-      {session.role === "admin" && (
+      {session.role === "admin" && !isLabs && (
         <>
           <MenuButton
             icon={<Shield style={{ width: 18, height: 18, color: v.accent }} />}
@@ -791,13 +823,13 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       <MenuButton
         icon={<Info style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.about", "About CaskSense")}
-        onClick={() => { onClose(); navigate("/m2/discover/about"); }}
+        onClick={() => { onClose(); navigate(isLabs ? "/labs/about" : "/m2/discover/about"); }}
         testId="m2-profile-about"
       />
       <MenuButton
         icon={<HandHeart style={{ width: 18, height: 18, color: v.accent }} />}
         label={t("m2.profile.support", "Support Us")}
-        onClick={() => { onClose(); navigate("/m2/discover/donate"); }}
+        onClick={() => { onClose(); navigate(isLabs ? "/labs/donate" : "/m2/discover/donate"); }}
         testId="m2-profile-support"
       />
 
@@ -966,35 +998,46 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        {!location.startsWith("/labs") && (
-          <button
-            onClick={toggleTheme}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "14px 16px",
-              background: "transparent",
-              border: `1px solid ${v.border}`,
-              borderRadius: 12,
-              cursor: "pointer",
-              color: v.text,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="m2-profile-theme"
-          >
-            {currentTheme === "dark-warm"
-              ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
-              : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
-            {currentTheme === "dark-warm"
-              ? t("m2.profile.themeLight", "Light")
-              : t("m2.profile.themeDark", "Dark")}
-          </button>
-        )}
+        <button
+          onClick={isLabs ? toggleLabsTheme : toggleTheme}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            padding: "14px 16px",
+            background: "transparent",
+            border: `1px solid ${v.border}`,
+            borderRadius: 12,
+            cursor: "pointer",
+            color: v.text,
+            fontSize: 14,
+            fontWeight: 500,
+            fontFamily: "system-ui, sans-serif",
+          }}
+          data-testid="m2-profile-theme"
+        >
+          {isLabs ? (
+            <>
+              {labsTheme === "dark"
+                ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
+                : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
+              {labsTheme === "dark"
+                ? t("m2.profile.themeLight", "Light")
+                : t("m2.profile.themeDark", "Dark")}
+            </>
+          ) : (
+            <>
+              {currentTheme === "dark-warm"
+                ? <Sun style={{ width: 16, height: 16, color: v.accent }} />
+                : <Moon style={{ width: 16, height: 16, color: v.accent }} />}
+              {currentTheme === "dark-warm"
+                ? t("m2.profile.themeLight", "Light")
+                : t("m2.profile.themeDark", "Dark")}
+            </>
+          )}
+        </button>
         <button
           onClick={toggleLanguage}
           style={{
