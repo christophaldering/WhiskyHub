@@ -7,7 +7,7 @@ import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as Map
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
 const COUNTRIES = ["All", "Scotland", "Ireland", "Japan", "USA"];
 
-function Card({ d }: { d: Distillery }) {
+function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opts?: any) => string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="labs-card" style={{ overflow: "hidden" }} data-testid={`labs-distillery-${d.name.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -33,11 +33,11 @@ function Card({ d }: { d: Distillery }) {
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--labs-text)", margin: 0, opacity: 0.9 }}>{d.description}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10, fontSize: 11, color: "var(--labs-accent)" }}>
-            <Calendar style={{ width: 12, height: 12 }} />Founded {d.founded}
+            <Calendar style={{ width: 12, height: 12 }} />{t("discover.founded", "Founded {{year}}", { year: d.founded })}
           </div>
           {d.feature && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>Key Fact</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>{t("discover.keyFact", "Key Fact")}</span>
               <p style={{ fontSize: 11, lineHeight: 1.5, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{d.feature}</p>
             </div>
           )}
@@ -63,16 +63,16 @@ export default function LabsDistilleries() {
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
       <Link href="/labs/discover" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
-          <ChevronLeft className="w-4 h-4" /> Discover
+          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
       </Link>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">Distilleries</h1>
+        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
         <div style={{ display: "flex", borderRadius: 8, border: "1px solid var(--labs-border)", overflow: "hidden" }}>
           {(["list", "map"] as const).map((m) => (
             <button key={m} onClick={() => setView(m)} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: view === m ? "var(--labs-accent)" : "transparent", color: view === m ? "var(--labs-bg)" : "var(--labs-text-muted)", borderRadius: 0 }} data-testid={`labs-view-${m}`}>
-              {m === "list" ? <List style={{ width: 12, height: 12 }} /> : <MapIcon style={{ width: 12, height: 12 }} />}{m.charAt(0).toUpperCase() + m.slice(1)}
+              {m === "list" ? <List style={{ width: 12, height: 12 }} /> : <MapIcon style={{ width: 12, height: 12 }} />}{t(`discover.${m}`, m === "list" ? "List" : "Map")}
             </button>
           ))}
         </div>
@@ -80,21 +80,21 @@ export default function LabsDistilleries() {
       <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
 
       {view === "map" ? (
-        <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--labs-text-muted)" }}>Loading map...</div>}>
+        <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--labs-text-muted)" }}>{t("discover.loadingMap", "Loading map...")}</div>}>
           <div className="labs-card" style={{ overflow: "hidden" }}><DistilleryMap /></div>
         </Suspense>
       ) : (
         <>
-          <input type="text" placeholder="Search distilleries..." value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-distilleries" />
+          <input type="text" placeholder={t("discover.searchDistilleries", "Search distilleries...")} value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-distilleries" />
           <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
             {COUNTRIES.map((c) => (
               <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? "var(--labs-accent)" : "var(--labs-border)"}`, background: country === c ? "var(--labs-accent)" : "transparent", color: country === c ? "var(--labs-bg)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`labs-chip-${c.toLowerCase()}`}>{c}</button>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{filtered.length} found</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{t("discover.found", "{{count}} found", { count: filtered.length })}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.map((d) => <Card key={d.name} d={d} />)}
-            {filtered.length === 0 && <div className="labs-empty" data-testid="text-distilleries-empty">No distilleries match your search.</div>}
+            {filtered.map((d) => <Card key={d.name} d={d} t={t} />)}
+            {filtered.length === 0 && <div className="labs-empty" data-testid="text-distilleries-empty">{t("discover.noMatch", "No distilleries match your search.")}</div>}
           </div>
         </>
       )}

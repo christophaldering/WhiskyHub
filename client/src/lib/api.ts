@@ -64,7 +64,7 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/details`, { method: "PATCH", body: JSON.stringify({ hostId, ...data }) }),
   duplicate: (id: string, hostId: string) =>
     fetchJSON(`/tastings/${id}/duplicate`, { method: "POST", body: JSON.stringify({ hostId }) }),
-  getParticipants: (id: string) => fetchJSON(`/tastings/${id}/participants`),
+  getParticipants: (id: string, participantId?: string) => fetchJSON(`/tastings/${id}/participants${participantId ? `?participantId=${participantId}` : ""}`),
   heartbeat: (id: string, participantId: string) =>
     fetchJSON(`/tastings/${id}/heartbeat`, { method: "POST", body: JSON.stringify({ participantId }) }),
   getPresence: (id: string) => fetchJSON(`/tastings/${id}/presence`),

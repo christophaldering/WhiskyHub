@@ -1337,7 +1337,16 @@ export async function registerRoutes(
 
   app.get("/api/tastings/:id/participants", async (req, res) => {
     const list = await storage.getTastingParticipants(req.params.id);
-    res.json(list);
+    const tasting = await storage.getTasting(req.params.id);
+    const isTestTasting = tasting?.isTestData;
+    const requesterId = req.query.participantId as string | undefined;
+    let isAdmin = false;
+    if (requesterId) {
+      const requester = await storage.getParticipant(requesterId);
+      if (requester?.role === "admin") isAdmin = true;
+    }
+    const filtered = (isAdmin || isTestTasting) ? list : list.filter((tp: any) => !tp.participant?.email?.endsWith("@casksense.local"));
+    res.json(filtered);
   });
 
   app.post("/api/tastings/:id/heartbeat", async (req, res) => {

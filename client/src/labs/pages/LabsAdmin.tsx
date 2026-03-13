@@ -342,7 +342,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
           data-testid="labs-admin-toggle-show-test"
         >
           <FlaskConical className="w-3 h-3" />
-          Test
+          {t("discover.testBadge", "Test")}
         </button>
       </div>
       <div className="space-y-2">
@@ -355,7 +355,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{tasting.title}</span>
                   <span className="text-[10px] px-2 rounded-full font-semibold" style={{ background: `${statusColor(tasting.status)}20`, color: statusColor(tasting.status) }}>{tasting.status}</span>
-                  {tasting.isTestData && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>TEST</span>}
+                  {tasting.isTestData && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                   <span className="flex items-center gap-1"><Crown className="w-2.5 h-2.5" />{tasting.hostName}</span>
@@ -849,7 +849,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium flex items-center gap-1" style={{ color: "var(--labs-text)" }}>
                   {ta.title}
-                  {ta.isTestData && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>TEST</span>}
+                  {ta.isTestData && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{ta.hostName} · {ta.date} · {ta.status}</div>
               </div>
