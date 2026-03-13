@@ -226,7 +226,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       <div className="flex gap-2 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 30 }} data-testid="labs-admin-input-search-participants" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-participants" />
         </div>
         <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={labsSelect} data-testid="labs-admin-select-filter-role">
           <option value="all">All Roles</option>
@@ -311,7 +311,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       <div className="flex gap-2 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tastings..." style={{ ...labsInput, paddingLeft: 30 }} data-testid="labs-admin-input-search-tastings" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tastings..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-tastings" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={labsSelect} data-testid="labs-admin-select-filter-status">
           <option value="all">All Statuses</option>
@@ -467,7 +467,7 @@ function ActivityTab() {
       <div className="flex gap-2 mb-3">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name or email..." style={{ ...labsInput, paddingLeft: 30 }} data-testid="labs-admin-input-search-activity" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name or email..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-activity" />
         </div>
         <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={labsSelect} data-testid="labs-admin-select-activity-role">
           <option value="all">All Roles</option>
@@ -1199,7 +1199,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
         </div>
         <div className="relative mb-3">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 30 }} data-testid="labs-admin-search-makingof-access" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-search-makingof-access" />
         </div>
         <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
           {filtered.length === 0 ? (

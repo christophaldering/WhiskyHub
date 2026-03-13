@@ -204,7 +204,7 @@ function LabsHistoryList() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("m2.historical.searchPlaceholder", "Search tastings...")}
               className="labs-input"
-              style={{ paddingLeft: 34 }}
+              style={{ paddingLeft: 36 }}
               data-testid="historical-search"
             />
           </div>
