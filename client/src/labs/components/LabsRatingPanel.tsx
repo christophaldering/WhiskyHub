@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, Mic, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, Plus, Lock, Sparkles } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 
 export type DimKey = "nose" | "taste" | "finish" | "balance";
@@ -469,6 +469,10 @@ export default function LabsRatingPanel({
     </div>
   );
 
+  const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
+  const allDimsScored = missingDims.length === 0;
+  const overallGated = showDetailed && !allDimsScored;
+
   const renderOverall = () => (
     <div style={{ marginTop: showToggle && showDetailed ? 8 : 16 }}>
       {detailTouched && (
@@ -482,10 +486,57 @@ export default function LabsRatingPanel({
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+      {overallGated && (
+        <div
+          data-testid="overall-gated-message"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: compact ? "10px 12px" : "12px 14px",
+            background: "var(--labs-surface-alt, rgba(255,255,255,0.03))",
+            border: "1px solid var(--labs-border-subtle)",
+            borderRadius: 10,
+            marginBottom: 8,
+          }}
+        >
+          <Lock style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: "var(--labs-text-muted)", display: "block", marginBottom: 4 }}>
+              {t("m2.rating.overallLocked", "Score all dimensions to unlock")}
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {missingDims.map((dim) => (
+                <button
+                  key={dim}
+                  type="button"
+                  onClick={() => { setActiveTab(dim); }}
+                  data-testid={`gated-dim-${dim}`}
+                  style={{
+                    padding: "2px 10px",
+                    borderRadius: 9999,
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "1px solid var(--labs-border)",
+                    background: "var(--labs-surface)",
+                    color: DIM_COLORS[dim],
+                    transition: "all 150ms",
+                  }}
+                >
+                  {dimLabels[dim]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, opacity: overallGated ? 0.35 : 1, transition: "opacity 0.2s" }}>
         <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)" }}>
           {t("m2.rating.overall", "Overall")}
-          {overrideActive && (
+          {overrideActive && !overallGated && (
             <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }} data-testid="badge-override">
               {t("m2.rating.manual", "Manual")}
             </span>
@@ -501,11 +552,11 @@ export default function LabsRatingPanel({
         max={scale}
         value={overall}
         onChange={(e) => onOverallChange(Number(e.target.value))}
-        disabled={disabled}
+        disabled={disabled || overallGated}
         data-testid="m2-rating-overall"
-        style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
+        style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: (disabled || overallGated) ? "not-allowed" : "pointer", opacity: overallGated ? 0.35 : 1, transition: "opacity 0.2s" }}
       />
-      {overrideActive && (
+      {overrideActive && !overallGated && (
         <button
           type="button"
           onClick={onResetOverride}
@@ -538,22 +589,46 @@ export default function LabsRatingPanel({
           data-testid="button-toggle-detailed"
           style={{
             width: "100%",
-            background: showDetailed ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+            background: showDetailed
+              ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
+              : "var(--labs-surface)",
             border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
-            borderRadius: "var(--labs-radius-sm)",
+            borderRadius: 12,
             cursor: "pointer",
             color: "var(--labs-text)",
-            fontSize: 13,
+            fontSize: 14,
             fontFamily: "inherit",
-            padding: "10px 14px",
+            padding: "14px 16px",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            gap: 12,
             textAlign: "left" as const,
+            transition: "all 0.2s ease",
+            boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
           }}
         >
-          <span style={{ fontWeight: 600 }}>{t("m2.rating.rateDetail", "Rate in detail")}</span>
-          <ChevronDown style={{ width: 16, height: 16, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }} />
+          <span style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+            flexShrink: 0,
+            transition: "all 0.2s",
+          }}>
+            <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
+              {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
+              {t("m2.rating.detailedTastingDesc", "Score nose, taste, finish & balance individually")}
+            </span>
+          </div>
+          <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
         </button>
       )}
 

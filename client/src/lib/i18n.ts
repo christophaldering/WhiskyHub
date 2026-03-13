@@ -4693,6 +4693,9 @@ const resources = {
         },
         rating: {
           rateDetail: "Rate in detail",
+          detailedTasting: "Detailed Tasting Notes",
+          detailedTastingDesc: "Score nose, taste, finish & balance individually",
+          overallLocked: "Score all dimensions to unlock",
           nose: "Nose",
           taste: "Taste",
           finish: "Finish",
@@ -4703,6 +4706,8 @@ const resources = {
           resetToCalc: "Reset to calculated",
           overallAuto: "Auto-calculated from average. Slide to override.",
           describePlaceholder: "Describe the {{dim}}...",
+          addFlavors: "Add flavors",
+          customDescriptor: "Custom descriptor...",
         },
         error: {
           title: "Something went wrong",
@@ -10419,6 +10424,9 @@ const resources = {
         },
         rating: {
           rateDetail: "Im Detail bewerten",
+          detailedTasting: "Detaillierte Verkostungsnotizen",
+          detailedTastingDesc: "Nase, Geschmack, Abgang & Balance einzeln bewerten",
+          overallLocked: "Alle Dimensionen bewerten zum Freischalten",
           nose: "Nase",
           taste: "Geschmack",
           finish: "Abgang",
@@ -10429,6 +10437,8 @@ const resources = {
           resetToCalc: "Auf berechnet zurücksetzen",
           overallAuto: "Automatisch berechnet. Schieben zum Überschreiben.",
           describePlaceholder: "Beschreibe {{dim}}...",
+          addFlavors: "Aromen hinzufügen",
+          customDescriptor: "Eigener Deskriptor...",
         },
         error: {
           title: "Etwas ist schiefgelaufen",

@@ -2110,6 +2110,7 @@ export default function LabsSolo() {
           overallAuto={calcOverall(detailedScores)}
           overrideActive={overrideActive}
           onResetOverride={resetOverride}
+          scale={100}
           showToggle={true}
           defaultOpen={true}
         />
