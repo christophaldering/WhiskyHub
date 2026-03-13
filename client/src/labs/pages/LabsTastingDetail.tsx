@@ -19,7 +19,6 @@ import {
   Download,
   Mail,
   Trophy,
-  ScanLine,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, friendsApi } from "@/lib/api";
@@ -494,14 +493,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             >
               <Clock className="w-4 h-4" />
               Manage Session
-            </button>
-            <button
-              className="labs-btn-ghost w-full flex items-center justify-center gap-2"
-              onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-              data-testid="labs-detail-paper-scan"
-            >
-              <ScanLine className="w-4 h-4" />
-              Paper Sheet Scanner
             </button>
           </>
         )}

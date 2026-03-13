@@ -10,7 +10,7 @@ import {
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
-  Download, ExternalLink, Lock, Printer,
+  Download, ExternalLink, Lock, Printer, ScanLine,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -1676,6 +1676,17 @@ function MobileCompanion({
           participants={participants as Array<Record<string, unknown>>}
           currentParticipant={{ id: pid, name: (currentParticipant as Record<string, unknown>)?.name || "Host" }}
         />
+      )}
+
+      {pid && (
+        <button
+          className="labs-btn-secondary w-full flex items-center justify-center gap-2 mb-4"
+          onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+          data-testid="mobile-paper-scan"
+        >
+          <ScanLine className="w-4 h-4" />
+          Paper Sheet Scanner
+        </button>
       )}
 
       {pid && whiskies.length > 0 && (
@@ -4637,6 +4648,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           participants={participants || []}
           currentParticipant={currentParticipant}
         />
+      )}
+
+      {currentParticipant && (
+        <div className="mb-6">
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+            data-testid="desktop-paper-scan"
+          >
+            <ScanLine className="w-4 h-4" />
+            Paper Sheet Scanner
+          </button>
+        </div>
       )}
 
       {currentParticipant && whiskyCount > 0 && (
