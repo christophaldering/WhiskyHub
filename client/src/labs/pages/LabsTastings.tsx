@@ -31,7 +31,7 @@ export default function LabsTastings() {
 
   const filtered = useMemo(() => {
     if (!tastings) return [];
-    let list = [...tastings];
+    let list = [...tastings].filter((t: any) => !t.isTestData);
 
     if (filterTab === "hosting") {
       list = list.filter((t: any) => t.hostId === currentParticipant?.id);
@@ -69,10 +69,11 @@ export default function LabsTastings() {
 
   const counts = useMemo(() => {
     if (!tastings) return { live: 0, upcoming: 0, past: 0 };
+    const real = tastings.filter((t: any) => !t.isTestData);
     return {
-      live: tastings.filter((t: any) => t.status === "open").length,
-      upcoming: tastings.filter((t: any) => t.status === "draft").length,
-      past: tastings.filter((t: any) => ["archived", "reveal", "closed"].includes(t.status)).length,
+      live: real.filter((t: any) => t.status === "open").length,
+      upcoming: real.filter((t: any) => t.status === "draft").length,
+      past: real.filter((t: any) => ["archived", "reveal", "closed"].includes(t.status)).length,
     };
   }, [tastings]);
 

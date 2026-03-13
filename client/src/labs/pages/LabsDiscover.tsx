@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Compass, BookOpen, Building2, Package, FileText, Map,
   FlaskConical, BookMarked, MessageSquare, ChevronRight, ChevronLeft,
@@ -8,31 +9,85 @@ import type { ElementType } from "react";
 
 interface DiscoverLink {
   icon: ElementType;
-  label: string;
-  description: string;
+  labelKey: string;
+  labelFallback: string;
+  descKey: string;
+  descFallback: string;
   href: string;
   testId: string;
 }
 
-const LINKS: DiscoverLink[] = [
-  { icon: BookOpen, label: "Lexicon", description: "Searchable whisky dictionary", href: "/labs/discover/lexicon", testId: "labs-link-discover-lexicon" },
-  { icon: Building2, label: "Distilleries", description: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-discover-distilleries" },
-  { icon: Package, label: "Bottlers", description: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-discover-bottlers" },
-  { icon: FileText, label: "Templates", description: "Tasting vocabulary templates", href: "/labs/discover/templates", testId: "labs-link-discover-templates" },
-  { icon: Map, label: "Tasting Guide", description: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-discover-guide" },
-  { icon: FlaskConical, label: "Research", description: "Science of perception & bibliography", href: "/labs/discover/research", testId: "labs-link-discover-research" },
-  { icon: BookMarked, label: "Rabbit Hole", description: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
-  { icon: MessageSquare, label: "Vocabulary", description: "Copy-paste vocabulary cards", href: "/labs/discover/vocabulary", testId: "labs-link-discover-vocabulary" },
-  { icon: Sparkles, label: "AI Curation", description: "AI whisky recommendations for lineups", href: "/labs/taste/ai-curation", testId: "labs-link-discover-ai-curation" },
-  { icon: BarChart3, label: "Historical Insights", description: "Cross-tasting analytics & trends", href: "/labs/host/history/insights", testId: "labs-link-discover-historical-insights" },
-  { icon: Info, label: "About", description: "Story, founder info & contact", href: "/labs/about", testId: "labs-link-discover-about" },
-  { icon: Heart, label: "Donate", description: "Support CaskSense & Hospice", href: "/labs/donate", testId: "labs-link-discover-donate" },
-  { icon: Rss, label: "Activity Feed", description: "See what your friends are up to", href: "/labs/activity", testId: "labs-link-discover-activity" },
-  { icon: Users, label: "Community", description: "Community features & archive", href: "/labs/community", testId: "labs-link-discover-community" },
+interface DiscoverSection {
+  titleKey: string;
+  titleFallback: string;
+  links: DiscoverLink[];
+}
+
+const SECTIONS: DiscoverSection[] = [
+  {
+    titleKey: "discover.sectionKnowledge",
+    titleFallback: "Knowledge & Reference",
+    links: [
+      { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "discover.lexiconDesc", descFallback: "Searchable whisky dictionary", href: "/labs/discover/lexicon", testId: "labs-link-discover-lexicon" },
+      { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-discover-distilleries" },
+      { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-discover-bottlers" },
+      { icon: MessageSquare, labelKey: "discover.vocabulary", labelFallback: "Vocabulary", descKey: "discover.vocabularyDesc", descFallback: "Copy-paste vocabulary cards", href: "/labs/discover/vocabulary", testId: "labs-link-discover-vocabulary" },
+    ],
+  },
+  {
+    titleKey: "discover.sectionTasting",
+    titleFallback: "Tasting & Guides",
+    links: [
+      { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-discover-guide" },
+      { icon: FileText, labelKey: "discover.templates", labelFallback: "Templates", descKey: "discover.templatesDesc", descFallback: "Tasting vocabulary templates", href: "/labs/discover/templates", testId: "labs-link-discover-templates" },
+      { icon: Sparkles, labelKey: "discover.aiCuration", labelFallback: "AI Curation", descKey: "discover.aiCurationDesc", descFallback: "AI whisky recommendations for lineups", href: "/labs/taste/ai-curation", testId: "labs-link-discover-ai-curation" },
+    ],
+  },
+  {
+    titleKey: "discover.sectionDeepDive",
+    titleFallback: "Deep Dives",
+    links: [
+      { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
+      { icon: FlaskConical, labelKey: "discover.research", labelFallback: "Research", descKey: "discover.researchDesc", descFallback: "Science of perception & bibliography", href: "/labs/discover/research", testId: "labs-link-discover-research" },
+      { icon: BarChart3, labelKey: "discover.insights", labelFallback: "Historical Insights", descKey: "discover.insightsDesc", descFallback: "Cross-tasting analytics & trends", href: "/labs/host/history/insights", testId: "labs-link-discover-historical-insights" },
+    ],
+  },
+  {
+    titleKey: "discover.sectionCommunity",
+    titleFallback: "Community & More",
+    links: [
+      { icon: Users, labelKey: "discover.community", labelFallback: "Community", descKey: "discover.communityDesc", descFallback: "Community features & archive", href: "/labs/community", testId: "labs-link-discover-community" },
+      { icon: Rss, labelKey: "discover.activity", labelFallback: "Activity Feed", descKey: "discover.activityDesc", descFallback: "See what your friends are up to", href: "/labs/activity", testId: "labs-link-discover-activity" },
+      { icon: Info, labelKey: "discover.about", labelFallback: "About", descKey: "discover.aboutDesc", descFallback: "Story, founder info & contact", href: "/labs/about", testId: "labs-link-discover-about" },
+      { icon: Heart, labelKey: "discover.donate", labelFallback: "Donate", descKey: "discover.donateDesc", descFallback: "Support CaskSense & Hospice", href: "/labs/donate", testId: "labs-link-discover-donate" },
+    ],
+  },
 ];
+
+function LinkCard({ link, t }: { link: DiscoverLink; t: (key: string, fallback: string) => string }) {
+  return (
+    <Link href={link.href} style={{ textDecoration: "none" }}>
+      <div className="labs-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} data-testid={link.testId}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <link.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+            {t(link.labelKey, link.labelFallback)}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1 }}>
+            {t(link.descKey, link.descFallback)}
+          </div>
+        </div>
+        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      </div>
+    </Link>
+  );
+}
 
 export default function LabsDiscover() {
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-page">
       <button onClick={() => navigate("/labs/home")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-discover">
@@ -43,32 +98,26 @@ export default function LabsDiscover() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 6 }}>
           <Compass style={{ width: 24, height: 24, color: "var(--labs-accent)" }} strokeWidth={1.8} />
           <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-discover-title">
-            Discover
+            {t("discover.title", "Discover")}
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: 0 }}>
-          Knowledge, guides & research — all in one place.
+          {t("discover.subtitle", "Knowledge, guides & research — all in one place.")}
         </p>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {LINKS.map((link) => (
-          <Link key={link.testId} href={link.href} style={{ textDecoration: "none" }}>
-            <div className="labs-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} data-testid={link.testId}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <link.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-                  {link.label}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1 }}>
-                  {link.description}
-                </div>
-              </div>
-              <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {SECTIONS.map((section) => (
+          <div key={section.titleKey}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: "var(--labs-accent)", marginBottom: 8, paddingLeft: 2 }}>
+              {t(section.titleKey, section.titleFallback)}
             </div>
-          </Link>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {section.links.map((link) => (
+                <LinkCard key={link.testId} link={link} t={t} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

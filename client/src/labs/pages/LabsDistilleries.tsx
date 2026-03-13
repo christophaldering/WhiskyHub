@@ -2,7 +2,7 @@ import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { distilleries, type Distillery } from "@/data/distilleries";
-import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon } from "lucide-react";
+import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon, ExternalLink } from "lucide-react";
 
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
 const COUNTRIES = ["All", "Scotland", "Ireland", "Japan", "USA"];
@@ -22,7 +22,12 @@ function Card({ d }: { d: Distillery }) {
             <MapPin style={{ width: 11, height: 11 }} />{d.region}, {d.country}
           </div>
         </div>
-        <ChevronDown style={{ width: 16, height: 16, color: "var(--labs-text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <a href={`https://www.whiskybase.com/search?q=${encodeURIComponent(d.name)}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-text-muted)", padding: 4 }} onClick={(e) => e.stopPropagation()} data-testid={`link-whiskybase-distillery-${d.name.toLowerCase().replace(/\s+/g, "-")}`}>
+            <ExternalLink style={{ width: 13, height: 13 }} />
+          </a>
+          <ChevronDown style={{ width: 16, height: 16, color: "var(--labs-text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        </div>
       </button>
       {open && (
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>

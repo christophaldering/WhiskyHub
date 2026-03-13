@@ -1054,10 +1054,14 @@ export async function registerRoutes(
       return res.json([]);
     }
     let tastings: any[];
+    const includeTest = req.query.includeTestData === "true" && participant.role === "admin";
     if (participant.role === "admin") {
       tastings = await storage.getAllTastings();
     } else {
       tastings = await storage.getTastingsForParticipant(participantId);
+    }
+    if (!includeTest) {
+      tastings = tastings.filter((t: any) => !t.isTestData);
     }
     const hostIds = [...new Set(tastings.map((t: any) => t.hostId).filter(Boolean))];
     const hostMap: Record<string, string> = {};
@@ -6163,6 +6167,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       } else {
         tastings = [];
       }
+      tastings = tastings.filter((t: any) => !t.isTestData);
       const calendarEvents = await Promise.all(
         tastings.map(async (t) => {
           const host = await storage.getParticipant(t.hostId);
@@ -6377,7 +6382,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     try {
       const hostId = req.params.hostId;
       const allTastings = await storage.getAllTastings();
-      const hostTastings = allTastings.filter(t => t.hostId === hostId);
+      const hostTastings = allTastings.filter(t => t.hostId === hostId && !t.isTestData);
 
       if (hostTastings.length === 0) {
         return res.json({
