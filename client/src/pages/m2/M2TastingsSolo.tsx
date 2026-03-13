@@ -137,7 +137,7 @@ function confidenceLabel(conf: number, t?: (key: string, fallback: string) => st
 type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function M2TastingsSolo() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
 
@@ -514,7 +514,7 @@ export default function M2TastingsSolo() {
     }
     if (!SpeechRecognitionAPI) return;
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "en-US";
+    recognition.lang = i18n.language === "de" ? "de-DE" : "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onresult = (event: any) => {
@@ -538,7 +538,7 @@ export default function M2TastingsSolo() {
     recognition.start();
     setVoiceListening(true);
     setVoiceTarget(target);
-  }, []);
+  }, [i18n.language]);
 
   const toggleVoice = useCallback((target: DimKey | "notes" = "notes") => {
     if (voiceListening && voiceTarget === target) {
@@ -2079,7 +2079,7 @@ export default function M2TastingsSolo() {
       </div>
 
       {/* VOICE MEMO — primary input */}
-      {unlocked && pid && (
+      {false && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-solo-voice-memo">
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
             {t("m2.solo.voiceMemoLabel", "Voice Memo")}

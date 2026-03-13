@@ -1636,7 +1636,7 @@ export default function M2TastingPlay() {
       </div>
 
 
-      {whiskyId && pid && id && (
+      {false && whiskyId && pid && id && (
         <VoiceMemoRecorder
           tastingId={id}
           whiskyId={whiskyId}

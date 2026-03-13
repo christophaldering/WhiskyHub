@@ -444,6 +444,7 @@ function GuidedStepView({
               style={{ resize: "vertical" }}
               data-testid="guided-notes"
             />
+            {false && (
             <div className="mt-3">
               <LabsVoiceMemoRecorder
                 participantId={currentParticipant?.id || ""}
@@ -457,6 +458,7 @@ function GuidedStepView({
                 }}
               />
             </div>
+            )}
           </div>
 
           <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
@@ -993,6 +995,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   style={{ resize: "vertical" }}
                   data-testid="labs-live-notes"
                 />
+                {false && (
                 <div className="mt-3">
                   <LabsVoiceMemoRecorder
                     participantId={currentParticipant?.id || ""}
@@ -1006,6 +1009,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     }}
                   />
                 </div>
+                )}
               </div>
 
               <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">

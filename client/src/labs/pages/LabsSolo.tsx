@@ -100,7 +100,7 @@ function confidenceLabel(conf: number, t?: (key: string, fallback: string) => st
 type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function LabsSolo() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
 
@@ -629,7 +629,7 @@ export default function LabsSolo() {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     if (!SpeechRecognitionAPI) return;
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "en-US";
+    recognition.lang = i18n.language === "de" ? "de-DE" : "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onresult = (event: any) => {
@@ -651,7 +651,7 @@ export default function LabsSolo() {
     recognition.start();
     setVoiceListening(true);
     setVoiceTarget(target);
-  }, []);
+  }, [i18n.language]);
 
   const toggleVoice = useCallback((target: DimKey | "notes" = "notes") => {
     if (voiceListening && voiceTarget === target) { stopVoice(); } else { startVoice(target); }
@@ -2122,7 +2122,7 @@ export default function LabsSolo() {
         />
       </div>
 
-      {unlocked && pid && (
+      {false && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
           <div className="labs-section-label">{t("m2.solo.voiceMemoLabel", "Voice Memo")}</div>
           <LabsVoiceMemoRecorder
