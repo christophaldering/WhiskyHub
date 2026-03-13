@@ -282,7 +282,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [showTestOnly, setShowTestOnly] = useState(false);
+  const [showTestData, setShowTestData] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: (tastingId: string) => adminApi.deleteTasting(tastingId, pid),
@@ -298,7 +298,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 
   const filtered = data.tastings.filter(ta => {
     if (ta.code === "DEMO") return false;
-    if (showTestOnly && !ta.isTestData) return false;
+    if (!showTestData && ta.isTestData) return false;
     if (filterStatus !== "all" && ta.status !== filterStatus) return false;
     if (search && !ta.title.toLowerCase().includes(search.toLowerCase()) && !ta.hostName.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -327,13 +327,13 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
           <option value="archived">Archived</option>
         </select>
         <button
-          onClick={() => setShowTestOnly(!showTestOnly)}
+          onClick={() => setShowTestData(!showTestData)}
           style={{
             padding: "6px 10px",
             borderRadius: 8,
-            border: `1px solid ${showTestOnly ? "var(--labs-accent)" : "var(--labs-border)"}`,
-            background: showTestOnly ? "var(--labs-accent-muted)" : "transparent",
-            color: showTestOnly ? "var(--labs-accent)" : "var(--labs-text-muted)",
+            border: `1px solid ${showTestData ? "var(--labs-accent)" : "var(--labs-border)"}`,
+            background: showTestData ? "var(--labs-accent-muted)" : "transparent",
+            color: showTestData ? "var(--labs-accent)" : "var(--labs-text-muted)",
             fontSize: 11,
             fontWeight: 600,
             cursor: "pointer",
