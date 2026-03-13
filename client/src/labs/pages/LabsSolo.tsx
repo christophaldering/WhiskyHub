@@ -164,7 +164,7 @@ export default function LabsSolo() {
   const [autofillLoading, setAutofillLoading] = useState(false);
   const [autofillResult, setAutofillResult] = useState("");
 
-  const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
+  const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0, balance: 0 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [], balance: [] });
@@ -289,7 +289,7 @@ export default function LabsSolo() {
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
       setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
-      setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
+      setDetailedScores({ nose: 0, taste: 0, finish: 0, balance: 0 });
       setDetailTouched(false);
       setOverrideActive(false);
       setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
@@ -1097,7 +1097,7 @@ export default function LabsSolo() {
     setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
     setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
     setPhotoUrl(""); setCandidates([]); setSelectedCandidate(null); setIsMenuMode(false);
-    setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
+    setDetailedScores({ nose: 0, taste: 0, finish: 0, balance: 0 });
     setDetailTouched(false); setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });

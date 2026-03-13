@@ -80,7 +80,6 @@ export default function LabsRatingPanel({
   const [activeTab, setActiveTab] = useState<DimKey>("nose");
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [showFlavors, setShowFlavors] = useState(false);
-  const [userTouchedDims, setUserTouchedDims] = useState<Set<DimKey>>(new Set());
   const isDE = i18n.language === "de";
   const [customInput, setCustomInput] = useState("");
 
@@ -148,7 +147,7 @@ export default function LabsRatingPanel({
     setCustomInput("");
   };
 
-  const detailTouched = DIM_KEYS.some((k) => scores[k] !== Math.round(scale / 2));
+  const detailTouched = DIM_KEYS.some((k) => scores[k] > 0);
 
   const dimLabels: Record<DimKey, string> = {
     nose: t("m2.rating.nose", "Nose"),
@@ -214,11 +213,7 @@ export default function LabsRatingPanel({
           min={0}
           max={scale}
           value={scores[key]}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            onScoreChange(key, val);
-            setUserTouchedDims((prev) => { const next = new Set(prev); next.add(key); return next; });
-          }}
+          onChange={(e) => onScoreChange(key, Number(e.target.value))}
           disabled={disabled}
           data-testid={`input-score-${key}`}
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
@@ -474,8 +469,7 @@ export default function LabsRatingPanel({
     </div>
   );
 
-  const mid = Math.round(scale / 2);
-  const missingDims = DIM_KEYS.filter((k) => scores[k] === mid && !userTouchedDims.has(k));
+  const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
   const allDimsScored = missingDims.length === 0;
   const overallGated = !allDimsScored;
 
