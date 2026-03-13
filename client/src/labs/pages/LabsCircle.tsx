@@ -236,7 +236,7 @@ export default function LabsCircle() {
         Your community, rankings & connections
       </p>
 
-      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -246,6 +246,7 @@ export default function LabsCircle() {
               color: tab === t.key ? "var(--labs-accent)" : "var(--labs-text-secondary)",
               border: `1px solid ${tab === t.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
               fontWeight: tab === t.key ? 600 : 500,
+              flexShrink: 0,
             }}
             onClick={() => setTab(t.key)}
             data-testid={`labs-circle-tab-${t.key}`}
