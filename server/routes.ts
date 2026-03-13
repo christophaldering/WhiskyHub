@@ -7611,7 +7611,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     try {
       const token = req.query.token as string;
       if (token !== "cask-cleanup-2026") return res.status(403).json({ message: "Invalid token" });
-      const allTastings = await storage.getAllTastings();
+      const { db } = await import("./db");
+      const { tastings } = await import("@shared/schema");
+      const allTastings = await db.select().from(tastings);
       const testTastings = allTastings.filter(t => t.title && /test/i.test(t.title));
       const deleted: string[] = [];
       for (const t of testTastings) {
