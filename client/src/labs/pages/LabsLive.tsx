@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, BarChart3, ChevronDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
@@ -857,14 +858,13 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   if (tastingLoading) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div
-          className="w-8 h-8 border-2 rounded-full animate-spin mb-4"
-          style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }}
-        />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-          Loading session…
-        </p>
+      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh" }}>
+        <div className="space-y-4">
+          <SkeletonLine width="50%" height={22} />
+          <SkeletonLine width="35%" height={13} />
+          <div style={{ height: 16 }} />
+          <SkeletonList count={2} />
+        </div>
       </div>
     );
   }

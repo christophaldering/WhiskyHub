@@ -4,6 +4,8 @@ import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, Chevron
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
+import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import { downloadBlob } from "@/lib/download";
 import jsPDF from "jspdf";
 
@@ -493,12 +495,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
   if (isLoading) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div
-          className="w-8 h-8 border-2 rounded-full animate-spin mb-4"
-          style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }}
-        />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading results…</p>
+      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh" }}>
+        <div className="space-y-4">
+          <SkeletonLine width="40%" height={24} />
+          <SkeletonLine width="60%" height={14} />
+          <div style={{ height: 16 }} />
+          <SkeletonList count={3} showAvatar />
+        </div>
       </div>
     );
   }
@@ -683,7 +686,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="labs-serif text-base font-semibold" style={{ color: "var(--labs-text)" }}>
                 {topWhisky.name || "Unknown"}
               </p>
@@ -693,12 +696,14 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   .join(" · ")}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold" style={{ color: "var(--labs-accent)" }}>
-                {fmt(topWhisky.avgOverall)}
-              </p>
-              <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>avg. score</p>
-            </div>
+            <LabsScoreRing
+              score={topWhisky.avgOverall}
+              maxScore={tasting?.maxScore || 100}
+              size={64}
+              strokeWidth={4}
+              color="var(--labs-accent)"
+              label="avg"
+            />
           </div>
         </div>
       )}
@@ -823,9 +828,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {w.avgOverall != null ? (
-                    <span className="text-base font-bold" style={{ color: "var(--labs-accent)" }}>
-                      {fmt(w.avgOverall)}
-                    </span>
+                    <LabsScoreRing
+                      score={w.avgOverall}
+                      maxScore={tasting?.maxScore || 100}
+                      size={40}
+                      strokeWidth={3}
+                    />
                   ) : (
                     <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>—</span>
                   )}

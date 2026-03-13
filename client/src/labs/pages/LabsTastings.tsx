@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live" | "past";
@@ -97,7 +98,7 @@ export default function LabsTastings() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+    <div className="labs-page-wide labs-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h1
           className="labs-serif text-xl font-semibold"
@@ -210,20 +211,7 @@ export default function LabsTastings() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="labs-card p-5" style={{ opacity: 0.5 }}>
-              <div
-                className="h-4 rounded-md mb-3"
-                style={{ background: "var(--labs-border)", width: "55%" }}
-              />
-              <div
-                className="h-3 rounded-md"
-                style={{ background: "var(--labs-border-subtle)", width: "35%" }}
-              />
-            </div>
-          ))}
-        </div>
+        <SkeletonList count={4} showAvatar />
       ) : filtered.length === 0 ? (
         <div className="labs-empty labs-fade-in">
           <Clock className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />

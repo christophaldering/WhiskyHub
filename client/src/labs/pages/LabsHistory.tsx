@@ -5,6 +5,7 @@ import { Link, useRoute, useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { getParticipantId } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import {
   Search, Wine, Trophy, Calendar, BarChart3,
   ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
@@ -224,9 +225,8 @@ function LabsHistoryList() {
       )}
 
       {isLoading && (
-        <div style={{ textAlign: "center", padding: "60px 16px" }}>
-          <Loader2 style={{ width: 28, height: 28, color: "var(--labs-accent)", margin: "0 auto 12px", display: "block", animation: "spin 1s linear infinite" }} />
-          <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.historical.loading", "Loading archive...")}</p>
+        <div style={{ padding: "16px 0" }}>
+          <SkeletonList count={4} showAvatar />
         </div>
       )}
 
@@ -339,9 +339,8 @@ function LabsHistoryInsights() {
 
   if (isLoading || commLoading) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 16px" }}>
-        <Loader2 style={{ width: 28, height: 28, color: "var(--labs-accent)", margin: "0 auto 12px", display: "block", animation: "spin 1s linear infinite" }} />
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>Loading insights...</p>
+      <div style={{ padding: "16px 0" }}>
+        <SkeletonList count={3} />
       </div>
     );
   }

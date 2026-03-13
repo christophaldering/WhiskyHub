@@ -102,6 +102,7 @@
 
 .labs-card-interactive:active {
   transform: scale(0.985);
+  opacity: 0.92;
 }
 
 .labs-card-elevated {
@@ -120,7 +121,7 @@
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-  transition: background-color 200ms ease, transform 160ms ease;
+  transition: background-color 200ms ease, transform 160ms cubic-bezier(0.2, 0.8, 0.4, 1), opacity 160ms ease;
   font-family: inherit;
 }
 
@@ -130,6 +131,7 @@
 
 .labs-btn-primary:active {
   transform: scale(0.97);
+  opacity: 0.88;
 }
 
 .labs-btn-primary:disabled {
@@ -146,13 +148,17 @@
   font-weight: 500;
   font-size: 15px;
   cursor: pointer;
-  transition: background-color 200ms ease, border-color 200ms ease;
+  transition: background-color 200ms ease, border-color 200ms ease, transform 160ms cubic-bezier(0.2, 0.8, 0.4, 1);
   font-family: inherit;
 }
 
 .labs-btn-secondary:hover {
   background: var(--labs-surface-hover);
   border-color: var(--labs-accent);
+}
+
+.labs-btn-secondary:active {
+  transform: scale(0.97);
 }
 
 .labs-btn-ghost {
@@ -164,13 +170,17 @@
   font-size: 14px;
   cursor: pointer;
   border-radius: var(--labs-radius-sm);
-  transition: background-color 200ms ease, color 200ms ease;
+  transition: background-color 200ms ease, color 200ms ease, transform 160ms cubic-bezier(0.2, 0.8, 0.4, 1);
   font-family: inherit;
 }
 
 .labs-btn-ghost:hover {
   background: var(--labs-accent-muted);
   color: var(--labs-accent);
+}
+
+.labs-btn-ghost:active {
+  transform: scale(0.97);
 }
 
 .labs-input {
@@ -279,10 +289,16 @@
   transform: translate(-50%, -50%);
   cursor: grab;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 120ms ease;
+}
+
+.labs-slider-thumb:active {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
 .labs-fade-in {
-  animation: labsFadeIn 400ms ease both;
+  animation: labsFadeIn 400ms cubic-bezier(0.2, 0.8, 0.4, 1) both;
 }
 
 @keyframes labsFadeIn {
@@ -294,3 +310,148 @@
 .labs-stagger-2 { animation-delay: 120ms; }
 .labs-stagger-3 { animation-delay: 180ms; }
 .labs-stagger-4 { animation-delay: 240ms; }
+.labs-stagger-5 { animation-delay: 300ms; }
+
+@keyframes labsSkeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.labs-skeleton {
+  background: linear-gradient(90deg,
+    var(--labs-border-subtle) 25%,
+    var(--labs-surface-hover) 50%,
+    var(--labs-border-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: labsSkeletonShimmer 1.8s ease-in-out infinite;
+  border-radius: var(--labs-radius-sm);
+}
+
+.labs-skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.labs-skeleton-title {
+  height: 18px;
+  border-radius: 8px;
+  width: 60%;
+}
+
+.labs-skeleton-circle {
+  border-radius: 50%;
+}
+
+.labs-skeleton-card {
+  padding: 16px;
+  border-radius: var(--labs-radius);
+  background: var(--labs-surface);
+  border: 1px solid var(--labs-border);
+}
+
+@keyframes labsScoreRingDraw {
+  from { stroke-dashoffset: var(--labs-ring-circumference); }
+  to { stroke-dashoffset: var(--labs-ring-offset); }
+}
+
+.labs-score-ring-animated circle:last-child {
+  animation: labsScoreRingDraw 800ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: 200ms;
+}
+
+@keyframes labsCountUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.labs-count-up {
+  animation: labsCountUp 500ms cubic-bezier(0.2, 0.8, 0.4, 1) both;
+  animation-delay: 400ms;
+}
+
+.labs-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 16px;
+  cursor: pointer;
+  transition: color 200ms ease, transform 200ms cubic-bezier(0.2, 0.8, 0.4, 1);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.labs-nav-item:active {
+  transform: scale(0.92);
+}
+
+.labs-nav-item-active {
+  transform: translateY(-1px);
+}
+
+.labs-nav-item-active .labs-nav-icon {
+  transform: scale(1.08);
+}
+
+.labs-nav-icon {
+  transition: transform 250ms cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+.labs-nav-dot {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--labs-accent);
+  animation: labsFadeIn 250ms cubic-bezier(0.2, 0.8, 0.4, 1) both;
+}
+
+.labs-page {
+  padding: 20px 20px 24px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.labs-page-wide {
+  padding: 20px 20px 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@keyframes labsPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.labs-pulse {
+  animation: labsPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.labs-pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--labs-bg);
+  transition: height 100ms ease;
+}
+
+.labs-pull-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--labs-border);
+  border-top-color: var(--labs-accent);
+  border-radius: 50%;
+}
+
+@keyframes labsSpin {
+  to { transform: rotate(360deg); }
+}
+
+.labs-pull-spinner-active {
+  animation: labsSpin 0.7s linear infinite;
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import {
   ChevronLeft,
   Calendar,
@@ -145,12 +146,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div
-          className="w-8 h-8 border-2 rounded-full animate-spin mb-4"
-          style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }}
-        />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading tasting…</p>
+      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh" }}>
+        <div className="space-y-4">
+          <SkeletonLine width="50%" height={22} />
+          <SkeletonLine width="70%" height={13} />
+          <div style={{ height: 12 }} />
+          <SkeletonList count={3} />
+        </div>
       </div>
     );
   }

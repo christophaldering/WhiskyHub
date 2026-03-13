@@ -8,6 +8,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { communityApi, friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type Tab = "people" | "leaderboard" | "friends" | "sessions" | "activity";
 
@@ -1108,16 +1109,7 @@ function formatRelativeTime(timestamp: string): string {
 }
 
 function LoadingSkeleton({ count }: { count: number }) {
-  return (
-    <div className="space-y-3 labs-fade-in">
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="labs-card p-4" style={{ opacity: 0.5 }}>
-          <div className="h-4 rounded animate-pulse" style={{ background: "var(--labs-border)", width: "60%" }} />
-          <div className="h-3 mt-2 rounded animate-pulse" style={{ background: "var(--labs-border)", width: "40%" }} />
-        </div>
-      ))}
-    </div>
-  );
+  return <SkeletonList count={count} showAvatar />;
 }
 
 function EmptyState({

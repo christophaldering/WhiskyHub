@@ -315,22 +315,22 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       {(pullDistance > 0 || refreshing) && (
         <div
-          className="flex items-center justify-center transition-all"
-          style={{
-            height: pullDistance,
-            overflow: "hidden",
-            background: "var(--labs-bg)",
-          }}
+          className="labs-pull-indicator"
+          style={{ height: pullDistance }}
           data-testid="labs-pull-refresh-indicator"
         >
-          <RefreshCw
-            className="w-5 h-5 transition-transform"
-            style={{
-              color: pullDistance > 60 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-              transform: `rotate(${pullDistance * 3.6}deg)`,
-              animation: refreshing ? "spin 0.8s linear infinite" : "none",
-            }}
-          />
+          {refreshing ? (
+            <div className="labs-pull-spinner labs-pull-spinner-active" />
+          ) : (
+            <div
+              className="labs-pull-spinner"
+              style={{
+                borderTopColor: pullDistance > 60 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                transform: `rotate(${pullDistance * 4}deg)`,
+                opacity: Math.min(pullDistance / 60, 1),
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -398,30 +398,27 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             return (
               <Link key={item.href} href={item.href}>
                 <div
-                  className="flex flex-col items-center gap-0.5 px-4 py-1 cursor-pointer transition-colors relative"
+                  className={`labs-nav-item${isActive ? " labs-nav-item-active" : ""}`}
                   style={{ color }}
                   data-testid={`labs-nav-${item.label.toLowerCase()}`}
                 >
-                  {isActive && (
-                    <div
-                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
-                      style={{ background: "var(--labs-accent)" }}
-                    />
-                  )}
-                  {item.icon === "glencairn" ? (
-                    <GlencairnIcon color={color} size={22} />
-                  ) : item.icon === "radar" ? (
-                    <Radar className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
-                  ) : item.icon === "compass" ? (
-                    <Compass className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
-                  ) : item.icon === "book" ? (
-                    <BookOpen className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
-                  ) : (
-                    <Users className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
-                  )}
+                  {isActive && <div className="labs-nav-dot" />}
+                  <div className="labs-nav-icon">
+                    {item.icon === "glencairn" ? (
+                      <GlencairnIcon color={color} size={22} />
+                    ) : item.icon === "radar" ? (
+                      <Radar className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    ) : item.icon === "compass" ? (
+                      <Compass className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    ) : item.icon === "book" ? (
+                      <BookOpen className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    ) : (
+                      <Users className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    )}
+                  </div>
                   <span
                     className="text-[10px]"
-                    style={{ fontWeight: isActive ? 600 : 500, letterSpacing: "0.02em" }}
+                    style={{ fontWeight: isActive ? 600 : 400, letterSpacing: "0.03em", opacity: isActive ? 1 : 0.7 }}
                   >
                     {item.label}
                   </span>

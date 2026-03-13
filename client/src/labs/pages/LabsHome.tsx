@@ -47,7 +47,7 @@ export default function LabsHome() {
   const [, navigate] = useLocation();
 
   return (
-    <div className="px-5 py-10 max-w-lg mx-auto">
+    <div className="labs-page" style={{ paddingTop: 40, paddingBottom: 40, maxWidth: 480 }}>
       <div className="flex flex-col items-center text-center mb-12 labs-fade-in">
         <GlencairnHero size={52} />
         <h1

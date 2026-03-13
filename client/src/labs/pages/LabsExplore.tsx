@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Search, SlidersHorizontal, Star, Wine, ChevronRight, TrendingUp, Hash, ArrowUpDown } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi } from "@/lib/api";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type SortOption = "avg_score" | "most_rated" | "alphabetical";
 
@@ -52,7 +53,7 @@ export default function LabsExplore() {
   };
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto">
+    <div className="labs-page-wide">
       <h1
         className="labs-serif text-xl font-semibold mb-1 labs-fade-in"
         style={{ color: "var(--labs-text)" }}
@@ -164,15 +165,7 @@ export default function LabsExplore() {
       </div>
 
       {isLoading && (
-        <div className="labs-empty" style={{ minHeight: "40vh" }}>
-          <div
-            className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin mb-4"
-            style={{ borderColor: "var(--labs-accent)", borderTopColor: "transparent" }}
-          />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-            Loading whiskies…
-          </p>
-        </div>
+        <SkeletonList count={5} showAvatar />
       )}
 
       {!isLoading && sortedWhiskies.length === 0 && (

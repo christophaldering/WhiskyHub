@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -1449,8 +1450,8 @@ export default function LabsSolo() {
         </button>
 
         {hubLoading ? (
-          <div style={{ textAlign: "center", padding: "32px 0" }}>
-            <Loader2 style={{ width: 24, height: 24, color: "var(--labs-text-muted)", animation: "spin 1s linear infinite" }} />
+          <div style={{ padding: "8px 0" }}>
+            <SkeletonList count={3} showAvatar />
           </div>
         ) : (
           <>
