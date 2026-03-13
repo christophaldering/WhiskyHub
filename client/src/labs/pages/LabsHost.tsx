@@ -32,6 +32,8 @@ const REVEAL_DEFAULT_ORDER: string[][] = [
   ["image"],
 ];
 
+const normalizeName = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
+
 function getRevealState(tasting: any, whiskyCount: number) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
   try {
@@ -992,17 +994,32 @@ function MobileCompanion({
   };
 
   const [mobileAiError, setMobileAiError] = useState("");
-  const [mobileAiConfirmMsg, setMobileAiConfirmMsg] = useState("");
+  const [mobileAiSummary, setMobileAiSummary] = useState<{ added: number; skipped: number; failed: number } | null>(null);
+
+  const getMobileDuplicateIndices = useCallback(() => {
+    if (!whiskies || !mobileAiResults.length) return new Set<number>();
+    const existing = new Set(whiskies.map((w: any) => normalizeName(w.name || "")));
+    const dupes = new Set<number>();
+    mobileAiResults.forEach((w: any, i: number) => {
+      if (existing.has(normalizeName(w.name || ""))) dupes.add(i);
+    });
+    return dupes;
+  }, [whiskies, mobileAiResults]);
 
   const handleMobileAiImport = async () => {
     if (mobileAiFiles.length === 0 && !mobileAiText.trim()) return;
     setMobileAiLoading(true);
     setMobileAiError("");
+    setMobileAiSummary(null);
     try {
       const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
       if (result?.whiskies?.length) {
         setMobileAiResults(result.whiskies);
-        setMobileAiSelected(new Set(result.whiskies.map((_: any, i: number) => i)));
+        const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+        const nonDupeIndices = new Set(
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingNames.has(normalizeName(result.whiskies[i].name || "")))
+        );
+        setMobileAiSelected(nonDupeIndices);
       } else {
         setMobileAiError("No whiskies found. Try a clearer photo or text.");
       }
@@ -1013,10 +1030,15 @@ function MobileCompanion({
   };
 
   const handleMobileAiConfirm = async () => {
-    let ok = 0, fail = 0;
+    let ok = 0, fail = 0, skipped = 0;
+    const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
+        if (existingNames.has(normalizeName(w.name || ""))) {
+          skipped++;
+          continue;
+        }
         try {
           await whiskyApi.create({
             tastingId,
@@ -1032,21 +1054,24 @@ function MobileCompanion({
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: w.price ? parseFloat(w.price) || null : null,
-            sortOrder: whiskyCount + idx + 1,
+            sortOrder: whiskyCount + ok + 1,
           });
           ok++;
+          existingNames.add(normalizeName(w.name || ""));
         } catch { fail++; }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    if (fail > 0) {
-      setMobileAiConfirmMsg(`Added ${ok}, ${fail} failed`);
-    } else {
+    setMobileAiSummary({ added: ok, skipped, failed: fail });
+    if (fail === 0 && skipped === 0) {
       setMobileAiResults([]);
       setMobileAiSelected(new Set());
       setMobileAiFiles([]);
       setMobileAiText("");
-      setMobileAiImport(false);
+      setTimeout(() => { setMobileAiImport(false); setMobileAiSummary(null); }, 2500);
+    } else {
+      setMobileAiResults([]);
+      setMobileAiSelected(new Set());
     }
   };
 
@@ -1239,40 +1264,55 @@ function MobileCompanion({
                   </div>
                 )}
 
-                {mobileAiConfirmMsg && (
-                  <div className="text-xs p-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)" }}>
-                    {mobileAiConfirmMsg}
+                {mobileAiSummary && (
+                  <div className="text-xs p-3 rounded-lg space-y-1" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="mobile-ai-summary">
+                    {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} added</p>}
+                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} skipped (already in lineup)</p>}
+                    {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} failed</p>}
                   </div>
                 )}
 
-                {mobileAiResults.length > 0 && (
+                {mobileAiResults.length > 0 && (() => {
+                  const dupeIndices = getMobileDuplicateIndices();
+                  const nonDupeCount = mobileAiResults.length - dupeIndices.size;
+                  return (
                   <div className="space-y-2 mt-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {mobileAiResults.length}</span>
+                      <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
+                        Found {mobileAiResults.length}
+                        {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} already in lineup)</span>}
+                      </span>
                       <button
                         className="labs-btn-ghost text-xs"
-                        onClick={() => setMobileAiSelected(mobileAiSelected.size === mobileAiResults.length ? new Set() : new Set(mobileAiResults.map((_, i) => i)))}
+                        onClick={() => setMobileAiSelected(mobileAiSelected.size === nonDupeCount ? new Set() : new Set(mobileAiResults.map((_, i) => i).filter(i => !dupeIndices.has(i))))}
                         data-testid="mobile-ai-select-all"
                       >
-                        {mobileAiSelected.size === mobileAiResults.length ? "Deselect" : "Select All"}
+                        {mobileAiSelected.size === nonDupeCount && nonDupeCount > 0 ? "Deselect" : "Select New"}
                       </button>
                     </div>
-                    {mobileAiResults.map((w: any, i: number) => (
-                      <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : 0.5 }}>
+                    {mobileAiResults.map((w: any, i: number) => {
+                      const isDupe = dupeIndices.has(i);
+                      return (
+                      <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : isDupe ? 0.4 : 0.5 }}>
                         <input type="checkbox" checked={mobileAiSelected.has(i)} onChange={() => { const s = new Set(mobileAiSelected); s.has(i) ? s.delete(i) : s.add(i); setMobileAiSelected(s); }} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{w.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium truncate" style={{ margin: 0 }}>{w.name}</p>
+                            {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>duplicate</span>}
+                          </div>
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                             {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
                           </p>
                         </div>
                       </label>
-                    ))}
+                      );
+                    })}
                     <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
                     Add {mobileAiSelected.size} Whiskies
                   </button>
                 </div>
-              )}
+                  );
+                })()}
             </div>
             </div>
           )}
@@ -3216,27 +3256,54 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     } catch {}
   };
 
+  const [aiImportError, setAiImportError] = useState("");
+  const [aiImportSummary, setAiImportSummary] = useState<{ added: number; skipped: number; failed: number } | null>(null);
+
+  const getDesktopDuplicateIndices = useCallback(() => {
+    if (!whiskies || !aiImportResults.length) return new Set<number>();
+    const existing = new Set(whiskies.map((w: any) => normalizeName(w.name || "")));
+    const dupes = new Set<number>();
+    aiImportResults.forEach((w: any, i: number) => {
+      if (existing.has(normalizeName(w.name || ""))) dupes.add(i);
+    });
+    return dupes;
+  }, [whiskies, aiImportResults]);
+
   const handleAiImport = async () => {
     if (aiImportFiles.length === 0 && !aiImportText.trim()) return;
     setAiImportLoading(true);
+    setAiImportError("");
+    setAiImportSummary(null);
     try {
       const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
       if (result?.whiskies?.length) {
         setAiImportResults(result.whiskies);
-        setAiImportSelected(new Set(result.whiskies.map((_: any, i: number) => i)));
+        const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+        const nonDupeIndices = new Set(
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingNames.has(normalizeName(result.whiskies[i].name || "")))
+        );
+        setAiImportSelected(nonDupeIndices);
+      } else {
+        setAiImportError("No whiskies found. Try a different photo or text.");
       }
-    } catch {}
+    } catch (e: any) {
+      setAiImportError(e?.message || "AI import failed. Please try again.");
+    }
     setAiImportLoading(false);
   };
-
-  const [aiImportStatus, setAiImportStatus] = useState("");
 
   const handleAiImportConfirm = async () => {
     let added = 0;
     let failed = 0;
+    let skipped = 0;
+    const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
+        if (existingNames.has(normalizeName(w.name || ""))) {
+          skipped++;
+          continue;
+        }
         try {
           await whiskyApi.create({
             tastingId,
@@ -3255,21 +3322,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             sortOrder: (whiskies?.length || 0) + added + 1,
           });
           added++;
+          existingNames.add(normalizeName(w.name || ""));
         } catch {
           failed++;
         }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    if (failed > 0) {
-      setAiImportStatus(`Added ${added}, failed ${failed}`);
-      setTimeout(() => setAiImportStatus(""), 4000);
-    }
+    setAiImportSummary({ added, skipped, failed });
     setAiImportResults([]);
     setAiImportSelected(new Set());
     setAiImportFiles([]);
     setAiImportText("");
-    setShowAiImport(false);
+    if (failed === 0 && skipped === 0) {
+      setTimeout(() => { setShowAiImport(false); setAiImportSummary(null); }, 2500);
+    }
   };
 
   const handleAddWhiskyExtended = () => {
@@ -4226,7 +4293,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-ai-import-text"
             />
             <div className="flex gap-2 justify-end">
-              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); }}>Cancel</button>
+              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); setAiImportError(""); setAiImportSummary(null); }}>Cancel</button>
               <button
                 className="labs-btn-primary text-sm flex items-center gap-1.5"
                 onClick={handleAiImport}
@@ -4238,29 +4305,51 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </button>
             </div>
 
-            {aiImportResults.length > 0 && (
+            {aiImportError && (
+              <div className="text-xs p-2 rounded-lg mt-2" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }} data-testid="labs-ai-import-error">
+                {aiImportError}
+              </div>
+            )}
+
+            {aiImportSummary && (
+              <div className="text-xs p-3 rounded-lg space-y-1 mt-2" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="labs-ai-import-summary">
+                {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} added</p>}
+                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} skipped (already in lineup)</p>}
+                {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} failed</p>}
+              </div>
+            )}
+
+            {aiImportResults.length > 0 && (() => {
+              const dupeIndices = getDesktopDuplicateIndices();
+              const nonDupeCount = aiImportResults.length - dupeIndices.size;
+              return (
               <div className="space-y-2 mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {aiImportResults.length} whiskies</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
+                    Found {aiImportResults.length} whiskies
+                    {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} already in lineup)</span>}
+                  </span>
                   <button
                     className="labs-btn-ghost text-xs"
                     onClick={() => {
-                      if (aiImportSelected.size === aiImportResults.length) {
+                      if (aiImportSelected.size === nonDupeCount && nonDupeCount > 0) {
                         setAiImportSelected(new Set());
                       } else {
-                        setAiImportSelected(new Set(aiImportResults.map((_, i) => i)));
+                        setAiImportSelected(new Set(aiImportResults.map((_, i) => i).filter(i => !dupeIndices.has(i))));
                       }
                     }}
                     data-testid="labs-ai-import-select-all"
                   >
-                    {aiImportSelected.size === aiImportResults.length ? "Deselect All" : "Select All"}
+                    {aiImportSelected.size === nonDupeCount && nonDupeCount > 0 ? "Deselect All" : "Select New"}
                   </button>
                 </div>
-                {aiImportResults.map((w: any, i: number) => (
+                {aiImportResults.map((w: any, i: number) => {
+                  const isDupe = dupeIndices.has(i);
+                  return (
                   <label
                     key={i}
                     className="labs-card p-3 flex items-center gap-3 cursor-pointer"
-                    style={{ opacity: aiImportSelected.has(i) ? 1 : 0.5 }}
+                    style={{ opacity: aiImportSelected.has(i) ? 1 : isDupe ? 0.4 : 0.5 }}
                   >
                     <input
                       type="checkbox"
@@ -4272,13 +4361,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{w.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium" style={{ margin: 0 }}>{w.name}</p>
+                        {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>duplicate</span>}
+                      </div>
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                         {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                   </label>
-                ))}
+                  );
+                })}
                 <button
                   className="labs-btn-primary w-full text-sm"
                   onClick={handleAiImportConfirm}
@@ -4288,7 +4381,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   Add {aiImportSelected.size} Whiskies
                 </button>
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
