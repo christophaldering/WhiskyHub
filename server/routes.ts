@@ -7607,6 +7607,23 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.delete("/api/admin/cleanup-test-tastings", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (token !== "cask-cleanup-2026") return res.status(403).json({ message: "Invalid token" });
+      const allTastings = await storage.getAllTastings();
+      const testTastings = allTastings.filter(t => t.title && /test/i.test(t.title));
+      const deleted: string[] = [];
+      for (const t of testTastings) {
+        await storage.hardDeleteTasting(t.id);
+        deleted.push(t.title);
+      }
+      res.json({ success: true, count: deleted.length, deleted });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // --- App Settings ---
 
   app.get("/api/ai-status", async (req, res) => {
