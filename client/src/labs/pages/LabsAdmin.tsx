@@ -201,6 +201,7 @@ export default function LabsAdmin() {
 }
 
 function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -276,6 +277,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -288,7 +290,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
   });
   const toggleTestMutation = useMutation({
     mutationFn: async ({ id, isTestData }: { id: string; isTestData: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/admin/tastings/${id}/test-flag`, { requesterId: pid, isTestData });
+      const res = await apiRequest("POST", `/api/admin/tastings/${id}/test-flag`, { requesterId: pid, isTestData });
       return res.json();
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Test flag updated" }); },
@@ -822,6 +824,7 @@ function ChangelogTab({ pid }: { pid: string }) {
 }
 
 function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
