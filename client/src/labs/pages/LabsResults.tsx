@@ -151,7 +151,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[]) {
         doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25 * pct, 3, 1, 1, "F");
         doc.setFontSize(6);
         doc.setTextColor(...textColor);
-        doc.text(String(barVals[bi]), bx + 26 + barMaxW * 0.25, by + 1);
+        doc.text(String(Math.round((barVals[bi] ?? 0) * 10) / 10), bx + 26 + barMaxW * 0.25, by + 1);
       }
     });
 
@@ -695,7 +695,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold" style={{ color: "var(--labs-accent)" }}>
-                {topWhisky.avgOverall}
+                {fmt(topWhisky.avgOverall)}
               </p>
               <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>avg. score</p>
             </div>
@@ -805,7 +805,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           const mostRecent = previousRatingsMap[w.id][0];
                           const d = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
                           if (d == null) return null;
-                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{d > 0 ? `+${d}` : d === 0 ? "=" : d}</span>;
+                          const rd = fmt(d)!;
+                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{rd > 0 ? `+${rd}` : rd === 0 ? "=" : rd}</span>;
                         })()}
                       </span>
                     )}
@@ -823,7 +824,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {w.avgOverall != null ? (
                     <span className="text-base font-bold" style={{ color: "var(--labs-accent)" }}>
-                      {w.avgOverall}
+                      {fmt(w.avgOverall)}
                     </span>
                   ) : (
                     <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>—</span>
@@ -982,7 +983,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                                   <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                                     {pr.tastingTitle || new Date(pr.date).toLocaleDateString()}
                                   </span>
-                                  <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{pr.overall}</span>
+                                  <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{fmt(pr.overall)}</span>
                                 </div>
                                 <div className="grid grid-cols-4 gap-2 text-center">
                                   {[
@@ -993,7 +994,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                                   ].map(d => (
                                     <div key={d.label}>
                                       <p className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
-                                      <p className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>{d.value || "—"}</p>
+                                      <p className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>{d.value != null ? fmt(d.value) : "—"}</p>
                                     </div>
                                   ))}
                                 </div>

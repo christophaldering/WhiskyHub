@@ -2074,14 +2074,14 @@ export default function LabsSolo() {
                       <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{pr.tastingTitle || new Date(pr.date).toLocaleDateString()}</span>
                       <span className="labs-badge" style={{ fontSize: 9, marginLeft: 6, opacity: 0.7 }}>{pr.source === "journal" ? "Solo" : "Tasting"}</span>
                     </div>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{pr.overall}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{typeof pr.overall === "number" ? Math.round(pr.overall * 10) / 10 : pr.overall}</span>
                   </div>
                   {pr.source === "tasting" && (
                     <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--labs-text-secondary)" }}>
-                      <span>N {pr.nose}</span>
-                      <span>T {pr.taste}</span>
-                      <span>F {pr.finish}</span>
-                      <span>B {pr.balance}</span>
+                      <span>N {typeof pr.nose === "number" ? Math.round(pr.nose * 10) / 10 : pr.nose}</span>
+                      <span>T {typeof pr.taste === "number" ? Math.round(pr.taste * 10) / 10 : pr.taste}</span>
+                      <span>F {typeof pr.finish === "number" ? Math.round(pr.finish * 10) / 10 : pr.finish}</span>
+                      <span>B {typeof pr.balance === "number" ? Math.round(pr.balance * 10) / 10 : pr.balance}</span>
                     </div>
                   )}
                   {pr.date && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}

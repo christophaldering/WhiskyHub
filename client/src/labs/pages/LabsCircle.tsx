@@ -699,7 +699,7 @@ export default function LabsCircle() {
             </span>
             <div className="text-right">
               <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
-                {entry.score}
+                {typeof entry.score === "number" ? Math.round(entry.score * 10) / 10 : entry.score}
               </span>
               {entry.tastings != null && (
                 <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
@@ -1069,7 +1069,7 @@ export default function LabsCircle() {
                         Logged: {whiskyName}
                         {score != null && (
                           <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
-                            {score}/100
+                            {typeof score === "number" ? Math.round(score * 10) / 10 : score}/100
                           </span>
                         )}
                       </>
