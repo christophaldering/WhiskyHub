@@ -469,7 +469,8 @@ export default function LabsRatingPanel({
     </div>
   );
 
-  const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
+  const midpoint = Math.round(scale / 2);
+  const missingDims = DIM_KEYS.filter((k) => scores[k] === midpoint);
   const allDimsScored = missingDims.length === 0;
   const overallGated = !allDimsScored;
 
@@ -503,7 +504,7 @@ export default function LabsRatingPanel({
           <Lock style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0, marginTop: 1 }} />
           <div>
             <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: "var(--labs-text-muted)", display: "block", marginBottom: 4 }}>
-              {t("m2.rating.overallLocked", "Score all dimensions to unlock")}
+              {t("m2.rating.overallLocked", "Rate each dimension to unlock Overall")}
             </span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
               {missingDims.map((dim) => (
