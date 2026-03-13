@@ -15,6 +15,7 @@ import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId, getEffectiveProfile } from "@/labs/data/flavor-data";
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
+import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -3163,6 +3164,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiNarrative, setAiNarrative] = useState<string | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [cockpitMode, setCockpitMode] = useState(false);
 
   const addWhiskyMutation = useMutation({
     mutationFn: (data: any) => whiskyApi.create(data),
@@ -3521,6 +3523,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     );
   }
 
+  const showCockpitButton = !isMobile && tasting && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "reveal" || tasting.status === "closed");
+
+  if (cockpitMode && tasting && currentParticipant) {
+    return (
+      <LabsHostCockpit
+        tastingId={tastingId}
+        onExit={() => setCockpitMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
       <button
@@ -3576,13 +3589,26 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
           </div>
         </div>
-        <span
-          className="labs-badge flex-shrink-0"
-          style={{ background: statusCfg.bg, color: statusCfg.color }}
-          data-testid="labs-host-status"
-        >
-          {statusCfg.label}
-        </span>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {showCockpitButton && (
+            <button
+              onClick={() => setCockpitMode(true)}
+              className="labs-btn-secondary"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 13 }}
+              data-testid="labs-host-cockpit-toggle"
+            >
+              <Gauge className="w-4 h-4" />
+              Desktop Cockpit
+            </button>
+          )}
+          <span
+            className="labs-badge"
+            style={{ background: statusCfg.bg, color: statusCfg.color }}
+            data-testid="labs-host-status"
+          >
+            {statusCfg.label}
+          </span>
+        </div>
       </div>
 
       {showEditTasting && (
