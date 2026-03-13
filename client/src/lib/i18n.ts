@@ -1796,6 +1796,7 @@ const resources = {
         imageManualPick: "Pick image...",
         imageNone: "None",
         close: "Close",
+        duplicate: "duplicate",
         mappingPreview: "Image Mapping",
         mappingHint: "Review which image will be attached to each expression. You can change the selection manually."
       },
@@ -7618,6 +7619,7 @@ const resources = {
         imageManualPick: "Bild w\u00e4hlen...",
         imageNone: "Keins",
         close: "Schließen",
+        duplicate: "Duplikat",
         mappingPreview: "Bildzuordnung",
         mappingHint: "\u00dcberpr\u00fcfen Sie, welches Bild jeder Expression zugeordnet wird. Sie k\u00f6nnen die Zuordnung manuell \u00e4ndern."
       },

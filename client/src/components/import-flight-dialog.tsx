@@ -26,6 +26,7 @@ interface PreviewRow {
   _errors: string[];
   _imageStatus: string | null;
   _matchedImage: string | null;
+  _isDuplicate?: boolean;
 }
 
 interface ImportResult {
@@ -146,7 +147,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
     });
   };
 
-  const validRows = preview.filter(r => r._errors.length === 0);
+  const validRows = preview.filter(r => r._errors.length === 0 || r._errors.every((e: string) => e.startsWith("Duplicate")));
 
   const imageBadge = (row: PreviewRow) => {
     if (row._imageStatus === "url") {
@@ -354,10 +355,16 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.map((row, idx) => (
-                      <tr key={idx} className={cn("border-t border-border/20", row._errors.length > 0 && "bg-destructive/5")}>
+                    {preview.map((row, idx) => {
+                      const hasHardError = row._errors.some((e: string) => !e.startsWith("Duplicate"));
+                      const isDupe = row._isDuplicate;
+                      return (
+                      <tr key={idx} className={cn("border-t border-border/20", hasHardError && "bg-destructive/5", !hasHardError && isDupe && "bg-yellow-500/5")} data-testid={`row-import-preview-${idx}`}>
                         <td className="px-2 py-1.5 text-muted-foreground">{row._row}</td>
-                        <td className="px-2 py-1.5 font-medium">{row.name || "\u2014"}</td>
+                        <td className="px-2 py-1.5 font-medium">
+                          {row.name || "\u2014"}
+                          {isDupe && <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-yellow-500/15 text-yellow-600" data-testid={`badge-duplicate-${idx}`}>{t("import.duplicate", "duplicate")}</span>}
+                        </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{row.distillery || "\u2014"}</td>
                         <td className="px-2 py-1.5 text-muted-foreground font-mono">{row.abv ? `${row.abv}%` : "\u2014"}</td>
                         <td className="px-2 py-1.5 text-muted-foreground">{row.age || "\u2014"}</td>
@@ -388,16 +395,21 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                           )}
                         </td>
                         <td className="px-2 py-1.5">
-                          {row._errors.length > 0 ? (
+                          {hasHardError ? (
                             <span className="text-destructive text-[10px]" title={row._errors.join("; ")}>
                               <XCircle className="w-3.5 h-3.5 inline" />
+                            </span>
+                          ) : isDupe ? (
+                            <span className="text-yellow-600 text-[10px]" title={row._errors.join("; ")}>
+                              <AlertTriangle className="w-3.5 h-3.5 inline" />
                             </span>
                           ) : (
                             <CheckCircle2 className="w-3.5 h-3.5 text-primary inline" />
                           )}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

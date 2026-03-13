@@ -1,0 +1,74 @@
+Now perform a strict production-readiness QA and acceptance pass for the CaskSense changes you just implemented.
+
+Your task is NOT to make cosmetic comments. Your task is to verify whether the implementation is truly coherent, stable, and production-worthy.
+
+WORK MODE
+- Think like a lead engineer, QA lead, and product owner together
+- Be skeptical
+- Try to break the flows
+- Do not assume success
+- If something is incomplete, fix it
+- If something is inconsistent between M2 and Labs, fix it or explicitly justify it
+- If a UI is still confusing, tighten it
+
+VALIDATION CHECKLIST
+
+A. SOLO / RATING
+- Verify Overall score in Solo only appears or becomes active after all required dimension scores are entered
+- Verify rating scale handling is internally consistent and normalized correctly
+- Verify no regression in printable sheets / tasting scoring / results
+
+B. VOICE / LANGUAGE
+- Verify AI voice-note UI is actually hidden/deactivated where intended
+- Verify speech recognition follows active language correctly in DE and EN contexts
+- Verify no orphaned broken buttons remain
+
+C. ADMIN / EMAIL
+- Verify admin notification email actually triggers on new participant join/login where intended
+- Verify duplicate/noisy notification loops do not occur
+- Verify failure logging and safe fallback behavior
+
+D. HOST CORE
+- Verify host dashboards give a clear and reliable control overview
+- Verify current dram, reveal state, participant progress, and next actions are obvious
+- Verify guided/free/reveal modes are understandable in wording and behavior
+- Verify paper participants remain fully supported
+
+E. IMPORT / EXPORT
+- Verify CSV/Excel import works
+- Verify duplicate detection is meaningful
+- Verify export still works and produces usable output
+- Verify no silent data corruption or duplicate explosion
+
+F. DISCOVER / KNOWLEDGE
+- Verify distillery/bottle links work
+- Verify restored map/list behavior if implemented
+- Verify no broken discover routes remain exposed
+- Verify unfinished pages are either fixed, gated, or hidden
+
+G. DATA CLEANUP
+- Verify demo/test content does not pollute real user experience
+- Verify participant/user visibility makes sense
+- Verify join/password flow is simpler and not broken
+
+H. RESULTS / AI
+- Verify results/rankings/AI summaries behave reliably
+- Verify empty/error/loading states are trustworthy
+- Verify no fake success states exist when generation fails
+
+I. TESTS
+- Run all relevant tests
+- Add missing tests if any critical case is still untested
+- Fix failing tests instead of ignoring them
+
+MANDATORY OUTPUT
+When complete, return:
+1. Acceptance verdict: READY / READY WITH CAVEATS / NOT READY
+2. Exact issues found
+3. Exact fixes applied during QA pass
+4. Remaining caveats, if any
+5. Test results summary
+6. Manual smoke test summary by flow
+
+Do not give a superficial status update.
+Actually verify and fix.

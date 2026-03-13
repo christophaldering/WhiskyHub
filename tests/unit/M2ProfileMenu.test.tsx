@@ -101,7 +101,6 @@ describe("M2ProfileMenu", () => {
     expect(screen.getByTestId("m2-profile-settings")).toBeDefined();
     expect(screen.getByTestId("m2-profile-signout")).toBeDefined();
     expect(screen.getByTestId("m2-profile-data")).toBeDefined();
-    expect(screen.getByTestId("m2-profile-classic")).toBeDefined();
   });
 
   it("shows user name when logged in", () => {

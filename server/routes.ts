@@ -361,7 +361,21 @@ export async function registerRoutes(
 
   const ADMIN_NOTIFICATION_EMAIL = "christoph.aldering@googlemail.com";
 
+  const recentAdminNotifications = new Map<string, number>();
+  const ADMIN_NOTIFY_COOLDOWN_MS = 5 * 60 * 1000;
+
   function notifyAdminLogin(participant: { name: string; email?: string | null; experienceLevel?: string | null }, isNew: boolean) {
+    const key = `${participant.email || participant.name}:${isNew}`;
+    const now = Date.now();
+    const lastSent = recentAdminNotifications.get(key);
+    if (lastSent && now - lastSent < ADMIN_NOTIFY_COOLDOWN_MS && !isNew) return;
+    recentAdminNotifications.set(key, now);
+    if (recentAdminNotifications.size > 500) {
+      const cutoff = now - ADMIN_NOTIFY_COOLDOWN_MS;
+      for (const [k, v] of recentAdminNotifications) {
+        if (v < cutoff) recentAdminNotifications.delete(k);
+      }
+    }
     const emailContent = buildAdminLoginNotification({
       participantName: participant.name,
       participantEmail: participant.email || undefined,
@@ -2064,9 +2078,20 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         }
       }
 
+      const existingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const existingKeys = new Set(existingWhiskies.map((w: any) => {
+        const n = (w.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const d = (w.distillery || "").trim().toLowerCase().replace(/\s+/g, " ");
+        return n + "||" + d;
+      }));
+
       const preview = rows.map((row, idx) => {
         const rowErrors: string[] = [];
         if (!row.name) rowErrors.push("Missing name");
+
+        const rowKey = ((row.name || "").trim().toLowerCase().replace(/\s+/g, " ")) + "||" + ((row.distillery || "").trim().toLowerCase().replace(/\s+/g, " "));
+        const _isDuplicate = !!(row.name && existingKeys.has(rowKey));
+        if (_isDuplicate) rowErrors.push("Duplicate — already in lineup");
 
         let imageStatus: string | null = null;
         let matchedImage: string | null = null;
@@ -2085,7 +2110,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           imageStatus = "missing";
         }
 
-        return { ...row, _row: idx + 2, _errors: rowErrors, _imageStatus: imageStatus, _matchedImage: matchedImage };
+        return { ...row, _row: idx + 2, _errors: rowErrors, _imageStatus: imageStatus, _matchedImage: matchedImage, _isDuplicate };
       });
 
       fs.unlinkSync(spreadsheetFile.path);
