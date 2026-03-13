@@ -21,7 +21,10 @@ function formatTastingDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
+    if (isNaN(d.getTime())) {
+      const short = dateStr.replace(/\s*,\s*/g, ", ").replace(/\s{2,}/g, " ");
+      return short.length > 20 ? short.slice(0, 18) + "..." : short;
+    }
     const now = new Date();
     const isThisYear = d.getFullYear() === now.getFullYear();
     const locale = navigator.language || "en-US";
@@ -32,7 +35,8 @@ function formatTastingDate(dateStr: string | null | undefined): string {
       ...(isThisYear ? {} : { year: "numeric" }),
     });
   } catch {
-    return dateStr;
+    const short = String(dateStr);
+    return short.length > 20 ? short.slice(0, 18) + "..." : short;
   }
 }
 
@@ -291,92 +295,97 @@ export default function LabsTastings() {
               <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
                 <div
                   className="labs-list-row"
+                  style={{ alignItems: "flex-start", gap: 12, padding: "14px 12px" }}
                   data-testid={`labs-tasting-card-${tasting.id}`}
                 >
                   <div
                     style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0, marginTop: 2,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       background: isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
                     }}
                   >
                     <Wine
-                      className="w-5 h-5"
-                      style={{ color: isLive ? "var(--labs-success)" : "var(--labs-accent)" }}
+                      style={{ width: 18, height: 18, color: isLive ? "var(--labs-success)" : "var(--labs-accent)" }}
                     />
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="flex items-center gap-2" style={{ marginBottom: 3 }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                       <span
                         style={{
                           fontSize: 15, fontWeight: 600,
                           color: "var(--labs-text)",
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          flex: 1, minWidth: 0,
                         }}
                         data-testid={`labs-tasting-title-${tasting.id}`}
                       >
                         {tasting.title}
                       </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                        {isHost && (
+                          <span
+                            style={{
+                              fontSize: 10, fontWeight: 600,
+                              padding: "2px 6px", borderRadius: 5,
+                              background: "var(--labs-accent-muted)",
+                              color: "var(--labs-accent)",
+                            }}
+                            data-testid={`labs-tasting-host-badge-${tasting.id}`}
+                          >
+                            Host
+                          </span>
+                        )}
+                        <span
+                          className={`labs-badge ${status.cssClass}`}
+                          style={{ fontSize: 10, padding: "2px 6px" }}
+                          data-testid={`labs-tasting-status-${tasting.id}`}
+                        >
+                          {isLive && (
+                            <span
+                              className="animate-pulse"
+                              style={{
+                                width: 5, height: 5, borderRadius: "50%",
+                                background: "currentColor", display: "inline-block",
+                              }}
+                            />
+                          )}
+                          {status.label}
+                        </span>
+                      </div>
                     </div>
 
                     <div
-                      className="flex items-center gap-3"
-                      style={{ fontSize: 13, color: "var(--labs-text-muted)" }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        fontSize: 12, color: "var(--labs-text-muted)",
+                        overflow: "hidden", whiteSpace: "nowrap",
+                      }}
                     >
                       {formattedDate && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
+                        <span style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                          <Calendar style={{ width: 12, height: 12, opacity: 0.6, flexShrink: 0 }} />
                           {formattedDate}
                         </span>
                       )}
                       {tasting.location && (
                         <span
-                          className="flex items-center gap-1"
-                          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 3,
+                            overflow: "hidden", textOverflow: "ellipsis",
+                          }}
                         >
-                          <MapPin className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
-                          {tasting.location}
+                          <MapPin style={{ width: 12, height: 12, opacity: 0.6, flexShrink: 0 }} />
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{tasting.location}</span>
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
-                    {isHost && (
-                      <span
-                        style={{
-                          fontSize: 11, fontWeight: 600,
-                          padding: "3px 8px", borderRadius: 6,
-                          background: "var(--labs-accent-muted)",
-                          color: "var(--labs-accent)",
-                        }}
-                        data-testid={`labs-tasting-host-badge-${tasting.id}`}
-                      >
-                        Host
-                      </span>
-                    )}
-                    <span
-                      className={`labs-badge ${status.cssClass}`}
-                      style={{ fontSize: 11, padding: "3px 8px" }}
-                      data-testid={`labs-tasting-status-${tasting.id}`}
-                    >
-                      {isLive && (
-                        <span
-                          className="animate-pulse"
-                          style={{
-                            width: 6, height: 6, borderRadius: "50%",
-                            background: "currentColor", display: "inline-block",
-                          }}
-                        />
-                      )}
-                      {status.label}
-                    </span>
-                    <ChevronRight
-                      className="w-4 h-4"
-                      style={{ color: "var(--labs-text-muted)", opacity: 0.5 }}
-                    />
-                  </div>
+                  <ChevronRight
+                    style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.4, flexShrink: 0, marginTop: 4 }}
+                  />
                 </div>
               </Link>
             );
