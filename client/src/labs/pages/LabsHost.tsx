@@ -34,6 +34,8 @@ const REVEAL_DEFAULT_ORDER: string[][] = [
 ];
 
 const normalizeName = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
+const whiskyKey = (name: string, distillery?: string) =>
+  normalizeName(name) + "||" + normalizeName(distillery || "");
 
 function getRevealState(tasting: any, whiskyCount: number) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
@@ -1000,10 +1002,10 @@ function MobileCompanion({
 
   const getMobileDuplicateIndices = useCallback(() => {
     if (!whiskies || !mobileAiResults.length) return new Set<number>();
-    const existing = new Set(whiskies.map((w: any) => normalizeName(w.name || "")));
+    const existing = new Set(whiskies.map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     const dupes = new Set<number>();
     mobileAiResults.forEach((w: any, i: number) => {
-      if (existing.has(normalizeName(w.name || ""))) dupes.add(i);
+      if (existing.has(whiskyKey(w.name || "", w.distillery || ""))) dupes.add(i);
     });
     return dupes;
   }, [whiskies, mobileAiResults]);
@@ -1017,9 +1019,9 @@ function MobileCompanion({
       const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
       if (result?.whiskies?.length) {
         setMobileAiResults(result.whiskies);
-        const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+        const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingNames.has(normalizeName(result.whiskies[i].name || "")))
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingKeys.has(whiskyKey(result.whiskies[i].name || "", result.whiskies[i].distillery || "")))
         );
         setMobileAiSelected(nonDupeIndices);
       } else {
@@ -1033,11 +1035,11 @@ function MobileCompanion({
 
   const handleMobileAiConfirm = async () => {
     let ok = 0, fail = 0, dupeAdded = 0;
-    const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+    const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
-        const isDupe = existingNames.has(normalizeName(w.name || ""));
+        const isDupe = existingKeys.has(whiskyKey(w.name || "", w.distillery || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -1057,12 +1059,12 @@ function MobileCompanion({
           });
           ok++;
           if (isDupe) dupeAdded++;
-          existingNames.add(normalizeName(w.name || ""));
+          existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch { fail++; }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setMobileAiSummary({ added: ok, skipped: dupeAdded, failed: fail });
+    setMobileAiSummary({ added: ok - dupeAdded, skipped: dupeAdded, failed: fail });
     setMobileAiResults([]);
     setMobileAiSelected(new Set());
     if (fail === 0) {
@@ -1264,7 +1266,7 @@ function MobileCompanion({
                 {mobileAiSummary && (
                   <div className="text-xs p-3 rounded-lg space-y-1" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="mobile-ai-summary">
                     {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} {t("labs.aiImport.added", "added")}</p>}
-                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} {t("labs.aiImport.addedAsDuplicate", "added (were already in lineup)")}</p>}
+                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
                     {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
                 )}
@@ -3259,10 +3261,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const getDesktopDuplicateIndices = useCallback(() => {
     if (!whiskies || !aiImportResults.length) return new Set<number>();
-    const existing = new Set(whiskies.map((w: any) => normalizeName(w.name || "")));
+    const existing = new Set(whiskies.map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     const dupes = new Set<number>();
     aiImportResults.forEach((w: any, i: number) => {
-      if (existing.has(normalizeName(w.name || ""))) dupes.add(i);
+      if (existing.has(whiskyKey(w.name || "", w.distillery || ""))) dupes.add(i);
     });
     return dupes;
   }, [whiskies, aiImportResults]);
@@ -3276,9 +3278,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
       if (result?.whiskies?.length) {
         setAiImportResults(result.whiskies);
-        const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+        const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingNames.has(normalizeName(result.whiskies[i].name || "")))
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingKeys.has(whiskyKey(result.whiskies[i].name || "", result.whiskies[i].distillery || "")))
         );
         setAiImportSelected(nonDupeIndices);
       } else {
@@ -3294,11 +3296,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     let added = 0;
     let failed = 0;
     let dupeAdded = 0;
-    const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
+    const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
-        const isDupe = existingNames.has(normalizeName(w.name || ""));
+        const isDupe = existingKeys.has(whiskyKey(w.name || "", w.distillery || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -3318,14 +3320,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           });
           added++;
           if (isDupe) dupeAdded++;
-          existingNames.add(normalizeName(w.name || ""));
+          existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch {
           failed++;
         }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setAiImportSummary({ added, skipped: dupeAdded, failed });
+    setAiImportSummary({ added: added - dupeAdded, skipped: dupeAdded, failed });
     setAiImportResults([]);
     setAiImportSelected(new Set());
     setAiImportFiles([]);
@@ -4310,7 +4312,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             {aiImportSummary && (
               <div className="text-xs p-3 rounded-lg space-y-1 mt-2" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="labs-ai-import-summary">
                 {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} {t("labs.aiImport.added", "added")}</p>}
-                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} {t("labs.aiImport.addedAsDuplicate", "added (were already in lineup)")}</p>}
+                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
                 {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
             )}
