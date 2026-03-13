@@ -489,19 +489,17 @@ export default function LabsTasteDrams() {
             ))}
           </div>
 
-          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
             {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
               <button key={sr} onClick={() => setScoreRange(sr)}
                 style={{ padding: "5px 12px", fontSize: 11, fontWeight: scoreRange === sr ? 600 : 400, color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)", background: scoreRange === sr ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${scoreRange === sr ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
                 data-testid={`labs-score-${sr}`}>{sr === "all" ? "Score" : sr}</button>
             ))}
-            <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-              {(["date", "score", "name"] as SortBy[]).map(sk => (
-                <button key={sk} onClick={() => setSortBy(sk)}
-                  style={{ padding: "5px 10px", fontSize: 10, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer" }}
-                  data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : "Name"}</button>
-              ))}
-            </div>
+            {(["date", "score", "name"] as SortBy[]).map(sk => (
+              <button key={sk} onClick={() => setSortBy(sk)}
+                style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : "Name"}</button>
+            ))}
           </div>
 
           <div className="flex gap-2 mb-3 flex-wrap">
