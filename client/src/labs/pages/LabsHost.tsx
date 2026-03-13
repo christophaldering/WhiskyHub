@@ -34,8 +34,29 @@ const REVEAL_DEFAULT_ORDER: string[][] = [
 ];
 
 const normalizeName = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
-const whiskyKey = (name: string, distillery?: string) =>
-  normalizeName(name) + "||" + normalizeName(distillery || "");
+const tokenize = (s: string) => normalizeName(s).replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+const tokenSimilarity = (a: string, b: string): number => {
+  const ta = tokenize(a);
+  const tb = tokenize(b);
+  if (ta.length === 0 && tb.length === 0) return 1;
+  if (ta.length === 0 || tb.length === 0) return 0;
+  const setB = new Set(tb);
+  const matches = ta.filter(t => setB.has(t)).length;
+  return (2 * matches) / (ta.length + tb.length);
+};
+const DUPE_THRESHOLD = 0.7;
+const isSimilarWhisky = (
+  name1: string, dist1: string,
+  name2: string, dist2: string,
+): boolean => {
+  const nameSim = tokenSimilarity(name1, name2);
+  if (nameSim >= DUPE_THRESHOLD) {
+    if (!dist1 && !dist2) return true;
+    if (!dist1 || !dist2) return nameSim >= 0.85;
+    return tokenSimilarity(dist1, dist2) >= 0.5;
+  }
+  return false;
+};
 
 function getRevealState(tasting: any, whiskyCount: number) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
@@ -1002,10 +1023,12 @@ function MobileCompanion({
 
   const getMobileDuplicateIndices = useCallback(() => {
     if (!whiskies || !mobileAiResults.length) return new Set<number>();
-    const existing = new Set(whiskies.map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     const dupes = new Set<number>();
     mobileAiResults.forEach((w: any, i: number) => {
-      if (existing.has(whiskyKey(w.name || "", w.distillery || ""))) dupes.add(i);
+      const match = whiskies.some((ew: any) =>
+        isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || "")
+      );
+      if (match) dupes.add(i);
     });
     return dupes;
   }, [whiskies, mobileAiResults]);
@@ -1019,9 +1042,11 @@ function MobileCompanion({
       const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
       if (result?.whiskies?.length) {
         setMobileAiResults(result.whiskies);
-        const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
+        const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingKeys.has(whiskyKey(result.whiskies[i].name || "", result.whiskies[i].distillery || "")))
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
+            !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+          )
         );
         setMobileAiSelected(nonDupeIndices);
       } else {
@@ -1037,11 +1062,11 @@ function MobileCompanion({
     let added = 0, dupeAdded = 0, fail = 0;
     const dupeIndices = getMobileDuplicateIndices();
     const duplicatesSkipped = Array.from(dupeIndices).filter(i => !mobileAiSelected.has(i)).length;
-    const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
+    const existingList = (whiskies || []) as Array<Record<string, unknown>>;
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
-        const isDupe = existingKeys.has(whiskyKey(w.name || "", w.distillery || ""));
+        const isDupe = existingList.some((ew: any) => isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -1060,7 +1085,6 @@ function MobileCompanion({
             sortOrder: whiskyCount + added + dupeAdded + 1,
           });
           if (isDupe) dupeAdded++; else added++;
-          existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch { fail++; }
       }
     }
@@ -3263,10 +3287,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const getDesktopDuplicateIndices = useCallback(() => {
     if (!whiskies || !aiImportResults.length) return new Set<number>();
-    const existing = new Set(whiskies.map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     const dupes = new Set<number>();
     aiImportResults.forEach((w: any, i: number) => {
-      if (existing.has(whiskyKey(w.name || "", w.distillery || ""))) dupes.add(i);
+      const match = whiskies.some((ew: any) =>
+        isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || "")
+      );
+      if (match) dupes.add(i);
     });
     return dupes;
   }, [whiskies, aiImportResults]);
@@ -3280,9 +3306,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
       if (result?.whiskies?.length) {
         setAiImportResults(result.whiskies);
-        const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
+        const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) => !existingKeys.has(whiskyKey(result.whiskies[i].name || "", result.whiskies[i].distillery || "")))
+          result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
+            !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+          )
         );
         setAiImportSelected(nonDupeIndices);
       } else {
@@ -3298,11 +3326,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     let added = 0, dupeAdded = 0, failed = 0;
     const dupeIndices = getDesktopDuplicateIndices();
     const duplicatesSkipped = Array.from(dupeIndices).filter(i => !aiImportSelected.has(i)).length;
-    const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
+    const existingList = (whiskies || []) as Array<Record<string, unknown>>;
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
-        const isDupe = existingKeys.has(whiskyKey(w.name || "", w.distillery || ""));
+        const isDupe = existingList.some((ew: any) => isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -3321,7 +3349,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             sortOrder: (whiskies?.length || 0) + added + dupeAdded + 1,
           });
           if (isDupe) dupeAdded++; else added++;
-          existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch {
           failed++;
         }
