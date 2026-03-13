@@ -528,22 +528,25 @@ export default function LabsResults({ params }: LabsResultsProps) {
     setExpandedWhisky(expandedWhisky === id ? null : id);
   };
 
+  const fmt = (v: number | null | undefined) => v == null ? null : Math.round(v * 10) / 10;
+
   const DeltaIndicator = ({ delta }: { delta: number | null }) => {
     if (delta == null) return null;
-    const absDelta = Math.abs(delta);
+    const d = fmt(delta)!;
+    const absDelta = Math.abs(d);
     if (absDelta < 1) return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-text-muted)" }}>
         <Minus className="w-3 h-3" /> ±0
       </span>
     );
-    if (delta > 0) return (
+    if (d > 0) return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-success)" }}>
-        <TrendingUp className="w-3 h-3" /> +{delta}
+        <TrendingUp className="w-3 h-3" /> +{d}
       </span>
     );
     return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-danger)" }}>
-        <TrendingDown className="w-3 h-3" /> {delta}
+        <TrendingDown className="w-3 h-3" /> {d}
       </span>
     );
   };
@@ -712,7 +715,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    You: {w.myRating?.overall} · Group: {w.avgOverall}
+                    You: {fmt(w.myRating?.overall)} · Group: {fmt(w.avgOverall)}
                   </p>
                 </div>
                 <DeltaIndicator delta={w.myDelta} />
@@ -734,7 +737,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    Avg: {w.avgOverall} · Range: {w.overallRange.min}–{w.overallRange.max}
+                    Avg: {fmt(w.avgOverall)} · Range: {fmt(w.overallRange.min)}–{fmt(w.overallRange.max)}
                   </p>
                 </div>
                 <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
@@ -756,7 +759,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    Avg: {w.avgOverall} · Range: {w.overallRange.min}–{w.overallRange.max}
+                    Avg: {fmt(w.avgOverall)} · Range: {fmt(w.overallRange.min)}–{fmt(w.overallRange.max)}
                   </p>
                 </div>
                 <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
@@ -850,7 +853,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           {dim.label}
                         </span>
                         <span className="text-sm font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
-                          {dim.value != null ? dim.value : "—"}
+                          {dim.value != null ? fmt(dim.value) : "—"}
                         </span>
                       </div>
                     ))}
@@ -871,7 +874,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-medium" style={{ color: "var(--labs-text-muted)" }}>Score Range</span>
                         <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                          Spread: {w.overallRange.spread}
+                          Spread: {fmt(w.overallRange.spread)}
                         </span>
                       </div>
                       <div className="relative h-2 rounded-full" style={{ background: "var(--labs-border)" }}>
@@ -887,10 +890,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
-                          {w.overallRange.min}
+                          {fmt(w.overallRange.min)}
                         </span>
                         <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
-                          {w.overallRange.max}
+                          {fmt(w.overallRange.max)}
                         </span>
                       </div>
                     </div>
@@ -930,7 +933,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           <div key={d.label}>
                             <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
                             <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
-                              {d.value ?? "—"}
+                              {d.value != null ? fmt(d.value) : "—"}
                             </p>
                           </div>
                         ))}
@@ -965,7 +968,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                             </span>
                             {histDelta != null && (
                               <span className="text-[10px] font-semibold" style={{ color: histDelta > 0 ? "var(--labs-success)" : histDelta < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
-                                {histDelta > 0 ? `↑+${histDelta}` : histDelta < 0 ? `↓${Math.abs(histDelta)}` : "="}
+                                {histDelta > 0 ? `↑+${fmt(histDelta)}` : histDelta < 0 ? `↓${fmt(Math.abs(histDelta))}` : "="}
                               </span>
                             )}
                           </div>
