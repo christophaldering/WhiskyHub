@@ -159,9 +159,15 @@ function GuidedStepView({
   tastingId: string;
   allWhiskies: any[];
 }) {
+  const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  useEffect(() => { setLocalIndex(whiskyIndex); }, [whiskyIndex]);
+  const hostMaxIndex = whiskyIndex;
+  const activeWhisky = allWhiskies[localIndex] ?? whisky;
+  const viewingHostDram = localIndex === whiskyIndex;
+
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
-  const revealStep = tasting.guidedRevealStep ?? 0;
+  const revealStep = viewingHostDram ? (tasting.guidedRevealStep ?? 0) : 3;
   const isBlindStep = revealStep === 0 && tasting.blindMode;
   const maxScore = tasting.ratingScale || 100;
   const mid = Math.round(maxScore / 2);
@@ -184,9 +190,9 @@ function GuidedStepView({
   );
 
   const { data: myRating } = useQuery({
-    queryKey: ["myRating", currentParticipant?.id, whisky?.id],
-    queryFn: () => ratingApi.getMyRating(currentParticipant!.id, whisky!.id),
-    enabled: !!currentParticipant && !!whisky,
+    queryKey: ["myRating", currentParticipant?.id, activeWhisky?.id],
+    queryFn: () => ratingApi.getMyRating(currentParticipant!.id, activeWhisky!.id),
+    enabled: !!currentParticipant && !!activeWhisky,
   });
 
   useEffect(() => {
@@ -203,11 +209,11 @@ function GuidedStepView({
       setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
       setNotes("");
     }
-  }, [myRating, whisky?.id, mid]);
+  }, [myRating, activeWhisky?.id, mid]);
 
   useEffect(() => {
     setGuidedMemo(null);
-  }, [whisky?.id]);
+  }, [activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -215,7 +221,7 @@ function GuidedStepView({
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
       setSaveError(null);
-      queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, whisky?.id] });
+      queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, activeWhisky?.id] });
     },
     onError: (err: any) => {
       const msg = err?.message || "Save failed";
@@ -229,7 +235,7 @@ function GuidedStepView({
   useEffect(() => {
     setSaveError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-  }, [whisky?.id]);
+  }, [activeWhisky?.id]);
 
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
@@ -237,7 +243,7 @@ function GuidedStepView({
 
   const debouncedSave = useCallback(
     (newScores: typeof scores, newNotes: string) => {
-      if (!currentParticipant || !whisky || !tasting) return;
+      if (!currentParticipant || !activeWhisky || !tasting) return;
       if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
@@ -245,14 +251,14 @@ function GuidedStepView({
         if (s !== "open" && s !== "draft") return;
         rateMutation.mutate({
           tastingId,
-          whiskyId: whisky.id,
+          whiskyId: activeWhisky.id,
           participantId: currentParticipant.id,
           ...newScores,
           notes: newNotes,
         });
       }, 800);
     },
-    [currentParticipant, whisky, tasting, tastingId]
+    [currentParticipant, activeWhisky, tasting, tastingId]
   );
 
   const updateScore = (dimension: keyof typeof scores, value: number) => {
@@ -276,31 +282,31 @@ function GuidedStepView({
   if (revealStep === 0) {
     stepBadgeLabel = "Rating Open";
     stepBadgeClass = "labs-badge-success";
-    displayName = isBlindStep ? `Dram ${String.fromCharCode(65 + whiskyIndex)}` : (whisky?.name || "Unknown");
+    displayName = isBlindStep ? `Dram ${String.fromCharCode(65 + localIndex)}` : (activeWhisky?.name || "Unknown");
     displaySub = isBlindStep ? "Blind tasting" : "";
   } else if (revealStep === 1) {
     stepBadgeLabel = "Name Revealed";
     stepBadgeClass = "labs-badge-info";
-    displayName = whisky?.name || "Unknown";
+    displayName = activeWhisky?.name || "Unknown";
     displaySub = "";
   } else if (revealStep === 2) {
     stepBadgeLabel = "Details Revealed";
     stepBadgeClass = "labs-badge-accent";
-    displayName = whisky?.name || "Unknown";
+    displayName = activeWhisky?.name || "Unknown";
     displaySub = [
-      whisky?.distillery,
-      whisky?.age ? `${whisky.age}y` : null,
-      whisky?.region,
+      activeWhisky?.distillery,
+      activeWhisky?.age ? `${activeWhisky.age}y` : null,
+      activeWhisky?.region,
     ].filter(Boolean).join(" · ");
   } else {
     stepBadgeLabel = "Fully Revealed";
     stepBadgeClass = "labs-badge-accent";
-    displayName = whisky?.name || "Unknown";
+    displayName = activeWhisky?.name || "Unknown";
     displaySub = [
-      whisky?.distillery,
-      whisky?.age ? `${whisky.age}y` : null,
-      whisky?.region,
-      whisky?.abv ? `${whisky.abv}%` : null,
+      activeWhisky?.distillery,
+      activeWhisky?.age ? `${activeWhisky.age}y` : null,
+      activeWhisky?.region,
+      activeWhisky?.abv ? `${activeWhisky.abv}%` : null,
     ].filter(Boolean).join(" · ");
   }
 
@@ -310,16 +316,52 @@ function GuidedStepView({
     <div className="labs-fade-in">
       <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
         <div className="flex items-center justify-between mb-3">
-          <span
-            className="text-[11px] font-bold tracking-widest uppercase"
-            style={{ color: "var(--labs-text-muted)" }}
-            data-testid="guided-step-counter"
+          <button
+            onClick={() => setLocalIndex(Math.max(0, localIndex - 1))}
+            disabled={localIndex === 0}
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--labs-surface)",
+              color: localIndex === 0 ? "var(--labs-border)" : "var(--labs-text)",
+              opacity: localIndex === 0 ? 0.3 : 1,
+              border: "none",
+              cursor: localIndex === 0 ? "default" : "pointer",
+            }}
+            data-testid="guided-prev"
           >
-            Dram {whiskyIndex + 1} of {totalWhiskies}
-          </span>
-          <span className={`labs-badge ${stepBadgeClass}`} data-testid="guided-step-badge">
-            {stepBadgeLabel}
-          </span>
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div className="text-center">
+            <span
+              className="text-[11px] font-bold tracking-widest uppercase"
+              style={{ color: "var(--labs-text-muted)" }}
+              data-testid="guided-step-counter"
+            >
+              Dram {localIndex + 1} of {totalWhiskies}
+            </span>
+            <div className="mt-0.5">
+              <span className={`labs-badge ${stepBadgeClass}`} data-testid="guided-step-badge">
+                {viewingHostDram ? stepBadgeLabel : "Review"}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setLocalIndex(Math.min(hostMaxIndex, localIndex + 1))}
+            disabled={localIndex >= hostMaxIndex}
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--labs-surface)",
+              color: localIndex >= hostMaxIndex ? "var(--labs-border)" : "var(--labs-text)",
+              opacity: localIndex >= hostMaxIndex ? 0.3 : 1,
+              border: "none",
+              cursor: localIndex >= hostMaxIndex ? "default" : "pointer",
+            }}
+            data-testid="guided-next"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="text-center py-3">
@@ -337,10 +379,10 @@ function GuidedStepView({
           )}
         </div>
 
-        {whisky?.imageUrl && revealStep >= 3 && (
+        {activeWhisky?.imageUrl && revealStep >= 3 && (
           <div className="mt-3 rounded-xl overflow-hidden" style={{ maxHeight: 200 }}>
             <img
-              src={whisky.imageUrl}
+              src={activeWhisky.imageUrl}
               alt={displayName}
               className="w-full h-full object-cover"
               style={{ maxHeight: 200 }}
@@ -349,7 +391,7 @@ function GuidedStepView({
           </div>
         )}
 
-        {revealStep >= 3 && (
+        {viewingHostDram && revealStep >= 3 && (
           <div
             className="flex items-center gap-2 mt-4 py-2 px-3 rounded-lg"
             style={{ background: "var(--labs-accent-muted)" }}
@@ -436,7 +478,7 @@ function GuidedStepView({
                 <InlineFlavorTags
                   notes={notes}
                   onNotesChange={updateNotes}
-                  profileId={getEffectiveProfile(whisky || {}, isBlindStep).profileId}
+                  profileId={getEffectiveProfile(activeWhisky || {}, isBlindStep).profileId}
                   phase={activeDim as "nose" | "taste" | "finish"}
                   expanded={flavorExpanded}
                   onToggle={() => setFlavorExpanded(!flavorExpanded)}
@@ -571,18 +613,22 @@ function GuidedStepView({
                     {allWhiskies.map((w: any, idx: number) => {
                       const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
                       const overall = rating?.overall;
-                      const isCurrent = idx === whiskyIndex;
+                      const isCurrent = idx === localIndex;
                       const label = isBlindStep
                         ? `Dram ${String.fromCharCode(65 + idx)}`
                         : (w.name || `Dram ${idx + 1}`);
+                      const isNavigable = idx <= hostMaxIndex;
                       return (
                         <div
                           key={w.id}
+                          onClick={() => { if (isNavigable) setLocalIndex(idx); }}
                           style={{
                             display: "flex", alignItems: "center", gap: 10,
                             padding: "8px 10px", borderRadius: 8,
                             background: isCurrent ? "var(--labs-accent-muted)" : "transparent",
                             border: isCurrent ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))",
+                            cursor: isNavigable ? "pointer" : "default",
+                            opacity: isNavigable ? 1 : 0.5,
                           }}
                           data-testid={`guided-calibration-row-${idx}`}
                         >
@@ -639,7 +685,7 @@ function GuidedStepView({
         </div>
       )}
 
-      <GuidedProgressDots total={totalWhiskies} currentIndex={whiskyIndex} />
+      <GuidedProgressDots total={totalWhiskies} currentIndex={localIndex} />
     </div>
   );
 }
