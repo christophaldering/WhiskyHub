@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, SlidersHorizontal, Star, Wine, ChevronRight, TrendingUp, Hash, ArrowUpDown } from "lucide-react";
@@ -14,6 +14,7 @@ export default function LabsExplore() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("most_rated");
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortBtnRef = useRef<HTMLButtonElement>(null);
 
   const { data: whiskies, isLoading } = useQuery({
     queryKey: ["labs-explore-whiskies", searchText, selectedRegion],
@@ -115,8 +116,9 @@ export default function LabsExplore() {
         <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
           {sortedWhiskies.length} {sortedWhiskies.length === 1 ? "whisky" : "whiskies"}
         </p>
-        <div style={{ position: "relative", zIndex: 30 }}>
+        <div style={{ position: "relative" }}>
           <button
+            ref={sortBtnRef}
             className="labs-btn-ghost flex items-center gap-1.5 text-xs py-1.5 px-3"
             onClick={() => setShowSortMenu(!showSortMenu)}
             data-testid="labs-explore-sort-toggle"
@@ -126,15 +128,17 @@ export default function LabsExplore() {
           </button>
           {showSortMenu && (
             <>
-              <div className="fixed inset-0" style={{ zIndex: 40 }} onClick={() => setShowSortMenu(false)} />
+              <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setShowSortMenu(false)} />
               <div
                 className="py-1 min-w-[140px]"
                 style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "100%",
-                  marginTop: 4,
-                  zIndex: 50,
+                  position: "fixed",
+                  right: 20,
+                  top: (() => {
+                    const r = sortBtnRef.current?.getBoundingClientRect();
+                    return r ? r.bottom + 4 : 100;
+                  })(),
+                  zIndex: 9999,
                   background: "var(--labs-surface-elevated)",
                   border: "1px solid var(--labs-border)",
                   borderRadius: "var(--labs-radius-sm)",
