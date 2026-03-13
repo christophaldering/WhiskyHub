@@ -1178,7 +1178,7 @@ function MobileCompanion({
                 >
                   <Camera className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
                   <p className="text-xs text-center" style={{ color: "var(--labs-text-secondary)" }}>
-                    Photo a menu or tasting sheet
+                    Photo, PDF or tasting sheet
                   </p>
                   <div className="flex gap-2">
                     <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1.5" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none" }}>
@@ -4178,7 +4178,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               }}
             >
               <Upload className="w-6 h-6" />
-              <p>Drop photos or files here</p>
+              <p>Drop photos, PDFs or files here</p>
               <div className="flex gap-2 mt-1">
                 <label className="labs-btn-ghost text-xs cursor-pointer">
                   <Camera className="w-3 h-3 inline mr-1" />

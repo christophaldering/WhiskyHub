@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, useSearch, useLocation } from "wouter";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import {
-  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User, ChevronLeft
+  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User, ChevronLeft, FileText
 } from "lucide-react";
 
 type ScanStep = "select-participant" | "confirm" | "capture" | "scanning" | "review" | "success";
@@ -283,17 +283,16 @@ export default function LabsPaperScan() {
         <div data-testid="scan-step-capture">
           <div className="labs-card" style={{ padding: 16, marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", marginBottom: 12 }}>
-              {t("m2.paperScan.takePhoto", "Photograph Your Sheet")}
+              {t("m2.paperScan.takePhoto", "Upload Photo or PDF")}
             </div>
             <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
-              {t("m2.paperScan.photoTip", "Place your sheet on a flat surface with good lighting. Make sure all scores and notes are visible.")}
+              {t("m2.paperScan.photoTip", "Take a photo of your sheet or upload a PDF with tasting notes and scores.")}
             </p>
 
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,.pdf,application/pdf"
               multiple
               onChange={handleFileSelect}
               style={{ display: "none" }}
@@ -308,54 +307,105 @@ export default function LabsPaperScan() {
                 data-testid="button-scan-camera"
               >
                 <Camera style={{ width: 16, height: 16 }} />
-                {t("m2.paperScan.addPhoto", "Add Photo")}
+                {t("m2.paperScan.addPhoto", "Photo")}
+              </button>
+              <button
+                onClick={() => {
+                  const pdfInput = document.createElement("input");
+                  pdfInput.type = "file";
+                  pdfInput.accept = ".pdf,application/pdf";
+                  pdfInput.multiple = true;
+                  pdfInput.onchange = (e: any) => {
+                    const files = Array.from(e.target.files || []) as File[];
+                    if (files.length > 0) {
+                      setPhotos((prev) => [...prev, ...files]);
+                      setError("");
+                    }
+                  };
+                  pdfInput.click();
+                }}
+                className="labs-btn-secondary"
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                data-testid="button-scan-pdf"
+              >
+                <FileText style={{ width: 16, height: 16 }} />
+                PDF
               </button>
             </div>
 
             {photos.length > 0 && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                {photos.map((photo, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      position: "relative",
-                      width: 80,
-                      height: 80,
-                      borderRadius: "var(--labs-radius-sm)",
-                      overflow: "hidden",
-                      border: "1px solid var(--labs-border)",
-                    }}
-                    data-testid={`scan-photo-preview-${idx}`}
-                  >
-                    <img
-                      src={URL.createObjectURL(photo)}
-                      alt={`Sheet ${idx + 1}`}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                    <button
-                      onClick={() => removePhoto(idx)}
+                {photos.map((photo, idx) => {
+                  const isPdf = photo.type === "application/pdf" || photo.name.toLowerCase().endsWith(".pdf");
+                  return (
+                    <div
+                      key={idx}
                       style={{
-                        position: "absolute",
-                        top: 4,
-                        right: 4,
-                        width: 22,
-                        height: 22,
-                        borderRadius: 11,
-                        border: "none",
-                        background: "rgba(0,0,0,0.6)",
-                        color: "var(--labs-on-accent)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        padding: 0,
+                        position: "relative",
+                        width: isPdf ? "auto" : 80,
+                        minWidth: isPdf ? 120 : undefined,
+                        height: 80,
+                        borderRadius: "var(--labs-radius-sm)",
+                        overflow: "hidden",
+                        border: "1px solid var(--labs-border)",
+                        background: isPdf ? "var(--labs-surface-alt)" : undefined,
                       }}
-                      data-testid={`button-remove-photo-${idx}`}
+                      data-testid={`scan-photo-preview-${idx}`}
                     >
-                      <Trash2 style={{ width: 12, height: 12 }} />
-                    </button>
-                  </div>
-                ))}
+                      {isPdf ? (
+                        <div style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                          padding: "8px 12px",
+                          gap: 4,
+                        }}>
+                          <FileText style={{ width: 24, height: 24, color: "var(--labs-accent)" }} />
+                          <span style={{
+                            fontSize: 10,
+                            color: "var(--labs-text-muted)",
+                            maxWidth: 100,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {photo.name}
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Sheet ${idx + 1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      )}
+                      <button
+                        onClick={() => removePhoto(idx)}
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          border: "none",
+                          background: "rgba(0,0,0,0.6)",
+                          color: "var(--labs-on-accent)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                        data-testid={`button-remove-photo-${idx}`}
+                      >
+                        <Trash2 style={{ width: 12, height: 12 }} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

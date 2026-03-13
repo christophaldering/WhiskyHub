@@ -9347,7 +9347,13 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
             type: "image_url",
             image_url: { url: `data:${file.mimetype};base64,${base64}` },
           });
-        } else if (ext === ".pdf" || file.mimetype === "text/plain") {
+        } else if (ext === ".pdf" || file.mimetype === "application/pdf") {
+          const { extractTextFromPdf } = await import("./pdf-utils");
+          const pdfText = await extractTextFromPdf(file.buffer);
+          if (pdfText.trim()) {
+            textContent += "\n\n[PDF: " + file.originalname + "]\n" + pdfText;
+          }
+        } else if (file.mimetype === "text/plain") {
           textContent += "\n\n" + file.buffer.toString("utf-8");
         }
       }
@@ -11591,11 +11597,11 @@ User's style request: ${sanitizedPrompt}`;
 
   const sheetScanUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 20 * 1024 * 1024 },
     fileFilter: (_req: any, file: any, cb: any) => {
-      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
       if (allowed.includes(file.mimetype)) cb(null, true);
-      else cb(new Error("Only image files are allowed"));
+      else cb(new Error("Only image or PDF files are allowed"));
     },
   });
 
@@ -11621,7 +11627,7 @@ User's style request: ${sanitizedPrompt}`;
 
       const files = (req as any).files as Express.Multer.File[];
       if (!files || files.length === 0) {
-        return res.status(400).json({ message: "At least one photo is required" });
+        return res.status(400).json({ message: "At least one photo or PDF is required" });
       }
 
       const participantId = req.body.participantId || null;
@@ -11643,7 +11649,22 @@ User's style request: ${sanitizedPrompt}`;
 
       const ratingScale = tasting.ratingScale || 100;
 
-      const imageMessages: any[] = files.map(f => ({
+      const imageFiles = files.filter(f => f.mimetype.startsWith("image/"));
+      const pdfFiles = files.filter(f => f.mimetype === "application/pdf");
+
+      let pdfTextContent = "";
+      if (pdfFiles.length > 0) {
+        const { extractTextFromPdf } = await import("./pdf-utils");
+        for (const pf of pdfFiles) {
+          const text = await extractTextFromPdf(pf.buffer);
+          if (text.trim()) pdfTextContent += "\n\n" + text;
+        }
+      }
+
+      const hasPdfText = pdfTextContent.trim().length > 0;
+      const hasImages = imageFiles.length > 0;
+
+      const imageMessages: any[] = imageFiles.map(f => ({
         type: "image_url" as const,
         image_url: {
           url: `data:${f.mimetype};base64,${f.buffer.toString("base64")}`,
@@ -11651,15 +11672,21 @@ User's style request: ${sanitizedPrompt}`;
         },
       }));
 
-      const systemPrompt = `You are an AI that extracts whisky tasting scores from photographs of handwritten paper tasting sheets.
+      const sourceDescription = hasPdfText && hasImages
+        ? "photographs and PDF documents"
+        : hasPdfText
+          ? "PDF documents"
+          : "photographs of handwritten paper tasting sheets";
+
+      const systemPrompt = `You are an AI that extracts whisky tasting scores from ${sourceDescription}.
 
 The tasting "${tasting.title}" uses a rating scale of 0-${ratingScale}.
 The whisky lineup is:
 ${whiskyLineup}
 
-Extract from the photographed sheet(s):
-1. Participant name (if visible on the sheet)
-2. For each whisky: nose score, taste score, finish score, balance score, overall score, and any handwritten tasting notes
+Extract from the provided content:
+1. Participant name (if visible)
+2. For each whisky: nose score, taste score, finish score, balance score, overall score, and any tasting notes
 
 Return ONLY valid JSON in this exact format:
 {
@@ -11674,33 +11701,52 @@ Return ONLY valid JSON in this exact format:
       "finish": number or null,
       "balance": number or null,
       "overall": number or null,
-      "notes": "transcribed handwritten notes or empty string"
+      "notes": "transcribed tasting notes or empty string"
     }
   ]
 }
 
 Rules:
-- Match whiskies by their number/position on the sheet to the lineup above
+- Match whiskies by their number/position to the lineup above
 - Scores must be within 0-${ratingScale} range
 - If a score field is empty or unreadable, use null
-- Transcribe handwritten notes as accurately as possible
+- Transcribe tasting notes as accurately as possible (preserve original language)
 - If participant name is not visible, set participantName to null
 - Return scores array in the same order as the whisky lineup
-- Only include whiskies that have at least one score or note on the sheet`;
+- Only include whiskies that have at least one score or note
+- For PDF documents: extract structured data from tables, columns, and text sections
+- Combine nose/palate/finish descriptions into the notes field`;
+
+      const userContent: any[] = [];
+
+      if (hasPdfText) {
+        userContent.push({
+          type: "text",
+          text: `Extract all scores and tasting notes from this document:\n\n${pdfTextContent}`,
+        });
+      }
+
+      if (hasImages) {
+        userContent.push({
+          type: "text",
+          text: hasPdfText
+            ? "Also analyze these photos for additional scores:"
+            : "Extract all scores and notes from this tasting sheet photograph:",
+        });
+        userContent.push(...imageMessages);
+      }
+
+      if (userContent.length === 0) {
+        return res.status(400).json({ message: "Could not extract any content from uploaded files" });
+      }
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract all scores and notes from this tasting sheet photograph:" },
-              ...imageMessages,
-            ],
-          },
+          { role: "user", content: userContent },
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         temperature: 0.1,
       });
 
