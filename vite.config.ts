@@ -39,6 +39,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "wouter", "@tanstack/react-query"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-tooltip", "@radix-ui/react-select", "@radix-ui/react-accordion"],
+          charts: ["recharts"],
+          pdf: ["jspdf"],
+          icons: ["lucide-react"],
+          i18n: ["i18next", "react-i18next"],
+          motion: ["framer-motion"],
+        },
+      },
+    },
   },
   server: {
     host: "0.0.0.0",
