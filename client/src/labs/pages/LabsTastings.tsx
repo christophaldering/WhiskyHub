@@ -148,7 +148,8 @@ export default function LabsTastings() {
           style={{ color: "var(--labs-text-muted)" }}
         />
         <input
-          className="labs-input pl-10"
+          className="labs-input"
+          style={{ paddingLeft: 40 }}
           placeholder="Search tastings..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

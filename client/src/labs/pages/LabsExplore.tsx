@@ -73,7 +73,8 @@ export default function LabsExplore() {
           style={{ color: "var(--labs-text-muted)" }}
         />
         <input
-          className="labs-input pl-11 pr-4"
+          className="labs-input"
+          style={{ paddingLeft: 44, paddingRight: 16 }}
           placeholder="Search by name, distillery, region…"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
