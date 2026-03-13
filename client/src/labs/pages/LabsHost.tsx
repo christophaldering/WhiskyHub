@@ -3523,9 +3523,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     );
   }
 
-  const showCockpitButton = !isMobile && tasting && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "reveal" || tasting.status === "closed");
+  const showCockpitButton = !isMobile && tasting && (tasting.status === "open" || tasting.status === "reveal");
 
-  if (cockpitMode && tasting && currentParticipant) {
+  if (cockpitMode && tasting && currentParticipant && (tasting.status === "open" || tasting.status === "reveal")) {
     return (
       <LabsHostCockpit
         tastingId={tastingId}

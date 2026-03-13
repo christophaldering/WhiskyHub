@@ -247,9 +247,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const guidedRevealStep = tasting.guidedRevealStep ?? 0;
   const ratingScale = tasting.ratingScale ?? 100;
   const scaleDefault = Math.round(ratingScale / 2);
-  const isLive = status === "open";
+  const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
-  const isEnded = status === "closed" || status === "reveal" || status === "archived";
 
   const rv = isBlind ? getRevealState(tasting, whiskies.length) : null;
   const activeWhisky = whiskies[isGuided ? Math.max(0, guidedIdx) : 0] || null;
@@ -391,10 +390,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <div style={{
                   width: 10, height: 10, borderRadius: 5,
-                  background: isLive ? "var(--labs-success)" : isDraft ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  background: status === "open" ? "var(--labs-success)" : status === "reveal" ? "var(--labs-accent)" : isDraft ? "var(--labs-accent)" : "var(--labs-text-muted)",
                 }} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-text)" }}>
-                  {isDraft ? "Draft" : isLive ? "Live — Ratings Open" : status === "closed" ? "Closed" : status === "reveal" ? "Reveal Phase" : "Archived"}
+                  {isDraft ? "Draft" : status === "open" ? "Live — Ratings Open" : status === "reveal" ? "Reveal Phase" : status === "closed" ? "Closed" : "Archived"}
                 </span>
               </div>
               {isBlind && <span className="labs-badge labs-badge-accent" style={{ marginRight: 6 }}><EyeOff style={{ width: 11, height: 11 }} /> Blind</span>}
@@ -444,7 +443,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   </button>
                 )}
 
-                {isLive && (
+                {status === "open" && (
                   <>
                     {!confirmEnd ? (
                       <button onClick={handleEndSession} className="labs-btn-secondary" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="cockpit-end">
