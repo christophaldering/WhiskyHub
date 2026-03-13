@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
@@ -296,6 +297,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>>({});
@@ -484,7 +486,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
         <button
           className="labs-btn-secondary"
-          onClick={() => navigate("/labs/tastings")}
+          onClick={goBack}
           data-testid="results-error-back"
         >
           Tastings
@@ -514,7 +516,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting could not be loaded.</p>
         <button
           className="labs-btn-secondary"
-          onClick={() => navigate("/labs/tastings")}
+          onClick={goBack}
           data-testid="results-back-tastings"
         >
           Tastings
@@ -572,7 +574,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="results-back-btn"
@@ -1036,7 +1038,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
       <div className="flex justify-center gap-3 pb-8">
         <button
           className="labs-btn-secondary"
-          onClick={() => navigate("/labs/tastings")}
+          onClick={goBack}
           data-testid="results-all-tastings"
         >
           All Tastings

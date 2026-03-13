@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft } from "lucide-react";
 import { useSession, getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
@@ -8,6 +9,7 @@ import { signIn } from "@/lib/session";
 
 export default function LabsJoin() {
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const session = useSession();
   const { currentParticipant } = useAppStore();
   const params = useParams<{ code?: string }>();
@@ -283,7 +285,7 @@ export default function LabsJoin() {
   return (
     <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-join-back"

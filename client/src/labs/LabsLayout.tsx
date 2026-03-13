@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import { Link, useLocation } from "wouter";
 import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -248,6 +248,19 @@ function useLabsTheme() {
   return { theme, toggle };
 }
 
+const scrollCache = new Map<string, number>();
+
+export function useLabsBack(fallback: string) {
+  const [, navigate] = useLocation();
+  return useCallback(() => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate(fallback);
+    }
+  }, [fallback, navigate]);
+}
+
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -258,6 +271,20 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   useHeartbeat();
   useFriendOnlineNotifications();
   const { theme } = useLabsTheme();
+  const prevLocationRef = useRef(location);
+
+  useEffect(() => {
+    if (prevLocationRef.current !== location) {
+      scrollCache.set(prevLocationRef.current, window.scrollY);
+      prevLocationRef.current = location;
+      const cached = scrollCache.get(location);
+      if (cached !== undefined) {
+        requestAnimationFrame(() => window.scrollTo(0, cached));
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, [location]);
 
   useEffect(() => {
     const session = getSession();

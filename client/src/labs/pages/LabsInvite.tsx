@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { inviteApi } from "@/lib/api";
@@ -13,6 +14,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
   const routeParams = useParams<{ token: string }>();
   const token = params?.token || routeParams?.token || "";
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const { currentParticipant } = useAppStore();
   const [accepted, setAccepted] = useState(false);
 
@@ -71,7 +73,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
           </p>
           <button
             className="labs-btn-primary"
-            onClick={() => navigate("/labs/tastings")}
+            onClick={goBack}
             data-testid="button-labs-invite-home"
           >
             Go to Tastings

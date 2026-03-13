@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ChevronLeft, Loader2,
@@ -944,6 +945,7 @@ function MobileCompanion({
   tastingId: string;
   navigate: (path: string) => void;
 }) {
+  const goBack = useLabsBack("/labs/tastings");
   const statusCfg = STATUS_CONFIG[(tasting.status as string)] || STATUS_CONFIG.draft;
   const whiskyCount = whiskies.length;
   const participantCount = participants.length;
@@ -1102,7 +1104,7 @@ function MobileCompanion({
   return (
     <div className="px-4 py-5 labs-fade-in" style={{ paddingBottom: 120 }} data-testid="labs-mobile-companion">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-mobile-back"
@@ -1773,6 +1775,7 @@ function LabsSegmentedSelect({ value, options, onChange }: {
 
 function CreateTastingForm() {
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const { currentParticipant } = useAppStore();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -3165,6 +3168,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [codeCopied, setCodeCopied] = useState(false);
@@ -3574,7 +3578,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-host-error-back">
+        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-host-error-back">
           Tastings
         </button>
       </div>
@@ -3598,7 +3602,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       <div className="labs-empty" style={{ minHeight: "60vh" }}>
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Tasting not found</p>
-        <button className="labs-btn-ghost mt-4" onClick={() => navigate("/labs/tastings")} data-testid="labs-host-back-to-tastings">
+        <button className="labs-btn-ghost mt-4" onClick={goBack} data-testid="labs-host-back-to-tastings">
           Tastings
         </button>
       </div>
@@ -3641,7 +3645,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   return (
     <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-host-back"

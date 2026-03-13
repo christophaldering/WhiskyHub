@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import {
   ChevronLeft,
@@ -41,6 +42,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const [showQr, setShowQr] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -139,7 +141,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-not-found-back">Tastings</button>
+        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-not-found-back">Tastings</button>
       </div>
     );
   }
@@ -163,7 +165,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-notfound-back">Tastings</button>
+        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-notfound-back">Tastings</button>
       </div>
     );
   }
@@ -171,7 +173,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   return (
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-detail-back"

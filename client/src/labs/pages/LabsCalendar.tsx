@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { useAppStore } from "@/lib/store";
 import { calendarApi, friendsApi, pidHeaders } from "@/lib/api";
 import {
@@ -76,6 +77,7 @@ function getTastingRoute(ev: CalendarEvent, participantId?: string): string {
 export default function LabsCalendar() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/tastings");
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
@@ -160,7 +162,7 @@ export default function LabsCalendar() {
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-calendar-page">
       <button
-        onClick={() => navigate("/labs/tastings")}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-calendar-back"
