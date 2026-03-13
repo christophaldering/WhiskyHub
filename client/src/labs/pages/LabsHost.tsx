@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -924,6 +925,7 @@ function MobileCompanion({
   const whiskyCount = whiskies.length;
   const participantCount = participants.length;
   const ratingCount = ratings.length;
+  const { t } = useTranslation();
   const isLive = tasting.status === "open";
   const isDraft = tasting.status === "draft";
   const isEnded = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
@@ -1030,15 +1032,12 @@ function MobileCompanion({
   };
 
   const handleMobileAiConfirm = async () => {
-    let ok = 0, fail = 0, skipped = 0;
+    let ok = 0, fail = 0, dupeAdded = 0;
     const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
-        if (existingNames.has(normalizeName(w.name || ""))) {
-          skipped++;
-          continue;
-        }
+        const isDupe = existingNames.has(normalizeName(w.name || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -1057,21 +1056,19 @@ function MobileCompanion({
             sortOrder: whiskyCount + ok + 1,
           });
           ok++;
+          if (isDupe) dupeAdded++;
           existingNames.add(normalizeName(w.name || ""));
         } catch { fail++; }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setMobileAiSummary({ added: ok, skipped, failed: fail });
-    if (fail === 0 && skipped === 0) {
-      setMobileAiResults([]);
-      setMobileAiSelected(new Set());
+    setMobileAiSummary({ added: ok, skipped: dupeAdded, failed: fail });
+    setMobileAiResults([]);
+    setMobileAiSelected(new Set());
+    if (fail === 0) {
       setMobileAiFiles([]);
       setMobileAiText("");
       setTimeout(() => { setMobileAiImport(false); setMobileAiSummary(null); }, 2500);
-    } else {
-      setMobileAiResults([]);
-      setMobileAiSelected(new Set());
     }
   };
 
@@ -1266,9 +1263,9 @@ function MobileCompanion({
 
                 {mobileAiSummary && (
                   <div className="text-xs p-3 rounded-lg space-y-1" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="mobile-ai-summary">
-                    {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} added</p>}
-                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} skipped (already in lineup)</p>}
-                    {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} failed</p>}
+                    {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} {t("labs.aiImport.added", "added")}</p>}
+                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} {t("labs.aiImport.addedAsDuplicate", "added (were already in lineup)")}</p>}
+                    {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
                 )}
 
@@ -1279,15 +1276,15 @@ function MobileCompanion({
                   <div className="space-y-2 mt-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
-                        Found {mobileAiResults.length}
-                        {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} already in lineup)</span>}
+                        {t("labs.aiImport.found", "Found {{count}}", { count: mobileAiResults.length })}
+                        {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                       </span>
                       <button
                         className="labs-btn-ghost text-xs"
                         onClick={() => setMobileAiSelected(mobileAiSelected.size === nonDupeCount ? new Set() : new Set(mobileAiResults.map((_, i) => i).filter(i => !dupeIndices.has(i))))}
                         data-testid="mobile-ai-select-all"
                       >
-                        {mobileAiSelected.size === nonDupeCount && nonDupeCount > 0 ? "Deselect" : "Select New"}
+                        {mobileAiSelected.size === nonDupeCount && nonDupeCount > 0 ? t("labs.aiImport.deselectAll", "Deselect") : t("labs.aiImport.selectNew", "Select New")}
                       </button>
                     </div>
                     {mobileAiResults.map((w: any, i: number) => {
@@ -1298,7 +1295,7 @@ function MobileCompanion({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-medium truncate" style={{ margin: 0 }}>{w.name}</p>
-                            {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>duplicate</span>}
+                            {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                           </div>
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                             {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
@@ -1308,7 +1305,7 @@ function MobileCompanion({
                       );
                     })}
                     <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
-                    Add {mobileAiSelected.size} Whiskies
+                    {t("labs.aiImport.addCount", "Add {{count}} Whiskies", { count: mobileAiSelected.size })}
                   </button>
                 </div>
                   );
@@ -3126,6 +3123,7 @@ function LabsSettingsPanel({
 }
 
 function ManageTasting({ tastingId }: { tastingId: string }) {
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -3295,15 +3293,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const handleAiImportConfirm = async () => {
     let added = 0;
     let failed = 0;
-    let skipped = 0;
+    let dupeAdded = 0;
     const existingNames = new Set((whiskies || []).map((w: any) => normalizeName(w.name || "")));
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
-        if (existingNames.has(normalizeName(w.name || ""))) {
-          skipped++;
-          continue;
-        }
+        const isDupe = existingNames.has(normalizeName(w.name || ""));
         try {
           await whiskyApi.create({
             tastingId,
@@ -3322,6 +3317,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             sortOrder: (whiskies?.length || 0) + added + 1,
           });
           added++;
+          if (isDupe) dupeAdded++;
           existingNames.add(normalizeName(w.name || ""));
         } catch {
           failed++;
@@ -3329,12 +3325,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setAiImportSummary({ added, skipped, failed });
+    setAiImportSummary({ added, skipped: dupeAdded, failed });
     setAiImportResults([]);
     setAiImportSelected(new Set());
     setAiImportFiles([]);
     setAiImportText("");
-    if (failed === 0 && skipped === 0) {
+    if (failed === 0) {
       setTimeout(() => { setShowAiImport(false); setAiImportSummary(null); }, 2500);
     }
   };
@@ -4313,9 +4309,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
             {aiImportSummary && (
               <div className="text-xs p-3 rounded-lg space-y-1 mt-2" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="labs-ai-import-summary">
-                {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} added</p>}
-                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} skipped (already in lineup)</p>}
-                {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} failed</p>}
+                {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} {t("labs.aiImport.added", "added")}</p>}
+                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} {t("labs.aiImport.addedAsDuplicate", "added (were already in lineup)")}</p>}
+                {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
             )}
 
@@ -4326,8 +4322,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <div className="space-y-2 mt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
-                    Found {aiImportResults.length} whiskies
-                    {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} already in lineup)</span>}
+                    {t("labs.aiImport.found", "Found {{count}}", { count: aiImportResults.length })}
+                    {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                   </span>
                   <button
                     className="labs-btn-ghost text-xs"
@@ -4340,7 +4336,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     }}
                     data-testid="labs-ai-import-select-all"
                   >
-                    {aiImportSelected.size === nonDupeCount && nonDupeCount > 0 ? "Deselect All" : "Select New"}
+                    {aiImportSelected.size === nonDupeCount && nonDupeCount > 0 ? t("labs.aiImport.deselectAll", "Deselect All") : t("labs.aiImport.selectNew", "Select New")}
                   </button>
                 </div>
                 {aiImportResults.map((w: any, i: number) => {
@@ -4363,7 +4359,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-medium" style={{ margin: 0 }}>{w.name}</p>
-                        {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>duplicate</span>}
+                        {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                       </div>
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                         {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
@@ -4378,7 +4374,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   disabled={aiImportSelected.size === 0}
                   data-testid="labs-ai-import-confirm"
                 >
-                  Add {aiImportSelected.size} Whiskies
+                  {t("labs.aiImport.addCount", "Add {{count}} Whiskies", { count: aiImportSelected.size })}
                 </button>
               </div>
               );

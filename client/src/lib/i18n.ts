@@ -4322,6 +4322,19 @@ const resources = {
         whisky: "whisky",
         whisky_plural: "whiskies",
       },
+      labs: {
+        aiImport: {
+          found: "Found {{count}}",
+          alreadyInLineup: "already in lineup",
+          duplicate: "duplicate",
+          selectNew: "Select New",
+          deselectAll: "Deselect All",
+          addCount: "Add {{count}} Whiskies",
+          added: "added",
+          addedAsDuplicate: "added (were already in lineup)",
+          failed: "failed",
+        },
+      },
       m2: {
         ai: {
           reportLanguage: "Report language",
@@ -10093,6 +10106,19 @@ const resources = {
         backToHost: "Zurück zum Host",
         whisky: "Whisky",
         whisky_plural: "Whiskys",
+      },
+      labs: {
+        aiImport: {
+          found: "{{count}} gefunden",
+          alreadyInLineup: "bereits im Lineup",
+          duplicate: "Duplikat",
+          selectNew: "Neue auswählen",
+          deselectAll: "Alle abwählen",
+          addCount: "{{count}} Whiskys hinzufügen",
+          added: "hinzugefügt",
+          addedAsDuplicate: "hinzugefügt (waren bereits im Lineup)",
+          failed: "fehlgeschlagen",
+        },
       },
       m2: {
         ai: {
