@@ -635,7 +635,7 @@ function PrintMaterialsSection({
   const handleGenerateMat = () => {
     setGenerating("mat");
     try {
-      generateBlankTastingMat("de", whiskyCount);
+      generateBlankTastingMat("de", whiskyCount, (tasting.ratingScale as number) || 10);
     } catch (e) {
       console.error("Mat generation failed:", e);
     } finally {

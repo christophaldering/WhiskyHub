@@ -471,7 +471,7 @@ export default function LabsRatingPanel({
 
   const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
   const allDimsScored = missingDims.length === 0;
-  const overallGated = showDetailed && !allDimsScored;
+  const overallGated = !allDimsScored;
 
   const renderOverall = () => (
     <div style={{ marginTop: showToggle && showDetailed ? 8 : 16 }}>

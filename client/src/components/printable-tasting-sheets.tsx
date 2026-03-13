@@ -1183,7 +1183,7 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
   doc.save(`${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
 }
 
-export function generateBlankTastingMat(lang: string, slots = 6) {
+export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 10) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = 297;
   const pageH = 210;
@@ -1225,7 +1225,7 @@ export function generateBlankTastingMat(lang: string, slots = 6) {
     doc.setFontSize(8);
     doc.setTextColor(...SLATE);
     doc.text(`${tp("printableSheets.pdfName", lang)}: ___________________`, cx + 6, cy + cellH - 14);
-    doc.text(`${tp("printableSheets.pdfRatingLabel", lang)}: __ / 10`, cx + 6, cy + cellH - 8);
+    doc.text(`${tp("printableSheets.pdfRatingLabel", lang)}: __ / ${ratingScale}`, cx + 6, cy + cellH - 8);
   }
 
   doc.setFontSize(7);
