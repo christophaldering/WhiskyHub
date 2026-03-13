@@ -217,46 +217,49 @@ export default function LabsCircle() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="labs-serif text-xl font-semibold" data-testid="labs-circle-title">
-          Circle
-        </h1>
-        {onlineCount > 0 && (
-          <span
-            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-            style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
-            data-testid="labs-circle-online-count"
+      <div style={{ marginBottom: 20 }}>
+        <div className="flex items-center justify-between">
+          <h1
+            className="labs-serif"
+            style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
+            data-testid="labs-circle-title"
           >
-            <Wifi className="w-3 h-3" />
-            {onlineCount} online
-          </span>
-        )}
+            Circle
+          </h1>
+          {onlineCount > 0 && (
+            <span
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+              style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
+              data-testid="labs-circle-online-count"
+            >
+              <Wifi className="w-3 h-3" />
+              {onlineCount} online
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
+          Your community, rankings & connections
+        </p>
       </div>
-      <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-        Your community, rankings & connections
-      </p>
 
-      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 20, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {tabs.map((t) => (
           <button
             key={t.key}
-            className="labs-btn-ghost px-3 py-2 rounded-full text-xs transition-all whitespace-nowrap flex items-center gap-1.5"
-            style={{
-              background: tab === t.key ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-              color: tab === t.key ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-              border: `1px solid ${tab === t.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
-              fontWeight: tab === t.key ? 600 : 500,
-              flexShrink: 0,
-            }}
+            className={`labs-chip ${tab === t.key ? "labs-chip-active" : ""}`}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
             onClick={() => setTab(t.key)}
             data-testid={`labs-circle-tab-${t.key}`}
           >
-            <t.icon className="w-3 h-3" />
+            <t.icon style={{ width: 14, height: 14 }} />
             {t.label}
             {t.key === "friends" && pendingList.length > 0 && (
               <span
-                className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold"
-                style={{ background: "var(--labs-danger)", color: "var(--labs-bg)" }}
+                className="inline-flex items-center justify-center rounded-full"
+                style={{
+                  width: 16, height: 16, fontSize: 9, fontWeight: 700,
+                  background: "var(--labs-danger)", color: "var(--labs-on-accent)",
+                }}
               >
                 {pendingList.length}
               </span>

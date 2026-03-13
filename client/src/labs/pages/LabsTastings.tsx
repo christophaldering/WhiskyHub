@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine, Users } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -16,6 +16,25 @@ const STATUS_CONFIG: Record<string, { label: string; cssClass: string }> = {
   reveal: { label: "Reveal", cssClass: "labs-badge-accent" },
   archived: { label: "Completed", cssClass: "labs-badge-info" },
 };
+
+function formatTastingDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const now = new Date();
+    const isThisYear = d.getFullYear() === now.getFullYear();
+    const locale = navigator.language || "en-US";
+    return d.toLocaleDateString(locale, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      ...(isThisYear ? {} : { year: "numeric" }),
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function LabsTastings() {
   const { currentParticipant } = useAppStore();
@@ -99,59 +118,84 @@ export default function LabsTastings() {
 
   return (
     <div className="labs-page-wide labs-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <h1
-          className="labs-serif text-xl font-semibold"
-          data-testid="labs-tastings-title"
-        >
-          Tastings
-        </h1>
-        {counts.live > 0 && (
-          <span className="labs-badge labs-badge-success" data-testid="labs-tastings-live-count">
-            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-            {counts.live} Live
-          </span>
-        )}
+      <div style={{ marginBottom: 24 }}>
+        <div className="flex items-center justify-between">
+          <h1
+            className="labs-serif"
+            style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
+            data-testid="labs-tastings-title"
+          >
+            Tastings
+          </h1>
+          {counts.live > 0 && (
+            <span
+              className="labs-badge labs-badge-success"
+              style={{ fontSize: 11 }}
+              data-testid="labs-tastings-live-count"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {counts.live} Live
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-5 labs-fade-in labs-stagger-1">
+      <div className="labs-action-grid labs-fade-in labs-stagger-1" style={{ marginBottom: 20 }}>
         <Link href="/labs/join">
-          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-join">
-            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-accent-muted)" }}>
-              <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+          <div className="labs-action-item" data-testid="labs-action-join">
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--labs-accent-muted)",
+              }}
+            >
+              <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
             </div>
-            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Join</div>
-            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Participate</div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Join</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Participate</span>
           </div>
         </Link>
         <Link href="/labs/solo">
-          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-solo">
-            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-surface-elevated)" }}>
+          <div className="labs-action-item" data-testid="labs-action-solo">
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--labs-surface-elevated)",
+              }}
+            >
               <PenLine className="w-5 h-5" style={{ color: "var(--labs-text-secondary)" }} />
             </div>
-            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Solo</div>
-            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Log a dram</div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Solo</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Log a dram</span>
           </div>
         </Link>
         <Link href="/labs/host">
-          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-host">
-            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-success-muted)" }}>
+          <div className="labs-action-item" data-testid="labs-action-host">
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--labs-success-muted)",
+              }}
+            >
               <Crown className="w-5 h-5" style={{ color: "var(--labs-success)" }} />
             </div>
-            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Host</div>
-            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Create session</div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Host</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Create session</span>
           </div>
         </Link>
       </div>
 
-      <div className="relative mb-4">
+      <div className="relative labs-fade-in labs-stagger-1" style={{ marginBottom: 16 }}>
         <Search
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4"
-          style={{ color: "var(--labs-text-muted)" }}
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4"
+          style={{ color: "var(--labs-text-muted)", left: 14 }}
         />
         <input
           className="labs-input"
-          style={{ paddingLeft: 40 }}
+          style={{ paddingLeft: 40, fontSize: 15, height: 44 }}
           placeholder="Search tastings..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -159,47 +203,56 @@ export default function LabsTastings() {
         />
       </div>
 
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="labs-segmented labs-fade-in labs-stagger-2" style={{ marginBottom: 12 }}>
         {(["all", "hosting", "joined"] as const).map((tab) => (
           <button
             key={tab}
-            className="labs-btn-ghost whitespace-nowrap"
-            style={{
-              background: filterTab === tab ? "var(--labs-accent-muted)" : undefined,
-              color: filterTab === tab ? "var(--labs-accent)" : undefined,
-              fontWeight: filterTab === tab ? 600 : undefined,
-            }}
+            className={`labs-segmented-btn ${filterTab === tab ? "labs-segmented-btn-active" : ""}`}
             onClick={() => setFilterTab(tab)}
             data-testid={`labs-tastings-filter-${tab}`}
           >
             {tab === "all" ? "All" : tab === "hosting" ? "Hosting" : "Joined"}
           </button>
         ))}
+      </div>
 
-        <div style={{ width: 1, background: "var(--labs-border)", margin: "4px 4px" }} />
-
+      <div
+        className="flex gap-2 labs-fade-in labs-stagger-2"
+        style={{ marginBottom: 16, overflowX: "auto", paddingBottom: 2 }}
+      >
         {(["live", "upcoming", "past"] as const).map((tf) => {
           const isActive = timeFilter === tf;
           const count = counts[tf];
           return (
             <button
               key={tf}
-              className="labs-btn-ghost whitespace-nowrap"
-              style={{
-                background: isActive ? "var(--labs-accent-muted)" : undefined,
-                color: isActive ? "var(--labs-accent)" : undefined,
-                fontWeight: isActive ? 600 : undefined,
-              }}
+              className={`labs-chip ${isActive ? "labs-chip-active" : ""}`}
               onClick={() => setTimeFilter(isActive ? null : tf)}
               data-testid={`labs-tastings-time-${tf}`}
             >
               {tf.charAt(0).toUpperCase() + tf.slice(1)}
               {count > 0 && (
                 <span
-                  className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                   style={{
-                    background: tf === "live" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
-                    color: tf === "live" ? "var(--labs-success)" : "var(--labs-accent)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: tf === "live"
+                      ? "var(--labs-success-muted)"
+                      : isActive
+                        ? "var(--labs-accent)"
+                        : "var(--labs-accent-muted)",
+                    color: tf === "live"
+                      ? "var(--labs-success)"
+                      : isActive
+                        ? "var(--labs-bg)"
+                        : "var(--labs-accent)",
+                    padding: "0 5px",
                   }}
                 >
                   {count}
@@ -213,7 +266,7 @@ export default function LabsTastings() {
       {isLoading ? (
         <SkeletonList count={4} showAvatar />
       ) : filtered.length === 0 ? (
-        <div className="labs-empty labs-fade-in">
+        <div className="labs-empty labs-fade-in" style={{ paddingTop: 40, paddingBottom: 40 }}>
           <Clock className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
             {searchQuery ? "No matching tastings" : "No tastings yet"}
@@ -227,79 +280,102 @@ export default function LabsTastings() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((tasting: any, idx: number) => {
+        <div className="labs-grouped-list labs-fade-in labs-stagger-3">
+          {filtered.map((tasting: any) => {
             const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
             const isHost = tasting.hostId === currentParticipant?.id;
             const isLive = tasting.status === "open";
+            const formattedDate = formatTastingDate(tasting.date);
 
             return (
               <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
                 <div
-                  className={`labs-card labs-card-interactive p-5 labs-fade-in labs-stagger-${Math.min(idx + 1, 4)}`}
-                  style={{
-                    borderColor: isLive ? "var(--labs-success)" : undefined,
-                    boxShadow: isLive ? "0 0 0 1px var(--labs-success), 0 4px 20px rgba(110,193,119,0.08)" : undefined,
-                  }}
+                  className="labs-list-row"
                   data-testid={`labs-tasting-card-${tasting.id}`}
                 >
-                  <div className="flex items-start gap-4">
+                  <div
+                    style={{
+                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                    }}
+                  >
+                    <Wine
+                      className="w-5 h-5"
+                      style={{ color: isLive ? "var(--labs-success)" : "var(--labs-accent)" }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="flex items-center gap-2" style={{ marginBottom: 3 }}>
+                      <span
+                        style={{
+                          fontSize: 15, fontWeight: 600,
+                          color: "var(--labs-text)",
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}
+                        data-testid={`labs-tasting-title-${tasting.id}`}
+                      >
+                        {tasting.title}
+                      </span>
+                    </div>
+
                     <div
-                      className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
-                      }}
+                      className="flex items-center gap-3"
+                      style={{ fontSize: 13, color: "var(--labs-text-muted)" }}
                     >
-                      <Wine
-                        className="w-5 h-5"
-                        style={{ color: isLive ? "var(--labs-success)" : "var(--labs-accent)" }}
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold truncate" data-testid={`labs-tasting-title-${tasting.id}`}>
-                          {tasting.title}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                        {tasting.date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {tasting.date}
-                          </span>
-                        )}
-                        {tasting.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {tasting.location}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      <div className="flex items-center gap-2">
-                        {isHost && (
-                          <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{
-                              background: "var(--labs-accent-muted)",
-                              color: "var(--labs-accent)",
-                            }}
-                            data-testid={`labs-tasting-host-badge-${tasting.id}`}
-                          >
-                            Host
-                          </span>
-                        )}
-                        <span className={`labs-badge ${status.cssClass}`} data-testid={`labs-tasting-status-${tasting.id}`}>
-                          {isLive && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
-                          {status.label}
+                      {formattedDate && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
+                          {formattedDate}
                         </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                      )}
+                      {tasting.location && (
+                        <span
+                          className="flex items-center gap-1"
+                          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          <MapPin className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
+                          {tasting.location}
+                        </span>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                    {isHost && (
+                      <span
+                        style={{
+                          fontSize: 11, fontWeight: 600,
+                          padding: "3px 8px", borderRadius: 6,
+                          background: "var(--labs-accent-muted)",
+                          color: "var(--labs-accent)",
+                        }}
+                        data-testid={`labs-tasting-host-badge-${tasting.id}`}
+                      >
+                        Host
+                      </span>
+                    )}
+                    <span
+                      className={`labs-badge ${status.cssClass}`}
+                      style={{ fontSize: 11, padding: "3px 8px" }}
+                      data-testid={`labs-tasting-status-${tasting.id}`}
+                    >
+                      {isLive && (
+                        <span
+                          className="animate-pulse"
+                          style={{
+                            width: 6, height: 6, borderRadius: "50%",
+                            background: "currentColor", display: "inline-block",
+                          }}
+                        />
+                      )}
+                      {status.label}
+                    </span>
+                    <ChevronRight
+                      className="w-4 h-4"
+                      style={{ color: "var(--labs-text-muted)", opacity: 0.5 }}
+                    />
                   </div>
                 </div>
               </Link>

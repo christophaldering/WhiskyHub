@@ -64,22 +64,22 @@ const SECTIONS: DiscoverSection[] = [
   },
 ];
 
-function LinkCard({ link, t }: { link: DiscoverLink; t: (key: string, fallback: string) => string }) {
+function LinkRow({ link, t }: { link: DiscoverLink; t: (key: string, fallback: string) => string }) {
   return (
     <Link href={link.href} style={{ textDecoration: "none" }}>
-      <div className="labs-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} data-testid={link.testId}>
+      <div className="labs-list-row" data-testid={link.testId}>
         <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <link.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>
             {t(link.labelKey, link.labelFallback)}
           </div>
-          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1 }}>
+          <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
             {t(link.descKey, link.descFallback)}
           </div>
         </div>
-        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
       </div>
     </Link>
   );
@@ -94,27 +94,24 @@ export default function LabsDiscover() {
         <ChevronLeft className="w-4 h-4" /> Home
       </button>
 
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 6 }}>
-          <Compass style={{ width: 24, height: 24, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-          <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-discover-title">
-            {t("discover.title", "Discover")}
-          </h1>
-        </div>
-        <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: 0 }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }} data-testid="text-discover-title">
+          {t("discover.title", "Discover")}
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0 }}>
           {t("discover.subtitle", "Knowledge, guides & research — all in one place.")}
         </p>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {SECTIONS.map((section) => (
           <div key={section.titleKey}>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: "var(--labs-accent)", marginBottom: 8, paddingLeft: 2 }}>
+            <div className="labs-section-label" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 8, paddingLeft: 4 }}>
               {t(section.titleKey, section.titleFallback)}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="labs-grouped-list">
               {section.links.map((link) => (
-                <LinkCard key={link.testId} link={link} t={t} />
+                <LinkRow key={link.testId} link={link} t={t} />
               ))}
             </div>
           </div>

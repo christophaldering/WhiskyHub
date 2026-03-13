@@ -55,29 +55,31 @@ export default function LabsExplore() {
 
   return (
     <div className="labs-page-wide">
-      <h1
-        className="labs-serif text-xl font-semibold mb-1 labs-fade-in"
-        style={{ color: "var(--labs-text)" }}
-        data-testid="labs-explore-title"
-      >
-        Explore
-      </h1>
-      <p
-        className="text-sm mb-5 labs-fade-in labs-stagger-1"
-        style={{ color: "var(--labs-text-muted)" }}
-      >
-        Browse whiskies tasted across all sessions
-      </p>
+      <div style={{ marginBottom: 20 }}>
+        <h1
+          className="labs-serif labs-fade-in"
+          style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}
+          data-testid="labs-explore-title"
+        >
+          Explore
+        </h1>
+        <p
+          className="labs-fade-in labs-stagger-1"
+          style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0 }}
+        >
+          Browse whiskies tasted across all sessions
+        </p>
+      </div>
 
-      <div className="relative mb-4 labs-fade-in labs-stagger-1">
+      <div className="relative labs-fade-in labs-stagger-1" style={{ marginBottom: 16 }}>
         <Search
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4"
-          style={{ color: "var(--labs-text-muted)" }}
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4"
+          style={{ color: "var(--labs-text-muted)", left: 14 }}
         />
         <input
           className="labs-input"
-          style={{ paddingLeft: 44, paddingRight: 16 }}
-          placeholder="Search by name, distillery, region…"
+          style={{ paddingLeft: 40, fontSize: 15, height: 44 }}
+          placeholder="Search by name, distillery, region..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           data-testid="labs-explore-search"
@@ -87,10 +89,7 @@ export default function LabsExplore() {
       {regions.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 labs-fade-in labs-stagger-2" style={{ scrollbarWidth: "none" }}>
           <button
-            className={`labs-badge whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors ${
-              !selectedRegion ? "labs-badge-accent" : ""
-            }`}
-            style={selectedRegion ? { background: "var(--labs-surface)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" } : {}}
+            className={`labs-chip ${!selectedRegion ? "labs-chip-active" : ""}`}
             onClick={() => setSelectedRegion(null)}
             data-testid="labs-explore-region-all"
           >
@@ -99,10 +98,7 @@ export default function LabsExplore() {
           {regions.map((region) => (
             <button
               key={region}
-              className={`labs-badge whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors ${
-                selectedRegion === region ? "labs-badge-accent" : ""
-              }`}
-              style={selectedRegion !== region ? { background: "var(--labs-surface)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" } : {}}
+              className={`labs-chip ${selectedRegion === region ? "labs-chip-active" : ""}`}
               onClick={() => setSelectedRegion(selectedRegion === region ? null : region)}
               data-testid={`labs-explore-region-${region}`}
             >
@@ -128,7 +124,7 @@ export default function LabsExplore() {
           </button>
           {showSortMenu && (
             <>
-              <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setShowSortMenu(false)} />
+              <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setShowSortMenu(false)} data-testid="labs-explore-sort-overlay" />
               <div
                 className="py-1 min-w-[140px]"
                 style={{
@@ -187,58 +183,56 @@ export default function LabsExplore() {
       )}
 
       {!isLoading && sortedWhiskies.length > 0 && (
-        <div className="space-y-2 labs-fade-in labs-stagger-3">
+        <div className="labs-grouped-list labs-fade-in labs-stagger-3">
           {sortedWhiskies.map((w: any) => (
             <div
               key={w.id}
-              className="labs-card labs-card-interactive"
-              style={{ padding: "12px 14px", overflow: "hidden" }}
+              className="labs-list-row"
               onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
               data-testid={`labs-explore-whisky-${w.id}`}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-                <div style={{ flexShrink: 0 }}>
-                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                  <p className="text-sm font-medium" style={{ color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>
-                    {w.name}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
-                    {w.distillery && (
-                      <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
-                        {w.distillery}
-                      </span>
-                    )}
-                    {w.region && (
-                      <span
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, padding: "1px 6px", borderRadius: 4 }}
-                      >
-                        {w.region}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                  {w.avgOverall != null && w.avgOverall > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>
-                        {Number(w.avgOverall).toFixed(1)}
-                      </span>
-                    </div>
-                  )}
-                  {w.ratingCount != null && w.ratingCount > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <Hash style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                        {w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)" }} />
+              <div style={{ flexShrink: 0 }}>
+                <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} />
               </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {w.name}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                  {w.distillery && (
+                    <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>
+                      {w.distillery}
+                    </span>
+                  )}
+                  {w.region && (
+                    <span style={{
+                      background: "var(--labs-accent-muted)", color: "var(--labs-accent)",
+                      fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
+                    }}>
+                      {w.region}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                {w.avgOverall != null && w.avgOverall > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>
+                      {Number(w.avgOverall).toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                {w.ratingCount != null && w.ratingCount > 0 && (
+                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                    {w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}
+                  </span>
+                )}
+              </div>
+              <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.5 }} />
             </div>
           ))}
         </div>

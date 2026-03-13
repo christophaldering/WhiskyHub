@@ -441,13 +441,15 @@ export default function LabsTasteDrams() {
       <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
         <ChevronLeft className="w-4 h-4" /> Taste
       </button>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-drams-title">Drams Journal</h1>
-        <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-dram">
+      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+        <div>
+          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">Drams Journal</h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>Your tasting journal</p>
+        </div>
+        <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
           <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
         </button>
       </div>
-      <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>Your tasting journal</p>
 
       {!session.signedIn ? (
         <div className="labs-empty" style={{ minHeight: 200 }}>
@@ -473,31 +475,34 @@ export default function LabsTasteDrams() {
             </div>
           </div>
 
-          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1">
+          <div className="labs-segmented" style={{ marginBottom: 12 }}>
             {FILTERS.map(f => (
-              <button key={f.key} onClick={() => setActiveFilter(f.key)} className="labs-pill" data-active={activeFilter === f.key ? "" : undefined}
-                style={{ padding: "5px 12px", fontSize: 11, fontWeight: activeFilter === f.key ? 600 : 400, color: activeFilter === f.key ? "var(--labs-accent)" : "var(--labs-text-muted)", background: activeFilter === f.key ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${activeFilter === f.key ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+              <button key={f.key} onClick={() => setActiveFilter(f.key)}
+                className={`labs-segmented-btn ${activeFilter === f.key ? "labs-segmented-btn-active" : ""}`}
                 data-testid={`labs-filter-${f.key}`}>{f.label}</button>
             ))}
           </div>
 
-          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 10 }}>
             {DATE_PERIODS.map(p => (
               <button key={p.key} onClick={() => setDatePeriod(p.key)}
-                style={{ padding: "5px 12px", fontSize: 11, fontWeight: datePeriod === p.key ? 600 : 400, color: datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-text-muted)", background: datePeriod === p.key ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                className={`labs-chip ${datePeriod === p.key ? "labs-chip-active" : ""}`}
+                style={{ fontSize: 12, padding: "5px 12px" }}
                 data-testid={`labs-period-${p.key}`}>{p.label}</button>
             ))}
           </div>
 
-          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 10, WebkitOverflowScrolling: "touch" }}>
             {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
               <button key={sr} onClick={() => setScoreRange(sr)}
-                style={{ padding: "5px 12px", fontSize: 11, fontWeight: scoreRange === sr ? 600 : 400, color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)", background: scoreRange === sr ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${scoreRange === sr ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                className={`labs-chip ${scoreRange === sr ? "labs-chip-active" : ""}`}
+                style={{ fontSize: 12, padding: "5px 12px" }}
                 data-testid={`labs-score-${sr}`}>{sr === "all" ? "Score" : sr}</button>
             ))}
             {(["date", "score", "name"] as SortBy[]).map(sk => (
               <button key={sk} onClick={() => setSortBy(sk)}
-                style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                className={`labs-chip ${sortBy === sk ? "labs-chip-active" : ""}`}
+                style={{ fontSize: 12, padding: "5px 12px" }}
                 data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : "Name"}</button>
             ))}
           </div>
@@ -509,15 +514,15 @@ export default function LabsTasteDrams() {
           </div>
 
           {hasAnyFilter && (
-            <button onClick={resetAllFilters} className="flex items-center gap-1.5 mb-3" style={{ padding: "5px 12px", fontSize: 11, fontWeight: 500, color: "var(--labs-accent)", background: "transparent", border: "1px solid var(--labs-accent)", borderRadius: 16, cursor: "pointer" }} data-testid="button-labs-reset-filters">
+            <button onClick={resetAllFilters} className="labs-chip labs-chip-active flex items-center gap-1.5" style={{ marginBottom: 10, fontSize: 12, padding: "5px 12px" }} data-testid="button-labs-reset-filters">
               <RotateCcw className="w-3 h-3" /> Reset filters
             </button>
           )}
 
-          <div className="relative mb-4">
-            <Search className="absolute left-3" style={{ top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
+          <div className="relative" style={{ marginBottom: 16 }}>
+            <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drams..."
-              style={{ width: "100%", padding: "10px 12px 10px 36px", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 10, fontSize: 14, color: "var(--labs-text)", outline: "none", boxSizing: "border-box" }}
+              className="labs-input" style={{ paddingLeft: 40, fontSize: 15, height: 44 }}
               data-testid="input-labs-search-drams" />
             {search && (
               <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 2 }} data-testid="button-labs-clear-search">
