@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
-import { Link } from "wouter";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { Link, useLocation } from "wouter";
 import { motion, useInView } from "framer-motion";
 import {
   ChevronRight, Eye,
@@ -101,6 +101,87 @@ function LangSwitch() {
       >
         EN
       </button>
+    </div>
+  );
+}
+
+function JoinCodeInput() {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+  const [code, setCode] = useState("");
+
+  const handleJoin = useCallback(() => {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed) {
+      navigate(`/quick/${trimmed}`);
+    }
+  }, [code, navigate]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <p
+        style={{
+          fontFamily: font.body,
+          fontSize: 12,
+          color: v.mutedLight,
+          letterSpacing: "0.04em",
+        }}
+      >
+        {t("premium.joinLabel")}
+      </p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          borderRadius: 50,
+          border: `1.5px solid ${v.border}`,
+          overflow: "hidden",
+          background: `${ACCENT}06`,
+        }}
+      >
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+          placeholder={t("premium.joinPlaceholder")}
+          style={{
+            width: 160,
+            padding: "11px 18px",
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            fontFamily: font.body,
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: "0.12em",
+            color: v.text,
+            textTransform: "uppercase",
+          }}
+          data-testid="input-join-code"
+        />
+        <button
+          onClick={handleJoin}
+          disabled={!code.trim()}
+          style={{
+            padding: "11px 20px",
+            border: "none",
+            borderLeft: `1px solid ${v.border}`,
+            background: code.trim() ? ACCENT : "transparent",
+            color: code.trim() ? v.bg : v.muted,
+            fontFamily: font.body,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: code.trim() ? "pointer" : "default",
+            transition: "all 0.2s",
+            letterSpacing: "0.02em",
+          }}
+          data-testid="button-join-code"
+        >
+          {t("premium.joinButton")}
+        </button>
+      </div>
     </div>
   );
 }
@@ -245,7 +326,7 @@ function HeroSection() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 14,
+            gap: 20,
             position: "relative",
             zIndex: 2,
           }}
@@ -274,45 +355,7 @@ function HeroSection() {
             <ChevronRight style={{ width: 17, height: 17 }} />
           </Link>
 
-          <Link
-            href="/labs/home"
-            data-testid="cta-hero-secondary"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "13px 36px",
-              background: "transparent",
-              color: ACCENT,
-              fontFamily: font.body,
-              fontSize: 15,
-              fontWeight: 500,
-              borderRadius: 50,
-              textDecoration: "none",
-              border: `1.5px solid ${ACCENT}40`,
-              transition: "transform 0.2s, border-color 0.2s",
-              letterSpacing: "0.01em",
-            }}
-          >
-            {t("premium.ctaSecondary")}
-          </Link>
-
-          <Link
-            href="/labs/home"
-            data-testid="cta-hero-tertiary"
-            style={{
-              fontFamily: font.body,
-              fontSize: 13,
-              fontWeight: 400,
-              color: v.mutedLight,
-              textDecoration: "none",
-              marginTop: 4,
-              transition: "color 0.2s",
-              letterSpacing: "0.02em",
-            }}
-          >
-            {t("premium.ctaTertiary")} →
-          </Link>
+          <JoinCodeInput />
         </div>
       </FadeUp>
 
