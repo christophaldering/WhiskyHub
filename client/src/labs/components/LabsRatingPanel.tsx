@@ -80,6 +80,12 @@ export default function LabsRatingPanel({
   const [activeTab, setActiveTab] = useState<DimKey>("nose");
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [showFlavors, setShowFlavors] = useState(false);
+  const [touchedDims, setTouchedDims] = useState<Set<DimKey>>(() => {
+    const initial = new Set<DimKey>();
+    const mid = Math.round(scale / 2);
+    DIM_KEYS.forEach((k) => { if (scores[k] !== mid) initial.add(k); });
+    return initial;
+  });
   const isDE = i18n.language === "de";
   const [customInput, setCustomInput] = useState("");
 
@@ -213,7 +219,11 @@ export default function LabsRatingPanel({
           min={0}
           max={scale}
           value={scores[key]}
-          onChange={(e) => onScoreChange(key, Number(e.target.value))}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            onScoreChange(key, val);
+            setTouchedDims((prev) => { const next = new Set(prev); next.add(key); return next; });
+          }}
           disabled={disabled}
           data-testid={`input-score-${key}`}
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
@@ -469,8 +479,7 @@ export default function LabsRatingPanel({
     </div>
   );
 
-  const midpoint = Math.round(scale / 2);
-  const missingDims = DIM_KEYS.filter((k) => scores[k] === midpoint);
+  const missingDims = DIM_KEYS.filter((k) => !touchedDims.has(k));
   const allDimsScored = missingDims.length === 0;
   const overallGated = !allDimsScored;
 
