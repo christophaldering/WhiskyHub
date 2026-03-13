@@ -11858,10 +11858,11 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: "de",
+    fallbackLng: "en",
+    lng: "en",
     supportedLngs: ["en", "de"],
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
       lookupLocalStorage: "casksense-language",
     },
