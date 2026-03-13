@@ -998,7 +998,7 @@ function MobileCompanion({
   };
 
   const [mobileAiError, setMobileAiError] = useState("");
-  const [mobileAiSummary, setMobileAiSummary] = useState<{ added: number; skipped: number; failed: number } | null>(null);
+  const [mobileAiSummary, setMobileAiSummary] = useState<{ added: number; duplicatesAdded: number; duplicatesSkipped: number; failed: number } | null>(null);
 
   const getMobileDuplicateIndices = useCallback(() => {
     if (!whiskies || !mobileAiResults.length) return new Set<number>();
@@ -1034,7 +1034,9 @@ function MobileCompanion({
   };
 
   const handleMobileAiConfirm = async () => {
-    let ok = 0, fail = 0, dupeAdded = 0;
+    let added = 0, dupeAdded = 0, fail = 0;
+    const dupeIndices = getMobileDuplicateIndices();
+    const duplicatesSkipped = Array.from(dupeIndices).filter(i => !mobileAiSelected.has(i)).length;
     const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
@@ -1055,16 +1057,15 @@ function MobileCompanion({
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: w.price ? parseFloat(w.price) || null : null,
-            sortOrder: whiskyCount + ok + 1,
+            sortOrder: whiskyCount + added + dupeAdded + 1,
           });
-          ok++;
-          if (isDupe) dupeAdded++;
+          if (isDupe) dupeAdded++; else added++;
           existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch { fail++; }
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setMobileAiSummary({ added: ok - dupeAdded, skipped: dupeAdded, failed: fail });
+    setMobileAiSummary({ added, duplicatesAdded: dupeAdded, duplicatesSkipped, failed: fail });
     setMobileAiResults([]);
     setMobileAiSelected(new Set());
     if (fail === 0) {
@@ -1266,7 +1267,8 @@ function MobileCompanion({
                 {mobileAiSummary && (
                   <div className="text-xs p-3 rounded-lg space-y-1" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="mobile-ai-summary">
                     {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} {t("labs.aiImport.added", "added")}</p>}
-                    {mobileAiSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.skipped} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
+                    {mobileAiSummary.duplicatesAdded > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.duplicatesAdded} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
+                    {mobileAiSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{mobileAiSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                     {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
                 )}
@@ -3257,7 +3259,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   };
 
   const [aiImportError, setAiImportError] = useState("");
-  const [aiImportSummary, setAiImportSummary] = useState<{ added: number; skipped: number; failed: number } | null>(null);
+  const [aiImportSummary, setAiImportSummary] = useState<{ added: number; duplicatesAdded: number; duplicatesSkipped: number; failed: number } | null>(null);
 
   const getDesktopDuplicateIndices = useCallback(() => {
     if (!whiskies || !aiImportResults.length) return new Set<number>();
@@ -3293,9 +3295,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   };
 
   const handleAiImportConfirm = async () => {
-    let added = 0;
-    let failed = 0;
-    let dupeAdded = 0;
+    let added = 0, dupeAdded = 0, failed = 0;
+    const dupeIndices = getDesktopDuplicateIndices();
+    const duplicatesSkipped = Array.from(dupeIndices).filter(i => !aiImportSelected.has(i)).length;
     const existingKeys = new Set((whiskies || []).map((w: any) => whiskyKey(w.name || "", w.distillery || "")));
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
@@ -3316,10 +3318,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: w.price ? parseFloat(w.price) || null : null,
-            sortOrder: (whiskies?.length || 0) + added + 1,
+            sortOrder: (whiskies?.length || 0) + added + dupeAdded + 1,
           });
-          added++;
-          if (isDupe) dupeAdded++;
+          if (isDupe) dupeAdded++; else added++;
           existingKeys.add(whiskyKey(w.name || "", w.distillery || ""));
         } catch {
           failed++;
@@ -3327,7 +3328,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       }
     }
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    setAiImportSummary({ added: added - dupeAdded, skipped: dupeAdded, failed });
+    setAiImportSummary({ added, duplicatesAdded: dupeAdded, duplicatesSkipped, failed });
     setAiImportResults([]);
     setAiImportSelected(new Set());
     setAiImportFiles([]);
@@ -4312,7 +4313,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             {aiImportSummary && (
               <div className="text-xs p-3 rounded-lg space-y-1 mt-2" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="labs-ai-import-summary">
                 {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} {t("labs.aiImport.added", "added")}</p>}
-                {aiImportSummary.skipped > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.skipped} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
+                {aiImportSummary.duplicatesAdded > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.duplicatesAdded} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
+                {aiImportSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{aiImportSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                 {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
             )}
