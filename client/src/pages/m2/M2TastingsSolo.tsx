@@ -14,6 +14,7 @@ import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
 import SoloVoiceMemoRecorder from "@/components/m2/SoloVoiceMemoRecorder";
 
+const VOICE_MEMOS_ENABLED = false;
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
 
 interface OfflineQueueItem {
@@ -2079,7 +2080,7 @@ export default function M2TastingsSolo() {
       </div>
 
       {/* VOICE MEMO — primary input */}
-      {false && unlocked && pid && (
+      {VOICE_MEMOS_ENABLED && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-solo-voice-memo">
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
             {t("m2.solo.voiceMemoLabel", "Voice Memo")}

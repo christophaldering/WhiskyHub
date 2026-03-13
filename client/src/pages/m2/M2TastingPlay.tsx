@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 
+const VOICE_MEMOS_ENABLED = false;
+
 interface WhiskyItem {
   id: string;
   name?: string;
@@ -1636,7 +1638,7 @@ export default function M2TastingPlay() {
       </div>
 
 
-      {false && whiskyId && pid && id && (
+      {VOICE_MEMOS_ENABLED && whiskyId && pid && id && (
         <VoiceMemoRecorder
           tastingId={id}
           whiskyId={whiskyId}

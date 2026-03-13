@@ -9,6 +9,8 @@ import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 
+const VOICE_MEMOS_ENABLED = false;
+
 interface LabsLiveProps {
   params: { id: string };
 }
@@ -444,7 +446,7 @@ function GuidedStepView({
               style={{ resize: "vertical" }}
               data-testid="guided-notes"
             />
-            {false && (
+            {VOICE_MEMOS_ENABLED && (
             <div className="mt-3">
               <LabsVoiceMemoRecorder
                 participantId={currentParticipant?.id || ""}
@@ -995,7 +997,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   style={{ resize: "vertical" }}
                   data-testid="labs-live-notes"
                 />
-                {false && (
+                {VOICE_MEMOS_ENABLED && (
                 <div className="mt-3">
                   <LabsVoiceMemoRecorder
                     participantId={currentParticipant?.id || ""}

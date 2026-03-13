@@ -12,6 +12,7 @@ import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 
+const VOICE_MEMOS_ENABLED = false;
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
 const SOLO_DRAFT_KEY = "cs_solo_draft";
 
@@ -2122,7 +2123,7 @@ export default function LabsSolo() {
         />
       </div>
 
-      {false && unlocked && pid && (
+      {VOICE_MEMOS_ENABLED && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
           <div className="labs-section-label">{t("m2.solo.voiceMemoLabel", "Voice Memo")}</div>
           <LabsVoiceMemoRecorder
