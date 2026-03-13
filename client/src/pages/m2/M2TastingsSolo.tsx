@@ -2080,7 +2080,7 @@ export default function M2TastingsSolo() {
       </div>
 
       {/* VOICE MEMO — primary input */}
-      {VOICE_MEMOS_ENABLED && unlocked && pid && (
+      {false && VOICE_MEMOS_ENABLED && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-solo-voice-memo">
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
             {t("m2.solo.voiceMemoLabel", "Voice Memo")}
