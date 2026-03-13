@@ -248,6 +248,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                    <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{p.name}</span>
                   {p.id === pid && <span className="text-[9px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
+                  {p.email?.endsWith("@casksense.local") && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
                   {p.email || "No email"} · {p.hostedTastings} tastings hosted
