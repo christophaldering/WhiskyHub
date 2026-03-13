@@ -1,0 +1,264 @@
+You are working on an existing, already advanced product called CaskSense. Do NOT treat this as a greenfield build. Do NOT create a new parallel architecture. Do NOT redesign the whole app from scratch.
+
+You must first understand the current system and then implement a highly targeted stabilization, cleanup, and UX-hardening pass across the existing architecture.
+
+CURRENT ARCHITECTURE TO RESPECT
+- Monorepo TypeScript app
+- client/: React + Vite + Wouter + TanStack React Query + Zustand
+- server/: Express 5 REST backend
+- shared/: Drizzle ORM + Zod schema
+- PostgreSQL DB
+- Existing dual UI layers: M2 and Labs
+- Existing auth, participants, tastings, whiskies, ratings, paper scans, AI imports, PDFs, guided tasting, host dashboards, discover pages, analytics, AI narrative/report features
+- Existing i18n via react-i18next (DE/EN)
+- Existing tests via Vitest
+- Existing Object Storage integration
+- Existing Nodemailer support
+
+GOAL
+Your mission is NOT to add random new features.
+Your mission is to make the current product feel coherent, stable, trustworthy, and premium in the core tasting journey.
+
+The focus is:
+1. stabilize the tasting core
+2. remove visible friction and broken states
+3. clean up demo/test remnants
+4. restore missing premium details that already existed conceptually
+5. improve trust in import/export/results/admin notification flows
+6. keep changes architecture-consistent and production-safe
+
+NON-NEGOTIABLE RULES
+- Reuse existing backend APIs, DB structure, and components wherever possible
+- Only add schema changes if absolutely necessary
+- Do not break existing auth/session/data access security
+- Do not remove major existing features unless explicitly requested below
+- Prefer feature hiding/soft disabling over destructive deletion
+- Keep M2 and Labs aligned where the same behavior should be consistent
+- All user-facing text must be properly internationalized (DE/EN)
+- Add or update tests for each critical flow you touch
+- At the end, run tests and provide a structured implementation report
+
+==================================================
+PHASE 1 — UNDERSTAND BEFORE CHANGING
+==================================================
+
+Before coding, inspect and map the current implementation of:
+- Solo Dram / Solo Drum flow
+- M2 and Labs rating panels
+- ratingScale usage across tasting creation, printable sheets, scoring UI, normalization
+- voice memo / speech / transcription related UI and API usage
+- participant join/login flow
+- email notification hooks
+- host dashboard(s): M2 + Labs + cockpit
+- discover pages: distilleries, bottles, research, rabbit hole, vocabulary, lexicon, guide
+- map view components or any previously existing map-capable discover pages
+- bottle/distillery external website links
+- demo tasting / seed content visibility in production UI
+- AI results / summaries / analytics flows
+- import/export flows for lineup import and historical whisky data
+- account/test/demo user visibility logic
+
+Then implement the tasks below.
+
+==================================================
+PHASE 2 — REQUIRED IMPLEMENTATION
+==================================================
+
+A. SOLO DRAM / SOLO DRUM FIXES
+
+1. Enforce rating completion order in guided solo entry:
+- In Solo Dram guided entry, the Overall score input must only appear or become enabled after all required dimension scores are completed.
+- Required dimensions: Nose, Palate/Taste, Finish, Balance
+- Prevent premature overall entry both visually and logically.
+- Add a clear UI cue showing what is still missing.
+
+2. Review and stabilize rating scale handling:
+- Audit current usage of scales such as 1–100, 1–10, 5/10/20 circle PDFs, and normalization.
+- Make sure the user-facing behavior is consistent.
+- Support clear, explicit rating scale selection where already architecturally feasible.
+- Do NOT create scale chaos.
+- Normalize all stored values safely to 0–100 as already intended.
+- Preserve backward compatibility.
+
+3. Advanced Lovers option:
+- Make the “Advanced Lovers” option visually more prominent, clearer, and more premium.
+- Improve information hierarchy, spacing, and affordance.
+- Keep the design elegant and Apple-like, not flashy.
+- Apply where relevant in Solo and other appropriate tasting-entry contexts.
+
+B. VOICE / SPEECH / LANGUAGE CLEANUP
+
+4. Disable AI voice note UI for now without deleting backend capability:
+- Hide or deactivate the AI voice-note option in the UI wherever it is currently exposed and confusing.
+- Do not remove the underlying backend/storage/transcription capability from the codebase unless unused and clearly isolated.
+- This is a temporary product decision: hidden, not destroyed.
+
+5. Fix speech recognition language behavior:
+- Ensure speech recognition / dictation uses the active UI or selected content language consistently.
+- German UI/input should use German recognition.
+- English UI/input should use English recognition.
+- Avoid mismatched language defaults.
+- Apply this consistently across all relevant speech/dictation entry points.
+
+C. ADMIN / PARTICIPANT NOTIFICATIONS
+
+6. Reactivate admin email notification on new participant login/join:
+- Restore or re-implement the logic so that an admin receives an email when a new participant joins/logs into a tasting flow where this is intended.
+- Inspect whether earlier code or hooks exist and reuse them if possible.
+- Prevent noisy duplicate notifications.
+- Add sensible guardrails and logging.
+- Make the behavior configurable if an existing configuration pattern already exists.
+
+D. HOSTING CORE / TASTING FLOW STABILIZATION
+
+7. Harden host dashboard as the control center:
+- Review M2 Hosting Dashboard, Labs Host Dashboard, Labs Host Cockpit, guided flow, free flow, reveal flow.
+- Make sure the host always has a clear view of:
+  - session state
+  - current dram
+  - participant status
+  - completion progress
+  - reveal state
+  - next action
+- Remove ambiguous labels or dead-end actions.
+- Desktop-first quality is essential.
+
+8. Clarify tasting mode logic and labels:
+- Review the terminology and UX for host-controlled, free, guided, reveal-related progression.
+- The user must immediately understand what each mode means.
+- Improve labels, helper texts, and empty states.
+- Keep behavior backward compatible.
+
+9. Preserve and strengthen paper-to-digital support:
+- Do not remove the paper workflow.
+- Review QR/self-scan/host-scan flow for clarity and reliability.
+- Make the route and messaging clearer where needed.
+- Ensure host sees a trustworthy status of app vs paper vs pending.
+
+E. IMPORT / EXPORT / DATA TRUST
+
+10. Strengthen whisky data import robustness:
+- Audit existing lineup import and historical whisky import patterns.
+- Improve support for CSV/Excel imports with duplicate detection.
+- Detect already-existing whiskies intelligently where feasible.
+- Do not create silent duplicate explosions.
+- Return a clear import review/summary result.
+
+11. Preserve and improve export trust:
+- Ensure users can reliably export relevant tasting/rating data where export already exists or is expected.
+- Validate CSV/Excel/PDF-related export flows touched by this work.
+- The user must feel that their data is portable and safe.
+
+12. Investigate Whiskybase-related dependency points:
+- Review where Whiskybase ID lookup or collection sync depends on user state/login/import format.
+- Remove confusing UX where possible.
+- Do not fake unavailable external data.
+- Add clearer messaging when user action is required.
+
+F. DISCOVER / KNOWLEDGE / CONTENT CLEANUP
+
+13. Restore or rebuild missing map views where appropriate:
+- Distilleries and Bottles were perceived as stronger when map-style views were available, especially on desktop.
+- Audit whether a map implementation already exists, was partially removed, or can be restored.
+- If feasible within the current architecture, restore map/list toggle for relevant discover sections.
+- If not fully feasible, implement a clean fallback and leave no broken UI.
+
+14. Add / fix bottle and distillery website links:
+- Ensure bottles/distilleries show meaningful external website links where data is available.
+- Avoid broken or placeholder links.
+- Keep external-link UX clean and explicit.
+
+15. Fix return navigation and view coherence:
+- In Discover / Flavor / detail pages, the user must be able to return clearly to the broader overview.
+- Remove confusing dead ends.
+- Improve breadcrumbs/back navigation only where beneficial.
+
+16. Remove visible demo tasting clutter:
+- Demo tasting content should not float around in the production-facing UX unless intentionally gated as demo/test content.
+- Hide, remove from normal lists, or gate test/demo data appropriately.
+- Keep pilot seed data usable for testing, but not confusing for real users.
+
+17. Audit unfinished or broken content sections:
+- Review Scale Models / Research / Rabbit Hole / Norms / Vocabulary / related knowledge areas.
+- For each route/page/component:
+  - if stable: keep and polish
+  - if incomplete but acceptable: mark clearly as coming soon
+  - if broken/confusing: hide from navigation until finished
+- No half-broken prestige pages should remain visible.
+
+G. ACCOUNT / TEST DATA / LIVE DATA CLEANUP
+
+18. Cleanly separate real users from demo/test artifacts:
+- Audit participant visibility, test users, seed users, demo records, and any production leakage.
+- Ensure admin views remain useful, but end-user views are not polluted by test/demo content.
+- Clarify naming and filtering where needed.
+
+19. Review password/join flow friction:
+- Audit join flow, password set/change/save behavior, guest entry, participant onboarding.
+- Remove unnecessary confusion.
+- Keep the flow simple and robust without weakening security.
+
+H. RESULTS / AI / ANALYTICS RELIABILITY
+
+20. Stabilize AI-based result and reflection flows:
+- Review tasting result generation, rankings, AI narratives, insights, summaries, and related result screens.
+- Fix obvious failure points, broken loading states, or misleading empty states.
+- Do not invent fake AI output when the backend fails.
+- Show reliable fallbacks and proper error messaging.
+
+==================================================
+PHASE 3 — DESIGN / UX STANDARDS
+==================================================
+
+Apply these principles throughout:
+- premium, calm, warm, elegant
+- Apple-inspired clarity, not gimmicky
+- strong hierarchy
+- fewer ambiguous choices
+- better empty states
+- clearer status communication
+- no technical leakage to normal users
+- desktop-first for host control, mobile-friendly for participant flows
+
+==================================================
+PHASE 4 — TESTING AND VALIDATION (MANDATORY)
+==================================================
+
+Add/update tests for all critical touched flows, including at minimum:
+1. Solo dram gating of Overall score
+2. speech recognition language selection behavior
+3. admin notification trigger for new participant join/login
+4. host dashboard critical actions and status rendering
+5. duplicate-safe import behavior
+6. discover page navigation / broken-route cleanup
+7. demo/test content not leaking into normal production UX where unintended
+8. result/AI fallback behavior
+
+Also perform a manual verification pass for:
+- M2 tasting flow
+- Labs tasting flow
+- host-controlled tasting
+- free/open tasting
+- blind reveal progression
+- paper scan flow
+- import flow
+- discover pages
+- export flow
+
+==================================================
+PHASE 5 — FINAL DELIVERABLE
+==================================================
+
+When finished, provide a structured report with:
+1. What you found
+2. What you changed
+3. Which files/components/routes were touched
+4. Any schema/env/config changes
+5. Which features were hidden vs fixed vs restored
+6. Which tests were added/updated
+7. Remaining known limitations, if any
+
+IMPORTANT:
+Do not stop after analysis.
+Do not ask for confirmation.
+Implement the work fully and carefully within the existing architecture.
