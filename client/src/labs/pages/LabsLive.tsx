@@ -178,6 +178,7 @@ function GuidedStepView({
   const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guidedCalibrationOpen, setGuidedCalibrationOpen] = useState(false);
+  const [overrideActive, setOverrideActive] = useState(false);
 
   const { data: guidedAllRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
@@ -198,22 +199,25 @@ function GuidedStepView({
 
   useEffect(() => {
     if (myRating) {
-      setScores({
-        nose: myRating.nose ?? mid,
-        taste: myRating.taste ?? mid,
-        finish: myRating.finish ?? mid,
-        balance: myRating.balance ?? mid,
-        overall: myRating.overall ?? mid,
-      });
+      const n = myRating.nose ?? mid;
+      const ta = myRating.taste ?? mid;
+      const f = myRating.finish ?? mid;
+      const b = myRating.balance ?? mid;
+      const o = myRating.overall ?? mid;
+      setScores({ nose: n, taste: ta, finish: f, balance: b, overall: o });
       setNotes(myRating.notes || "");
+      const auto = Math.round((n + ta + f + b) / 4);
+      setOverrideActive(o !== auto);
     } else {
       setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
       setNotes("");
+      setOverrideActive(false);
     }
   }, [myRating, activeWhisky?.id, mid]);
 
   useEffect(() => {
     setGuidedMemo(null);
+    setOverrideActive(false);
   }, [activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -262,10 +266,30 @@ function GuidedStepView({
     [currentParticipant, activeWhisky, tasting, tastingId]
   );
 
+  const computeAutoOverall = (s: typeof scores) =>
+    Math.round((s.nose + s.taste + s.finish + s.balance) / 4);
+
   const updateScore = (dimension: keyof typeof scores, value: number) => {
     const newScores = { ...scores, [dimension]: value };
-    const avg = Math.round((newScores.nose + newScores.taste + newScores.finish + newScores.balance) / 4);
-    newScores.overall = avg;
+    if (!overrideActive) {
+      newScores.overall = computeAutoOverall(newScores);
+    }
+    setScores(newScores);
+    debouncedSave(newScores, notes);
+  };
+
+  const updateOverall = (value: number) => {
+    const auto = computeAutoOverall(scores);
+    if (value !== auto) setOverrideActive(true);
+    const newScores = { ...scores, overall: value };
+    setScores(newScores);
+    debouncedSave(newScores, notes);
+  };
+
+  const resetOverride = () => {
+    setOverrideActive(false);
+    const auto = computeAutoOverall(scores);
+    const newScores = { ...scores, overall: auto };
     setScores(newScores);
     debouncedSave(newScores, notes);
   };
@@ -551,17 +575,47 @@ function GuidedStepView({
 
             <div className="labs-divider" style={{ margin: "16px 0" }} />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
-                Overall
-              </span>
-              <span
-                className="text-2xl font-bold tabular-nums"
-                style={{ color: "var(--labs-accent)" }}
-                data-testid="guided-overall"
-              >
-                {scores.overall}
-              </span>
+            <div style={{ marginBottom: 4 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                  Overall
+                  {overrideActive && (
+                    <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }}>
+                      Manual
+                    </span>
+                  )}
+                </span>
+                <span
+                  className="labs-serif text-2xl font-bold tabular-nums"
+                  style={{ color: "var(--labs-accent)" }}
+                  data-testid="guided-overall"
+                >
+                  {scores.overall}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={maxScore}
+                value={scores.overall}
+                onChange={(e) => updateOverall(Number(e.target.value))}
+                data-testid="guided-overall-slider"
+                style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: "pointer" }}
+              />
+              {overrideActive && (
+                <button
+                  type="button"
+                  onClick={resetOverride}
+                  data-testid="guided-reset-override"
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "var(--labs-accent)", fontSize: 11, fontWeight: 500,
+                    padding: "4px 0", fontFamily: "inherit", marginTop: 2,
+                  }}
+                >
+                  Reset to suggested ({computeAutoOverall(scores)})
+                </button>
+              )}
             </div>
 
             {saveError && (
@@ -736,6 +790,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
+  const [overrideActive, setOverrideActive] = useState(false);
 
   const { data: allTastingRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
@@ -750,22 +805,25 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   useEffect(() => {
     if (myRating) {
-      setScores({
-        nose: myRating.nose ?? mid2,
-        taste: myRating.taste ?? mid2,
-        finish: myRating.finish ?? mid2,
-        balance: myRating.balance ?? mid2,
-        overall: myRating.overall ?? mid2,
-      });
+      const n = myRating.nose ?? mid2;
+      const ta = myRating.taste ?? mid2;
+      const f = myRating.finish ?? mid2;
+      const b = myRating.balance ?? mid2;
+      const o = myRating.overall ?? mid2;
+      setScores({ nose: n, taste: ta, finish: f, balance: b, overall: o });
       setNotes(myRating.notes || "");
+      const auto = Math.round((n + ta + f + b) / 4);
+      setOverrideActive(o !== auto);
     } else {
       setScores({ nose: mid2, taste: mid2, finish: mid2, balance: mid2, overall: mid2 });
       setNotes("");
+      setOverrideActive(false);
     }
   }, [myRating, currentWhisky?.id, mid2]);
 
   useEffect(() => {
     setFreeformMemo(null);
+    setOverrideActive(false);
   }, [currentWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -813,10 +871,30 @@ export default function LabsLive({ params }: LabsLiveProps) {
     [currentParticipant, currentWhisky, tasting, tastingId]
   );
 
+  const computeAutoOverall = (s: typeof scores) =>
+    Math.round((s.nose + s.taste + s.finish + s.balance) / 4);
+
   const updateScore = (dimension: keyof typeof scores, value: number) => {
     const newScores = { ...scores, [dimension]: value };
-    const avg = Math.round((newScores.nose + newScores.taste + newScores.finish + newScores.balance) / 4);
-    newScores.overall = avg;
+    if (!overrideActive) {
+      newScores.overall = computeAutoOverall(newScores);
+    }
+    setScores(newScores);
+    debouncedSave(newScores, notes);
+  };
+
+  const updateOverall = (value: number) => {
+    const auto = computeAutoOverall(scores);
+    if (value !== auto) setOverrideActive(true);
+    const newScores = { ...scores, overall: value };
+    setScores(newScores);
+    debouncedSave(newScores, notes);
+  };
+
+  const resetOverride = () => {
+    setOverrideActive(false);
+    const auto = computeAutoOverall(scores);
+    const newScores = { ...scores, overall: auto };
     setScores(newScores);
     debouncedSave(newScores, notes);
   };
@@ -1205,17 +1283,47 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
                 <div className="labs-divider" style={{ margin: "16px 0" }} />
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
-                    Overall
-                  </span>
-                  <span
-                    className="text-2xl font-bold tabular-nums"
-                    style={{ color: "var(--labs-accent)" }}
-                    data-testid="labs-live-overall"
-                  >
-                    {scores.overall}
-                  </span>
+                <div style={{ marginBottom: 4 }}>
+                  <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+                    <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                      Overall
+                      {overrideActive && (
+                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }}>
+                          Manual
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="labs-serif text-2xl font-bold tabular-nums"
+                      style={{ color: "var(--labs-accent)" }}
+                      data-testid="labs-live-overall"
+                    >
+                      {scores.overall}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={maxScore}
+                    value={scores.overall}
+                    onChange={(e) => updateOverall(Number(e.target.value))}
+                    data-testid="labs-live-overall-slider"
+                    style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: "pointer" }}
+                  />
+                  {overrideActive && (
+                    <button
+                      type="button"
+                      onClick={resetOverride}
+                      data-testid="labs-live-reset-override"
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "var(--labs-accent)", fontSize: 11, fontWeight: 500,
+                        padding: "4px 0", fontFamily: "inherit", marginTop: 2,
+                      }}
+                    >
+                      Reset to suggested ({computeAutoOverall(scores)})
+                    </button>
+                  )}
                 </div>
 
                 {saveError && (
