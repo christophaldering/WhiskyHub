@@ -1025,10 +1025,10 @@ function MobileCompanion({
         );
         setMobileAiSelected(nonDupeIndices);
       } else {
-        setMobileAiError("No whiskies found. Try a clearer photo or text.");
+        setMobileAiError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
       }
-    } catch (e: any) {
-      setMobileAiError(e?.message || "AI import failed. Please try again.");
+    } catch (e: unknown) {
+      setMobileAiError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setMobileAiLoading(false);
   };
@@ -3284,10 +3284,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         );
         setAiImportSelected(nonDupeIndices);
       } else {
-        setAiImportError("No whiskies found. Try a different photo or text.");
+        setAiImportError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
       }
-    } catch (e: any) {
-      setAiImportError(e?.message || "AI import failed. Please try again.");
+    } catch (e: unknown) {
+      setAiImportError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setAiImportLoading(false);
   };

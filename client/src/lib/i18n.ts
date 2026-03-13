@@ -4333,6 +4333,8 @@ const resources = {
           added: "added",
           duplicatesAdded: "duplicates added",
           failed: "failed",
+          noResults: "No whiskies found. Try a clearer photo or text.",
+          importFailed: "AI import failed. Please try again.",
         },
       },
       m2: {
@@ -10118,6 +10120,8 @@ const resources = {
           added: "hinzugefügt",
           duplicatesAdded: "Duplikate hinzugefügt",
           failed: "fehlgeschlagen",
+          noResults: "Keine Whiskys gefunden. Versuche ein klareres Foto oder Text.",
+          importFailed: "AI-Import fehlgeschlagen. Bitte erneut versuchen.",
         },
       },
       m2: {
