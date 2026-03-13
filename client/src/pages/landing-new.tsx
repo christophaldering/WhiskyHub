@@ -42,6 +42,69 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
   );
 }
 
+function LangSwitch() {
+  const { i18n } = useTranslation();
+  const isDE = i18n.language?.startsWith("de");
+
+  const switchLang = (lang: string) => {
+    const scrollY = window.scrollY;
+    i18n.changeLanguage(lang).then(() => {
+      requestAnimationFrame(() => window.scrollTo(0, scrollY));
+    });
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 20,
+        right: 24,
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        fontFamily: font.body,
+        fontSize: 12,
+        fontWeight: 500,
+        letterSpacing: "0.06em",
+      }}
+      data-testid="lang-switch"
+    >
+      <button
+        onClick={() => switchLang("de")}
+        style={{
+          padding: "6px 10px",
+          borderRadius: "8px 0 0 8px",
+          border: `1px solid ${isDE ? ACCENT + "50" : v.border}`,
+          borderRight: "none",
+          background: isDE ? `${ACCENT}12` : "transparent",
+          color: isDE ? ACCENT : v.muted,
+          cursor: "pointer",
+          transition: "all 0.2s",
+        }}
+        data-testid="button-lang-de"
+      >
+        DE
+      </button>
+      <button
+        onClick={() => switchLang("en")}
+        style={{
+          padding: "6px 10px",
+          borderRadius: "0 8px 8px 0",
+          border: `1px solid ${!isDE ? ACCENT + "50" : v.border}`,
+          background: !isDE ? `${ACCENT}12` : "transparent",
+          color: !isDE ? ACCENT : v.muted,
+          cursor: "pointer",
+          transition: "all 0.2s",
+        }}
+        data-testid="button-lang-en"
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+
 function HeroSection() {
   const { t } = useTranslation();
 
@@ -60,6 +123,8 @@ function HeroSection() {
       }}
       data-testid="section-hero"
     >
+      <LangSwitch />
+
       <div
         style={{
           position: "absolute",
