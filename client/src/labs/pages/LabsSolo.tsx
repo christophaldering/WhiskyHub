@@ -124,7 +124,7 @@ export default function LabsSolo() {
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
-  const [score, setScore] = useState(50);
+  const [score, setScore] = useState(0);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -207,7 +207,7 @@ export default function LabsSolo() {
           detailChips, detailTexts,
           soloView, ts: Date.now(),
         };
-        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 50 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
+        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 0 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
         localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
       } catch {}
     }, 500);
@@ -281,7 +281,7 @@ export default function LabsSolo() {
       if (!d) return;
       setWhiskyName(d.whiskyName || "");
       setDistillery(d.distillery || "");
-      setScore(d.personalScore != null ? d.personalScore : 50);
+      setScore(d.personalScore != null ? d.personalScore : 0);
       setNotes("");
       setUnknownAge(d.age ? String(d.age) : "");
       setUnknownAbv(d.abv ? String(d.abv) : "");
@@ -1046,8 +1046,14 @@ export default function LabsSolo() {
     } catch {}
   };
 
+  const dimsScoredForFinalize = detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0 && detailedScores.balance > 0;
+
   const handleFinalize = async () => {
     if (!whiskyName.trim()) return;
+    if (!dimsScoredForFinalize) {
+      setError(t("m2.rating.overallLocked", "Rate each dimension to unlock Overall"));
+      return;
+    }
     if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
     if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
     setSaving(true);
@@ -1092,7 +1098,7 @@ export default function LabsSolo() {
   };
 
   const handleReset = (goToHub = false) => {
-    setWhiskyName(""); setDistillery(""); setScore(50); setNotes(""); setSaved(false);
+    setWhiskyName(""); setDistillery(""); setScore(0); setNotes(""); setSaved(false);
     setError(""); setShowManual(false);
     setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
     setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
@@ -2184,9 +2190,9 @@ export default function LabsSolo() {
 
       <button
         onClick={handleFinalize}
-        disabled={saving || !whiskyName.trim()}
+        disabled={saving || !whiskyName.trim() || !dimsScoredForFinalize}
         className="labs-btn-primary"
-        style={{ width: "100%", padding: 16, fontSize: 16, opacity: !whiskyName.trim() ? 0.5 : 1 }}
+        style={{ width: "100%", padding: 16, fontSize: 16, opacity: (!whiskyName.trim() || !dimsScoredForFinalize) ? 0.5 : 1 }}
         data-testid="button-finalize"
       >
         {saving ? t("m2.solo.saving", "Saving...") : t("m2.solo.finalize", "Complete tasting")}
