@@ -159,14 +159,15 @@ function GuidedStepView({
 }) {
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
-  const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
-  const [notes, setNotes] = useState("");
-  const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const revealStep = tasting.guidedRevealStep ?? 0;
   const isBlindStep = revealStep === 0 && tasting.blindMode;
   const maxScore = tasting.ratingScale || 100;
+  const mid = Math.round(maxScore / 2);
+
+  const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+  const [notes, setNotes] = useState("");
+  const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: myRating } = useQuery({
     queryKey: ["myRating", currentParticipant?.id, whisky?.id],
@@ -177,18 +178,18 @@ function GuidedStepView({
   useEffect(() => {
     if (myRating) {
       setScores({
-        nose: myRating.nose ?? 50,
-        taste: myRating.taste ?? 50,
-        finish: myRating.finish ?? 50,
-        balance: myRating.balance ?? 50,
-        overall: myRating.overall ?? 50,
+        nose: myRating.nose ?? mid,
+        taste: myRating.taste ?? mid,
+        finish: myRating.finish ?? mid,
+        balance: myRating.balance ?? mid,
+        overall: myRating.overall ?? mid,
       });
       setNotes(myRating.notes || "");
     } else {
-      setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
+      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
       setNotes("");
     }
-  }, [myRating, whisky?.id]);
+  }, [myRating, whisky?.id, mid]);
 
   useEffect(() => {
     setGuidedMemo(null);
@@ -585,25 +586,28 @@ export default function LabsLive({ params }: LabsLiveProps) {
     enabled: !!currentParticipant && !!currentWhisky && !tasting?.guidedMode,
   });
 
-  const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
+  const maxScore = tasting?.ratingScale || 100;
+  const mid2 = Math.round(maxScore / 2);
+
+  const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, balance: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
 
   useEffect(() => {
     if (myRating) {
       setScores({
-        nose: myRating.nose ?? 50,
-        taste: myRating.taste ?? 50,
-        finish: myRating.finish ?? 50,
-        balance: myRating.balance ?? 50,
-        overall: myRating.overall ?? 50,
+        nose: myRating.nose ?? mid2,
+        taste: myRating.taste ?? mid2,
+        finish: myRating.finish ?? mid2,
+        balance: myRating.balance ?? mid2,
+        overall: myRating.overall ?? mid2,
       });
       setNotes(myRating.notes || "");
     } else {
-      setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
+      setScores({ nose: mid2, taste: mid2, finish: mid2, balance: mid2, overall: mid2 });
       setNotes("");
     }
-  }, [myRating, currentWhisky?.id]);
+  }, [myRating, currentWhisky?.id, mid2]);
 
   useEffect(() => {
     setFreeformMemo(null);
@@ -668,7 +672,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
   };
 
   const isBlind = tasting?.blindMode && tasting?.status === "open";
-  const maxScore = tasting?.ratingScale || 100;
 
   const displayName = isBlind
     ? `Dram ${String.fromCharCode(65 + currentIndex)}`
