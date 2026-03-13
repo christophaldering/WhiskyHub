@@ -1,0 +1,270 @@
+HARD PROMPT FOR REPLIT
+
+You are working inside the current CaskSense codebase. Before changing anything, first inspect the existing architecture, routing, design tokens, component structure, and landing page implementation. Then adapt the following intent cleanly to the current codebase instead of forcing a parallel solution.
+
+GOAL
+Redesign the public landing page into a much more premium, Apple-level, high-end experience that is visually calmer, more confident, more focused, and more product-mature.
+
+CRITICAL PRODUCT DIRECTION
+The landing page must now guide users only into the ONE main CaskSense experience.
+Internally this may still route into the current Labs implementation, but externally the term “Labs” must NOT appear anywhere on the landing page.
+Also: there is NO demo anymore. Remove all demo references and demo CTAs.
+
+THIS MEANS
+- No mention of “Labs” on the landing page
+- No mention of “Demo”
+- No “Explore Labs”
+- No “Try the Demo”
+- No communication of parallel product worlds
+- The landing page must feel like this is the final main product experience
+
+PRIMARY UX INTENT
+The current page likely has too much visual weight in the background motif and not enough clarity in hierarchy, CTA focus, and premium calm.
+Rebuild the landing page so that it feels:
+- more Apple-like
+- more restrained
+- more elegant
+- more typographically led
+- more materially rich
+- less graphic-noisy
+- more clearly curated
+- more focused on one entry path
+
+DESIGN PRINCIPLES
+Use the following principles consistently:
+
+1. HERO MUST BE CLEARER
+The hero should immediately communicate:
+- what CaskSense is
+- why it is special
+- what the user should do next
+
+2. FORM MOTIF MUST BECOME BACKGROUND ATMOSPHERE
+If there is currently a dominant bottle / oval / amber visual motif, do NOT fully remove it unless necessary, but reduce its dominance significantly.
+It should become:
+- more subtle
+- more elegant
+- more atmospheric
+- more like material / glow / sculpture
+- less like a giant flat graphic object
+
+3. STRONGER TYPOGRAPHIC HIERARCHY
+The hero should rely more on typography, spacing, restraint, and premium rhythm than on oversized decorative shape language.
+
+4. ONE CLEAR PRODUCT ENTRY
+The page should guide users into one main experience only.
+
+5. FOOTER-LEVEL PDF DOWNLOADS
+Offer two PDF downloads only in a subtle lower section / footer-adjacent section, never as hero CTAs:
+- a PDF with a detailed feature overview
+- a PDF with a guided overview
+
+IMPORTANT:
+The PDF section should feel elegant, quiet, informative, and secondary.
+It must not compete with the main CTA.
+
+CONTENT / MESSAGING DIRECTION
+
+HERO CONTENT
+Keep or refine the core premium messaging around:
+- CaskSense
+- Where tasting becomes reflection.
+- The most thoughtful way to explore whisky — alone or together.
+
+But improve the composition, spacing, and visual confidence.
+
+CTA STRATEGY
+Use a much simpler CTA structure.
+
+Recommended:
+- Primary CTA: Start Tasting
+- Secondary CTA: Join a Tasting
+- Optional tertiary text link: Host a Tasting
+
+Alternative acceptable structure:
+- Primary CTA: Enter CaskSense
+- Secondary CTA: Join a Tasting
+- Tertiary text link: Host a Tasting
+
+Do NOT use:
+- Demo
+- Labs
+- Preview
+- Experimental
+- Try it
+- Explore Labs
+
+PDF DOWNLOAD SECTION
+Place near the bottom / footer area as a quiet “Learn more” or “Downloads” block.
+
+Suggested labels in EN:
+- Download feature overview (PDF)
+- Download guided overview (PDF)
+
+Suggested labels in DE:
+- Leistungsübersicht als PDF
+- Geführte Übersicht als PDF
+
+These can be shown depending on current language setting / i18n mode.
+
+VISUAL DIRECTION
+
+OVERALL LOOK
+Move toward:
+- dark warm near-black background
+- subtle amber / gold / bronze accents
+- premium material feel
+- controlled gradients
+- soft glow
+- refined depth
+- no loud over-illustration
+
+TYPOGRAPHY
+Use existing typography system if already established, but sharpen the hierarchy substantially.
+Ideal feel:
+- elegant serif only where it adds premium authority
+- clean sans-serif for interface and supporting copy
+- stronger headline scale
+- cleaner line lengths
+- more breathing space
+- more confidence through restraint
+
+BUTTONS
+Upgrade CTA components to feel much more premium:
+- larger touch target
+- better spacing
+- elegant radius
+- subtle shadow / glow
+- refined hover / active states
+- visually obvious primary vs secondary hierarchy
+
+SPACING / LAYOUT
+Reduce vertical waste.
+The current page likely stretches too much and loses precision.
+Make the landing page feel:
+- tighter
+- more curated
+- more intentional
+- less like a long concept canvas
+- more like a premium product narrative
+
+RECOMMENDED PAGE STRUCTURE
+
+1. HERO
+- eyebrow / small label
+- product name
+- claim
+- subline
+- CTA row
+- subtle premium background motif
+
+2. THREE VALUE PROOF BLOCKS
+Instead of too many feature tiles upfront, show 3 elegant proof cards/rows such as:
+- Host-led tastings
+- Personal taste intelligence
+- Beautiful on paper and on screen
+
+These are examples, adapt to current architecture and existing sections.
+
+3. CORE EXPERIENCE SECTIONS
+Retain only the strongest sections from the current landing page.
+Prioritize:
+- guided tasting / host-led flow
+- reveal / shared moment
+- personal taste analytics / reflection
+- paper + digital elegance
+- premium calm / philosophy
+
+Condense or remove sections that feel repetitive, over-explanatory, or feature-heavy.
+
+4. DOWNLOADS / LEARN MORE
+A subtle lower section offering the 2 PDFs.
+
+5. FOOTER
+Clean, premium, quiet.
+
+FUNCTIONAL REQUIREMENTS
+
+1. ROUTING
+The main CTA must route into the current primary product experience.
+If that currently points into Labs routes internally, that is fine.
+But the landing page must not expose the term “Labs”.
+
+2. I18N
+Respect the existing German / English internationalization structure.
+All new labels must be integrated properly into the current i18n system, not hardcoded unless absolutely necessary and consistent with the current architecture.
+
+3. REUSE EXISTING DESIGN SYSTEM
+Do not create random isolated styling.
+Use and extend the current design tokens, UI primitives, layout system, and theme architecture wherever possible.
+
+4. CLEAN CODE
+Refactor rather than patch chaotically.
+Avoid dead code and duplicate landing page logic.
+If there are old sections or obsolete CTAs, remove or clearly retire them.
+
+5. RESPONSIVE
+The new landing page must look premium on:
+- desktop
+- tablet
+- mobile
+
+Especially on mobile:
+- hero hierarchy must remain clear
+- CTAs must stack elegantly
+- background motif must not dominate
+- footer PDF downloads must remain unobtrusive and readable
+
+PDF DOWNLOAD HANDLING
+Implement placeholder-ready download entry points for the two PDFs if the final assets are not yet present.
+If the assets are not available yet:
+- create clean placeholder hooks/links or file references
+- structure the component so final PDFs can later be swapped in easily
+- do not block the redesign on missing final PDF assets
+
+COPY TONE
+Use premium, calm, thoughtful language.
+No hypey startup tone.
+No gimmicky whisky clichés.
+No overly technical product overload on the landing page.
+
+Think:
+- calm confidence
+- cultivated intelligence
+- sensory sophistication
+- beautifully reduced product storytelling
+
+DO NOT
+- do not mention Labs
+- do not mention Demo
+- do not communicate experiments / beta / preview on the landing page
+- do not overload the hero with too many actions
+- do not make the PDF links primary actions
+- do not keep obsolete CTA logic alive
+- do not create visual clutter
+- do not overuse gradients, glassmorphism, or decorative effects
+- do not use loud marketing language
+
+DELIVERABLES
+1. Implement the redesigned landing page in the current codebase
+2. Update all relevant CTA logic
+3. Remove obsolete “Demo” and external “Labs” references from landing-page experience
+4. Add the subtle PDF download section near the bottom/footer
+5. Ensure the result is polished, responsive, and internally consistent
+
+FINAL CHECK BEFORE YOU STOP
+Review the result against this checklist:
+- Does the page now feel like one mature premium product?
+- Is the hero clearer and calmer?
+- Is the visual motif more restrained?
+- Is there exactly one main product direction?
+- Are Demo references gone?
+- Is Labs hidden externally?
+- Are the two PDF downloads present only as subtle lower-page options?
+- Does the page feel more Apple-level in hierarchy, restraint, and polish?
+
+Then finish by summarizing:
+- what you changed
+- which files were updated
+- any placeholder assumptions for the two PDFs
+- any recommendations for the next refinement pass
