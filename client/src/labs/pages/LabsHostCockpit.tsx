@@ -796,11 +796,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               }}>
                                 {activeWhisky.name || "—"}
                               </div>
-                              {(!isBlind || (gv && gv.isFieldRevealed("distillery"))) && (
-                                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
-                                  {[activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ") || ""}
-                                </div>
-                              )}
+                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
+                                {isBlind && gv && !gv.isFieldRevealed("distillery")
+                                  ? "??? · ??? · ???"
+                                  : [activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+                              </div>
                             </>
                           )}
                         </div>
