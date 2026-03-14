@@ -96,6 +96,13 @@ export function syncStoreParticipant(pid?: string, name?: string | null, role?: 
   } catch {}
 }
 
+export function setGuestSession(pid: string, name: string) {
+  setSessionStorage("tasting", name, pid, undefined);
+  try { localStorage.setItem("casksense_participant_id", pid); } catch {}
+  syncStoreParticipant(pid, name, undefined);
+  window.dispatchEvent(new Event("session-change"));
+}
+
 export async function signIn(opts: {
   pin: string;
   name?: string;

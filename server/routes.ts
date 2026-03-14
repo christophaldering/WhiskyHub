@@ -1176,7 +1176,7 @@ export async function registerRoutes(
     if (auth.authenticated) {
       res.json(tasting);
     } else {
-      res.json({ id: tasting.id, status: tasting.status });
+      res.json({ id: tasting.id, status: tasting.status, guestMode: tasting.guestMode || "standard" });
     }
   });
 
@@ -1485,6 +1485,65 @@ export async function registerRoutes(
       } catch {}
 
       res.status(201).json(tp);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/guest-join", async (req, res) => {
+    try {
+      const { name, code } = req.body;
+      if (!name || typeof name !== "string" || !name.trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      if (!code || typeof code !== "string" || !code.trim()) {
+        return res.status(400).json({ message: "Tasting code is required" });
+      }
+
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      if ((tasting.guestMode || "standard") !== "ultra") {
+        return res.status(403).json({ message: "This tasting requires sign-in to join" });
+      }
+
+      const codeUpper = code.trim().toUpperCase();
+      if (!tasting.code || tasting.code.toUpperCase() !== codeUpper) {
+        return res.status(403).json({ message: "Invalid tasting code" });
+      }
+
+      const suffix = Math.random().toString(36).slice(2, 6);
+      const guestName = `${name.trim()} #${suffix}`;
+
+      const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
+      await storage.setPrivacyConsent(participant.id);
+      await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: participant.id });
+      storage.updateLastSeen(participant.id).catch(() => {});
+
+      console.log(`[LABS] Guest joined: participant=${participant.id} "${guestName}" tasting=${tasting.id} "${tasting.title}"`);
+
+      try {
+        if (tasting.hostId !== participant.id) {
+          await storage.createNotification({
+            recipientId: tasting.hostId,
+            type: "join",
+            title: `${name.trim()} joined "${tasting.title}"`,
+            message: `${name.trim()} has joined your tasting session "${tasting.title}" as a guest.`,
+            linkUrl: `/tasting/${tasting.id}`,
+            tastingId: tasting.id,
+            isGlobal: false,
+          });
+        }
+      } catch {}
+
+      res.status(201).json({
+        id: participant.id,
+        name: participant.name,
+        role: participant.role,
+        experienceLevel: "guest",
+        guest: true,
+        tastingId: tasting.id,
+      });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }

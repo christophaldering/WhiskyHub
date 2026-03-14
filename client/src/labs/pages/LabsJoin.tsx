@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft } from "lucide-react";
-import { useSession, getSession } from "@/lib/session";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User } from "lucide-react";
+import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { signIn } from "@/lib/session";
+
+interface PendingTasting {
+  id: string;
+  guestMode: string;
+}
 
 export default function LabsJoin() {
   const [, navigate] = useLocation();
@@ -19,22 +24,40 @@ export default function LabsJoin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showGuestName, setShowGuestName] = useState(false);
   const [pendingCode, setPendingCode] = useState("");
+  const [pendingTasting, setPendingTasting] = useState<PendingTasting | null>(null);
 
   const [loginPin, setLoginPin] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
+  const [guestName, setGuestName] = useState("");
+  const [guestError, setGuestError] = useState("");
+  const [guestLoading, setGuestLoading] = useState(false);
+
   const isLoggedIn = session.signedIn && !!currentParticipant;
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
 
   useEffect(() => {
-    if (queryCode && isLoggedIn && !autoJoinAttempted) {
+    if (queryCode && !autoJoinAttempted) {
       setAutoJoinAttempted(true);
       handleJoinWithCode(queryCode);
     }
-  }, [queryCode, isLoggedIn, autoJoinAttempted]);
+  }, [queryCode, autoJoinAttempted]);
+
+  const showAuthOrGuest = (tasting: PendingTasting, trimmedCode: string) => {
+    setPendingCode(trimmedCode);
+    setPendingTasting(tasting);
+    if (tasting.guestMode === "ultra") {
+      setShowGuestName(true);
+      setShowLogin(false);
+    } else {
+      setShowLogin(true);
+      setShowGuestName(false);
+    }
+  };
 
   const handleJoinWithCode = async (joinCode: string) => {
     const trimmed = joinCode.trim().toUpperCase();
@@ -49,15 +72,14 @@ export default function LabsJoin() {
         return;
       }
       if (!isLoggedIn) {
-        setPendingCode(trimmed);
-        setShowLogin(true);
+        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);
         setLoading(false);
         return;
       }
       await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
       navigate(`/labs/tastings/${tasting.id}`);
-    } catch (e: any) {
-      const msg = e.message || "";
+    } catch (e: unknown) {
+      const msg = (e as Error).message || "";
       if (msg.toLowerCase().includes("already")) {
         const tasting = await tastingApi.getByCode(trimmed).catch(() => null);
         if (tasting?.id) { navigate(`/labs/tastings/${tasting.id}`); return; }
@@ -92,16 +114,15 @@ export default function LabsJoin() {
       }
 
       if (!isLoggedIn) {
-        setPendingCode(trimmed);
-        setShowLogin(true);
+        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);
         setLoading(false);
         return;
       }
 
       await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
       navigate(`/labs/tastings/${tasting.id}`);
-    } catch (e: any) {
-      const msg = e.message || "";
+    } catch (e: unknown) {
+      const msg = (e as Error).message || "";
       if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
         setError("No tasting found with this code. Double-check the code and try again.");
       } else if (msg.toLowerCase().includes("session code") || msg.toLowerCase().includes("invitation")) {
@@ -113,6 +134,28 @@ export default function LabsJoin() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGuestJoin = async () => {
+    if (!guestName.trim()) {
+      setGuestError("Please enter your name.");
+      return;
+    }
+    if (!pendingTasting) return;
+
+    setGuestError("");
+    setGuestLoading(true);
+
+    try {
+      const result = await tastingApi.guestJoin(pendingTasting.id, guestName.trim(), pendingCode);
+      setGuestSession(result.id, result.name);
+      navigate(`/labs/tastings/${pendingTasting.id}`);
+    } catch (e: unknown) {
+      const msg = (e as Error).message || "";
+      setGuestError(msg || "Could not join. Please try again.");
+    } finally {
+      setGuestLoading(false);
     }
   };
 
@@ -180,6 +223,101 @@ export default function LabsJoin() {
       handleLogin();
     }
   };
+
+  const handleGuestKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleGuestJoin();
+    }
+  };
+
+  if (showGuestName) {
+    return (
+      <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+        <div className="text-center mb-8">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--labs-accent-muted)" }}
+          >
+            <User className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
+          </div>
+          <h1
+            className="labs-serif text-2xl font-semibold mb-2"
+            style={{ color: "var(--labs-text)" }}
+            data-testid="labs-join-guest-title"
+          >
+            Join as Guest
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: "var(--labs-text-muted)" }}
+          >
+            Enter your name to join the tasting — no account needed.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label
+              className="text-xs font-medium mb-1.5 block"
+              style={{ color: "var(--labs-text-muted)" }}
+            >
+              Your Name
+            </label>
+            <input
+              className="labs-input"
+              type="text"
+              placeholder="e.g. Max Mustermann"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={handleGuestKeyDown}
+              autoFocus
+              data-testid="labs-join-guest-name"
+            />
+          </div>
+
+          {guestError && (
+            <div
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+              style={{
+                background: "var(--labs-danger-muted)",
+                color: "var(--labs-danger)",
+              }}
+              data-testid="labs-join-guest-error"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {guestError}
+            </div>
+          )}
+
+          <button
+            className="labs-btn-primary w-full flex items-center justify-center gap-2"
+            onClick={handleGuestJoin}
+            disabled={guestLoading || !guestName.trim()}
+            data-testid="labs-join-guest-submit"
+          >
+            {guestLoading ? "Joining..." : (
+              <>
+                Join Tasting
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+
+          <button
+            className="labs-btn-ghost w-full"
+            onClick={() => {
+              setShowGuestName(false);
+              setGuestError("");
+              setGuestName("");
+            }}
+            data-testid="labs-join-guest-back"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (showLogin) {
     return (

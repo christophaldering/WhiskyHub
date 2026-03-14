@@ -72,6 +72,8 @@ export const tastingApi = {
   getPresence: (id: string) => fetchJSON(`/tastings/${id}/presence`),
   join: (id: string, participantId: string, code?: string) =>
     fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId, code }) }),
+  guestJoin: (id: string, name: string, code?: string) =>
+    fetchJSON(`/tastings/${id}/guest-join`, { method: "POST", body: JSON.stringify({ name, code }) }),
   getAnalytics: (id: string, requesterId?: string) => fetchJSON(`/tastings/${id}/analytics${requesterId ? `?requesterId=${requesterId}` : ''}`),
   revealAllPhotos: (id: string, revealed: boolean, hostId: string) => fetchJSON(`/tastings/${id}/reveal-all-photos`, { method: "POST", body: JSON.stringify({ revealed, hostId }) }),
   uploadCoverImage: async (id: string, file: File, hostId: string) => {
