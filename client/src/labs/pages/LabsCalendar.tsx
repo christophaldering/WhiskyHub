@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useAppStore } from "@/lib/store";
 import { calendarApi, friendsApi, pidHeaders } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight,
   MapPin, Users, Wine, Loader2,
@@ -306,7 +307,7 @@ export default function LabsCalendar() {
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Wine style={{ width: 10, height: 10 }} /> {ev.whiskyCount}</span>
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Users style={{ width: 10, height: 10 }} /> {ev.participantCount}</span>
                           </div>
-                          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{t("calendar.hostedBy", "Hosted by")} {ev.hostName}</p>
+                          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{t("calendar.hostedBy", "Hosted by")} {stripGuestSuffix(ev.hostName)}</p>
                         </div>
                       </Link>
                     ))}
@@ -330,7 +331,7 @@ export default function LabsCalendar() {
                         <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{ev.date} · {ev.location || ""}</p>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                           <StatusBadge status={ev.status} />
-                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{ev.hostName}</span>
+                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ev.hostName)}</span>
                         </div>
                       </div>
                     </Link>
