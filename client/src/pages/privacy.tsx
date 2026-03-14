@@ -21,6 +21,9 @@ export default function Privacy() {
     "deletion",
     "dataExport",
     "children",
+    "transfer",
+    "security",
+    "complaint",
     "changes",
     "contact",
   ] as const;

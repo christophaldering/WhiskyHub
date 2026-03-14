@@ -85,6 +85,7 @@ export interface IStorage {
   getOnlineParticipants(thresholdMinutes?: number): Promise<Participant[]>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
   updateParticipantPin(id: string, pin: string): Promise<Participant | undefined>;
+  setPrivacyConsent(id: string): Promise<void>;
   setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
   verifyEmail(id: string): Promise<Participant | undefined>;
   updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined>;
@@ -413,6 +414,10 @@ export class DatabaseStorage implements IStorage {
   async updateParticipantPin(id: string, pin: string): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ pin }).where(eq(participants.id, id)).returning();
     return result;
+  }
+
+  async setPrivacyConsent(id: string): Promise<void> {
+    await db.update(participants).set({ privacyConsentAt: new Date() }).where(eq(participants.id, id));
   }
 
   async setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined> {

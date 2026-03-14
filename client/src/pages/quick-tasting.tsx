@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Wine, ArrowRight, ArrowLeft, Check,
   Sparkles
@@ -23,8 +24,9 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [quickPrivacy, setQuickPrivacy] = useState(false);
 
-  const canSubmit = name.trim().length > 0 && pin.length >= 4;
+  const canSubmit = name.trim().length > 0 && pin.length >= 4 && quickPrivacy;
 
   return (
     <motion.div
@@ -62,7 +64,18 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
             />
             <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
           </div>
-          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+          <div className="flex items-start gap-2 text-left">
+            <Checkbox
+              id="quickPrivacy"
+              checked={quickPrivacy}
+              onCheckedChange={(c) => setQuickPrivacy(c === true)}
+              data-testid="checkbox-quick-privacy"
+            />
+            <label htmlFor="quickPrivacy" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+              {t('login.privacyConsentLabel')}{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+            </label>
+          </div>
           <Button
             size="lg"
             onClick={() => onJoin(name.trim(), pin)}
@@ -344,7 +357,7 @@ export default function QuickTasting() {
     setJoining(true);
     setJoinError("");
     try {
-      const participant = await participantApi.guestJoin(name, pin);
+      const participant = await participantApi.guestJoin(name, pin, true);
       setParticipant({
         id: participant.id,
         name: participant.name,

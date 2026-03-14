@@ -5,7 +5,7 @@ import { Shield, ChevronLeft } from "lucide-react";
 const SECTIONS = [
   "overview", "dataCollected", "purpose", "localStorage", "aiProcessing",
   "email", "thirdParty", "retention", "rights", "deletion", "dataExport",
-  "children", "changes", "contact",
+  "children", "transfer", "security", "complaint", "changes", "contact",
 ] as const;
 
 export default function LabsPrivacy() {

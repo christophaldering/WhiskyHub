@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText, AlertTriangle, Info } from "lucide-react";
 import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -1005,6 +1006,7 @@ export default function NakedTasting() {
   const [pin, setPin] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [nakedPrivacyConsent, setNakedPrivacyConsent] = useState(false);
   const [ephemeralParticipant, setEphemeralParticipant] = useState<{ id: string; name: string; role: string; canAccessWhiskyDb?: boolean } | null>(null);
 
   const { data: tasting, isLoading: tastingLoading, error: tastingError } = useQuery<Tasting>({
@@ -1042,10 +1044,14 @@ export default function NakedTasting() {
 
   const handleJoin = async () => {
     if (!name.trim() || pin.length < 4) return;
+    if (!nakedPrivacyConsent) {
+      setJoinError(t('login.privacyConsentRequired'));
+      return;
+    }
     setJoining(true);
     setJoinError("");
     try {
-      const participant = await participantApi.guestJoin(name.trim(), pin);
+      const participant = await participantApi.guestJoin(name.trim(), pin, true);
       const pData = {
         id: participant.id,
         name: participant.name,
@@ -1207,7 +1213,18 @@ export default function NakedTasting() {
                       <p className="text-[10px] text-muted-foreground/50 leading-relaxed">{t("naked.pinExplain")}</p>
                     </div>
                   </div>
-                  <p className="text-[9px] text-muted-foreground/40 text-center">{t("guestAuth.consentNotice")}</p>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="nakedPrivacy"
+                      checked={nakedPrivacyConsent}
+                      onCheckedChange={(c) => setNakedPrivacyConsent(c === true)}
+                      data-testid="checkbox-naked-privacy"
+                    />
+                    <label htmlFor="nakedPrivacy" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+                      {t('login.privacyConsentLabel')}{" "}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+                    </label>
+                  </div>
                   {joinError && <p className="text-xs text-destructive text-center">{joinError}</p>}
                   <Button
                     onClick={handleJoin}

@@ -435,6 +435,14 @@ export async function registerRoutes(
     return { ok: true, participant };
   };
 
+  const requireAuth = async (req: Request): Promise<{ authenticated: true; participant: Participant } | { authenticated: false; status: number; message: string }> => {
+    const requesterId = req.headers["x-participant-id"] as string | undefined;
+    if (!requesterId) return { authenticated: false, status: 401, message: "Authentication required" };
+    const participant = await storage.getParticipant(requesterId);
+    if (!participant) return { authenticated: false, status: 401, message: "Authentication required" };
+    return { authenticated: true, participant };
+  };
+
   const requireOwnerOrAdmin = async (req: Request, paramId: string): Promise<{ authorized: true; requester: Participant } | { authorized: false; status: number; message: string }> => {
     const requesterId = req.headers["x-participant-id"] as string | undefined;
     if (!requesterId) return { authorized: false, status: 403, message: "Forbidden" };
@@ -465,6 +473,7 @@ export async function registerRoutes(
   app.post("/api/participants", async (req, res) => {
     try {
       const data = insertParticipantSchema.parse(req.body);
+      const privacyConsent = req.body.privacyConsent === true;
       const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
 
       const existing = await storage.getParticipantByName(data.name);
@@ -511,10 +520,14 @@ export async function registerRoutes(
       if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
         return res.status(400).json({ message: "A valid email is required" });
       }
+      if (privacyConsent !== true) {
+        return res.status(400).json({ message: "Privacy consent is required to create an account." });
+      }
       if (data.pin) {
         data.pin = await hashPassword(data.pin);
       }
       const participant = await storage.createParticipant(data);
+      await storage.setPrivacyConsent(participant.id);
 
       if (participant.email?.toLowerCase() === ADMIN_EMAIL && participant.role !== "admin") {
         await storage.updateParticipantRole(participant.id, "admin");
@@ -583,7 +596,7 @@ export async function registerRoutes(
 
   app.post("/api/participants/login", async (req, res) => {
     try {
-      const { email, pin, experienceLevel } = req.body;
+      const { email, pin, experienceLevel, privacyConsent } = req.body;
       if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         return res.status(400).json({ message: "A valid email is required" });
       }
@@ -619,6 +632,9 @@ export async function registerRoutes(
         if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
         return res.json(updated);
       }
+      if (privacyConsent === true && !existing.privacyConsentAt) {
+        await storage.setPrivacyConsent(existing.id);
+      }
       const freshParticipant = await storage.getParticipant(existing.id);
       storage.updateLastSeen(existing.id).catch(() => {});
       notifyAdminLogin(freshParticipant || existing, false);
@@ -630,9 +646,12 @@ export async function registerRoutes(
 
   app.post("/api/participants/demo-guest", async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name, privacyConsent } = req.body;
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
+      }
+      if (privacyConsent !== true) {
+        return res.status(400).json({ message: "Privacy consent is required." });
       }
       const demoTasting = await storage.getTastingByCode("DEMO");
       if (!demoTasting) return res.status(404).json({ message: "Demo tasting not available" });
@@ -641,6 +660,7 @@ export async function registerRoutes(
       const guestName = `${name.trim()} #${suffix}`;
 
       const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
+      await storage.setPrivacyConsent(participant.id);
       await storage.addParticipantToTasting({ tastingId: demoTasting.id, participantId: participant.id });
       storage.updateLastSeen(participant.id).catch(() => {});
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, experienceLevel: "guest", guest: true, tastingId: demoTasting.id });
@@ -651,7 +671,7 @@ export async function registerRoutes(
 
   app.post("/api/participants/guest", async (req, res) => {
     try {
-      const { name, pin } = req.body;
+      const { name, pin, privacyConsent } = req.body;
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
       }
@@ -674,8 +694,12 @@ export async function registerRoutes(
         notifyAdminLogin(existing, false);
         return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
       }
+      if (privacyConsent !== true) {
+        return res.status(400).json({ message: "Privacy consent is required." });
+      }
       const hashedNewPin = await hashPassword(pin);
       const participant = await storage.createParticipant({ name: name.trim(), pin: hashedNewPin, experienceLevel: "guest" });
+      await storage.setPrivacyConsent(participant.id);
       storage.updateLastSeen(participant.id).catch(() => {});
       notifyAdminLogin(participant, true);
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, experienceLevel: "guest", guest: true });
@@ -686,6 +710,8 @@ export async function registerRoutes(
 
   app.patch("/api/participants/:id/experience-level", async (req, res) => {
     try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
       const { level } = req.body;
       if (!level || !["guest", "explorer", "connoisseur", "analyst"].includes(level)) {
         return res.status(400).json({ message: "Invalid level. Must be guest, explorer, connoisseur, or analyst." });
@@ -942,6 +968,20 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.patch("/api/participants/:id/privacy-consent", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      await storage.setPrivacyConsent(req.params.id);
+      const updated = await storage.getParticipant(req.params.id);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/participants/:id/anonymize", async (req, res) => {
     try {
       const participant = await storage.getParticipant(req.params.id);
@@ -1104,17 +1144,14 @@ export async function registerRoutes(
   });
 
   app.get("/api/tastings/:id", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const tasting = await storage.getTasting(req.params.id);
     if (!tasting) return res.status(404).json({ message: "Not found" });
-    const requesterId = req.headers["x-participant-id"] as string | undefined;
-    if (requesterId) {
-      const requester = await storage.getParticipant(requesterId);
-      if (!requester) return res.status(403).json({ message: "Forbidden" });
-      if (requester.role !== "admin" && tasting.hostId !== requesterId) {
-        const tp = await storage.getTastingParticipants(tasting.id);
-        const isMember = tp.some(p => p.participantId === requesterId);
-        if (!isMember) return res.status(403).json({ message: "Forbidden" });
-      }
+    if (auth.participant.role !== "admin" && tasting.hostId !== auth.participant.id) {
+      const tp = await storage.getTastingParticipants(tasting.id);
+      const isMember = tp.some(p => p.participantId === auth.participant.id);
+      if (!isMember) return res.status(403).json({ message: "Forbidden" });
     }
     res.json(tasting);
   });
@@ -1122,7 +1159,12 @@ export async function registerRoutes(
   app.get("/api/tastings/code/:code", async (req, res) => {
     const tasting = await storage.getTastingByCode(req.params.code);
     if (!tasting) return res.status(404).json({ message: "Not found" });
-    res.json(tasting);
+    const auth = await requireAuth(req);
+    if (auth.authenticated) {
+      res.json(tasting);
+    } else {
+      res.json({ id: tasting.id, code: tasting.code, status: tasting.status, title: tasting.title, blindMode: tasting.blindMode });
+    }
   });
 
   app.post("/api/tastings", async (req, res) => {
@@ -1350,6 +1392,8 @@ export async function registerRoutes(
   // ===== TASTING PARTICIPANTS =====
 
   app.get("/api/tastings/:id/participants", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const list = await storage.getTastingParticipants(req.params.id);
     const filtered = list.filter((tp: any) => !tp.participant?.email?.endsWith("@casksense.local"));
     res.json(filtered);
@@ -2289,12 +2333,16 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
   // ===== RATINGS =====
 
   app.get("/api/whiskies/:id/ratings", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const list = await storage.getRatingsForWhisky(req.params.id);
     res.json(list);
   });
 
   app.get("/api/tastings/:id/results", async (req, res) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
 
@@ -2367,6 +2415,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/tastings/:id/results/export", async (req, res) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const format = (req.query.format as string) || "csv";
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
@@ -2409,6 +2459,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
   });
 
   app.get("/api/tastings/:id/ratings", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const list = await storage.getRatingsForTasting(req.params.id);
     res.json(list);
   });
@@ -2451,6 +2503,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
   // ===== ANALYTICS (for Reveal/Insight Mode) =====
 
   app.get("/api/tastings/:id/analytics", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const tastingId = req.params.id;
     const requesterId = req.query.requesterId as string | undefined;
     const tasting = await storage.getTasting(tastingId);
@@ -2729,6 +2783,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/profiles/:participantId", async (req, res) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const profile = await storage.getProfile(req.params.participantId);
       if (!profile) return res.json(null);
       res.json(profile);
@@ -2858,6 +2914,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/participants/:id/friends", async (req, res) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const friends = await storage.getWhiskyFriends(req.params.id);
       res.json(friends);
     } catch (e: any) {
@@ -2867,6 +2925,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/participants/:id/friends/online", async (req, res) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const friends = await storage.getWhiskyFriends(req.params.id);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
       const allParticipants = await Promise.all(
@@ -8950,6 +9010,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
   // ===== TASTING PHOTOS =====
   app.get("/api/tastings/:id/photos", async (req: Request, res: Response) => {
     try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const photos = await storage.getTastingPhotos(req.params.id as string);
       res.json(photos);
     } catch (e: any) {

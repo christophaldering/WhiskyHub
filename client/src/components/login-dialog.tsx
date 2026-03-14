@@ -25,6 +25,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
@@ -64,7 +65,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     if (isReturning) {
       setLoading(true);
       try {
-        const participant = await participantApi.loginByEmail(email.trim(), pin);
+        const participant = await participantApi.loginByEmail(email.trim(), pin, true);
         setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
         onClose();
       } catch (e: any) {
@@ -77,6 +78,10 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         setError(t('login.nameRequired'));
         return;
       }
+      if (!privacyConsent) {
+        setError(t('login.privacyConsentRequired'));
+        return;
+      }
 
       setLoading(true);
       try {
@@ -84,7 +89,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           name.trim(),
           pin,
           email.trim(),
-          newsletterOptIn
+          newsletterOptIn,
+          true
         );
 
         if (!participant.emailVerified) {
@@ -495,7 +501,31 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             )}
           </div>
 
-          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+          {!isReturning && (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="privacyConsent"
+                checked={privacyConsent}
+                onCheckedChange={(checked) => setPrivacyConsent(checked === true)}
+                data-testid="checkbox-privacy-consent"
+              />
+              <div className="grid gap-0.5 leading-none">
+                <label
+                  htmlFor="privacyConsent"
+                  className="text-xs leading-snug cursor-pointer text-muted-foreground"
+                >
+                  {t('login.privacyConsentLabel')}{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {isReturning && (
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('login.loginPrivacyNotice')}{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+            </p>
+          )}
 
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}
 

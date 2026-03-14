@@ -31,12 +31,14 @@ async function fetchJSON(url: string, options?: RequestInit) {
 
 // ===== Participants =====
 export const participantApi = {
-  loginOrCreate: (name: string, pin?: string, email?: string, newsletterOptIn?: boolean) =>
-    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn }) }),
-  loginByEmail: (email: string, pin: string) =>
-    fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin }) }),
-  guestJoin: (name: string, pin: string) =>
-    fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name, pin }) }),
+  loginOrCreate: (name: string, pin?: string, email?: string, newsletterOptIn?: boolean, privacyConsent?: boolean) =>
+    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn, privacyConsent }) }),
+  loginByEmail: (email: string, pin: string, privacyConsent?: boolean) =>
+    fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin, privacyConsent }) }),
+  guestJoin: (name: string, pin: string, privacyConsent?: boolean) =>
+    fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name, pin, privacyConsent }) }),
+  acceptPrivacyConsent: (id: string) =>
+    fetchJSON(`/participants/${id}/privacy-consent`, { method: "PATCH", body: JSON.stringify({}) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
   setLanguage: (id: string, language: string) =>
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),

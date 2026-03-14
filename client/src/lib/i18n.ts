@@ -686,7 +686,11 @@ const resources = {
         nameRequired: "Name is required",
         emailRequired: "Email is required",
         pinRequired: "Password is required",
-        invalidEmail: "Please enter a valid email address"
+        invalidEmail: "Please enter a valid email address",
+        privacyConsentLabel: "I agree to the processing of my data as described in the",
+        privacyConsentLink: "Privacy Policy",
+        privacyConsentRequired: "You must accept the privacy policy to continue.",
+        loginPrivacyNotice: "By signing in, you confirm your continued agreement to the Privacy Policy."
       },
       forgotPin: {
         link: "Forgot password?",
@@ -4071,62 +4075,74 @@ const resources = {
         privacy: {
           title: "Privacy Policy",
           lastUpdated: "Last updated",
-          lastUpdatedDate: "February 2026",
+          lastUpdatedDate: "March 2026",
           overview: {
-            title: "Overview",
-            text: "CaskSense is a private hobby project operated by Christoph Aldering. We take your privacy seriously and process your data only to the extent necessary for providing our service. This policy explains what data we collect, why, and how you can control it.",
+            title: "1. Controller & Overview",
+            text: "CaskSense is a private, non-commercial hobby project.\n\nController within the meaning of Art. 4(7) GDPR:\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nThis privacy policy explains which personal data we collect when you use CaskSense, for what purposes, on which legal basis, and what rights you have.",
           },
           dataCollected: {
-            title: "Data We Collect",
-            text: "• Display name (freely chosen, no real name required)\n• 4-digit PIN (for tasting authentication)\n• Whisky ratings and tasting notes you submit\n• Journal entries and wishlist items you create\n• Profile information you voluntarily provide (experience level, preferences)\n• Uploaded images (bottle photos, tasting cover images)\n\nWe do not collect email addresses unless you voluntarily provide one for tasting invitations or newsletter subscription.",
+            title: "2. Categories of Personal Data",
+            text: "We process the following personal data:\n\n(a) Account data: Display name (freely chosen pseudonym), optional e-mail address, hashed PIN (authentication), language preference, experience level\n(b) Usage data: Whisky ratings and tasting notes, journal entries, wishlist and collection items, flavor-tag selections, profile bio and photo\n(c) Technical data: Browser local storage (session, preferences), IP address (server logs, not stored permanently), heartbeat timestamps (online status)\n(d) Optional data: Uploaded images (bottle photos, tasting cover images), newsletter subscription preference\n\nNo real names are required. The display name can be any pseudonym.",
           },
           purpose: {
-            title: "Purpose of Data Processing",
-            text: "Your data is used exclusively for:\n• Enabling participation in whisky tastings\n• Calculating aggregated group results and analytics\n• Providing your personal journal and flavor profile\n• Sending tasting invitations (only with your email, if provided)\n\nWe do not use your data for advertising, tracking, profiling, or sale to third parties.",
+            title: "3. Purposes & Legal Basis (Art. 6 GDPR)",
+            text: "Purpose — Legal Basis:\n\n• Providing the tasting platform and account — Art. 6(1)(b) GDPR (performance of contract / service provision)\n• Calculating aggregated group results and analytics — Art. 6(1)(b) GDPR\n• Personal journal, flavor profile, and wishlist — Art. 6(1)(b) GDPR\n• Sending tasting invitations to provided email — Art. 6(1)(a) GDPR (consent)\n• Newsletter — Art. 6(1)(a) GDPR (explicit opt-in consent)\n• AI-powered bottle identification and import — Art. 6(1)(a) GDPR (voluntary use)\n• Online presence / heartbeat — Art. 6(1)(f) GDPR (legitimate interest in showing friends' online status)\n• Admin login notifications — Art. 6(1)(f) GDPR (legitimate interest in security monitoring)\n• Server logs (IP, errors) — Art. 6(1)(f) GDPR (legitimate interest in security and stability)\n\nWe do not use your data for advertising, profiling, automated decision-making, or sale to third parties.",
           },
           localStorage: {
-            title: "Local Storage & Cookies",
-            text: "CaskSense uses your browser's local storage (localStorage) to save your session, preferences (language, theme, experience level), and UI settings. We do not use tracking cookies, analytics tools, or third-party tracking scripts. No data is shared with advertising networks.",
+            title: "4. Cookies & Local Storage",
+            text: "CaskSense does not use tracking cookies, analytics tools, or third-party tracking scripts.\n\nWe use your browser's local storage (localStorage / sessionStorage) exclusively for:\n• Session persistence (participant ID)\n• User preferences (language, theme, experience level, UI settings)\n\nThis data remains on your device and is not transmitted to third parties. No advertising networks or social media plugins are integrated.",
           },
           aiProcessing: {
-            title: "AI Processing (OpenAI)",
-            text: "CaskSense offers optional AI-powered features:\n• Bottle identification: When you upload a photo for scanning, the image is sent to OpenAI's API for analysis. The image is processed in real-time and not stored by OpenAI for training.\n• Newsletter generation (admin only): Tasting data summaries may be sent to OpenAI to generate newsletter text.\n• Tasting import: Uploaded spreadsheets or images may be processed via OpenAI for data extraction.\n\nAI features are always optional. You can fully use CaskSense without them. OpenAI's data processing is governed by their API data usage policy, which states that API data is not used for model training.",
+            title: "5. AI Processing (OpenAI)",
+            text: "CaskSense offers optional AI-powered features:\n\n• Bottle identification: Uploaded photos are sent to OpenAI's API (GPT-4 Vision) for real-time analysis. Images are processed transiently and not stored by OpenAI for training purposes.\n• Tasting import: Uploaded spreadsheets or photos may be processed via OpenAI for data extraction.\n• Newsletter generation (admin only): Anonymized tasting summaries may be sent to OpenAI.\n\nLegal basis: Art. 6(1)(a) GDPR — all AI features are voluntary. You can use CaskSense fully without them.\n\nOpenAI, Inc. is based in the USA. Data transfer is based on OpenAI's DPA and Standard Contractual Clauses (SCCs) pursuant to Art. 46(2)(c) GDPR. OpenAI's API data usage policy states that API inputs are not used for model training.",
           },
           email: {
-            title: "Email Communication",
-            text: "If you provide your email address, it may be used to:\n• Send tasting invitations from a host\n• Send newsletter updates (opt-in only)\n\nYou can remove your email from your profile at any time. We use Nodemailer with Gmail for sending. We do not share your email with third parties.",
+            title: "6. Email Communication",
+            text: "If you voluntarily provide your email address, it may be used for:\n• Email verification (one-time code)\n• Tasting invitations from a session host\n• Newsletter (explicit opt-in only, withdrawable at any time)\n• PIN reset codes\n\nEmails are sent via Google Mail (Gmail API). Google processes the email address solely for delivery purposes.\n\nYou can remove your email from your profile at any time. We do not share your email address with third parties beyond the sending infrastructure.",
           },
           thirdParty: {
-            title: "Third-Party Services",
-            text: "• Replit: Hosting and infrastructure (PostgreSQL database, object storage for images)\n• OpenAI: Optional AI features (see above)\n• Google Fonts: Web fonts loaded from Google's servers\n\nNo analytics, advertising, or social media tracking services are used.",
+            title: "7. Recipients & Third-Party Services",
+            text: "Your data may be shared with the following processors:\n\n• Replit, Inc. (USA): Hosting, PostgreSQL database, object storage for images. Data transfer based on SCCs.\n• OpenAI, Inc. (USA): Optional AI features (see section 5). Data transfer based on SCCs.\n• Google LLC (USA): Email delivery via Gmail API, web fonts (Google Fonts). Data transfer based on SCCs.\n\nNo analytics, advertising, social media tracking, or data broker services are used. No personal data is sold or shared for marketing purposes.",
           },
           retention: {
-            title: "Data Retention",
-            text: "Your data is stored as long as your account exists. Tasting ratings are retained as part of aggregated group results even after account deletion (in anonymized form). You can delete your account at any time through your profile settings.",
+            title: "8. Data Retention",
+            text: "• Account data: Stored as long as your account exists. Deleted upon account deletion.\n• Ratings: After account deletion, ratings are anonymized (pseudonym replaced with random hash) and retained as part of aggregated group statistics. The anonymized data can no longer be attributed to you.\n• Server logs: Automatically deleted after 30 days.\n• Uploaded images: Stored as long as the associated tasting or profile exists. Deleted with the tasting or upon account deletion.\n• Newsletter consent: Stored until withdrawal.\n• Privacy consent timestamp: Stored as long as the account exists.",
           },
           rights: {
-            title: "Your Rights (GDPR)",
-            text: "Under the EU General Data Protection Regulation (GDPR), you have the right to:\n• Access your personal data\n• Correct inaccurate data\n• Delete your account and personal data\n• Export your data in a portable format\n• Object to data processing\n\nTo exercise these rights, contact us at christoph.aldering@googlemail.com or use the built-in features (profile settings, data export).",
+            title: "9. Your Rights Under GDPR",
+            text: "Under the EU General Data Protection Regulation, you have the following rights:\n\n• Right of access (Art. 15 GDPR): Request information about your stored data. Use the built-in Data Export feature or contact us.\n• Right to rectification (Art. 16 GDPR): Correct inaccurate data via your profile settings.\n• Right to erasure (Art. 17 GDPR): Delete your account via profile settings. Ratings will be anonymized.\n• Right to restriction (Art. 18 GDPR): Request restriction of processing by contacting us.\n• Right to data portability (Art. 20 GDPR): Export your data in JSON/Excel format via the Data Export feature.\n• Right to object (Art. 21 GDPR): Object to processing based on legitimate interest by contacting us.\n• Right to withdraw consent (Art. 7(3) GDPR): Withdraw any given consent at any time (e.g., newsletter, email) without affecting the lawfulness of processing before withdrawal.\n\nTo exercise your rights: use the built-in features (profile settings, data export, account deletion) or contact christoph.aldering@googlemail.com.",
           },
           deletion: {
-            title: "Account Deletion",
-            text: "You can delete your account through your profile settings. This will:\n• Remove your display name, PIN, and profile information\n• Anonymize your ratings (they remain as part of aggregated group statistics without your identity)\n• Delete your journal entries and wishlist\n\nThis process is irreversible.",
+            title: "10. Account Deletion & Anonymization",
+            text: "You can delete your account at any time through your profile settings (PIN required). Upon deletion:\n\n• Your display name is replaced with a random anonymous identifier\n• Your PIN, email, and profile information are permanently removed\n• Your ratings are anonymized and retained only as part of aggregated group statistics\n• Your journal entries, wishlist, and collection are deleted\n• Your friend connections are removed\n\nThis process is irreversible. The anonymized data cannot be traced back to you.",
           },
           dataExport: {
-            title: "Data Export",
-            text: "You can export all your personal data (ratings, journal entries, profile, wishlist) at any time through the Data Export page in the app. Data is provided in JSON and Excel formats.",
+            title: "11. Data Export & Portability",
+            text: "You can export all your personal data at any time through the Data Export page in the app. Available formats:\n• JSON (machine-readable)\n• Excel (human-readable)\n\nExported data includes: ratings, journal entries, profile data, wishlist, collection, and friend list. This fulfills your right to data portability under Art. 20 GDPR.",
           },
           children: {
-            title: "Children",
-            text: "CaskSense is a platform about alcoholic beverages and is intended for users of legal drinking age. We do not knowingly collect data from minors.",
+            title: "12. Minors",
+            text: "CaskSense is a platform concerning alcoholic beverages and is intended exclusively for users of legal drinking age in their jurisdiction. We do not knowingly collect personal data from minors. If we become aware that data has been collected from a minor, we will delete it without undue delay.",
+          },
+          transfer: {
+            title: "13. International Data Transfer",
+            text: "Some of our processors are based in the United States (Replit, OpenAI, Google). Data transfers to the USA are safeguarded by:\n\n• Standard Contractual Clauses (SCCs) pursuant to Art. 46(2)(c) GDPR\n• Additional technical measures (encryption in transit and at rest)\n\nThe European Commission has not issued an adequacy decision for the USA for general data transfers. The SCCs provide appropriate safeguards for the protection of your data.",
+          },
+          security: {
+            title: "14. Data Security",
+            text: "We implement appropriate technical and organizational measures to protect your personal data:\n\n• PINs are stored as bcrypt hashes (never in plain text)\n• All communication is encrypted via HTTPS/TLS\n• Database access is restricted and credentials are stored as environment secrets\n• No unnecessary data is collected (data minimization)\n• Regular review of access controls",
+          },
+          complaint: {
+            title: "15. Right to Lodge a Complaint",
+            text: "Without prejudice to any other administrative or judicial remedy, you have the right to lodge a complaint with a supervisory authority, in particular in the EU Member State of your habitual residence, place of work, or place of the alleged infringement, if you consider that the processing of your personal data infringes the GDPR.\n\nThe competent supervisory authority for the controller is:\nLandesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2-4, 40213 Düsseldorf\nhttps://www.ldi.nrw.de",
           },
           changes: {
-            title: "Changes to This Policy",
-            text: "We may update this privacy policy from time to time. Changes will be noted with an updated date at the top of this page. Continued use of CaskSense after changes constitutes acceptance of the revised policy.",
+            title: "16. Changes to This Policy",
+            text: "We may update this privacy policy to reflect changes in our data processing practices or legal requirements. The current version is always available at /privacy with the date of last update. Material changes will be communicated through the app.",
           },
           contact: {
-            title: "Contact",
-            text: "For privacy-related questions or requests, please contact:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com",
+            title: "17. Contact",
+            text: "For all privacy-related questions, requests, or to exercise your rights:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nWe aim to respond to all requests within 30 days.",
           },
         },
         storageConsent: {
@@ -6564,7 +6580,11 @@ const resources = {
         nameRequired: "Name ist erforderlich",
         emailRequired: "E-Mail ist erforderlich",
         pinRequired: "Passwort ist erforderlich",
-        invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+        invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+        privacyConsentLabel: "Ich stimme der Verarbeitung meiner Daten gemäß der",
+        privacyConsentLink: "Datenschutzerklärung",
+        privacyConsentRequired: "Du musst die Datenschutzerklärung akzeptieren, um fortzufahren.",
+        loginPrivacyNotice: "Mit der Anmeldung bestätigst du deine fortlaufende Zustimmung zur Datenschutzerklärung."
       },
       forgotPin: {
         link: "Passwort vergessen?",
@@ -9951,62 +9971,74 @@ const resources = {
         privacy: {
           title: "Datenschutzerklärung",
           lastUpdated: "Zuletzt aktualisiert",
-          lastUpdatedDate: "Februar 2026",
+          lastUpdatedDate: "März 2026",
           overview: {
-            title: "Überblick",
-            text: "CaskSense ist ein privates Hobbyprojekt, betrieben von Christoph Aldering. Wir nehmen deinen Datenschutz ernst und verarbeiten deine Daten nur im für den Betrieb notwendigen Umfang. Diese Erklärung informiert darüber, welche Daten wir erfassen, warum und wie du sie kontrollieren kannst.",
+            title: "1. Verantwortlicher & Überblick",
+            text: "CaskSense ist ein privates, nicht-kommerzielles Hobbyprojekt.\n\nVerantwortlicher im Sinne von Art. 4 Nr. 7 DSGVO:\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nDiese Datenschutzerklärung informiert dich darüber, welche personenbezogenen Daten wir bei der Nutzung von CaskSense erheben, zu welchen Zwecken, auf welcher Rechtsgrundlage und welche Rechte dir zustehen.",
           },
           dataCollected: {
-            title: "Welche Daten wir erfassen",
-            text: "• Anzeigename (frei wählbar, kein Klarname erforderlich)\n• 4-stellige PIN (zur Tasting-Authentifizierung)\n• Whisky-Bewertungen und Tasting-Notizen\n• Tagebucheinträge und Wunschlisten-Einträge\n• Profilinformationen, die du freiwillig angibst (Erfahrungslevel, Vorlieben)\n• Hochgeladene Bilder (Flaschenfotos, Tasting-Titelbilder)\n\nE-Mail-Adressen werden nur erfasst, wenn du sie freiwillig für Tasting-Einladungen oder den Newsletter angibst.",
+            title: "2. Kategorien personenbezogener Daten",
+            text: "Wir verarbeiten folgende personenbezogene Daten:\n\n(a) Kontodaten: Anzeigename (frei wählbares Pseudonym), optionale E-Mail-Adresse, gehashte PIN (Authentifizierung), Spracheinstellung, Erfahrungslevel\n(b) Nutzungsdaten: Whisky-Bewertungen und Tasting-Notizen, Tagebucheinträge, Wunsch- und Sammlungslisten, Flavor-Tag-Auswahl, Profil-Bio und -Foto\n(c) Technische Daten: Browser-Local-Storage (Sitzung, Einstellungen), IP-Adresse (Server-Logs, nicht dauerhaft gespeichert), Heartbeat-Zeitstempel (Online-Status)\n(d) Optionale Daten: Hochgeladene Bilder (Flaschenfotos, Tasting-Titelbilder), Newsletter-Präferenz\n\nEs sind keine Klarnamen erforderlich. Der Anzeigename kann ein beliebiges Pseudonym sein.",
           },
           purpose: {
-            title: "Zweck der Datenverarbeitung",
-            text: "Deine Daten werden ausschließlich verwendet für:\n• Teilnahme an Whisky-Tastings\n• Berechnung aggregierter Gruppenergebnisse und Analysen\n• Bereitstellung deines persönlichen Tagebuchs und Geschmacksprofils\n• Versand von Tasting-Einladungen (nur mit deiner E-Mail, falls angegeben)\n\nWir verwenden deine Daten nicht für Werbung, Tracking, Profiling oder den Verkauf an Dritte.",
+            title: "3. Zwecke & Rechtsgrundlagen (Art. 6 DSGVO)",
+            text: "Zweck — Rechtsgrundlage:\n\n• Bereitstellung der Tasting-Plattform und des Kontos — Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung / Dienstbereitstellung)\n• Berechnung aggregierter Gruppenergebnisse und Analysen — Art. 6 Abs. 1 lit. b DSGVO\n• Persönliches Tagebuch, Geschmacksprofil und Wunschliste — Art. 6 Abs. 1 lit. b DSGVO\n• Versand von Tasting-Einladungen an angegebene E-Mail — Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)\n• Newsletter — Art. 6 Abs. 1 lit. a DSGVO (ausdrückliche Opt-in-Einwilligung)\n• KI-gestützte Flaschenerkennung und Import — Art. 6 Abs. 1 lit. a DSGVO (freiwillige Nutzung)\n• Online-Präsenz / Heartbeat — Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Anzeige des Online-Status von Freunden)\n• Admin-Login-Benachrichtigungen — Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Sicherheitsüberwachung)\n• Server-Logs (IP, Fehler) — Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Sicherheit und Stabilität)\n\nWir verwenden deine Daten nicht für Werbung, Profiling, automatisierte Entscheidungsfindung oder den Verkauf an Dritte.",
           },
           localStorage: {
-            title: "Lokaler Speicher & Cookies",
-            text: "CaskSense nutzt den lokalen Speicher (localStorage) deines Browsers, um Tasting-Daten, Einstellungen (Sprache, Theme, Erfahrungslevel) und UI-Präferenzen zu speichern. Wir verwenden keine Tracking-Cookies, Analyse-Tools oder Tracking-Scripts von Drittanbietern. Es werden keine Daten an Werbenetzwerke weitergegeben.",
+            title: "4. Cookies & Lokaler Speicher",
+            text: "CaskSense verwendet keine Tracking-Cookies, Analyse-Tools oder Tracking-Scripts von Drittanbietern.\n\nWir nutzen den lokalen Speicher (localStorage / sessionStorage) deines Browsers ausschließlich für:\n• Sitzungspersistenz (Teilnehmer-ID)\n• Benutzereinstellungen (Sprache, Theme, Erfahrungslevel, UI-Einstellungen)\n\nDiese Daten verbleiben auf deinem Gerät und werden nicht an Dritte übermittelt. Es sind keine Werbenetzwerke oder Social-Media-Plugins integriert.",
           },
           aiProcessing: {
-            title: "KI-Verarbeitung (OpenAI)",
-            text: "CaskSense bietet optionale KI-gestützte Funktionen:\n• Flaschenerkennung: Wenn du ein Foto zum Scannen hochlädst, wird das Bild an die OpenAI-API zur Analyse gesendet. Das Bild wird in Echtzeit verarbeitet und nicht von OpenAI für Training gespeichert.\n• Newsletter-Erstellung (nur Admin): Tasting-daten-Zusammenfassungen können an OpenAI gesendet werden, um Newsletter-Text zu generieren.\n• Tasting-Import: Hochgeladene Tabellen oder Bilder können über OpenAI zur Datenextraktion verarbeitet werden.\n\nKI-Funktionen sind immer optional. Du kannst CaskSense vollständig ohne sie nutzen. Die Datenverarbeitung von OpenAI unterliegt deren API-Nutzungsrichtlinie, die besagt, dass API-Daten nicht für Modell-Training verwendet werden.",
+            title: "5. KI-Verarbeitung (OpenAI)",
+            text: "CaskSense bietet optionale KI-gestützte Funktionen:\n\n• Flaschenerkennung: Hochgeladene Fotos werden an die OpenAI-API (GPT-4 Vision) zur Echtzeit-Analyse gesendet. Bilder werden transient verarbeitet und nicht von OpenAI zu Trainingszwecken gespeichert.\n• Tasting-Import: Hochgeladene Tabellen oder Fotos können über OpenAI zur Datenextraktion verarbeitet werden.\n• Newsletter-Erstellung (nur Admin): Anonymisierte Tasting-Zusammenfassungen können an OpenAI gesendet werden.\n\nRechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO — alle KI-Funktionen sind freiwillig. Du kannst CaskSense vollständig ohne sie nutzen.\n\nOpenAI, Inc. hat seinen Sitz in den USA. Die Datenübermittlung erfolgt auf Grundlage des Auftragsverarbeitungsvertrags (DPA) von OpenAI und Standardvertragsklauseln (SCCs) gemäß Art. 46 Abs. 2 lit. c DSGVO. Die API-Nutzungsrichtlinie von OpenAI sieht vor, dass API-Eingaben nicht für Modell-Training verwendet werden.",
           },
           email: {
-            title: "E-Mail-Kommunikation",
-            text: "Wenn du deine E-Mail-Adresse angibst, kann sie verwendet werden für:\n• Versand von Tasting-Einladungen durch einen Host\n• Versand von Newsletter-Updates (nur mit Opt-in)\n\nDu kannst deine E-Mail jederzeit aus deinem Profil entfernen. Wir verwenden Nodemailer mit Gmail zum Versand. Deine E-Mail wird nicht an Dritte weitergegeben.",
+            title: "6. E-Mail-Kommunikation",
+            text: "Wenn du freiwillig deine E-Mail-Adresse angibst, kann sie verwendet werden für:\n• E-Mail-Verifizierung (einmaliger Code)\n• Tasting-Einladungen durch einen Session-Host\n• Newsletter (ausdrückliches Opt-in, jederzeit widerrufbar)\n• PIN-Reset-Codes\n\nE-Mails werden über Google Mail (Gmail API) versendet. Google verarbeitet die E-Mail-Adresse ausschließlich zum Zweck der Zustellung.\n\nDu kannst deine E-Mail-Adresse jederzeit aus deinem Profil entfernen. Wir geben deine E-Mail-Adresse über die Versandinfrastruktur hinaus nicht an Dritte weiter.",
           },
           thirdParty: {
-            title: "Drittanbieter-Dienste",
-            text: "• Replit: Hosting und Infrastruktur (PostgreSQL-Datenbank, Objektspeicher für Bilder)\n• OpenAI: Optionale KI-Funktionen (siehe oben)\n• Google Fonts: Web-Schriften, geladen von Google-Servern\n\nEs werden keine Analyse-, Werbe- oder Social-Media-Tracking-Dienste verwendet.",
+            title: "7. Empfänger & Drittanbieter-Dienste",
+            text: "Deine Daten können an folgende Auftragsverarbeiter weitergegeben werden:\n\n• Replit, Inc. (USA): Hosting, PostgreSQL-Datenbank, Objektspeicher für Bilder. Datenübermittlung auf Grundlage von SCCs.\n• OpenAI, Inc. (USA): Optionale KI-Funktionen (siehe Abschnitt 5). Datenübermittlung auf Grundlage von SCCs.\n• Google LLC (USA): E-Mail-Zustellung über Gmail API, Web-Schriften (Google Fonts). Datenübermittlung auf Grundlage von SCCs.\n\nEs werden keine Analyse-, Werbe-, Social-Media-Tracking- oder Datenmaklerdienste verwendet. Personenbezogene Daten werden weder verkauft noch zu Marketingzwecken weitergegeben.",
           },
           retention: {
-            title: "Datenspeicherung",
-            text: "Deine Daten werden gespeichert, solange dein Konto besteht. Bewertungen bleiben als Teil aggregierter Gruppenergebnisse auch nach Kontolöschung erhalten (in anonymisierter Form). Du kannst dein Konto jederzeit über die Profileinstellungen löschen.",
+            title: "8. Speicherdauer",
+            text: "• Kontodaten: Werden gespeichert, solange dein Konto besteht. Bei Kontolöschung gelöscht.\n• Bewertungen: Nach Kontolöschung werden Bewertungen anonymisiert (Pseudonym durch zufälligen Hash ersetzt) und als Teil aggregierter Gruppenstatistiken aufbewahrt. Die anonymisierten Daten sind dir nicht mehr zuordenbar.\n• Server-Logs: Werden nach 30 Tagen automatisch gelöscht.\n• Hochgeladene Bilder: Werden gespeichert, solange das zugehörige Tasting oder Profil existiert. Bei Tasting- oder Kontolöschung gelöscht.\n• Newsletter-Einwilligung: Wird bis zum Widerruf gespeichert.\n• Datenschutz-Einwilligungszeitstempel: Wird gespeichert, solange das Konto besteht.",
           },
           rights: {
-            title: "Deine Rechte (DSGVO)",
-            text: "Nach der EU-Datenschutz-Grundverordnung (DSGVO) hast du das Recht auf:\n• Auskunft über deine personenbezogenen Daten\n• Berichtigung unrichtiger Daten\n• Löschung deines Kontos und deiner personenbezogenen Daten\n• Export deiner Daten in einem portablen Format\n• Widerspruch gegen die Datenverarbeitung\n\nUm diese Rechte auszuüben, kontaktiere uns unter christoph.aldering@googlemail.com oder nutze die eingebauten Funktionen (Profileinstellungen, Datenexport).",
+            title: "9. Deine Rechte nach der DSGVO",
+            text: "Nach der EU-Datenschutz-Grundverordnung stehen dir folgende Rechte zu:\n\n• Auskunftsrecht (Art. 15 DSGVO): Fordere Informationen über deine gespeicherten Daten an. Nutze die integrierte Datenexport-Funktion oder kontaktiere uns.\n• Recht auf Berichtigung (Art. 16 DSGVO): Korrigiere unrichtige Daten über deine Profileinstellungen.\n• Recht auf Löschung (Art. 17 DSGVO): Lösche dein Konto über die Profileinstellungen. Bewertungen werden anonymisiert.\n• Recht auf Einschränkung (Art. 18 DSGVO): Fordere die Einschränkung der Verarbeitung an, indem du uns kontaktierst.\n• Recht auf Datenübertragbarkeit (Art. 20 DSGVO): Exportiere deine Daten im JSON/Excel-Format über die Datenexport-Funktion.\n• Widerspruchsrecht (Art. 21 DSGVO): Widersprich der Verarbeitung aufgrund berechtigten Interesses, indem du uns kontaktierst.\n• Recht auf Widerruf der Einwilligung (Art. 7 Abs. 3 DSGVO): Widerrufe jede erteilte Einwilligung jederzeit (z.B. Newsletter, E-Mail), ohne dass die Rechtmäßigkeit der aufgrund der Einwilligung bis zum Widerruf erfolgten Verarbeitung berührt wird.\n\nZur Ausübung deiner Rechte: Nutze die integrierten Funktionen (Profileinstellungen, Datenexport, Kontolöschung) oder kontaktiere christoph.aldering@googlemail.com.",
           },
           deletion: {
-            title: "Kontolöschung",
-            text: "Du kannst dein Konto über die Profileinstellungen löschen. Dabei wird:\n• Dein Anzeigename, PIN und Profilinformationen entfernt\n• Deine Bewertungen anonymisiert (sie bleiben als Teil aggregierter Gruppenstatistiken ohne deine Identität)\n• Deine Tagebucheinträge und Wunschliste gelöscht\n\nDieser Vorgang ist unwiderruflich.",
+            title: "10. Kontolöschung & Anonymisierung",
+            text: "Du kannst dein Konto jederzeit über deine Profileinstellungen löschen (PIN erforderlich). Bei Löschung:\n\n• Dein Anzeigename wird durch einen zufälligen anonymen Bezeichner ersetzt\n• Deine PIN, E-Mail und Profilinformationen werden dauerhaft entfernt\n• Deine Bewertungen werden anonymisiert und nur als Teil aggregierter Gruppenstatistiken aufbewahrt\n• Deine Tagebucheinträge, Wunschliste und Sammlung werden gelöscht\n• Deine Freundesverbindungen werden entfernt\n\nDieser Vorgang ist unwiderruflich. Die anonymisierten Daten können nicht mehr auf dich zurückgeführt werden.",
           },
           dataExport: {
-            title: "Datenexport",
-            text: "Du kannst alle deine persönlichen Daten (Bewertungen, Tagebucheinträge, Profil, Wunschliste) jederzeit über die Datenexport-Seite in der App exportieren. Die Daten werden im JSON- und Excel-Format bereitgestellt.",
+            title: "11. Datenexport & Datenübertragbarkeit",
+            text: "Du kannst alle deine personenbezogenen Daten jederzeit über die Datenexport-Seite in der App exportieren. Verfügbare Formate:\n• JSON (maschinenlesbar)\n• Excel (menschenlesbar)\n\nExportierte Daten umfassen: Bewertungen, Tagebucheinträge, Profildaten, Wunschliste, Sammlung und Freundesliste. Dies erfüllt dein Recht auf Datenübertragbarkeit nach Art. 20 DSGVO.",
           },
           children: {
-            title: "Minderjährige",
-            text: "CaskSense ist eine Plattform über alkoholische Getränke und richtet sich an Nutzer im gesetzlichen Trinkalter. Wir erheben wissentlich keine Daten von Minderjährigen.",
+            title: "12. Minderjährige",
+            text: "CaskSense ist eine Plattform über alkoholische Getränke und richtet sich ausschließlich an Nutzer im gesetzlichen Trinkalter ihres Rechtsgebiets. Wir erheben wissentlich keine personenbezogenen Daten von Minderjährigen. Sollten wir Kenntnis davon erlangen, dass Daten von Minderjährigen erhoben wurden, werden wir diese unverzüglich löschen.",
+          },
+          transfer: {
+            title: "13. Internationale Datenübermittlung",
+            text: "Einige unserer Auftragsverarbeiter haben ihren Sitz in den Vereinigten Staaten (Replit, OpenAI, Google). Datenübermittlungen in die USA werden abgesichert durch:\n\n• Standardvertragsklauseln (SCCs) gemäß Art. 46 Abs. 2 lit. c DSGVO\n• Zusätzliche technische Maßnahmen (Verschlüsselung bei Übertragung und Speicherung)\n\nDie Europäische Kommission hat für allgemeine Datenübermittlungen in die USA keinen Angemessenheitsbeschluss erlassen. Die SCCs bieten geeignete Garantien für den Schutz deiner Daten.",
+          },
+          security: {
+            title: "14. Datensicherheit",
+            text: "Wir setzen angemessene technische und organisatorische Maßnahmen zum Schutz deiner personenbezogenen Daten um:\n\n• PINs werden als bcrypt-Hashes gespeichert (niemals im Klartext)\n• Sämtliche Kommunikation ist über HTTPS/TLS verschlüsselt\n• Datenbankzugriff ist beschränkt und Zugangsdaten werden als Umgebungssecrets gespeichert\n• Es werden keine unnötigen Daten erhoben (Datenminimierung)\n• Regelmäßige Überprüfung der Zugriffskontrollen",
+          },
+          complaint: {
+            title: "15. Beschwerderecht",
+            text: "Unbeschadet eines anderweitigen verwaltungsrechtlichen oder gerichtlichen Rechtsbehelfs steht dir das Recht auf Beschwerde bei einer Aufsichtsbehörde zu, insbesondere in dem EU-Mitgliedstaat deines Aufenthaltsorts, deines Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes, wenn du der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten gegen die DSGVO verstößt.\n\nDie zuständige Aufsichtsbehörde für den Verantwortlichen ist:\nLandesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2-4, 40213 Düsseldorf\nhttps://www.ldi.nrw.de",
           },
           changes: {
-            title: "Änderungen dieser Erklärung",
-            text: "Wir können diese Datenschutzerklärung von Zeit zu Zeit aktualisieren. Änderungen werden mit einem aktualisierten Datum am Anfang dieser Seite vermerkt. Die weitere Nutzung von CaskSense nach Änderungen gilt als Zustimmung zur überarbeiteten Erklärung.",
+            title: "16. Änderungen dieser Erklärung",
+            text: "Wir können diese Datenschutzerklärung aktualisieren, um Änderungen unserer Datenverarbeitungspraktiken oder gesetzlicher Anforderungen widerzuspiegeln. Die aktuelle Fassung ist stets unter /privacy mit dem Datum der letzten Aktualisierung abrufbar. Wesentliche Änderungen werden über die App kommuniziert.",
           },
           contact: {
-            title: "Kontakt",
-            text: "Für datenschutzbezogene Fragen oder Anfragen kontaktiere bitte:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com",
+            title: "17. Kontakt",
+            text: "Für alle datenschutzbezogenen Fragen, Anfragen oder zur Ausübung deiner Rechte:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nWir bemühen uns, alle Anfragen innerhalb von 30 Tagen zu beantworten.",
           },
         },
         storageConsent: {
