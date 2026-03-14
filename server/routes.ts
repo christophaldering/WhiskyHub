@@ -657,6 +657,9 @@ export async function registerRoutes(
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
       }
+      if (privacyConsent !== true) {
+        return res.status(400).json({ message: "Privacy consent is required." });
+      }
       const demoTasting = await storage.getTastingByCode("DEMO");
       if (!demoTasting) return res.status(404).json({ message: "Demo tasting not available" });
 
@@ -664,9 +667,7 @@ export async function registerRoutes(
       const guestName = `${name.trim()} #${suffix}`;
 
       const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
-      if (privacyConsent === true) {
-        await storage.setPrivacyConsent(participant.id);
-      }
+      await storage.setPrivacyConsent(participant.id);
       await storage.addParticipantToTasting({ tastingId: demoTasting.id, participantId: participant.id });
       storage.updateLastSeen(participant.id).catch(() => {});
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, experienceLevel: "guest", guest: true, tastingId: demoTasting.id });

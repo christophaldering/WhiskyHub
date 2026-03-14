@@ -603,16 +603,17 @@ function DemoGuestEntry({ tastingId }: { tastingId: string }) {
   const [alias, setAlias] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [demoConsent, setDemoConsent] = useState(false);
 
   const handleJoin = async () => {
-    if (!alias.trim()) return;
+    if (!alias.trim() || !demoConsent) return;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/participants/demo-guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: alias.trim() }),
+        body: JSON.stringify({ name: alias.trim(), privacyConsent: true }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -686,18 +687,34 @@ function DemoGuestEntry({ tastingId }: { tastingId: string }) {
           }}
           data-testid="input-demo-name"
         />
+        <label style={{
+          display: "flex", alignItems: "flex-start", gap: 8,
+          marginTop: 12, textAlign: "left", cursor: "pointer",
+        }}>
+          <input
+            type="checkbox"
+            checked={demoConsent}
+            onChange={(e) => setDemoConsent(e.target.checked)}
+            style={{ marginTop: 3, accentColor: "#d4a256" }}
+            data-testid="checkbox-demo-privacy"
+          />
+          <span style={{ fontSize: 11, color: v.muted, lineHeight: 1.4, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+            {t("login.privacyConsentLabel")}{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#d4a256", textDecoration: "underline" }}>{t("login.privacyConsentLink")}</a>
+          </span>
+        </label>
         {error && (
           <p style={{ color: "#e74c3c", fontSize: 13, margin: "8px 0 0" }}>{error}</p>
         )}
         <button
           type="button"
           onClick={handleJoin}
-          disabled={!alias.trim() || loading}
+          disabled={!alias.trim() || !demoConsent || loading}
           style={{
             width: "100%", padding: "14px",
             marginTop: 12, borderRadius: 12, border: "none",
-            background: alias.trim() ? "#d4a256" : alpha("#d4a256", "30"),
-            color: alias.trim() ? v.bg : v.muted,
+            background: (alias.trim() && demoConsent) ? "#d4a256" : alpha("#d4a256", "30"),
+            color: (alias.trim() && demoConsent) ? v.bg : v.muted,
             fontSize: 16, fontWeight: 600,
             fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
             cursor: alias.trim() ? "pointer" : "default",
