@@ -983,6 +983,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
     );
   }
 
+  const isPresentationLive = tasting.presentationSlide != null && currentParticipant?.id !== tasting.hostId;
+
   if (tasting.guidedMode) {
     const guidedWhiskyIndex = tasting.guidedWhiskyIndex ?? -1;
     const isSessionComplete = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
@@ -1001,6 +1003,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
           <ChevronLeft className="w-4 h-4" />
           Tasting
         </button>
+
+        {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
 
         {isSessionComplete ? (
           <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
@@ -1034,6 +1038,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
         <ChevronLeft className="w-4 h-4" />
         Tasting
       </button>
+
+      {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
 
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">
