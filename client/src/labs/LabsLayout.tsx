@@ -1,13 +1,20 @@
-import { ReactNode, useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
 import "./labs-theme.css";
+
+interface OnlineFriendInfo {
+  friendId: string;
+  name: string;
+}
+
 
 interface LabsLayoutProps {
   children: ReactNode;
@@ -140,32 +147,70 @@ function useHeartbeat() {
   }, [currentParticipant?.id]);
 }
 
-function useFriendOnlineNotifications() {
+function useFriendOnlineNotifications(): number {
   const { currentParticipant } = useAppStore();
-  const prevOnlineRef = useRef<Set<string> | null>(null);
+  const prevOnlineRef = useRef<Map<string, string> | null>(null);
   const mountedRef = useRef(false);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
     const pid = currentParticipant?.id;
-    if (!pid) return;
+    if (!pid) {
+      setOnlineCount(0);
+      prevOnlineRef.current = null;
+      mountedRef.current = false;
+      return;
+    }
     let cancelled = false;
 
     const check = async () => {
       try {
-        const onlineRes = await fetch(`/api/participants/${pid}/friends/online`).then(r => r.json());
+        const res = await fetch(`/api/participants/${pid}/friends/online`);
         if (cancelled) return;
-        const currentOnline = new Set<string>(
-          (onlineRes.online || []).map((f: { friendId: string }) => f.friendId)
-        );
+        if (!res.ok) {
+          setOnlineCount(0);
+          return;
+        }
+        const onlineRes = await res.json();
+        if (cancelled) return;
+        const currentOnline = new Map<string, string>();
+        for (const f of (onlineRes.online || []) as OnlineFriendInfo[]) {
+          currentOnline.set(f.friendId, f.name);
+        }
+        setOnlineCount(currentOnline.size);
+
+        if (mountedRef.current && prevOnlineRef.current) {
+          const prev = prevOnlineRef.current;
+          const newlyOnline: string[] = [];
+          for (const [fid, name] of currentOnline) {
+            if (!prev.has(fid)) newlyOnline.push(name);
+          }
+          if (newlyOnline.length === 1) {
+            toast({
+              title: `${newlyOnline[0]} is online`,
+              description: "Your friend just came online",
+            });
+          } else if (newlyOnline.length > 1) {
+            toast({
+              title: `${newlyOnline.length} friends came online`,
+              description: newlyOnline.slice(0, 3).join(", ") + (newlyOnline.length > 3 ? ` +${newlyOnline.length - 3} more` : ""),
+            });
+          }
+        }
+
         prevOnlineRef.current = currentOnline;
         mountedRef.current = true;
-      } catch {}
+      } catch {
+        if (!cancelled) setOnlineCount(0);
+      }
     };
 
     check();
     const interval = setInterval(check, 60000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [currentParticipant?.id]);
+
+  return onlineCount;
 }
 
 function LabsNotificationBell() {
@@ -269,7 +314,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const mainRef = useRef<HTMLElement>(null);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
-  useFriendOnlineNotifications();
+  const onlineFriendsCount = useFriendOnlineNotifications();
   const { theme } = useLabsTheme();
   const prevLocationRef = useRef(location);
 
@@ -421,6 +466,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               (item.href === "/labs/tastings" && (location.startsWith("/labs/tastings") || location.startsWith("/labs/live") || location.startsWith("/labs/results") || location.startsWith("/labs/host/")));
 
             const color = isActive ? "var(--labs-accent)" : "var(--labs-text-muted)";
+            const isCircle = item.href === "/labs/circle";
 
             return (
               <Link key={item.href} href={item.href}>
@@ -430,7 +476,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                   data-testid={`labs-nav-${item.label.toLowerCase()}`}
                 >
                   {isActive && <div className="labs-nav-dot" />}
-                  <div className="labs-nav-icon">
+                  <div className="labs-nav-icon" style={{ position: "relative" }}>
                     {item.icon === "glencairn" ? (
                       <GlencairnIcon color={color} size={22} />
                     ) : item.icon === "radar" ? (
@@ -441,6 +487,27 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                       <BookOpen className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
                     ) : (
                       <Users className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    )}
+                    {isCircle && onlineFriendsCount > 0 && (
+                      <span
+                        className="absolute flex items-center justify-center rounded-full"
+                        style={{
+                          top: -4,
+                          right: -8,
+                          minWidth: 16,
+                          height: 16,
+                          padding: "0 4px",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          lineHeight: 1,
+                          background: "var(--labs-success)",
+                          color: "var(--labs-bg)",
+                          boxShadow: "0 0 0 2px var(--labs-nav-bg)",
+                        }}
+                        data-testid="circle-online-badge"
+                      >
+                        {onlineFriendsCount > 9 ? "9+" : onlineFriendsCount}
+                      </span>
                     )}
                   </div>
                   <span
