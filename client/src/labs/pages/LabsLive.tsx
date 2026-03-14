@@ -192,9 +192,28 @@ function GuidedStepView({
 
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
-  const revealStep = viewingHostDram ? (tasting.guidedRevealStep ?? 0) : 3;
-  const isBlindStep = revealStep === 0 && tasting.blindMode;
+  const revealStep = viewingHostDram ? (tasting.guidedRevealStep ?? 0) : 999;
   const maxScore = tasting.ratingScale || 100;
+
+  const REVEAL_DEFAULT_ORDER: string[][] = [
+    ["name"],
+    ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+    ["image"],
+  ];
+  let stepGroups = REVEAL_DEFAULT_ORDER;
+  try {
+    if (tasting.revealOrder) {
+      const parsed = JSON.parse(tasting.revealOrder);
+      if (Array.isArray(parsed) && parsed.length > 0) stepGroups = parsed;
+    }
+  } catch {}
+
+  const revealedFields = new Set<string>();
+  for (let s = 0; s < revealStep && s < stepGroups.length; s++) {
+    for (const f of stepGroups[s]) revealedFields.add(f);
+  }
+  const isFullyRevealed = revealStep >= stepGroups.length;
+  const isBlindStep = revealStep === 0 && tasting.blindMode;
   const mid = Math.round(maxScore / 2);
 
   const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
@@ -323,6 +342,14 @@ function GuidedStepView({
     debouncedSave(scores, value);
   };
 
+  const REVEAL_FIELD_LABELS: Record<string, string> = {
+    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+    region: "Region", country: "Country", category: "Category",
+    caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
+    vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
+    ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
+  };
+
   let displayName: string;
   let displaySub: string;
   let stepBadgeLabel: string;
@@ -333,30 +360,42 @@ function GuidedStepView({
     stepBadgeClass = "labs-badge-success";
     displayName = isBlindStep ? `Dram ${String.fromCharCode(65 + localIndex)}` : (activeWhisky?.name || "Unknown");
     displaySub = isBlindStep ? "Blind tasting" : "";
-  } else if (revealStep === 1) {
-    stepBadgeLabel = "Name Revealed";
-    stepBadgeClass = "labs-badge-info";
-    displayName = activeWhisky?.name || "Unknown";
-    displaySub = "";
-  } else if (revealStep === 2) {
-    stepBadgeLabel = "Details Revealed";
-    stepBadgeClass = "labs-badge-accent";
-    displayName = activeWhisky?.name || "Unknown";
-    displaySub = [
-      activeWhisky?.distillery,
-      activeWhisky?.age ? `${activeWhisky.age}y` : null,
-      activeWhisky?.region,
-    ].filter(Boolean).join(" · ");
-  } else {
+  } else if (isFullyRevealed) {
     stepBadgeLabel = "Fully Revealed";
     stepBadgeClass = "labs-badge-accent";
     displayName = activeWhisky?.name || "Unknown";
-    displaySub = [
-      activeWhisky?.distillery,
-      activeWhisky?.age ? `${activeWhisky.age}y` : null,
-      activeWhisky?.region,
-      activeWhisky?.abv ? `${activeWhisky.abv}%` : null,
-    ].filter(Boolean).join(" · ");
+    const detailParts: string[] = [];
+    if (activeWhisky?.distillery) detailParts.push(activeWhisky.distillery);
+    if (activeWhisky?.age) detailParts.push(`${activeWhisky.age}y`);
+    if (activeWhisky?.region) detailParts.push(activeWhisky.region);
+    if (activeWhisky?.abv) detailParts.push(`${activeWhisky.abv}%`);
+    displaySub = detailParts.join(" · ");
+  } else {
+    const currentStepFields = stepGroups[revealStep - 1] || [];
+    const fieldLabels = currentStepFields
+      .map((f: string) => REVEAL_FIELD_LABELS[f] || f)
+      .slice(0, 3);
+    stepBadgeLabel = fieldLabels.length > 0
+      ? `${fieldLabels.join(", ")} Revealed`
+      : "Step Revealed";
+    stepBadgeClass = "labs-badge-info";
+
+    displayName = revealedFields.has("name")
+      ? (activeWhisky?.name || "Unknown")
+      : (isBlindStep ? `Dram ${String.fromCharCode(65 + localIndex)}` : (activeWhisky?.name || "Unknown"));
+
+    const detailParts: string[] = [];
+    if (revealedFields.has("distillery") && activeWhisky?.distillery) detailParts.push(activeWhisky.distillery);
+    if (revealedFields.has("age") && activeWhisky?.age) detailParts.push(`${activeWhisky.age}y`);
+    if (revealedFields.has("region") && activeWhisky?.region) detailParts.push(activeWhisky.region);
+    if (revealedFields.has("country") && activeWhisky?.country) detailParts.push(activeWhisky.country);
+    if (revealedFields.has("abv") && activeWhisky?.abv) detailParts.push(`${activeWhisky.abv}%`);
+    if (revealedFields.has("category") && activeWhisky?.category) detailParts.push(activeWhisky.category);
+    if (revealedFields.has("caskInfluence") && activeWhisky?.caskInfluence) detailParts.push(activeWhisky.caskInfluence);
+    if (revealedFields.has("bottler") && activeWhisky?.bottler) detailParts.push(activeWhisky.bottler);
+    if (revealedFields.has("vintage") && activeWhisky?.vintage) detailParts.push(`${activeWhisky.vintage}`);
+    if (revealedFields.has("peatLevel") && activeWhisky?.peatLevel) detailParts.push(activeWhisky.peatLevel);
+    displaySub = detailParts.join(" · ");
   }
 
   const canRate = currentParticipant && tasting?.status === "open";
@@ -428,7 +467,7 @@ function GuidedStepView({
           )}
         </div>
 
-        {activeWhisky?.imageUrl && revealStep >= 3 && (
+        {activeWhisky?.imageUrl && (revealedFields.has("image") || isFullyRevealed) && (
           <div className="mt-3 rounded-xl overflow-hidden" style={{ maxHeight: 200 }}>
             <img
               src={activeWhisky.imageUrl}
@@ -440,7 +479,7 @@ function GuidedStepView({
           </div>
         )}
 
-        {viewingHostDram && revealStep >= 3 && (
+        {viewingHostDram && isFullyRevealed && (
           <div
             className="flex items-center gap-2 mt-4 py-2 px-3 rounded-lg"
             style={{ background: "var(--labs-accent-muted)" }}

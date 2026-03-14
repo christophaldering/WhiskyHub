@@ -797,9 +797,26 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                 {activeWhisky.name || "—"}
                               </div>
                               <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
-                                {isBlind && gv && !gv.isFieldRevealed("distillery")
-                                  ? "??? · ??? · ???"
-                                  : [activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+                                {(() => {
+                                  const detailFields: Array<[string, string | null | undefined]> = [
+                                    ["distillery", activeWhisky.distillery],
+                                    ["age", activeWhisky.age ? `${activeWhisky.age}y` : null],
+                                    ["abv", activeWhisky.abv ? `${activeWhisky.abv}%` : null],
+                                    ["region", activeWhisky.region],
+                                    ["country", activeWhisky.country],
+                                    ["category", activeWhisky.category],
+                                    ["caskInfluence", activeWhisky.caskInfluence],
+                                    ["bottler", activeWhisky.bottler],
+                                    ["vintage", activeWhisky.vintage ? `${activeWhisky.vintage}` : null],
+                                    ["peatLevel", activeWhisky.peatLevel],
+                                  ];
+                                  if (isBlind && gv) {
+                                    const revealed = detailFields.filter(([f, v]) => v && gv.isFieldRevealed(f)).map(([, v]) => v);
+                                    if (revealed.length === 0) return "??? · ??? · ???";
+                                    return revealed.join(" · ");
+                                  }
+                                  return detailFields.map(([, v]) => v).filter(Boolean).join(" · ") || "—";
+                                })()}
                               </div>
                             </>
                           )}

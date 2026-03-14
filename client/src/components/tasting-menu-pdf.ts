@@ -146,6 +146,21 @@ export function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
 
 interface ParticipantInfo {
   name: string;
+  photoUrl?: string | null;
+}
+
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
 }
 
 export interface TastingMenuOptions {
@@ -473,6 +488,16 @@ export async function generateTastingMenu(
     doc.setFontSize(10);
     doc.setTextColor(...secondary);
 
+    const participantPhotos: Map<number, string> = new Map();
+    for (let i = 0; i < participants.length; i++) {
+      if (participants[i].photoUrl) {
+        const data = await loadImageAsBase64(participants[i].photoUrl!);
+        if (data) participantPhotos.set(i, data);
+      }
+    }
+
+    const hasAnyPhoto = participantPhotos.size > 0;
+    const pRowH = hasAnyPhoto ? 9 : 7;
     const colW = isLandscape ? contentW / 4 : contentW / 3;
     const colCount = isLandscape ? 4 : 3;
 
@@ -480,18 +505,39 @@ export async function generateTastingMenu(
       const col = i % colCount;
       const row = Math.floor(i / colCount);
       const px = marginX + col * colW;
-      const py = y + row * 7;
+      const py = y + row * pRowH;
 
       if (py > pageH - 20) return;
 
-      doc.text(`• ${p.name}`, px, py);
+      const photoData = participantPhotos.get(i);
+      if (photoData) {
+        try {
+          doc.addImage(photoData, "JPEG", px, py - 4, 5, 5, undefined, "FAST");
+        } catch {}
+        doc.text(p.name, px + 7, py);
+      } else {
+        doc.text(`• ${p.name}`, px, py);
+      }
     });
 
     const rows = Math.ceil(participants.length / colCount);
-    y += rows * 7 + 8;
+    y += rows * pRowH + 8;
   }
 
   addFooter(2, totalPages);
+
+  const whiskyImages: Map<number, string> = new Map();
+  if (!blindMode) {
+    for (let i = 0; i < whiskies.length; i++) {
+      if (whiskies[i].imageUrl) {
+        const data = await loadImageAsBase64(whiskies[i].imageUrl!);
+        if (data) whiskyImages.set(i, data);
+      }
+    }
+  }
+  const hasWhiskyImages = whiskyImages.size > 0 && !blindMode;
+  const thumbW = 10;
+  const thumbH = 13;
 
   const whiskyPages = Math.ceil(whiskies.length / whiskiesPerPage);
   const colCount = 2;
@@ -528,9 +574,17 @@ export async function generateTastingMenu(
       const row = i < perCol ? i : i - perCol;
       const colX = marginX + col * (colW + colGap);
       const cardY = wy + row * rowH;
+      const textOffsetX = hasWhiskyImages ? thumbW + 4 : 0;
 
       doc.setFillColor(240, 243, 248);
-      doc.roundedRect(colX, cardY, colW, 7, 1, 1, "F");
+      doc.roundedRect(colX, cardY, colW, hasWhiskyImages ? Math.max(7, thumbH + 1) : 7, 1, 1, "F");
+
+      const imgData = whiskyImages.get(idx);
+      if (imgData && !blindMode) {
+        try {
+          doc.addImage(imgData, "JPEG", colX + 1, cardY + 0.5, thumbW, thumbH, undefined, "FAST");
+        } catch {}
+      }
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -545,13 +599,13 @@ export async function generateTastingMenu(
         doc.setTextColor(...secondary);
         doc.text(l("mysteryWhisky", language), colX + 12, cardY + 5);
       } else {
-        doc.text(`${idx + 1}.`, colX + 2, cardY + 5);
+        doc.text(`${idx + 1}.`, colX + 2 + textOffsetX, cardY + 5);
         const numW = doc.getTextWidth(`${idx + 1}. `);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(30, 41, 59);
         const dispName = w.name.length > maxNameLen ? w.name.slice(0, maxNameLen - 2) + "\u2026" : w.name;
-        doc.text(dispName, colX + 2 + numW, cardY + 5);
+        doc.text(dispName, colX + 2 + textOffsetX + numW, cardY + 5);
       }
 
       if (!blindMode) {
@@ -571,11 +625,11 @@ export async function generateTastingMenu(
           doc.setFontSize(7);
           doc.setTextColor(...secondary);
           const detailStr = details.join(" · ");
-          const maxW = colW - 4;
+          const maxW = colW - 4 - textOffsetX;
           const truncated = doc.getTextWidth(detailStr) > maxW
             ? detailStr.slice(0, Math.floor(detailStr.length * maxW / doc.getTextWidth(detailStr))) + "\u2026"
             : detailStr;
-          doc.text(truncated, colX + 2, detailY);
+          doc.text(truncated, colX + 2 + textOffsetX, detailY);
         }
       }
     });

@@ -451,6 +451,7 @@ async function drawScoringPage(
   isBlind: boolean,
   participant?: ParticipantInfo,
   orientation: "portrait" | "landscape" = "portrait",
+  whiskyImageCache?: Map<number, string>,
 ) {
   const pageW = orientation === "portrait" ? 210 : 297;
   const pageH = orientation === "portrait" ? 297 : 210;
@@ -593,19 +594,28 @@ async function drawScoringPage(
       doc.setFontSize(titleFontSize);
       doc.setTextColor(...NAVY);
 
+      const thumbSize = titleFontSize * 0.6 + 1;
+      let thumbOffset = 0;
+      if (!isBlind && whiskyImageCache?.has(globalIdx)) {
+        try {
+          doc.addImage(whiskyImageCache.get(globalIdx)!, "JPEG", colX + 1, y - 0.5, thumbSize, thumbSize, undefined, "FAST");
+          thumbOffset = thumbSize + 2;
+        } catch {}
+      }
+
       if (isBlind) {
         doc.text(`${labels.sample} #${globalIdx + 1}`, colX + 2, y + titleFontSize * 0.35);
       } else {
         const numStr = `${globalIdx + 1}`;
-        doc.text(numStr, colX + 2, y + titleFontSize * 0.35);
+        doc.text(numStr, colX + 2 + thumbOffset, y + titleFontSize * 0.35);
         const numW = doc.getTextWidth(numStr + " ");
-        const maxNameW = colW * 0.45;
+        const maxNameW = colW * 0.45 - thumbOffset;
         const nameText = doc.splitTextToSize(w.name, maxNameW)[0];
-        doc.text(nameText, colX + 2 + numW + 2, y + titleFontSize * 0.35);
+        doc.text(nameText, colX + 2 + thumbOffset + numW + 2, y + titleFontSize * 0.35);
 
         const meta = getWhiskyMeta(w);
         if (meta) {
-          const afterName = colX + 2 + numW + 2 + doc.getTextWidth(nameText + "  ");
+          const afterName = colX + 2 + thumbOffset + numW + 2 + doc.getTextWidth(nameText + "  ");
           doc.setFont("helvetica", "normal");
           doc.setFontSize(criteriaFontSize);
           doc.setTextColor(...MUTED);
@@ -696,6 +706,18 @@ async function drawScoringPage(
   }
 }
 
+async function preloadWhiskyImages(whiskies: Whisky[], isBlind: boolean): Promise<Map<number, string>> {
+  const cache = new Map<number, string>();
+  if (isBlind) return cache;
+  for (let i = 0; i < whiskies.length; i++) {
+    if (whiskies[i].imageUrl) {
+      const data = await loadImageAsBase64(whiskies[i].imageUrl!);
+      if (data) cache.set(i, data);
+    }
+  }
+  return cache;
+}
+
 export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
   if (whiskies.length === 0) return;
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
@@ -705,9 +727,11 @@ export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whis
     coverImageBase64 = await loadImageAsBase64(tasting.coverImageUrl);
   }
 
+  const whiskyImageCache = await preloadWhiskyImages(whiskies, false);
+
   await drawCoverPage(doc, tasting, whiskies, lang, false, participant, coverImageBase64, hostName, orientation, styleTheme);
 
-  await drawScoringPage(doc, tasting, whiskies, lang, false, participant, orientation);
+  await drawScoringPage(doc, tasting, whiskies, lang, false, participant, orientation, whiskyImageCache);
 
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
@@ -743,6 +767,7 @@ export async function generateBatchPersonalizedPdf(
 
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
   const isBlind = type === "blind";
+  const whiskyImageCache = await preloadWhiskyImages(whiskies, isBlind);
 
   let coverImageBase64: string | null = null;
   if (tasting.coverImageUrl) {
@@ -759,7 +784,7 @@ export async function generateBatchPersonalizedPdf(
 
     await drawCoverPage(doc, tasting, whiskies, lang, isBlind, participantInfo, coverImageBase64, hostName, orientation, styleTheme);
 
-    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation);
+    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, whiskyImageCache);
   }
 
   const suffix = isBlind ? "Bewertungsbogen" : "Notizblatt";

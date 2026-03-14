@@ -576,6 +576,7 @@ function PrintMaterialsSection({
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
         name: stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
+        photoUrl: (p.photoUrl || (p.participant as Record<string, unknown>)?.photoUrl || null) as string | null,
       }));
       const hostName = resolveHostName();
 

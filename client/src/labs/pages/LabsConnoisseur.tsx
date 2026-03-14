@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useSession } from "@/lib/session";
-import { pidHeaders } from "@/lib/api";
+import { pidHeaders, profileApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   ChevronLeft, Sparkles, Copy, Check, ChevronDown, Download,
@@ -180,11 +180,19 @@ export default function LabsConnoisseur() {
   const downloadPdf = async () => {
     if (!latestReport) return;
     try {
+      let participantPhotoUrl: string | undefined;
+      if (pid) {
+        try {
+          const profile = await profileApi.get(pid);
+          if (profile?.photoUrl) participantPhotoUrl = profile.photoUrl;
+        } catch { /* photo is optional */ }
+      }
       const mod = await import("@/components/connoisseur-report-pdf");
-      mod.generateConnoisseurReportPdf({
+      await mod.generateConnoisseurReportPdf({
         report: latestReport as Parameters<typeof mod.generateConnoisseurReportPdf>[0]["report"],
         participantName: stripGuestSuffix(session.name || "Participant"),
         language: latestReport.language || "en",
+        participantPhotoUrl,
       });
     } catch (e) { console.error("PDF generation failed:", e); }
   };

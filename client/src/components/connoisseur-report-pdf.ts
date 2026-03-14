@@ -6,6 +6,7 @@ interface ConnoisseurPdfOptions {
   report: ConnoisseurReport;
   participantName: string;
   language: string;
+  participantPhotoUrl?: string | null;
 }
 
 type RGB = [number, number, number];
@@ -54,6 +55,20 @@ function parseMarkdownLines(md: string): { type: string; text: string }[] {
   return result;
 }
 
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
+}
+
 function stripMd(text: string): string {
   return text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1").replace(/__(.*?)__/g, "$1").replace(/_(.*?)_/g, "$1");
 }
@@ -79,8 +94,8 @@ function renderBoldSegments(doc: jsPDF, text: string, x: number, y: number, maxW
   }
 }
 
-export function generateConnoisseurReportPdf(options: ConnoisseurPdfOptions): void {
-  const { report, participantName, language } = options;
+export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOptions): Promise<void> {
+  const { report, participantName, language, participantPhotoUrl } = options;
 
   const pageW = 210;
   const pageH = 297;
@@ -137,11 +152,27 @@ export function generateConnoisseurReportPdf(options: ConnoisseurPdfOptions): vo
   doc.text(titleText, marginX, y);
   y += 12;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor(...SECONDARY);
-  doc.text(participantName, marginX, y);
-  y += 8;
+  let photoDataUrl: string | null = null;
+  if (participantPhotoUrl) {
+    photoDataUrl = await loadImageAsBase64(participantPhotoUrl);
+  }
+
+  if (photoDataUrl) {
+    try {
+      doc.addImage(photoDataUrl, "JPEG", marginX, y - 5, 14, 14, undefined, "FAST");
+    } catch {}
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor(...SECONDARY);
+    doc.text(participantName, marginX + 18, y + 3);
+    y += 14;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor(...SECONDARY);
+    doc.text(participantName, marginX, y);
+    y += 8;
+  }
 
   doc.setFontSize(10);
   doc.setTextColor(...SECONDARY);
