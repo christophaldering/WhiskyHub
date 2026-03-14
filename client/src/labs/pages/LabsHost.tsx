@@ -1144,6 +1144,18 @@ function MobileCompanion({
         </div>
       </div>
 
+      {currentParticipant && (
+        <div className="mb-4">
+          <LabsSettingsPanel
+            tasting={tasting}
+            tastingId={tastingId}
+            pid={currentParticipant.id}
+            queryClient={queryClient}
+            navigate={navigate}
+          />
+        </div>
+      )}
+
       {isDraft && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -5037,17 +5049,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      {currentParticipant && (
-        <div className="mb-6">
-          <LabsSettingsPanel
-            tasting={tasting}
-            tastingId={tastingId}
-            pid={currentParticipant.id}
-            queryClient={queryClient}
-            navigate={navigate}
-          />
-        </div>
-      )}
+      
 
       {(tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed") && (whiskies?.length || 0) > 0 && (
         <div className="mb-4">
