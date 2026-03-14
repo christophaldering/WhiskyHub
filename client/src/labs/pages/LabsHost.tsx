@@ -3497,6 +3497,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [personalNote, setPersonalNote] = useState("");
   const [sendingInvites, setSendingInvites] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [topDuplicating, setTopDuplicating] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -5079,6 +5080,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           Join as Participant
         </button>
       </div>
+
+      {currentParticipant && (
+        <div className="mt-3">
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={async () => {
+              setTopDuplicating(true);
+              try {
+                const pid = currentParticipant.id;
+                const newTasting = await tastingApi.duplicate(tastingId, pid);
+                if (newTasting?.id) navigate(`/labs/host/${newTasting.id}`);
+              } catch {}
+              setTopDuplicating(false);
+            }}
+            disabled={topDuplicating}
+            data-testid="labs-host-duplicate"
+          >
+            <Copy className="w-4 h-4" />
+            {topDuplicating ? "Kopiere..." : "Tasting kopieren"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
