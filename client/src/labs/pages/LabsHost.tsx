@@ -14,6 +14,7 @@ import {
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId, getEffectiveProfile } from "@/labs/data/flavor-data";
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
@@ -574,7 +575,7 @@ function PrintMaterialsSection({
     setGenerating("menu");
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
-        name: ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
+        name: stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
       }));
       const hostName = resolveHostName();
 
@@ -614,7 +615,7 @@ function PrintMaterialsSection({
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
         id: (p.participantId || p.id) as string,
-        name: ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
+        name: stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
       }));
       if (pList.length === 0) return;
       const type = blindMode ? "blind" : "tasting";
@@ -850,7 +851,7 @@ function PrintMaterialsSection({
             {participants.length > 0 && (
               <div className="mb-3 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
                 {participants.map((p: Record<string, unknown>, idx: number) => {
-                  const pName = ((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
+                  const pName = stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
                   return (
                     <div
                       key={(p.participantId || p.id) as string}
@@ -2528,9 +2529,9 @@ function ParticipantStatusSection({
                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                         style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                       >
-                        {(p.name || "?").charAt(0).toUpperCase()}
+                        {stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-sm font-medium truncate flex-1 min-w-0">{p.name || "Anonymous"}</p>
+                      <p className="text-sm font-medium truncate flex-1 min-w-0">{stripGuestSuffix((p.name || "Anonymous") as string)}</p>
                       <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
                         {p.ratedCount}/{whiskyCount}
                       </span>
@@ -2611,7 +2612,7 @@ function ParticipantStatusSection({
                               className="text-xs truncate"
                               style={{ color: hasRated ? "var(--labs-text-secondary)" : "var(--labs-text-muted)" }}
                             >
-                              {p.name || "Anonymous"}
+                              {stripGuestSuffix((p.name || "Anonymous") as string)}
                             </span>
                           </div>
                         );
@@ -2949,11 +2950,11 @@ function GuidedTastingEngine({
                       color: hasRated ? "var(--labs-bg)" : "var(--labs-text-muted)",
                     }}
                   >
-                    {hasRated ? <Check className="w-3.5 h-3.5" /> : (p.name || "?").charAt(0).toUpperCase()}
+                    {hasRated ? <Check className="w-3.5 h-3.5" /> : stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                      {p.name || "Anonymous"}
+                      {stripGuestSuffix((p.name || "Anonymous") as string)}
                     </p>
                     <p className="text-[10px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
                       {hasRated ? "SUBMITTED" : "NOT STARTED"}

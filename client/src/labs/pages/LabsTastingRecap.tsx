@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { recapApi } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
   Loader2, ChevronLeft, AlertCircle
@@ -58,7 +59,7 @@ export default function LabsTastingRecap() {
     lines.push(`${recap.tasting.title}`);
     lines.push(`${formatDate(recap.tasting.date)}`);
     if (recap.tasting.location) lines.push(recap.tasting.location);
-    lines.push(`${t("recap.host")}: ${recap.hostName}`);
+    lines.push(`${t("recap.host")}: ${stripGuestSuffix(recap.hostName)}`);
     lines.push(`${recap.participantCount} ${t("recap.participants")}`);
     lines.push("");
     lines.push(`${t("recap.topRated")}:`);
@@ -147,7 +148,7 @@ export default function LabsTastingRecap() {
     const meta: string[] = [];
     if (recap.tasting.date) meta.push(formatDate(recap.tasting.date));
     if (recap.tasting.location) meta.push(recap.tasting.location);
-    meta.push(`${t("recap.host")}: ${recap.hostName}`);
+    meta.push(`${t("recap.host")}: ${stripGuestSuffix(recap.hostName)}`);
     meta.push(`${recap.participantCount} ${t("recap.participants")}`);
     meta.push(`${recap.whiskyCount} ${t("recap.whiskies")}`);
     doc.text(meta.join("  ·  "), pw / 2, y, { align: "center" });
@@ -247,7 +248,7 @@ export default function LabsTastingRecap() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(...dark);
-        doc.text(p.name, margin + 4, y);
+        doc.text(stripGuestSuffix(p.name), margin + 4, y);
         doc.setTextColor(...muted);
         doc.text(`${p.ratingsCount} ${t("recap.ratings")}  ·  Avg ${p.avgScore.toFixed(1)}`, pw - margin, y, { align: "right" });
         y += 7;
@@ -358,7 +359,7 @@ export default function LabsTastingRecap() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 13, color: "var(--labs-text-muted)" }}>
           {recap.tasting.date && <span data-testid="text-labs-recap-date">{formatDate(recap.tasting.date)}</span>}
           {recap.tasting.location && <span data-testid="text-labs-recap-location">{recap.tasting.location}</span>}
-          <span data-testid="text-labs-recap-host">{recap.hostName}</span>
+          <span data-testid="text-labs-recap-host">{stripGuestSuffix(recap.hostName)}</span>
           <span data-testid="text-labs-recap-participants" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Users style={{ width: 14, height: 14 }} />
             {recap.participantCount} {t("recap.participants")}
@@ -499,7 +500,7 @@ export default function LabsTastingRecap() {
                 border: "1px solid var(--labs-border)",
               }} data-testid="card-labs-most-ratings">
                 <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 4px" }}>{t("recap.mostRatings")}</p>
-                <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{mostRatings.name}</p>
+                <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{stripGuestSuffix(mostRatings.name)}</p>
                 <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{mostRatings.ratingsCount} {t("recap.ratings")}</p>
               </div>
             )}
@@ -511,7 +512,7 @@ export default function LabsTastingRecap() {
                 border: "1px solid var(--labs-border)",
               }} data-testid="card-labs-highest-avg">
                 <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 4px" }}>{t("recap.highestAvg")}</p>
-                <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{highestAvg.name}</p>
+                <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{stripGuestSuffix(highestAvg.name)}</p>
                 <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{highestAvg.avgScore.toFixed(1)}</p>
               </div>
             )}
@@ -530,7 +531,7 @@ export default function LabsTastingRecap() {
                 }}
                 data-testid={`row-labs-participant-highlight-${i}`}
               >
-                <span style={{ fontSize: 13, color: "var(--labs-text)" }}>{p.name}</span>
+                <span style={{ fontSize: 13, color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
                 <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
                   {p.ratingsCount} {t("recap.ratings")} · Avg {p.avgScore.toFixed(1)}
                 </span>

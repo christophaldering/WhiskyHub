@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import {
   ChevronLeft, Sparkles, Copy, Check, ChevronDown, Download,
   FileText, Trash2, Globe,
@@ -182,7 +183,7 @@ export default function LabsConnoisseur() {
       const mod = await import("@/components/connoisseur-report-pdf");
       mod.generateConnoisseurReportPdf({
         report: latestReport as Parameters<typeof mod.generateConnoisseurReportPdf>[0]["report"],
-        participantName: session.name || "Participant",
+        participantName: stripGuestSuffix(session.name || "Participant"),
         language: latestReport.language || "en",
       });
     } catch (e) { console.error("PDF generation failed:", e); }

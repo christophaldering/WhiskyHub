@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useSearch, useLocation } from "wouter";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import {
   Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User, ChevronLeft, FileText
 } from "lucide-react";
@@ -226,7 +227,7 @@ export default function LabsPaperScan() {
                     <User style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 500, color: "var(--labs-text)" }}>
-                    {p.name || "Anonymous"}
+                    {stripGuestSuffix((p.name || "Anonymous") as string)}
                   </span>
                 </button>
               ))}
@@ -258,7 +259,7 @@ export default function LabsPaperScan() {
             <div className="labs-card" style={{ padding: 16, marginBottom: 12 }}>
               <div className="labs-section-label">{t("m2.paperScan.participant", "Participant")}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }} data-testid="text-scan-participant-name">
-                {participant.name}
+                {stripGuestSuffix(participant.name as string)}
               </div>
             </div>
           )}
@@ -464,7 +465,7 @@ export default function LabsPaperScan() {
 
             {scanResult.participantName && (
               <div style={{ fontSize: 13, color: "var(--labs-text-secondary)", marginBottom: 12 }}>
-                {t("m2.paperScan.detectedAs", "Detected as")}: <strong style={{ color: "var(--labs-text)" }}>{scanResult.participantName}</strong>
+                {t("m2.paperScan.detectedAs", "Detected as")}: <strong style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(scanResult.participantName as string)}</strong>
               </div>
             )}
 

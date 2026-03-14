@@ -6,6 +6,7 @@ import {
   Monitor, Smartphone, FileText, Radio, X,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 
@@ -319,7 +320,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     });
   };
 
-  const pName = (p: any) => p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous";
+  const pName = (p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous");
   const pId = (p: any) => p.participantId || p.id;
 
   const getSource = (participantId: string): "digital" | "paper" | "pending" => {

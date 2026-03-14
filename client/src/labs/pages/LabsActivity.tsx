@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
+import { stripGuestSuffix } from "@/lib/utils";
 import { FileText, Wine, Star, Activity, ChevronLeft } from "lucide-react";
 
 interface ActivityItem {
@@ -105,7 +106,7 @@ export default function LabsActivity() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="labs-serif text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                    {a.participantName}
+                    {stripGuestSuffix(a.participantName)}
                   </span>
                   <span className="text-[10px] flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
                     {relTime(a.timestamp)}

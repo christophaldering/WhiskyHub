@@ -6,6 +6,7 @@ import {
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { stripGuestSuffix } from "@/lib/utils";
 import { communityApi, friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -190,7 +191,7 @@ export default function LabsCircle() {
           existing.sessions.push((t.title || t.id) as string);
         } else {
           map.set(key, {
-            name: (p.name as string) || "Unknown",
+            name: stripGuestSuffix((p.name as string) || "Unknown"),
             sharedCount: 1,
             sessions: [(t.title || t.id) as string],
           });
@@ -368,7 +369,7 @@ export default function LabsCircle() {
                 const matchPct = Math.round(((twin.correlation ?? twin.similarity ?? 0) as number) * 100);
                 const sharedWhiskies = (twin.sharedWhiskies || 0) as number;
                 const twinSessions = (twin.sharedSessions || twin.sharedTastings || 0) as number;
-                const twinName = (twin.participantName || twin.name || "Unknown") as string;
+                const twinName = stripGuestSuffix((twin.participantName || twin.name || "Unknown") as string);
                 const [bgFrom, bgTo] = getAvatarColor(twinName);
                 const initials = getInitials(twinName);
                 return (
@@ -696,7 +697,7 @@ export default function LabsCircle() {
                       style={{ color: isCurrentUser ? "var(--labs-accent)" : "var(--labs-text)" }}
                       data-testid={`labs-circle-lb-name-${i}`}
                     >
-                      {entry.name}
+                      {stripGuestSuffix(entry.name)}
                       {isCurrentUser ? " \u2605" : ""}
                     </span>
                     <span
@@ -740,7 +741,7 @@ export default function LabsCircle() {
               {i < 3 ? MEDALS[i] : i + 1}
             </div>
             <span className="flex-1 text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-              {entry.name}
+              {stripGuestSuffix(entry.name)}
             </span>
             <div className="text-right">
               <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
@@ -913,7 +914,7 @@ export default function LabsCircle() {
                 </p>
                 <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                   {(onlineData?.online || []).map((of) => {
-                    const initials = of.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
+                    const initials = stripGuestSuffix(of.name).trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
                     return (
                       <button
                         key={of.friendId}
@@ -935,7 +936,7 @@ export default function LabsCircle() {
                           />
                         </div>
                         <span className="text-[11px] font-medium truncate w-full text-center" style={{ color: "var(--labs-text)" }}>
-                          {of.name.split(" ")[0]}
+                          {stripGuestSuffix(of.name).split(" ")[0]}
                         </span>
                       </button>
                     );
@@ -953,7 +954,7 @@ export default function LabsCircle() {
                 .map((friend, i) => {
                   const fid = friend.id as string;
                   const isOnline = onlineFriendIds.has(fid);
-                  const displayName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
+                  const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend");
                   const onlineInfo = onlineFriendsMap.get(fid);
                   return (
                     <div
@@ -1151,7 +1152,7 @@ export default function LabsCircle() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                  {(item.participantName as string) || "Someone"}
+                  {stripGuestSuffix((item.participantName as string) || "Someone")}
                 </p>
                 <p className="text-xs truncate mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
                   {isJournal ? (

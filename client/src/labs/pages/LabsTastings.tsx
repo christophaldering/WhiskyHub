@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine, Users } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type FilterTab = "all" | "hosting" | "joined";
@@ -370,7 +371,7 @@ export default function LabsTastings() {
                       >
                         <Crown style={{ width: 11, height: 11, opacity: 0.5, flexShrink: 0 }} />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {tasting.hostName}
+                          {stripGuestSuffix(tasting.hostName)}
                         </span>
                       </div>
                     )}

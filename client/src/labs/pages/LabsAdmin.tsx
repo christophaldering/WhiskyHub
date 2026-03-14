@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { adminApi, feedbackApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
+import { stripGuestSuffix } from "@/lib/utils";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, useSession } from "@/lib/session";
@@ -247,7 +248,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   {p.role === "admin" ? <Shield className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> :
                    p.role === "host" ? <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} /> :
                    <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
-                  <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{p.name}</span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
                   {p.id === pid && <span className="text-[9px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
                   {p.email?.endsWith("@casksense.local") && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
@@ -361,7 +362,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   {tasting.isTestData && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                  <span className="flex items-center gap-1"><Crown className="w-2.5 h-2.5" />{tasting.hostName}</span>
+                  <span className="flex items-center gap-1"><Crown className="w-2.5 h-2.5" />{stripGuestSuffix(tasting.hostName)}</span>
                   <span className="flex items-center gap-1"><Calendar className="w-2.5 h-2.5" />{tasting.date}</span>
                   <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{tasting.participantCount}</span>
                   <span className="flex items-center gap-1"><Wine className="w-2.5 h-2.5" />{tasting.whiskyCount}</span>
@@ -701,7 +702,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
             {allWithEmail.map(p => (
               <div key={p.id} onClick={() => toggleRecipient(p.id)} className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer" style={{ background: selectedIds.has(p.id) ? "var(--labs-accent-muted)" : "transparent" }} data-testid={`labs-admin-recipient-${p.id}`}>
                 {selectedIds.has(p.id) ? <CheckSquare className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> : <Square className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
-                <span className="text-xs" style={{ color: "var(--labs-text)" }}>{p.name}</span>
+                <span className="text-xs" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
                 <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{p.email}</span>
               </div>
             ))}
@@ -855,7 +856,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   {ta.title}
                   {ta.isTestData && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
-                <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{ta.hostName} · {ta.date} · {ta.status}</div>
+                <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ta.hostName)} · {ta.date} · {ta.status}</div>
               </div>
             </div>
           ))}
@@ -1055,8 +1056,8 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
                 return (
                   <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg max-h-[200px] overflow-y-auto" style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
                     {filtered.map(p => (
-                      <button key={p.id} onClick={() => { setMemberSelectedId(p.id); setMemberSearch(p.name + (p.email ? ` (${p.email})` : "")); setShowDropdown(false); }} className="flex flex-col gap-0.5 w-full px-2.5 py-2 text-left" style={{ background: "none", border: "none", borderBottom: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid={`labs-admin-member-option-${p.id}`}>
-                        <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{p.name}</span>
+                      <button key={p.id} onClick={() => { setMemberSelectedId(p.id); setMemberSearch(stripGuestSuffix(p.name) + (p.email ? ` (${p.email})` : "")); setShowDropdown(false); }} className="flex flex-col gap-0.5 w-full px-2.5 py-2 text-left" style={{ background: "none", border: "none", borderBottom: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid={`labs-admin-member-option-${p.id}`}>
+                        <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
                         {p.email && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{p.email}</span>}
                       </button>
                     ))}
@@ -1079,7 +1080,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
                 <div className="flex items-center gap-2">
                   <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                   <div>
-                    <div className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{(m.participantName as string) || (m.participantEmail as string) || (m.participantId as string)}</div>
+                    <div className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix((m.participantName as string) || (m.participantEmail as string) || (m.participantId as string))}</div>
                     <span className="text-[10px] font-semibold uppercase px-1.5 rounded" style={{ color: "var(--labs-text-muted)" }}>{m.role as string} · {m.status as string}</span>
                   </div>
                 </div>
@@ -1241,7 +1242,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
                    p.role === "host" ? <Crown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-info)" }} /> :
                    <User className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />}
                   <div className="min-w-0">
-                    <div className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>{p.name}</div>
+                    <div className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</div>
                     <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
                       {p.email || "No email"}{isAdmin && " · always has access"}
                     </div>
@@ -1276,7 +1277,7 @@ function FeedbackTab({ pid }: { pid: string }) {
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-sm">{icons[(fb.category as string)] || "\u{1F4DD}"}</span>
                 <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--labs-accent)" }}>{fb.category as string}</span>
-                {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {fb.participantName as string}</span>}
+                {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(fb.participantName as string)}</span>}
                 {fb.createdAt && <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(fb.createdAt as string).toLocaleDateString()}</span>}
               </div>
               <div className="text-xs" style={{ color: "var(--labs-text)", lineHeight: 1.5 }}>{fb.message as string}</div>

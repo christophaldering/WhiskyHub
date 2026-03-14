@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, friendsApi } from "@/lib/api";
+import { stripGuestSuffix } from "@/lib/utils";
 import QRCode from "qrcode";
 
 interface LabsTastingDetailProps {
@@ -251,7 +252,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Host</span>
               <span className="text-sm font-medium flex items-center gap-1.5" data-testid="labs-detail-host">
                 <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                {tasting.hostName}
+                {stripGuestSuffix(tasting.hostName)}
               </span>
             </div>
           )}
@@ -299,9 +300,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
                   style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                 >
-                  {(p.name || "?").charAt(0).toUpperCase()}
+                  {stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium">{p.name}</span>
+                <span className="text-sm font-medium">{stripGuestSuffix((p.name || "Anonymous") as string)}</span>
                 {p.id === tasting.hostId && (
                   <Crown className="w-3 h-3 ml-auto" style={{ color: "var(--labs-accent)" }} />
                 )}
