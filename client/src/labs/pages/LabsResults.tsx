@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
@@ -609,7 +609,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </div>
           </div>
           {sorted.length > 0 && (
-            <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
+            <div className="flex items-center gap-2">
+              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
+                <button
+                  className="labs-btn-primary flex items-center gap-2"
+                  onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+                  data-testid="button-labs-present-results"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Present
+                </button>
+              )}
+              <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
+            </div>
           )}
         </div>
       </div>

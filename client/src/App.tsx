@@ -220,6 +220,7 @@ const LabsActivityPage = lazy(() => import("@/labs/pages/LabsActivity"));
 const LabsCommunity = lazy(() => import("@/labs/pages/LabsCommunity"));
 const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
 const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
+const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -562,6 +563,7 @@ function Router() {
         </Route>
 
         {/* === CASKSENSE LABS === */}
+        <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
         <Route path="/labs">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/labs/*">
           <LabsLayout>

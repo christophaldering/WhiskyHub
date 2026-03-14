@@ -5047,6 +5047,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
+      {(tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed") && (whiskies?.length || 0) > 0 && (
+        <div className="mb-4">
+          <button
+            className="labs-btn-primary flex items-center gap-2 w-full justify-center"
+            onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+            data-testid="labs-host-present-results"
+          >
+            <Monitor className="w-4 h-4" />
+            Present Results
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button
           className="labs-btn-secondary flex items-center gap-2 flex-1"
