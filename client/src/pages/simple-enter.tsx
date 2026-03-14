@@ -75,6 +75,7 @@ export default function SimpleEnterPage() {
   const [code, setCode] = useState(prefillCode.toUpperCase());
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [enterConsent, setEnterConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -87,12 +88,12 @@ export default function SimpleEnterPage() {
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !pin.trim()) return;
+    if (!name.trim() || !pin.trim() || !enterConsent) return;
     setLoading(true);
     setError("");
     try {
       console.log("[SIMPLE_MODE] identify attempt", name.trim());
-      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+      const result = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, true);
       if (result?.id) {
         console.log("[SIMPLE_MODE] identify success", result.id);
         setParticipant({ id: result.id, name: result.name, role: result.role });
@@ -166,7 +167,14 @@ export default function SimpleEnterPage() {
               <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <input type="text" placeholder={t("simpleEnter.namePlaceholder")} name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={appleInputStyle} data-testid="input-enter-name" autoFocus autoComplete="name" autoCapitalize="words" spellCheck={false} />
                 <input type="password" placeholder={t("simpleEnter.pinPlaceholder")} name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...appleInputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} />
-                <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ ...appleButtonStyle, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                  <input type="checkbox" checked={enterConsent} onChange={(e) => setEnterConsent(e.target.checked)} style={{ marginTop: 3 }} data-testid="checkbox-enter-privacy" />
+                  <span style={{ fontSize: 10, color: c.muted, lineHeight: 1.4 }}>
+                    {t('login.privacyConsentLabel')}{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
+                  </span>
+                </label>
+                <button type="submit" disabled={loading || !name.trim() || !pin.trim() || !enterConsent} data-testid="button-identify" style={{ ...appleButtonStyle, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim() || !enterConsent) ? 0.5 : 1 }}>
                   {loading ? "…" : t("simpleEnter.continue")}
                 </button>
                 {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-enter-error">{error}</p>}

@@ -163,6 +163,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
+  const [m2GuestConsent, setM2GuestConsent] = useState(false);
 
   const [labsTheme, setLabsThemeState] = useState<"dark" | "light">(() => {
     try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
@@ -280,7 +281,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     setError("");
     setLoading(true);
     try {
-      await participantApi.loginOrCreate(regName.trim(), regPin.trim(), regEmail.trim());
+      await participantApi.loginOrCreate(regName.trim(), regPin.trim(), regEmail.trim(), undefined, true);
       setRegSuccess(true);
       const result = await signIn({
         pin: regPin.trim(),
@@ -391,14 +392,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   };
 
   const handleGuestJoin = async () => {
-    if (!guestName.trim() || !guestPin.trim()) {
+    if (!guestName.trim() || !guestPin.trim() || !m2GuestConsent) {
       setError(t("m2.guest.allFieldsRequired", "Name and tasting code are required"));
       return;
     }
     setError("");
     setLoading(true);
     try {
-      const res = await participantApi.guestJoin(guestName.trim(), guestPin.trim());
+      const res = await participantApi.guestJoin(guestName.trim(), guestPin.trim(), true);
       if (res?.id) {
         setSessionPid(res.id);
         try {
@@ -742,10 +743,23 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           {error}
         </div>
       )}
+      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", margin: "4px 0" }}>
+        <input
+          type="checkbox"
+          checked={m2GuestConsent}
+          onChange={(e) => setM2GuestConsent(e.target.checked)}
+          style={{ marginTop: 3 }}
+          data-testid="m2-guest-consent"
+        />
+        <span style={{ fontSize: 11, color: tv.muted, lineHeight: 1.4 }}>
+          {t('login.privacyConsentLabel')}{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
+        </span>
+      </label>
       <button
         onClick={handleGuestJoin}
-        disabled={loading || !guestName.trim() || !guestPin.trim()}
-        style={primaryBtnStyle(!guestName.trim() || !guestPin.trim())}
+        disabled={loading || !guestName.trim() || !guestPin.trim() || !m2GuestConsent}
+        style={primaryBtnStyle(!guestName.trim() || !guestPin.trim() || !m2GuestConsent)}
         data-testid="m2-guest-submit"
       >
         {loading ? t("m2.guest.joining", "Joining...") : t("m2.guest.join", "Joyn Tasting")}

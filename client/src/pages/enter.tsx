@@ -13,16 +13,17 @@ export default function EnterPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [enterConsent, setEnterConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !pin.trim()) return;
+    if (!name.trim() || !pin.trim() || !enterConsent) return;
     setLoading(true);
     setError("");
     try {
-      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+      const result = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, true);
       if (result?.id) {
         setParticipant({ id: result.id, name: result.name, role: result.role });
         setStep("code");
@@ -115,9 +116,16 @@ export default function EnterPage() {
                   data-testid="input-enter-pin"
                   autoComplete="off"
                 />
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                  <input type="checkbox" checked={enterConsent} onChange={(e) => setEnterConsent(e.target.checked)} style={{ marginTop: 3 }} data-testid="checkbox-enter-privacy" />
+                  <span style={{ fontSize: 10, color: c.muted, lineHeight: 1.4 }}>
+                    I agree to the processing of my data.{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>Privacy Policy</a>
+                  </span>
+                </label>
                 <button
                   type="submit"
-                  disabled={loading || !name.trim() || !pin.trim()}
+                  disabled={loading || !name.trim() || !pin.trim() || !enterConsent}
                   data-testid="button-identify"
                   style={{
                     width: "100%",

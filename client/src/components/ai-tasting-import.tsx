@@ -167,6 +167,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
   const [error, setError] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
+  const [importConsent, setImportConsent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasUnsavedData = files.length > 0 || pastedText.trim().length > 0 || editingWhiskies.length > 0 || tastingTitle.trim().length > 0;
@@ -196,7 +197,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
       let hostId = currentParticipant?.id;
       if (!hostId) {
         if (!guestName.trim()) throw new Error("Please enter your name");
-        const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined);
+        const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined, undefined, undefined, true);
         setParticipant(participant);
         hostId = participant.id;
       }
@@ -609,7 +610,19 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               )}
 
-              <p style={{ fontSize: 10, color: `${c.muted}99`, lineHeight: 1.6 }}>{t('guestAuth.consentNotice')}</p>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={importConsent}
+                  onChange={(e) => setImportConsent(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: c.accent }}
+                  data-testid="checkbox-import-privacy"
+                />
+                <span style={{ fontSize: 10, color: `${c.muted}99`, lineHeight: 1.4 }}>
+                  {t('login.privacyConsentLabel')}{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: c.accent, textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
+                </span>
+              </label>
 
               {error && (
                 <div style={{ padding: 12, background: `${c.error}15`, border: `1px solid ${c.error}40`, borderRadius: 8, fontSize: 14, color: c.error }}>
@@ -623,12 +636,12 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </button>
                 <button
                   onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending || editingWhiskies.length === 0 || (!currentParticipant && !guestName.trim())}
+                  disabled={createMutation.isPending || editingWhiskies.length === 0 || (!currentParticipant && (!guestName.trim() || !importConsent))}
                   style={{
                     ...btnPrimary,
                     flex: 1,
                     width: "auto",
-                    opacity: (createMutation.isPending || editingWhiskies.length === 0 || (!currentParticipant && !guestName.trim())) ? 0.5 : 1,
+                    opacity: (createMutation.isPending || editingWhiskies.length === 0 || (!currentParticipant && (!guestName.trim() || !importConsent))) ? 0.5 : 1,
                   }}
                   data-testid="button-import-create"
                 >

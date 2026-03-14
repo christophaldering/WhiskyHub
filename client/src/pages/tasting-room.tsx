@@ -5,6 +5,7 @@ import { OverviewRating } from "@/components/overview-rating";
 import { GuidedTasting } from "@/components/guided-tasting";
 import { RevealPresenter } from "@/components/reveal-presenter";
 import { SessionControl } from "@/components/session-control";
+import { Checkbox } from "@/components/ui/checkbox";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { CurationWizard } from "@/components/curation-wizard";
@@ -1593,6 +1594,7 @@ export default function TastingRoom() {
   const [showLogin, setShowLogin] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
+  const [guestRoomConsent, setGuestRoomConsent] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [showSecureAccount, setShowSecureAccount] = useState(false);
   const [secureEmail, setSecureEmail] = useState("");
@@ -1602,11 +1604,11 @@ export default function TastingRoom() {
   const [secureDismissed, setSecureDismissed] = useState(false);
 
   const handleGuestJoin = async () => {
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !guestRoomConsent) return;
     setGuestLoading(true);
     setGuestError("");
     try {
-      const guest = await participantApi.guestJoin(guestName.trim(), "");
+      const guest = await participantApi.guestJoin(guestName.trim(), "", true);
       setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       if (guest.guest && !guest.pin) {
         setShowSecureAccount(true);
@@ -1807,10 +1809,21 @@ export default function TastingRoom() {
               />
             </div>
             {guestError && <p className="text-sm text-destructive" data-testid="text-guest-error">{guestError}</p>}
-            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="guestRoomConsent"
+                checked={guestRoomConsent}
+                onCheckedChange={(c) => setGuestRoomConsent(c === true)}
+                data-testid="checkbox-guest-room-privacy"
+              />
+              <label htmlFor="guestRoomConsent" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+                {t('login.privacyConsentLabel')}{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+              </label>
+            </div>
             <Button
               onClick={handleGuestJoin}
-              disabled={guestLoading || !guestName.trim()}
+              disabled={guestLoading || !guestName.trim() || !guestRoomConsent}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-guest-join"
             >

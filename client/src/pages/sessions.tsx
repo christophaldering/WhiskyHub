@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GuestPreview } from "@/components/guest-preview";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
@@ -50,6 +51,7 @@ export default function Sessions() {
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
+  const [sessionsConsent, setSessionsConsent] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [pendingAction, setPendingAction] = useState<"create" | "photo" | "join" | null>(null);
 
@@ -160,11 +162,11 @@ export default function Sessions() {
   };
 
   const handleGuestSubmit = async () => {
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !sessionsConsent) return;
     setGuestLoading(true);
     setGuestError("");
     try {
-      const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined);
+      const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined, undefined, undefined, true);
       setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
       setShowGuestDialog(false);
       setGuestName("");
@@ -485,8 +487,19 @@ export default function Sessions() {
                 data-testid="input-guest-pin-sessions"
               />
               {guestError && <p className="text-xs text-destructive">{guestError}</p>}
-              <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
-              <Button onClick={handleGuestSubmit} disabled={!guestName.trim() || guestLoading} className="w-full" data-testid="button-guest-submit-sessions">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="sessionsConsent"
+                  checked={sessionsConsent}
+                  onCheckedChange={(c) => setSessionsConsent(c === true)}
+                  data-testid="checkbox-sessions-privacy"
+                />
+                <label htmlFor="sessionsConsent" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+                  {t('login.privacyConsentLabel')}{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+                </label>
+              </div>
+              <Button onClick={handleGuestSubmit} disabled={!guestName.trim() || !sessionsConsent || guestLoading} className="w-full" data-testid="button-guest-submit-sessions">
                 {guestLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("home.joinNow")}
               </Button>
             </div>

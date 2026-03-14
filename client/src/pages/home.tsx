@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
 import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, LogIn, FileUp, Navigation, LayoutDashboard, Bell } from "lucide-react";
@@ -230,6 +231,7 @@ export default function Home() {
   const [quickPin, setQuickPin] = useState("");
   const [quickJoinLoading, setQuickJoinLoading] = useState(false);
   const [quickJoinError, setQuickJoinError] = useState("");
+  const [quickJoinConsent, setQuickJoinConsent] = useState(false);
 
   const [showHostForm, setShowHostForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -244,6 +246,7 @@ export default function Home() {
   const [guestCreatePin, setGuestCreatePin] = useState("");
   const [guestCreateLoading, setGuestCreateLoading] = useState(false);
   const [guestCreateError, setGuestCreateError] = useState("");
+  const [guestCreateConsent, setGuestCreateConsent] = useState(false);
   const [pendingAction, setPendingAction] = useState<"create" | "photo" | null>(null);
 
   const { data: tastings } = useQuery({
@@ -300,11 +303,11 @@ export default function Home() {
   };
 
   const handleQuickJoin = async () => {
-    if (!quickName.trim() || quickPin.length < 4) return;
+    if (!quickName.trim() || quickPin.length < 4 || !quickJoinConsent) return;
     setQuickJoinLoading(true);
     setQuickJoinError("");
     try {
-      const guest = await participantApi.guestJoin(quickName.trim(), quickPin);
+      const guest = await participantApi.guestJoin(quickName.trim(), quickPin, true);
       setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       setShowQuickJoin(false);
       setQuickName("");
@@ -358,11 +361,11 @@ export default function Home() {
   };
 
   const handleGuestCreateSubmit = async () => {
-    if (!guestCreateName.trim() || guestCreatePin.length < 4) return;
+    if (!guestCreateName.trim() || guestCreatePin.length < 4 || !guestCreateConsent) return;
     setGuestCreateLoading(true);
     setGuestCreateError("");
     try {
-      const participant = await participantApi.guestJoin(guestCreateName.trim(), guestCreatePin);
+      const participant = await participantApi.guestJoin(guestCreateName.trim(), guestCreatePin, true);
       setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
       setShowGuestCreate(false);
       setGuestCreateName("");
@@ -428,10 +431,21 @@ export default function Home() {
               <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {quickJoinError && <p className="text-sm text-destructive" data-testid="text-quick-join-error">{quickJoinError}</p>}
-            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="quickJoinConsent"
+                checked={quickJoinConsent}
+                onCheckedChange={(c) => setQuickJoinConsent(c === true)}
+                data-testid="checkbox-quick-join-privacy"
+              />
+              <label htmlFor="quickJoinConsent" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+                {t('login.privacyConsentLabel')}{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+              </label>
+            </div>
             <Button
               onClick={handleQuickJoin}
-              disabled={quickJoinLoading || !quickName.trim() || quickPin.length < 4}
+              disabled={quickJoinLoading || !quickName.trim() || quickPin.length < 4 || !quickJoinConsent}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-quick-join"
             >
@@ -493,10 +507,21 @@ export default function Home() {
               <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {guestCreateError && <p className="text-sm text-destructive" data-testid="text-guest-create-error">{guestCreateError}</p>}
-            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="guestCreateConsent"
+                checked={guestCreateConsent}
+                onCheckedChange={(c) => setGuestCreateConsent(c === true)}
+                data-testid="checkbox-guest-create-privacy"
+              />
+              <label htmlFor="guestCreateConsent" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
+                {t('login.privacyConsentLabel')}{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+              </label>
+            </div>
             <Button
               onClick={handleGuestCreateSubmit}
-              disabled={guestCreateLoading || !guestCreateName.trim() || guestCreatePin.length < 4}
+              disabled={guestCreateLoading || !guestCreateName.trim() || guestCreatePin.length < 4 || !guestCreateConsent}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-guest-create-submit"
             >

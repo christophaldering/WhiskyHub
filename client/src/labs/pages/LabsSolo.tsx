@@ -2346,12 +2346,13 @@ function LabsSignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, p
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [remember, setRemember] = useState(true);
+  const [labsSoloConsent, setLabsSoloConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pin.trim()) return;
+    if (!pin.trim() || !labsSoloConsent) return;
     setLoading(true);
     setError("");
     try {
@@ -2363,7 +2364,7 @@ function LabsSignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, p
       const displayName = result.name || name.trim() || t("m2.solo.guest", "Guest");
       if (name.trim() && pin.trim()) {
         try {
-          const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim());
+          const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, true);
           if (pResult?.id) {
             setSessionPid(pResult.id);
             onSignedIn(displayName, pResult.id);
@@ -2389,7 +2390,14 @@ function LabsSignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, p
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ accentColor: "var(--labs-accent)" }} data-testid="checkbox-remember" />
           {t("m2.solo.staySignedIn", "Stay signed in")}
         </label>
-        <button type="submit" disabled={loading || !pin.trim()} data-testid="button-unlock-submit" className="labs-btn-primary" style={{ fontSize: 14, padding: 12, opacity: !pin.trim() ? 0.5 : 1 }}>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+          <input type="checkbox" checked={labsSoloConsent} onChange={(e) => setLabsSoloConsent(e.target.checked)} style={{ marginTop: 3, accentColor: "var(--labs-accent)" }} data-testid="checkbox-labssolo-privacy" />
+          <span style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+            {t('login.privacyConsentLabel')}{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
+          </span>
+        </label>
+        <button type="submit" disabled={loading || !pin.trim() || !labsSoloConsent} data-testid="button-unlock-submit" className="labs-btn-primary" style={{ fontSize: 14, padding: 12, opacity: (!pin.trim() || !labsSoloConsent) ? 0.5 : 1 }}>
           {loading ? t("m2.solo.signingIn", "Signing in\u2026") : t("m2.solo.signIn", "Sign in")}
         </button>
         {error && <p style={{ fontSize: 12, color: "var(--labs-danger)", margin: 0, textAlign: "center" }}>{error}</p>}

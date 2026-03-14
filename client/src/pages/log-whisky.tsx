@@ -8,16 +8,17 @@ import { c, inputStyle, sliderCSS } from "@/lib/theme";
 function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [logConsent, setLogConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !pin.trim()) return;
+    if (!name.trim() || !pin.trim() || !logConsent) return;
     setLoading(true);
     setError("");
     try {
-      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+      const result = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, true);
       if (result?.id) onUnlock({ id: result.id, name: result.name, role: result.role });
     } catch (err: any) {
       const msg = err?.message || "";
@@ -39,11 +40,18 @@ function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; r
         <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
         <input type="text" placeholder="Name" name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-log-name" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
         <input type="password" placeholder="PIN" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-log-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+          <input type="checkbox" checked={logConsent} onChange={(e) => setLogConsent(e.target.checked)} style={{ marginTop: 3 }} data-testid="checkbox-log-privacy" />
+          <span style={{ fontSize: 10, color: c.muted, lineHeight: 1.4 }}>
+            I agree to the processing of my data.{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>Privacy Policy</a>
+          </span>
+        </label>
         <button
           type="submit"
-          disabled={loading || !name.trim() || !pin.trim()}
+          disabled={loading || !name.trim() || !pin.trim() || !logConsent}
           data-testid="button-log-unlock"
-          style={{ width: "100%", padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}
+          style={{ width: "100%", padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim() || !logConsent) ? 0.5 : 1 }}
         >
           {loading ? "…" : "Unlock"}
         </button>
