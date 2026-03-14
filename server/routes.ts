@@ -494,6 +494,9 @@ export async function registerRoutes(
         if (!existing.pin) {
           const hashed = await hashPassword(data.pin!);
           await storage.updateParticipantPin(existing.id, hashed);
+          if (privacyConsent && !existing.privacyConsentAt) {
+            await storage.setPrivacyConsent(existing.id);
+          }
           if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
             await storage.updateParticipantRole(existing.id, "admin");
           }
@@ -504,6 +507,9 @@ export async function registerRoutes(
         if (!(await verifyPassword(data.pin || "", existing.pin))) {
           return res.status(401).json({ message: "Invalid password" });
         }
+        if (privacyConsent && !existing.privacyConsentAt) {
+          await storage.setPrivacyConsent(existing.id);
+        }
         if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
           const updated = await storage.getParticipant(existing.id);
@@ -512,7 +518,8 @@ export async function registerRoutes(
         }
         storage.updateLastSeen(existing.id).catch(() => {});
         notifyAdminLogin(existing, false);
-        return res.json(existing);
+        const refreshedExisting = await storage.getParticipant(existing.id);
+        return res.json(refreshedExisting || existing);
       }
       if (!data.pin) {
         return res.status(400).json({ message: "PIN is required" });
@@ -650,9 +657,6 @@ export async function registerRoutes(
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
       }
-      if (privacyConsent !== true) {
-        return res.status(400).json({ message: "Privacy consent is required." });
-      }
       const demoTasting = await storage.getTastingByCode("DEMO");
       if (!demoTasting) return res.status(404).json({ message: "Demo tasting not available" });
 
@@ -660,7 +664,9 @@ export async function registerRoutes(
       const guestName = `${name.trim()} #${suffix}`;
 
       const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
-      await storage.setPrivacyConsent(participant.id);
+      if (privacyConsent === true) {
+        await storage.setPrivacyConsent(participant.id);
+      }
       await storage.addParticipantToTasting({ tastingId: demoTasting.id, participantId: participant.id });
       storage.updateLastSeen(participant.id).catch(() => {});
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, experienceLevel: "guest", guest: true, tastingId: demoTasting.id });
@@ -684,12 +690,18 @@ export async function registerRoutes(
           if (!(await verifyPassword(pin || "", existing.pin))) {
             return res.status(401).json({ message: "Invalid password" });
           }
+          if (privacyConsent === true && !existing.privacyConsentAt) {
+            await storage.setPrivacyConsent(existing.id);
+          }
           storage.updateLastSeen(existing.id).catch(() => {});
           notifyAdminLogin(existing, false);
           return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
         }
         const hashedGuestPin = await hashPassword(pin);
         await storage.updateParticipant(existing.id, { pin: hashedGuestPin });
+        if (privacyConsent === true && !existing.privacyConsentAt) {
+          await storage.setPrivacyConsent(existing.id);
+        }
         storage.updateLastSeen(existing.id).catch(() => {});
         notifyAdminLogin(existing, false);
         return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
