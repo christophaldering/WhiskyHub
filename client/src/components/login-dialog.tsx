@@ -28,7 +28,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const [consentGate, setConsentGate] = useState(false);
-  const [pendingLoginParticipant, setPendingLoginParticipant] = useState<any>(null);
+  const [pendingLoginParticipant, setPendingLoginParticipant] = useState<{ id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null>(null);
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
