@@ -213,7 +213,8 @@ function GuidedStepView({
     for (const f of stepGroups[s]) revealedFields.add(f);
   }
   const isFullyRevealed = revealStep >= stepGroups.length;
-  const isBlindStep = revealStep === 0 && tasting.blindMode;
+  const isNameRevealed = revealedFields.has("name") || isFullyRevealed;
+  const isBlindStep = tasting.blindMode && !isNameRevealed;
   const mid = Math.round(maxScore / 2);
 
   const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
@@ -968,7 +969,37 @@ export default function LabsLive({ params }: LabsLiveProps) {
     debouncedSave(scores, value);
   };
 
-  const isBlind = tasting?.blindMode && tasting?.status === "open";
+  const freeRevealIdx = tasting?.revealIndex ?? 0;
+  const freeRevealStp = tasting?.revealStep ?? 0;
+  const FREE_REVEAL_DEFAULT: string[][] = [
+    ["name"],
+    ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+    ["image"],
+  ];
+  let freeStepGroups = FREE_REVEAL_DEFAULT;
+  try {
+    if (tasting?.revealOrder) {
+      const parsed = JSON.parse(tasting.revealOrder);
+      if (Array.isArray(parsed) && parsed.length > 0) freeStepGroups = parsed;
+    }
+  } catch {}
+
+  const getFreeRevealedFields = (whiskyIdx: number) => {
+    const fields = new Set<string>();
+    if (!tasting?.blindMode) return fields;
+    if (whiskyIdx < freeRevealIdx) {
+      for (const group of freeStepGroups) for (const f of group) fields.add(f);
+    } else if (whiskyIdx === freeRevealIdx) {
+      for (let s = 0; s < freeRevealStp && s < freeStepGroups.length; s++) {
+        for (const f of freeStepGroups[s]) fields.add(f);
+      }
+    }
+    return fields;
+  };
+
+  const currentFreeRevealed = getFreeRevealedFields(currentIndex);
+  const freeNameRevealed = currentFreeRevealed.has("name") || (freeRevealIdx > currentIndex) || (freeRevealStp >= freeStepGroups.length && freeRevealIdx >= currentIndex);
+  const isBlind = tasting?.blindMode && !freeNameRevealed;
 
   const displayName = isBlind
     ? `Dram ${String.fromCharCode(65 + currentIndex)}`
@@ -1447,7 +1478,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                           const rating = myAllRatings.find((r: any) => r.whiskyId === w.id);
                           const overall = rating?.overall;
                           const isActive = idx === currentIndex;
-                          const label = isBlind
+                          const idxRevealed = getFreeRevealedFields(idx);
+                          const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name") && !(freeRevealIdx > idx) && !(freeRevealStp >= freeStepGroups.length && freeRevealIdx >= idx);
+                          const label = idxNameHidden
                             ? `Dram ${String.fromCharCode(65 + idx)}`
                             : (w.name || `Dram ${idx + 1}`);
                           return (
