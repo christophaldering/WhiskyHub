@@ -7,7 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, Shield } from "lucide-react";
 
 
 interface LoginDialogProps {
@@ -27,6 +27,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
 
+  const [consentGate, setConsentGate] = useState(false);
+  const [pendingLoginParticipant, setPendingLoginParticipant] = useState<any>(null);
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
@@ -65,9 +67,15 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     if (isReturning) {
       setLoading(true);
       try {
-        const participant = await participantApi.loginByEmail(email.trim(), pin, true);
-        setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
-        onClose();
+        const participant = await participantApi.loginByEmail(email.trim(), pin);
+        if (!participant.privacyConsentAt) {
+          setPendingLoginParticipant(participant);
+          setConsentGate(true);
+          setPrivacyConsent(false);
+        } else {
+          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+          onClose();
+        }
       } catch (e: any) {
         setError(e.message || "Login failed");
       } finally {
@@ -219,6 +227,65 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setResetError("");
     setResetParticipantId("");
   };
+
+  if (consentGate && pendingLoginParticipant) {
+    const handleConsentAccept = async () => {
+      setLoading(true);
+      try {
+        sessionStorage.setItem("session_pid", pendingLoginParticipant.id);
+        await participantApi.acceptPrivacyConsent(pendingLoginParticipant.id);
+        setParticipant({ id: pendingLoginParticipant.id, name: pendingLoginParticipant.name, role: pendingLoginParticipant.role, canAccessWhiskyDb: pendingLoginParticipant.canAccessWhiskyDb });
+        setConsentGate(false);
+        setPendingLoginParticipant(null);
+        onClose();
+      } catch (e: any) {
+        setError(e.message || "Failed to save consent");
+      } finally {
+        setLoading(false);
+      }
+    };
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Shield className="w-6 h-6" />
+              {t('legal.privacy.title')}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {t('login.privacyConsentRequired')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t('legal.privacy.overview.text')}
+            </p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="consentGateCheckbox"
+                checked={privacyConsent}
+                onCheckedChange={(c) => setPrivacyConsent(c === true)}
+                data-testid="checkbox-consent-gate"
+              />
+              <label htmlFor="consentGateCheckbox" className="text-sm text-muted-foreground leading-snug cursor-pointer">
+                {t('login.privacyConsentLabel')}{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>
+              </label>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { sessionStorage.removeItem("session_pid"); setConsentGate(false); setPendingLoginParticipant(null); }} className="flex-1" data-testid="button-consent-cancel">
+              {t('legal.back')}
+            </Button>
+            <Button onClick={handleConsentAccept} disabled={!privacyConsent || loading} className="flex-1 font-serif" data-testid="button-consent-accept">
+              {loading ? t('login.joining') : t('login.enterReturning')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (verifyMode && pendingParticipant) {
     return (

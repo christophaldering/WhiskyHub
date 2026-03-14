@@ -1163,7 +1163,7 @@ export async function registerRoutes(
     if (auth.authenticated) {
       res.json(tasting);
     } else {
-      res.json({ id: tasting.id, code: tasting.code, status: tasting.status, title: tasting.title, blindMode: tasting.blindMode });
+      res.json({ id: tasting.id, status: tasting.status });
     }
   });
 
