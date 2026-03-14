@@ -1779,6 +1779,9 @@ function CustomRevealEditor({ steps, onChange }: {
   const [dragFrom, setDragFrom] = useState<{ step: number; field: number } | null>(null);
   const [dragOverStep, setDragOverStep] = useState<number | null>(null);
 
+  const allUsed = new Set(steps.flat());
+  const missingFields = REVEAL_ALL_FIELDS.filter(f => !allUsed.has(f));
+
   const moveField = (fromStep: number, fromIdx: number, toStep: number) => {
     const next = steps.map(s => [...s]);
     const field = next[fromStep].splice(fromIdx, 1)[0];
@@ -1954,17 +1957,50 @@ function CustomRevealEditor({ steps, onChange }: {
         Drop here to create new step
       </div>
 
+      {missingFields.length > 0 && (
+        <div style={{
+          marginTop: 4, padding: "8px 10px", borderRadius: 8,
+          background: "var(--labs-surface)", border: "1px dashed var(--labs-border)",
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-text-muted)", marginBottom: 4 }}>
+            Not included (click to add as new step):
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {missingFields.map(field => (
+              <button
+                key={field}
+                type="button"
+                onClick={() => onChange([...steps, [field]])}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 3,
+                  padding: "2px 7px", borderRadius: 5, fontSize: 10, fontWeight: 600,
+                  background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)",
+                  border: "1px solid var(--labs-border)", cursor: "pointer",
+                }}
+                data-testid={`reveal-add-${field}`}
+              >
+                <Plus style={{ width: 8, height: 8 }} />
+                {REVEAL_FIELD_LABELS[field] || field}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{
         marginTop: 4, padding: "8px 10px", borderRadius: 8,
         background: "var(--labs-surface)", fontSize: 11, color: "var(--labs-text-muted)",
         lineHeight: 1.6,
       }}>
-        <span style={{ fontWeight: 600, color: "var(--labs-text-secondary)" }}>Preview: </span>
         {steps.map((step, i) => (
-          <span key={i}>
-            {i > 0 && <span style={{ color: "var(--labs-accent)", margin: "0 4px" }}> → </span>}
-            <span style={{ color: "var(--labs-text)" }}>{step.map(f => REVEAL_FIELD_LABELS[f] || f).join(" & ")}</span>
-          </span>
+          <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+            <span style={{ fontWeight: 700, color: "var(--labs-accent)", minWidth: 44, flexShrink: 0, fontSize: 10 }}>
+              Step {i + 1}:
+            </span>
+            <span style={{ color: "var(--labs-text)" }}>
+              {step.map(f => REVEAL_FIELD_LABELS[f] || f).join(" & ")}
+            </span>
+          </div>
         ))}
       </div>
     </div>
