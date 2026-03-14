@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   Users, Heart, Wine, ChevronRight, Activity, Star, UserPlus, Calendar,
-  GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi,
+  GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { communityApi, friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
@@ -13,6 +13,25 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 type Tab = "people" | "leaderboard" | "friends" | "sessions" | "activity";
 
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+
+interface OnlineFriend {
+  friendId: string;
+  name: string;
+  email?: string;
+  participantId?: string;
+  lastSeenAt?: string;
+}
+
+function timeAgo(iso: string | undefined): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 interface LeaderboardEntry {
   id: string;
@@ -64,11 +83,11 @@ export default function LabsCircle() {
     refetchInterval: 30000,
   });
 
-  const { data: onlineData } = useQuery<{ online: Array<{ friendId: string }>; count: number }>({
+  const { data: onlineData } = useQuery<{ online: OnlineFriend[]; count: number }>({
     queryKey: ["friends-online", pid],
     queryFn: () => fetch(`/api/participants/${pid}/friends/online`).then((r) => r.json()),
     enabled: !!pid,
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   });
 
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery<LeaderboardData | LeaderboardEntry[]>({
@@ -86,7 +105,7 @@ export default function LabsCircle() {
   const { data: tastings } = useQuery({
     queryKey: ["tastings", pid],
     queryFn: () => tastingApi.getAll(pid),
-    enabled: !!pid && tab === "sessions",
+    enabled: !!pid && (tab === "sessions" || tab === "people" || tab === "friends"),
   });
 
   const addFriendMutation = useMutation({
@@ -123,8 +142,16 @@ export default function LabsCircle() {
     },
   });
 
+  const [selectedFriend, setSelectedFriend] = useState<OnlineFriend | null>(null);
+
   const onlineFriendIds = useMemo(() => {
     return new Set<string>((onlineData?.online || []).map((f) => f.friendId));
+  }, [onlineData]);
+
+  const onlineFriendsMap = useMemo(() => {
+    const m = new Map<string, OnlineFriend>();
+    for (const f of onlineData?.online || []) m.set(f.friendId, f);
+    return m;
   }, [onlineData]);
 
   const onlineCount = onlineData?.count || onlineFriendIds.size;
@@ -273,6 +300,14 @@ export default function LabsCircle() {
       {tab === "friends" && renderFriendsTab()}
       {tab === "sessions" && renderSessionsTab()}
       {tab === "activity" && renderActivityTab()}
+
+      {selectedFriend && (
+        <FriendDetailSheet
+          friend={selectedFriend}
+          sharedSessions={sharedSessions}
+          onClose={() => setSelectedFriend(null)}
+        />
+      )}
     </div>
   );
 
@@ -473,11 +508,13 @@ export default function LabsCircle() {
                 const friendName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
                 const [fBgFrom, fBgTo] = getAvatarColor(friendName);
                 const fInitials = getInitials(friendName);
+                const onlineInfo = onlineFriendsMap.get(fid);
                 return (
                   <div
                     key={fid || idx}
                     className="labs-card p-4 flex items-center gap-4"
-                    style={isOnline ? { borderLeft: "3px solid var(--labs-success)" } : undefined}
+                    style={{ ...(isOnline ? { borderLeft: "3px solid var(--labs-success)" } : {}), cursor: isOnline ? "pointer" : undefined }}
+                    onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
                     data-testid={`labs-circle-friend-${fid || idx}`}
                   >
                     <div className="relative flex-shrink-0">
@@ -503,16 +540,19 @@ export default function LabsCircle() {
                       <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
                         {friendName}
                       </p>
-                      {typeof friend.email === "string" && friend.email && (
+                      {isOnline ? (
+                        <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
+                          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--labs-success)" }} />
+                          Active {timeAgo(onlineInfo?.lastSeenAt)}
+                        </p>
+                      ) : typeof friend.email === "string" && friend.email ? (
                         <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
                           {friend.email}
                         </p>
-                      )}
+                      ) : null}
                     </div>
                     {isOnline && (
-                      <span className="text-[10px] font-semibold" style={{ color: "var(--labs-success)" }}>
-                        Online
-                      </span>
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
                     )}
                   </div>
                 );
@@ -864,71 +904,117 @@ export default function LabsCircle() {
         {friendList.length === 0 && !addFriendOpen ? (
           <EmptyState icon={Users} title="No friends yet" description="Add your whisky companions to share notes and see their activity" />
         ) : (
-          <div className="space-y-2">
-            {[...friendList]
-              .sort((a, b) => {
-                const aOn = onlineFriendIds.has(a.id as string) ? 0 : 1;
-                const bOn = onlineFriendIds.has(b.id as string) ? 0 : 1;
-                return aOn - bOn;
-              })
-              .map((friend, i) => {
-                const fid = friend.id as string;
-                const isOnline = onlineFriendIds.has(fid);
-                const displayName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
-                return (
-                  <div
-                    key={fid || i}
-                    className="labs-card p-4 flex items-center gap-3"
-                    style={isOnline ? { borderLeft: "3px solid var(--labs-success)" } : undefined}
-                    data-testid={`labs-circle-friendlist-${i}`}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                      >
-                        {displayName[0]}
-                      </div>
-                      {isOnline && (
-                        <div
-                          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
-                          style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                        {displayName}
-                      </p>
-                      {typeof friend.email === "string" && friend.email && (
-                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                          {friend.email}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isOnline && (
-                        <span className="text-[10px] font-semibold" style={{ color: "var(--labs-success)" }}>
-                          Online
-                        </span>
-                      )}
+          <>
+            {onlineCount > 0 && (
+              <div className="mb-4">
+                <p className="labs-section-label flex items-center gap-2 mb-2">
+                  <Wifi className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
+                  <span style={{ color: "var(--labs-success)" }}>Online Now</span>
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                  {(onlineData?.online || []).map((of) => {
+                    const initials = of.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
+                    return (
                       <button
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                        style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "none", cursor: "pointer" }}
-                        onClick={() => {
-                          if (confirm("Remove this friend?")) {
-                            deleteFriendMutation.mutate(fid);
-                          }
-                        }}
-                        data-testid={`labs-circle-delete-friend-${i}`}
+                        key={of.friendId}
+                        onClick={() => setSelectedFriend(of)}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0"
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, minWidth: 60 }}
+                        data-testid={`labs-circle-online-avatar-${of.friendId}`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <div className="relative">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-[14px] font-bold"
+                            style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "2px solid var(--labs-success)" }}
+                          >
+                            {initials}
+                          </div>
+                          <div
+                            className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
+                            style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-medium truncate w-full text-center" style={{ color: "var(--labs-text)" }}>
+                          {of.name.split(" ")[0]}
+                        </span>
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              {[...friendList]
+                .sort((a, b) => {
+                  const aOn = onlineFriendIds.has(a.id as string) ? 0 : 1;
+                  const bOn = onlineFriendIds.has(b.id as string) ? 0 : 1;
+                  return aOn - bOn;
+                })
+                .map((friend, i) => {
+                  const fid = friend.id as string;
+                  const isOnline = onlineFriendIds.has(fid);
+                  const displayName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
+                  const onlineInfo = onlineFriendsMap.get(fid);
+                  return (
+                    <div
+                      key={fid || i}
+                      className="labs-card p-4 flex items-center gap-3"
+                      style={{ ...(isOnline ? { borderLeft: "3px solid var(--labs-success)" } : {}), cursor: isOnline ? "pointer" : undefined }}
+                      onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
+                      data-testid={`labs-circle-friendlist-${i}`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
+                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                        >
+                          {displayName[0]}
+                        </div>
+                        {isOnline && (
+                          <div
+                            className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
+                            style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                          {displayName}
+                        </p>
+                        {isOnline ? (
+                          <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
+                            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--labs-success)" }} />
+                            Active {timeAgo(onlineInfo?.lastSeenAt)}
+                          </p>
+                        ) : typeof friend.email === "string" && friend.email ? (
+                          <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                            {friend.email}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isOnline && (
+                          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                        )}
+                        <button
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                          style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "none", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Remove this friend?")) {
+                              deleteFriendMutation.mutate(fid);
+                            }
+                          }}
+                          data-testid={`labs-circle-delete-friend-${i}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-          </div>
+                  );
+                })}
+            </div>
+          </>
         )}
       </div>
     );
@@ -1114,6 +1200,143 @@ function formatRelativeTime(timestamp: string): string {
 
 function LoadingSkeleton({ count }: { count: number }) {
   return <SkeletonList count={count} showAvatar />;
+}
+
+function FriendDetailSheet({
+  friend,
+  sharedSessions,
+  onClose,
+}: {
+  friend: OnlineFriend;
+  sharedSessions: Array<Record<string, unknown>>;
+  onClose: () => void;
+}) {
+  const initials = friend.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
+  const friendSessions = sharedSessions.filter((s) => {
+    const participants = (s.participants || []) as Array<Record<string, unknown>>;
+    return participants.some((p) => p.id === friend.participantId || (p.name as string)?.toLowerCase() === friend.name.toLowerCase());
+  });
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+      onClick={onClose}
+      data-testid="friend-detail-overlay"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="labs-fade-in"
+        style={{
+          width: "100%", maxWidth: 480,
+          background: "var(--labs-surface)", borderRadius: "20px 20px 0 0",
+          padding: "28px 24px 36px",
+          maxHeight: "75vh", overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />
+
+        <div className="flex flex-col items-center gap-3 mb-6">
+          <div className="relative">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold"
+              style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "3px solid var(--labs-success)" }}
+            >
+              {initials}
+            </div>
+            <div
+              className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2"
+              style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold labs-serif" style={{ color: "var(--labs-text)" }}>
+              {friend.name}
+            </p>
+            <p className="text-xs flex items-center justify-center gap-1.5 mt-1" style={{ color: "var(--labs-success)" }}>
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--labs-success)", animation: "pulse 2s infinite" }} />
+              Online {timeAgo(friend.lastSeenAt)}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <div className="labs-card p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--labs-accent-muted)" }}>
+              <Clock className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Last active</p>
+              <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                {friend.lastSeenAt ? new Date(friend.lastSeenAt).toLocaleString() : "Just now"}
+              </p>
+            </div>
+          </div>
+
+          {friend.email && (
+            <div className="labs-card p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--labs-accent-muted)" }}>
+                <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Contact</p>
+                <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                  {friend.email}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="labs-card p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--labs-accent-muted)" }}>
+              <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Shared tastings</p>
+              <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                {friendSessions.length > 0
+                  ? `${friendSessions.length} session${friendSessions.length > 1 ? "s" : ""} together`
+                  : "No shared sessions yet"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {friendSessions.length > 0 && (
+          <div>
+            <p className="labs-section-label mb-2">Recent together</p>
+            <div className="space-y-2">
+              {friendSessions.slice(0, 3).map((s) => (
+                <div key={s.id as string} className="labs-card p-3 flex items-center gap-3">
+                  <GlassWater className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                      {(s.title as string) || "Tasting"}
+                    </p>
+                    <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                      {new Date(s.date as string).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full mt-6 py-3 rounded-xl text-sm font-semibold"
+          style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "none", cursor: "pointer" }}
+          data-testid="friend-detail-close"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function EmptyState({
