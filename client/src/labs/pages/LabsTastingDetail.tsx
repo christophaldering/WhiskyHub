@@ -508,7 +508,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   const pid = currentParticipant?.id;
                   if (!pid) return;
                   const newTasting = await tastingApi.duplicate(tastingId, pid);
-                  if (newTasting?.id) navigate(`/labs/host/${newTasting.id}`);
+                  if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
                 } catch {}
                 setDuplicating(false);
               }}

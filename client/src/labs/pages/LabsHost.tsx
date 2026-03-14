@@ -3081,7 +3081,7 @@ function LabsSettingsPanel({
     try {
       const newTasting = await tastingApi.duplicate(tastingId, pid);
       if (newTasting?.id) {
-        navigate(`/labs/host/${newTasting.id}`);
+        navigate(`/labs/tastings/${newTasting.id}`);
       }
     } catch {}
     setDuplicating(false);
@@ -5090,7 +5090,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               try {
                 const pid = currentParticipant.id;
                 const newTasting = await tastingApi.duplicate(tastingId, pid);
-                if (newTasting?.id) navigate(`/labs/host/${newTasting.id}`);
+                if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
               } catch {}
               setTopDuplicating(false);
             }}
