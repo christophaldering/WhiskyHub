@@ -127,7 +127,7 @@ function JoinCodeInput() {
           letterSpacing: "0.04em",
         }}
       >
-        {t("premium.joinLabel")}
+        Have a tasting code? Join instantly — no account needed.
       </p>
       <div
         style={{
@@ -145,7 +145,7 @@ function JoinCodeInput() {
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-          placeholder={t("premium.joinPlaceholder")}
+          placeholder="CODE"
           style={{
             width: 160,
             padding: "11px 18px",
@@ -179,7 +179,7 @@ function JoinCodeInput() {
           }}
           data-testid="button-join-code"
         >
-          {t("premium.joinButton")}
+          Join
         </button>
       </div>
     </div>
@@ -263,7 +263,7 @@ function HeroSection() {
             zIndex: 2,
           }}
         >
-          {t("premium.eyebrow")}
+          Whisky Tasting Platform
         </p>
       </FadeUp>
 
@@ -299,7 +299,7 @@ function HeroSection() {
             zIndex: 2,
           }}
         >
-          {t("premium.claim")}
+          Where tasting becomes reflection.
         </p>
       </FadeUp>
 
@@ -316,7 +316,7 @@ function HeroSection() {
             zIndex: 2,
           }}
         >
-          {t("premium.subline")}
+          The most thoughtful way to explore whisky — alone or together.
         </p>
       </FadeUp>
 
@@ -351,7 +351,7 @@ function HeroSection() {
               letterSpacing: "0.01em",
             }}
           >
-            {t("premium.ctaPrimary")}
+            Start Tasting
             <ChevronRight style={{ width: 17, height: 17 }} />
           </Link>
 
