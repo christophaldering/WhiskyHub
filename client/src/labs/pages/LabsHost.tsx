@@ -1941,7 +1941,13 @@ function CreateTastingForm() {
                 { value: "details-first", label: "Details", desc: "Details then name" },
                 { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
               ]}
-              onChange={setRevealOrder}
+              onChange={(val: string | number) => {
+                const v = String(val);
+                setRevealOrder(v);
+                if (v === "one-by-one" && sessionUiMode === "flow") {
+                  setSessionUiMode("focus");
+                }
+              }}
             />
           </div>
         )}
@@ -2036,7 +2042,13 @@ function CreateTastingForm() {
                     { value: "focus", label: "One at a Time", desc: "Focus on one dram" },
                     { value: "journal", label: "Tasting Journal", desc: "Step-by-step guided notes" },
                   ]}
-                  onChange={setSessionUiMode}
+                  onChange={(val: string | number) => {
+                    const v = String(val);
+                    setSessionUiMode(v);
+                    if (v === "flow" && revealOrder === "one-by-one") {
+                      setRevealOrder("classic");
+                    }
+                  }}
                 />
               </div>
 
@@ -2746,7 +2758,17 @@ function LabsSettingsPanel({
   };
 
   const handleChangeSessionUi = async (mode: string) => {
-    try { await patchDetails({ sessionUiMode: mode || null }); } catch {}
+    const patch: Record<string, unknown> = { sessionUiMode: mode || null };
+    if (mode === "flow" && tasting.blindMode) {
+      try {
+        const parsed = JSON.parse(tasting.revealOrder as string || "null");
+        const oneByOneStr = JSON.stringify([["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]]);
+        if (JSON.stringify(parsed) === oneByOneStr) {
+          patch.revealOrder = null;
+        }
+      } catch {}
+    }
+    try { await patchDetails(patch); } catch {}
   };
 
   const handleToggleReflection = async () => {
@@ -2905,7 +2927,11 @@ function LabsSettingsPanel({
                     "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
                   };
                   const key = String(val);
-                  patchDetails({ revealOrder: key === "classic" ? null : JSON.stringify(PRESETS[key] || PRESETS.classic) });
+                  const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(PRESETS[key] || PRESETS.classic) };
+                  if (key === "one-by-one" && (tasting.sessionUiMode as string || "flow") === "flow") {
+                    patch.sessionUiMode = "focus";
+                  }
+                  patchDetails(patch);
                 }}
               />
             </div>
