@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { participantApi } from "@/lib/api";
+import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
@@ -10,8 +10,8 @@ import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
 import "./labs-theme.css";
 
-interface OnlineFriendInfo {
-  friendId: string;
+interface OnlineUserInfo {
+  participantId: string;
   name: string;
 }
 
@@ -165,7 +165,9 @@ function useFriendOnlineNotifications(): number {
 
     const check = async () => {
       try {
-        const res = await fetch(`/api/participants/${pid}/friends/online`);
+        const res = await fetch(`/api/participants/${pid}/platform-online`, {
+          headers: pidHeaders(),
+        });
         if (cancelled) return;
         if (!res.ok) {
           setOnlineCount(0);
@@ -174,26 +176,26 @@ function useFriendOnlineNotifications(): number {
         const onlineRes = await res.json();
         if (cancelled) return;
         const currentOnline = new Map<string, string>();
-        for (const f of (onlineRes.online || []) as OnlineFriendInfo[]) {
-          currentOnline.set(f.friendId, f.name);
+        for (const u of (onlineRes.online || []) as OnlineUserInfo[]) {
+          currentOnline.set(u.participantId, u.name);
         }
         setOnlineCount(currentOnline.size);
 
         if (mountedRef.current && prevOnlineRef.current) {
           const prev = prevOnlineRef.current;
           const newlyOnline: string[] = [];
-          for (const [fid, name] of currentOnline) {
-            if (!prev.has(fid)) newlyOnline.push(name);
+          for (const [uid, name] of currentOnline) {
+            if (!prev.has(uid)) newlyOnline.push(name);
           }
           if (newlyOnline.length === 1) {
             toast({
-              title: `${newlyOnline[0]} is online`,
-              description: "Your friend just came online",
+              title: `${newlyOnline[0]} ist online`,
+              description: "Gerade auf CaskSense aktiv geworden",
             });
           } else if (newlyOnline.length > 1) {
             toast({
-              title: `${newlyOnline.length} friends came online`,
-              description: newlyOnline.slice(0, 3).join(", ") + (newlyOnline.length > 3 ? ` +${newlyOnline.length - 3} more` : ""),
+              title: `${newlyOnline.length} Nutzer sind online`,
+              description: newlyOnline.slice(0, 3).join(", ") + (newlyOnline.length > 3 ? ` +${newlyOnline.length - 3} weitere` : ""),
             });
           }
         }

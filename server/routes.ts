@@ -383,7 +383,9 @@ export async function registerRoutes(
       experienceLevel: participant.experienceLevel || undefined,
       timestamp: new Date(),
     });
-    sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch(() => {});
+    sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch((err) => {
+      log(`Admin login notification email failed: ${err?.message || err}`, "email");
+    });
   }
 
   // ===== HEALTH CHECK =====
@@ -3009,6 +3011,29 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       );
       const onlineFriends = allParticipants.filter((p: any) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
       res.json({ online: onlineFriends, count: onlineFriends.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/platform-online", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const selfId = auth.participant!.id;
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
+      const result = await dbInst.execute(
+        sqlTag`SELECT id, name, last_seen_at FROM participants WHERE last_seen_at > ${fiveMinAgo.toISOString()} AND id != ${selfId} ORDER BY last_seen_at DESC LIMIT 50`
+      );
+      const rows = (result as any).rows || result;
+      const online = rows.map((r: { id: string; name: string; last_seen_at: string }) => ({
+        participantId: r.id,
+        name: r.name,
+        lastSeenAt: r.last_seen_at,
+      }));
+      res.json({ online, count: online.length });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
