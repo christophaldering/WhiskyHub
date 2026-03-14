@@ -609,6 +609,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
 
   const participantCount = participants?.length || 0;
   const totalRatings = allRatings?.length || 0;
+  const viewerCount = Math.max(0, participantCount - 1);
   const slide = slides[currentSlide];
 
   return (
@@ -630,21 +631,40 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         display: "flex", alignItems: "center", justifyContent: "space-between",
         pointerEvents: "none",
       }}>
-        <button
-          onClick={exitPresentation}
-          style={{
-            pointerEvents: "auto",
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 12px", borderRadius: 8,
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-            color: "var(--labs-text-muted)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-            backdropFilter: "blur(8px)",
-          }}
-          data-testid="present-exit-btn"
-        >
-          <X style={{ width: 16, height: 16 }} />
-          <span className="hidden sm:inline">Exit</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
+          <button
+            onClick={exitPresentation}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "6px 12px", borderRadius: 8,
+              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+              color: "var(--labs-text-muted)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+              backdropFilter: "blur(8px)",
+            }}
+            data-testid="present-exit-btn"
+          >
+            <X style={{ width: 16, height: 16 }} />
+            <span className="hidden sm:inline">Exit</span>
+          </button>
+          <span
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "5px 12px", borderRadius: 8,
+              background: "rgba(212, 162, 86, 0.12)", border: "1px solid rgba(212, 162, 86, 0.25)",
+              fontSize: 12, fontWeight: 600, color: "var(--labs-accent)",
+              backdropFilter: "blur(8px)",
+            }}
+            data-testid="present-live-indicator"
+          >
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
+            LIVE
+            {viewerCount > 0 && (
+              <span style={{ color: "var(--labs-text-muted)", fontWeight: 400 }}>
+                · {viewerCount} {viewerCount === 1 ? "viewer" : "viewers"}
+              </span>
+            )}
+          </span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
           <span style={{
             fontSize: 13, fontWeight: 600, color: "var(--labs-text-muted)",

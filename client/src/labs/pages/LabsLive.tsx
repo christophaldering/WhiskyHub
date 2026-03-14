@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, BarChart3, ChevronDown } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
@@ -80,10 +80,33 @@ function GuidedLobby({ tasting, participantCount }: { tasting: any; participantC
   );
 }
 
-function GuidedComplete({ tastingId }: { tastingId: string }) {
+function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12,
+        background: "rgba(212, 162, 86, 0.12)", border: "1px solid rgba(212, 162, 86, 0.25)",
+        marginBottom: 16, cursor: "pointer",
+      }}
+      onClick={() => navigate(`/labs/results/${tastingId}`)}
+      data-testid="live-presentation-banner"
+    >
+      <div style={{ width: 10, height: 10, borderRadius: 5, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
+      <div style={{ flex: 1 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>Presentation is live</span>
+        <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0 }}>Tap to watch the results presentation</p>
+      </div>
+      <Monitor style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
+    </div>
+  );
+}
+
+function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; presentationActive?: boolean }) {
   const [, navigate] = useLocation();
   return (
     <div className="labs-fade-in" style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", textAlign: "center" }}>
+      {presentationActive && <PresentationLiveBanner tastingId={tastingId} />}
       <div
         className="labs-card-elevated"
         style={{ padding: "40px 32px", maxWidth: 420, width: "100%", borderRadius: "var(--labs-radius-lg)" }}
@@ -980,7 +1003,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </button>
 
         {isSessionComplete ? (
-          <GuidedComplete tastingId={tastingId} />
+          <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
         ) : isLobby ? (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
         ) : guidedWhisky && tasting.status === "open" ? (
@@ -1447,6 +1470,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 </p>
               ) : tasting.status === "archived" ? (
                 <div>
+                  {tasting.presentationSlide != null && (
+                    <PresentationLiveBanner tastingId={tastingId} />
+                  )}
                   <p className="text-sm mb-3" style={{ color: "var(--labs-text-muted)" }}>
                     This session has been completed
                   </p>
