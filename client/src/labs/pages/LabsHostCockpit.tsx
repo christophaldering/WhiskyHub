@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
-  Monitor, Smartphone, FileText, Radio, X,
+  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff,
 } from "lucide-react";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
@@ -55,6 +56,38 @@ function getRevealState(tasting: any, whiskyCount: number) {
 
   return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabel, stepGroups };
 }
+
+function getGuestVisibility(tasting: any, stepGroups: string[][], isGuided: boolean) {
+  const dramIdx = isGuided
+    ? Math.max(0, tasting.guidedWhiskyIndex ?? 0)
+    : (tasting.revealIndex ?? 0);
+  const currentStep = isGuided
+    ? (tasting.guidedRevealStep ?? 0)
+    : (tasting.revealStep ?? 0);
+
+  const revealedFields = new Set<string>();
+  for (let s = 0; s < currentStep && s < stepGroups.length; s++) {
+    for (const f of stepGroups[s]) revealedFields.add(f);
+  }
+
+  const isFieldRevealed = (field: string) => revealedFields.has(field);
+
+  const stepStates = stepGroups.map((_: string[], sIdx: number) => {
+    if (sIdx < currentStep) return "revealed" as const;
+    if (sIdx === currentStep) return "next" as const;
+    return "hidden" as const;
+  });
+
+  return { dramIdx, currentStep, revealedFields, isFieldRevealed, stepStates };
+}
+
+const REVEAL_FIELD_LABELS: Record<string, string> = {
+  name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+  region: "Region", country: "Country", category: "Category",
+  caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
+  vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
+  ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
+};
 
 interface LabsHostCockpitProps {
   tastingId: string;
@@ -252,6 +285,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const isDraft = status === "draft";
 
   const rv = isBlind ? getRevealState(tasting, whiskies.length) : null;
+  const gv = isBlind && rv ? getGuestVisibility(tasting, rv.stepGroups, isGuided) : null;
   const activeWhisky = whiskies[isGuided ? Math.max(0, guidedIdx) : 0] || null;
   const currentRatingWhisky = whiskies[hostRatingIdx] || null;
 
@@ -532,9 +566,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     Participants see
                   </div>
                   <div>
-                    {isGuided && guidedRevealStep === 0 ? `Dram ${blindLabel(Math.max(0, guidedIdx))}` :
-                     isGuided && guidedRevealStep === 1 ? (activeWhisky?.name || "—") :
-                     isGuided && guidedRevealStep >= 2 ? `${activeWhisky?.name || "—"} (+ details)` :
+                    {gv && !gv.isFieldRevealed("name") ? `Dram ${blindLabel(gv.dramIdx)}` :
+                     gv && gv.isFieldRevealed("name") && !gv.isFieldRevealed("distillery") ? (activeWhisky?.name || "—") :
+                     gv && gv.isFieldRevealed("distillery") ? `${activeWhisky?.name || "—"} (+ details)` :
                      activeWhisky?.name || "—"}
                   </div>
                 </div>
@@ -616,6 +650,267 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
           {/* CENTER COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="cockpit-center">
+            {/* PROMINENT GUEST VIEW */}
+            <div
+              className="labs-card"
+              style={{
+                padding: 0, overflow: "hidden",
+                border: "1.5px solid var(--labs-accent)",
+                boxShadow: "0 0 24px rgba(212,162,86,0.08)",
+              }}
+              data-testid="cockpit-guest-preview"
+            >
+              <div style={{
+                padding: "10px 16px",
+                background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 12%, var(--labs-surface)), color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface)))",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                borderBottom: "1px solid var(--labs-border)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: 8,
+                    background: "var(--labs-accent)", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Eye style={{ width: 14, height: 14, color: "var(--labs-bg)" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-text)", letterSpacing: "0.02em" }}>
+                      GUEST VIEW
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                      What participants see right now
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Smartphone style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                  {isLive && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                      background: "var(--labs-success-muted)", color: "var(--labs-success)",
+                    }}>LIVE</span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: 20 }}>
+                {!isLive && isDraft ? (
+                  <div style={{ textAlign: "center", padding: "32px 20px", color: "var(--labs-text-muted)" }}>
+                    <Clock style={{ width: 32, height: 32, margin: "0 auto 12px", display: "block", opacity: 0.5 }} />
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>Session not started</div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Guests will see a waiting screen until you start the tasting.</div>
+                  </div>
+                ) : isLive && isGuided && guidedIdx < 0 ? (
+                  <div style={{ textAlign: "center", padding: "32px 20px", color: "var(--labs-text-muted)" }}>
+                    <Radio style={{ width: 32, height: 32, margin: "0 auto 12px", display: "block", animation: "pulse 2s infinite" }} />
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>Waiting for first dram</div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Press "Start First Dram" to begin the guided tasting.</div>
+                  </div>
+                ) : activeWhisky ? (
+                  <>
+                    {/* Dram progress dots */}
+                    {whiskies.length > 1 && (
+                      <div style={{ display: "flex", gap: 6, marginBottom: 16, justifyContent: "center" }}>
+                        {whiskies.map((_: any, idx: number) => {
+                          const isActive = isGuided ? idx === guidedIdx : idx === 0;
+                          const isPast = isGuided ? idx < guidedIdx : false;
+                          return (
+                            <div key={idx} style={{
+                              width: isActive ? 32 : 28, height: isActive ? 32 : 28, borderRadius: "50%",
+                              background: isActive ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
+                              color: isActive ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
+                              fontSize: isActive ? 13 : 11, fontWeight: 700,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              border: isActive ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                              transition: "all 0.2s",
+                            }}>
+                              {isPast ? <CheckCircle2 style={{ width: 14, height: 14 }} /> : isBlind ? blindLabel(idx) : idx + 1}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Main content: Image + Info side by side */}
+                    <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                      {/* Whisky image area */}
+                      <div style={{ flexShrink: 0 }}>
+                        {(() => {
+                          const imageRevealed = !isBlind || (gv && gv.isFieldRevealed("image"));
+                          const hasImage = activeWhisky.imageUrl;
+                          if (imageRevealed && hasImage) {
+                            return <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={80} height={100} />;
+                          }
+                          return (
+                            <div style={{
+                              width: 80, height: 100, borderRadius: 12,
+                              background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)",
+                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                              gap: 4,
+                            }}>
+                              {!imageRevealed ? (
+                                <>
+                                  <LockKeyhole style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                                  <span style={{ fontSize: 8, color: "var(--labs-text-muted)", fontWeight: 600 }}>HIDDEN</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ImageOff style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.4 }} />
+                                  <span style={{ fontSize: 8, color: "var(--labs-text-muted)" }}>No image</span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Info area */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Whisky name / blind label */}
+                        <div style={{ marginBottom: 12 }}>
+                          {isBlind && gv && !gv.isFieldRevealed("name") ? (
+                            <>
+                              <div style={{
+                                fontSize: 22, fontWeight: 800, color: "var(--labs-accent)",
+                                fontFamily: "var(--labs-font-serif, Georgia, serif)",
+                              }}>
+                                Dram {blindLabel(Math.max(0, guidedIdx))}
+                              </div>
+                              <div style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                marginTop: 4, padding: "2px 10px", borderRadius: 6,
+                                background: "color-mix(in srgb, var(--labs-text-muted) 10%, transparent)",
+                                fontSize: 11, color: "var(--labs-text-muted)",
+                              }}>
+                                <EyeOff style={{ width: 10, height: 10 }} />
+                                Name hidden
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{
+                                fontSize: 20, fontWeight: 700, color: "var(--labs-text)",
+                                fontFamily: "var(--labs-font-serif, Georgia, serif)",
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                              }}>
+                                {activeWhisky.name || "—"}
+                              </div>
+                              {(!isBlind || (gv && gv.isFieldRevealed("distillery"))) && (
+                                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
+                                  {[activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ") || ""}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Host message */}
+                        {tasting.ratingPrompt && (
+                          <div style={{
+                            padding: "8px 12px", borderRadius: 8,
+                            background: "var(--labs-accent-muted)",
+                            fontSize: 12, color: "var(--labs-accent)", fontStyle: "italic",
+                            marginBottom: 12,
+                          }}>
+                            "{tasting.ratingPrompt}"
+                          </div>
+                        )}
+
+                        {/* Rating dimensions preview */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {["Nose", "Taste", "Finish", "Balance", "Overall"].map(dim => (
+                            <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 48, textAlign: "right", fontWeight: 500 }}>{dim}</span>
+                              <div style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--labs-surface-elevated)", overflow: "hidden" }}>
+                                <div style={{ width: "50%", height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.3 }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reveal steps tracker — only in blind mode */}
+                    {isBlind && rv && gv && (
+                      <div style={{
+                        marginTop: 16, padding: "14px 16px", borderRadius: 12,
+                        background: "var(--labs-surface-elevated)",
+                        border: "1px solid var(--labs-border)",
+                      }}>
+                        <div style={{
+                          fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)",
+                          marginBottom: 10, letterSpacing: "0.04em",
+                          display: "flex", alignItems: "center", gap: 6,
+                        }}>
+                          <EyeOff style={{ width: 11, height: 11 }} />
+                          REVEAL PROGRESS — DRAM {blindLabel(Math.max(0, isGuided ? guidedIdx : 0))}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {rv.stepGroups.map((group: string[], sIdx: number) => {
+                            const state = gv.stepStates[sIdx] || "hidden";
+                            const isRevealed = state === "revealed";
+                            const isCurrent = state === "next";
+                            const fieldLabels = group.map(f => REVEAL_FIELD_LABELS[f] || f).join(", ");
+
+                            return (
+                              <div key={sIdx} style={{
+                                display: "flex", alignItems: "center", gap: 10,
+                                padding: "8px 12px", borderRadius: 8,
+                                background: isCurrent ? "color-mix(in srgb, var(--labs-accent) 8%, transparent)"
+                                  : isRevealed ? "color-mix(in srgb, var(--labs-success) 6%, transparent)"
+                                  : "transparent",
+                                border: isCurrent ? "1px solid var(--labs-accent)" : "1px solid transparent",
+                              }} data-testid={`cockpit-reveal-step-${sIdx}`}>
+                                <div style={{
+                                  width: 24, height: 24, borderRadius: 12, flexShrink: 0,
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  background: isRevealed ? "var(--labs-success)" : isCurrent ? "var(--labs-accent)" : "var(--labs-border)",
+                                  color: isRevealed || isCurrent ? "#fff" : "var(--labs-text-muted)",
+                                }}>
+                                  {isRevealed ? (
+                                    <Unlock style={{ width: 12, height: 12 }} />
+                                  ) : (
+                                    <LockKeyhole style={{ width: 12, height: 12 }} />
+                                  )}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{
+                                    fontSize: 12, fontWeight: 600,
+                                    color: isRevealed ? "var(--labs-success)" : isCurrent ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                                  }}>
+                                    Step {sIdx + 1}
+                                  </div>
+                                  <div style={{
+                                    fontSize: 11,
+                                    color: isRevealed ? "var(--labs-text-secondary)" : "var(--labs-text-muted)",
+                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                  }}>
+                                    {fieldLabels}
+                                  </div>
+                                </div>
+                                <span style={{
+                                  fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
+                                  background: isRevealed ? "var(--labs-success-muted)" : isCurrent ? "var(--labs-accent-muted)" : "color-mix(in srgb, var(--labs-text-muted) 10%, transparent)",
+                                  color: isRevealed ? "var(--labs-success)" : isCurrent ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                                }}>
+                                  {isRevealed ? "REVEALED" : isCurrent ? "NEXT" : "HIDDEN"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ textAlign: "center", padding: "24px 20px", color: "var(--labs-text-muted)" }}>
+                    <Wine style={{ width: 28, height: 28, margin: "0 auto 8px", display: "block", opacity: 0.4 }} />
+                    <div style={{ fontSize: 13 }}>No whiskies in this tasting yet.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="labs-card" style={{ padding: 16 }}>
               <div className="labs-section-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Wine style={{ width: 12, height: 12 }} />
@@ -867,96 +1162,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               )}
             </div>
 
-            <div className="labs-card" style={{ padding: 16 }} data-testid="cockpit-guest-preview">
-              <div className="labs-section-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <Monitor style={{ width: 12, height: 12 }} />
-                Guest View — Current Dram
-              </div>
-              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10, lineHeight: 1.4 }}>
-                Shows what guests see for the dram you're currently discussing.
-              </div>
-
-              <div style={{
-                borderRadius: 14, border: "2px solid var(--labs-border)",
-                background: "var(--labs-bg)", overflow: "hidden",
-              }}>
-                <div style={{
-                  padding: "8px 12px", background: "var(--labs-surface-elevated)",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  borderBottom: "1px solid var(--labs-border)",
-                }}>
-                  <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>PARTICIPANT VIEW</span>
-                  <Smartphone style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
-                </div>
-
-                <div style={{ padding: 16 }}>
-                  {!isLive && isDraft ? (
-                    <div style={{ textAlign: "center", padding: 20, color: "var(--labs-text-muted)" }}>
-                      <Clock style={{ width: 24, height: 24, margin: "0 auto 8px", display: "block" }} />
-                      <div style={{ fontSize: 13 }}>Waiting for host to start...</div>
-                    </div>
-                  ) : isLive && isGuided && guidedIdx < 0 ? (
-                    <div style={{ textAlign: "center", padding: 20, color: "var(--labs-text-muted)" }}>
-                      <Radio style={{ width: 24, height: 24, margin: "0 auto 8px", display: "block", animation: "pulse 2s infinite" }} />
-                      <div style={{ fontSize: 13 }}>Waiting for host...</div>
-                    </div>
-                  ) : (
-                    <>
-                      {whiskies.length > 0 && (
-                        <div style={{ display: "flex", gap: 4, marginBottom: 12, justifyContent: "center" }}>
-                          {whiskies.map((_: any, idx: number) => (
-                            <div key={idx} style={{
-                              width: 24, height: 24, borderRadius: 12,
-                              background: (isGuided ? idx === guidedIdx : false) ? "var(--labs-accent)" : "var(--labs-surface-elevated)",
-                              color: (isGuided ? idx === guidedIdx : false) ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                              fontSize: 10, fontWeight: 700,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}>
-                              {isBlind ? blindLabel(idx) : idx + 1}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div style={{ textAlign: "center", marginBottom: 12 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
-                          {isBlind && guidedRevealStep < 1
-                            ? `Dram ${blindLabel(Math.max(0, guidedIdx))}`
-                            : activeWhisky?.name || "—"}
-                        </div>
-                        {activeWhisky && (!isBlind || guidedRevealStep >= 2) && (
-                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 4 }}>
-                            {[activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ")}
-                          </div>
-                        )}
-                      </div>
-
-                      {tasting.ratingPrompt && (
-                        <div style={{
-                          padding: "8px 12px", borderRadius: 8,
-                          background: "var(--labs-accent-muted)",
-                          fontSize: 12, color: "var(--labs-accent)", fontStyle: "italic",
-                          marginBottom: 12,
-                        }}>
-                          Host: {tasting.ratingPrompt}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {["Nose", "Taste", "Finish", "Balance", "Overall"].map(dim => (
-                          <div key={dim} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 10, color: "var(--labs-text-muted)", width: 40, textAlign: "right" }}>{dim}</span>
-                            <div style={{ flex: 1, height: 4, borderRadius: 2, background: "var(--labs-surface-elevated)" }}>
-                              <div style={{ width: "50%", height: "100%", borderRadius: 2, background: "var(--labs-accent)", opacity: 0.4 }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
