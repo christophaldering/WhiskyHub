@@ -286,7 +286,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const rv = isBlind ? getRevealState(tasting, whiskies.length) : null;
   const gv = isBlind && rv ? getGuestVisibility(tasting, rv.stepGroups, isGuided) : null;
-  const activeWhisky = whiskies[isGuided ? Math.max(0, guidedIdx) : 0] || null;
+  const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
+  const activeWhisky = whiskies[guestDramIdx] || null;
   const currentRatingWhisky = whiskies[hostRatingIdx] || null;
 
   const totalParticipants = participants.length;
@@ -712,8 +713,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     {whiskies.length > 1 && (
                       <div style={{ display: "flex", gap: 6, marginBottom: 16, justifyContent: "center" }}>
                         {whiskies.map((_: any, idx: number) => {
-                          const isActive = isGuided ? idx === guidedIdx : idx === 0;
-                          const isPast = isGuided ? idx < guidedIdx : false;
+                          const isActive = idx === guestDramIdx;
+                          const isPast = idx < guestDramIdx;
                           return (
                             <div key={idx} style={{
                               width: isActive ? 32 : 28, height: isActive ? 32 : 28, borderRadius: "50%",
@@ -774,7 +775,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                 fontSize: 22, fontWeight: 800, color: "var(--labs-accent)",
                                 fontFamily: "var(--labs-font-serif, Georgia, serif)",
                               }}>
-                                Dram {blindLabel(Math.max(0, guidedIdx))}
+                                Dram {blindLabel(guestDramIdx)}
                               </div>
                               <div style={{
                                 display: "inline-flex", alignItems: "center", gap: 4,
@@ -843,7 +844,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           display: "flex", alignItems: "center", gap: 6,
                         }}>
                           <EyeOff style={{ width: 11, height: 11 }} />
-                          REVEAL PROGRESS — DRAM {blindLabel(Math.max(0, isGuided ? guidedIdx : 0))}
+                          REVEAL PROGRESS — DRAM {blindLabel(guestDramIdx)}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {rv.stepGroups.map((group: string[], sIdx: number) => {
