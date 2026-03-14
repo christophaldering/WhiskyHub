@@ -11,7 +11,7 @@ import {
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
-  Download, ExternalLink, Lock, Printer, ScanLine,
+  Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -1742,12 +1742,242 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
   );
 }
 
+const REVEAL_ALL_FIELDS = [
+  "name", "distillery", "age", "abv", "region", "country",
+  "category", "caskInfluence", "peatLevel", "bottler", "vintage",
+  "hostNotes", "hostSummary", "image",
+] as const;
+
+const REVEAL_FIELD_LABELS: Record<string, string> = {
+  name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+  region: "Region", country: "Country", category: "Category",
+  caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
+  vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
+  ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
+};
+
+const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
+  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+  "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+};
+
+function detectPresetKey(order: string[][] | null): string {
+  if (!order) return "classic";
+  const json = JSON.stringify(order);
+  for (const [key, preset] of Object.entries(REVEAL_PRESETS_MAP)) {
+    if (JSON.stringify(preset) === json) return key;
+  }
+  return "custom";
+}
+
+function CustomRevealEditor({ steps, onChange }: {
+  steps: string[][];
+  onChange: (steps: string[][]) => void;
+}) {
+  const [dragFrom, setDragFrom] = useState<{ step: number; field: number } | null>(null);
+  const [dragOverStep, setDragOverStep] = useState<number | null>(null);
+
+  const moveField = (fromStep: number, fromIdx: number, toStep: number) => {
+    const next = steps.map(s => [...s]);
+    const field = next[fromStep].splice(fromIdx, 1)[0];
+    if (toStep >= next.length) {
+      next.push([field]);
+    } else {
+      next[toStep].push(field);
+    }
+    onChange(next.filter(s => s.length > 0));
+  };
+
+  const splitField = (stepIdx: number, fieldIdx: number) => {
+    const next = steps.map(s => [...s]);
+    const field = next[stepIdx].splice(fieldIdx, 1)[0];
+    next.splice(stepIdx + 1, 0, [field]);
+    onChange(next.filter(s => s.length > 0));
+  };
+
+  const mergeStepUp = (stepIdx: number) => {
+    if (stepIdx === 0) return;
+    const next = steps.map(s => [...s]);
+    next[stepIdx - 1] = [...next[stepIdx - 1], ...next[stepIdx]];
+    next.splice(stepIdx, 1);
+    onChange(next);
+  };
+
+  const moveStepUp = (stepIdx: number) => {
+    if (stepIdx === 0) return;
+    const next = steps.map(s => [...s]);
+    [next[stepIdx - 1], next[stepIdx]] = [next[stepIdx], next[stepIdx - 1]];
+    onChange(next);
+  };
+
+  const moveStepDown = (stepIdx: number) => {
+    if (stepIdx >= steps.length - 1) return;
+    const next = steps.map(s => [...s]);
+    [next[stepIdx], next[stepIdx + 1]] = [next[stepIdx + 1], next[stepIdx]];
+    onChange(next);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }} data-testid="custom-reveal-editor">
+      {steps.map((step, sIdx) => (
+        <div
+          key={sIdx}
+          onDragOver={(e) => { e.preventDefault(); setDragOverStep(sIdx); }}
+          onDragLeave={() => setDragOverStep(null)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOverStep(null);
+            if (dragFrom && dragFrom.step !== sIdx) {
+              moveField(dragFrom.step, dragFrom.field, sIdx);
+            }
+            setDragFrom(null);
+          }}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 8px", borderRadius: 10,
+            background: dragOverStep === sIdx ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+            border: `1.5px solid ${dragOverStep === sIdx ? "var(--labs-accent)" : "var(--labs-border)"}`,
+            transition: "all 0.15s",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => moveStepUp(sIdx)}
+              disabled={sIdx === 0}
+              style={{
+                background: "none", border: "none", cursor: sIdx === 0 ? "default" : "pointer",
+                padding: 0, color: sIdx === 0 ? "var(--labs-border)" : "var(--labs-text-muted)",
+                fontSize: 10, lineHeight: 1,
+              }}
+              data-testid={`reveal-step-up-${sIdx}`}
+            >
+              <ChevronUp style={{ width: 12, height: 12 }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => moveStepDown(sIdx)}
+              disabled={sIdx >= steps.length - 1}
+              style={{
+                background: "none", border: "none", cursor: sIdx >= steps.length - 1 ? "default" : "pointer",
+                padding: 0, color: sIdx >= steps.length - 1 ? "var(--labs-border)" : "var(--labs-text-muted)",
+                fontSize: 10, lineHeight: 1,
+              }}
+              data-testid={`reveal-step-down-${sIdx}`}
+            >
+              <ChevronDown style={{ width: 12, height: 12 }} />
+            </button>
+          </div>
+
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: "var(--labs-accent)",
+            background: "var(--labs-accent-muted)", borderRadius: 6,
+            padding: "2px 6px", flexShrink: 0, minWidth: 16, textAlign: "center",
+          }}>
+            {sIdx + 1}
+          </span>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, flex: 1 }}>
+            {step.map((field, fIdx) => (
+              <div
+                key={field}
+                draggable
+                onDragStart={() => setDragFrom({ step: sIdx, field: fIdx })}
+                onDragEnd={() => { setDragFrom(null); setDragOverStep(null); }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                  background: "var(--labs-surface-elevated)", color: "var(--labs-text)",
+                  border: "1px solid var(--labs-border)", cursor: "grab",
+                  userSelect: "none",
+                }}
+                data-testid={`reveal-field-${field}`}
+              >
+                <GripVertical style={{ width: 10, height: 10, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                {REVEAL_FIELD_LABELS[field] || field}
+                {step.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); splitField(sIdx, fIdx); }}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      padding: 0, color: "var(--labs-text-muted)", fontSize: 10, lineHeight: 1,
+                    }}
+                    title="Split into own step"
+                    data-testid={`reveal-split-${field}`}
+                  >
+                    <X style={{ width: 10, height: 10 }} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {sIdx > 0 && (
+            <button
+              type="button"
+              onClick={() => mergeStepUp(sIdx)}
+              title="Merge with previous step"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "2px", color: "var(--labs-text-muted)", flexShrink: 0,
+              }}
+              data-testid={`reveal-merge-${sIdx}`}
+            >
+              <Layers style={{ width: 12, height: 12 }} />
+            </button>
+          )}
+        </div>
+      ))}
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOverStep(steps.length); }}
+        onDragLeave={() => setDragOverStep(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOverStep(null);
+          if (dragFrom) {
+            moveField(dragFrom.step, dragFrom.field, steps.length);
+            setDragFrom(null);
+          }
+        }}
+        style={{
+          padding: "8px 12px", borderRadius: 10,
+          border: `1.5px dashed ${dragOverStep === steps.length ? "var(--labs-accent)" : "var(--labs-border)"}`,
+          background: dragOverStep === steps.length ? "var(--labs-accent-muted)" : "transparent",
+          textAlign: "center", fontSize: 10, color: "var(--labs-text-muted)",
+          transition: "all 0.15s",
+        }}
+      >
+        Drop here to create new step
+      </div>
+
+      <div style={{
+        marginTop: 4, padding: "8px 10px", borderRadius: 8,
+        background: "var(--labs-surface)", fontSize: 11, color: "var(--labs-text-muted)",
+        lineHeight: 1.6,
+      }}>
+        <span style={{ fontWeight: 600, color: "var(--labs-text-secondary)" }}>Preview: </span>
+        {steps.map((step, i) => (
+          <span key={i}>
+            {i > 0 && <span style={{ color: "var(--labs-accent)", margin: "0 4px" }}> → </span>}
+            <span style={{ color: "var(--labs-text)" }}>{step.map(f => REVEAL_FIELD_LABELS[f] || f).join(" & ")}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LabsSegmentedSelect({ value, options, onChange }: {
   value: string | number; options: { value: string | number; label: string; desc?: string }[];
   onChange: (v: any) => void;
 }) {
+  const cols = options.length <= 4 ? options.length : options.length <= 6 ? 3 : 4;
   return (
-    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(options.length, 4)}, 1fr)` }}>
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
       {options.map((opt) => {
         const active = value === opt.value;
         return (
@@ -1783,12 +2013,7 @@ function CreateTastingForm() {
   const [description, setDescription] = useState("");
   const [blindMode, setBlindMode] = useState(false);
   const [revealOrder, setRevealOrder] = useState("classic");
-  const REVEAL_PRESETS: Record<string, string[][]> = {
-    classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
-    "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
-    "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
-    "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
-  };
+  const [customRevealSteps, setCustomRevealSteps] = useState<string[][]>(REVEAL_PRESETS_MAP.classic);
   const [ratingScale, setRatingScale] = useState(100);
   const [guidedMode, setGuidedMode] = useState(false);
   const [guestMode, setGuestMode] = useState("standard");
@@ -1816,7 +2041,7 @@ function CreateTastingForm() {
         hostId: currentParticipant.id,
         code,
         blindMode,
-        revealOrder: blindMode && revealOrder !== "classic" ? JSON.stringify(REVEAL_PRESETS[revealOrder] || REVEAL_PRESETS.classic) : null,
+        revealOrder: blindMode && revealOrder !== "classic" ? JSON.stringify(revealOrder === "custom" ? customRevealSteps : (REVEAL_PRESETS_MAP[revealOrder] || REVEAL_PRESETS_MAP.classic)) : null,
         ratingScale,
         guidedMode,
         guestMode,
@@ -1940,15 +2165,31 @@ function CreateTastingForm() {
                 { value: "photo-first", label: "Photo First", desc: "Photo then name" },
                 { value: "details-first", label: "Details", desc: "Details then name" },
                 { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
+                { value: "custom", label: "Custom", desc: "Your own order" },
               ]}
               onChange={(val: string | number) => {
                 const v = String(val);
                 setRevealOrder(v);
-                if (v === "one-by-one" && sessionUiMode === "flow") {
+                if (v !== "custom" && REVEAL_PRESETS_MAP[v]) {
+                  setCustomRevealSteps(REVEAL_PRESETS_MAP[v]);
+                }
+                const stepsCount = v === "custom" ? customRevealSteps.length : (REVEAL_PRESETS_MAP[v]?.length ?? 3);
+                if (stepsCount > 4 && sessionUiMode === "flow") {
                   setSessionUiMode("focus");
                 }
               }}
             />
+            {revealOrder === "custom" && (
+              <CustomRevealEditor
+                steps={customRevealSteps}
+                onChange={(newSteps) => {
+                  setCustomRevealSteps(newSteps);
+                  if (newSteps.length > 4 && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+              />
+            )}
           </div>
         )}
 
@@ -2045,8 +2286,9 @@ function CreateTastingForm() {
                   onChange={(val: string | number) => {
                     const v = String(val);
                     setSessionUiMode(v);
-                    if (v === "flow" && revealOrder === "one-by-one") {
+                    if (v === "flow" && (revealOrder === "one-by-one" || (revealOrder === "custom" && customRevealSteps.length > 4))) {
                       setRevealOrder("classic");
+                      setCustomRevealSteps(REVEAL_PRESETS_MAP.classic);
                     }
                   }}
                 />
@@ -2713,6 +2955,7 @@ function LabsSettingsPanel({
   const [duplicating, setDuplicating] = useState(false);
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [forceCustomReveal, setForceCustomReveal] = useState(false);
 
   const isDraft = tasting.status === "draft";
 
@@ -2762,8 +3005,7 @@ function LabsSettingsPanel({
     if (mode === "flow" && tasting.blindMode) {
       try {
         const parsed = JSON.parse(tasting.revealOrder as string || "null");
-        const oneByOneStr = JSON.stringify([["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]]);
-        if (JSON.stringify(parsed) === oneByOneStr) {
+        if (Array.isArray(parsed) && parsed.length > 4) {
           patch.revealOrder = null;
         }
       } catch {}
@@ -2893,49 +3135,60 @@ function LabsSettingsPanel({
             testId="labs-settings-toggle-blind"
           />
 
-          {tasting.blindMode && (
-            <div>
-              <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
-                <Eye className="w-3 h-3" />
-                Reveal Order
-              </label>
-              <LabsSegmentedSelect
-                value={(() => {
-                  if (!tasting.revealOrder) return "classic";
-                  try {
-                    const parsed = JSON.parse(tasting.revealOrder as string);
-                    const presets: Record<string, string> = {
-                      [JSON.stringify([["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]])]: "classic",
-                      [JSON.stringify([["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]])]: "photo-first",
-                      [JSON.stringify([["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]])]: "one-by-one",
-                      [JSON.stringify([["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]])]: "details-first",
-                    };
-                    return presets[JSON.stringify(parsed)] || "classic";
-                  } catch { return "classic"; }
-                })()}
-                options={[
-                  { value: "classic", label: "Classic", desc: "Name then details" },
-                  { value: "photo-first", label: "Photo First", desc: "Photo then name" },
-                  { value: "details-first", label: "Details", desc: "Details then name" },
-                  { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
-                ]}
-                onChange={(val: string | number) => {
-                  const PRESETS: Record<string, string[][]> = {
-                    classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
-                    "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
-                    "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
-                    "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
-                  };
-                  const key = String(val);
-                  const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(PRESETS[key] || PRESETS.classic) };
-                  if (key === "one-by-one" && (tasting.sessionUiMode as string || "flow") === "flow") {
-                    patch.sessionUiMode = "focus";
-                  }
-                  patchDetails(patch);
-                }}
-              />
-            </div>
-          )}
+          {tasting.blindMode && (() => {
+            let detectedKey = "classic";
+            let currentSteps = REVEAL_PRESETS_MAP.classic;
+            try {
+              if (tasting.revealOrder) {
+                currentSteps = JSON.parse(tasting.revealOrder as string);
+                detectedKey = detectPresetKey(currentSteps);
+              }
+            } catch {}
+            const activeKey = forceCustomReveal ? "custom" : detectedKey;
+            return (
+              <div>
+                <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+                  <Eye className="w-3 h-3" />
+                  Reveal Order
+                </label>
+                <LabsSegmentedSelect
+                  value={activeKey}
+                  options={[
+                    { value: "classic", label: "Classic", desc: "Name then details" },
+                    { value: "photo-first", label: "Photo First", desc: "Photo then name" },
+                    { value: "details-first", label: "Details", desc: "Details then name" },
+                    { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
+                    { value: "custom", label: "Custom", desc: "Your own order" },
+                  ]}
+                  onChange={(val: string | number) => {
+                    const key = String(val);
+                    if (key === "custom") {
+                      setForceCustomReveal(true);
+                    } else {
+                      setForceCustomReveal(false);
+                      const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(REVEAL_PRESETS_MAP[key] || REVEAL_PRESETS_MAP.classic) };
+                      if (key === "one-by-one" && (tasting.sessionUiMode as string || "flow") === "flow") {
+                        patch.sessionUiMode = "focus";
+                      }
+                      patchDetails(patch);
+                    }
+                  }}
+                />
+                {activeKey === "custom" && (
+                  <CustomRevealEditor
+                    steps={currentSteps}
+                    onChange={(newSteps) => {
+                      const patch: Record<string, unknown> = { revealOrder: JSON.stringify(newSteps) };
+                      if (newSteps.length > 4 && (tasting.sessionUiMode as string || "flow") === "flow") {
+                        patch.sessionUiMode = "focus";
+                      }
+                      patchDetails(patch);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })()}
 
           <LabsToggle
             checked={!!tasting.guidedMode}
