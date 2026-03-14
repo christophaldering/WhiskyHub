@@ -769,7 +769,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </div>
       </div>
 
-      {(() => {
+      {session.role === "admin" && (() => {
         const ri = mapRouteToCounterpart(location);
         return (
           <MenuButton theme={tv}
@@ -906,39 +906,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderSignedOutView = () => (
     <>
-      {(() => {
-        const ri = mapRouteToCounterpart(location);
-        return (
-          <button
-            onClick={() => { onClose(); navigate(ri.target); }}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "14px 16px",
-              marginBottom: 12,
-              background: "transparent",
-              border: `1px solid ${tv.border}`,
-              borderRadius: 12,
-              cursor: "pointer",
-              color: tv.text,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="m2-profile-switch-version-signedout"
-          >
-            {ri.isLabs
-              ? <Layout style={{ width: 16, height: 16, color: tv.accent }} />
-              : <FlaskConical style={{ width: 16, height: 16, color: tv.accent }} />}
-            {ri.isLabs
-              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
-              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
-          </button>
-        );
-      })()}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <input
           type="email"
