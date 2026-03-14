@@ -137,7 +137,7 @@ export interface IStorage {
   updateInviteStatus(id: string, status: string, acceptedAt?: Date): Promise<SessionInvite | undefined>;
 
   // Blind Mode / Reveal
-  updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string; guidedMode?: boolean; guidedWhiskyIndex?: number; guidedRevealStep?: number }): Promise<Tasting | undefined>;
+  updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string; guidedMode?: boolean; guidedWhiskyIndex?: number; guidedRevealStep?: number; presentationSlide?: number | null }): Promise<Tasting | undefined>;
 
   // Discussion Entries
   getDiscussionEntries(tastingId: string): Promise<DiscussionEntry[]>;
@@ -748,7 +748,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Blind Mode / Reveal ---
-  async updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string; guidedMode?: boolean; guidedWhiskyIndex?: number; guidedRevealStep?: number }): Promise<Tasting | undefined> {
+  async updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string; guidedMode?: boolean; guidedWhiskyIndex?: number; guidedRevealStep?: number; presentationSlide?: number | null }): Promise<Tasting | undefined> {
     const updateObj: any = {};
     if (data.blindMode !== undefined) updateObj.blindMode = data.blindMode;
     if (data.revealIndex !== undefined) updateObj.revealIndex = data.revealIndex;
@@ -760,6 +760,7 @@ export class DatabaseStorage implements IStorage {
     if (data.guidedMode !== undefined) updateObj.guidedMode = data.guidedMode;
     if (data.guidedWhiskyIndex !== undefined) updateObj.guidedWhiskyIndex = data.guidedWhiskyIndex;
     if (data.guidedRevealStep !== undefined) updateObj.guidedRevealStep = data.guidedRevealStep;
+    if (data.presentationSlide !== undefined) updateObj.presentationSlide = data.presentationSlide;
     const [result] = await db.update(tastings).set(updateObj).where(eq(tastings.id, id)).returning();
     return result;
   }

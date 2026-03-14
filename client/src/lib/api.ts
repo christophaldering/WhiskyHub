@@ -254,6 +254,25 @@ export const guidedApi = {
     }),
 };
 
+// ===== Presentation =====
+export const presentationApi = {
+  start: (tastingId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/presentation-start`, {
+      method: "POST",
+      body: JSON.stringify({ hostId }),
+    }),
+  setSlide: (tastingId: string, hostId: string, slide: number) =>
+    fetchJSON(`/tastings/${tastingId}/presentation-slide`, {
+      method: "POST",
+      body: JSON.stringify({ hostId, slide }),
+    }),
+  stop: (tastingId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/presentation-stop`, {
+      method: "POST",
+      body: JSON.stringify({ hostId }),
+    }),
+};
+
 // ===== Discussions =====
 export const discussionApi = {
   get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/discussions`),

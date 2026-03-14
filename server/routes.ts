@@ -3409,6 +3409,54 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  app.post("/api/tastings/:id/presentation-start", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can start a presentation" });
+      const allowedStatuses = ["archived", "completed", "closed", "reveal"];
+      if (!allowedStatuses.includes(tasting.status || "")) return res.status(400).json({ message: "Tasting is not in a presentable state" });
+      const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: 0 });
+      console.log(`[LABS] Presentation started: tasting=${req.params.id}`);
+      res.json(updated);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message });
+    }
+  });
+
+  app.post("/api/tastings/:id/presentation-slide", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, slide } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can control the presentation" });
+      if (typeof slide !== "number" || slide < 0) return res.status(400).json({ message: "Invalid slide index" });
+      const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: slide });
+      console.log(`[LABS] Presentation slide: ${slide} tasting=${req.params.id}`);
+      res.json(updated);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message });
+    }
+  });
+
+  app.post("/api/tastings/:id/presentation-stop", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can stop the presentation" });
+      const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: null });
+      console.log(`[LABS] Presentation stopped: tasting=${req.params.id}`);
+      res.json(updated);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message });
+    }
+  });
+
   app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
     try {
       const { participantId } = req.body;

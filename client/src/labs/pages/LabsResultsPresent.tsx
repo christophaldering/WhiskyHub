@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users, BarChart3,
   Star, Target, MessageCircle, Maximize, Minimize, Loader2,
 } from "lucide-react";
-import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, presentationApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
@@ -449,32 +449,60 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
 
   const totalSlides = slides.length;
 
+  const hostId = currentParticipant?.id;
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const syncSlide = useCallback((slide: number) => {
+    if (!hostId || !tastingId) return;
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      presentationApi.setSlide(tastingId, hostId, slide).catch(() => {});
+    }, 150);
+  }, [hostId, tastingId]);
+
+  const isAllowedForPresentation = tasting?.status === "archived" || tasting?.status === "completed" || tasting?.status === "closed" || tasting?.status === "reveal";
+  const isHostUser = tasting?.hostId === hostId;
+
+  useEffect(() => {
+    if (hostId && tastingId && tasting && isHostUser && isAllowedForPresentation) {
+      presentationApi.start(tastingId, hostId).catch(() => {});
+    }
+  }, [hostId, tastingId, !!tasting, isHostUser, isAllowedForPresentation]);
+
   const goTo = useCallback((index: number) => {
     if (index < 0 || index >= totalSlides) return;
     setDirection(index > currentSlide ? 1 : -1);
     setCurrentSlide(index);
-  }, [currentSlide, totalSlides]);
+    syncSlide(index);
+  }, [currentSlide, totalSlides, syncSlide]);
 
   const goNext = useCallback(() => {
     if (currentSlide < totalSlides - 1) {
+      const next = currentSlide + 1;
       setDirection(1);
-      setCurrentSlide(prev => prev + 1);
+      setCurrentSlide(next);
+      syncSlide(next);
     }
-  }, [currentSlide, totalSlides]);
+  }, [currentSlide, totalSlides, syncSlide]);
 
   const goPrev = useCallback(() => {
     if (currentSlide > 0) {
+      const prev = currentSlide - 1;
       setDirection(-1);
-      setCurrentSlide(prev => prev - 1);
+      setCurrentSlide(prev);
+      syncSlide(prev);
     }
-  }, [currentSlide]);
+  }, [currentSlide, syncSlide]);
 
   const exitPresentation = useCallback(() => {
+    if (hostId && tastingId) {
+      presentationApi.stop(tastingId, hostId).catch(() => {});
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
     navigate(`/labs/results/${tastingId}`);
-  }, [navigate, tastingId]);
+  }, [navigate, tastingId, hostId]);
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -493,6 +521,24 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     document.addEventListener("fullscreenchange", handleFSChange);
     return () => document.removeEventListener("fullscreenchange", handleFSChange);
   }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (hostId && tastingId) {
+        navigator.sendBeacon(
+          `/api/tastings/${tastingId}/presentation-stop`,
+          new Blob([JSON.stringify({ hostId })], { type: "application/json" })
+        );
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (hostId && tastingId) {
+        presentationApi.stop(tastingId, hostId).catch(() => {});
+      }
+    };
+  }, [hostId, tastingId]);
 
   useEffect(() => {
     const isDesktop = window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
