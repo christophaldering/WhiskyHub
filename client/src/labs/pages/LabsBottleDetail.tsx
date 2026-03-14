@@ -28,7 +28,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
 
   const { data: whisky, isLoading, isError } = useQuery({
     queryKey: ["labs-explore-whisky", whiskyId],
-    queryFn: () => exploreApi.getWhisky(whiskyId),
+    queryFn: () => exploreApi.getWhisky(whiskyId, currentParticipant?.id),
     enabled: !!whiskyId,
   });
 

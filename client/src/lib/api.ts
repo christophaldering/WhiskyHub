@@ -373,7 +373,10 @@ export const exploreApi = {
     const qs = params.toString();
     return fetchJSON(`/labs/explore/whiskies${qs ? `?${qs}` : ""}`);
   },
-  getWhisky: (id: string) => fetchJSON(`/labs/explore/whiskies/${id}`),
+  getWhisky: (id: string, participantId?: string) => {
+    const qs = participantId ? `?participantId=${participantId}` : "";
+    return fetchJSON(`/labs/explore/whiskies/${id}${qs}`);
+  },
 };
 
 // ===== Paper Sheet Scanning =====

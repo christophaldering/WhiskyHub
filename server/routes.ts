@@ -12017,17 +12017,23 @@ Rules:
         id: t.id, title: t.title, date: t.date, status: t.status,
       }));
 
+      const requesterId = req.query.participantId as string | undefined;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      const isAuthenticated = !!requester;
+
       res.json({
         ...whisky,
-        ratings: whiskyRatings.map(r => ({
-          id: r.id,
-          participantId: r.participantId,
-          nose: r.nose,
-          taste: r.taste,
-          finish: r.finish,
-          balance: r.balance,
-          overall: r.overall,
-        })),
+        ratings: isAuthenticated
+          ? whiskyRatings.map(r => ({
+              id: r.id,
+              participantId: r.participantId,
+              nose: r.nose,
+              taste: r.taste,
+              finish: r.finish,
+              balance: r.balance,
+              overall: r.overall,
+            }))
+          : [],
         aggregated: {
           avgNose: avg(noseScores),
           avgTaste: avg(tasteScores),
@@ -12037,8 +12043,8 @@ Rules:
           ratingCount: whiskyRatings.length,
           overallRange: minMax(overallScores),
         },
-        tastingContext: tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
-        relatedTastings,
+        tastingContext: isAuthenticated && tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
+        relatedTastings: isAuthenticated ? relatedTastings : [],
       });
     } catch (e: any) {
       console.error("Labs explore whisky detail error:", e);
