@@ -51,6 +51,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteNote, setInviteNote] = useState("");
+  const [duplicating, setDuplicating] = useState(false);
   const [inviteResults, setInviteResults] = useState<any[] | null>(null);
 
   const { data: tasting, isLoading, isError } = useQuery({
@@ -498,6 +499,24 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             >
               <Clock className="w-4 h-4" />
               Manage Session
+            </button>
+            <button
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={async () => {
+                setDuplicating(true);
+                try {
+                  const pid = currentParticipant?.id;
+                  if (!pid) return;
+                  const newTasting = await tastingApi.duplicate(tastingId, pid);
+                  if (newTasting?.id) navigate(`/labs/host/${newTasting.id}`);
+                } catch {}
+                setDuplicating(false);
+              }}
+              disabled={duplicating}
+              data-testid="labs-detail-duplicate"
+            >
+              <Copy className="w-4 h-4" />
+              {duplicating ? "Kopiere..." : "Tasting kopieren"}
             </button>
           </>
         )}
