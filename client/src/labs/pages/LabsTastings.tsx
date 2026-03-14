@@ -47,6 +47,8 @@ export default function LabsTastings() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const isAdmin = currentParticipant?.role === "admin";
+
   const { data: tastings, isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
@@ -76,7 +78,8 @@ export default function LabsTastings() {
       list = list.filter(
         (t: any) =>
           t.title?.toLowerCase().includes(q) ||
-          t.location?.toLowerCase().includes(q)
+          t.location?.toLowerCase().includes(q) ||
+          t.hostName?.toLowerCase().includes(q)
       );
     }
 
@@ -356,6 +359,21 @@ export default function LabsTastings() {
                       </div>
                     </div>
 
+                    {tasting.hostName && (isAdmin || !isHost) && (
+                      <div
+                        style={{
+                          display: "flex", alignItems: "center", gap: 3,
+                          fontSize: 11, color: "var(--labs-text-secondary)",
+                          marginBottom: 1,
+                        }}
+                        data-testid={`labs-tasting-hostname-${tasting.id}`}
+                      >
+                        <Crown style={{ width: 11, height: 11, opacity: 0.5, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {tasting.hostName}
+                        </span>
+                      </div>
+                    )}
                     <div
                       style={{
                         display: "flex", alignItems: "center", gap: 8,
