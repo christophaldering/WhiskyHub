@@ -1022,7 +1022,15 @@ export default function FlavourStudioSheet({
 
   useEffect(() => {
     if (open) {
-      setSelectedTerms(new Set(existingChips.map((c) => c.toLowerCase())));
+      setSelectedTerms(new Set(existingChips.map((c) => {
+        const normalized = FLAVOR_CATEGORIES.reduce((acc, cat) => {
+          for (const sub of cat.subcategories) {
+            if (sub.en.toLowerCase() === c.toLowerCase() || sub.de.toLowerCase() === c.toLowerCase()) return sub.en.toLowerCase();
+          }
+          return acc;
+        }, c.toLowerCase());
+        return normalized;
+      })));
     }
   }, [open, existingChips]);
 

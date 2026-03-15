@@ -302,33 +302,35 @@ export default function LabsRatingPanel({
     return (
       <div style={{ marginBottom: compact ? 8 : 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          <button
-            type="button"
-            onClick={() => {
-              if (disabled) return;
-              setStudioOpen(true);
-              triggerHaptic("light");
-            }}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "linear-gradient(135deg, var(--labs-accent-muted), transparent)",
-              border: "1px solid var(--labs-accent-muted)",
-              borderRadius: 10, cursor: disabled ? "default" : "pointer",
-              color: "var(--labs-accent)", fontSize: 12, fontFamily: "inherit",
-              fontWeight: 600, opacity: disabled ? 0.5 : 1,
-              padding: "8px 14px",
-              transition: "all 0.2s ease",
-            }}
-            data-testid="button-open-flavour-studio"
-          >
-            <Sparkles style={{ width: 14, height: 14 }} />
-            {t("m2.rating.flavourStudio", "Flavour Studio")}
-            {activeChips.length > 0 && (
-              <span style={{ fontSize: 10, background: "var(--labs-accent)", color: "var(--labs-bg)", padding: "1px 7px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
-                {activeChips.length}
-              </span>
-            )}
-          </button>
+          {activeTab !== "balance" && (
+            <button
+              type="button"
+              onClick={() => {
+                if (disabled) return;
+                setStudioOpen(true);
+                triggerHaptic("light");
+              }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "linear-gradient(135deg, var(--labs-accent-muted), transparent)",
+                border: "1px solid var(--labs-accent-muted)",
+                borderRadius: 10, cursor: disabled ? "default" : "pointer",
+                color: "var(--labs-accent)", fontSize: 12, fontFamily: "inherit",
+                fontWeight: 600, opacity: disabled ? 0.5 : 1,
+                padding: "8px 14px",
+                transition: "all 0.2s ease",
+              }}
+              data-testid="button-open-flavour-studio"
+            >
+              <Sparkles style={{ width: 14, height: 14 }} />
+              {t("m2.rating.flavourStudio", "Flavour Studio")}
+              {activeChips.length > 0 && (
+                <span style={{ fontSize: 10, background: "var(--labs-accent)", color: "var(--labs-bg)", padding: "1px 7px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
+                  {activeChips.length}
+                </span>
+              )}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
