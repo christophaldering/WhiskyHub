@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
-  Compass, BookOpen, Building2, Package, FileText, Map,
+  BookOpen, Building2, Package, FileText, Map,
   FlaskConical, BookMarked, MessageSquare, ChevronRight, ChevronLeft,
-  Sparkles, Info, Heart, Rss, Users, BarChart3,
+  Sparkles, Info, Heart, BarChart3,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -53,11 +53,9 @@ const SECTIONS: DiscoverSection[] = [
     ],
   },
   {
-    titleKey: "discover.sectionCommunity",
-    titleFallback: "Community & More",
+    titleKey: "discover.sectionMore",
+    titleFallback: "More",
     links: [
-      { icon: Users, labelKey: "discover.community", labelFallback: "Community", descKey: "discover.communityDesc", descFallback: "Community features & archive", href: "/labs/community", testId: "labs-link-discover-community" },
-      { icon: Rss, labelKey: "discover.activity", labelFallback: "Activity Feed", descKey: "discover.activityDesc", descFallback: "See what your friends are up to", href: "/labs/activity", testId: "labs-link-discover-activity" },
       { icon: Info, labelKey: "discover.about", labelFallback: "About", descKey: "discover.aboutDesc", descFallback: "Story, founder info & contact", href: "/labs/about", testId: "labs-link-discover-about" },
       { icon: Heart, labelKey: "discover.donate", labelFallback: "Donate", descKey: "discover.donateDesc", descFallback: "Support CaskSense & Hospice", href: "/labs/donate", testId: "labs-link-discover-donate" },
     ],
