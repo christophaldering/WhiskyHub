@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw } from "lucide-react";
+import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
+import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
 import "./labs-theme.css";
 
@@ -362,6 +363,7 @@ export function useLabsBack(fallback: string) {
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { currentParticipant, setParticipant } = useAppStore();
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
@@ -425,6 +427,21 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setSearchOpen(true); triggerHaptic("light"); }}
+            className="flex items-center justify-center rounded-full transition-all"
+            style={{
+              width: 44,
+              height: 44,
+              background: "var(--labs-surface-elevated)",
+              border: "1px solid var(--labs-border)",
+              color: "var(--labs-text-secondary)",
+              cursor: "pointer",
+            }}
+            data-testid="labs-search-btn"
+          >
+            <Search className="w-4 h-4" />
+          </button>
           <LabsNotificationBell />
           <button
             onClick={() => setProfileOpen(true)}
@@ -577,6 +594,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       )}
 
       <M2ProfileMenu open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <LabsGlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
