@@ -383,66 +383,68 @@ export default function LabsExplore() {
             </div>
           )}
           {sortedWhiskies.length > 0 && (
-            <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-              {visibleWhiskies.map((w: any) => (
-                <div
-                  key={w.id}
-                  className="labs-list-row"
-                  onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
-                  data-testid={`labs-explore-whisky-${w.id}`}
-                >
-                  <div style={{ flexShrink: 0 }}>
-                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} whiskyId={w.id} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {w.name}
-                    </p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
-                      {w.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{w.distillery}</span>}
-                      {w.region && (
-                        <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
-                          {w.region}
-                        </span>
+            <>
+              <div className="labs-grouped-list labs-fade-in labs-stagger-3">
+                {visibleWhiskies.map((w: any) => (
+                  <div
+                    key={w.id}
+                    className="labs-list-row"
+                    onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
+                    data-testid={`labs-explore-whisky-${w.id}`}
+                  >
+                    <div style={{ flexShrink: 0 }}>
+                      <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} whiskyId={w.id} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {w.name}
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
+                        {w.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{w.distillery}</span>}
+                        {w.region && (
+                          <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
+                            {w.region}
+                          </span>
+                        )}
+                        {(sortBy === "category" && w.category) && (
+                          <span style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4 }}>
+                            {w.category}
+                          </span>
+                        )}
+                        {(sortBy === "age" && w.age) && (
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.age) ? `${w.age}y` : w.age}</span>
+                        )}
+                        {(sortBy === "abv" && w.abv) && (
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.abv) ? `${w.abv}%` : w.abv}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                      {w.avgOverall != null && w.avgOverall > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>{Number(w.avgOverall).toFixed(1)}</span>
+                        </div>
                       )}
-                      {(sortBy === "category" && w.category) && (
-                        <span style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4 }}>
-                          {w.category}
-                        </span>
-                      )}
-                      {(sortBy === "age" && w.age) && (
-                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.age) ? `${w.age}y` : w.age}</span>
-                      )}
-                      {(sortBy === "abv" && w.abv) && (
-                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.abv) ? `${w.abv}%` : w.abv}</span>
+                      {w.ratingCount != null && w.ratingCount > 0 && (
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}</span>
                       )}
                     </div>
+                    <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.5 }} />
                   </div>
-                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                    {w.avgOverall != null && w.avgOverall > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <Star style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>{Number(w.avgOverall).toFixed(1)}</span>
-                      </div>
-                    )}
-                    {w.ratingCount != null && w.ratingCount > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}</span>
-                    )}
-                  </div>
-                  <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.5 }} />
-                </div>
-              ))}
-            </div>
-            {displayLimit < sortedWhiskies.length && (
-              <button
-                onClick={() => setDisplayLimit(prev => prev + 50)}
-                className="labs-btn-secondary w-full mt-4"
-                style={{ padding: "12px", fontSize: 13 }}
-                data-testid="labs-explore-load-more"
-              >
-                {t("explore.loadMore", "Show more")} ({sortedWhiskies.length - displayLimit} {t("explore.remaining", "remaining")})
-              </button>
-            )}
+                ))}
+              </div>
+              {displayLimit < sortedWhiskies.length && (
+                <button
+                  onClick={() => setDisplayLimit(prev => prev + 50)}
+                  className="labs-btn-secondary w-full mt-4"
+                  style={{ padding: "12px", fontSize: 13 }}
+                  data-testid="labs-explore-load-more"
+                >
+                  {t("explore.loadMore", "Show more")} ({sortedWhiskies.length - displayLimit} {t("explore.remaining", "remaining")})
+                </button>
+              )}
+            </>
           )}
         </>
       )}
