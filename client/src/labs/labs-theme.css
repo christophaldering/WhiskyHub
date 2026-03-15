@@ -491,20 +491,17 @@
   transition: height 100ms ease;
 }
 
-.labs-pull-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2.5px solid var(--labs-border);
-  border-top-color: var(--labs-accent);
-  border-radius: 50%;
+@keyframes labsGlencairnSway {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(12deg); }
+  100% { transform: rotate(0deg); }
 }
 
-@keyframes labsSpin {
-  to { transform: rotate(360deg); }
-}
-
-.labs-pull-spinner-active {
-  animation: labsSpin 0.7s linear infinite;
+.labs-glencairn-refresh-active {
+  animation: labsGlencairnSway 1.2s ease-in-out infinite;
+  transform-origin: center bottom;
 }
 
 .labs-segmented {

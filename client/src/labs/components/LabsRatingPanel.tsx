@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Mic, Plus, Lock, Sparkles } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
+import { triggerHaptic } from "@/labs/hooks/useHaptic";
 
 export type DimKey = "nose" | "taste" | "finish" | "balance";
 
@@ -101,6 +102,7 @@ export default function LabsRatingPanel({
   const [voiceTarget, setVoiceTarget] = useState<DimKey | null>(null);
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
+  const prevSliderVals = useRef<Record<string, number>>({});
 
   const totalWizardSteps = 5;
   const isWizardOverallStep = wizardStep === 4;
@@ -255,7 +257,15 @@ export default function LabsRatingPanel({
           min={0}
           max={scale}
           value={scores[key]}
-          onChange={(e) => onScoreChange(key, Number(e.target.value))}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            const prev = prevSliderVals.current[key];
+            if ((val === 0 || val === scale) && prev !== val) {
+              triggerHaptic("boundary");
+            }
+            prevSliderVals.current[key] = val;
+            onScoreChange(key, val);
+          }}
           disabled={disabled}
           data-testid={`input-score-${key}`}
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
@@ -599,7 +609,15 @@ export default function LabsRatingPanel({
         min={0}
         max={scale}
         value={overall}
-        onChange={(e) => onOverallChange(Number(e.target.value))}
+        onChange={(e) => {
+          const val = Number(e.target.value);
+          const prev = prevSliderVals.current["overall"];
+          if ((val === 0 || val === scale) && prev !== val) {
+            triggerHaptic("boundary");
+          }
+          prevSliderVals.current["overall"] = val;
+          onOverallChange(val);
+        }}
         disabled={disabled || overallGated}
         data-testid="m2-rating-overall"
         style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: (disabled || overallGated) ? "not-allowed" : "pointer", opacity: overallGated ? 0.35 : 1, transition: "opacity 0.2s" }}

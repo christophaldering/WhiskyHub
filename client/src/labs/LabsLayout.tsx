@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
+import { triggerHaptic } from "./hooks/useHaptic";
 import "./labs-theme.css";
 
 interface OnlineUserInfo {
@@ -29,6 +30,50 @@ function GlencairnIcon({ color, size = 22 }: { color: string; size?: number }) {
       <line x1="9" y1="20" x2="15" y2="20" />
       <line x1="12" y1="17.6" x2="12" y2="20" />
     </svg>
+  );
+}
+
+function GlencairnRefresh({ pullProgress, refreshing, triggered }: { pullProgress: number; refreshing: boolean; triggered: boolean }) {
+  const fillHeight = pullProgress * 12;
+  const fillY = 17 - fillHeight;
+  const accentColor = triggered || refreshing ? "var(--labs-accent)" : "var(--labs-text-muted)";
+
+  return (
+    <div
+      className={refreshing ? "labs-glencairn-refresh-active" : ""}
+      style={{
+        opacity: Math.max(pullProgress, refreshing ? 1 : 0),
+        transition: "opacity 150ms ease",
+      }}
+    >
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <clipPath id="glassClip">
+            <path d="M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z" />
+          </clipPath>
+        </defs>
+        <rect
+          x="7"
+          y={fillY}
+          width="10"
+          height={fillHeight}
+          fill={accentColor}
+          opacity={0.25}
+          clipPath="url(#glassClip)"
+          style={{ transition: "y 100ms ease, height 100ms ease" }}
+        />
+        <path
+          d="M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z"
+          stroke={accentColor}
+          strokeWidth={1.8}
+          fill="none"
+          style={{ transition: "stroke 200ms ease" }}
+        />
+        <line x1="10" y1="17.6" x2="14" y2="17.6" stroke={accentColor} strokeWidth={1.8} style={{ transition: "stroke 200ms ease" }} />
+        <line x1="9" y1="20" x2="15" y2="20" stroke={accentColor} strokeWidth={1.8} style={{ transition: "stroke 200ms ease" }} />
+        <line x1="12" y1="17.6" x2="12" y2="20" stroke={accentColor} strokeWidth={1.8} style={{ transition: "stroke 200ms ease" }} />
+      </svg>
+    </div>
   );
 }
 
@@ -82,20 +127,25 @@ function usePullToRefresh(mainRef: React.RefObject<HTMLElement | null>) {
   const [refreshing, setRefreshing] = useState(false);
   const touchStartY = useRef(0);
   const pulling = useRef(false);
+  const pullDistRef = useRef(0);
+  const refreshingRef = useRef(false);
+
+  pullDistRef.current = pullDistance;
+  refreshingRef.current = refreshing;
 
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
 
     const onTouchStart = (e: TouchEvent) => {
-      if (el.scrollTop === 0 && !refreshing) {
+      if (el.scrollTop === 0 && !refreshingRef.current) {
         touchStartY.current = e.touches[0].clientY;
         pulling.current = true;
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!pulling.current || refreshing) return;
+      if (!pulling.current || refreshingRef.current) return;
       const dy = e.touches[0].clientY - touchStartY.current;
       if (dy > 0 && el.scrollTop === 0) {
         setPullDistance(Math.min(dy * 0.5, 100));
@@ -108,10 +158,11 @@ function usePullToRefresh(mainRef: React.RefObject<HTMLElement | null>) {
     const onTouchEnd = () => {
       if (!pulling.current) return;
       pulling.current = false;
-      if (pullDistance > 60) {
+      if (pullDistRef.current > 60) {
+        triggerHaptic("success");
         setRefreshing(true);
         setPullDistance(60);
-        queryClient.invalidateQueries().then(() => {
+        queryClient.invalidateQueries().finally(() => {
           setTimeout(() => {
             setRefreshing(false);
             setPullDistance(0);
@@ -130,7 +181,7 @@ function usePullToRefresh(mainRef: React.RefObject<HTMLElement | null>) {
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [mainRef, pullDistance, refreshing]);
+  }, [mainRef]);
 
   return { pullDistance, refreshing };
 }
@@ -345,8 +396,15 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
   const isLabsHome = location === "/labs" || location === "/labs/";
 
+  const handleButtonHaptic = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("button:not(:disabled), a, [role='button'], [role='tab'], [role='switch']")) {
+      triggerHaptic("light");
+    }
+  }, []);
+
   return (
-    <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`}>
+    <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} onTouchStart={handleButtonHaptic}>
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-5 py-3"
         style={{
@@ -393,18 +451,11 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           style={{ height: pullDistance }}
           data-testid="labs-pull-refresh-indicator"
         >
-          {refreshing ? (
-            <div className="labs-pull-spinner labs-pull-spinner-active" />
-          ) : (
-            <div
-              className="labs-pull-spinner"
-              style={{
-                borderTopColor: pullDistance > 60 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                transform: `rotate(${pullDistance * 4}deg)`,
-                opacity: Math.min(pullDistance / 60, 1),
-              }}
-            />
-          )}
+          <GlencairnRefresh
+            pullProgress={Math.min(pullDistance / 60, 1)}
+            refreshing={refreshing}
+            triggered={pullDistance > 60}
+          />
         </div>
       )}
 

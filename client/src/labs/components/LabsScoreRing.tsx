@@ -24,6 +24,8 @@ export default function LabsScoreRing({
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [displayValue, setDisplayValue] = useState(0);
+  const currentAnimatedRef = useRef(0);
+  const animFrameRef = useRef<number>(0);
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -46,16 +48,38 @@ export default function LabsScoreRing({
 
   useEffect(() => {
     if (!visible || !showValue) return;
-    const duration = 600;
+
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+    }
+
+    const fromValue = currentAnimatedRef.current;
+    const toValue = roundedScore;
+    const duration = 400;
     const start = performance.now();
+
     const animate = (now: number) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.round(roundedScore * eased * 10) / 10);
-      if (progress < 1) requestAnimationFrame(animate);
+      const current = fromValue + (toValue - fromValue) * eased;
+      const rounded = Math.round(current * 10) / 10;
+      currentAnimatedRef.current = current;
+      setDisplayValue(rounded);
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        currentAnimatedRef.current = toValue;
+        animFrameRef.current = 0;
+      }
     };
-    requestAnimationFrame(animate);
+    animFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
   }, [visible, roundedScore, showValue]);
 
   return (
@@ -81,8 +105,7 @@ export default function LabsScoreRing({
             strokeDasharray={circumference}
             strokeDashoffset={visible ? offset : circumference}
             style={{
-              transition: visible ? "stroke-dashoffset 800ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-              transitionDelay: visible ? "150ms" : "0ms",
+              transition: visible ? "stroke-dashoffset 500ms cubic-bezier(0.34, 1.56, 0.64, 1), stroke 300ms ease" : "none",
             }}
           />
         </svg>
