@@ -478,7 +478,11 @@ export default function M2TastingsSolo() {
       if (pid) headers["x-participant-id"] = pid;
       const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
       if (!res.ok) {
-        if (res.status === 429) { setWbLookupResult("rate_limit"); return; }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({}));
+          if (body.message === "AI_LIMIT_EXCEEDED") { setWbLookupResult("ai_limit_exceeded"); return; }
+          setWbLookupResult("rate_limit"); return;
+        }
         if (res.status === 503) { setWbLookupResult("ai_unavailable"); return; }
         if (res.status === 400) { setWbLookupResult("invalid"); return; }
         setWbLookupResult("not_found");
@@ -1986,6 +1990,7 @@ export default function M2TastingsSolo() {
                          wbLookupResult === "not_found" ? t("m2.solo.wbNotFound", "Not found") :
                          wbLookupResult === "rate_limit" ? t("m2.solo.wbRateLimit", "Rate limited, please wait") :
                          wbLookupResult === "ai_unavailable" ? t("m2.solo.wbAiUnavailable", "AI unavailable") :
+                         wbLookupResult === "ai_limit_exceeded" ? t("ai.limitExceeded", "Dein Freikontingent ist aufgebraucht. Hinterlege deinen eigenen OpenAI API Key in den Einstellungen oder kontaktiere den Admin.") :
                          wbLookupResult === "invalid" ? t("m2.solo.wbInvalidId", "Invalid ID") : t("m2.solo.wbError", "Error")}
                       </p>
                     )}

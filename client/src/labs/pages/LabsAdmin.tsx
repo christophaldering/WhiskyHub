@@ -548,8 +548,15 @@ function AITab({ pid }: { pid: string }) {
     queryFn: async () => { const res = await fetch(`/api/admin/ai-settings?participantId=${pid}`); if (!res.ok) throw new Error("Failed"); return res.json(); },
   });
 
+  const { data: usageData, isLoading: usageLoading } = useQuery({
+    queryKey: ["/api/admin/ai-usage", pid],
+    queryFn: async () => { const res = await fetch(`/api/admin/ai-usage?participantId=${pid}`); if (!res.ok) throw new Error("Failed"); return res.json(); },
+  });
+
   const [masterDisabled, setMasterDisabled] = useState<boolean | null>(null);
   const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
+  const [quotaInput, setQuotaInput] = useState("");
+  const [quotaInitialized, setQuotaInitialized] = useState(false);
 
   useEffect(() => {
     if (data && masterDisabled === null) {
@@ -557,6 +564,13 @@ function AITab({ pid }: { pid: string }) {
       setDisabledFeatures(data.settings.ai_features_disabled || []);
     }
   }, [data, masterDisabled]);
+
+  useEffect(() => {
+    if (usageData && !quotaInitialized) {
+      setQuotaInput(String(usageData.quota ?? 20));
+      setQuotaInitialized(true);
+    }
+  }, [usageData, quotaInitialized]);
 
   const saveMutation = useMutation({
     mutationFn: async ({ md, df }: { md: boolean | null; df: string[] }) => {
@@ -567,6 +581,18 @@ function AITab({ pid }: { pid: string }) {
     onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); if (data) { setMasterDisabled(data.settings.ai_master_disabled); setDisabledFeatures(data.settings.ai_features_disabled || []); } },
   });
 
+  const quotaMutation = useMutation({
+    mutationFn: async (quota: number) => {
+      const res = await apiRequest("POST", "/api/admin/ai-quota", { participantId: pid, quota });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      toast({ title: `Free quota set to ${result.quota === 0 ? "unlimited" : result.quota}` });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-usage"] });
+    },
+    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
+  });
+
   const save = (md: boolean | null, df: string[]) => saveMutation.mutate({ md, df });
 
   const toggleFeature = (featureId: string) => {
@@ -575,10 +601,17 @@ function AITab({ pid }: { pid: string }) {
     save(masterDisabled, newDisabled);
   };
 
+  const handleQuotaSave = () => {
+    const val = parseInt(quotaInput, 10);
+    if (isNaN(val) || val < 0) { toast({ title: "Invalid quota value", variant: "destructive" }); return; }
+    quotaMutation.mutate(val);
+  };
+
   if (isLoading || masterDisabled === null) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
 
   const features = data?.features || [];
   const auditLog = data?.auditLog || [];
+  const usageList: Array<{ participantId: string; name: string; email: string | null; requestCount: number; hasOwnKey: boolean }> = usageData?.usage || [];
 
   return (
     <div data-testid="labs-admin-ai-tab">
@@ -587,10 +620,17 @@ function AITab({ pid }: { pid: string }) {
           <ShieldAlert className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
           <span className="text-base font-bold" style={{ color: "var(--labs-text)" }}>AI Kill Switch</span>
         </div>
+        <div className="p-3 rounded-lg mb-4 text-xs" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Shield className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
+            <span className="font-semibold" style={{ color: "var(--labs-accent)" }}>Admin Bypass</span>
+          </div>
+          <span style={{ color: "var(--labs-text-muted)" }}>Als Admin behältst du immer Zugriff auf alle AI-Features über den Plattform-Key, auch wenn Features deaktiviert oder Limits erreicht sind.</span>
+        </div>
         <div className="flex items-center justify-between p-3.5 rounded-xl mb-4" style={{ border: `2px solid ${masterDisabled ? "var(--labs-danger)" : "var(--labs-success)"}`, background: masterDisabled ? "var(--labs-danger-muted)" : "var(--labs-success-muted)" }} data-testid="labs-admin-ai-master-toggle">
           <div>
             <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Master Kill Switch</div>
-            <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{masterDisabled ? "All AI features disabled" : "AI features active"}</div>
+            <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{masterDisabled ? "All AI features disabled (Admin bypass active)" : "AI features active"}</div>
           </div>
           <ToggleSwitch on={!masterDisabled} onToggle={() => { const v = !masterDisabled; setMasterDisabled(v); save(v, disabledFeatures); }} testId="labs-admin-switch-ai-master" />
         </div>
@@ -614,6 +654,82 @@ function AITab({ pid }: { pid: string }) {
         </div>
         {saveMutation.isPending && <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-text-muted)" }}><Loader2 className="w-3 h-3 animate-spin" />Saving...</div>}
       </div>
+
+      <div className="labs-card p-4 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Hash className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>Freikontingent (Plattform-Key)</span>
+        </div>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+          Anzahl kostenloser AI-Anfragen pro User über den Plattform-Key. 0 = unbegrenzt. User mit eigenem API Key sind nicht betroffen.
+        </p>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            min="0"
+            value={quotaInput}
+            onChange={e => setQuotaInput(e.target.value)}
+            style={{ ...labsInput, width: 100 }}
+            data-testid="labs-admin-input-ai-quota"
+          />
+          <button
+            onClick={handleQuotaSave}
+            disabled={quotaMutation.isPending}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }}
+            data-testid="labs-admin-save-ai-quota"
+          >
+            {quotaMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Speichern"}
+          </button>
+          <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+            Aktuell: {usageData?.quota === 0 ? "Unbegrenzt" : `${usageData?.quota ?? 20} Anfragen`}
+          </span>
+        </div>
+      </div>
+
+      <div className="labs-card p-4 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>AI-Nutzung pro User</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{usageList.length}</span>
+        </div>
+        {usageLoading ? (
+          <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
+        ) : usageList.length === 0 ? (
+          <div className="text-center py-6 text-xs" style={{ color: "var(--labs-text-muted)" }}>Noch keine AI-Nutzung über den Plattform-Key.</div>
+        ) : (
+          <div className="max-h-[300px] overflow-y-auto space-y-1.5">
+            {usageList.map(u => {
+              const quota = usageData?.quota ?? 20;
+              const pct = quota > 0 ? Math.min(100, Math.round((u.requestCount / quota) * 100)) : 0;
+              const overLimit = quota > 0 && u.requestCount >= quota;
+              return (
+                <div key={u.participantId} className="flex items-center gap-2 p-2.5 rounded-lg" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid={`labs-admin-ai-usage-${u.participantId}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{u.name}</span>
+                      {u.hasOwnKey && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>Own Key</span>}
+                      {overLimit && !u.hasOwnKey && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Limit</span>}
+                    </div>
+                    {u.email && <div className="text-[10px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {quota > 0 && (
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--labs-surface-elevated)" }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: overLimit ? "var(--labs-danger)" : "var(--labs-accent)" }} />
+                      </div>
+                    )}
+                    <span className="text-xs font-mono font-semibold" style={{ color: overLimit ? "var(--labs-danger)" : "var(--labs-text)", minWidth: 40, textAlign: "right" }}>
+                      {u.requestCount}{quota > 0 ? `/${quota}` : ""}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {auditLog.length > 0 && (
         <div className="labs-card p-4">
           <div className="flex items-center gap-2 mb-3">

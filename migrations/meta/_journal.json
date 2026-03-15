@@ -15,6 +15,13 @@
       "when": 1773499362440,
       "tag": "0001_odd_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773577513840,
+      "tag": "0002_mean_tiger_shark",
+      "breakpoints": true
     }
   ]
 }

@@ -15,7 +15,7 @@ import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
-import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
+import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { hashPassword, verifyPassword } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
@@ -3546,8 +3546,11 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
   app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
     try {
       const { participantId } = req.body;
-      const { client: openai } = await getAIClient(participantId, "ai_enrich");
-      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "ai_enrich");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      }
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Whisky not found" });
 
@@ -3661,8 +3664,11 @@ Respond ONLY with valid JSON, no markdown.`;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
-      const { client: openai } = await getAIClient(participantId, "ai_insights");
-      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "ai_insights");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      }
       const lang = language === "de" ? "German" : "English";
       const cacheKey = language === "de" ? "de" : "en";
 
@@ -3944,7 +3950,10 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
 
       const participantNames = Array.from(participantMap.values());
 
-      const { client } = await getAIClient(null, "ai_narrative");
+      const { client, error: aiError, quotaInfo } = await getAIClient(requesterId, "ai_narrative");
+      if (aiError === "AI_LIMIT_EXCEEDED") {
+        return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+      }
       if (!client) {
         return res.status(503).json({ message: "AI service not available" });
       }
@@ -4153,8 +4162,11 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
-      const { client: openai } = await getAIClient(participantId, "connoisseur_report");
-      if (!openai) return res.status(503).json({ message: "AI not available" });
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "connoisseur_report");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available" });
+      }
 
       const requestedLang = req.body?.language;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
@@ -4586,8 +4598,9 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
       history.push(now);
       wbLookupRateMap.set(rateKey, history);
 
-      const { client } = await getAIClient(participantId || undefined, "whiskybase_lookup");
+      const { client, error: aiError, quotaInfo } = await getAIClient(participantId || undefined, "whiskybase_lookup");
       if (!client) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", error: "AI_LIMIT_EXCEEDED", quotaInfo });
         return res.status(503).json({ error: "ai_unavailable" });
       }
 
@@ -4656,8 +4669,9 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
       history.push(now);
       wbLookupRateMap.set(rateKey, history);
 
-      const { client } = await getAIClient(participantId || undefined, "whisky_autofill");
+      const { client, error: aiError, quotaInfo } = await getAIClient(participantId || undefined, "whisky_autofill");
       if (!client) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", error: "AI_LIMIT_EXCEEDED", quotaInfo });
         return res.status(503).json({ error: "ai_unavailable" });
       }
 
@@ -5299,8 +5313,11 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
     try {
       const participantId = req.body.participantId as string;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
-      const { client: openai } = await getAIClient(participantId, "journal_identify");
-      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "journal_identify");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      }
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
@@ -5868,8 +5885,11 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const { text, participantId } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!text || typeof text !== "string" || text.trim().length < 3) return res.status(400).json({ message: "Text required (min 3 characters)" });
-      const { client: openai } = await getAIClient(participantId, "whisky_search");
-      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "whisky_search");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      }
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
@@ -7070,7 +7090,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       let aiAnalysis: string | null = null;
       try {
         const { getAIClient } = await import("./ai-client");
-        const { client } = await getAIClient(null, "curation");
+        const pairingsRequesterId = req.headers["x-participant-id"] as string || req.query.participantId as string || null;
+        const { client, error: pairingAiError } = await getAIClient(pairingsRequesterId, "curation");
+        if (pairingAiError === "AI_LIMIT_EXCEEDED") {
+          return res.json({ suggestions: ruleBasedSuggestions, aiAnalysis: null });
+        }
         if (client) {
           const lineupSummary = lineupWhiskies.map(w =>
             `${w.name} (${w.distillery || "?"}, ${w.region || "?"}, ${w.caskInfluence || "?"}, ${w.peatLevel || "?"}, ABV ${w.abv || "?"})`
@@ -7334,6 +7358,67 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       res.json({ settings: updated });
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Failed to update AI settings" });
+    }
+  });
+
+  app.get("/api/admin/ai-quota", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const quota = await getAIFreeQuota();
+      res.json({ quota });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load AI quota" });
+    }
+  });
+
+  app.post("/api/admin/ai-quota", async (req, res) => {
+    try {
+      const { participantId, quota } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (typeof quota !== "number" || quota < 0) {
+        return res.status(400).json({ message: "quota must be a non-negative number (0 = unlimited)" });
+      }
+      const updated = await setAIFreeQuota(quota, participantId);
+      res.json({ quota: updated });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to update AI quota" });
+    }
+  });
+
+  app.get("/api/admin/ai-usage", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const usage = await getAIUsageOverview();
+      const quota = await getAIFreeQuota();
+      res.json({ usage, quota });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load AI usage" });
+    }
+  });
+
+  app.get("/api/ai-quota-status", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.json({ used: 0, limit: 0, remaining: 0 });
+      const quotaStatus = await checkAIQuota(participantId);
+      const remaining = quotaStatus.limit === 0 ? -1 : Math.max(0, quotaStatus.limit - quotaStatus.used);
+      res.json({ used: quotaStatus.used, limit: quotaStatus.limit, remaining });
+    } catch {
+      res.json({ used: 0, limit: 0, remaining: 0 });
     }
   });
 
@@ -7818,20 +7903,31 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/ai-status", async (req, res) => {
     try {
-      const participantId = req.query.participantId as string | undefined;
+      const participantId = req.query.participantId as string || req.headers["x-participant-id"] as string | undefined;
       const settings = await getAISettings();
-      const disabledFeatures: string[] = [];
-      if (settings.ai_master_disabled) {
-        disabledFeatures.push(...AI_FEATURES.map(f => f.id));
-      } else {
-        disabledFeatures.push(...settings.ai_features_disabled);
+
+      let isAdminUser = false;
+      if (participantId) {
+        const requester = await storage.getParticipant(participantId);
+        isAdminUser = requester?.role === "admin";
       }
+
+      const disabledFeatures: string[] = [];
+      if (!isAdminUser) {
+        if (settings.ai_master_disabled) {
+          disabledFeatures.push(...AI_FEATURES.map(f => f.id));
+        } else {
+          disabledFeatures.push(...settings.ai_features_disabled);
+        }
+      }
+
       const { available, source } = await getAIStatus(participantId || null);
       res.json({
-        masterDisabled: settings.ai_master_disabled,
+        masterDisabled: isAdminUser ? false : settings.ai_master_disabled,
         disabledFeatures,
         available,
         source,
+        isAdmin: isAdminUser,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -11423,8 +11519,11 @@ Important rules:
       const { prompt, whiskies, tastingTitle } = req.body;
       if (!prompt || typeof prompt !== "string") return res.status(400).json({ message: "Prompt required" });
 
-      const { client } = await getAIClient(requesterId, "pdf-style");
-      if (!client) return res.status(503).json({ message: "AI not available" });
+      const { client, error: aiError, quotaInfo } = await getAIClient(requesterId, "pdf-style");
+      if (!client) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available" });
+      }
 
       const sanitizedPrompt = prompt.trim().slice(0, 500);
 
@@ -11870,9 +11969,12 @@ User's style request: ${sanitizedPrompt}`;
         return res.status(400).json({ message: "At least one photo or PDF is required" });
       }
 
-      const participantId = req.body.participantId || null;
+      const participantId = req.body.participantId || req.headers["x-participant-id"] as string || null;
 
-      const { client: openai } = await getAIClient(null, "scan_sheet");
+      const { client: openai, error: scanAiError, quotaInfo: scanQuotaInfo } = await getAIClient(participantId, "scan_sheet");
+      if (scanAiError === "AI_LIMIT_EXCEEDED") {
+        return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo: scanQuotaInfo });
+      }
       if (!openai) {
         return res.status(503).json({ message: "AI is not available" });
       }

@@ -2011,8 +2011,26 @@ function AIControlsTab({ participantId }: { participantId: string }) {
     },
   });
 
+  const { data: usageData } = useQuery({
+    queryKey: ["/api/admin/ai-usage", participantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/ai-usage?participantId=${participantId}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
   const [masterDisabled, setMasterDisabled] = useState<boolean | null>(null);
   const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
+  const [quotaInput, setQuotaInput] = useState("");
+  const [quotaInitialized, setQuotaInitialized] = useState(false);
+
+  useEffect(() => {
+    if (usageData && !quotaInitialized) {
+      setQuotaInput(String(usageData.quota ?? 20));
+      setQuotaInitialized(true);
+    }
+  }, [usageData, quotaInitialized]);
 
   useEffect(() => {
     if (data && masterDisabled === null) {
@@ -2039,6 +2057,26 @@ function AIControlsTab({ participantId }: { participantId: string }) {
     },
   });
 
+  const quotaMutation = useMutation({
+    mutationFn: async (quota: number) => {
+      const res = await apiRequest("POST", "/api/admin/ai-quota", { participantId, quota });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      toast({ title: `Freikontingent auf ${result.quota === 0 ? "unbegrenzt" : result.quota} gesetzt` });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-usage"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleQuotaSave = () => {
+    const val = parseInt(quotaInput, 10);
+    if (isNaN(val) || val < 0) { toast({ title: "Ungültiger Wert", variant: "destructive" }); return; }
+    quotaMutation.mutate(val);
+  };
+
   const toggleFeature = (featureId: string) => {
     setDisabledFeatures(prev =>
       prev.includes(featureId)
@@ -2057,6 +2095,7 @@ function AIControlsTab({ participantId }: { participantId: string }) {
 
   const features = data?.features || [];
   const auditLog = data?.auditLog || [];
+  const usageList: Array<{ participantId: string; name: string; email: string | null; requestCount: number; hasOwnKey: boolean }> = usageData?.usage || [];
   const hasChanges =
     masterDisabled !== data?.settings.ai_master_disabled ||
     JSON.stringify([...disabledFeatures].sort()) !== JSON.stringify([...(data?.settings.ai_features_disabled || [])].sort());
@@ -2149,6 +2188,82 @@ function AIControlsTab({ participantId }: { participantId: string }) {
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <Hash className="w-5 h-5 text-amber-600" />
+            Freikontingent (Plattform-Key)
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Anzahl kostenloser AI-Anfragen pro User über den Plattform-Key. 0 = unbegrenzt. User mit eigenem API Key sind nicht betroffen.
+          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <Input
+              type="number"
+              min="0"
+              value={quotaInput}
+              onChange={(e) => setQuotaInput(e.target.value)}
+              className="w-28"
+              data-testid="input-ai-quota"
+            />
+            <Button onClick={handleQuotaSave} disabled={quotaMutation.isPending} size="sm" data-testid="button-save-ai-quota">
+              {quotaMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Speichern
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Aktuell: {usageData?.quota === 0 ? "Unbegrenzt" : `${usageData?.quota ?? 20} Anfragen`}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Shield className="w-3 h-3 text-amber-500" />
+            Admin-User sind vom Limit ausgenommen und behalten immer Zugriff.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-amber-600" />
+            AI-Nutzung pro User
+            <Badge variant="secondary" className="ml-1">{usageList.length}</Badge>
+          </h3>
+          {usageList.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Noch keine AI-Nutzung über den Plattform-Key.</p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {usageList.map((u) => {
+                const quota = usageData?.quota ?? 20;
+                const pct = quota > 0 ? Math.min(100, Math.round((u.requestCount / quota) * 100)) : 0;
+                const overLimit = quota > 0 && u.requestCount >= quota;
+                return (
+                  <div key={u.participantId} className="flex items-center gap-3 p-3 rounded-lg border" data-testid={`ai-usage-${u.participantId}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{u.name}</span>
+                        {u.hasOwnKey && <Badge variant="outline" className="text-green-600 border-green-300 text-[10px]">Own Key</Badge>}
+                        {overLimit && !u.hasOwnKey && <Badge variant="destructive" className="text-[10px]">Limit erreicht</Badge>}
+                      </div>
+                      {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {quota > 0 && (
+                        <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+                          <div className={`h-full rounded-full ${overLimit ? "bg-red-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                      <span className={`text-sm font-mono font-semibold ${overLimit ? "text-red-500" : ""}`}>
+                        {u.requestCount}{quota > 0 ? `/${quota}` : ""}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

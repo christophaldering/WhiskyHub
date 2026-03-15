@@ -791,7 +791,11 @@ function EntryForm({
                     }
                     onImageChange(file);
                   } catch (err: any) {
-                    setScanError(err.message || "Scan failed");
+                    if (err.message === "AI_LIMIT_EXCEEDED") {
+                      setScanError(t("ai.limitExceeded", "Dein Freikontingent ist aufgebraucht. Hinterlege deinen eigenen OpenAI API Key in den Einstellungen oder kontaktiere den Admin."));
+                    } else {
+                      setScanError(err.message || "Scan failed");
+                    }
                   } finally {
                     setScanning(false);
                   }
@@ -937,7 +941,11 @@ function EntryForm({
                       setScanError(t("journal.scanFailed"));
                     }
                   } catch (err: any) {
-                    setScanError(err.message || t("journal.scanFailed"));
+                    if (err.message === "AI_LIMIT_EXCEEDED") {
+                      setScanError(t("ai.limitExceeded", "Dein Freikontingent ist aufgebraucht. Hinterlege deinen eigenen OpenAI API Key in den Einstellungen oder kontaktiere den Admin."));
+                    } else {
+                      setScanError(err.message || t("journal.scanFailed"));
+                    }
                   } finally {
                     setExtracting(false);
                   }
@@ -1063,7 +1071,11 @@ function EntryForm({
                         setScanResult({ multipleWhiskies: whiskies });
                       }
                     } catch (err: any) {
-                      setScanError(err.message || t("journal.scanFailed"));
+                      if (err.message === "AI_LIMIT_EXCEEDED") {
+                        setScanError(t("ai.limitExceeded", "Dein Freikontingent ist aufgebraucht. Hinterlege deinen eigenen OpenAI API Key in den Einstellungen oder kontaktiere den Admin."));
+                      } else {
+                        setScanError(err.message || t("journal.scanFailed"));
+                      }
                     } finally {
                       setScanning(false);
                     }

@@ -511,6 +511,19 @@ export const adminAuditLog = pgTable("admin_audit_log", {
 
 export type AdminAuditLogEntry = typeof adminAuditLog.$inferSelect;
 
+// --- AI Usage Log (tracking platform-key AI requests per user) ---
+export const aiUsageLog = pgTable("ai_usage_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  featureId: text("feature_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ai_usage_participant").on(table.participantId),
+  index("idx_ai_usage_created").on(table.createdAt),
+]);
+
+export type AIUsageLogEntry = typeof aiUsageLog.$inferSelect;
+
 // --- Changelog Entries (platform development log) ---
 export const changelogEntries = pgTable("changelog_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

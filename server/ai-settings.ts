@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql, and, gte, count } from "drizzle-orm";
 import { db } from "./db";
-import { systemSettings, adminAuditLog } from "@shared/schema";
+import { systemSettings, adminAuditLog, aiUsageLog, participants, profiles } from "@shared/schema";
 
 export const AI_FEATURES = [
   { id: "ai_enrich", label: "Whisky AI Enrich (Fakten)", route: "/api/whiskies/:id/ai-enrich" },
@@ -104,4 +104,71 @@ export async function getAuditLog(limit = 50): Promise<any[]> {
     .orderBy(adminAuditLog.createdAt)
     .limit(limit);
   return rows.reverse();
+}
+
+const DEFAULT_AI_FREE_QUOTA = 20;
+const AI_QUOTA_SETTINGS_KEY = "ai_free_quota";
+
+export async function getAIFreeQuota(): Promise<number> {
+  try {
+    const row = await db.select().from(systemSettings).where(eq(systemSettings.key, AI_QUOTA_SETTINGS_KEY)).limit(1);
+    if (row.length > 0 && row[0].value !== null && row[0].value !== undefined) {
+      const val = typeof row[0].value === "number" ? row[0].value : Number(row[0].value);
+      return isNaN(val) ? DEFAULT_AI_FREE_QUOTA : val;
+    }
+    return DEFAULT_AI_FREE_QUOTA;
+  } catch {
+    return DEFAULT_AI_FREE_QUOTA;
+  }
+}
+
+export async function setAIFreeQuota(quota: number, actorId: string): Promise<number> {
+  const safeQuota = Math.max(0, Math.floor(quota));
+  await db.insert(systemSettings)
+    .values({ key: AI_QUOTA_SETTINGS_KEY, value: safeQuota, updatedAt: new Date(), updatedBy: actorId })
+    .onConflictDoUpdate({ target: systemSettings.key, set: { value: safeQuota, updatedAt: new Date(), updatedBy: actorId } });
+  return safeQuota;
+}
+
+export async function recordAIUsage(participantId: string, featureId: string): Promise<void> {
+  await db.insert(aiUsageLog).values({ participantId, featureId });
+}
+
+export async function getAIUsageCount(participantId: string): Promise<number> {
+  const result = await db.select({ count: count() }).from(aiUsageLog).where(eq(aiUsageLog.participantId, participantId));
+  return result[0]?.count ?? 0;
+}
+
+export async function checkAIQuota(participantId: string): Promise<{ allowed: boolean; used: number; limit: number }> {
+  const [used, limit] = await Promise.all([getAIUsageCount(participantId), getAIFreeQuota()]);
+  if (limit === 0) return { allowed: true, used, limit: 0 };
+  return { allowed: used < limit, used, limit };
+}
+
+export async function getAIUsageOverview(): Promise<Array<{ participantId: string; name: string; email: string | null; requestCount: number; hasOwnKey: boolean }>> {
+  const usageCounts = await db
+    .select({ participantId: aiUsageLog.participantId, requestCount: count() })
+    .from(aiUsageLog)
+    .groupBy(aiUsageLog.participantId);
+
+  if (usageCounts.length === 0) return [];
+
+  const pIds = usageCounts.map(u => u.participantId);
+  const allParticipants = await db.select({ id: participants.id, name: participants.name, email: participants.email }).from(participants);
+  const allProfiles = await db.select({ participantId: profiles.participantId, openaiApiKey: profiles.openaiApiKey }).from(profiles);
+
+  const pMap = new Map(allParticipants.map(p => [p.id, p]));
+  const profileMap = new Map(allProfiles.map(p => [p.participantId, p]));
+
+  return usageCounts.map(u => {
+    const p = pMap.get(u.participantId);
+    const prof = profileMap.get(u.participantId);
+    return {
+      participantId: u.participantId,
+      name: p?.name ?? "Unknown",
+      email: p?.email ?? null,
+      requestCount: u.requestCount,
+      hasOwnKey: !!(prof?.openaiApiKey),
+    };
+  }).sort((a, b) => b.requestCount - a.requestCount);
 }

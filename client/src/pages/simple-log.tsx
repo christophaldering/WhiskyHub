@@ -1094,7 +1094,11 @@ export default function SimpleLogPage() {
       if (pid) headers["x-participant-id"] = pid;
       const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
       if (!res.ok) {
-        if (res.status === 429) { setWbLookupResult("rate_limit"); return; }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({}));
+          if (body.message === "AI_LIMIT_EXCEEDED") { setWbLookupResult("ai_limit_exceeded"); return; }
+          setWbLookupResult("rate_limit"); return;
+        }
         if (res.status === 503) { setWbLookupResult("ai_unavailable"); return; }
         if (res.status === 400) { setWbLookupResult("invalid"); return; }
         setWbLookupResult("not_found");
@@ -1815,6 +1819,7 @@ export default function SimpleLogPage() {
                                wbLookupResult === "not_found" ? "Nicht gefunden" :
                                wbLookupResult === "rate_limit" ? "Zu viele Anfragen, bitte warten" :
                                wbLookupResult === "ai_unavailable" ? "AI nicht verfügbar" :
+                               wbLookupResult === "ai_limit_exceeded" ? "Freikontingent aufgebraucht. Eigenen API Key in den Einstellungen hinterlegen." :
                                wbLookupResult === "invalid" ? "Ungültige ID (nur Zahlen)" : "Fehler"}
                             </p>
                           )}

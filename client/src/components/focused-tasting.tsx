@@ -170,7 +170,17 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
           customPrompt: insightsPrompt.trim() || undefined,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({}));
+          if (body.message === "AI_LIMIT_EXCEEDED") {
+            setInsights(t("ai.limitExceeded", "Dein Freikontingent ist aufgebraucht. Hinterlege deinen eigenen OpenAI API Key in den Einstellungen oder kontaktiere den Admin."));
+            setLoading(false);
+            return;
+          }
+        }
+        throw new Error("Failed");
+      }
       const data = await res.json();
       setInsights(data.insights);
     } catch {
