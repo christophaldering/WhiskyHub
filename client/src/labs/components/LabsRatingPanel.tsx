@@ -64,6 +64,7 @@ export interface LabsRatingPanelProps {
   defaultOpen?: boolean;
   compact?: boolean;
   wizard?: boolean;
+  onActiveTabChange?: (dim: DimKey) => void;
 }
 
 export default function LabsRatingPanel({
@@ -84,6 +85,7 @@ export default function LabsRatingPanel({
   defaultOpen = true,
   compact = false,
   wizard = false,
+  onActiveTabChange,
 }: LabsRatingPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -115,8 +117,9 @@ export default function LabsRatingPanel({
       setExpandedCats({});
       setShowFlavors(false);
       setCustomInput("");
+      onActiveTabChange?.(DIM_KEYS[wizardStep]);
     }
-  }, [wizard, wizardStep]);
+  }, [wizard, wizardStep, onActiveTabChange]);
 
   const wizardNavigate = useCallback((dir: "next" | "prev") => {
     setWizardTransition(true);
@@ -311,21 +314,22 @@ export default function LabsRatingPanel({
                 triggerHaptic("light");
               }}
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "linear-gradient(135deg, var(--labs-accent-muted), transparent)",
-                border: "1px solid var(--labs-accent-muted)",
-                borderRadius: 10, cursor: disabled ? "default" : "pointer",
-                color: "var(--labs-accent)", fontSize: 12, fontFamily: "inherit",
-                fontWeight: 600, opacity: disabled ? 0.5 : 1,
-                padding: "8px 14px",
+                display: "flex", alignItems: "center", gap: 8,
+                background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, var(--labs-surface)))",
+                border: "1px solid var(--labs-accent)",
+                borderRadius: 12, cursor: disabled ? "default" : "pointer",
+                color: "var(--labs-bg)", fontSize: 13, fontFamily: "inherit",
+                fontWeight: 700, opacity: disabled ? 0.5 : 1,
+                padding: "10px 16px",
                 transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
               }}
               data-testid="button-open-flavour-studio"
             >
-              <Sparkles style={{ width: 14, height: 14 }} />
+              <Sparkles style={{ width: 16, height: 16 }} />
               {t("m2.rating.flavourStudio", "Flavour Studio")}
               {activeChips.length > 0 && (
-                <span style={{ fontSize: 10, background: "var(--labs-accent)", color: "var(--labs-bg)", padding: "1px 7px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
+                <span style={{ fontSize: 10, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
                   {activeChips.length}
                 </span>
               )}

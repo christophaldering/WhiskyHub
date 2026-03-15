@@ -6,7 +6,7 @@ import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data"
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { DimKey } from "./LabsRatingPanel";
 
-type StudioView = "wheel" | "compass" | "radar" | "describe" | "discover";
+export type StudioView = "wheel" | "compass" | "radar" | "describe" | "discover";
 type CategoryId = "islay" | "speyside" | "sherry" | "bourbon" | "highland" | "japanese";
 type TermSection = "nose" | "palate" | "finish";
 
@@ -78,6 +78,7 @@ interface FlavourStudioSheetProps {
   existingChips: string[];
   onChipsChange: (chips: string[]) => void;
   disabled?: boolean;
+  initialView?: StudioView;
 }
 
 interface VocabCategory {
@@ -1009,11 +1010,17 @@ function DiscoverView({
 }
 
 export default function FlavourStudioSheet({
-  open, onOpenChange, dimension, existingChips, onChipsChange, disabled,
+  open, onOpenChange, dimension, existingChips, onChipsChange, disabled, initialView,
 }: FlavourStudioSheetProps) {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
-  const [view, setView] = useState<StudioView>("wheel");
+  const [view, setView] = useState<StudioView>(initialView || "wheel");
+
+  useEffect(() => {
+    if (open && initialView) {
+      setView(initialView);
+    }
+  }, [open, initialView]);
   const [customInput, setCustomInput] = useState("");
   const categories = useVocabCategories();
   const section = DIM_TO_SECTION[dimension] || "nose";

@@ -6,12 +6,15 @@ import { participantApi, collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar, Library, Archive
+  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar, Library, Archive,
+  Sparkles, Compass, Target, Layers,
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
+import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
+import type { StudioView } from "@/labs/components/FlavourStudioSheet";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -180,6 +183,10 @@ export default function LabsSolo() {
   const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "", balance: "" });
 
   const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
+
+  const [tastingToolsOpen, setTastingToolsOpen] = useState(false);
+  const [tastingToolsView, setTastingToolsView] = useState<StudioView>("wheel");
+  const [activeDimension, setActiveDimension] = useState<DimKey>("nose");
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
@@ -2337,8 +2344,67 @@ export default function LabsSolo() {
           showToggle={true}
           defaultOpen={true}
           wizard={true}
+          onActiveTabChange={setActiveDimension}
         />
       </div>
+
+      <div style={{ marginBottom: 24 }} data-testid="section-tasting-tools">
+        <div className="labs-section-label">{t("m2.solo.tastingToolsLabel", "Tasting Tools")}</div>
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
+        }}>
+          {([
+            { view: "discover" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolDiscover", "Discover"), desc: t("m2.solo.toolDiscoverDesc", "Swipe through flavours"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
+            { view: "wheel" as StudioView, icon: <Layers style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolWheel", "Flavour Wheel"), desc: t("m2.solo.toolWheelDesc", "Explore the aroma map"), gradient: "linear-gradient(135deg, #6a9f5b, #4a7a3e)" },
+            { view: "compass" as StudioView, icon: <Compass style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolCompass", "Compass"), desc: t("m2.solo.toolCompassDesc", "Navigate flavour profiles"), gradient: "linear-gradient(135deg, #5b7da9, #3e5a7a)" },
+            { view: "radar" as StudioView, icon: <Target style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolRadar", "Radar"), desc: t("m2.solo.toolRadarDesc", "Visualise your tasting"), gradient: "linear-gradient(135deg, #9b6aaf, #7a4a8e)" },
+          ]).map((tool) => (
+            <button
+              key={tool.view}
+              type="button"
+              onClick={() => {
+                setTastingToolsView(tool.view);
+                setTastingToolsOpen(true);
+              }}
+              data-testid={`button-tasting-tool-${tool.view}`}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
+                background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
+                borderRadius: 14, padding: "14px 14px 12px", cursor: "pointer",
+                textAlign: "left", fontFamily: "inherit",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 36, height: 36, borderRadius: 10,
+                background: tool.gradient, color: "#fff",
+                flexShrink: 0,
+              }}>
+                {tool.icon}
+              </span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                {tool.label}
+              </span>
+              <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                {tool.desc}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <FlavourStudioSheet
+        open={tastingToolsOpen}
+        onOpenChange={setTastingToolsOpen}
+        dimension={activeDimension === "balance" ? "nose" : activeDimension}
+        existingChips={detailChips[activeDimension === "balance" ? "nose" : activeDimension]}
+        onChipsChange={(chips) => {
+          const dim = activeDimension === "balance" ? "nose" : activeDimension;
+          setDetailChips((prev) => ({ ...prev, [dim]: chips }));
+        }}
+        initialView={tastingToolsView}
+      />
 
       {VOICE_MEMOS_ENABLED && unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
