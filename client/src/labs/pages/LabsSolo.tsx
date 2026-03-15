@@ -2121,6 +2121,7 @@ export default function LabsSolo() {
           scale={100}
           showToggle={true}
           defaultOpen={true}
+          wizard={true}
         />
       </div>
 

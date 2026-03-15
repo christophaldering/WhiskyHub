@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, Mic, Plus, Lock, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Mic, Plus, Lock, Sparkles } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 
 export type DimKey = "nose" | "taste" | "finish" | "balance";
@@ -32,6 +32,13 @@ const DIM_COLORS: Record<DimKey, string> = {
   balance: "var(--labs-dim-balance)",
 };
 
+const DIM_HINTS: Record<DimKey, { en: string; de: string }> = {
+  nose: { en: "How does the whisky smell?", de: "Wie riecht der Whisky?" },
+  taste: { en: "How does it taste on your palate?", de: "Wie schmeckt er am Gaumen?" },
+  finish: { en: "How is the finish?", de: "Wie ist der Abgang?" },
+  balance: { en: "How well balanced is it overall?", de: "Wie ausgewogen ist er insgesamt?" },
+};
+
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -54,6 +61,7 @@ export interface LabsRatingPanelProps {
   showToggle?: boolean;
   defaultOpen?: boolean;
   compact?: boolean;
+  wizard?: boolean;
 }
 
 export default function LabsRatingPanel({
@@ -73,6 +81,7 @@ export default function LabsRatingPanel({
   showToggle = false,
   defaultOpen = true,
   compact = false,
+  wizard = false,
 }: LabsRatingPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -83,10 +92,43 @@ export default function LabsRatingPanel({
   const isDE = i18n.language === "de";
   const [customInput, setCustomInput] = useState("");
 
+  const [wizardStep, setWizardStep] = useState(0);
+  const [wizardRevealed, setWizardRevealed] = useState(false);
+  const [wizardTransition, setWizardTransition] = useState(false);
+  const wizardContentRef = useRef<HTMLDivElement>(null);
+
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | null>(null);
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
+
+  const totalWizardSteps = 5;
+  const isWizardOverallStep = wizardStep === 4;
+
+  useEffect(() => {
+    if (wizard && wizardStep < 4) {
+      setActiveTab(DIM_KEYS[wizardStep]);
+      setExpandedCats({});
+      setShowFlavors(false);
+      setCustomInput("");
+    }
+  }, [wizard, wizardStep]);
+
+  const wizardNavigate = useCallback((dir: "next" | "prev") => {
+    setWizardTransition(true);
+    setTimeout(() => {
+      if (dir === "next" && wizardStep < 4) {
+        setWizardStep(wizardStep + 1);
+        if (wizardStep + 1 === 4) {
+          setWizardRevealed(false);
+          setTimeout(() => setWizardRevealed(true), 300);
+        }
+      } else if (dir === "prev" && wizardStep > 0) {
+        setWizardStep(wizardStep - 1);
+      }
+      setWizardTransition(false);
+    }, 150);
+  }, [wizardStep]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) {
@@ -510,7 +552,13 @@ export default function LabsRatingPanel({
                 <button
                   key={dim}
                   type="button"
-                  onClick={() => { setActiveTab(dim); }}
+                  onClick={() => {
+                    if (wizard) {
+                      setWizardStep(DIM_KEYS.indexOf(dim));
+                    } else {
+                      setActiveTab(dim);
+                    }
+                  }}
                   data-testid={`gated-dim-${dim}`}
                   style={{
                     padding: "2px 10px",
@@ -579,6 +627,300 @@ export default function LabsRatingPanel({
       )}
     </div>
   );
+
+  const renderWizardProgressDots = () => (
+    <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }} data-testid="wizard-progress">
+      {Array.from({ length: totalWizardSteps }).map((_, i) => {
+        const isActive = i === wizardStep;
+        const isCompleted = i < 4 ? scores[DIM_KEYS[i]] > 0 : !overallGated;
+        const dimColor = i < 4 ? DIM_COLORS[DIM_KEYS[i]] : "var(--labs-accent)";
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              if (!disabled) {
+                setWizardTransition(true);
+                setTimeout(() => {
+                  setWizardStep(i);
+                  if (i === 4 && !wizardRevealed) {
+                    setTimeout(() => setWizardRevealed(true), 300);
+                  }
+                  setWizardTransition(false);
+                }, 150);
+              }
+            }}
+            data-testid={`wizard-dot-${i}`}
+            style={{
+              width: isActive ? 28 : 10,
+              height: 10,
+              borderRadius: 5,
+              border: "none",
+              background: isActive ? dimColor : isCompleted ? dimColor : "var(--labs-border)",
+              opacity: isActive ? 1 : isCompleted ? 0.5 : 0.25,
+              cursor: disabled ? "default" : "pointer",
+              transition: "all 250ms cubic-bezier(0.2, 0.8, 0.4, 1)",
+              padding: 0,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const renderWizardStepHeader = () => {
+    if (isWizardOverallStep) return null;
+    const currentDim = DIM_KEYS[wizardStep];
+    const dimColor = DIM_COLORS[currentDim];
+    const hint = DIM_HINTS[currentDim];
+    return (
+      <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <div
+          className="labs-h2"
+          style={{ color: dimColor, marginBottom: 6, letterSpacing: "0.04em" }}
+          data-testid="wizard-step-title"
+        >
+          {dimLabels[currentDim]}
+        </div>
+        <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: 0 }} data-testid="wizard-step-hint">
+          {isDE ? hint.de : hint.en}
+        </p>
+      </div>
+    );
+  };
+
+  const renderWizardOverallReveal = () => {
+    const scoreCircleSize = 120;
+    const circumference = 2 * Math.PI * 52;
+    const progress = allDimsScored ? (overall / scale) : 0;
+    const offset = circumference * (1 - progress);
+
+    return (
+      <div style={{ textAlign: "center", paddingTop: 8 }} data-testid="wizard-overall-reveal">
+        <div
+          className="labs-h2"
+          style={{ color: "var(--labs-text)", marginBottom: 16 }}
+        >
+          {t("m2.rating.overall", "Overall")}
+        </div>
+
+        {allDimsScored && wizardRevealed && (
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 20,
+            animation: "labsFadeIn 600ms cubic-bezier(0.2, 0.8, 0.4, 1) both",
+          }}>
+            <div style={{ position: "relative", width: scoreCircleSize, height: scoreCircleSize }}>
+              <svg width={scoreCircleSize} height={scoreCircleSize} style={{ transform: "rotate(-90deg)" }}>
+                <circle
+                  cx={scoreCircleSize / 2}
+                  cy={scoreCircleSize / 2}
+                  r={52}
+                  fill="none"
+                  stroke="var(--labs-border)"
+                  strokeWidth={6}
+                />
+                <circle
+                  cx={scoreCircleSize / 2}
+                  cy={scoreCircleSize / 2}
+                  r={52}
+                  fill="none"
+                  stroke="var(--labs-accent)"
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={offset}
+                  style={{
+                    transition: "stroke-dashoffset 800ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                />
+              </svg>
+              <div style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <span
+                  className="labs-serif"
+                  style={{
+                    fontSize: 36,
+                    fontWeight: 700,
+                    color: "var(--labs-text)",
+                    fontVariantNumeric: "tabular-nums",
+                    animation: "labsFadeIn 500ms cubic-bezier(0.2, 0.8, 0.4, 1) both",
+                    animationDelay: "400ms",
+                  }}
+                  data-testid="wizard-overall-score"
+                >
+                  {overall}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 16 }}>
+          {DIM_KEYS.map((k) => (
+            <div key={k} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginBottom: 2 }}>{dimLabels[k]}</div>
+              <div className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: DIM_COLORS[k] }}>{scores[k]}</div>
+            </div>
+          ))}
+        </div>
+
+        {renderOverall()}
+      </div>
+    );
+  };
+
+  const renderWizardNavigation = () => {
+    const canGoBack = wizardStep > 0;
+    const canGoForward = wizardStep < 4;
+    const currentDim = wizardStep < 4 ? DIM_KEYS[wizardStep] : null;
+    const stepLabel = isWizardOverallStep
+      ? `${t("m2.rating.overall", "Overall")}`
+      : `${wizardStep + 1} / 4`;
+
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: 20,
+        paddingTop: 16,
+        borderTop: "1px solid var(--labs-border-subtle)",
+      }} data-testid="wizard-navigation">
+        <button
+          type="button"
+          onClick={() => wizardNavigate("prev")}
+          disabled={!canGoBack || disabled}
+          className="labs-btn-ghost"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            opacity: canGoBack ? 1 : 0.3,
+            padding: "8px 12px",
+          }}
+          data-testid="wizard-prev"
+        >
+          <ChevronLeft style={{ width: 16, height: 16 }} />
+          {isDE ? "Zurück" : "Back"}
+        </button>
+
+        <span style={{ fontSize: 12, color: "var(--labs-text-muted)", fontWeight: 500 }}>
+          {stepLabel}
+        </span>
+
+        {canGoForward ? (
+          <button
+            type="button"
+            onClick={() => wizardNavigate("next")}
+            disabled={disabled}
+            className="labs-btn-primary"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+            }}
+            data-testid="wizard-next"
+          >
+            {isDE ? "Weiter" : "Next"}
+            <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
+        ) : (
+          <div style={{ width: 80 }} />
+        )}
+      </div>
+    );
+  };
+
+  if (wizard) {
+    return (
+      <div data-testid="labs-rating-panel">
+        {showToggle && (
+          <button
+            type="button"
+            onClick={() => setShowDetailed(!showDetailed)}
+            data-testid="button-toggle-detailed"
+            style={{
+              width: "100%",
+              background: showDetailed
+                ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
+                : "var(--labs-surface)",
+              border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
+              borderRadius: 12,
+              cursor: "pointer",
+              color: "var(--labs-text)",
+              fontSize: 14,
+              fontFamily: "inherit",
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              textAlign: "left" as const,
+              transition: "all 0.2s ease",
+              boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
+            }}
+          >
+            <span style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+              flexShrink: 0,
+              transition: "all 0.2s",
+            }}>
+              <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
+                {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
+              </span>
+              <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
+                {t("m2.rating.detailedTastingDesc", "Score nose, taste, finish & balance individually")}
+              </span>
+            </div>
+            <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
+          </button>
+        )}
+
+        {(!showToggle || showDetailed) && (
+          <div style={{ paddingTop: 8, marginTop: 4 }}>
+            {renderWizardProgressDots()}
+
+            <div
+              ref={wizardContentRef}
+              style={{
+                opacity: wizardTransition ? 0 : 1,
+                transform: wizardTransition ? "translateX(8px)" : "translateX(0)",
+                transition: "opacity 150ms ease, transform 150ms ease",
+              }}
+            >
+              {isWizardOverallStep ? (
+                renderWizardOverallReveal()
+              ) : (
+                <>
+                  {renderWizardStepHeader()}
+                  {renderActiveTabContent()}
+                </>
+              )}
+            </div>
+
+            {renderWizardNavigation()}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div data-testid="labs-rating-panel">
