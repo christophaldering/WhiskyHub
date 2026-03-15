@@ -23,7 +23,7 @@ export default function LabsAbout() {
 
       <div className="flex items-center gap-2.5 mb-1">
         <Info className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-about-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-about-title">
           {t("about.title", "About CaskSense")}
         </h1>
       </div>
@@ -41,7 +41,7 @@ export default function LabsAbout() {
         {Array.isArray(blocks) && blocks.map((block, i) => (
           <div key={i} data-testid={`labs-about-block-${i}`}>
             {block.heading && (
-              <h3 className="labs-serif text-base font-bold mb-1.5" style={{ color: "var(--labs-accent)" }}>
+              <h3 className="labs-h3 mb-1.5" style={{ color: "var(--labs-accent)" }}>
                 {block.heading}
               </h3>
             )}

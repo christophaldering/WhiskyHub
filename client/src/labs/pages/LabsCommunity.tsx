@@ -55,7 +55,7 @@ export default function LabsCommunity() {
 
       <div className="flex items-center gap-2.5 mb-1">
         <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-community-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-community-title">
           Community
         </h1>
       </div>

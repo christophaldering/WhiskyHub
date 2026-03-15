@@ -17,13 +17,13 @@ export default function LabsImpressum() {
         <ChevronLeft className="w-4 h-4" /> About
       </button>
 
-      <h1 className="labs-serif text-2xl font-bold mb-8" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-title">
+      <h1 className="labs-h1 mb-8" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-title">
         {t("legal.impressum.title")}
       </h1>
 
       <div className="space-y-8">
         <section>
-          <h2 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-responsible">
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-responsible">
             {t("legal.impressum.responsibleTitle")}
           </h2>
           <p style={{ color: "var(--labs-text)", lineHeight: 1.7 }} data-testid="labs-impressum-address">
@@ -35,7 +35,7 @@ export default function LabsImpressum() {
         </section>
 
         <section>
-          <h2 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-contact-title">
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-contact-title">
             {t("legal.impressum.contactTitle")}
           </h2>
           <div className="space-y-2">
@@ -63,7 +63,7 @@ export default function LabsImpressum() {
         </section>
 
         <section>
-          <h2 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-disclaimer-title">
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-disclaimer-title">
             {t("legal.impressum.disclaimerTitle")}
           </h2>
           <p className="text-sm" style={{ color: "var(--labs-text-muted)", lineHeight: 1.7 }} data-testid="labs-impressum-disclaimer">
@@ -72,7 +72,7 @@ export default function LabsImpressum() {
         </section>
 
         <section>
-          <h2 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-project-title">
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-impressum-project-title">
             {t("legal.impressum.projectNoteTitle")}
           </h2>
           <p className="text-sm" style={{ color: "var(--labs-text-muted)", lineHeight: 1.7 }} data-testid="labs-impressum-project">

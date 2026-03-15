@@ -141,7 +141,7 @@ export default function LabsTasteSettings() {
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }}>Settings</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Settings</h1>
         </div>
         <div className="labs-empty" style={{ minHeight: 200 }}>
           <Settings className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
@@ -163,7 +163,7 @@ export default function LabsTasteSettings() {
       <div className="flex items-center gap-3">
         <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <div>
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-settings-title">Settings & Profile</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-settings-title">Settings & Profile</h1>
           <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Manage your account, preferences & taste defaults</p>
         </div>
       </div>
@@ -355,7 +355,7 @@ function SectionHeading({ icon: Icon, label }: { icon: React.ElementType; label:
   return (
     <div className="flex items-center gap-2">
       <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-      <h2 className="labs-serif text-base font-semibold" style={{ color: "var(--labs-accent)" }}>{label}</h2>
+      <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>{label}</h2>
     </div>
   );
 }

@@ -254,7 +254,7 @@ export default function LabsCollectionAnalysis() {
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">
           <Library className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-collection-analysis-title">
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-collection-analysis-title">
             Collection Analysis
           </h1>
         </div>

@@ -99,7 +99,7 @@ export default function LabsAICuration() {
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-curation-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-curation-title">
           AI Curation
         </h1>
       </div>

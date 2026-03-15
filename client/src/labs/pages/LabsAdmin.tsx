@@ -143,7 +143,7 @@ export default function LabsAdmin() {
         <ChevronLeft className="w-4 h-4" /> Home
       </button>
 
-      <h1 className="labs-serif text-xl font-bold mb-3" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
+      <h1 className="labs-h2 mb-3" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
 
       <div className="grid grid-cols-4 gap-2 mb-5">
         {[
@@ -154,7 +154,7 @@ export default function LabsAdmin() {
         ].map(s => (
           <div key={s.label} className="labs-card text-center py-3 px-2" data-testid={`labs-admin-stat-${s.label.toLowerCase()}`}>
             <s.Icon className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
-            <div className="labs-serif text-lg font-bold" style={{ color: "var(--labs-text)" }}>{s.value}</div>
+            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{s.value}</div>
             <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
           </div>
         ))}
@@ -887,7 +887,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
           { label: "Total Participants", value: (analytics.totalParticipants as number) || 0 },
         ].map(s => (
           <div key={s.label} className="labs-card text-center py-3" data-testid={`labs-admin-analytics-${s.label.toLowerCase().replace(/\s/g, "-")}`}>
-            <div className="labs-serif text-xl font-bold" style={{ color: "var(--labs-text)" }}>{s.value}</div>
+            <div className="labs-h2" style={{ color: "var(--labs-text)" }}>{s.value}</div>
             <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
           </div>
         ))}

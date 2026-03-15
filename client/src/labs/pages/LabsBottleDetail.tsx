@@ -110,7 +110,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
           <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || ""} size={56} testId="labs-bottle-image" />
           <div className="flex-1 min-w-0">
             <h1
-              className="labs-serif text-xl font-semibold leading-tight"
+              className="labs-h2 leading-tight"
               style={{ color: "var(--labs-text)" }}
               data-testid="labs-bottle-name"
             >

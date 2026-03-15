@@ -214,7 +214,7 @@ export default function LabsTasteCompare() {
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <GitCompareArrows className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-compare-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-compare-title">
           Compare
         </h1>
       </div>
@@ -421,7 +421,7 @@ export default function LabsTasteCompare() {
             <div className="labs-fade-in labs-stagger-2">
               <div className="flex items-center gap-2 mb-2">
                 <ArrowUpDown className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <h2 className="labs-serif text-base font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-radar-title">
+                <h2 className="labs-h3" style={{ color: "var(--labs-text)" }} data-testid="text-radar-title">
                   Whisky Radar Overlay
                 </h2>
               </div>

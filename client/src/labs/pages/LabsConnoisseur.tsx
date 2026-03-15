@@ -218,7 +218,7 @@ export default function LabsConnoisseur() {
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">
           <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-connoisseur-title">
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-connoisseur-title">
             Connoisseur Report
           </h1>
         </div>
@@ -418,7 +418,7 @@ export default function LabsConnoisseur() {
         >
           <div className="labs-card" style={{ padding: "24px 20px", maxWidth: 340, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
             <Trash2 className="w-7 h-7 mx-auto mb-3" style={{ color: "var(--labs-danger)" }} />
-            <h3 className="labs-serif text-base font-bold mb-2" style={{ color: "var(--labs-text)" }}>Delete Report?</h3>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Report?</h3>
             <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
               This action cannot be undone. The report and its data snapshot will be permanently removed.
             </p>

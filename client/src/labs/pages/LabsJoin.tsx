@@ -241,7 +241,7 @@ export default function LabsJoin() {
             <User className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
           </div>
           <h1
-            className="labs-serif text-2xl font-semibold mb-2"
+            className="labs-h1 mb-2"
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-join-guest-title"
           >
@@ -330,7 +330,7 @@ export default function LabsJoin() {
             <LogIn className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
           </div>
           <h1
-            className="labs-serif text-2xl font-semibold mb-2"
+            className="labs-h1 mb-2"
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-join-login-title"
           >
@@ -439,7 +439,7 @@ export default function LabsJoin() {
           <Wine className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
         </div>
         <h1
-          className="labs-serif text-2xl font-semibold mb-2"
+          className="labs-h1 mb-2"
           style={{ color: "var(--labs-text)" }}
           data-testid="labs-join-title"
         >

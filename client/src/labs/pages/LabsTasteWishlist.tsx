@@ -58,7 +58,7 @@ export default function LabsTasteWishlist() {
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
         </div>
         <div className="labs-empty" style={{ minHeight: 200 }}>
           <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)" }} />
@@ -84,7 +84,7 @@ export default function LabsTasteWishlist() {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
                 <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
-                <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">Wishlist</h1>
+                <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">Wishlist</h1>
               </div>
               <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">
                 <Plus className="w-4 h-4" /> Add Whisky
@@ -169,7 +169,7 @@ export default function LabsTasteWishlist() {
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-labs-delete-wishlist">
           <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 28 }}>
-            <h3 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-text)" }}>Delete Entry</h3>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Entry</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>Are you sure?</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px" }} data-testid="button-labs-cancel-delete">Cancel</button>
@@ -249,7 +249,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
         <ChevronLeft className="w-4 h-4" /> Back
       </button>
 
-      <h2 className="labs-serif text-lg font-bold mb-5" style={{ color: "var(--labs-text)" }} data-testid="text-labs-wishlist-form-title">
+      <h2 className="labs-h3 mb-5" style={{ color: "var(--labs-text)" }} data-testid="text-labs-wishlist-form-title">
         {entry ? "Edit Entry" : "Add Whisky"}
       </h2>
 

@@ -51,7 +51,7 @@ export default class LabsErrorBoundary extends Component<Props, State> {
           </div>
 
           <h2
-            className="labs-serif text-xl font-semibold mb-2"
+            className="labs-h2 mb-2"
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-error-boundary-title"
           >

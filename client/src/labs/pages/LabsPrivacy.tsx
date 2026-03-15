@@ -25,7 +25,7 @@ export default function LabsPrivacy() {
 
       <div className="flex items-center gap-3 mb-2">
         <Shield className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-2xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="labs-privacy-title">
+        <h1 className="labs-h1" style={{ color: "var(--labs-accent)" }} data-testid="labs-privacy-title">
           {t("legal.privacy.title")}
         </h1>
       </div>
@@ -37,7 +37,7 @@ export default function LabsPrivacy() {
       <div className="space-y-8">
         {SECTIONS.map((section) => (
           <section key={section}>
-            <h2 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid={`labs-privacy-${section}-title`}>
+            <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-accent)" }} data-testid={`labs-privacy-${section}-title`}>
               {t(`legal.privacy.${section}.title`)}
             </h2>
             <p className="text-sm whitespace-pre-line" style={{ color: "var(--labs-text-muted)", lineHeight: 1.7 }} data-testid={`labs-privacy-${section}-text`}>

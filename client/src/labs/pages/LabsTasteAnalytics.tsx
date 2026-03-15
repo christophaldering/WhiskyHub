@@ -306,7 +306,7 @@ export default function LabsTasteAnalytics() {
         </button>
       </Link>
 
-      <h1 className="labs-serif text-xl font-semibold mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-analytics-title">
+      <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-analytics-title">
         Analytics
       </h1>
       <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>

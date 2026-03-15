@@ -63,7 +63,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
             style={{ color: "var(--labs-danger)" }}
           />
           <h2
-            className="labs-serif text-lg font-bold mb-2"
+            className="labs-h3 mb-2"
             style={{ color: "var(--labs-text)" }}
           >
             Invitation Not Found
@@ -92,7 +92,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
             style={{ color: "var(--labs-accent)" }}
           />
           <h2
-            className="labs-serif text-lg font-bold mb-2"
+            className="labs-h3 mb-2"
             style={{ color: "var(--labs-text)" }}
           >
             Tasting Invitation
@@ -126,7 +126,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
             style={{ color: "var(--labs-success)" }}
           />
           <h2
-            className="labs-serif text-lg font-bold mb-2"
+            className="labs-h3 mb-2"
             style={{ color: "var(--labs-text)" }}
           >
             Invitation Accepted!
@@ -148,7 +148,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
             style={{ color: "var(--labs-danger)" }}
           />
           <h2
-            className="labs-serif text-lg font-bold mb-2"
+            className="labs-h3 mb-2"
             style={{ color: "var(--labs-text)" }}
           >
             Could Not Accept

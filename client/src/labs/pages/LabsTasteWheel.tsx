@@ -95,7 +95,7 @@ export default function LabsTasteWheel() {
         </button>
       </Link>
 
-      <h1 className="labs-serif text-xl font-semibold mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-wheel-title">
+      <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-wheel-title">
         Flavor Wheel
       </h1>
       <p className="text-sm mb-1 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
@@ -116,21 +116,21 @@ export default function LabsTasteWheel() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="grid grid-cols-3 gap-3 labs-fade-in">
             <div className="labs-card p-3 text-center" data-testid="stat-total-mentions">
-              <p className="labs-serif text-xl font-bold" style={{ color: "var(--labs-accent)" }}>{totalMentions}</p>
+              <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{totalMentions}</p>
               <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Total Mentions</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-top-category">
-              <p className="labs-serif text-xl font-bold" style={{ color: topCategory?.color }}>{topCategory ? locName(topCategory) : "—"}</p>
+              <p className="labs-h2" style={{ color: topCategory?.color }}>{topCategory ? locName(topCategory) : "—"}</p>
               <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Top Category</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-unique-flavor">
-              <p className="labs-serif text-xl font-bold" style={{ color: "var(--labs-accent)" }}>{mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}</p>
+              <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}</p>
               <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Most Unique</p>
             </div>
           </div>
 
           <div className="labs-card p-5 labs-fade-in labs-stagger-1">
-            <h2 className="labs-serif text-base font-semibold mb-4" style={{ color: "var(--labs-text)" }}>Flavor Distribution</h2>
+            <h2 className="labs-h3 mb-4" style={{ color: "var(--labs-text)" }}>Flavor Distribution</h2>
             <div style={{ height: 380 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -184,7 +184,7 @@ export default function LabsTasteWheel() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: selectedCatData.color }} />
-                  <h2 className="labs-serif text-base font-semibold" style={{ color: "var(--labs-text)" }}>{locName(selectedCatData)}</h2>
+                  <h2 className="labs-h3" style={{ color: "var(--labs-text)" }}>{locName(selectedCatData)}</h2>
                   <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({categoryFreqs[selectedCatData.id]} mentions)</span>
                 </div>
                 <button onClick={() => setSelectedCategory(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid="button-close-detail">

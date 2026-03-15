@@ -52,7 +52,7 @@ export default function LabsActivity() {
 
       <div className="flex items-center gap-2.5 mb-1">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-activity-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-activity-title">
           Activity Feed
         </h1>
       </div>

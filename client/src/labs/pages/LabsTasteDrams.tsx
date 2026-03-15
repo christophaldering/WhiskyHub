@@ -294,7 +294,7 @@ export default function LabsTasteDrams() {
           <div className="flex items-start justify-between gap-4 mb-4">
             <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.whiskyName || selectedEntry.title || ""} size={64} height={88} className="flex-shrink-0" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)", margin: 0 }}>
+              <h2 className="labs-h3" style={{ color: "var(--labs-accent)", margin: 0 }}>
                 {selectedEntry.whiskyName || selectedEntry.title || "—"}
               </h2>
               {selectedEntry.distillery && <div className="text-sm mt-1" style={{ color: "var(--labs-text-secondary)" }}>{selectedEntry.distillery}</div>}
@@ -309,7 +309,7 @@ export default function LabsTasteDrams() {
             </div>
             {selectedEntry.personalScore != null && (
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div className="labs-serif text-2xl font-bold" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.personalScore).toFixed(1)}</div>
+                <div className="labs-h1" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.personalScore).toFixed(1)}</div>
                 <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Score</div>
               </div>
             )}
@@ -468,7 +468,7 @@ export default function LabsTasteDrams() {
                 { value: journal.filter((e: any) => e.status === "draft").length, label: "Drafts" },
               ].map(s => (
                 <div key={s.label} className="text-center">
-                  <div className="labs-serif text-xl font-bold" style={{ color: "var(--labs-accent)" }}>{s.value}</div>
+                  <div className="labs-h2" style={{ color: "var(--labs-accent)" }}>{s.value}</div>
                   <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
                 </div>
               ))}
@@ -635,7 +635,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
         <div className="flex flex-wrap gap-2" style={{ marginBottom: hasDims ? 12 : 0 }}>
           {(["nose", "taste", "finish", "balance"] as const).map(k => scores[k] != null ? (
             <div key={k} style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
-              <div className="labs-serif text-base font-bold" style={{ color: "var(--labs-accent)" }}>{scores[k]}</div>
+              <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{scores[k]}</div>
               <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{dimLabels[k]}</div>
             </div>
           ) : null)}
@@ -724,12 +724,12 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
       </div>
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="labs-card p-2.5 text-center">
-          <div className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{data.count}</div>
+          <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{data.count}</div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Appearances</div>
         </div>
         {(data.avgScoreNormalized ?? data.avgScore) != null && (
           <div className="labs-card p-2.5 text-center">
-            <div className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)" }}>
+            <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>
               {Math.round(data.avgScoreNormalized ?? (data.avgScore ?? 0) * 10)}<span className="text-xs font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
             </div>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Avg Score</div>
@@ -739,7 +739,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
           <div className="labs-card p-2.5 text-center">
             <div className="flex items-center justify-center gap-1">
               <Trophy className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-              <span className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)" }}>#{data.bestPlacement.rank}</span>
+              <span className="labs-h3" style={{ color: "var(--labs-accent)" }}>#{data.bestPlacement.rank}</span>
             </div>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Best Rank</div>
           </div>
@@ -796,7 +796,7 @@ function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-labs-delete-dram">
       <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
-        <h3 className="labs-serif text-lg font-bold mb-2" style={{ color: "var(--labs-text)" }}>Delete Dram</h3>
+        <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Dram</h3>
         <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Are you sure you want to delete this entry? This cannot be undone.</p>
         <div className="flex justify-end gap-2.5">
           <button onClick={onCancel} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-labs-cancel-delete">Cancel</button>

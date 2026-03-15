@@ -358,7 +358,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       >
         <Link href="/labs">
           <span
-            className="labs-serif text-lg font-semibold tracking-tight cursor-pointer"
+            className="labs-h3 tracking-tight cursor-pointer"
             style={{ color: "var(--labs-accent)" }}
             data-testid="labs-logo"
           >

@@ -22,7 +22,7 @@ export default function LabsDonate() {
 
       <div className="flex items-center gap-2.5 mb-1">
         <Heart className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-donate-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-donate-title">
           {t("donate.title", "Donate")}
         </h1>
       </div>

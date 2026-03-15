@@ -802,7 +802,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1
-              className="labs-serif text-xl font-semibold mb-1"
+              className="labs-h2 mb-1"
               style={{ color: "var(--labs-text)" }}
               data-testid="results-title"
             >
@@ -916,7 +916,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="labs-serif text-base font-semibold" style={{ color: "var(--labs-text)" }}>
+              <p className="labs-h3" style={{ color: "var(--labs-text)" }}>
                 {topWhisky.name || "Unknown"}
               </p>
               <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>

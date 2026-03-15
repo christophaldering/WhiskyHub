@@ -187,7 +187,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       <div className="mb-6">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h1
-            className="labs-serif text-xl font-semibold"
+            className="labs-h2"
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-detail-title"
           >

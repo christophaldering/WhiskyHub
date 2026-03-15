@@ -92,7 +92,7 @@ export default function LabsTasteDownloads() {
         <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <div className="flex items-center gap-2">
           <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">Downloads & Export</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">Downloads & Export</h1>
         </div>
       </div>
       <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>Export your data and download templates</p>

@@ -31,6 +31,13 @@
   --labs-radius-lg: 22px;
   --labs-radius-xl: 28px;
 
+  --labs-space-xs: 4px;
+  --labs-space-sm: 8px;
+  --labs-space-md: 16px;
+  --labs-space-lg: 24px;
+  --labs-space-xl: 32px;
+  --labs-space-2xl: 48px;
+
   background-color: var(--labs-bg);
   color: var(--labs-text);
   min-height: 100dvh;
@@ -83,6 +90,32 @@
 
 .labs-serif {
   font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+.labs-h1 {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(26px, 5vw, 32px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--labs-text);
+  letter-spacing: -0.01em;
+}
+
+.labs-h2 {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(20px, 3.5vw, 24px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--labs-text);
+  letter-spacing: -0.005em;
+}
+
+.labs-h3 {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(16px, 2.5vw, 18px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--labs-text);
 }
 
 .labs-card {
@@ -237,12 +270,17 @@
 }
 
 .labs-section-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--labs-text-muted);
-  margin-bottom: 12px;
+  margin-top: var(--labs-space-xl);
+  margin-bottom: var(--labs-space-md);
+}
+
+.labs-section-label:first-child {
+  margin-top: 0;
 }
 
 .labs-divider {
@@ -411,13 +449,13 @@
 }
 
 .labs-page {
-  padding: 20px 20px 24px;
+  padding: var(--labs-space-lg) var(--labs-space-lg) var(--labs-space-xl);
   max-width: 640px;
   margin: 0 auto;
 }
 
 .labs-page-wide {
-  padding: 20px 20px 24px;
+  padding: var(--labs-space-lg) var(--labs-space-lg) var(--labs-space-xl);
   max-width: 800px;
   margin: 0 auto;
 }
@@ -525,8 +563,8 @@
 .labs-list-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 16px 18px;
   background: var(--labs-surface);
   cursor: pointer;
   transition: background-color 160ms ease;
@@ -554,15 +592,15 @@
 .labs-action-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 14px;
 }
 
 .labs-action-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 16px 8px 14px;
+  gap: 8px;
+  padding: 18px 10px 16px;
   background: var(--labs-surface);
   border: 1px solid var(--labs-border);
   border-radius: var(--labs-radius);

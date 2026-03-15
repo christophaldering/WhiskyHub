@@ -35,7 +35,7 @@ function GuidedLobby({ tasting, participantCount }: { tasting: any; participantC
         </div>
 
         <h2
-          className="labs-serif text-xl font-semibold mb-2"
+          className="labs-h2 mb-2"
           style={{ color: "var(--labs-text)" }}
           data-testid="guided-lobby-title"
         >
@@ -119,7 +119,7 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
         </div>
 
         <h2
-          className="labs-serif text-xl font-semibold mb-3"
+          className="labs-h2 mb-3"
           style={{ color: "var(--labs-text)" }}
           data-testid="guided-complete-title"
         >
@@ -455,7 +455,7 @@ function GuidedStepView({
 
         <div className="text-center py-3">
           <h2
-            className="labs-serif text-lg font-semibold"
+            className="labs-h3"
             style={{ color: "var(--labs-text)" }}
             data-testid="guided-whisky-name"
           >
@@ -650,7 +650,7 @@ function GuidedStepView({
                   )}
                 </span>
                 <span
-                  className="labs-serif text-2xl font-bold tabular-nums"
+                  className="labs-h1 tabular-nums"
                   style={{ color: "var(--labs-accent)" }}
                   data-testid="guided-overall"
                 >
@@ -1114,7 +1114,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">
           <h1
-            className="labs-serif text-lg font-semibold"
+            className="labs-h3"
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-live-title"
           >
@@ -1187,7 +1187,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   />
                 )}
                 <h2
-                  className="labs-serif text-base font-semibold"
+                  className="labs-h3"
                   data-testid="labs-live-whisky-name"
                 >
                   {displayName}
@@ -1395,7 +1395,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       )}
                     </span>
                     <span
-                      className="labs-serif text-2xl font-bold tabular-nums"
+                      className="labs-h1 tabular-nums"
                       style={{ color: "var(--labs-accent)" }}
                       data-testid="labs-live-overall"
                     >

@@ -261,7 +261,7 @@ export default function LabsBenchmark() {
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">
           <Brain className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-accent)" }} data-testid="text-benchmark-title">
+          <h1 className="labs-h2" style={{ color: "var(--labs-accent)" }} data-testid="text-benchmark-title">
             Benchmark
           </h1>
         </div>
@@ -300,7 +300,7 @@ export default function LabsBenchmark() {
               <div style={{ width: 64, height: 64, borderRadius: "50%", background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <Brain className="w-8 h-8" style={{ color: "var(--labs-accent)" }} />
               </div>
-              <h2 className="labs-serif text-lg font-bold mb-1" style={{ color: "var(--labs-accent)" }}>Upload & Extract</h2>
+              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-accent)" }}>Upload & Extract</h2>
               <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 400, margin: "0 auto" }}>
                 Upload tasting notes, reviews, or articles. AI will extract whisky data automatically.
               </p>
@@ -341,7 +341,7 @@ export default function LabsBenchmark() {
               <div className="labs-fade-in" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
-                    <h2 className="labs-serif text-lg font-bold" style={{ color: "var(--labs-accent)" }}>Results</h2>
+                    <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>Results</h2>
                     <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "2px 8px" }}>{extractedEntries.length} entries</span>
                     {fileName && <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}><FileText className="w-3 h-3" />{fileName}</span>}
                   </div>

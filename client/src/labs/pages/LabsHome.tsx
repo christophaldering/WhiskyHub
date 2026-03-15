@@ -51,7 +51,7 @@ export default function LabsHome() {
       <div className="flex flex-col items-center text-center mb-12 labs-fade-in">
         <GlencairnHero size={52} />
         <h1
-          className="labs-serif text-3xl font-semibold mt-5 mb-3"
+          className="labs-h1 mt-5 mb-3"
           style={{ color: "var(--labs-text)" }}
           data-testid="labs-home-title"
         >

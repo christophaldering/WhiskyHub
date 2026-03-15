@@ -220,7 +220,7 @@ export default function LabsTasteProfile() {
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif text-xl font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-profile-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-profile-title">
           CaskSense Profile
         </h1>
       </div>
@@ -286,7 +286,7 @@ export default function LabsTasteProfile() {
 
           {radarData.length > 0 && (
             <div className="labs-card p-5 labs-fade-in labs-stagger-3" data-testid="section-radar">
-              <h2 className="labs-serif text-base font-semibold mb-1" style={{ color: "var(--labs-text)" }}>Taste Radar</h2>
+              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>Taste Radar</h2>
               <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>
                 Your flavor profile across all dimensions
               </p>
@@ -341,7 +341,7 @@ export default function LabsTasteProfile() {
 
           {whiskyProfile?.ratingStyle && (
             <div className="labs-card p-5 labs-fade-in labs-stagger-3" data-testid="section-rating-style">
-              <h2 className="labs-serif text-base font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
+              <h2 className="labs-h3 mb-3 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
                 <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 Rating Style
               </h2>
@@ -382,7 +382,7 @@ export default function LabsTasteProfile() {
 
           {whiskyProfile?.whiskyComparison && whiskyProfile.whiskyComparison.length > 0 && (
             <div className="labs-card p-5 labs-fade-in" data-testid="section-whisky-comparison">
-              <h2 className="labs-serif text-base font-semibold mb-1 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
+              <h2 className="labs-h3 mb-1 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
                 <Globe className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 Your Scores vs Platform
               </h2>

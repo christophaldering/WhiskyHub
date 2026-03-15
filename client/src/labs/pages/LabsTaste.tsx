@@ -154,7 +154,7 @@ export default function LabsTaste() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
-      <h1 className="labs-serif text-xl font-semibold mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
+      <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
         My Taste
       </h1>
       <p className="text-sm mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
@@ -164,7 +164,7 @@ export default function LabsTaste() {
       {analyticsLocked ? (
         <div className="labs-card p-6 mb-6 text-center labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
           <div style={{ fontSize: 36, marginBottom: 12 }}>🥃</div>
-          <h2 className="labs-serif text-lg font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</h2>
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</h2>
           <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 280, margin: "0 auto 16px" }}>
             Rate whiskies and log drams to unlock your personal taste profile
           </p>

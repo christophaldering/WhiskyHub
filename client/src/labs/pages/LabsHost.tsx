@@ -1164,7 +1164,7 @@ function MobileCompanion({
           ) : (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <h1
-                className="labs-serif text-lg font-semibold"
+                className="labs-h3"
                 style={{ color: "var(--labs-text)", margin: 0, cursor: "pointer" }}
                 onClick={() => setMobileEditTitle((tasting.title as string) || "")}
                 data-testid="labs-mobile-title"
@@ -2194,7 +2194,7 @@ function CreateTastingForm() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
       <h1
-        className="labs-serif text-xl font-semibold mb-2"
+        className="labs-h2 mb-2"
         style={{ color: "var(--labs-text)" }}
         data-testid="labs-host-title"
       >
@@ -4220,7 +4220,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h1
-              className="labs-serif text-xl font-semibold mb-1"
+              className="labs-h2 mb-1"
               data-testid="labs-host-tasting-title"
             >
               {tasting.title}

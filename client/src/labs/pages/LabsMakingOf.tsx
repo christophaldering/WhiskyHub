@@ -70,7 +70,7 @@ function StatCard({ label, value, icon: Icon, testId, delay }: { label: string; 
       data-testid={testId}
     >
       <Icon className="w-[18px] h-[18px] mx-auto mb-2 opacity-70" style={{ color: "var(--labs-accent)" }} strokeWidth={1.5} />
-      <div className="labs-serif text-2xl font-bold" style={{ color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div className="labs-h1" style={{ color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
       <div className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{label}</div>
     </div>
   );
@@ -204,7 +204,7 @@ export default function LabsMakingOf() {
         <BackBtn />
         <div className="text-center py-16">
           <Lock className="w-10 h-10 mx-auto mb-4 opacity-40" style={{ color: "var(--labs-text-muted)" }} />
-          <h3 className="labs-serif text-lg font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Access Required</h3>
+          <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Access Required</h3>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
             This page is available by invitation only. Ask the admin for access.
           </p>
@@ -220,7 +220,7 @@ export default function LabsMakingOf() {
       <BackBtn />
 
       <div className="text-center mt-4 mb-8">
-        <h1 className="labs-serif text-2xl font-bold mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-makingof-title">
+        <h1 className="labs-h1 mb-2" style={{ color: "var(--labs-accent)" }} data-testid="labs-makingof-title">
           The Making of CaskSense
         </h1>
         <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
@@ -237,7 +237,7 @@ export default function LabsMakingOf() {
         <StatCard label="Languages" value={stats.languages} icon={Languages} testId="labs-makingof-stat-langs" delay={500} />
       </div>
 
-      <h2 className="labs-serif text-lg font-bold mb-6" style={{ color: "var(--labs-text)" }}>The Journey</h2>
+      <h2 className="labs-h3 mb-6" style={{ color: "var(--labs-text)" }}>The Journey</h2>
 
       <div>
         {chapters.map((chapter, i) => (
