@@ -1686,27 +1686,31 @@ function MobileCompanion({
       })()}
 
       {pid && whiskies.length > 0 && (
-        <PrintMaterialsSection
-          tasting={tasting as Record<string, unknown>}
-          whiskies={whiskies as Array<Record<string, unknown>>}
-          participants={participants as Array<Record<string, unknown>>}
-          currentParticipant={{ id: pid, name: (currentParticipant as Record<string, unknown>)?.name || "Host" }}
-        />
+        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--labs-border, rgba(255,255,255,0.08))" }}>
+          <PrintMaterialsSection
+            tasting={tasting as Record<string, unknown>}
+            whiskies={whiskies as Array<Record<string, unknown>>}
+            participants={participants as Array<Record<string, unknown>>}
+            currentParticipant={{ id: pid, name: (currentParticipant as Record<string, unknown>)?.name || "Host" }}
+          />
+        </div>
       )}
 
       {pid && (
-        <button
-          className="labs-btn-secondary w-full flex items-center justify-center gap-2 mb-4"
-          onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-          data-testid="mobile-paper-scan"
-        >
-          <ScanLine className="w-4 h-4" />
-          Paper Sheet Scanner
-        </button>
+        <div className="mt-6">
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+            data-testid="mobile-paper-scan"
+          >
+            <ScanLine className="w-4 h-4" />
+            Paper Sheet Scanner
+          </button>
+        </div>
       )}
 
       {pid && whiskies.length > 0 && (
-        <div style={{ marginTop: 16 }}>
+        <div className="mt-6">
           <HostRatingPanel
             whiskies={whiskies as Array<{ id: string; name?: string; distillery?: string; age?: number; abv?: number }>}
             tastingId={tastingId}
@@ -4996,16 +5000,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       )}
 
       {currentParticipant && whiskyCount > 0 && (
-        <PrintMaterialsSection
-          tasting={tasting}
-          whiskies={whiskies || []}
-          participants={participants || []}
-          currentParticipant={currentParticipant}
-        />
+        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--labs-border, rgba(255,255,255,0.08))" }}>
+          <PrintMaterialsSection
+            tasting={tasting}
+            whiskies={whiskies || []}
+            participants={participants || []}
+            currentParticipant={currentParticipant}
+          />
+        </div>
       )}
 
       {currentParticipant && (
-        <div className="mb-6">
+        <div className="mt-6 mb-6">
           <button
             className="labs-btn-secondary w-full flex items-center justify-center gap-2"
             onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
@@ -5018,7 +5024,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       )}
 
       {currentParticipant && whiskyCount > 0 && (
-        <div className="mb-6">
+        <div className="mt-6 mb-6">
           <h2 className="labs-section-label">Host Rating</h2>
           <HostRatingPanel
             whiskies={whiskies}
