@@ -1826,7 +1826,7 @@ export default function LabsSolo() {
                           key={entry.id}
                           className="labs-card labs-card-interactive"
                           style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}
-                          onClick={() => navigate("/labs/taste")}
+                          onClick={() => loadDraftIntoForm(entry)}
                           data-testid={`card-completed-${entry.id}`}
                         >
                           {entry.imageUrl ? (
