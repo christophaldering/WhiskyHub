@@ -4910,6 +4910,11 @@ const resources = {
           studioCompass: "Compass",
           studioDescribe: "Describe",
           studioDiscover: "Discover",
+          studioAxisLight: "Light",
+          studioAxisFullBodied: "Full-Bodied",
+          studioAxisSmoky: "Smoky",
+          studioAxisSweet: "Sweet",
+          studioYouLabel: "You",
           customDescriptor: "Custom descriptor...",
         },
         error: {
@@ -10844,6 +10849,11 @@ const resources = {
           studioCompass: "Kompass",
           studioDescribe: "Beschreiben",
           studioDiscover: "Entdecken",
+          studioAxisLight: "Leicht",
+          studioAxisFullBodied: "Vollmundig",
+          studioAxisSmoky: "Rauchig",
+          studioAxisSweet: "Süß",
+          studioYouLabel: "Du",
           customDescriptor: "Eigener Deskriptor...",
         },
         error: {

@@ -291,6 +291,7 @@ function CompactCompass({
   selected: Set<string>;
   onToggle: (term: string) => void;
 }) {
+  const { t } = useTranslation();
   const [selectedCat, setSelectedCat] = useState<CategoryId | null>(null);
   const w = 300, h = 260;
   const selCat = selectedCat ? categories.find((c) => c.id === selectedCat) : null;
@@ -299,7 +300,7 @@ function CompactCompass({
     if (selected.size === 0) return null;
     let totalX = 0, totalY = 0, totalWeight = 0;
     for (const cat of categories) {
-      const matchCount = cat[section].filter((t) => selected.has(t.toLowerCase())).length;
+      const matchCount = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
       if (matchCount > 0) {
         const pos = COMPASS_POSITIONS[cat.id];
         totalX += pos.x * matchCount;
@@ -333,10 +334,10 @@ function CompactCompass({
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 320, margin: "0 auto", display: "block" }}>
         <line x1={30} y1={h / 2} x2={w - 30} y2={h / 2} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
         <line x1={w / 2} y1={20} x2={w / 2} y2={h - 20} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
-        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="end">Full-Bodied</text>
-        <text x={35} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="start">Light</text>
-        <text x={w / 2} y={28} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">Smoky</text>
-        <text x={w / 2} y={h - 16} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">Sweet</text>
+        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="end">{t("m2.rating.studioAxisFullBodied", "Full-Bodied")}</text>
+        <text x={35} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="start">{t("m2.rating.studioAxisLight", "Light")}</text>
+        <text x={w / 2} y={28} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSmoky", "Smoky")}</text>
+        <text x={w / 2} y={h - 16} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSweet", "Sweet")}</text>
         {categories.map((cat) => {
           const pos = COMPASS_POSITIONS[cat.id];
           const px = 30 + pos.x * (w - 60);
@@ -345,7 +346,7 @@ function CompactCompass({
           const isDimmed = selectedCat !== null && !isSelected;
           const r = isSelected ? 24 : 20;
           const color = CATEGORY_COLORS[cat.id];
-          const count = cat[section].filter((t) => selected.has(t.toLowerCase())).length;
+          const count = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
           return (
             <g key={cat.id} onClick={() => { setSelectedCat(isSelected ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
               <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.06} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
@@ -362,11 +363,11 @@ function CompactCompass({
                   <text x={px + r - 2} y={py - r + 2} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-bg)" fontSize={7} fontWeight={700}>{count}</text>
                 </g>
               )}
-              {cat[section].filter((t) => selected.has(t.toLowerCase())).map((t, ti) => {
+              {cat[section].filter((term) => selected.has(term.toLowerCase())).map((selTerm, ti) => {
                 const dotAngle = (ti * 45 + 20) * (Math.PI / 180);
                 const dotR = r * 0.65;
                 return (
-                  <circle key={t} cx={px + dotR * Math.cos(dotAngle)} cy={py + dotR * Math.sin(dotAngle)}
+                  <circle key={selTerm} cx={px + dotR * Math.cos(dotAngle)} cy={py + dotR * Math.sin(dotAngle)}
                     r={3} fill={color} fillOpacity={0.9} style={{ transition: "all 0.3s ease", filter: `drop-shadow(0 0 3px ${color})` }} />
                 );
               })}
@@ -389,7 +390,7 @@ function CompactCompass({
           <g>
             <circle cx={userPosition.x} cy={userPosition.y} r={8} fill="var(--labs-accent)" fillOpacity={0.2} stroke="var(--labs-accent)" strokeWidth={1.5} strokeDasharray="3 2" style={{ transition: "all 0.5s ease" }} />
             <circle cx={userPosition.x} cy={userPosition.y} r={3} fill="var(--labs-accent)" style={{ transition: "all 0.5s ease" }} />
-            <text x={userPosition.x} y={userPosition.y - 12} textAnchor="middle" fill="var(--labs-accent)" fontSize={7} fontWeight={600}>You</text>
+            <text x={userPosition.x} y={userPosition.y - 12} textAnchor="middle" fill="var(--labs-accent)" fontSize={7} fontWeight={600}>{t("m2.rating.studioYouLabel", "You")}</text>
           </g>
         )}
       </svg>
@@ -656,11 +657,11 @@ function DescribeView({
       }
     } catch {
       const lower = text.toLowerCase();
-      const matched = allTerms.filter((t) =>
-        t.toLowerCase().includes(lower) ||
+      const matched = allTerms.filter((term) =>
+        term.toLowerCase().includes(lower) ||
         FLAVOR_CATEGORIES.some((cat) =>
           cat.subcategories.some((sub) =>
-            sub.keywords.some((kw) => kw.includes(lower)) && (sub.en === t || sub.de === t)
+            sub.keywords.some((kw) => kw.includes(lower)) && (sub.en === term || sub.de === term)
           )
         )
       );
@@ -1010,7 +1011,7 @@ function DiscoverView({
 export default function FlavourStudioSheet({
   open, onOpenChange, dimension, existingChips, onChipsChange, disabled,
 }: FlavourStudioSheetProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
   const [view, setView] = useState<StudioView>("wheel");
   const [customInput, setCustomInput] = useState("");
