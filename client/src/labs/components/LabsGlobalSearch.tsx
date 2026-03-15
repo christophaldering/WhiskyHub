@@ -158,15 +158,6 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-    const handlePopState = () => {
-      handleClose(true);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [open, handleClose]);
-
-  useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
     return () => clearTimeout(timer);
   }, [query]);
@@ -318,8 +309,17 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       setVisible(false);
       setExiting(false);
       onClose();
-    }, 200);
+    }, 300);
   }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePopState = () => {
+      handleClose(true);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [open, handleClose]);
 
   const handleNavigate = useCallback((route: string) => {
     if (query.trim()) saveRecent(query.trim());
@@ -404,7 +404,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         background: "var(--labs-bg)",
         opacity: exiting ? 0 : 1,
         transform: exiting ? "translateY(8px)" : "translateY(0)",
-        transition: "opacity 200ms cubic-bezier(0.2, 0.8, 0.4, 1), transform 200ms cubic-bezier(0.2, 0.8, 0.4, 1)",
+        transition: "opacity 300ms cubic-bezier(0.2, 0.8, 0.4, 1), transform 300ms cubic-bezier(0.2, 0.8, 0.4, 1)",
         animation: !exiting ? "labsSearchIn 300ms cubic-bezier(0.2, 0.8, 0.4, 1) both" : undefined,
         display: "flex",
         flexDirection: "column",

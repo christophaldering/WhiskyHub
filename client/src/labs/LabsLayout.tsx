@@ -287,8 +287,8 @@ function LabsNotificationBell() {
         onClick={() => setOpen(!open)}
         className="flex items-center justify-center rounded-full transition-all relative"
         style={{
-          width: 44,
-          height: 44,
+          width: 36,
+          height: 36,
           background: "var(--labs-surface-elevated)",
           border: "1px solid var(--labs-border)",
           color: "var(--labs-text-secondary)",
@@ -434,8 +434,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             onClick={() => { setSearchOpen(true); triggerHaptic("light"); }}
             className="flex items-center justify-center rounded-full transition-all"
             style={{
-              width: 44,
-              height: 44,
+              width: 36,
+              height: 36,
               background: "var(--labs-surface-elevated)",
               border: "1px solid var(--labs-border)",
               color: "var(--labs-text-secondary)",
