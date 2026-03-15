@@ -130,13 +130,14 @@ function findTermCategory(term: string, categories: VocabCategory[]): CategoryId
   return null;
 }
 
-function SegmentedControl({ value, onChange, isDE }: { value: StudioView; onChange: (v: StudioView) => void; isDE: boolean }) {
+function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v: StudioView) => void }) {
+  const { t } = useTranslation();
   const options: { key: StudioView; label: string }[] = [
-    { key: "wheel", label: isDE ? "Rad" : "Wheel" },
-    { key: "compass", label: isDE ? "Kompass" : "Compass" },
+    { key: "wheel", label: t("m2.rating.studioWheel", "Wheel") },
+    { key: "compass", label: t("m2.rating.studioCompass", "Compass") },
     { key: "radar", label: "Radar" },
-    { key: "describe", label: isDE ? "Beschreiben" : "Describe" },
-    { key: "discover", label: isDE ? "Entdecken" : "Discover" },
+    { key: "describe", label: t("m2.rating.studioDescribe", "Describe") },
+    { key: "discover", label: t("m2.rating.studioDiscover", "Discover") },
   ];
 
   return (
@@ -294,6 +295,39 @@ function CompactCompass({
   const w = 300, h = 260;
   const selCat = selectedCat ? categories.find((c) => c.id === selectedCat) : null;
 
+  const userPosition = useMemo(() => {
+    if (selected.size === 0) return null;
+    let totalX = 0, totalY = 0, totalWeight = 0;
+    for (const cat of categories) {
+      const matchCount = cat[section].filter((t) => selected.has(t.toLowerCase())).length;
+      if (matchCount > 0) {
+        const pos = COMPASS_POSITIONS[cat.id];
+        totalX += pos.x * matchCount;
+        totalY += pos.y * matchCount;
+        totalWeight += matchCount;
+      }
+    }
+    if (totalWeight === 0) return null;
+    return {
+      x: 30 + (totalX / totalWeight) * (w - 60),
+      y: 20 + (totalY / totalWeight) * (h - 40),
+    };
+  }, [selected, categories, section, w, h]);
+
+  const floatingChips = useMemo(() => {
+    if (!selectedCat) return [];
+    const cat = categories.find((c) => c.id === selectedCat);
+    if (!cat) return [];
+    const pos = COMPASS_POSITIONS[selectedCat];
+    const px = 30 + pos.x * (w - 60);
+    const py = 20 + pos.y * (h - 40);
+    return cat[section].slice(0, 5).map((term, i) => {
+      const angle = (i * 72 - 90) * (Math.PI / 180);
+      const chipR = 42;
+      return { term, x: px + chipR * Math.cos(angle), y: py + chipR * Math.sin(angle) };
+    });
+  }, [selectedCat, categories, section, w, h]);
+
   return (
     <div data-testid="studio-compass-view">
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 320, margin: "0 auto", display: "block" }}>
@@ -328,9 +362,36 @@ function CompactCompass({
                   <text x={px + r - 2} y={py - r + 2} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-bg)" fontSize={7} fontWeight={700}>{count}</text>
                 </g>
               )}
+              {cat[section].filter((t) => selected.has(t.toLowerCase())).map((t, ti) => {
+                const dotAngle = (ti * 45 + 20) * (Math.PI / 180);
+                const dotR = r * 0.65;
+                return (
+                  <circle key={t} cx={px + dotR * Math.cos(dotAngle)} cy={py + dotR * Math.sin(dotAngle)}
+                    r={3} fill={color} fillOpacity={0.9} style={{ transition: "all 0.3s ease", filter: `drop-shadow(0 0 3px ${color})` }} />
+                );
+              })}
             </g>
           );
         })}
+        {floatingChips.map((chip) => {
+          const isS = selected.has(chip.term.toLowerCase());
+          const color = selectedCat ? CATEGORY_COLORS[selectedCat] : "var(--labs-accent)";
+          return (
+            <g key={chip.term} onClick={(e) => { e.stopPropagation(); onToggle(chip.term); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
+              <rect x={chip.x - 22} y={chip.y - 7} width={44} height={14} rx={7} fill={isS ? color : "var(--labs-surface)"} fillOpacity={isS ? 0.35 : 0.85} stroke={color} strokeWidth={isS ? 1.2 : 0.5} strokeOpacity={isS ? 0.8 : 0.3} style={{ transition: "all 0.3s ease" }} />
+              <text x={chip.x} y={chip.y + 1} textAnchor="middle" dominantBaseline="middle" fill={isS ? color : "var(--labs-text)"} fontSize={6} fontWeight={isS ? 700 : 400} style={{ pointerEvents: "none" }}>
+                {chip.term.length > 8 ? chip.term.slice(0, 7) + "…" : chip.term}
+              </text>
+            </g>
+          );
+        })}
+        {userPosition && (
+          <g>
+            <circle cx={userPosition.x} cy={userPosition.y} r={8} fill="var(--labs-accent)" fillOpacity={0.2} stroke="var(--labs-accent)" strokeWidth={1.5} strokeDasharray="3 2" style={{ transition: "all 0.5s ease" }} />
+            <circle cx={userPosition.x} cy={userPosition.y} r={3} fill="var(--labs-accent)" style={{ transition: "all 0.5s ease" }} />
+            <text x={userPosition.x} y={userPosition.y - 12} textAnchor="middle" fill="var(--labs-accent)" fontSize={7} fontWeight={600}>You</text>
+          </g>
+        )}
       </svg>
       {selCat && selectedCat && (
         <div style={{
@@ -379,8 +440,10 @@ function CompactRadar({
   onToggle: (term: string) => void;
   section: TermSection;
 }) {
+  const { t } = useTranslation();
   const [enabledCats, setEnabledCats] = useState<Set<CategoryId>>(new Set(["islay", "speyside"]));
   const [selectedRadarCat, setSelectedRadarCat] = useState<CategoryId | null>(null);
+  const [selectedAxis, setSelectedAxis] = useState<string | null>(null);
   const cx = 150, cy = 145, maxR = 110;
   const levels = [0.25, 0.5, 0.75, 1.0];
 
@@ -439,8 +502,9 @@ function CompactRadar({
           const lp = getPoint(i, 1.18);
           return (
             <g key={axis} onClick={() => {
-              const bestCat = categories.find((c) => enabledCats.has(c.id) && RADAR_PROFILES[c.id][i] >= 0.5);
-              if (bestCat) { setSelectedRadarCat(selectedRadarCat === bestCat.id ? null : bestCat.id); triggerHaptic("light"); }
+              setSelectedAxis(selectedAxis === axis ? null : axis);
+              setSelectedRadarCat(null);
+              triggerHaptic("light");
             }} style={{ cursor: "pointer" }}>
               <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="var(--labs-border)" strokeWidth={0.4} strokeOpacity={0.4} />
               <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text-secondary, var(--labs-text-muted))" fontSize={9} fontWeight={500}>{axis}</text>
@@ -458,9 +522,56 @@ function CompactRadar({
       </svg>
       {selected.size > 0 && (
         <div style={{ textAlign: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 9, color: "var(--labs-accent)", fontWeight: 500 }}>— Your tasting profile —</span>
+          <span style={{ fontSize: 9, color: "var(--labs-accent)", fontWeight: 500 }}>— {t("m2.rating.studioYourProfile", "Your tasting profile")} —</span>
         </div>
       )}
+      {selectedAxis && !selectedRadarCat && (() => {
+        const keywords = AXIS_KEYWORDS[selectedAxis] || [];
+        const axisTerms: string[] = [];
+        for (const cat of categories) {
+          for (const term of cat[section]) {
+            if (keywords.some((kw) => term.toLowerCase().includes(kw))) {
+              axisTerms.push(term);
+            }
+          }
+        }
+        const uniqueTerms = Array.from(new Set(axisTerms));
+        if (uniqueTerms.length === 0) return null;
+        return (
+          <div style={{
+            marginTop: 10, padding: 14, background: "var(--labs-surface)",
+            borderRadius: "var(--labs-radius, 10px)", border: "1px solid var(--labs-accent-muted)",
+            animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+          }} data-testid={`radar-axis-${selectedAxis.toLowerCase()}`}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>{selectedAxis}</span>
+              <button onClick={() => setSelectedAxis(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
+                <X style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {uniqueTerms.map((term) => {
+                const isS = selected.has(term.toLowerCase());
+                return (
+                  <button key={term} onClick={() => onToggle(term)}
+                    data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
+                    style={{
+                      fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
+                      background: isS ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated, var(--labs-bg))",
+                      color: isS ? "var(--labs-accent)" : "var(--labs-text)",
+                      border: `1.5px solid ${isS ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                      boxShadow: isS ? "0 0 0 2px var(--labs-accent-muted)" : "none",
+                    }}
+                  >
+                    {isS ? "✓ " : ""}{term}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {selCat && selectedRadarCat && (
         <div style={{
           marginTop: 10, padding: 14, background: "var(--labs-surface)",
@@ -501,14 +612,15 @@ function CompactRadar({
 }
 
 function DescribeView({
-  selected, onToggle, isDE, section, categories,
+  selected, onToggle, section, categories,
 }: {
   selected: Set<string>;
   onToggle: (term: string) => void;
-  isDE: boolean;
   section: TermSection;
   categories: VocabCategory[];
 }) {
+  const { t, i18n } = useTranslation();
+  const isDE = i18n.language === "de";
   const [description, setDescription] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -599,7 +711,7 @@ function DescribeView({
         <textarea
           value={description}
           onChange={(e) => handleInputChange(e.target.value)}
-          placeholder={isDE ? "Beschreibe, was du schmeckst..." : "Describe what you taste..."}
+          placeholder={t("m2.rating.studioDescribePlaceholder", "Describe what you taste...")}
           rows={3}
           className="labs-input"
           data-testid="studio-describe-input"
@@ -615,7 +727,7 @@ function DescribeView({
       {suggestions.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-            {isDE ? "Vorgeschlagene Aromen" : "Suggested Flavours"}
+            {t("m2.rating.studioSuggestedFlavours", "Suggested Flavours")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {suggestions.map((term, i) => {
@@ -654,14 +766,14 @@ function DescribeView({
         }}
       >
         <Search style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-        {isDE ? "Schmeckt wie..." : "Tastes like..."}
+        {t("m2.rating.studioTastesLike", "Tastes like...")}
       </button>
 
       {tastesLikeOpen && (
         <div style={{ marginTop: 8, padding: 12, background: "var(--labs-surface)", borderRadius: 10, border: "1px solid var(--labs-border-subtle)", animation: "labsFadeIn 200ms ease both" }}>
           <input
             className="labs-input"
-            placeholder={isDE ? "Whisky suchen..." : "Search whisky..."}
+            placeholder={t("m2.rating.studioSearchWhisky", "Search whisky...")}
             value={tastesLikeQuery}
             onChange={(e) => {
               setTastesLikeQuery(e.target.value);
@@ -671,7 +783,7 @@ function DescribeView({
             data-testid="studio-tastes-like-search"
             style={{ width: "100%", fontSize: 12, padding: "8px 12px", marginBottom: 8, boxSizing: "border-box" }}
           />
-          {tastesLikeLoading && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", padding: 4 }}>{isDE ? "Suche..." : "Searching..."}</div>}
+          {tastesLikeLoading && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", padding: 4 }}>{t("m2.rating.studioSearching", "Searching...")}</div>}
           {tastesLikeResults.map((w) => (
             <button
               key={`${w.name}-${w.distillery}`}
@@ -693,7 +805,7 @@ function DescribeView({
       {refSuggestions.length > 0 && (
         <div style={{ marginTop: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-            {isDE ? "Typische Aromen" : "Typical Flavours"}
+            {t("m2.rating.studioTypicalFlavours", "Typical Flavours")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {refSuggestions.map((term, i) => {
@@ -723,14 +835,14 @@ function DescribeView({
 }
 
 function DiscoverView({
-  categories, section, selected, onToggle, isDE,
+  categories, section, selected, onToggle,
 }: {
   categories: VocabCategory[];
   section: TermSection;
   selected: Set<string>;
   onToggle: (term: string) => void;
-  isDE: boolean;
 }) {
+  const { t } = useTranslation();
   const allTerms = useMemo(() => {
     const terms: Array<{ term: string; catId: CategoryId; color: string }> = [];
     for (const cat of categories) {
@@ -788,7 +900,7 @@ function DiscoverView({
     return (
       <div data-testid="studio-discover-view" style={{ textAlign: "center", padding: "40px 20px", color: "var(--labs-text-muted)" }}>
         <span style={{ fontSize: 32, display: "block", marginBottom: 8 }}>🎉</span>
-        <span style={{ fontSize: 13 }}>{isDE ? "Alle Aromen entdeckt!" : "All flavours discovered!"}</span>
+        <span style={{ fontSize: 13 }}>{t("m2.rating.studioAllDiscovered", "All flavours discovered!")}</span>
       </div>
     );
   }
@@ -858,7 +970,7 @@ function DiscoverView({
 
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
-          {isDE ? "Wische rechts zum Hinzufügen, links zum Überspringen" : "Swipe right to add, left to skip"}
+          {t("m2.rating.studioSwipeHint", "Swipe right to add, left to skip")}
         </span>
       </div>
 
@@ -868,7 +980,7 @@ function DiscoverView({
           border: "1px solid var(--labs-border-subtle)", animation: "labsFadeIn 300ms ease both",
         }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-            {isDE ? "Oft zusammen mit" : "Often paired with"}
+            {t("m2.rating.studioOftenPaired", "Often paired with")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {companions.map((term) => {
@@ -1000,13 +1112,13 @@ export default function FlavourStudioSheet({
         </div>
 
         <div style={{ padding: "12px 16px", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
-          <SegmentedControl value={view} onChange={setView} isDE={isDE} />
+          <SegmentedControl value={view} onChange={setView} />
 
           {view === "wheel" && <CompactWheel categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "compass" && <CompactCompass categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "radar" && <CompactRadar categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
-          {view === "describe" && <DescribeView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} section={section} categories={categories} />}
-          {view === "discover" && <DiscoverView categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
+          {view === "describe" && <DescribeView selected={selectedTerms} onToggle={toggleTerm} section={section} categories={categories} />}
+          {view === "discover" && <DiscoverView categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
         </div>
 
         <div style={{
@@ -1016,7 +1128,7 @@ export default function FlavourStudioSheet({
           {quickTerms.length > 0 && (
             <div style={{ marginBottom: 8 }}>
               <div style={{ fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-                {isDE ? "Schnellauswahl" : "Quick Add"}
+                {t("m2.rating.studioQuickAdd", "Quick Add")}
               </div>
               <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 4 }}>
                 {quickTerms.map((term) => {
@@ -1074,7 +1186,7 @@ export default function FlavourStudioSheet({
           <div style={{ display: "flex", gap: 6 }}>
             <input
               className="labs-input"
-              placeholder={isDE ? "Eigener Begriff..." : "Custom descriptor..."}
+              placeholder={t("m2.rating.studioCustomPlaceholder", "Custom descriptor...")}
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}

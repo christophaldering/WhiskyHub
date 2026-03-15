@@ -975,6 +975,15 @@ export default function LabsRatingPanel({
             {renderWizardNavigation()}
           </div>
         )}
+
+        <FlavourStudioSheet
+          open={studioOpen}
+          onOpenChange={setStudioOpen}
+          dimension={activeTab}
+          existingChips={activeChips}
+          onChipsChange={handleStudioChipsChange}
+          disabled={disabled}
+        />
       </div>
     );
   }
