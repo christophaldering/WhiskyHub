@@ -323,11 +323,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   const handleNavigate = useCallback((route: string) => {
     if (query.trim()) saveRecent(query.trim());
-    setRecentSearches(getRecent());
-    navigate(route);
-    handleClose();
     triggerHaptic("light");
-  }, [query, navigate, handleClose]);
+    setVisible(false);
+    setExiting(false);
+    onClose();
+    navigate(route);
+  }, [query, navigate, onClose]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
