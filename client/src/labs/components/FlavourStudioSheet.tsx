@@ -1525,8 +1525,8 @@ export default function FlavourStudioSheet({
   const [view, setView] = useState<StudioView>(initialView || "guide");
 
   useEffect(() => {
-    if (open && initialView) {
-      setView(initialView);
+    if (open) {
+      setView(initialView || "guide");
     }
   }, [open, initialView]);
   const [customInput, setCustomInput] = useState("");
