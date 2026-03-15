@@ -439,8 +439,8 @@ function GuidedView({
                               data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
                               style={{
                                 fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                                background: `${color}18`, color,
-                                border: `1px solid ${color}44`, cursor: "pointer",
+                                background: `${color}38`, color: "#f5f0e8",
+                                border: `1px solid ${color}66`, cursor: "pointer",
                                 display: "flex", alignItems: "center", gap: 4,
                                 transition: "all 0.15s",
                               }}

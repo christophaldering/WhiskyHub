@@ -1,0 +1,359 @@
+commit 3191ce853417b67c82fea1b2a928fb4b4b2571e7
+Author: christophalderi <54775121-christophalderi@users.noreply.replit.com>
+Date:   Sun Mar 15 23:16:43 2026 +0000
+
+    Task #68: Fix dark mode contrast/readability across entire Flavour Studio
+    
+    Systematically increased opacity values across all 5 views + Quick Add:
+    
+    - Journey: sweep card bg 12/06→35/20, border 44→70, description text brightened,
+      example chips bg 15→30, No button text to --labs-text, Maybe border to --labs-accent
+    - Journey Phase 2: selected chip bg 22→40, text to #f5f0e8
+    - Journey Phase 3: profile chips bg 18→38, border 44→66, text to #f5f0e8
+    - GuidedView: category cards bg 12→30 border 55→70, subgroup bg 12→30 border 44→66,
+      all descriptor chips bg 22→40 text to #f5f0e8, related subgroup bg 12→30
+    - CompactWheel: segment fillOpacity 0.12/0.28→0.2/0.4, labels to #f5f0e8,
+      detail chips bg 22→40, shadow 44→55
+    - CompactCompass: glow 0.06→0.15, bubble fill 0.1/0.22→0.2/0.4, labels to #f5f0e8,
+      axis labels to var(--labs-text) with opacity 0.7
+    - CompactRadar: toggle bg 18→38 text to #f5f0e8, polygon fill 0.12→0.25,
+      axis labels to var(--labs-text) with opacity 0.8
+    - Quick Add: bg 22→40, unselected text from muted to --labs-text
+    - All detail panel borders: 33→55
+
+diff --git a/client/src/labs/components/FlavourStudioSheet.tsx b/client/src/labs/components/FlavourStudioSheet.tsx
+index 39f1d68..0932b19 100644
+--- a/client/src/labs/components/FlavourStudioSheet.tsx
++++ b/client/src/labs/components/FlavourStudioSheet.tsx
+@@ -480,8 +480,8 @@ function GuidedView({
+                     style={{
+                       display: "flex", flexDirection: "column", alignItems: "flex-start",
+                       padding: "12px 14px", borderRadius: 12, fontFamily: "inherit",
+-                      background: count > 0 ? `${cat.color}12` : "var(--labs-surface)",
+-                      border: `1.5px solid ${count > 0 ? `${cat.color}55` : "var(--labs-border-subtle)"}`,
++                      background: count > 0 ? `${cat.color}30` : "var(--labs-surface)",
++                      border: `1.5px solid ${count > 0 ? `${cat.color}70` : "var(--labs-border-subtle)"}`,
+                       cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                       position: "relative", overflow: "hidden",
+                       animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+@@ -545,8 +545,8 @@ function GuidedView({
+                       style={{
+                         display: "flex", alignItems: "center", justifyContent: "space-between",
+                         padding: "14px 16px", borderRadius: 12, fontFamily: "inherit",
+-                        background: sgCount > 0 ? `${navCategory.color}12` : "var(--labs-surface)",
+-                        border: `1.5px solid ${sgCount > 0 ? `${navCategory.color}44` : "var(--labs-border-subtle)"}`,
++                        background: sgCount > 0 ? `${navCategory.color}30` : "var(--labs-surface)",
++                        border: `1.5px solid ${sgCount > 0 ? `${navCategory.color}66` : "var(--labs-border-subtle)"}`,
+                         cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                         animationDelay: `${i * 60}ms`,
+@@ -597,8 +597,8 @@ function GuidedView({
+                           data-testid={`guide-term-${desc.id}`}
+                           style={{
+                             fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
+-                            background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+-                            color: isS ? navCategory.color : "var(--labs-text)",
++                            background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
++                            color: isS ? "#f5f0e8" : "var(--labs-text)",
+                             border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                             cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                             fontWeight: isS ? 600 : 400,
+@@ -624,8 +624,8 @@ function GuidedView({
+                       data-testid={`guide-term-${desc.id}`}
+                       style={{
+                         fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
+-                        background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+-                        color: isS ? navCategory.color : "var(--labs-text)",
++                        background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
++                        color: isS ? "#f5f0e8" : "var(--labs-text)",
+                         border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                         cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                         fontWeight: isS ? 600 : 400,
+@@ -654,8 +654,8 @@ function GuidedView({
+                     data-testid={`guide-term-${desc.id}`}
+                     style={{
+                       fontSize: 13, padding: "10px 18px", borderRadius: 22, fontFamily: "inherit",
+-                      background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+-                      color: isS ? navCategory.color : "var(--labs-text)",
++                      background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
++                      color: isS ? "#f5f0e8" : "var(--labs-text)",
+                       border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                       cursor: "pointer", transition: "all 0.2s ease", minHeight: 42,
+                       fontWeight: isS ? 600 : 400,
+@@ -689,9 +689,9 @@ function GuidedView({
+                           data-testid={`guide-related-${sg.id}`}
+                           style={{
+                             fontSize: 11, padding: "6px 12px", borderRadius: 16, fontFamily: "inherit",
+-                            background: sgCount > 0 ? `${navCategory.color}12` : "var(--labs-surface)",
+-                            color: sgCount > 0 ? navCategory.color : "var(--labs-text-muted)",
+-                            border: `1px solid ${sgCount > 0 ? `${navCategory.color}44` : "var(--labs-border-subtle)"}`,
++                            background: sgCount > 0 ? `${navCategory.color}30` : "var(--labs-surface)",
++                            color: sgCount > 0 ? "#f5f0e8" : "var(--labs-text)",
++                            border: `1px solid ${sgCount > 0 ? `${navCategory.color}66` : "var(--labs-border-subtle)"}`,
+                             cursor: "pointer", transition: "all 0.15s",
+                             display: "flex", alignItems: "center", gap: 4,
+                           }}
+@@ -762,16 +762,16 @@ function CompactWheel({
+             <path
+               d={seg.path}
+               fill={CATEGORY_COLORS[seg.id]}
+-              fillOpacity={seg.isDimmed ? 0.12 : seg.isFocused ? 0.5 : 0.28}
++              fillOpacity={seg.isDimmed ? 0.2 : seg.isFocused ? 0.6 : 0.4}
+               stroke={CATEGORY_COLORS[seg.id]}
+-              strokeWidth={seg.isFocused ? 2 : 0.8}
+-              strokeOpacity={seg.isDimmed ? 0.2 : 0.6}
++              strokeWidth={seg.isFocused ? 2 : 1}
++              strokeOpacity={seg.isDimmed ? 0.3 : 0.7}
+               style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+             />
+             <text
+               x={seg.labelX} y={seg.labelY} textAnchor="middle" dominantBaseline="middle"
+-              fill={seg.isDimmed ? "var(--labs-text-muted)" : CATEGORY_COLORS[seg.id]}
+-              fontSize={seg.isFocused ? 10 : 8} fontWeight={seg.isFocused ? 700 : 500}
++              fill={seg.isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"}
++              fontSize={seg.isFocused ? 10 : 8} fontWeight={seg.isFocused ? 700 : 600}
+               style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}
+             >
+               {seg.name.split(" / ")[0]}
+@@ -798,7 +798,7 @@ function CompactWheel({
+       {focusedCat && focused && (
+         <div style={{
+           marginTop: 12, padding: 14, background: "var(--labs-surface)",
+-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[focused]}33`,
++          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[focused]}55`,
+           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+         }} data-testid={`wheel-detail-${focused}`}>
+           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+@@ -817,11 +817,11 @@ function CompactWheel({
+                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
+                   style={{
+                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
+-                    background: isSelected ? `${CATEGORY_COLORS[focused]}22` : "var(--labs-surface-elevated, var(--labs-bg))",
+-                    color: isSelected ? CATEGORY_COLORS[focused] : "var(--labs-text)",
++                    background: isSelected ? `${CATEGORY_COLORS[focused]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
++                    color: isSelected ? "#f5f0e8" : "var(--labs-text)",
+                     border: `1.5px solid ${isSelected ? CATEGORY_COLORS[focused] : "var(--labs-border)"}`,
+                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+-                    boxShadow: isSelected ? `0 0 0 2px ${CATEGORY_COLORS[focused]}44` : "none",
++                    boxShadow: isSelected ? `0 0 0 2px ${CATEGORY_COLORS[focused]}55` : "none",
+                   }}
+                 >
+                   {isSelected ? "✓ " : ""}{term}
+@@ -886,10 +886,10 @@ function CompactCompass({
+       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 320, margin: "0 auto", display: "block" }}>
+         <line x1={30} y1={h / 2} x2={w - 30} y2={h / 2} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
+         <line x1={w / 2} y1={20} x2={w / 2} y2={h - 20} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
+-        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="end">{t("m2.rating.studioAxisFullBodied", "Full-Bodied")}</text>
+-        <text x={35} y={h / 2 - 6} fill="var(--labs-text-muted)" fontSize={8} textAnchor="start">{t("m2.rating.studioAxisLight", "Light")}</text>
+-        <text x={w / 2} y={28} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSmoky", "Smoky")}</text>
+-        <text x={w / 2} y={h - 16} fill="var(--labs-text-muted)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSweet", "Sweet")}</text>
++        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text)" fontSize={8} textAnchor="end" opacity={0.7}>{t("m2.rating.studioAxisFullBodied", "Full-Bodied")}</text>
++        <text x={35} y={h / 2 - 6} fill="var(--labs-text)" fontSize={8} textAnchor="start" opacity={0.7}>{t("m2.rating.studioAxisLight", "Light")}</text>
++        <text x={w / 2} y={28} fill="var(--labs-text)" fontSize={8} textAnchor="middle" opacity={0.7}>{t("m2.rating.studioAxisSmoky", "Smoky")}</text>
++        <text x={w / 2} y={h - 16} fill="var(--labs-text)" fontSize={8} textAnchor="middle" opacity={0.7}>{t("m2.rating.studioAxisSweet", "Sweet")}</text>
+         {categories.map((cat) => {
+           const pos = COMPASS_POSITIONS[cat.id];
+           const px = 30 + pos.x * (w - 60);
+@@ -901,12 +901,12 @@ function CompactCompass({
+           const count = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
+           return (
+             <g key={cat.id} onClick={() => { setSelectedCat(isSelected ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
+-              <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.06} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+-              <circle cx={px} cy={py} r={r} fill={color} fillOpacity={isDimmed ? 0.1 : 0.22} stroke={color} strokeWidth={isSelected ? 2 : 0.8} strokeOpacity={isDimmed ? 0.2 : 0.5} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+-              <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : color} fontSize={8} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
++              <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.15} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
++              <circle cx={px} cy={py} r={r} fill={color} fillOpacity={isDimmed ? 0.2 : 0.4} stroke={color} strokeWidth={isSelected ? 2 : 1} strokeOpacity={isDimmed ? 0.3 : 0.7} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
++              <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"} fontSize={8} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
+                 {cat.name.split(" / ")[0]}
+               </text>
+-              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "var(--labs-text-secondary, var(--labs-text-muted))"} fontSize={7} style={{ pointerEvents: "none", opacity: isDimmed ? 0.4 : 0.7 }}>
++              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"} fontSize={7} style={{ pointerEvents: "none", opacity: isDimmed ? 0.5 : 0.8 }}>
+                 {cat.name.split(" / ")[1] || ""}
+               </text>
+               {count > 0 && (
+@@ -949,7 +949,7 @@ function CompactCompass({
+       {selCat && selectedCat && (
+         <div style={{
+           marginTop: 10, padding: 14, background: "var(--labs-surface)",
+-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedCat]}33`,
++          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedCat]}55`,
+           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+         }} data-testid={`compass-detail-${selectedCat}`}>
+           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+@@ -967,11 +967,11 @@ function CompactCompass({
+                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
+                   style={{
+                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
+-                    background: isS ? `${CATEGORY_COLORS[selectedCat]}22` : "var(--labs-surface-elevated, var(--labs-bg))",
+-                    color: isS ? CATEGORY_COLORS[selectedCat] : "var(--labs-text)",
++                    background: isS ? `${CATEGORY_COLORS[selectedCat]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
++                    color: isS ? "#f5f0e8" : "var(--labs-text)",
+                     border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedCat] : "var(--labs-border)"}`,
+                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+-                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedCat]}44` : "none",
++                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedCat]}55` : "none",
+                   }}
+                 >
+                   {isS ? "✓ " : ""}{term}
+@@ -1033,9 +1033,9 @@ function CompactRadar({
+             <button key={cat.id} onClick={() => toggleCat(cat.id)}
+               style={{
+                 fontSize: 10, padding: "4px 10px", borderRadius: 20, fontFamily: "inherit", cursor: "pointer",
+-                background: isOn ? `${CATEGORY_COLORS[cat.id]}18` : "var(--labs-surface)",
++                background: isOn ? `${CATEGORY_COLORS[cat.id]}38` : "var(--labs-surface)",
+                 border: `1px solid ${isOn ? CATEGORY_COLORS[cat.id] : "var(--labs-border)"}`,
+-                color: isOn ? CATEGORY_COLORS[cat.id] : "var(--labs-text-muted)",
++                color: isOn ? "#f5f0e8" : "var(--labs-text)",
+                 transition: "all 0.2s", display: "flex", alignItems: "center", gap: 4,
+               }}
+               data-testid={`studio-radar-toggle-${cat.id}`}
+@@ -1060,13 +1060,13 @@ function CompactRadar({
+               triggerHaptic("light");
+             }} style={{ cursor: "pointer" }}>
+               <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="var(--labs-border)" strokeWidth={0.4} strokeOpacity={0.4} />
+-              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text-secondary, var(--labs-text-muted))" fontSize={9} fontWeight={500}>{axis}</text>
++              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text)" fontSize={9} fontWeight={500} opacity={0.8}>{axis}</text>
+             </g>
+           );
+         })}
+         {categories.filter((c) => enabledCats.has(c.id)).map((cat) => (
+           <g key={cat.id} onClick={() => { setSelectedRadarCat(selectedRadarCat === cat.id ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
+-            <polygon points={getPolygonPoints(RADAR_PROFILES[cat.id])} fill={CATEGORY_COLORS[cat.id]} fillOpacity={0.12} stroke={CATEGORY_COLORS[cat.id]} strokeWidth={1.2} strokeOpacity={0.7} style={{ transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
++            <polygon points={getPolygonPoints(RADAR_PROFILES[cat.id])} fill={CATEGORY_COLORS[cat.id]} fillOpacity={0.25} stroke={CATEGORY_COLORS[cat.id]} strokeWidth={1.5} strokeOpacity={0.8} style={{ transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+           </g>
+         ))}
+         {selected.size > 0 && (
+@@ -1128,7 +1128,7 @@ function CompactRadar({
+       {selCat && selectedRadarCat && (
+         <div style={{
+           marginTop: 10, padding: 14, background: "var(--labs-surface)",
+-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedRadarCat]}33`,
++          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedRadarCat]}55`,
+           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+         }}>
+           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+@@ -1146,11 +1146,11 @@ function CompactRadar({
+                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
+                   style={{
+                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
+-                    background: isS ? `${CATEGORY_COLORS[selectedRadarCat]}22` : "var(--labs-surface-elevated, var(--labs-bg))",
+-                    color: isS ? CATEGORY_COLORS[selectedRadarCat] : "var(--labs-text)",
++                    background: isS ? `${CATEGORY_COLORS[selectedRadarCat]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
++                    color: isS ? "#f5f0e8" : "var(--labs-text)",
+                     border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedRadarCat] : "var(--labs-border)"}`,
+                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+-                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedRadarCat]}44` : "none",
++                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedRadarCat]}55` : "none",
+                   }}
+                 >
+                   {isS ? "✓ " : ""}{term}
+@@ -1535,7 +1535,7 @@ function JourneyView({
+           ))}
+         </div>
+ 
+-        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textAlign: "center", marginBottom: 12 }}>
++        <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7, textAlign: "center", marginBottom: 12 }}>
+           {t("m2.rating.journeySweepPrompt", "Do you detect this flavour family?")}
+         </div>
+ 
+@@ -1543,8 +1543,8 @@ function JourneyView({
+           <div className={animClass} key={currentSweepCat.id} style={{ animation: "labsFadeIn 300ms ease both" }}>
+             <div style={{
+               padding: 20, borderRadius: 16,
+-              background: `linear-gradient(135deg, ${currentSweepCat.color}12, ${currentSweepCat.color}06)`,
+-              border: `1.5px solid ${currentSweepCat.color}44`,
++              background: `linear-gradient(135deg, ${currentSweepCat.color}35, ${currentSweepCat.color}20)`,
++              border: `1.5px solid ${currentSweepCat.color}70`,
+               textAlign: "center", marginBottom: 16,
+             }} data-testid={`journey-sweep-card-${currentSweepCat.id}`}>
+               <div style={{ fontSize: 32, marginBottom: 8 }}>
+@@ -1553,15 +1553,15 @@ function JourneyView({
+               <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: currentSweepCat.color, marginBottom: 4 }}>
+                 {isDE ? currentSweepCat.de : currentSweepCat.en}
+               </div>
+-              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 10 }}>
++              <div style={{ fontSize: 12, color: "var(--labs-text)", opacity: 0.8, marginBottom: 10 }}>
+                 {isDE ? currentSweepCat.descDe : currentSweepCat.descEn}
+               </div>
+               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+                 {currentSweepCat.subcategories.slice(0, 4).map((sub) => (
+                   <span key={sub.id} style={{
+                     fontSize: 10, padding: "2px 8px", borderRadius: 10,
+-                    background: `${currentSweepCat.color}15`, color: currentSweepCat.color,
+-                    border: `1px solid ${currentSweepCat.color}22`,
++                    background: `${currentSweepCat.color}30`, color: "#f5f0e8",
++                    border: `1px solid ${currentSweepCat.color}55`,
+                   }}>
+                     {isDE ? sub.de : sub.en}
+                   </span>
+@@ -1569,7 +1569,7 @@ function JourneyView({
+                 {currentSweepCat.subcategories.length > 4 && (
+                   <span style={{
+                     fontSize: 10, padding: "2px 8px", borderRadius: 10,
+-                    background: `${currentSweepCat.color}10`, color: `${currentSweepCat.color}88`,
++                    background: `${currentSweepCat.color}25`, color: "#f5f0e8", opacity: 0.7,
+                   }}>
+                     +{currentSweepCat.subcategories.length - 4}
+                   </span>
+@@ -1585,7 +1585,7 @@ function JourneyView({
+                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                   padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
+                   background: "var(--labs-surface)", border: "1.5px solid var(--labs-border)",
+-                  cursor: "pointer", color: "var(--labs-text-muted)", transition: "all 0.15s",
++                  cursor: "pointer", color: "var(--labs-text)", transition: "all 0.15s",
+                   minWidth: 70,
+                 }}
+               >
+@@ -1598,7 +1598,7 @@ function JourneyView({
+                 style={{
+                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                   padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
+-                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-accent-muted, var(--labs-border))",
++                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-accent)",
+                   cursor: "pointer", color: "var(--labs-accent)", transition: "all 0.15s",
+                   minWidth: 70,
+                 }}
+@@ -1700,8 +1700,8 @@ function JourneyView({
+                           data-testid={`journey-term-${desc.id}`}
+                           style={{
+                             fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
+-                            background: isS ? `${currentDrillCat.color}22` : "var(--labs-surface)",
+-                            color: isS ? currentDrillCat.color : "var(--labs-text)",
++                            background: isS ? `${currentDrillCat.color}40` : "var(--labs-surface)",
++                            color: isS ? "#f5f0e8" : "var(--labs-text)",
+                             border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                             cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                             fontWeight: isS ? 600 : 400,
+@@ -1726,8 +1726,8 @@ function JourneyView({
+                     data-testid={`journey-term-${desc.id}`}
+                     style={{
+                       fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
+-                      background: isS ? `${currentDrillCat.color}22` : "var(--labs-surface)",
+-                      color: isS ? currentDrillCat.color : "var(--labs-text)",
++                      background: isS ? `${currentDrillCat.color}40` : "var(--labs-surface)",
++                      color: isS ? "#f5f0e8" : "var(--labs-text)",
+                       border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                       cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                       fontWeight: isS ? 600 : 400,
+@@ -1928,8 +1928,8 @@ function JourneyView({
+                             data-testid={`journey-profile-${desc.id}`}
+                             style={{
+                               fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+-                              background: `${cat.color}18`, color: cat.color,
+-                              border: `1px solid ${cat.color}44`, cursor: "pointer",
++                              background: `${cat.color}38`, color: "#f5f0e8",
++                              border: `1px solid ${cat.color}66`, cursor: "pointer",
+                               display: "flex", alignItems: "center", gap: 4,
+                               transition: "all 0.15s",
+                             }}
+@@ -2122,8 +2122,8 @@ export default function FlavourStudioSheet({
+                       style={{
+                         fontSize: 10, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
+                         whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
+-                        background: isS ? `${color}22` : "var(--labs-surface)",
+-                        color: isS ? color : "var(--labs-text-muted)",
++                        background: isS ? `${color}40` : "var(--labs-surface)",
++                        color: isS ? "#f5f0e8" : "var(--labs-text)",
+                         border: `1px solid ${isS ? color : "var(--labs-border-subtle)"}`,
+                         cursor: "pointer", transition: "all 0.15s",
+                       }}
