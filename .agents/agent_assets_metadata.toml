@@ -12,3 +12,9 @@ id = "XyjT0eRwWIptUwF8jeChB"
 uri = "file://casksense-whisky-database.xlsx"
 type = "table"
 title = "CaskSense Whisky Database (1.578 Einträge)"
+
+[[outputs]]
+id = "ff4kQ_2xGS2g1sljoMKKH"
+uri = "file://casksense-whisky-database.csv"
+type = "table"
+title = "CaskSense Whisky Database CSV (1.578 Einträge)"
