@@ -63,7 +63,7 @@ export default function LabsExplore() {
 
   const sortedWhiskies = useMemo(() => {
     if (activeTab !== "all" || !whiskies || !Array.isArray(whiskies)) return [];
-    const list = [...whiskies];
+    let list = [...whiskies];
     const parseNum = (v: string | null | undefined): number => {
       if (!v) return 0;
       const n = parseFloat(v.replace(/[^0-9.]/g, ""));
@@ -75,8 +75,14 @@ export default function LabsExplore() {
       case "category": list.sort((a: any, b: any) => (a.category || "zzz").localeCompare(b.category || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
       case "age": list.sort((a: any, b: any) => parseNum(b.age) - parseNum(a.age) || (a.name || "").localeCompare(b.name || "")); break;
       case "abv": list.sort((a: any, b: any) => parseNum(b.abv) - parseNum(a.abv) || (a.name || "").localeCompare(b.name || "")); break;
-      case "highest_rated": list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || "")); break;
-      case "most_rated": list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || "")); break;
+      case "highest_rated":
+        list = list.filter((w: any) => w.avgOverall != null && w.avgOverall > 0);
+        list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || ""));
+        break;
+      case "most_rated":
+        list = list.filter((w: any) => w.ratingCount != null && w.ratingCount > 0);
+        list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || ""));
+        break;
     }
     return list;
   }, [whiskies, sortBy, activeTab]);
