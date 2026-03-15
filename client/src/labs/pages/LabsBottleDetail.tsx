@@ -107,7 +107,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
 
       <div className="labs-fade-in labs-stagger-1">
         <div className="flex items-start gap-4 mb-6">
-          <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || ""} size={56} testId="labs-bottle-image" />
+          <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || ""} size={56} testId="labs-bottle-image" whiskyId={whisky.id} />
           <div className="flex-1 min-w-0">
             <h1
               className="labs-h2 leading-tight"

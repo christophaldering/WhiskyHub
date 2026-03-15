@@ -1598,6 +1598,12 @@ export async function registerRoutes(
     if (body.wbScore !== undefined) body.wbScore = (typeof body.wbScore === "string" ? parseFloat(body.wbScore) : body.wbScore) || null;
     if (body.wbScore === "") body.wbScore = null;
     if (body.caskType !== undefined && !body.caskInfluence) { body.caskInfluence = body.caskType; delete body.caskType; }
+    if (body.imageUrl) {
+      const existing = await storage.getWhisky(req.params.id);
+      if (existing?.imageUrl && existing.imageUrl !== body.imageUrl) {
+        await storage.addWhiskyGalleryPhoto({ whiskyId: existing.id, photoUrl: existing.imageUrl, source: "replaced" });
+      }
+    }
     const updated = await storage.updateWhisky(req.params.id, body);
     if (!updated) return res.status(404).json({ message: "Not found" });
     if (!updated.imageUrl && updated.whiskybaseId) {
@@ -1661,10 +1667,34 @@ export async function registerRoutes(
   }, async (req: any, res: any) => {
     try {
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Not found" });
+      const oldImageUrl = whisky.imageUrl;
       const imageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
       const updated = await storage.updateWhisky(req.params.id, { imageUrl });
       if (!updated) return res.status(404).json({ message: "Not found" });
+      if (oldImageUrl) {
+        await storage.addWhiskyGalleryPhoto({ whiskyId: whisky.id, photoUrl: oldImageUrl, source: "replaced" });
+      }
       res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/whiskies/:id/gallery", async (req, res) => {
+    try {
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Not found" });
+      const galleryPhotos = await storage.getWhiskyGallery(req.params.id);
+      const photos: { url: string; source: string; isCurrent: boolean; createdAt: string | null }[] = [];
+      if (whisky.imageUrl) {
+        photos.push({ url: whisky.imageUrl, source: "current", isCurrent: true, createdAt: null });
+      }
+      for (const p of galleryPhotos) {
+        photos.push({ url: p.photoUrl, source: p.source || "manual", isCurrent: false, createdAt: p.createdAt?.toISOString() || null });
+      }
+      res.json({ photos, total: photos.length });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
@@ -1673,9 +1703,8 @@ export async function registerRoutes(
   app.delete("/api/whiskies/:id/image", async (req, res) => {
     const whisky = await storage.getWhisky(req.params.id);
     if (!whisky) return res.status(404).json({ message: "Not found" });
-    if (whisky.imageUrl && whisky.imageUrl.startsWith("/uploads/")) {
-      const filePath = path.join(process.cwd(), whisky.imageUrl);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (whisky.imageUrl) {
+      await storage.addWhiskyGalleryPhoto({ whiskyId: whisky.id, photoUrl: whisky.imageUrl, source: "removed" });
     }
     const updated = await storage.updateWhisky(req.params.id, { imageUrl: null });
     res.json(updated);

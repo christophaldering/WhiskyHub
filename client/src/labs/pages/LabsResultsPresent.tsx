@@ -193,7 +193,7 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         style={{ marginBottom: 16 }}
       >
-        <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || "?"} size={120} height={120} />
+        <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || "?"} size={120} height={120} whiskyId={whisky.id} />
       </motion.div>
 
       <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -285,7 +285,7 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
               style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 200 }}
               data-testid={`present-podium-${actualRank + 1}`}
             >
-              <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 80 : 64} height={actualRank === 0 ? 80 : 64} />
+              <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 80 : 64} height={actualRank === 0 ? 80 : 64} whiskyId={w.id} />
               <p className="labs-serif" style={{
                 fontSize: actualRank === 0 ? 16 : 14,
                 fontWeight: 700,

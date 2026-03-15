@@ -434,7 +434,7 @@ export default function LabsTastingRecap() {
                     <span className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text-muted)" }}>{i + 1}</span>
                   )}
                 </div>
-                <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={40} />
+                <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={40} whiskyId={w.id} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`text-labs-top-rated-name-${i}`}>
                     {w.name}

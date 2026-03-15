@@ -410,7 +410,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                     <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>#{rank} of {sorted.length}</span>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={120} height={120} />
+                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={120} height={120} whiskyId={w.id} />
                   </div>
                   <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 4vw, 38px)", fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginBottom: 4, lineHeight: 1.15 }}>{w.name || "Unknown"}</h2>
                   {w.distillery && <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 4, textAlign: "center" }}>{w.distillery}</p>}
@@ -447,7 +447,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                       const h = podiumHeights[i] || 130;
                       return (
                         <div key={w.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 200 }}>
-                          <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 80 : 64} height={actualRank === 0 ? 80 : 64} />
+                          <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 80 : 64} height={actualRank === 0 ? 80 : 64} whiskyId={w.id} />
                           <p className="labs-serif" style={{ fontSize: actualRank === 0 ? 16 : 14, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginTop: 8, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{w.name || "Unknown"}</p>
                           <span style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 8 }}>{w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : "\u2014"}</span>
                           <div style={{ width: "100%", height: h, borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${MEDAL_COLORS[actualRank]}33 0%, ${MEDAL_COLORS[actualRank]}11 100%)`, border: `1px solid ${MEDAL_COLORS[actualRank]}44`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 16 }}>

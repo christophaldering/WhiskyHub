@@ -746,7 +746,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           const imageRevealed = !isBlind || (gv && gv.isFieldRevealed("image"));
                           const hasImage = activeWhisky.imageUrl;
                           if (imageRevealed && hasImage) {
-                            return <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={80} height={100} />;
+                            return <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={80} height={100} whiskyId={activeWhisky.id} />;
                           }
                           return (
                             <div style={{

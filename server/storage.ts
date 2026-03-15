@@ -45,6 +45,8 @@ import {
   type InsertConnoisseurReport, type ConnoisseurReport,
   voiceMemos,
   type InsertVoiceMemo, type VoiceMemo,
+  whiskyGallery,
+  type InsertWhiskyGallery, type WhiskyGalleryPhoto,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -370,6 +372,11 @@ export interface IStorage {
   getVoiceMemosForWhisky(tastingId: string, whiskyId: string): Promise<VoiceMemo[]>;
   getVoiceMemosForTasting(tastingId: string): Promise<VoiceMemo[]>;
   deleteVoiceMemo(id: string, participantId: string): Promise<void>;
+
+  // Whisky Gallery
+  getWhiskyGallery(whiskyId: string): Promise<WhiskyGalleryPhoto[]>;
+  addWhiskyGalleryPhoto(data: InsertWhiskyGallery): Promise<WhiskyGalleryPhoto>;
+  getWhiskyGalleryCount(whiskyId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2191,6 +2198,21 @@ export class DatabaseStorage implements IStorage {
 
   async deleteVoiceMemo(id: string, participantId: string): Promise<void> {
     await db.delete(voiceMemos).where(and(eq(voiceMemos.id, id), eq(voiceMemos.participantId, participantId)));
+  }
+
+  // --- Whisky Gallery ---
+  async getWhiskyGallery(whiskyId: string): Promise<WhiskyGalleryPhoto[]> {
+    return db.select().from(whiskyGallery).where(eq(whiskyGallery.whiskyId, whiskyId)).orderBy(desc(whiskyGallery.createdAt));
+  }
+
+  async addWhiskyGalleryPhoto(data: InsertWhiskyGallery): Promise<WhiskyGalleryPhoto> {
+    const [result] = await db.insert(whiskyGallery).values(data).returning();
+    return result;
+  }
+
+  async getWhiskyGalleryCount(whiskyId: string): Promise<number> {
+    const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskyGallery).where(eq(whiskyGallery.whiskyId, whiskyId));
+    return result?.count || 0;
   }
 }
 

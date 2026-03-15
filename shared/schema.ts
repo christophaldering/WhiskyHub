@@ -718,3 +718,18 @@ export const voiceMemos = pgTable("voice_memos", {
 export const insertVoiceMemoSchema = createInsertSchema(voiceMemos).omit({ id: true, createdAt: true });
 export type InsertVoiceMemo = z.infer<typeof insertVoiceMemoSchema>;
 export type VoiceMemo = typeof voiceMemos.$inferSelect;
+
+// --- Whisky Gallery (multi-photo per whisky) ---
+export const whiskyGallery = pgTable("whisky_gallery", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  whiskyId: varchar("whisky_id").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  source: text("source").default("manual"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("whisky_gallery_whisky_id_idx").on(table.whiskyId),
+]);
+
+export const insertWhiskyGallerySchema = createInsertSchema(whiskyGallery).omit({ id: true, createdAt: true });
+export type InsertWhiskyGallery = z.infer<typeof insertWhiskyGallerySchema>;
+export type WhiskyGalleryPhoto = typeof whiskyGallery.$inferSelect;

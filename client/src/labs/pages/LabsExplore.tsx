@@ -364,7 +364,7 @@ export default function LabsExplore() {
                   data-testid={`labs-explore-whisky-${w.id}`}
                 >
                   <div style={{ flexShrink: 0 }}>
-                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} />
+                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={44} testId={`labs-explore-whisky-img-${w.id}`} whiskyId={w.id} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
