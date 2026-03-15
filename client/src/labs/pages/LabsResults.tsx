@@ -213,7 +213,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
             borderRadius: 10,
             padding: 6,
             minWidth: 160,
-            zIndex: 50,
+            zIndex: "var(--z-toast)",
             boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           }}
           data-testid="dropdown-labs-export-menu"
@@ -333,7 +333,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden" }}
+      style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden" }}
       data-testid="viewer-overlay"
     >
       <div style={{ position: "absolute", top: 12, left: 16, right: 16, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}>

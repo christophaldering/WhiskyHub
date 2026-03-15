@@ -124,7 +124,7 @@ export default function LabsExplore() {
           </button>
           {showSortMenu && (
             <>
-              <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setShowSortMenu(false)} data-testid="labs-explore-sort-overlay" />
+              <div className="fixed inset-0" style={{ zIndex: "var(--z-overlay)" }} onClick={() => setShowSortMenu(false)} data-testid="labs-explore-sort-overlay" />
               <div
                 className="py-1 min-w-[140px]"
                 style={{
@@ -134,7 +134,7 @@ export default function LabsExplore() {
                     const r = sortBtnRef.current?.getBoundingClientRect();
                     return r ? r.bottom + 4 : 100;
                   })(),
-                  zIndex: 9999,
+                  zIndex: "var(--z-toast)",
                   background: "var(--labs-surface-elevated)",
                   border: "1px solid var(--labs-border)",
                   borderRadius: "var(--labs-radius-sm)",

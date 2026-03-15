@@ -167,7 +167,7 @@ export default function LabsTasteWishlist() {
       </AnimatePresence>
 
       {deleteTarget && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-labs-delete-wishlist">
+        <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-wishlist">
           <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 28 }}>
             <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Entry</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>Are you sure?</p>

@@ -794,7 +794,7 @@ function EditTextarea({ label, value, onChange, testId }: { label: string; value
 
 function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void; onConfirm: () => void; isPending: boolean }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-labs-delete-dram">
+    <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-dram">
       <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
         <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Dram</h3>
         <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Are you sure you want to delete this entry? This cannot be undone.</p>

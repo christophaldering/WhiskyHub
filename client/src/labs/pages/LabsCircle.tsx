@@ -1221,8 +1221,8 @@ function FriendDetailSheet({
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)",
+        position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
+        background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)",
         display: "flex", alignItems: "flex-end", justifyContent: "center",
       }}
       onClick={onClose}

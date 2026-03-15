@@ -108,6 +108,18 @@
   }
 }
 
+:root {
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-fab: 30;
+  --z-header: 40;
+  --z-overlay: 50;
+  --z-toast: 60;
+
+  --overlay-backdrop: rgba(0, 0, 0, 0.4);
+  --overlay-blur: blur(20px);
+}
+
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }

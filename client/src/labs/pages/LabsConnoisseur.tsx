@@ -412,7 +412,7 @@ export default function LabsConnoisseur() {
 
       {confirmDeleteId && (
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", padding: 24 }}
+          style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", padding: 24 }}
           onClick={() => setConfirmDeleteId(null)}
           data-testid="dialog-confirm-delete"
         >

@@ -581,7 +581,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   if (loadingTasting || loadingWhiskies) {
     return (
       <div style={{
-        position: "fixed", inset: 0, zIndex: 9999,
+        position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
         background: "var(--labs-bg)", display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <Loader2 style={{ width: 32, height: 32, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
@@ -595,7 +595,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   if (!tasting || !isHost || !isAllowedStatus) {
     return (
       <div style={{
-        position: "fixed", inset: 0, zIndex: 9999,
+        position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
         background: "var(--labs-bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
       }}>
         <Wine style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />
@@ -618,7 +618,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       style={{
-        position: "fixed", inset: 0, zIndex: 9999,
+        position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
         background: "var(--labs-bg)",
         display: "flex", flexDirection: "column",
         overflow: "hidden",

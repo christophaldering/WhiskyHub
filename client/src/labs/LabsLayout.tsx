@@ -451,7 +451,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       {!isLabsHome && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around"
           style={{
             background: "var(--labs-nav-bg)",
             backdropFilter: "blur(16px)",

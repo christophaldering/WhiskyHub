@@ -334,7 +334,7 @@ export default function LabsTasteCollection() {
       )}
 
       {deleteTarget && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-labs-delete-collection">
+        <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-collection">
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
             <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Bottle</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Remove "{deleteTarget.name}" from your collection?</p>
@@ -347,7 +347,7 @@ export default function LabsTasteCollection() {
       )}
 
       {bulkDeleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }}>
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
             <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete {selectedIds.size} bottles?</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This cannot be undone.</p>

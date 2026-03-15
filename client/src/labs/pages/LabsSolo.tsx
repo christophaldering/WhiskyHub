@@ -1260,14 +1260,14 @@ export default function LabsSolo() {
   };
 
   const sheetBackdrop = sheetView !== "none" && (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 99 }} onClick={() => setSheetView("none")} />
+    <div style={{ position: "fixed", inset: 0, background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: "var(--z-overlay)" }} onClick={() => setSheetView("none")} />
   );
 
   const renderIdentifyingSheet = (
     <div style={{
       position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
       borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-      padding: "40px 20px 60px", zIndex: 100, textAlign: "center",
+      padding: "40px 20px 60px", zIndex: "var(--z-overlay)", textAlign: "center",
     }} data-testid="sheet-identifying">
       <div style={{ width: 32, height: 32, border: "3px solid var(--labs-accent)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("m2.solo.identifying", "Identifying whisky...")}</p>
@@ -1279,7 +1279,7 @@ export default function LabsSolo() {
     <div style={{
       position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
       borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-      padding: "40px 20px 60px", zIndex: 100, textAlign: "center",
+      padding: "40px 20px 60px", zIndex: "var(--z-overlay)", textAlign: "center",
     }} data-testid="sheet-file-analyzing">
       <div style={{ width: 32, height: 32, border: "3px solid var(--labs-accent)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("m2.solo.analyzingFile", "Analyzing file...")}</p>
@@ -1290,7 +1290,7 @@ export default function LabsSolo() {
     <div style={{
       position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
       borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-      padding: "20px 20px 40px", zIndex: 100, maxHeight: "80vh", overflowY: "auto",
+      padding: "20px 20px 40px", zIndex: "var(--z-overlay)", maxHeight: "80vh", overflowY: "auto",
     }} data-testid="sheet-online-search">
       <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
       <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 8px" }}>{t("m2.solo.searchOnline", "Search online (Beta)")}</h3>
@@ -1320,7 +1320,7 @@ export default function LabsSolo() {
     <div style={{
       position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
       borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-      padding: "20px 20px 40px", zIndex: 100, maxHeight: "80vh", overflowY: "auto",
+      padding: "20px 20px 40px", zIndex: "var(--z-overlay)", maxHeight: "80vh", overflowY: "auto",
     }} data-testid="sheet-candidates">
       <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
@@ -1448,7 +1448,7 @@ export default function LabsSolo() {
           <div style={{
             position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
             borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
+            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: "var(--z-overlay)", maxHeight: "85dvh", overflowY: "auto",
           }}>
             <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
             <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
@@ -1486,7 +1486,7 @@ export default function LabsSolo() {
           <div style={{
             position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
             borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
+            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: "var(--z-overlay)", maxHeight: "85dvh", overflowY: "auto",
           }}>
             <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
             <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-collection-picker-title">
@@ -2413,7 +2413,7 @@ export default function LabsSolo() {
         <div style={{
           position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
           borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-          padding: "20px 20px 40px", zIndex: 100,
+          padding: "20px 20px 40px", zIndex: "var(--z-overlay)",
         }} data-testid="sheet-describe">
           <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
           <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 4px" }}>
@@ -2441,7 +2441,7 @@ export default function LabsSolo() {
 
       {sheetView === "barcode" && (
         <div style={{
-          position: "fixed", inset: 0, background: "var(--labs-bg)", zIndex: 101,
+          position: "fixed", inset: 0, background: "var(--labs-bg)", zIndex: "var(--z-overlay)",
           display: "flex", flexDirection: "column", paddingTop: 56,
         }} data-testid="sheet-barcode-scanner">
           <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--labs-border)" }}>
