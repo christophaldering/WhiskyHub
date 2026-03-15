@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
+import { lexiconData, categoryLabelMap, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
 
 interface SearchResult {
   id: string;
@@ -31,101 +32,8 @@ interface WhiskyResult {
   avgOverall?: number;
 }
 
-interface LexiconEntry { term: string; definition: string; }
-interface LexiconCategory { key: string; entries: LexiconEntry[]; }
-
 const RECENT_KEY = "cs_labs_recent_searches";
 const MAX_RECENT = 5;
-
-const lexiconData: Record<string, LexiconCategory[]> = {
-  en: [
-    { key: "tastingTerms", entries: [
-      { term: "Nose", definition: "The aroma of a whisky as perceived by smelling it." },
-      { term: "Palate", definition: "The taste and texture experienced when whisky is on the tongue." },
-      { term: "Finish", definition: "The lingering flavors and sensations after swallowing." },
-      { term: "Balance", definition: "The harmony between different flavor elements." },
-      { term: "Body", definition: "The weight and texture of a whisky in the mouth." },
-      { term: "Dram", definition: "A traditional Scottish term for a serving of whisky." },
-      { term: "Cask Strength", definition: "Whisky bottled directly from the cask without dilution." },
-      { term: "Single Malt", definition: "Whisky made from 100% malted barley at a single distillery." },
-      { term: "ABV", definition: "Alcohol By Volume — the standard measure of alcohol content." },
-    ]},
-    { key: "flavorCategories", entries: [
-      { term: "Fruity", definition: "Flavors of fresh or dried fruit — apple, pear, citrus." },
-      { term: "Floral", definition: "Delicate aromas of heather, lavender, rose." },
-      { term: "Peaty / Smoky", definition: "Aromas from peat-dried malt — campfire, iodine." },
-      { term: "Spicy", definition: "Warming notes of cinnamon, pepper, ginger." },
-      { term: "Sweet", definition: "Honey, vanilla, caramel, toffee." },
-      { term: "Maritime", definition: "Sea-influenced — brine, seaweed, salt spray." },
-    ]},
-    { key: "regions", entries: [
-      { term: "Speyside", definition: "Scotland's most prolific region. Elegant, fruity malts." },
-      { term: "Highland", definition: "Scotland's largest region — diverse styles." },
-      { term: "Islay", definition: "Famous for intensely peated, smoky whiskies." },
-      { term: "Campbeltown", definition: "Briny, complex, slightly oily whiskies." },
-      { term: "Lowland", definition: "Light, floral, and gentle whiskies." },
-    ]},
-    { key: "productionMethods", entries: [
-      { term: "Malting", definition: "Soaking barley, germination, then drying." },
-      { term: "Distillation", definition: "Heating wash in copper pot stills." },
-      { term: "Maturation", definition: "Ageing spirit in oak casks." },
-      { term: "Cask Finishing", definition: "Secondary maturation in a different cask type." },
-      { term: "Angel's Share", definition: "The ~2% of whisky that evaporates annually." },
-    ]},
-    { key: "caskTypes", entries: [
-      { term: "Bourbon Barrel", definition: "American oak. Vanilla, caramel, coconut." },
-      { term: "Sherry Butt", definition: "European oak. Dried fruit, chocolate, spice." },
-      { term: "Port Pipe", definition: "Portuguese cask. Red berry, plum, chocolate." },
-      { term: "Quarter Cask", definition: "Small cask that accelerates maturation." },
-    ]},
-  ],
-  de: [
-    { key: "tastingTerms", entries: [
-      { term: "Nase", definition: "Das Aroma eines Whiskys beim Riechen." },
-      { term: "Gaumen", definition: "Geschmack und Textur auf der Zunge." },
-      { term: "Abgang", definition: "Nachklingende Aromen nach dem Schlucken." },
-      { term: "Balance", definition: "Gleichgewicht zwischen Geschmackselementen." },
-      { term: "Körper", definition: "Gewicht und Textur im Mund." },
-      { term: "Dram", definition: "Schottischer Begriff für eine Portion Whisky." },
-      { term: "Fassstärke", definition: "Whisky direkt aus dem Fass, ohne Verdünnung." },
-      { term: "Single Malt", definition: "Whisky aus 100% gemälzter Gerste einer Brennerei." },
-      { term: "ABV", definition: "Alkoholgehalt in Prozent." },
-    ]},
-    { key: "flavorCategories", entries: [
-      { term: "Fruchtig", definition: "Aromen von frischem oder getrocknetem Obst." },
-      { term: "Blumig", definition: "Zarte Aromen von Heidekraut, Lavendel, Rose." },
-      { term: "Torfig / Rauchig", definition: "Aromen aus torfgetrocknetem Malz." },
-      { term: "Würzig", definition: "Zimt, Pfeffer, Ingwer, Nelke." },
-      { term: "Süß", definition: "Honig, Vanille, Karamell." },
-      { term: "Maritim", definition: "Salzlake, Seetang, Meeressprühnebel." },
-    ]},
-    { key: "regions", entries: [
-      { term: "Speyside", definition: "Produktivste Region mit 50+ Brennereien." },
-      { term: "Highland", definition: "Größte Region — vielfältige Stile." },
-      { term: "Islay", definition: "Intensiv getorft, rauchig, maritim." },
-      { term: "Campbeltown", definition: "Salzig, komplex, ölig." },
-      { term: "Lowland", definition: "Leicht, blumig, sanft." },
-    ]},
-    { key: "productionMethods", entries: [
-      { term: "Mälzen", definition: "Gerste einweichen, keimen lassen, trocknen." },
-      { term: "Destillation", definition: "Erhitzen in Kupferbrennblasen." },
-      { term: "Reifung", definition: "Lagerung in Eichenfässern." },
-      { term: "Fass-Finish", definition: "Zweite Reifung in anderem Fasstyp." },
-      { term: "Angel's Share", definition: "~2% Verdunstung pro Jahr." },
-    ]},
-    { key: "caskTypes", entries: [
-      { term: "Bourbon Barrel", definition: "Amerikanisches Eichenfass. Vanille, Karamell." },
-      { term: "Sherry Butt", definition: "Europäisches Eichenfass. Trockenfrüchte, Schokolade." },
-      { term: "Port Pipe", definition: "Portugiesisches Fass. Rote Beeren, Pflaume." },
-      { term: "Quarter Cask", definition: "Kleines Fass. Beschleunigte Reifung." },
-    ]},
-  ],
-};
-
-const categoryLabelMap: Record<string, Record<string, string>> = {
-  en: { tastingTerms: "Tasting", flavorCategories: "Flavours", regions: "Regions", productionMethods: "Production", caskTypes: "Casks" },
-  de: { tastingTerms: "Verkostung", flavorCategories: "Aromen", regions: "Regionen", productionMethods: "Herstellung", caskTypes: "Fässer" },
-};
 
 interface PageEntry {
   label: string;
@@ -252,11 +160,11 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   useEffect(() => {
     if (!open) return;
     const handlePopState = () => {
-      onClose();
+      handleClose(true);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
@@ -399,9 +307,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     return null;
   }, [allResults]);
 
-  const handleClose = useCallback(() => {
+  const handleClose = useCallback((fromPopState = false) => {
     setExiting(true);
     triggerHaptic("light");
+    if (!fromPopState) {
+      try { window.history.back(); } catch {}
+    }
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     closeTimerRef.current = setTimeout(() => {
       setVisible(false);
@@ -453,6 +364,28 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       handleClose();
     }
   }, [handleClose]);
+
+  const [swipingRecent, setSwipingRecent] = useState<{ index: number; startX: number; offsetX: number } | null>(null);
+
+  const handleRecentTouchStart = useCallback((index: number, e: React.TouchEvent) => {
+    setSwipingRecent({ index, startX: e.touches[0].clientX, offsetX: 0 });
+  }, []);
+
+  const handleRecentTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swipingRecent) return;
+    const dx = e.touches[0].clientX - swipingRecent.startX;
+    setSwipingRecent((prev) => prev ? { ...prev, offsetX: Math.min(0, dx) } : null);
+  }, [swipingRecent]);
+
+  const handleRecentTouchEnd = useCallback((q: string) => {
+    if (!swipingRecent) return;
+    if (swipingRecent.offsetX < -80) {
+      removeRecent(q);
+      setRecentSearches(getRecent());
+      triggerHaptic("light");
+    }
+    setSwipingRecent(null);
+  }, [swipingRecent]);
 
   const hasQuery = debouncedQuery.length >= 2;
   const hasResults = allResults.some((g) => g.results.length > 0);
@@ -645,48 +578,80 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                 {t("search.clearAll", isDe ? "Alle löschen" : "Clear all")}
               </button>
             </div>
-            {recentSearches.map((q, i) => (
-              <div
-                key={q}
-                onClick={() => { setQuery(q); triggerHaptic("light"); }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 8px",
-                  borderRadius: 12,
-                  cursor: "pointer",
-                  minHeight: 44,
-                  transition: "background 150ms ease",
-                  animation: `labsFadeIn 300ms cubic-bezier(0.2, 0.8, 0.4, 1) ${i * 50}ms both`,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--labs-surface)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                data-testid={`search-recent-${i}`}
-              >
-                <Clock style={{ width: 15, height: 15, color: "var(--labs-text-muted)", flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 15, color: "var(--labs-text-secondary)" }}>{q}</span>
-                <button
-                  onClick={(e) => handleRemoveRecent(q, e)}
+            {recentSearches.map((q, i) => {
+              const isSwiping = swipingRecent?.index === i;
+              const offset = isSwiping ? swipingRecent.offsetX : 0;
+              return (
+                <div
+                  key={q}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    background: "transparent",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    color: "var(--labs-text-muted)",
-                    flexShrink: 0,
+                    position: "relative",
+                    overflow: "hidden",
+                    borderRadius: 12,
+                    animation: `labsFadeIn 300ms cubic-bezier(0.2, 0.8, 0.4, 1) ${i * 50}ms both`,
                   }}
-                  data-testid={`button-remove-recent-${i}`}
                 >
-                  <X style={{ width: 12, height: 12 }} />
-                </button>
-              </div>
-            ))}
+                  {offset < 0 && (
+                    <div style={{
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: Math.abs(offset),
+                      background: "var(--labs-danger, #e74c3c)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "0 12px 12px 0",
+                    }}>
+                      <X style={{ width: 16, height: 16, color: "#fff" }} />
+                    </div>
+                  )}
+                  <div
+                    onClick={() => { setQuery(q); triggerHaptic("light"); }}
+                    onTouchStart={(e) => handleRecentTouchStart(i, e)}
+                    onTouchMove={handleRecentTouchMove}
+                    onTouchEnd={() => handleRecentTouchEnd(q)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "12px 8px",
+                      cursor: "pointer",
+                      minHeight: 44,
+                      transition: isSwiping ? "none" : "background 150ms ease, transform 200ms ease",
+                      transform: `translateX(${offset}px)`,
+                      background: "var(--labs-bg)",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--labs-surface)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "var(--labs-bg)")}
+                    data-testid={`search-recent-${i}`}
+                  >
+                    <Clock style={{ width: 15, height: 15, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 15, color: "var(--labs-text-secondary)" }}>{q}</span>
+                    <button
+                      onClick={(e) => handleRemoveRecent(q, e)}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: "transparent",
+                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        color: "var(--labs-text-muted)",
+                        flexShrink: 0,
+                      }}
+                      data-testid={`button-remove-recent-${i}`}
+                    >
+                      <X style={{ width: 12, height: 12 }} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

@@ -429,6 +429,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <LabsNotificationBell />
           <button
             onClick={() => { setSearchOpen(true); triggerHaptic("light"); }}
             className="flex items-center justify-center rounded-full transition-all"
@@ -444,7 +445,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           >
             <Search className="w-4 h-4" />
           </button>
-          <LabsNotificationBell />
           <button
             onClick={() => setProfileOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
