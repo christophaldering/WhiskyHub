@@ -392,7 +392,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     setSwipingRecent(null);
   }, [swipingRecent]);
 
-  const hasQuery = debouncedQuery.length >= 2;
+  const hasQuery = debouncedQuery.length >= 1;
   const hasResults = allResults.some((g) => g.results.length > 0);
   const isSearching = hasQuery && whiskyLoading;
 
