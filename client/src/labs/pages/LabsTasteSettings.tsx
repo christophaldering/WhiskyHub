@@ -208,6 +208,7 @@ export default function LabsTasteSettings() {
                   {currentPhotoUrl ? "Change Photo" : "Upload Photo"}
                 </button>
                 <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>JPG, PNG, WebP - max 2 MB</span>
+                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
                 {currentPhotoUrl && (
                   <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); }} className="text-xs" style={{ color: "var(--labs-danger)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} data-testid="button-labs-remove-photo">Remove Photo</button>
                 )}

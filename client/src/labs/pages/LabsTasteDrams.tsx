@@ -378,6 +378,7 @@ export default function LabsTasteDrams() {
             )}
             <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} data-testid="input-labs-image-upload" />
             <div className="flex-1 flex flex-col gap-2">
+              <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
               <EditField label="Whisky Name" value={editForm.whiskyName} onChange={(v) => setEditForm({ ...editForm, whiskyName: v, title: v })} testId="input-labs-edit-whiskyName" />
               <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>

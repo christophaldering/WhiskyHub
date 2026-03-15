@@ -714,6 +714,7 @@ function PrintMaterialsSection({
                   Upload
                   <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} data-testid="input-print-cover-file" />
                 </label>
+                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint-cover">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
                 <button
                   className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
                   onClick={handleAiCover}
@@ -5104,7 +5105,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                             <ChevronDown className="w-3 h-3" />
                           </button>
                         </div>
-                        <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`}>
+                        <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
                           <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                           <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
                         </label>

@@ -1389,8 +1389,11 @@ export default function LabsSolo() {
           <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 6px", textAlign: "center" }}>
             {t("m2.solo.captureTitle", "What are you tasting?")}
           </h1>
-          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 32, textAlign: "center", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 8, textAlign: "center", lineHeight: 1.5 }}>
             {t("m2.solo.captureSubtitle", "Start with a photo — or choose another method.")}
+          </p>
+          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center", opacity: 0.7 }} data-testid="text-photo-rights-hint-solo">
+            {t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}
           </p>
 
           <button
