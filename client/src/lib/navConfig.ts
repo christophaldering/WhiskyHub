@@ -27,7 +27,7 @@ export const primaryTabs: NavItem[] = [
 ];
 
 export const myTasteLinks: NavItem[] = [
-  { key: "drams", labelKey: "myTastePage.journal", route: "/my-taste/drams", icon: BookOpen },
+  { key: "drams", labelKey: "myTastePage.myDrams", route: "/my-taste/drams", icon: BookOpen },
   { key: "profile", labelKey: "myTastePage.flavorProfile", route: "/my-taste/profile", icon: Radar },
   { key: "analytics", labelKey: "myTastePage.myAnalytics", route: "/my-taste/analytics", icon: BarChart3 },
   { key: "compare", labelKey: "myTastePage.compare", route: "/my-taste/compare", icon: GitCompareArrows },

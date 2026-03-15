@@ -589,6 +589,9 @@ export const textExtractApi = {
 // ===== Whiskybase Collection =====
 export const collectionApi = {
   getAll: (participantId: string) => fetchJSON(`/collection/${participantId}`),
+  add: (participantId: string, data: { name: string; distillery?: string; whiskybaseId?: string; brand?: string; statedAge?: string; abv?: string; caskType?: string; status?: string; imageUrl?: string }) =>
+    fetchJSON(`/collection/${participantId}/add`, { method: "POST", body: JSON.stringify(data) }),
+  check: (participantId: string) => fetchJSON(`/collection/${participantId}/check`) as Promise<{ items: Record<string, { id: string; status: string | null }> }>,
   importFile: async (participantId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);

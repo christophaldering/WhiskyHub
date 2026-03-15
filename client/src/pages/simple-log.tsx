@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, ChevronDown, Camera, Loader2, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { participantApi } from "@/lib/api";
+import { participantApi, collectionApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
+import { useToast } from "@/hooks/use-toast";
 import { c, inputStyle, cardStyle, sliderCSS, sectionSpacing } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
 
@@ -1027,6 +1028,7 @@ type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" |
 
 export default function SimpleLogPage() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { currentParticipant, setParticipant } = useAppStore();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1199,6 +1201,9 @@ export default function SimpleLogPage() {
   const [isMenuMode, setIsMenuMode] = useState(false);
   const [lastResult, setLastResult] = useState<IdentifyResult | null>(null);
   const [onlineQuery, setOnlineQuery] = useState("");
+  const [occasion, setOccasion] = useState("");
+  const [customOccasion, setCustomOccasion] = useState("");
+  const [addToCollection, setAddToCollection] = useState(false);
 
   const processFiles = async (files: File[]) => {
     setScanning(true);
@@ -1446,6 +1451,7 @@ export default function SimpleLogPage() {
     try {
       const notesWithScores = (notes.trim() + scoresBlock).trim() || undefined;
 
+      const effectiveOccasion = occasion === "custom" ? customOccasion.trim() : occasion;
       const body: Record<string, any> = {
         title: whiskyName.trim(),
         whiskyName: whiskyName.trim(),
@@ -1454,6 +1460,7 @@ export default function SimpleLogPage() {
         noseNotes: notesWithScores,
         source: "casksense",
         imageUrl: photoUrl || undefined,
+        occasion: effectiveOccasion || undefined,
       };
 
       if (showManual) {
@@ -1475,6 +1482,23 @@ export default function SimpleLogPage() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Save failed");
+      }
+
+      if (addToCollection && pid) {
+        try {
+          await collectionApi.add(pid, {
+            name: whiskyName.trim(),
+            distillery: distillery.trim() || undefined,
+            whiskybaseId: (selectedCandidate?.whiskybaseId || unknownWbId || "").trim() || undefined,
+            statedAge: unknownAge.trim() || undefined,
+            abv: unknownAbv.trim() || undefined,
+            caskType: unknownCask.trim() || undefined,
+            imageUrl: photoUrl || undefined,
+            status: "open",
+          });
+        } catch {
+          toast({ title: t("myTastePage.collectionAddFailed"), variant: "destructive" });
+        }
       }
 
       persistDetailedScores();
@@ -1526,6 +1550,9 @@ export default function SimpleLogPage() {
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
     setExpandedModules({ nose: false, taste: false, finish: false, balance: false });
+    setOccasion("");
+    setCustomOccasion("");
+    setAddToCollection(false);
     stopVoice();
   };
 
@@ -2061,6 +2088,100 @@ export default function SimpleLogPage() {
                 )}
               </div>
             </div>
+
+            {/* ── SECTION 3b: OCCASION ── */}
+            <div style={{ marginBottom: sectionSpacing }} data-testid="section-occasion">
+              <SectionLabel>{t("myTastePage.occasion")}</SectionLabel>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: occasion === "custom" ? 8 : 0 }}>
+                {([
+                  { key: "ownBottle", i18n: "myTastePage.occasionOwnBottle" },
+                  { key: "friends", i18n: "myTastePage.occasionFriends" },
+                  { key: "fair", i18n: "myTastePage.occasionFair" },
+                  { key: "bar", i18n: "myTastePage.occasionBar" },
+                  { key: "event", i18n: "myTastePage.occasionEvent" },
+                  { key: "gift", i18n: "myTastePage.occasionGift" },
+                ] as const).map((occ) => {
+                  const label = t(occ.i18n);
+                  return (
+                    <button
+                      key={occ.key}
+                      type="button"
+                      onClick={() => setOccasion(occasion === label ? "" : label)}
+                      data-testid={`chip-occasion-${occ.key}`}
+                      style={chipStyle(occasion === label)}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setOccasion(occasion === "custom" ? "" : "custom")}
+                  data-testid="chip-occasion-custom"
+                  style={chipStyle(occasion === "custom")}
+                >
+                  {t("myTastePage.occasionOther")}
+                </button>
+              </div>
+              {occasion === "custom" && (
+                <input
+                  type="text"
+                  value={customOccasion}
+                  onChange={(e) => setCustomOccasion(e.target.value)}
+                  placeholder={t("myTastePage.occasionPlaceholderCustom")}
+                  style={{ ...inputStyle, marginTop: 6 }}
+                  data-testid="input-occasion-custom"
+                  autoComplete="off"
+                />
+              )}
+            </div>
+
+            {/* ── SECTION 3c: COLLECTION TOGGLE ── */}
+            {pid && (
+              <div style={{ marginBottom: sectionSpacing }} data-testid="section-collection-toggle">
+                <button
+                  type="button"
+                  onClick={() => setAddToCollection(!addToCollection)}
+                  data-testid="toggle-add-to-collection"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${addToCollection ? v.accent : v.border}`,
+                    background: addToCollection ? alpha(v.accent, "10") : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                >
+                  <div style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    border: `2px solid ${addToCollection ? v.accent : v.muted}`,
+                    background: addToCollection ? v.accent : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s",
+                    flexShrink: 0,
+                  }}>
+                    {addToCollection && <span style={{ color: v.bg, fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                  </div>
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: addToCollection ? v.accent : v.text }}>
+                      {t("myTastePage.addToCollection")}
+                    </div>
+                    <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>
+                      {t("myTastePage.collectionExplainer")}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* ── SECTION 4: SAVE ── */}
             <div data-testid="section-save">

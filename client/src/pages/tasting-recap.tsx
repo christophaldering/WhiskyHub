@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
-import { recapApi, tastingApi } from "@/lib/api";
+import { recapApi, tastingApi, getParticipantId, collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown, Download } from "lucide-react";
+import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown, Download, Check, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,28 @@ export default function TastingRecap() {
   const params = useParams<{ id: string }>();
   const [selectedTastingId, setSelectedTastingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const pid = getParticipantId();
+  const qc = useQueryClient();
+
+  const { data: collectionCheck } = useQuery({
+    queryKey: ["collection-check", pid],
+    queryFn: () => collectionApi.check(pid!),
+    enabled: !!pid,
+    staleTime: 30_000,
+  });
+  const addToCollectionMut = useMutation({
+    mutationFn: (data: { name: string; distillery?: string }) =>
+      collectionApi.add(pid!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collection-check", pid] }),
+  });
+  const isInCollection = (name: string, distillery?: string, whiskybaseId?: string) => {
+    if (!collectionCheck?.items) return false;
+    if (whiskybaseId && collectionCheck.items[`wb:${whiskybaseId}`]) return true;
+    const namePart = (name || "").trim().toLowerCase();
+    const distPart = (distillery || "").trim().toLowerCase();
+    const compositeKey = distPart ? `${namePart}|||${distPart}` : namePart;
+    return !!(collectionCheck.items[compositeKey] || collectionCheck.items[namePart]);
+  };
 
   const tastingId = params.id || selectedTastingId;
 
@@ -435,10 +457,30 @@ export default function TastingRecap() {
                       <p className="text-xs text-muted-foreground truncate">{w.distillery}</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex items-center gap-2">
                     <span className="text-lg font-serif font-bold text-primary" data-testid={`text-top-rated-score-${i}`}>
                       {w.avgScore.toFixed(1)}
                     </span>
+                    {pid && (
+                      isInCollection(w.name, w.distillery) ? (
+                        <span
+                          style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "rgba(76, 175, 80, 0.15)", justifyContent: "center" }}
+                          data-testid={`badge-recap-collection-${i}`}
+                        >
+                          <Check style={{ width: 12, height: 12, color: "#4CAF50" }} />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => addToCollectionMut.mutate({ name: w.name, distillery: w.distillery })}
+                          disabled={addToCollectionMut.isPending}
+                          style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "rgba(200,168,100,0.15)", justifyContent: "center", border: "none", cursor: "pointer", padding: 0 }}
+                          data-testid={`button-recap-add-collection-${i}`}
+                        >
+                          <Archive style={{ width: 12, height: 12, color: "#c8a864" }} />
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               ))}

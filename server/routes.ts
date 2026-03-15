@@ -4891,6 +4891,58 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
     }
   });
 
+  app.post("/api/collection/:participantId/add", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const { name, distillery, whiskybaseId, brand, statedAge, abv, caskType, status, imageUrl } = req.body;
+      if (!name) return res.status(400).json({ error: "Name is required" });
+      const wbId = whiskybaseId || `manual-${Date.now()}`;
+      const item = await storage.upsertWhiskybaseCollectionItem({
+        participantId,
+        whiskybaseId: wbId,
+        name,
+        brand: brand || distillery || null,
+        distillery: distillery || null,
+        statedAge: statedAge || null,
+        abv: abv || null,
+        caskType: caskType || null,
+        status: status || "open",
+        imageUrl: imageUrl || null,
+      });
+      res.json(item);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/collection/:participantId/check", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const items = await storage.getWhiskybaseCollection(participantId);
+      const nameMap: Record<string, { id: string; status: string | null }> = {};
+      for (const item of items) {
+        const namePart = (item.name || "").trim().toLowerCase();
+        const distPart = (item.distillery || "").trim().toLowerCase();
+        const key = distPart ? `${namePart}|||${distPart}` : namePart;
+        const entry = { id: item.id, status: item.status };
+        if (namePart) {
+          nameMap[key] = entry;
+          if (distPart) nameMap[namePart] = nameMap[namePart] || entry;
+        }
+        if (item.whiskybaseId && !item.whiskybaseId.startsWith("manual-")) {
+          nameMap[`wb:${item.whiskybaseId}`] = entry;
+        }
+      }
+      res.json({ items: nameMap });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/collection/:participantId/:id", async (req: Request, res: Response) => {
     try {
       await storage.deleteWhiskybaseCollectionItem(req.params.id as string, req.params.participantId as string);

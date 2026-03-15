@@ -1,11 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -526,6 +527,31 @@ export default function LabsResults({ params }: LabsResultsProps) {
   });
 
   const isLoading = loadingTasting || loadingWhiskies;
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const pid = getParticipantId();
+
+  const { data: collectionCheck } = useQuery({
+    queryKey: ["collection-check", pid],
+    queryFn: () => collectionApi.check(pid!),
+    enabled: !!pid,
+    staleTime: 30_000,
+  });
+
+  const addToCollectionMut = useMutation({
+    mutationFn: (data: { name: string; distillery?: string; whiskybaseId?: string }) =>
+      collectionApi.add(pid!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collection-check", pid] }),
+  });
+
+  const isInCollection = (name: string, distillery?: string, whiskybaseId?: string) => {
+    if (!collectionCheck?.items) return false;
+    if (whiskybaseId && collectionCheck.items[`wb:${whiskybaseId}`]) return true;
+    const namePart = (name || "").trim().toLowerCase();
+    const distPart = (distillery || "").trim().toLowerCase();
+    const compositeKey = distPart ? `${namePart}|||${distPart}` : namePart;
+    return !!(collectionCheck.items[compositeKey] || collectionCheck.items[namePart]);
+  };
 
   const isRevealed = tasting?.status === "reveal" || tasting?.status === "archived" || tasting?.status === "completed";
 
@@ -1139,6 +1165,33 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
                   {w.caskType && (
                     <span className="labs-badge labs-badge-accent text-[11px]">{w.caskType}</span>
+                  )}
+
+                  {pid && (
+                    <div className="mt-2">
+                      {isInCollection(w.name, w.distillery) ? (
+                        <span
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg"
+                          style={{ background: "rgba(76, 175, 80, 0.12)", color: "#4CAF50" }}
+                          data-testid={`badge-in-collection-${w.id}`}
+                        >
+                          <Check className="w-3 h-3" />
+                          {t("myTastePage.addedToCollection")}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg transition-colors"
+                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                          onClick={(e) => { e.stopPropagation(); addToCollectionMut.mutate({ name: w.name, distillery: w.distillery, whiskybaseId: w.whiskybaseId }); }}
+                          disabled={addToCollectionMut.isPending}
+                          data-testid={`button-add-collection-${w.id}`}
+                        >
+                          <Archive className="w-3 h-3" />
+                          {addToCollectionMut.isPending ? "..." : t("myTastePage.addToCollection")}
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {w.myRating && (

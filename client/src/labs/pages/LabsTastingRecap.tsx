@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { recapApi } from "@/lib/api";
+import { recapApi, collectionApi, getParticipantId } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
-  Loader2, ChevronLeft, AlertCircle
+  Loader2, ChevronLeft, AlertCircle, Archive, Check
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -40,6 +40,30 @@ export default function LabsTastingRecap() {
   });
 
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const qc = useQueryClient();
+  const pid = getParticipantId();
+
+  const { data: collectionCheck } = useQuery({
+    queryKey: ["collection-check", pid],
+    queryFn: () => collectionApi.check(pid!),
+    enabled: !!pid,
+    staleTime: 30_000,
+  });
+
+  const addToCollectionMut = useMutation({
+    mutationFn: (data: { name: string; distillery?: string }) =>
+      collectionApi.add(pid!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collection-check", pid] }),
+  });
+
+  const isInCollection = (name: string, distillery?: string, whiskybaseId?: string) => {
+    if (!collectionCheck?.items) return false;
+    if (whiskybaseId && collectionCheck.items[`wb:${whiskybaseId}`]) return true;
+    const namePart = (name || "").trim().toLowerCase();
+    const distPart = (distillery || "").trim().toLowerCase();
+    const compositeKey = distPart ? `${namePart}|||${distPart}` : namePart;
+    return !!(collectionCheck.items[compositeKey] || collectionCheck.items[namePart]);
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -424,6 +448,28 @@ export default function LabsTastingRecap() {
                 <span className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }} data-testid={`text-labs-top-rated-score-${i}`}>
                   {w.avgScore.toFixed(1)}
                 </span>
+                {pid && (
+                  <div style={{ marginLeft: 6 }}>
+                    {isInCollection(w.name, w.distillery) ? (
+                      <span
+                        style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "rgba(76, 175, 80, 0.15)", justifyContent: "center" }}
+                        data-testid={`badge-recap-collection-${i}`}
+                      >
+                        <Check style={{ width: 12, height: 12, color: "#4CAF50" }} />
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => addToCollectionMut.mutate({ name: w.name, distillery: w.distillery })}
+                        disabled={addToCollectionMut.isPending}
+                        style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "var(--labs-accent-muted)", justifyContent: "center", border: "none", cursor: "pointer", padding: 0 }}
+                        data-testid={`button-recap-add-collection-${i}`}
+                      >
+                        <Archive style={{ width: 12, height: 12, color: "var(--labs-accent)" }} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -1,14 +1,15 @@
 import { useParams } from "wouter";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import Module2Shell from "@/components/m2/Module2Shell";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { v, alpha } from "@/lib/themeVars";
-import { Trophy, ChevronDown, Download, FileSpreadsheet, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { Trophy, ChevronDown, Download, FileSpreadsheet, FileText, ClipboardList, Loader2, Check, Archive } from "lucide-react";
 import { downloadBlob } from "@/lib/download";
+import { getParticipantId, collectionApi } from "@/lib/api";
 import jsPDF from "jspdf";
 
 const CONFETTI_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32", "#d4a256"];
@@ -119,7 +120,7 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
   );
 }
 
-function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number }) {
+function WhiskyResultCard({ result, rank, inCollection, onAddToCollection, addPending }: { result: WhiskyResult; rank: number; inCollection?: boolean; onAddToCollection?: () => void; addPending?: boolean }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const hasDetails = result.avgNose != null || result.avgTaste != null || result.avgFinish != null || result.avgBalance != null;
@@ -207,6 +208,31 @@ function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number
           </div>
         </div>
       </div>
+
+      {onAddToCollection && (
+        <div style={{ marginTop: 8 }}>
+          {inCollection ? (
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 8, background: "rgba(76, 175, 80, 0.12)", color: "#4CAF50" }}
+              data-testid={`badge-in-collection-${result.whiskyId}`}
+            >
+              <Check style={{ width: 12, height: 12 }} />
+              {t("myTastePage.addedToCollection")}
+            </span>
+          ) : (
+            <button
+              type="button"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 8, background: alpha(v.accent, "22"), color: v.accent, border: "none", cursor: "pointer", fontFamily: "inherit" }}
+              onClick={(e) => { e.stopPropagation(); onAddToCollection(); }}
+              disabled={addPending}
+              data-testid={`button-add-collection-${result.whiskyId}`}
+            >
+              <Archive style={{ width: 12, height: 12 }} />
+              {addPending ? "..." : t("myTastePage.addToCollection")}
+            </button>
+          )}
+        </div>
+      )}
 
       {hasDetails && (
         <div style={{ marginTop: 12 }}>
@@ -520,10 +546,36 @@ function ExportDropdown({ data }: { data: ResultsData }) {
   );
 }
 
+function useCollectionState() {
+  const pid = getParticipantId();
+  const qc = useQueryClient();
+  const { data: collectionCheck } = useQuery({
+    queryKey: ["collection-check", pid],
+    queryFn: () => collectionApi.check(pid!),
+    enabled: !!pid,
+    staleTime: 30_000,
+  });
+  const addMut = useMutation({
+    mutationFn: (data: { name: string; distillery?: string }) =>
+      collectionApi.add(pid!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collection-check", pid] }),
+  });
+  const isInCollection = (name: string, distillery?: string, whiskybaseId?: string) => {
+    if (!collectionCheck?.items) return false;
+    if (whiskybaseId && collectionCheck.items[`wb:${whiskybaseId}`]) return true;
+    const namePart = (name || "").trim().toLowerCase();
+    const distPart = (distillery || "").trim().toLowerCase();
+    const compositeKey = distPart ? `${namePart}|||${distPart}` : namePart;
+    return !!(collectionCheck.items[compositeKey] || collectionCheck.items[namePart]);
+  };
+  return { pid, isInCollection, addMut };
+}
+
 export default function M2TastingResults() {
   const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
+  const { pid, isInCollection, addMut } = useCollectionState();
 
   const { data, isLoading, isError, refetch } = useQuery<ResultsData>({
     queryKey: ["tasting-results", tastingId],
@@ -591,7 +643,14 @@ export default function M2TastingResults() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {data.results.map((result, i) => (
-            <WhiskyResultCard key={result.whiskyId} result={result} rank={i} />
+            <WhiskyResultCard
+              key={result.whiskyId}
+              result={result}
+              rank={i}
+              inCollection={pid ? isInCollection(result.name, result.distillery ?? undefined) : undefined}
+              onAddToCollection={pid ? () => addMut.mutate({ name: result.name, distillery: result.distillery ?? undefined }) : undefined}
+              addPending={addMut.isPending}
+            />
           ))}
         </div>
       )}

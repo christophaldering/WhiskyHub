@@ -1,11 +1,11 @@
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { recapApi } from "@/lib/api";
+import { recapApi, getParticipantId, collectionApi } from "@/lib/api";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
-import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown } from "lucide-react";
+import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown, Check, Archive } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
@@ -28,6 +28,27 @@ export default function M2TastingRecap() {
   const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const pid = getParticipantId();
+  const qc = useQueryClient();
+  const { data: collectionCheck } = useQuery({
+    queryKey: ["collection-check", pid],
+    queryFn: () => collectionApi.check(pid!),
+    enabled: !!pid,
+    staleTime: 30_000,
+  });
+  const addToCollectionMut = useMutation({
+    mutationFn: (data: { name: string; distillery?: string }) =>
+      collectionApi.add(pid!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collection-check", pid] }),
+  });
+  const isInCollection = (name: string, distillery?: string, whiskybaseId?: string) => {
+    if (!collectionCheck?.items) return false;
+    if (whiskybaseId && collectionCheck.items[`wb:${whiskybaseId}`]) return true;
+    const namePart = (name || "").trim().toLowerCase();
+    const distPart = (distillery || "").trim().toLowerCase();
+    const compositeKey = distPart ? `${namePart}|||${distPart}` : namePart;
+    return !!(collectionCheck.items[compositeKey] || collectionCheck.items[namePart]);
+  };
   const tastingId = params.id;
 
   const { data: recap, isLoading, isError, refetch } = useQuery<RecapData>({
@@ -474,6 +495,26 @@ export default function M2TastingRecap() {
                   >
                     {w.avgScore.toFixed(1)}
                   </span>
+                  {pid && (
+                    isInCollection(w.name, w.distillery) ? (
+                      <span
+                        style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "rgba(76, 175, 80, 0.15)", justifyContent: "center", marginLeft: 4 }}
+                        data-testid={`badge-m2-recap-collection-${i}`}
+                      >
+                        <Check style={{ width: 12, height: 12, color: "#4CAF50" }} />
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => addToCollectionMut.mutate({ name: w.name, distillery: w.distillery })}
+                        disabled={addToCollectionMut.isPending}
+                        style={{ display: "inline-flex", alignItems: "center", width: 22, height: 22, borderRadius: 11, background: "rgba(200,168,100,0.15)", justifyContent: "center", border: "none", cursor: "pointer", padding: 0, marginLeft: 4 }}
+                        data-testid={`button-m2-recap-add-collection-${i}`}
+                      >
+                        <Archive style={{ width: 12, height: 12, color: v.accent }} />
+                      </button>
+                    )
+                  )}
                 </div>
               ))}
             </div>
