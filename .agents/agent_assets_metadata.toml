@@ -6,3 +6,9 @@ id = "LfBQXI4Ptd9oMsgu5cPah"
 uri = "file://.local/m2-vs-labs-features.md"
 type = "text"
 title = "M2 vs Labs — Vollständige Feature-Übersicht"
+
+[[outputs]]
+id = "XyjT0eRwWIptUwF8jeChB"
+uri = "file://casksense-whisky-database.xlsx"
+type = "table"
+title = "CaskSense Whisky Database (1.578 Einträge)"
