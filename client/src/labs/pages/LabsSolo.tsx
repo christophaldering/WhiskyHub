@@ -2,16 +2,17 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
-import { participantApi } from "@/lib/api";
+import { participantApi, collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar
+  Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar, Library, Archive
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
+import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
@@ -99,7 +100,7 @@ function confidenceLabel(conf: number, t?: (key: string, fallback: string) => st
   return { text: tr("m2.solo.confidenceLow", "Low"), color: "var(--labs-danger)" };
 }
 
-type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
+type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing" | "collectionPicker";
 
 export default function LabsSolo() {
   const { t, i18n } = useTranslation();
@@ -165,6 +166,12 @@ export default function LabsSolo() {
   const [wbLookupResult, setWbLookupResult] = useState("");
   const [autofillLoading, setAutofillLoading] = useState(false);
   const [autofillResult, setAutofillResult] = useState("");
+
+  const [collectionItems, setCollectionItems] = useState<WhiskybaseCollectionItem[]>([]);
+  const [collectionLoading, setCollectionLoading] = useState(false);
+  const [collectionError, setCollectionError] = useState(false);
+  const [collectionSearch, setCollectionSearch] = useState("");
+  const [collectionStatusFilter, setCollectionStatusFilter] = useState<"all" | "open" | "closed">("all");
 
   const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0, balance: 0 });
   const [detailTouched, setDetailTouched] = useState(false);
@@ -857,6 +864,59 @@ export default function LabsSolo() {
     setSelectedCandidate(null);
   };
 
+  const openCollectionPicker = async () => {
+    setSheetView("collectionPicker");
+    setCollectionSearch("");
+    setCollectionStatusFilter("all");
+    setCollectionError(false);
+    if (pid) {
+      setCollectionLoading(true);
+      try {
+        const items = await collectionApi.getAll(pid);
+        setCollectionItems(items);
+        setCollectionError(false);
+      } catch {
+        setCollectionItems([]);
+        setCollectionError(true);
+      } finally {
+        setCollectionLoading(false);
+      }
+    }
+  };
+
+  const handleSelectCollectionItem = (item: WhiskybaseCollectionItem) => {
+    const fullName = item.brand && item.brand !== item.name ? `${item.brand} ${item.name}` : (item.name || "");
+    setWhiskyName(fullName);
+    setDistillery(item.distillery || "");
+    setUnknownAge(item.statedAge || "");
+    setUnknownAbv(item.abv || "");
+    setUnknownCask(item.caskType || "");
+    setUnknownRegion("");
+    setUnknownCountry("");
+    setUnknownPeatLevel("");
+    setUnknownVintage(item.vintage || "");
+    setUnknownBottler("");
+    setUnknownWbId(item.whiskybaseId || "");
+    setUnknownPrice(item.pricePaid != null ? String(item.pricePaid) : "");
+    setSelectedCandidate(null);
+    setSheetView("none");
+    setSoloView("editor");
+    setShowManual(true);
+    setAcceptedBanner(true);
+    setTimeout(() => setAcceptedBanner(false), 3500);
+    setTimeout(() => { ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
+    if (pid && fullName) fetchPreviousRatings("", fullName);
+  };
+
+  const filteredCollectionItems = collectionItems.filter((item) => {
+    if (collectionStatusFilter !== "all" && item.status !== collectionStatusFilter) return false;
+    if (collectionSearch) {
+      const q = collectionSearch.toLowerCase();
+      return (item.name?.toLowerCase().includes(q) || item.brand?.toLowerCase().includes(q) || item.distillery?.toLowerCase().includes(q) || item.caskType?.toLowerCase().includes(q));
+    }
+    return true;
+  });
+
   const handleRetake = () => {
     setCaptureSource("editor");
     setSoloView("capture");
@@ -1353,6 +1413,7 @@ export default function LabsSolo() {
               { onClick: () => { setSoloView("editor"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }, icon: <Barcode style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureBarcode", "Barcode"), testId: "button-capture-barcode" },
               { onClick: () => { setSoloView("editor"); setSheetView("describe"); setDescribeQuery(""); }, icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureDescribe", "Describe"), testId: "button-capture-describe" },
               { onClick: () => fileInputRef.current?.click(), icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureImport", "Import"), testId: "button-capture-file" },
+              ...(pid ? [{ onClick: () => openCollectionPicker(), icon: <Library style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureCollection", "Collection"), testId: "button-capture-collection" }] : []),
             ].map((item) => (
               <button
                 key={item.testId}
@@ -1421,6 +1482,147 @@ export default function LabsSolo() {
           </div>
         )}
         {sheetView === "onlineSearch" && renderOnlineSearchSheet}
+        {sheetView === "collectionPicker" && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
+            borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
+            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
+          }}>
+            <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-collection-picker-title">
+              {t("m2.solo.collectionPickerTitle", "From Collection")}
+            </h3>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
+              {t("m2.solo.collectionPickerSubtitle", "Select a whisky from your collection")}
+            </p>
+
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
+              <input
+                type="text"
+                value={collectionSearch}
+                onChange={(e) => setCollectionSearch(e.target.value)}
+                placeholder={t("m2.solo.collectionSearchPlaceholder", "Search collection...")}
+                style={{ width: "100%", padding: "10px 12px 10px 34px", background: "var(--labs-bg)", border: "1px solid var(--labs-border)", borderRadius: 10, fontSize: 14, color: "var(--labs-text)", outline: "none", boxSizing: "border-box" }}
+                data-testid="input-collection-picker-search"
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              {(["all", "open", "closed"] as const).map(sf => (
+                <button
+                  key={sf}
+                  onClick={() => setCollectionStatusFilter(sf)}
+                  style={{
+                    padding: "4px 12px", fontSize: 11, fontWeight: collectionStatusFilter === sf ? 600 : 400,
+                    color: collectionStatusFilter === sf ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                    background: collectionStatusFilter === sf ? "var(--labs-accent-muted)" : "transparent",
+                    border: `1px solid ${collectionStatusFilter === sf ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                    borderRadius: 16, cursor: "pointer",
+                  }}
+                  data-testid={`button-collection-filter-${sf}`}
+                >
+                  {sf === "all" ? t("m2.solo.collectionFilterAll", "All") : sf === "open" ? t("m2.solo.collectionFilterOpen", "Open") : t("m2.solo.collectionFilterClosed", "Closed")}
+                </button>
+              ))}
+            </div>
+
+            {collectionLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 8 }}>
+                <Loader2 style={{ width: 24, height: 24, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+                <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("m2.solo.collectionLoading", "Loading collection...")}</span>
+              </div>
+            ) : collectionError ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 10 }} data-testid="collection-picker-error">
+                <X style={{ width: 32, height: 32, color: "var(--labs-danger)" }} />
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                  {t("m2.solo.collectionLoadError", "Failed to load collection")}
+                </p>
+                <button
+                  onClick={() => openCollectionPicker()}
+                  className="labs-btn-secondary"
+                  style={{ marginTop: 4, fontSize: 13 }}
+                  data-testid="button-collection-picker-retry"
+                >
+                  {t("m2.solo.tryAgain", "Try again")}
+                </button>
+              </div>
+            ) : collectionItems.length === 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 10 }} data-testid="collection-picker-empty">
+                <Archive style={{ width: 32, height: 32, color: "var(--labs-text-muted)" }} />
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                  {t("m2.solo.collectionEmpty", "No bottles in your collection")}
+                </p>
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", maxWidth: 260, lineHeight: 1.5 }}>
+                  {t("m2.solo.collectionEmptyHint", "Import your Whiskybase collection first to select from here.")}
+                </p>
+                <button
+                  onClick={() => { setSheetView("none"); navigate("/labs/taste/collection"); }}
+                  className="labs-btn-primary"
+                  style={{ marginTop: 4, fontSize: 13 }}
+                  data-testid="button-collection-picker-import"
+                >
+                  {t("m2.solo.collectionGoImport", "Import Collection")}
+                </button>
+              </div>
+            ) : filteredCollectionItems.length === 0 ? (
+              <div style={{ padding: "24px 0", textAlign: "center" }}>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("m2.solo.collectionNoResults", "No matches found")}</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 4 }}>
+                  {filteredCollectionItems.length} {t("m2.solo.collectionBottles", "bottles")}
+                </div>
+                {filteredCollectionItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectCollectionItem(item)}
+                    className="labs-card labs-card-interactive"
+                    style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", cursor: "pointer" }}
+                    data-testid={`button-collection-item-${item.id}`}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 3, fontSize: 12, color: "var(--labs-text-muted)" }}>
+                        {item.distillery && <span>{item.distillery}</span>}
+                        {item.statedAge && <span>{item.statedAge}</span>}
+                        {item.abv && <span>{item.abv}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      {item.status && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 999,
+                          color: item.status === "open" ? "var(--labs-success)" : "var(--labs-info)",
+                          border: `1px solid ${item.status === "open" ? "var(--labs-success)" : "var(--labs-info)"}`,
+                        }}>
+                          {item.status === "open" ? t("m2.solo.collectionFilterOpen", "Open") : t("m2.solo.collectionFilterClosed", "Closed")}
+                        </span>
+                      )}
+                      {item.communityRating && (
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 2 }}>
+                          <Star style={{ width: 12, height: 12 }} />{item.communityRating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setSheetView("none")}
+              className="labs-btn-secondary"
+              style={{ width: "100%", marginTop: 12 }}
+              data-testid="button-collection-picker-close"
+            >
+              {t("m2.solo.cancel", "Cancel")}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
