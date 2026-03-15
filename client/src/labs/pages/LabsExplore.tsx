@@ -2,13 +2,13 @@ import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Star, Wine, ChevronRight, ArrowUpDown, Archive, BookOpen, Globe, Package } from "lucide-react";
+import { Search, Star, Wine, ChevronRight, ArrowUpDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
-import { exploreApi, collectionApi, journalApi, tastingHistoryApi, getParticipantId } from "@/lib/api";
+import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type SortOption = "avg_score" | "most_rated" | "alphabetical";
-type ExploreTab = "bottles" | "drams" | "all";
+type ExploreTab = "bottles" | "drams" | "wishlist" | "all";
 type DramFilter = "all" | "solo" | "tasting";
 
 export default function LabsExplore() {
@@ -45,6 +45,12 @@ export default function LabsExplore() {
     queryKey: ["labs-explore-tasting-history", pid],
     queryFn: () => tastingHistoryApi.get(pid!),
     enabled: !!pid && activeTab === "drams",
+  });
+
+  const { data: wishlistItems, isLoading: isLoadingWishlist } = useQuery({
+    queryKey: ["labs-explore-wishlist", pid],
+    queryFn: () => wishlistApi.getAll(pid!),
+    enabled: !!pid && activeTab === "wishlist",
   });
 
   const regions = useMemo(() => {
@@ -129,7 +135,17 @@ export default function LabsExplore() {
     return filtered;
   }, [journalItems, tastingHistory, searchText, dramFilter]);
 
-  const isLoading = activeTab === "all" ? isLoadingAll : activeTab === "bottles" ? isLoadingCollection : (isLoadingJournal || isLoadingHistory);
+  const filteredWishlist = useMemo(() => {
+    if (!wishlistItems || !Array.isArray(wishlistItems)) return [];
+    if (!searchText.trim()) return wishlistItems;
+    const q = searchText.toLowerCase();
+    return wishlistItems.filter((item: any) =>
+      (item.name || "").toLowerCase().includes(q) ||
+      (item.distillery || "").toLowerCase().includes(q)
+    );
+  }, [wishlistItems, searchText]);
+
+  const isLoading = activeTab === "all" ? isLoadingAll : activeTab === "bottles" ? isLoadingCollection : activeTab === "wishlist" ? isLoadingWishlist : (isLoadingJournal || isLoadingHistory);
 
   const sortLabels: Record<SortOption, string> = {
     avg_score: "Avg Score",
@@ -141,9 +157,10 @@ export default function LabsExplore() {
     ? [
         { key: "bottles", label: t("myTastePage.myBottles"), icon: Archive },
         { key: "drams", label: t("myTastePage.myDrams"), icon: BookOpen },
-        { key: "all", label: t("myTastePage.allWhiskies"), icon: Globe },
+        { key: "wishlist", label: t("myTastePage.wishlist"), icon: Heart },
+        { key: "all", label: t("myTastePage.database", "Database"), icon: Globe },
       ]
-    : [{ key: "all", label: t("myTastePage.allWhiskies"), icon: Globe }];
+    : [{ key: "all", label: t("myTastePage.database", "Database"), icon: Globe }];
 
   const statusColors: Record<string, string> = {
     open: "#4CAF50",
@@ -175,7 +192,9 @@ export default function LabsExplore() {
             ? t("myTastePage.collectionSubtitle")
             : activeTab === "drams"
             ? t("myTastePage.journalDesc")
-            : "Browse whiskies tasted across all sessions"}
+            : activeTab === "wishlist"
+            ? t("myTastePage.wishlistDesc")
+            : t("myTastePage.databaseDesc", "Browse all whiskies in the CaskSense database")}
         </p>
       </div>
 
@@ -445,6 +464,76 @@ export default function LabsExplore() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {activeTab === "wishlist" && !isLoading && (
+        <>
+          {filteredWishlist.length === 0 && (
+            <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-wishlist-empty">
+              <Heart className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
+              <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+                {searchText ? t("myTastePage.noMatchingWishlist", "No matching whiskies") : t("myTastePage.emptyWishlist", "Your wishlist is empty")}
+              </p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                {searchText ? t("myTastePage.tryDifferentSearch", "Try a different search") : t("myTastePage.wishlistHint", "Add whiskies you'd like to try")}
+              </p>
+            </div>
+          )}
+          {filteredWishlist.length > 0 && (
+            <>
+              <p className="text-xs font-medium mb-3 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
+                {filteredWishlist.length} {filteredWishlist.length === 1 ? "whisky" : "whiskies"}
+              </p>
+              <div className="labs-grouped-list labs-fade-in labs-stagger-3">
+                {filteredWishlist.map((item: any) => {
+                  const priorityColors: Record<string, string> = { high: "#F44336", medium: "#FF9800", low: "#4CAF50" };
+                  const priorityLabels: Record<string, string> = { high: "High", medium: "Medium", low: "Low" };
+                  return (
+                    <div
+                      key={item.id}
+                      className="labs-list-row"
+                      data-testid={`labs-explore-wishlist-${item.id}`}
+                    >
+                      <div style={{ flexShrink: 0 }}>
+                        <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={44} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.name}
+                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                          {item.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{item.distillery}</span>}
+                          {item.region && (
+                            <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
+                              {item.region}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                        {item.priority && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 8px",
+                              borderRadius: 10,
+                              background: `${priorityColors[item.priority] || "#9E9E9E"}22`,
+                              color: priorityColors[item.priority] || "#9E9E9E",
+                            }}
+                            data-testid={`badge-wishlist-priority-${item.id}`}
+                          >
+                            {priorityLabels[item.priority] || item.priority}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

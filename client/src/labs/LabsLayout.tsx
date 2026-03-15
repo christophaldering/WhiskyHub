@@ -80,8 +80,8 @@ function GlencairnRefresh({ pullProgress, refreshing, triggered }: { pullProgres
 const NAV_ITEMS = [
   { href: "/labs/tastings", icon: "glencairn" as const, label: "Tastings" },
   { href: "/labs/explore", icon: "compass" as const, label: "Explore" },
-  { href: "/labs/discover", icon: "book" as const, label: "Discover" },
   { href: "/labs/taste", icon: "radar" as const, label: "Taste" },
+  { href: "/labs/discover", icon: "book" as const, label: "Discover" },
   { href: "/labs/circle", icon: "circle" as const, label: "Circle" },
 ];
 

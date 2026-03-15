@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
-  Wine, Star, Calendar, ChevronRight, TrendingUp, BookOpen,
-  MapPin, Droplets, BarChart3, Target, Compass, Award,
+  Wine, Calendar, ChevronRight, BookOpen,
+  BarChart3, Target, Compass, Award,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
-  Archive, Download, Settings, Brain, Utensils, Library,
+  Download, Brain, Utensils, Library,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
@@ -126,8 +126,6 @@ export default function LabsTaste() {
 
   const totalTastings = tastings?.length || 0;
   const totalRatings = myRatings.length;
-  const avgOverall = totalRatings > 0 ? Math.round((myRatings.reduce((sum, r) => sum + (r.overall || 0), 0) / totalRatings) * 10) / 10 : 0;
-  const journalCount = Array.isArray(journal) ? journal.length : 0;
   const statsObj = stats as { totalRatings?: number; totalJournalEntries?: number } | null;
   const whiskyCount = (statsObj?.totalRatings ?? 0) + (statsObj?.totalJournalEntries ?? 0);
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
@@ -274,11 +272,7 @@ export default function LabsTaste() {
           Data & Tools
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <NavItem icon={BookOpen} label="Drams Journal" description="Your tasting diary & entries" href="/labs/taste/drams" testId="labs-taste-link-drams" badge={journalCount || null} />
-          <NavItem icon={Archive} label="Collection" description="Manage your whisky bottles" href="/labs/taste/collection" testId="labs-taste-link-collection" />
-          <NavItem icon={Star} label="Wishlist" description="Whiskies you want to try" href="/labs/taste/wishlist" testId="labs-taste-link-wishlist" />
           <NavItem icon={Download} label="Downloads" description="Export data & templates" href="/labs/taste/downloads" testId="labs-taste-link-downloads" />
-          <NavItem icon={Settings} label="Settings" description="Profile, preferences & account" href="/labs/taste/settings" testId="labs-taste-link-settings" />
         </div>
       </div>
 
