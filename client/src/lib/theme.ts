@@ -1,23 +1,23 @@
 export const c = {
   bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
+  card: "#2e2621",
+  border: "#4a4038",
   text: "#f5f0e8",
   muted: "#888",
   mutedLight: "#8a7e6d",
-  accent: "#d4a256",
-  accentDim: "#a8834a",
-  error: "#c44",
-  success: "#6a9a5b",
-  high: "#6a9a5b",
-  medium: "#d4a256",
-  low: "#c44",
-  gold: "#d4a256",
+  accent: "#c9a76c",
+  accentDim: "#a88d55",
+  error: "#b85c5c",
+  success: "#7dba84",
+  high: "#7dba84",
+  medium: "#c9a76c",
+  low: "#b85c5c",
+  gold: "#c9a76c",
   silver: "#a8a8a8",
   bronze: "#b87333",
-  danger: "#e57373",
-  inputBg: "#23201a",
-  inputBorder: "#3d362e",
+  danger: "#c47e7e",
+  inputBg: "#252019",
+  inputBorder: "#4a4038",
 };
 
 export const inputStyle: React.CSSProperties = {
@@ -86,7 +86,7 @@ export const sliderCSS = `
     border-radius: 50%;
     background: var(--cs-slider-thumb);
     border: 2px solid var(--cs-text);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 1px 4px rgba(0,0,0,0.2);
     cursor: pointer;
   }
   input[type="range"].warm-slider::-moz-range-track {
@@ -101,7 +101,7 @@ export const sliderCSS = `
     border-radius: 50%;
     background: var(--cs-slider-thumb);
     border: 2px solid var(--cs-text);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 1px 4px rgba(0,0,0,0.2);
     cursor: pointer;
   }
 `;
@@ -112,9 +112,9 @@ export const radius = { sm: 10, md: 14, lg: 18, xl: 22, pill: 999 } as const;
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 
 export const shadow = {
-  card: "0 1px 4px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.08)",
-  elevated: "0 4px 16px rgba(0,0,0,0.24), 0 1px 4px rgba(0,0,0,0.12)",
-  subtle: "0 1px 2px rgba(0,0,0,0.1)",
+  card: "0 0 0 1px rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.15)",
+  elevated: "0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.18)",
+  subtle: "0 0 0 1px rgba(255,255,255,0.04)",
 } as const;
 
 export const typo = {

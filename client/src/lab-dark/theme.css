@@ -1,18 +1,18 @@
 .lab-dark {
   --lab-bg: #1a1714;
-  --lab-surface: #242018;
-  --lab-surface-hover: #2e281f;
-  --lab-surface-elevated: #302a20;
-  --lab-border: #3d3529;
-  --lab-border-subtle: #2e281f;
+  --lab-surface: #2e2621;
+  --lab-surface-hover: #362e27;
+  --lab-surface-elevated: #3d342c;
+  --lab-border: #4a4038;
+  --lab-border-subtle: #3a322b;
   --lab-text: #f5f0e8;
   --lab-text-secondary: #b8af90;
   --lab-text-muted: #8a7e6d;
-  --lab-accent: #d4a256;
-  --lab-accent-hover: #e0b36a;
-  --lab-accent-muted: rgba(212, 162, 86, 0.15);
-  --lab-success: #6ec177;
-  --lab-danger: #d46a6a;
+  --lab-accent: #c9a76c;
+  --lab-accent-hover: #d4b07a;
+  --lab-accent-muted: rgba(201, 167, 108, 0.15);
+  --lab-success: #7dba84;
+  --lab-danger: #c47e7e;
   --lab-radius: 16px;
   --lab-radius-sm: 10px;
   --lab-radius-lg: 20px;
@@ -162,7 +162,7 @@
   top: 50%;
   transform: translate(-50%, -50%);
   cursor: grab;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .lab-dark .lab-empty-state {

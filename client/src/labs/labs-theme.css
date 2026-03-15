@@ -1,23 +1,23 @@
 .labs-shell {
   --labs-bg: #1a1714;
-  --labs-surface: #232019;
-  --labs-surface-hover: #2d2820;
-  --labs-surface-elevated: #312b22;
-  --labs-border: #3d3529;
-  --labs-border-subtle: #2d2820;
+  --labs-surface: #2e2621;
+  --labs-surface-hover: #362e27;
+  --labs-surface-elevated: #3d342c;
+  --labs-border: #4a4038;
+  --labs-border-subtle: #3a322b;
   --labs-text: #f5f0e8;
   --labs-text-secondary: #c4b99a;
   --labs-text-muted: #a39279;
-  --labs-accent: #d4a256;
-  --labs-accent-hover: #e0b36a;
-  --labs-accent-muted: rgba(212, 162, 86, 0.12);
-  --labs-accent-glow: rgba(212, 162, 86, 0.06);
-  --labs-success: #6ec177;
-  --labs-success-muted: rgba(110, 193, 119, 0.12);
-  --labs-danger: #d46a6a;
-  --labs-danger-muted: rgba(212, 106, 106, 0.12);
-  --labs-info: #6aa8d4;
-  --labs-info-muted: rgba(106, 168, 212, 0.12);
+  --labs-accent: #c9a76c;
+  --labs-accent-hover: #d4b07a;
+  --labs-accent-muted: rgba(201, 167, 108, 0.12);
+  --labs-accent-glow: rgba(201, 167, 108, 0.06);
+  --labs-success: #7dba84;
+  --labs-success-muted: rgba(125, 186, 132, 0.12);
+  --labs-danger: #c47e7e;
+  --labs-danger-muted: rgba(196, 126, 126, 0.12);
+  --labs-info: #7aafc9;
+  --labs-info-muted: rgba(122, 175, 201, 0.12);
   --labs-dim-nose: #D9A15B;
   --labs-dim-taste: #C97845;
   --labs-dim-finish: #9C6A5E;
@@ -143,6 +143,11 @@
   border: 1px solid var(--labs-border);
   border-radius: var(--labs-radius);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.labs-shell:not(.labs-light) .labs-card-elevated {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .labs-btn-primary {
@@ -333,6 +338,14 @@
 .labs-slider-thumb:active {
   transform: translate(-50%, -50%) scale(1.15);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+.labs-shell:not(.labs-light) .labs-slider-thumb {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.labs-shell:not(.labs-light) .labs-slider-thumb:active {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 3px 10px rgba(0, 0, 0, 0.25);
 }
 
 .labs-fade-in {
@@ -528,6 +541,10 @@
   color: var(--labs-bg);
   font-weight: 600;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.labs-shell:not(.labs-light) .labs-segmented-btn-active {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .labs-chip {
