@@ -594,7 +594,8 @@ function Router() {
               <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
               <Route path="/labs/discover/method" component={LabsMethod} />
               <Route path="/labs/discover/background" component={LabsBackground} />
-              <Route path="/labs/discover/vocabulary" component={LabsVocabulary} />
+              <Route path="/labs/discover/flavour-map" component={LabsVocabulary} />
+              <Route path="/labs/discover/vocabulary">{() => { window.location.replace("/labs/discover/flavour-map"); return null; }}</Route>
               <Route path="/labs/discover" component={LabsDiscover} />
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
               <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />

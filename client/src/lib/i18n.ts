@@ -207,8 +207,8 @@ const resources = {
         distilleriesDesc: "Distillery encyclopedia & map",
         bottlers: "Bottlers",
         bottlersDesc: "Independent bottlers database",
-        vocabulary: "Vocabulary",
-        vocabularyDesc: "Copy-paste vocabulary cards",
+        vocabulary: "Flavour Map",
+        vocabularyDesc: "Interactive tasting visualisation",
         guide: "Tasting Guide",
         guideDesc: "Step-by-step tasting guide",
         templates: "Templates",
@@ -3599,8 +3599,8 @@ const resources = {
         statWhiskies: "Whiskies",
       },
       vocabularyPage: {
-        title: "Tasting Vocabulary",
-        subtitle: "Descriptors for Nose, Palate & Finish – sorted by whisky style",
+        title: "Flavour Map",
+        subtitle: "Explore whisky styles interactively — tap terms to collect tasting notes",
       },
       discoverTemplates: {
         subtitle: "Style-specific vocabulary & sensory guides",

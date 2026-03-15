@@ -31,7 +31,7 @@ const SECTIONS: DiscoverSection[] = [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "discover.lexiconDesc", descFallback: "Searchable whisky dictionary", href: "/labs/discover/lexicon", testId: "labs-link-discover-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-discover-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-discover-bottlers" },
-      { icon: MessageSquare, labelKey: "discover.vocabulary", labelFallback: "Vocabulary", descKey: "discover.vocabularyDesc", descFallback: "Copy-paste vocabulary cards", href: "/labs/discover/vocabulary", testId: "labs-link-discover-vocabulary" },
+      { icon: MessageSquare, labelKey: "discover.vocabulary", labelFallback: "Flavour Map", descKey: "discover.vocabularyDesc", descFallback: "Interactive tasting visualisation", href: "/labs/discover/flavour-map", testId: "labs-link-discover-flavour-map" },
     ],
   },
   {
