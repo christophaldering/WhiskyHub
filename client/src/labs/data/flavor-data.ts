@@ -231,6 +231,28 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
   },
 ];
 
+export interface JourneyCategoryMeta {
+  id: string;
+  descEn: string;
+  descDe: string;
+}
+
+export const JOURNEY_CATEGORY_ORDER: JourneyCategoryMeta[] = [
+  { id: "floral", descEn: "Delicate flower & blossom aromas", descDe: "Zarte Blüten- und Blumenaromen" },
+  { id: "fruity", descEn: "Fresh & dried fruit notes", descDe: "Frische und getrocknete Fruchtnoten" },
+  { id: "sweet", descEn: "Honey, caramel & confection sweetness", descDe: "Honig, Karamell & Konfekt-Süße" },
+  { id: "creamy", descEn: "Butter, cream & soft richness", descDe: "Butter, Sahne & weiche Fülle" },
+  { id: "malty", descEn: "Cereal, biscuit & baked grains", descDe: "Getreide, Keks & gebackene Körner" },
+  { id: "herbal", descEn: "Fresh herbs, grass & tea", descDe: "Frische Kräuter, Gras & Tee" },
+  { id: "nutty", descEn: "Walnut, hazelnut & almond warmth", descDe: "Walnuss, Haselnuss & Mandel-Wärme" },
+  { id: "woody", descEn: "Oak, cedar & wood character", descDe: "Eiche, Zeder & Holzcharakter" },
+  { id: "spicy", descEn: "Cinnamon, pepper & warming spices", descDe: "Zimt, Pfeffer & wärmende Gewürze" },
+  { id: "earthy", descEn: "Leather, tobacco & forest floor", descDe: "Leder, Tabak & Waldboden" },
+  { id: "smoky", descEn: "Peat, campfire & charcoal smoke", descDe: "Torf, Lagerfeuer & Holzkohlerauch" },
+  { id: "maritime", descEn: "Sea salt, brine & coastal air", descDe: "Meersalz, Lake & Küstenluft" },
+  { id: "mineral", descEn: "Flint, chalk & metallic edges", descDe: "Feuerstein, Kreide & metallische Kanten" },
+];
+
 export type FlavorProfileId =
   | "none"
   | "auto"

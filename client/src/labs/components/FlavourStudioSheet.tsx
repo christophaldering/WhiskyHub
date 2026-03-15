@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Plus, Sparkles, Search, ChevronRight } from "lucide-react";
+import { X, Plus, Sparkles, Search, ChevronRight, Check, HelpCircle, ChevronDown, RotateCcw } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { FLAVOR_CATEGORIES, type FlavorCategory, type FlavorSubGroup } from "@/labs/data/flavor-data";
+import { FLAVOR_CATEGORIES, JOURNEY_CATEGORY_ORDER, FLAVOR_PROFILES, type FlavorCategory, type FlavorSubGroup } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { DimKey } from "./LabsRatingPanel";
 
-export type StudioView = "guide" | "wheel" | "compass" | "radar" | "describe" | "discover";
+export type StudioView = "guide" | "journey" | "wheel" | "compass" | "radar" | "describe";
 type CategoryId = "islay" | "speyside" | "sherry" | "bourbon" | "highland" | "japanese";
 type TermSection = "nose" | "palate" | "finish";
 
@@ -46,24 +46,6 @@ const AXIS_KEYWORDS: Record<string, string[]> = {
   Maritime: ["salt", "brine", "sea", "maritime", "coastal", "iodine", "seaweed", "marine", "mineral"],
 };
 
-const COMPANION_MAP: Record<string, string[]> = {
-  "Vanilla": ["Honey", "Caramel", "Toffee", "Oak", "Butterscotch"],
-  "Honey": ["Vanilla", "Heather", "Malt", "Floral", "Butterscotch"],
-  "Peat": ["Campfire", "Sea Salt", "Iodine", "Brine", "Ash"],
-  "Campfire": ["Peat", "Charcoal", "Ash", "Tar", "Leather"],
-  "Apple": ["Pear", "Citrus", "Honey", "Vanilla", "Heather"],
-  "Caramel": ["Vanilla", "Toffee", "Brown Sugar", "Butterscotch", "Oak"],
-  "Oak": ["Vanilla", "Spice", "Tannin", "Cedar", "Pepper"],
-  "Cinnamon": ["Clove", "Nutmeg", "Ginger", "Pepper", "Oak"],
-  "Chocolate": ["Espresso", "Dried Fruit", "Clove", "Cherry", "Vanilla"],
-  "Citrus": ["Apple", "Pear", "Ginger", "Honey", "Floral"],
-  "Sea Salt": ["Brine", "Iodine", "Seaweed", "Peat", "Mineral"],
-  "Dried Fruit": ["Raisins", "Cinnamon", "Clove", "Walnut", "Brown Sugar"],
-  "Pepper": ["Cinnamon", "Clove", "Oak", "Ginger", "Nutmeg"],
-  "Rose": ["Lavender", "Heather", "Jasmine", "Elderflower", "Honey"],
-  "Leather": ["Tobacco", "Oak", "Peat", "Charcoal", "Mushroom"],
-  "Butter": ["Cream", "Custard", "Vanilla", "Toffee", "Malt"],
-};
 
 const CATEGORY_IDS: CategoryId[] = ["islay", "speyside", "sherry", "bourbon", "highland", "japanese"];
 
@@ -133,38 +115,99 @@ function findTermCategory(term: string, categories: VocabCategory[]): CategoryId
 
 function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v: StudioView) => void }) {
   const { t } = useTranslation();
-  const options: { key: StudioView; label: string }[] = [
+  const [showMore, setShowMore] = useState(false);
+
+  const primaryOptions: { key: StudioView; label: string }[] = [
     { key: "guide", label: t("m2.rating.studioGuide", "Guide") },
-    { key: "wheel", label: t("m2.rating.studioWheel", "Wheel") },
-    { key: "compass", label: t("m2.rating.studioCompass", "Compass") },
-    { key: "radar", label: "Radar" },
+    { key: "journey", label: t("m2.rating.studioJourney", "Journey") },
     { key: "describe", label: t("m2.rating.studioDescribe", "Describe") },
-    { key: "discover", label: t("m2.rating.studioDiscover", "Discover") },
   ];
 
+  const expertOptions: { key: StudioView; label: string; icon: string }[] = [
+    { key: "wheel", label: t("m2.rating.studioWheel", "Wheel"), icon: "◎" },
+    { key: "compass", label: t("m2.rating.studioCompass", "Compass"), icon: "◇" },
+    { key: "radar", label: "Radar", icon: "⬡" },
+  ];
+
+  const isExpertActive = expertOptions.some((o) => o.key === value);
+
   return (
-    <div style={{
-      display: "flex", gap: 2, padding: 3, borderRadius: 10,
-      background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
-      marginBottom: 16,
-    }} data-testid="studio-segmented-control">
-      {options.map((opt) => (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        display: "flex", gap: 2, padding: 3, borderRadius: 10,
+        background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
+      }} data-testid="studio-segmented-control">
+        {primaryOptions.map((opt) => (
+          <button
+            key={opt.key}
+            onClick={() => { onChange(opt.key); setShowMore(false); triggerHaptic("light"); }}
+            data-testid={`studio-view-${opt.key}`}
+            style={{
+              flex: 1, padding: "7px 4px", borderRadius: 8,
+              border: "none", cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
+              background: value === opt.key ? "var(--labs-accent)" : "transparent",
+              color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 6 }}>
         <button
-          key={opt.key}
-          onClick={() => { onChange(opt.key); triggerHaptic("light"); }}
-          data-testid={`studio-view-${opt.key}`}
+          onClick={() => setShowMore((p) => !p)}
+          data-testid="studio-more-tools-toggle"
           style={{
-            flex: 1, padding: "7px 4px", borderRadius: 8,
-            border: "none", cursor: "pointer", fontFamily: "inherit",
-            fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
-            background: value === opt.key ? "var(--labs-accent)" : "transparent",
-            color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-muted)",
-            transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
+            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+            fontSize: 10, color: isExpertActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
+            fontWeight: isExpertActive ? 600 : 400,
           }}
         >
-          {opt.label}
+          {isExpertActive && (
+            <span style={{
+              width: 6, height: 6, borderRadius: 3,
+              background: "var(--labs-accent)", display: "inline-block",
+            }} />
+          )}
+          {t("m2.rating.studioMoreTools", "More Tools")}
+          <ChevronDown style={{
+            width: 12, height: 12,
+            transition: "transform 0.2s",
+            transform: showMore ? "rotate(180deg)" : "rotate(0deg)",
+          }} />
         </button>
-      ))}
+
+        {showMore && (
+          <div style={{
+            display: "flex", gap: 6, marginTop: 4, padding: "6px 0",
+            animation: "labsFadeIn 200ms ease both",
+          }}>
+            {expertOptions.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => { onChange(opt.key); triggerHaptic("light"); }}
+                data-testid={`studio-view-${opt.key}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "5px 12px", borderRadius: 16, fontFamily: "inherit",
+                  fontSize: 10, fontWeight: value === opt.key ? 700 : 500,
+                  background: value === opt.key ? "var(--labs-accent)" : "var(--labs-surface)",
+                  color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                  border: `1px solid ${value === opt.key ? "var(--labs-accent)" : "var(--labs-border-subtle)"}`,
+                  cursor: "pointer", transition: "all 0.2s ease",
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{opt.icon}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1344,174 +1387,587 @@ function DescribeView({
   );
 }
 
-function DiscoverView({
-  categories, section, selected, onToggle,
+type JourneyDecision = "yes" | "maybe" | "no";
+type JourneyPhase = "sweep" | "drilldown" | "profile";
+
+const GUIDE_ICONS: Record<string, string> = {
+  fruity: "🍎", floral: "🌸", sweet: "🍯", spicy: "🌶️", woody: "🪵",
+  smoky: "🔥", malty: "🌾", maritime: "🌊", nutty: "🥜", herbal: "🌿",
+  earthy: "🍂", creamy: "🧈", mineral: "💎",
+};
+
+function matchProfile(catWeights: Record<string, number>, isDE: boolean): { label: string; score: number } | null {
+  let best: { label: string; score: number } | null = null;
+  for (const profile of FLAVOR_PROFILES) {
+    let score = 0;
+    for (const catId of profile.priorityCategories) {
+      score += catWeights[catId] || 0;
+    }
+    if (!best || score > best.score) {
+      best = { label: isDE ? profile.de : profile.en, score };
+    }
+  }
+  return best && best.score > 0 ? best : null;
+}
+
+function JourneyView({
+  selected, onToggle, isDE,
 }: {
-  categories: VocabCategory[];
-  section: TermSection;
   selected: Set<string>;
   onToggle: (term: string) => void;
+  isDE: boolean;
 }) {
   const { t } = useTranslation();
-  const allTerms = useMemo(() => {
-    const terms: Array<{ term: string; catId: CategoryId; color: string }> = [];
-    for (const cat of categories) {
-      for (const term of cat[section]) {
-        if (!selected.has(term.toLowerCase())) {
-          terms.push({ term, catId: cat.id, color: CATEGORY_COLORS[cat.id] });
+  const [phase, setPhase] = useState<JourneyPhase>("sweep");
+  const [sweepIndex, setSweepIndex] = useState(0);
+  const [decisions, setDecisions] = useState<Record<string, JourneyDecision>>({});
+  const [drillIndex, setDrillIndex] = useState(0);
+  const [animDir, setAnimDir] = useState<"forward" | "back" | null>(null);
+
+  const orderedCategories = useMemo(() => {
+    return JOURNEY_CATEGORY_ORDER.map((jcm) => {
+      const cat = FLAVOR_CATEGORIES.find((c) => c.id === jcm.id);
+      return cat ? { ...cat, descEn: jcm.descEn, descDe: jcm.descDe } : null;
+    }).filter(Boolean) as (FlavorCategory & { descEn: string; descDe: string })[];
+  }, []);
+
+  const currentSweepCat = orderedCategories[sweepIndex] || null;
+
+  const drillCategories = useMemo(() => {
+    const yes = orderedCategories.filter((c) => decisions[c.id] === "yes");
+    const maybe = orderedCategories.filter((c) => decisions[c.id] === "maybe");
+    return [...yes, ...maybe];
+  }, [orderedCategories, decisions]);
+
+  const currentDrillCat = drillCategories[drillIndex] || null;
+
+  const isTermSelected = useCallback((desc: { en: string; de: string }): boolean => {
+    return selected.has(desc.en.toLowerCase()) || selected.has(desc.de.toLowerCase());
+  }, [selected]);
+
+  const catWeights = useMemo(() => {
+    const w: Record<string, number> = {};
+    for (const cat of FLAVOR_CATEGORIES) {
+      const count = cat.subcategories.filter((sub) => isTermSelected(sub)).length;
+      if (count > 0) w[cat.id] = count;
+    }
+    return w;
+  }, [isTermSelected]);
+
+  const profileMatch = useMemo(() => matchProfile(catWeights, isDE), [catWeights, isDE]);
+
+  const handleDecision = useCallback((decision: JourneyDecision) => {
+    if (!currentSweepCat) return;
+    triggerHaptic(decision === "yes" ? "success" : "light");
+    setDecisions((prev) => ({ ...prev, [currentSweepCat.id]: decision }));
+    setAnimDir("forward");
+    setTimeout(() => {
+      if (sweepIndex < orderedCategories.length - 1) {
+        setSweepIndex((i) => i + 1);
+      } else {
+        const yesOrMaybe = orderedCategories.filter((c) => {
+          const d = { ...decisions, [currentSweepCat.id]: decision };
+          return d[c.id] === "yes" || d[c.id] === "maybe";
+        });
+        if (yesOrMaybe.length > 0) {
+          setDrillIndex(0);
+          setPhase("drilldown");
+        } else {
+          setPhase("profile");
         }
       }
-    }
-    return terms;
-  }, [categories, section, selected]);
-
-  const [cardIndex, setCardIndex] = useState(0);
-  const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
-  const [companions, setCompanions] = useState<string[]>([]);
-
-  const currentCard = allTerms[cardIndex] || null;
-  const nextCard = allTerms[cardIndex + 1] || null;
-
-  const handleSwipe = useCallback((dir: "left" | "right") => {
-    if (!currentCard) return;
-    setSwipeDir(dir);
-    triggerHaptic(dir === "right" ? "success" : "light");
-    if (dir === "right") {
-      onToggle(currentCard.term);
-      const comps = COMPANION_MAP[currentCard.term];
-      if (comps) setCompanions(comps.filter((c) => !selected.has(c.toLowerCase())));
-      else setCompanions([]);
-    } else {
-      setCompanions([]);
-    }
-    setTimeout(() => {
-      setSwipeDir(null);
-      setCardIndex((prev) => Math.min(prev + 1, allTerms.length));
+      setAnimDir(null);
     }, 250);
-  }, [currentCard, onToggle, selected, allTerms.length]);
+  }, [currentSweepCat, sweepIndex, orderedCategories, decisions]);
 
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handleRestart = useCallback(() => {
+    setPhase("sweep");
+    setSweepIndex(0);
+    setDecisions({});
+    setDrillIndex(0);
+    triggerHaptic("light");
+  }, []);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
+  const animClass = animDir === "forward" ? "labs-slide-in" : animDir === "back" ? "labs-slide-back" : "";
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      handleSwipe(dx > 0 ? "right" : "left");
-    }
-    touchStartRef.current = null;
-  };
+  const miniProfileBars = useMemo(() => {
+    return orderedCategories.map((cat) => {
+      const d = decisions[cat.id];
+      return {
+        id: cat.id,
+        color: cat.color,
+        active: d === "yes" || d === "maybe",
+        maybe: d === "maybe",
+        decided: !!d,
+      };
+    });
+  }, [orderedCategories, decisions]);
 
-  if (!currentCard && allTerms.length === 0) {
+  if (phase === "sweep") {
     return (
-      <div data-testid="studio-discover-view" style={{ textAlign: "center", padding: "40px 20px", color: "var(--labs-text-muted)" }}>
-        <span style={{ fontSize: 32, display: "block", marginBottom: 8 }}>🎉</span>
-        <span style={{ fontSize: 13 }}>{t("m2.rating.studioAllDiscovered", "All flavours discovered!")}</span>
+      <div data-testid="studio-journey-view">
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+            {t("m2.rating.journeyPhase1", "Phase 1: First Impressions")}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+            {sweepIndex + 1} / {orderedCategories.length}
+          </div>
+        </div>
+
+        <div style={{
+          display: "flex", gap: 2, marginBottom: 12, height: 4, borderRadius: 2,
+          background: "var(--labs-surface)", overflow: "hidden",
+        }} data-testid="journey-progress-bar">
+          {miniProfileBars.map((bar) => (
+            <div
+              key={bar.id}
+              style={{
+                flex: 1, borderRadius: 2,
+                background: bar.active ? bar.color : bar.decided ? "var(--labs-border-subtle)" : "var(--labs-surface)",
+                opacity: bar.maybe ? 0.5 : 1,
+                transition: "all 0.3s ease",
+              }}
+            />
+          ))}
+        </div>
+
+        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textAlign: "center", marginBottom: 12 }}>
+          {t("m2.rating.journeySweepPrompt", "Do you detect this flavour family?")}
+        </div>
+
+        {currentSweepCat && (
+          <div className={animClass} key={currentSweepCat.id} style={{ animation: "labsFadeIn 300ms ease both" }}>
+            <div style={{
+              padding: 20, borderRadius: 16,
+              background: `linear-gradient(135deg, ${currentSweepCat.color}12, ${currentSweepCat.color}06)`,
+              border: `1.5px solid ${currentSweepCat.color}44`,
+              textAlign: "center", marginBottom: 16,
+            }} data-testid={`journey-sweep-card-${currentSweepCat.id}`}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>
+                {GUIDE_ICONS[currentSweepCat.id] || ""}
+              </div>
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: currentSweepCat.color, marginBottom: 4 }}>
+                {isDE ? currentSweepCat.de : currentSweepCat.en}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 10 }}>
+                {isDE ? currentSweepCat.descDe : currentSweepCat.descEn}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+                {currentSweepCat.subcategories.slice(0, 4).map((sub) => (
+                  <span key={sub.id} style={{
+                    fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                    background: `${currentSweepCat.color}15`, color: currentSweepCat.color,
+                    border: `1px solid ${currentSweepCat.color}22`,
+                  }}>
+                    {isDE ? sub.de : sub.en}
+                  </span>
+                ))}
+                {currentSweepCat.subcategories.length > 4 && (
+                  <span style={{
+                    fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                    background: `${currentSweepCat.color}10`, color: `${currentSweepCat.color}88`,
+                  }}>
+                    +{currentSweepCat.subcategories.length - 4}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+              <button
+                onClick={() => handleDecision("no")}
+                data-testid="journey-btn-no"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                  padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
+                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-border)",
+                  cursor: "pointer", color: "var(--labs-text-muted)", transition: "all 0.15s",
+                  minWidth: 70,
+                }}
+              >
+                <X style={{ width: 18, height: 18 }} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyNo", "No")}</span>
+              </button>
+              <button
+                onClick={() => handleDecision("maybe")}
+                data-testid="journey-btn-maybe"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                  padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
+                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-accent-muted, var(--labs-border))",
+                  cursor: "pointer", color: "var(--labs-accent)", transition: "all 0.15s",
+                  minWidth: 70,
+                }}
+              >
+                <HelpCircle style={{ width: 18, height: 18 }} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyMaybe", "Maybe")}</span>
+              </button>
+              <button
+                onClick={() => handleDecision("yes")}
+                data-testid="journey-btn-yes"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                  padding: "10px 22px", borderRadius: 14, fontFamily: "inherit",
+                  background: "var(--labs-accent)", border: "none",
+                  cursor: "pointer", color: "var(--labs-bg)", transition: "all 0.15s",
+                  boxShadow: "0 2px 12px rgba(201, 167, 108, 0.3)",
+                  minWidth: 70,
+                }}
+              >
+                <Check style={{ width: 18, height: 18 }} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyYes", "Yes")}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  return (
-    <div data-testid="studio-discover-view">
-      <div style={{ position: "relative", height: 180, display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 12 }}>
-        {nextCard && (
-          <div style={{
-            position: "absolute", width: "80%", maxWidth: 260, height: 140,
-            background: `${nextCard.color}08`, border: `1px solid ${nextCard.color}22`,
-            borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center",
-            transform: "scale(0.94) translateY(6px)", opacity: 0.6,
-          }}>
-            <span style={{ fontSize: 14, color: "var(--labs-text-muted)" }}>{nextCard.term}</span>
-          </div>
-        )}
-        {currentCard && (
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            data-testid="studio-discover-card"
-            style={{
-              position: "absolute", width: "85%", maxWidth: 280, height: 150,
-              background: `linear-gradient(135deg, ${currentCard.color}18, ${currentCard.color}08)`,
-              border: `1.5px solid ${currentCard.color}44`,
-              borderRadius: 18, padding: 20, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 8,
-              cursor: "grab",
-              transition: swipeDir ? "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease" : "none",
-              transform: swipeDir === "right" ? "translateX(120%) rotate(8deg)" : swipeDir === "left" ? "translateX(-120%) rotate(-8deg)" : "translateX(0)",
-              opacity: swipeDir ? 0 : 1,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-            }}
-          >
-            <span className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: currentCard.color }}>{currentCard.term}</span>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-              {categories.find((c) => c.id === currentCard.catId)?.name || ""}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 12 }}>
-        <button onClick={() => handleSwipe("left")} data-testid="studio-discover-skip"
-          style={{
-            width: 52, height: 52, borderRadius: "50%",
-            background: "var(--labs-surface)", border: "1.5px solid var(--labs-border)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--labs-text-muted)", transition: "all 0.15s",
-          }}
-        >
-          <X style={{ width: 20, height: 20 }} />
-        </button>
-        <button onClick={() => handleSwipe("right")} data-testid="studio-discover-add"
-          style={{
-            width: 52, height: 52, borderRadius: "50%",
-            background: "var(--labs-accent)", border: "none",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--labs-bg)", transition: "all 0.15s",
-            boxShadow: "0 2px 12px rgba(201, 167, 108, 0.4)",
-          }}
-        >
-          <Plus style={{ width: 22, height: 22 }} />
-        </button>
-      </div>
-
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
-          {t("m2.rating.studioSwipeHint", "Swipe right to add, left to skip")}
-        </span>
-      </div>
-
-      {companions.length > 0 && (
+  if (phase === "drilldown" && currentDrillCat) {
+    const isMaybe = decisions[currentDrillCat.id] === "maybe";
+    return (
+      <div data-testid="studio-journey-drilldown">
         <div style={{
-          padding: 12, background: "var(--labs-surface)", borderRadius: 10,
-          border: "1px solid var(--labs-border-subtle)", animation: "labsFadeIn 300ms ease both",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          marginBottom: 8,
         }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-            {t("m2.rating.studioOftenPaired", "Often paired with")}
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+            {t("m2.rating.journeyPhase2", "Phase 2: Specific Notes")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-            {companions.map((term) => {
-              const isS = selected.has(term.toLowerCase());
-              return (
-                <button key={term} onClick={() => onToggle(term)}
-                  style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? "var(--labs-accent)" : "var(--labs-surface-elevated, var(--labs-bg))",
-                    color: isS ? "var(--labs-bg)" : "var(--labs-text)",
-                    border: `1.5px solid ${isS ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
-                  }}
-                  data-testid={`studio-companion-${term.replace(/\s+/g, "-").toLowerCase()}`}
-                >
-                  {isS ? "✓ " : ""}{term}
-                </button>
-              );
-            })}
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+            {drillIndex + 1} / {drillCategories.length}
           </div>
         </div>
+
+        <div style={{
+          display: "flex", gap: 2, marginBottom: 12, height: 3, borderRadius: 2,
+          background: "var(--labs-surface)", overflow: "hidden",
+        }}>
+          {drillCategories.map((cat, i) => (
+            <div key={cat.id} style={{
+              flex: 1, borderRadius: 2,
+              background: i <= drillIndex ? cat.color : "var(--labs-border-subtle)",
+              opacity: i < drillIndex ? 0.5 : 1,
+              transition: "all 0.3s ease",
+            }} />
+          ))}
+        </div>
+
+        <div className={animClass} key={currentDrillCat.id}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
+          }}>
+            <span style={{ fontSize: 20 }}>{GUIDE_ICONS[currentDrillCat.id] || ""}</span>
+            <div>
+              <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: currentDrillCat.color }}>
+                {isDE ? currentDrillCat.de : currentDrillCat.en}
+              </div>
+              {isMaybe && (
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", fontStyle: "italic" }}>
+                  {t("m2.rating.journeyMaybePrompt", "You weren't sure — tap any notes you might detect")}
+                </div>
+              )}
+              {!isMaybe && (
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                  {t("m2.rating.journeyDrillPrompt", "Which specific notes stand out?")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {currentDrillCat.subgroups && currentDrillCat.subgroups.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {currentDrillCat.subgroups.map((sg) => (
+                <div key={sg.id}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 600, color: currentDrillCat.color,
+                    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
+                  }}>
+                    {isDE ? sg.de : sg.en}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {sg.descriptors.map((desc) => {
+                      const isS = isTermSelected(desc);
+                      return (
+                        <button
+                          key={desc.id}
+                          onClick={() => { onToggle(desc.en); triggerHaptic("light"); }}
+                          data-testid={`journey-term-${desc.id}`}
+                          style={{
+                            fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
+                            background: isS ? `${currentDrillCat.color}22` : "var(--labs-surface)",
+                            color: isS ? currentDrillCat.color : "var(--labs-text)",
+                            border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                            cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                            fontWeight: isS ? 600 : 400,
+                          }}
+                        >
+                          {isS ? "✓ " : ""}{isDE ? desc.de : desc.en}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {currentDrillCat.subcategories.map((desc) => {
+                const isS = isTermSelected(desc);
+                return (
+                  <button
+                    key={desc.id}
+                    onClick={() => { onToggle(desc.en); triggerHaptic("light"); }}
+                    data-testid={`journey-term-${desc.id}`}
+                    style={{
+                      fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
+                      background: isS ? `${currentDrillCat.color}22` : "var(--labs-surface)",
+                      color: isS ? currentDrillCat.color : "var(--labs-text)",
+                      border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                      fontWeight: isS ? 600 : 400,
+                    }}
+                  >
+                    {isS ? "✓ " : ""}{isDE ? desc.de : desc.en}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+            <button
+              onClick={() => {
+                triggerHaptic("light");
+                if (drillIndex > 0) {
+                  setAnimDir("back");
+                  setTimeout(() => { setDrillIndex((i) => i - 1); setAnimDir(null); }, 200);
+                } else {
+                  setPhase("sweep");
+                  setSweepIndex(orderedCategories.length - 1);
+                }
+              }}
+              data-testid="journey-drill-back"
+              style={{
+                fontSize: 11, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
+                background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
+                cursor: "pointer", color: "var(--labs-text-muted)",
+              }}
+            >
+              {t("common.back", "Back")}
+            </button>
+            <button
+              onClick={() => {
+                triggerHaptic("light");
+                setAnimDir("forward");
+                setTimeout(() => {
+                  if (drillIndex < drillCategories.length - 1) {
+                    setDrillIndex((i) => i + 1);
+                  } else {
+                    setPhase("profile");
+                  }
+                  setAnimDir(null);
+                }, 200);
+              }}
+              data-testid="journey-drill-next"
+              style={{
+                fontSize: 11, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
+                background: "var(--labs-accent)", border: "none",
+                cursor: "pointer", color: "var(--labs-bg)", fontWeight: 600,
+              }}
+            >
+              {drillIndex < drillCategories.length - 1
+                ? t("m2.rating.journeyNext", "Next")
+                : t("m2.rating.journeyShowProfile", "Show Profile")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const totalSelected = Object.keys(catWeights).reduce((sum, k) => sum + catWeights[k], 0);
+  const maxWeight = Math.max(...Object.values(catWeights), 1);
+
+  return (
+    <div data-testid="studio-journey-profile">
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        marginBottom: 12,
+      }}>
+        <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+          {t("m2.rating.journeyPhase3", "Phase 3: Your Profile")}
+        </div>
+        <button
+          onClick={handleRestart}
+          data-testid="journey-restart"
+          style={{
+            display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
+            background: "none", border: "1px solid var(--labs-border-subtle)",
+            borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+            fontSize: 10, color: "var(--labs-text-muted)",
+          }}
+        >
+          <RotateCcw style={{ width: 10, height: 10 }} />
+          {t("m2.rating.journeyRestart", "Restart")}
+        </button>
+      </div>
+
+      {totalSelected === 0 ? (
+        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--labs-text-muted)" }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>🔍</div>
+          <div style={{ fontSize: 13 }}>
+            {t("m2.rating.journeyNoSelections", "No notes selected yet. Go back and tap specific notes in each category.")}
+          </div>
+          <button
+            onClick={() => {
+              if (drillCategories.length > 0) {
+                setDrillIndex(0);
+                setPhase("drilldown");
+              } else {
+                handleRestart();
+              }
+            }}
+            data-testid="journey-back-to-drill"
+            style={{
+              marginTop: 12, fontSize: 12, padding: "8px 16px", borderRadius: 10,
+              fontFamily: "inherit", background: "var(--labs-accent)", border: "none",
+              cursor: "pointer", color: "var(--labs-bg)", fontWeight: 600,
+            }}
+          >
+            {t("m2.rating.journeyGoBack", "Go Back")}
+          </button>
+        </div>
+      ) : (
+        <>
+          {profileMatch && (
+            <div style={{
+              padding: 12, borderRadius: 12, marginBottom: 14,
+              background: "var(--labs-accent-muted, rgba(212, 162, 86, 0.08))",
+              border: "1px solid var(--labs-accent)",
+              textAlign: "center",
+            }} data-testid="journey-profile-match">
+              <div style={{ fontSize: 10, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, fontWeight: 600 }}>
+                {t("m2.rating.journeyProfileMatch", "Profile Match")}
+              </div>
+              <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)" }}>
+                {profileMatch.label}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 14 }}>
+            <div style={{
+              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+            }}>
+              {t("m2.rating.journeyCategoryWeights", "Category Weights")}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {orderedCategories
+                .filter((cat) => catWeights[cat.id] > 0)
+                .sort((a, b) => (catWeights[b.id] || 0) - (catWeights[a.id] || 0))
+                .map((cat) => {
+                  const w = catWeights[cat.id] || 0;
+                  const pct = (w / maxWeight) * 100;
+                  return (
+                    <div key={cat.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{GUIDE_ICONS[cat.id]}</span>
+                      <span style={{ fontSize: 11, width: 60, color: cat.color, fontWeight: 600 }}>
+                        {isDE ? cat.de : cat.en}
+                      </span>
+                      <div style={{
+                        flex: 1, height: 8, borderRadius: 4,
+                        background: "var(--labs-surface)", overflow: "hidden",
+                      }}>
+                        <div style={{
+                          width: `${pct}%`, height: "100%", borderRadius: 4,
+                          background: cat.color, transition: "width 0.5s ease",
+                        }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", width: 16, textAlign: "right" }}>
+                        {w}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          <div>
+            <div style={{
+              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+            }}>
+              {t("m2.rating.journeySelectedNotes", "Selected Notes")} ({totalSelected})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {orderedCategories
+                .filter((cat) => catWeights[cat.id] > 0)
+                .map((cat) => {
+                  const selectedDescs = cat.subcategories.filter((sub) => isTermSelected(sub));
+                  return (
+                    <div key={cat.id}>
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
+                        fontSize: 10, color: cat.color, fontWeight: 600,
+                      }}>
+                        <span style={{ fontSize: 12 }}>{GUIDE_ICONS[cat.id]}</span>
+                        <span>{isDE ? cat.de : cat.en}</span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
+                        {selectedDescs.map((desc) => (
+                          <button
+                            key={desc.id}
+                            onClick={() => onToggle(desc.en)}
+                            data-testid={`journey-profile-${desc.id}`}
+                            style={{
+                              fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+                              background: `${cat.color}18`, color: cat.color,
+                              border: `1px solid ${cat.color}44`, cursor: "pointer",
+                              display: "flex", alignItems: "center", gap: 4,
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>{isDE ? desc.de : desc.en}</span>
+                            <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button
+              onClick={() => {
+                if (drillCategories.length > 0) {
+                  setDrillIndex(0);
+                  setPhase("drilldown");
+                } else {
+                  handleRestart();
+                }
+                triggerHaptic("light");
+              }}
+              data-testid="journey-refine"
+              style={{
+                flex: 1, fontSize: 11, padding: "8px 12px", borderRadius: 10,
+                fontFamily: "inherit", background: "var(--labs-surface)",
+                border: "1px solid var(--labs-border)", cursor: "pointer",
+                color: "var(--labs-text-muted)",
+              }}
+            >
+              {t("m2.rating.journeyRefine", "Refine Notes")}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -1639,11 +2095,11 @@ export default function FlavourStudioSheet({
           <SegmentedControl value={view} onChange={setView} />
 
           {view === "guide" && <GuidedView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
+          {view === "journey" && <JourneyView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
           {view === "wheel" && <CompactWheel categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "compass" && <CompactCompass categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "radar" && <CompactRadar categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "describe" && <DescribeView selected={selectedTerms} onToggle={toggleTerm} section={section} categories={categories} />}
-          {view === "discover" && <DiscoverView categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
         </div>
 
         <div style={{

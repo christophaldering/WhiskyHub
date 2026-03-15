@@ -2354,7 +2354,7 @@ export default function LabsSolo() {
           display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
         }}>
           {([
-            { view: "discover" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolDiscover", "Discover"), desc: t("m2.solo.toolDiscoverDesc", "Swipe through flavours"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
+            { view: "journey" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolJourney", "Flavour Journey"), desc: t("m2.solo.toolJourneyDesc", "Guided 3-phase tasting"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
             { view: "wheel" as StudioView, icon: <Layers style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolWheel", "Flavour Wheel"), desc: t("m2.solo.toolWheelDesc", "Explore the aroma map"), gradient: "linear-gradient(135deg, #6a9f5b, #4a7a3e)" },
             { view: "compass" as StudioView, icon: <Compass style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolCompass", "Compass"), desc: t("m2.solo.toolCompassDesc", "Navigate flavour profiles"), gradient: "linear-gradient(135deg, #5b7da9, #3e5a7a)" },
             { view: "radar" as StudioView, icon: <Target style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolRadar", "Radar"), desc: t("m2.solo.toolRadarDesc", "Visualise your tasting"), gradient: "linear-gradient(135deg, #9b6aaf, #7a4a8e)" },
