@@ -12264,66 +12264,85 @@ Rules:
 
       const whiskyMap = new Map<string, any>();
 
+      const mergeIntoMap = (key: string, entry: {
+        id: string; name: string; distillery?: string | null; region?: string | null;
+        country?: string | null; category?: string | null; age?: string | null;
+        abv?: string | null; caskType?: string | null; imageUrl?: string | null;
+      }, scores: number[], isTasting: boolean) => {
+        if (whiskyMap.has(key)) {
+          const existing = whiskyMap.get(key);
+          existing._allScores.push(...scores);
+          existing.ratingCount = existing._allScores.length;
+          if (isTasting) existing.tastingCount += 1;
+          existing.avgOverall = existing._allScores.length > 0
+            ? parseFloat((existing._allScores.reduce((a: number, b: number) => a + b, 0) / existing._allScores.length).toFixed(1))
+            : null;
+          if (!existing.age && entry.age) existing.age = entry.age;
+          if (!existing.abv && entry.abv) existing.abv = entry.abv;
+          if (!existing.region && entry.region) existing.region = entry.region;
+          if (!existing.country && entry.country) existing.country = entry.country;
+          if (!existing.category && entry.category) existing.category = entry.category;
+          if (!existing.caskType && entry.caskType) existing.caskType = entry.caskType;
+          if (!existing.imageUrl && entry.imageUrl) existing.imageUrl = entry.imageUrl;
+        } else {
+          whiskyMap.set(key, {
+            id: entry.id,
+            name: entry.name,
+            distillery: entry.distillery || null,
+            region: entry.region || null,
+            country: entry.country || null,
+            category: entry.category || null,
+            age: entry.age || null,
+            abv: entry.abv || null,
+            caskType: entry.caskType || null,
+            imageUrl: entry.imageUrl || null,
+            avgOverall: scores.length > 0
+              ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
+              : null,
+            ratingCount: scores.length,
+            tastingCount: isTasting ? 1 : 0,
+            _allScores: [...scores],
+          });
+        }
+      };
+
       for (const w of allWhiskies) {
         const key = `${(w.name || "").toLowerCase()}::${(w.distillery || "").toLowerCase()}`;
         const whiskyRatings = allRatingsData.filter(r => r.whiskyId === w.id);
         const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
+        mergeIntoMap(key, {
+          id: w.id, name: w.name || "", distillery: w.distillery, region: w.region,
+          country: w.country, category: w.category, age: w.age, abv: w.abv,
+          caskType: w.caskType, imageUrl: w.imageUrl,
+        }, overallScores, true);
+      }
 
-        if (whiskyMap.has(key)) {
-          const existing = whiskyMap.get(key);
-          existing._allScores.push(...overallScores);
-          existing.ratingCount = existing._allScores.length;
-          existing.tastingCount += 1;
-          existing.avgOverall = existing._allScores.length > 0
-            ? parseFloat((existing._allScores.reduce((a: number, b: number) => a + b, 0) / existing._allScores.length).toFixed(1))
-            : null;
-          if (!existing.age && w.age) existing.age = w.age;
-          if (!existing.abv && w.abv) existing.abv = w.abv;
-          if (!existing.region && w.region) existing.region = w.region;
-          if (!existing.country && w.country) existing.country = w.country;
-          if (!existing.category && w.category) existing.category = w.category;
-          if (!existing.caskType && w.caskType) existing.caskType = w.caskType;
-          if (!existing.imageUrl && w.imageUrl) existing.imageUrl = w.imageUrl;
-        } else {
-          whiskyMap.set(key, {
-            id: w.id,
-            name: w.name,
-            distillery: w.distillery || null,
-            region: w.region || null,
-            country: w.country || null,
-            category: w.category || null,
-            age: w.age || null,
-            abv: w.abv || null,
-            caskType: w.caskType || null,
-            imageUrl: w.imageUrl || null,
-            avgOverall: overallScores.length > 0
-              ? parseFloat((overallScores.reduce((a, b) => a + b, 0) / overallScores.length).toFixed(1))
-              : null,
-            ratingCount: overallScores.length,
-            tastingCount: 1,
-            _allScores: [...overallScores],
-          });
-        }
+      const journalEntries = await storage.getAllJournalEntries();
+      for (const je of journalEntries) {
+        if (!je.whiskyName) continue;
+        const key = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
+        const scores = je.personalScore != null && je.personalScore > 0 ? [je.personalScore] : [];
+        mergeIntoMap(key, {
+          id: je.id, name: je.whiskyName, distillery: je.distillery, region: je.region,
+          country: je.country, category: null, age: je.age, abv: je.abv,
+          caskType: je.caskType, imageUrl: je.imageUrl,
+        }, scores, false);
+      }
+
+      const allCollectionItems = await storage.getAllCollectionItems();
+      for (const ci of allCollectionItems) {
+        if (!ci.name) continue;
+        const key = `${ci.name.toLowerCase()}::${(ci.distillery || "").toLowerCase()}`;
+        const scores = ci.personalRating != null && ci.personalRating > 0 ? [ci.personalRating] : [];
+        mergeIntoMap(key, {
+          id: ci.id.toString(), name: ci.name, distillery: ci.distillery, region: null,
+          country: null, category: null, age: ci.statedAge, abv: ci.abv,
+          caskType: ci.caskType, imageUrl: ci.imageUrl,
+        }, scores, false);
       }
 
       for (const entry of whiskyMap.values()) {
         delete entry._allScores;
-      }
-
-      const journalEntries = await storage.getAllJournalEntries();
-      const journalImageMap = new Map<string, string>();
-      for (const je of journalEntries) {
-        if (je.imageUrl && je.whiskyName) {
-          const jeKey = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
-          if (!journalImageMap.has(jeKey)) journalImageMap.set(jeKey, je.imageUrl);
-        }
-      }
-
-      for (const [key, entry] of whiskyMap) {
-        if (!entry.imageUrl) {
-          const journalImg = journalImageMap.get(key);
-          if (journalImg) entry.imageUrl = journalImg;
-        }
       }
 
       let results = Array.from(whiskyMap.values());

@@ -269,6 +269,7 @@ export interface IStorage {
   hasReminderBeenSent(participantId: string, tastingId: string, offsetMinutes: number): Promise<boolean>;
 
   // Whiskybase Collection
+  getAllCollectionItems(): Promise<WhiskybaseCollectionItem[]>;
   getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]>;
   upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
@@ -1194,6 +1195,10 @@ export class DatabaseStorage implements IStorage {
     }).from(newsletterRecipients).where(eq(newsletterRecipients.newsletterId, newsletterId));
   }
   // --- Whiskybase Collection ---
+  async getAllCollectionItems(): Promise<WhiskybaseCollectionItem[]> {
+    return await db.select().from(whiskybaseCollection).orderBy(whiskybaseCollection.brand, whiskybaseCollection.name);
+  }
+
   async getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]> {
     return await db.select().from(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId)).orderBy(whiskybaseCollection.brand, whiskybaseCollection.name);
   }
