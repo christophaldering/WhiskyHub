@@ -185,7 +185,7 @@ export default function LabsSolo() {
   const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
 
   const [tastingToolsOpen, setTastingToolsOpen] = useState(false);
-  const [tastingToolsView, setTastingToolsView] = useState<StudioView>("wheel");
+  const [tastingToolsView, setTastingToolsView] = useState<StudioView>("guide");
   const [activeDimension, setActiveDimension] = useState<DimKey>("nose");
 
   const [voiceListening, setVoiceListening] = useState(false);

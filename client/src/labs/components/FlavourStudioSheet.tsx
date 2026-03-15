@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Plus, Sparkles, Search } from "lucide-react";
+import { X, Plus, Sparkles, Search, ChevronRight } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
+import { FLAVOR_CATEGORIES, type FlavorCategory, type FlavorSubGroup } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { DimKey } from "./LabsRatingPanel";
 
-export type StudioView = "wheel" | "compass" | "radar" | "describe" | "discover";
+export type StudioView = "guide" | "wheel" | "compass" | "radar" | "describe" | "discover";
 type CategoryId = "islay" | "speyside" | "sherry" | "bourbon" | "highland" | "japanese";
 type TermSection = "nose" | "palate" | "finish";
 
@@ -134,6 +134,7 @@ function findTermCategory(term: string, categories: VocabCategory[]): CategoryId
 function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v: StudioView) => void }) {
   const { t } = useTranslation();
   const options: { key: StudioView; label: string }[] = [
+    { key: "guide", label: t("m2.rating.studioGuide", "Guide") },
     { key: "wheel", label: t("m2.rating.studioWheel", "Wheel") },
     { key: "compass", label: t("m2.rating.studioCompass", "Compass") },
     { key: "radar", label: "Radar" },
@@ -164,6 +165,485 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+interface GuidedBreadcrumb {
+  label: string;
+  level: number;
+  categoryId?: string;
+  subgroupId?: string;
+}
+
+interface DescriptorHierarchyPath {
+  categoryId: string;
+  categoryLabel: string;
+  categoryColor: string;
+  subgroupLabel?: string;
+  descriptorLabel: string;
+  descriptorKey: string;
+}
+
+function findDescriptorHierarchy(termLower: string, isDE: boolean): DescriptorHierarchyPath | null {
+  for (const cat of FLAVOR_CATEGORIES) {
+    for (const sub of cat.subcategories) {
+      if (sub.en.toLowerCase() === termLower || sub.de.toLowerCase() === termLower) {
+        let subgroupLabel: string | undefined;
+        if (cat.subgroups) {
+          for (const sg of cat.subgroups) {
+            if (sg.descriptors.some((d) => d.en.toLowerCase() === termLower || d.de.toLowerCase() === termLower)) {
+              subgroupLabel = isDE ? sg.de : sg.en;
+              break;
+            }
+          }
+        }
+        return {
+          categoryId: cat.id,
+          categoryLabel: isDE ? cat.de : cat.en,
+          categoryColor: cat.color,
+          subgroupLabel,
+          descriptorLabel: isDE ? sub.de : sub.en,
+          descriptorKey: sub.en,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function GuidedView({
+  selected, onToggle, isDE,
+}: {
+  selected: Set<string>;
+  onToggle: (term: string) => void;
+  isDE: boolean;
+}) {
+  const { t } = useTranslation();
+  const [navCategoryId, setNavCategoryId] = useState<string | null>(null);
+  const [navSubgroupId, setNavSubgroupId] = useState<string | null>(null);
+  const [animDir, setAnimDir] = useState<"forward" | "back" | null>(null);
+
+  const navCategory = navCategoryId ? FLAVOR_CATEGORIES.find((c) => c.id === navCategoryId) || null : null;
+  const navSubgroup = navCategory?.subgroups && navSubgroupId
+    ? navCategory.subgroups.find((sg) => sg.id === navSubgroupId) || null
+    : null;
+
+  const level = navSubgroup ? 3 : navCategory ? 2 : 1;
+
+  const drillDown = useCallback((categoryId: string, subgroupId?: string) => {
+    setAnimDir("forward");
+    if (subgroupId) {
+      setNavSubgroupId(subgroupId);
+    } else {
+      setNavCategoryId(categoryId);
+      setNavSubgroupId(null);
+    }
+    triggerHaptic("light");
+  }, []);
+
+  const goBack = useCallback((toLevel: number) => {
+    setAnimDir("back");
+    if (toLevel <= 1) {
+      setNavCategoryId(null);
+      setNavSubgroupId(null);
+    } else if (toLevel <= 2) {
+      setNavSubgroupId(null);
+    }
+    triggerHaptic("light");
+  }, []);
+
+  const countSelectedInCategory = useCallback((cat: FlavorCategory): number => {
+    return cat.subcategories.filter((sub) =>
+      selected.has(sub.en.toLowerCase())
+    ).length;
+  }, [selected]);
+
+  const countSelectedInSubgroup = useCallback((sg: FlavorSubGroup): number => {
+    return sg.descriptors.filter((d) =>
+      selected.has(d.en.toLowerCase())
+    ).length;
+  }, [selected]);
+
+  const breadcrumbs = useMemo((): GuidedBreadcrumb[] => {
+    const crumbs: GuidedBreadcrumb[] = [
+      { label: t("m2.rating.studioGuideAll", "All Categories"), level: 1 },
+    ];
+    if (navCategory) {
+      crumbs.push({
+        label: isDE ? navCategory.de : navCategory.en,
+        level: 2,
+        categoryId: navCategory.id,
+      });
+    }
+    if (navSubgroup && navCategory) {
+      crumbs.push({
+        label: isDE ? navSubgroup.de : navSubgroup.en,
+        level: 3,
+        categoryId: navCategory.id,
+        subgroupId: navSubgroup.id,
+      });
+    }
+    return crumbs;
+  }, [navCategory, navSubgroup, isDE, t]);
+
+  const selectedPaths = useMemo((): DescriptorHierarchyPath[] => {
+    const paths: DescriptorHierarchyPath[] = [];
+    for (const termLower of selected) {
+      const path = findDescriptorHierarchy(termLower, isDE);
+      if (path) paths.push(path);
+    }
+    return paths;
+  }, [selected, isDE]);
+
+  const selectedByCategory = useMemo(() => {
+    const map = new Map<string, DescriptorHierarchyPath[]>();
+    for (const p of selectedPaths) {
+      const existing = map.get(p.categoryId) || [];
+      existing.push(p);
+      map.set(p.categoryId, existing);
+    }
+    return map;
+  }, [selectedPaths]);
+
+  const animClass = animDir === "forward" ? "guideSlideIn" : animDir === "back" ? "guideSlideBack" : "";
+
+  return (
+    <div data-testid="studio-guide-view">
+      <style>{`
+        @keyframes guideSlideIn {
+          from { opacity: 0; transform: translateX(40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes guideSlideBack {
+          from { opacity: 0; transform: translateX(-40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .guideSlideIn { animation: guideSlideIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .guideSlideBack { animation: guideSlideBack 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+      `}</style>
+
+      {level > 1 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 4, marginBottom: 12,
+          fontSize: 11, color: "var(--labs-text-muted)", flexWrap: "wrap",
+        }} data-testid="guide-breadcrumbs">
+          {breadcrumbs.map((crumb, i) => {
+            const isLast = i === breadcrumbs.length - 1;
+            return (
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {i > 0 && <ChevronRight style={{ width: 12, height: 12, opacity: 0.5 }} />}
+                <button
+                  onClick={() => { if (!isLast) goBack(crumb.level); }}
+                  data-testid={`guide-breadcrumb-${i}`}
+                  style={{
+                    background: "none", border: "none", cursor: isLast ? "default" : "pointer",
+                    fontFamily: "inherit", fontSize: 11, padding: "2px 4px", borderRadius: 4,
+                    color: isLast
+                      ? (navCategory ? navCategory.color : "var(--labs-text)")
+                      : "var(--labs-text-muted)",
+                    fontWeight: isLast ? 600 : 400,
+                    textDecoration: isLast ? "none" : "underline",
+                    textDecorationColor: "var(--labs-border)",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  {crumb.label}
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      <div className={animClass} key={`${navCategoryId}-${navSubgroupId}`}>
+        {level === 1 && (
+          <div>
+            {selectedByCategory.size > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{
+                  fontSize: 9, fontWeight: 600, color: "var(--labs-accent)",
+                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+                }}>
+                  {t("m2.rating.studioGuideSelected", "Your Selections")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {selectedPaths.map((p) => (
+                    <button
+                      key={p.descriptorKey}
+                      onClick={() => onToggle(p.descriptorKey)}
+                      data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
+                      style={{
+                        fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+                        background: `${p.categoryColor}18`, color: p.categoryColor,
+                        border: `1px solid ${p.categoryColor}44`, cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <span style={{ fontSize: 8, opacity: 0.7 }}>
+                        {p.subgroupLabel ? `${p.categoryLabel} › ${p.subgroupLabel}` : p.categoryLabel}
+                      </span>
+                      <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
+                      <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{
+              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+            }}>
+              {t("m2.rating.studioGuideCategories", "Tap to explore")}
+            </div>
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
+            }} data-testid="guide-category-grid">
+              {FLAVOR_CATEGORIES.map((cat, i) => {
+                const count = countSelectedInCategory(cat);
+                const hasSubgroups = !!cat.subgroups && cat.subgroups.length > 0;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => drillDown(cat.id)}
+                    data-testid={`guide-category-${cat.id}`}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "flex-start",
+                      padding: "12px 14px", borderRadius: 12, fontFamily: "inherit",
+                      background: count > 0 ? `${cat.color}12` : "var(--labs-surface)",
+                      border: `1.5px solid ${count > 0 ? `${cat.color}55` : "var(--labs-border-subtle)"}`,
+                      cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                      position: "relative", overflow: "hidden",
+                      animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                      animationDelay: `${i * 40}ms`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
+                      <span className="labs-serif" style={{
+                        fontSize: 13, fontWeight: 600, color: cat.color,
+                      }}>
+                        {isDE ? cat.de : cat.en}
+                      </span>
+                      {count > 0 && (
+                        <span style={{
+                          fontSize: 9, padding: "1px 6px", borderRadius: 8,
+                          background: cat.color, color: "var(--labs-bg)", fontWeight: 700,
+                          marginLeft: "auto",
+                        }}>
+                          {count}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{
+                      fontSize: 9, color: "var(--labs-text-muted)", marginTop: 4,
+                      display: "flex", alignItems: "center", gap: 3,
+                    }}>
+                      <span>
+                        {hasSubgroups
+                          ? `${cat.subgroups!.length} ${t("m2.rating.studioGuideGroups", "groups")}`
+                          : `${cat.subcategories.length} ${t("m2.rating.studioGuideNotes", "notes")}`}
+                      </span>
+                      <ChevronRight style={{ width: 10, height: 10, opacity: 0.5 }} />
+                    </div>
+                    {count > 0 && (
+                      <div style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
+                        background: cat.color, opacity: 0.5,
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {level === 2 && navCategory && (
+          <div>
+            {navCategory.subgroups && navCategory.subgroups.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {navCategory.subgroups.map((sg, i) => {
+                  const sgCount = countSelectedInSubgroup(sg);
+                  return (
+                    <button
+                      key={sg.id}
+                      onClick={() => drillDown(navCategory.id, sg.id)}
+                      data-testid={`guide-subgroup-${sg.id}`}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "14px 16px", borderRadius: 12, fontFamily: "inherit",
+                        background: sgCount > 0 ? `${navCategory.color}12` : "var(--labs-surface)",
+                        border: `1.5px solid ${sgCount > 0 ? `${navCategory.color}44` : "var(--labs-border-subtle)"}`,
+                        cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                        animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                        animationDelay: `${i * 60}ms`,
+                      }}
+                    >
+                      <div>
+                        <div className="labs-serif" style={{
+                          fontSize: 14, fontWeight: 600, color: navCategory.color,
+                        }}>
+                          {isDE ? sg.de : sg.en}
+                        </div>
+                        <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                          {sg.descriptors.map((d) => isDE ? d.de : d.en).join(", ")}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {sgCount > 0 && (
+                          <span style={{
+                            fontSize: 9, padding: "1px 6px", borderRadius: 8,
+                            background: navCategory.color, color: "var(--labs-bg)", fontWeight: 700,
+                          }}>
+                            {sgCount}
+                          </span>
+                        )}
+                        <ChevronRight style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
+                      </div>
+                    </button>
+                  );
+                })}
+
+                <div style={{
+                  marginTop: 8, padding: "10px 0",
+                  borderTop: "1px solid var(--labs-border-subtle)",
+                }}>
+                  <div style={{
+                    fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+                    textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+                  }}>
+                    {t("m2.rating.studioGuideAllInCategory", "All in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {navCategory.subcategories.map((desc, i) => {
+                      const isS = selected.has(desc.en.toLowerCase());
+                      return (
+                        <button
+                          key={desc.id}
+                          onClick={() => onToggle(desc.en)}
+                          data-testid={`guide-term-${desc.id}`}
+                          style={{
+                            fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
+                            background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+                            color: isS ? navCategory.color : "var(--labs-text)",
+                            border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                            cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                            fontWeight: isS ? 600 : 400,
+                            animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                            animationDelay: `${i * 40}ms`,
+                          }}
+                        >
+                          {isS ? "✓ " : ""}{isDE ? desc.de : desc.en}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {navCategory.subcategories.map((desc, i) => {
+                  const isS = selected.has(desc.en.toLowerCase());
+                  return (
+                    <button
+                      key={desc.id}
+                      onClick={() => onToggle(desc.en)}
+                      data-testid={`guide-term-${desc.id}`}
+                      style={{
+                        fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
+                        background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+                        color: isS ? navCategory.color : "var(--labs-text)",
+                        border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                        cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                        fontWeight: isS ? 600 : 400,
+                        animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                        animationDelay: `${i * 50}ms`,
+                      }}
+                    >
+                      {isS ? "✓ " : ""}{isDE ? desc.de : desc.en}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {level === 3 && navSubgroup && navCategory && (
+          <div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {navSubgroup.descriptors.map((desc, i) => {
+                const isS = selected.has(desc.en.toLowerCase());
+                return (
+                  <button
+                    key={desc.id}
+                    onClick={() => onToggle(desc.en)}
+                    data-testid={`guide-term-${desc.id}`}
+                    style={{
+                      fontSize: 13, padding: "10px 18px", borderRadius: 22, fontFamily: "inherit",
+                      background: isS ? `${navCategory.color}22` : "var(--labs-surface)",
+                      color: isS ? navCategory.color : "var(--labs-text)",
+                      border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 42,
+                      fontWeight: isS ? 600 : 400,
+                      animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                      animationDelay: `${i * 60}ms`,
+                    }}
+                  >
+                    {isS ? "✓ " : ""}{isDE ? desc.de : desc.en}
+                  </button>
+                );
+              })}
+            </div>
+
+            {navCategory.subgroups && navCategory.subgroups.length > 1 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{
+                  fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+                }}>
+                  {t("m2.rating.studioGuideRelated", "Other groups in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {navCategory.subgroups
+                    .filter((sg) => sg.id !== navSubgroupId)
+                    .map((sg) => {
+                      const sgCount = countSelectedInSubgroup(sg);
+                      return (
+                        <button
+                          key={sg.id}
+                          onClick={() => drillDown(navCategory.id, sg.id)}
+                          data-testid={`guide-related-${sg.id}`}
+                          style={{
+                            fontSize: 11, padding: "6px 12px", borderRadius: 16, fontFamily: "inherit",
+                            background: sgCount > 0 ? `${navCategory.color}12` : "var(--labs-surface)",
+                            color: sgCount > 0 ? navCategory.color : "var(--labs-text-muted)",
+                            border: `1px solid ${sgCount > 0 ? `${navCategory.color}44` : "var(--labs-border-subtle)"}`,
+                            cursor: "pointer", transition: "all 0.15s",
+                            display: "flex", alignItems: "center", gap: 4,
+                          }}
+                        >
+                          {isDE ? sg.de : sg.en}
+                          {sgCount > 0 && (
+                            <span style={{
+                              fontSize: 8, padding: "0 4px", borderRadius: 6,
+                              background: navCategory.color, color: "var(--labs-bg)", fontWeight: 700,
+                            }}>
+                              {sgCount}
+                            </span>
+                          )}
+                          <ChevronRight style={{ width: 10, height: 10 }} />
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1014,7 +1494,7 @@ export default function FlavourStudioSheet({
 }: FlavourStudioSheetProps) {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
-  const [view, setView] = useState<StudioView>(initialView || "wheel");
+  const [view, setView] = useState<StudioView>(initialView || "guide");
 
   useEffect(() => {
     if (open && initialView) {
@@ -1130,6 +1610,7 @@ export default function FlavourStudioSheet({
         <div style={{ padding: "12px 16px", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
           <SegmentedControl value={view} onChange={setView} />
 
+          {view === "guide" && <GuidedView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
           {view === "wheel" && <CompactWheel categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "compass" && <CompactCompass categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}
           {view === "radar" && <CompactRadar categories={categories} section={section} selected={selectedTerms} onToggle={toggleTerm} />}

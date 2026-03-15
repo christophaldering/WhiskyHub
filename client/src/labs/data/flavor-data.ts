@@ -5,12 +5,20 @@ export interface FlavorDescriptor {
   keywords: string[];
 }
 
+export interface FlavorSubGroup {
+  id: string;
+  en: string;
+  de: string;
+  descriptors: FlavorDescriptor[];
+}
+
 export interface FlavorCategory {
   id: string;
   en: string;
   de: string;
   color: string;
   subcategories: FlavorDescriptor[];
+  subgroups?: FlavorSubGroup[];
 }
 
 export const FLAVOR_CATEGORIES: FlavorCategory[] = [
@@ -23,6 +31,24 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "berry", en: "Berry", de: "Beere", keywords: ["berry", "beere", "berries", "strawberry", "raspberry", "blackberry", "blueberry"] },
       { id: "tropical", en: "Tropical", de: "Tropisch", keywords: ["tropical", "tropisch", "mango", "pineapple", "banana", "coconut", "passion fruit"] },
       { id: "dried-fruit", en: "Dried Fruit", de: "Trockenfrüchte", keywords: ["dried fruit", "trockenfrüchte", "raisin", "date", "fig", "prune", "sultana"] },
+    ],
+    subgroups: [
+      {
+        id: "fresh-fruit", en: "Fresh Fruit", de: "Frisches Obst",
+        descriptors: [
+          { id: "apple", en: "Apple", de: "Apfel", keywords: ["apple", "apfel", "green apple", "grüner apfel"] },
+          { id: "pear", en: "Pear", de: "Birne", keywords: ["pear", "birne"] },
+          { id: "citrus", en: "Citrus", de: "Zitrus", keywords: ["citrus", "zitrus", "lemon", "zitrone", "orange", "lime", "grapefruit"] },
+        ],
+      },
+      {
+        id: "dark-fruit", en: "Dark & Dried Fruit", de: "Dunkle & Trockenfrüchte",
+        descriptors: [
+          { id: "berry", en: "Berry", de: "Beere", keywords: ["berry", "beere", "berries", "strawberry", "raspberry", "blackberry", "blueberry"] },
+          { id: "dried-fruit", en: "Dried Fruit", de: "Trockenfrüchte", keywords: ["dried fruit", "trockenfrüchte", "raisin", "date", "fig", "prune", "sultana"] },
+          { id: "tropical", en: "Tropical", de: "Tropisch", keywords: ["tropical", "tropisch", "mango", "pineapple", "banana", "coconut", "passion fruit"] },
+        ],
+      },
     ],
   },
   {
@@ -45,6 +71,25 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "chocolate", en: "Chocolate", de: "Schokolade", keywords: ["chocolate", "schokolade", "cocoa", "kakao"] },
       { id: "marzipan", en: "Marzipan", de: "Marzipan", keywords: ["marzipan", "almond paste", "mandel"] },
       { id: "brown-sugar", en: "Brown Sugar", de: "Brauner Zucker", keywords: ["brown sugar", "brauner zucker", "molasses", "melasse", "treacle"] },
+    ],
+    subgroups: [
+      {
+        id: "sugar-sweet", en: "Sugar & Syrup", de: "Zucker & Sirup",
+        descriptors: [
+          { id: "honey", en: "Honey", de: "Honig", keywords: ["honey", "honig"] },
+          { id: "caramel", en: "Caramel", de: "Karamell", keywords: ["caramel", "karamell", "butterscotch"] },
+          { id: "toffee", en: "Toffee", de: "Toffee", keywords: ["toffee", "fudge"] },
+          { id: "brown-sugar", en: "Brown Sugar", de: "Brauner Zucker", keywords: ["brown sugar", "brauner zucker", "molasses", "melasse", "treacle"] },
+        ],
+      },
+      {
+        id: "confection", en: "Confection", de: "Konfekt",
+        descriptors: [
+          { id: "vanilla", en: "Vanilla", de: "Vanille", keywords: ["vanilla", "vanille"] },
+          { id: "chocolate", en: "Chocolate", de: "Schokolade", keywords: ["chocolate", "schokolade", "cocoa", "kakao"] },
+          { id: "marzipan", en: "Marzipan", de: "Marzipan", keywords: ["marzipan", "almond paste", "mandel"] },
+        ],
+      },
     ],
   },
   {
@@ -78,6 +123,24 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "tar", en: "Tar", de: "Teer", keywords: ["tar", "teer"] },
       { id: "bbq", en: "BBQ", de: "Grill", keywords: ["bbq", "grill", "smoked meat", "bacon", "speck"] },
     ],
+    subgroups: [
+      {
+        id: "peat-smoke", en: "Peat Smoke", de: "Torfrauch",
+        descriptors: [
+          { id: "peat", en: "Peat", de: "Torf", keywords: ["peat", "torf", "peaty", "torfig"] },
+          { id: "ash", en: "Ash", de: "Asche", keywords: ["ash", "asche"] },
+          { id: "tar", en: "Tar", de: "Teer", keywords: ["tar", "teer"] },
+        ],
+      },
+      {
+        id: "wood-smoke", en: "Wood Smoke", de: "Holzrauch",
+        descriptors: [
+          { id: "campfire", en: "Campfire", de: "Lagerfeuer", keywords: ["campfire", "lagerfeuer", "bonfire", "smoke", "rauch"] },
+          { id: "charcoal", en: "Charcoal", de: "Holzkohle", keywords: ["charcoal", "holzkohle"] },
+          { id: "bbq", en: "BBQ", de: "Grill", keywords: ["bbq", "grill", "smoked meat", "bacon", "speck"] },
+        ],
+      },
+    ],
   },
   {
     id: "malty", en: "Malty", de: "Malzig", color: "#b8934a",
@@ -97,6 +160,23 @@ export const FLAVOR_CATEGORIES: FlavorCategory[] = [
       { id: "iodine", en: "Iodine", de: "Jod", keywords: ["iodine", "jod", "medicinal"] },
       { id: "seaweed", en: "Seaweed", de: "Seetang", keywords: ["seaweed", "seetang", "kelp", "algae"] },
       { id: "oyster", en: "Oyster", de: "Auster", keywords: ["oyster", "auster", "shellfish"] },
+    ],
+    subgroups: [
+      {
+        id: "salt-brine", en: "Salt & Brine", de: "Salz & Lake",
+        descriptors: [
+          { id: "sea-salt", en: "Sea Salt", de: "Meersalz", keywords: ["sea salt", "meersalz", "salt", "salz", "salty", "brine"] },
+          { id: "brine", en: "Brine", de: "Salzlake", keywords: ["brine", "salzlake", "briny"] },
+        ],
+      },
+      {
+        id: "coastal", en: "Coastal & Marine", de: "Küste & Meer",
+        descriptors: [
+          { id: "iodine", en: "Iodine", de: "Jod", keywords: ["iodine", "jod", "medicinal"] },
+          { id: "seaweed", en: "Seaweed", de: "Seetang", keywords: ["seaweed", "seetang", "kelp", "algae"] },
+          { id: "oyster", en: "Oyster", de: "Auster", keywords: ["oyster", "auster", "shellfish"] },
+        ],
+      },
     ],
   },
   {
