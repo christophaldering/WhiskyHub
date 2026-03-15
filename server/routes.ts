@@ -1397,6 +1397,8 @@ export async function registerRoutes(
       if (!newHostId) return res.status(400).json({ message: "newHostId is required" });
       const newHost = await storage.getParticipant(newHostId);
       if (!newHost) return res.status(404).json({ message: "New host participant not found" });
+      const isInTasting = await storage.isParticipantInTasting(req.params.id, newHostId);
+      if (!isInTasting) return res.status(400).json({ message: "New host must be a participant of this tasting" });
       const updated = await storage.transferTastingHost(req.params.id, newHostId);
       res.json(updated);
     } catch (e: any) {

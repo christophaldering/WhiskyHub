@@ -11,7 +11,7 @@ import {
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
-  Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers,
+  Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -958,6 +958,8 @@ function MobileCompanion({
   const isEnded = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
   const pid = currentParticipant?.id as string;
 
+  const [mobileEditTitle, setMobileEditTitle] = useState<string | null>(null);
+  const mobileEditCancelled = useRef(false);
   const [mobileWhiskyName, setMobileWhiskyName] = useState("");
   const [mobileShowAdd, setMobileShowAdd] = useState(isDraft && whiskyCount === 0);
   const [mobileAiImport, setMobileAiImport] = useState(false);
@@ -969,6 +971,19 @@ function MobileCompanion({
   const [mobileDragOver, setMobileDragOver] = useState(false);
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
   const [mobileEditName, setMobileEditName] = useState("");
+
+  const patchMobileDetails = async (fields: Record<string, unknown>) => {
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/details`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: pid, ...fields }),
+      });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      }
+    } catch {}
+  };
 
   const addWhiskyMut = useMutation({
     mutationFn: (data: any) => whiskyApi.create(data),
@@ -1117,10 +1132,55 @@ function MobileCompanion({
 
       <div className="labs-card p-4 mb-4">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <h1 className="labs-serif text-lg font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
-            {(tasting.title as string) || "Untitled Tasting"}
-          </h1>
-          <span className="labs-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+          {mobileEditTitle !== null ? (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <input
+                className="labs-input flex-1"
+                value={mobileEditTitle}
+                onChange={e => setMobileEditTitle(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  } else if (e.key === "Escape") {
+                    mobileEditCancelled.current = true;
+                    setMobileEditTitle(null);
+                  }
+                }}
+                onBlur={() => {
+                  if (mobileEditCancelled.current) {
+                    mobileEditCancelled.current = false;
+                    return;
+                  }
+                  const trimmed = (mobileEditTitle || "").trim();
+                  if (trimmed && trimmed !== tasting.title) {
+                    patchMobileDetails({ title: trimmed });
+                  }
+                  setMobileEditTitle(null);
+                }}
+                autoFocus
+                data-testid="labs-mobile-edit-title-input"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <h1
+                className="labs-serif text-lg font-semibold"
+                style={{ color: "var(--labs-text)", margin: 0, cursor: "pointer" }}
+                onClick={() => setMobileEditTitle((tasting.title as string) || "")}
+                data-testid="labs-mobile-title"
+              >
+                {(tasting.title as string) || "Untitled Tasting"}
+              </h1>
+              <button
+                className="labs-btn-ghost p-1 flex-shrink-0"
+                onClick={() => setMobileEditTitle((tasting.title as string) || "")}
+                data-testid="labs-mobile-edit-title-btn"
+              >
+                <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
+              </button>
+            </div>
+          )}
+          <span className="labs-badge flex-shrink-0" style={{ background: statusCfg.bg, color: statusCfg.color }}>
             {isLive && (
               <span style={{
                 width: 6, height: 6, borderRadius: 3, background: statusCfg.color,
@@ -3018,6 +3078,47 @@ function LabsSettingsPanel({
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [forceCustomReveal, setForceCustomReveal] = useState(false);
+  const [showTransferHost, setShowTransferHost] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState(false);
+
+  const { data: settingsParticipants } = useQuery({
+    queryKey: ["participants", tastingId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tastingId}/participants`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: showTransferHost,
+  });
+
+  const transferableGuests = (settingsParticipants || []).filter(
+    (tp: { participant: { id: string } }) => tp.participant.id !== pid
+  );
+
+  const handleTransferHost = async () => {
+    if (!transferTargetId) return;
+    setTransferring(true);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/transfer-host`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: pid, newHostId: transferTargetId }),
+      });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+        navigate("/labs/tastings");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSaveStatus(err.message || "Transfer failed");
+        setTimeout(() => setSaveStatus(null), 3000);
+      }
+    } catch {
+      setSaveStatus("Transfer failed");
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
+    setTransferring(false);
+  };
 
   const isDraft = tasting.status === "draft";
 
@@ -3476,6 +3577,81 @@ function LabsSettingsPanel({
               {duplicating ? "Duplicating..." : "Duplicate Tasting"}
             </button>
 
+            <button
+              className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
+              style={{
+                background: "none",
+                color: "var(--labs-text-muted)",
+                border: "1px solid var(--labs-border)",
+              }}
+              onClick={() => { setShowTransferHost(!showTransferHost); setTransferTargetId(null); }}
+              data-testid="labs-settings-transfer-host"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              Host übertragen
+            </button>
+
+            {showTransferHost && (
+              <div
+                className="p-3 rounded-lg space-y-2"
+                style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)" }}
+                data-testid="labs-transfer-host-panel"
+              >
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
+                </p>
+                {transferableGuests.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                    Keine anderen Teilnehmer vorhanden.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {transferableGuests.map((tp: { participant: { id: string; name: string } }) => (
+                      <label
+                        key={tp.participant.id}
+                        className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
+                        style={{
+                          background: transferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
+                          border: transferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
+                        }}
+                        data-testid={`labs-transfer-target-${tp.participant.id}`}
+                      >
+                        <input
+                          type="radio"
+                          name="transferTarget"
+                          checked={transferTargetId === tp.participant.id}
+                          onChange={() => setTransferTargetId(tp.participant.id)}
+                          style={{ accentColor: "var(--labs-accent)" }}
+                        />
+                        <span className="text-sm" style={{ color: "var(--labs-text)" }}>
+                          {stripGuestSuffix(tp.participant.name || "Anonymous")}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {transferTargetId && (
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      className="labs-btn-primary text-sm flex-1"
+                      onClick={handleTransferHost}
+                      disabled={transferring}
+                      data-testid="labs-transfer-host-confirm"
+                    >
+                      {transferring ? "Übertrage..." : "Host übertragen"}
+                    </button>
+                    <button
+                      className="labs-btn-ghost text-sm"
+                      onClick={() => { setShowTransferHost(false); setTransferTargetId(null); }}
+                      data-testid="labs-transfer-host-cancel"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {!confirmDelete ? (
               <button
                 className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
@@ -3534,6 +3710,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [sendingInvites, setSendingInvites] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [topDuplicating, setTopDuplicating] = useState(false);
+  const [showDesktopTransfer, setShowDesktopTransfer] = useState(false);
+  const [desktopTransferTargetId, setDesktopTransferTargetId] = useState<string | null>(null);
+  const [desktopTransferring, setDesktopTransferring] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -3578,6 +3757,35 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
     },
   });
+
+  const desktopTransferGuests = (participants || []).filter(
+    (tp: { participant: { id: string } }) => tp.participant.id !== currentParticipant?.id
+  );
+
+  const [desktopTransferError, setDesktopTransferError] = useState<string | null>(null);
+
+  const handleDesktopTransferHost = async () => {
+    if (!desktopTransferTargetId || !currentParticipant) return;
+    setDesktopTransferring(true);
+    setDesktopTransferError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/transfer-host`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: currentParticipant.id, newHostId: desktopTransferTargetId }),
+      });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+        navigate("/labs/tastings");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setDesktopTransferError(err.message || "Übertragung fehlgeschlagen");
+      }
+    } catch {
+      setDesktopTransferError("Übertragung fehlgeschlagen");
+    }
+    setDesktopTransferring(false);
+  };
 
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showAddWhisky, setShowAddWhisky] = useState(false);
@@ -5128,6 +5336,80 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             <Copy className="w-4 h-4" />
             {topDuplicating ? "Kopiere..." : "Tasting kopieren"}
           </button>
+
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2 mt-2"
+            onClick={() => { setShowDesktopTransfer(!showDesktopTransfer); setDesktopTransferTargetId(null); }}
+            data-testid="labs-host-transfer-host"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            Host übertragen
+          </button>
+
+          {showDesktopTransfer && (
+            <div
+              className="labs-card p-4 mt-2 space-y-2"
+              data-testid="labs-desktop-transfer-panel"
+            >
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
+              </p>
+              {desktopTransferGuests.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  Keine anderen Teilnehmer vorhanden.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {desktopTransferGuests.map((tp: { participant: { id: string; name: string } }) => (
+                    <label
+                      key={tp.participant.id}
+                      className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
+                      style={{
+                        background: desktopTransferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
+                        border: desktopTransferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
+                      }}
+                      data-testid={`labs-desktop-transfer-target-${tp.participant.id}`}
+                    >
+                      <input
+                        type="radio"
+                        name="desktopTransferTarget"
+                        checked={desktopTransferTargetId === tp.participant.id}
+                        onChange={() => setDesktopTransferTargetId(tp.participant.id)}
+                        style={{ accentColor: "var(--labs-accent)" }}
+                      />
+                      <span className="text-sm" style={{ color: "var(--labs-text)" }}>
+                        {stripGuestSuffix(tp.participant.name || "Anonymous")}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {desktopTransferError && (
+                <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-desktop-transfer-error">
+                  {desktopTransferError}
+                </p>
+              )}
+              {desktopTransferTargetId && (
+                <div className="flex gap-2 pt-1">
+                  <button
+                    className="labs-btn-primary text-sm flex-1"
+                    onClick={handleDesktopTransferHost}
+                    disabled={desktopTransferring}
+                    data-testid="labs-desktop-transfer-confirm"
+                  >
+                    {desktopTransferring ? "Übertrage..." : "Host übertragen"}
+                  </button>
+                  <button
+                    className="labs-btn-ghost text-sm"
+                    onClick={() => { setShowDesktopTransfer(false); setDesktopTransferTargetId(null); setDesktopTransferError(null); }}
+                    data-testid="labs-desktop-transfer-cancel"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
