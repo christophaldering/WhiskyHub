@@ -166,6 +166,7 @@ export interface IStorage {
 
   // Journal Entries
   getAllJournalEntries(): Promise<JournalEntry[]>;
+  getCuratedDatabaseEntries(): Promise<JournalEntry[]>;
   getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]>;
   getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
@@ -840,6 +841,12 @@ export class DatabaseStorage implements IStorage {
   // --- Journal Entries ---
   async getAllJournalEntries(): Promise<JournalEntry[]> {
     return db.select().from(journalEntries).orderBy(desc(journalEntries.createdAt));
+  }
+
+  async getCuratedDatabaseEntries(): Promise<JournalEntry[]> {
+    return db.select().from(journalEntries)
+      .where(eq(journalEntries.source, "casksense-database"))
+      .orderBy(desc(journalEntries.createdAt));
   }
 
   async getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]> {

@@ -12262,20 +12262,37 @@ Rules:
       const allWhiskies = await storage.getActiveWhiskies();
       const allRatingsData = await storage.getAllRatings();
 
-      const whiskyMap = new Map<string, any>();
+      interface ExploreWhiskyEntry {
+        id: string;
+        name: string;
+        distillery: string | null;
+        region: string | null;
+        country: string | null;
+        category: string | null;
+        age: string | null;
+        abv: string | null;
+        caskType: string | null;
+        imageUrl: string | null;
+        avgOverall: number | null;
+        ratingCount: number;
+        tastingCount: number;
+        _allScores: number[];
+      }
+
+      const whiskyMap = new Map<string, ExploreWhiskyEntry>();
 
       const mergeIntoMap = (key: string, entry: {
         id: string; name: string; distillery?: string | null; region?: string | null;
         country?: string | null; category?: string | null; age?: string | null;
         abv?: string | null; caskType?: string | null; imageUrl?: string | null;
       }, scores: number[], isTasting: boolean) => {
-        if (whiskyMap.has(key)) {
-          const existing = whiskyMap.get(key);
+        const existing = whiskyMap.get(key);
+        if (existing) {
           existing._allScores.push(...scores);
           existing.ratingCount = existing._allScores.length;
           if (isTasting) existing.tastingCount += 1;
           existing.avgOverall = existing._allScores.length > 0
-            ? parseFloat((existing._allScores.reduce((a: number, b: number) => a + b, 0) / existing._allScores.length).toFixed(1))
+            ? parseFloat((existing._allScores.reduce((a, b) => a + b, 0) / existing._allScores.length).toFixed(1))
             : null;
           if (!existing.age && entry.age) existing.age = entry.age;
           if (!existing.abv && entry.abv) existing.abv = entry.abv;
@@ -12317,14 +12334,14 @@ Rules:
         }, overallScores, true);
       }
 
-      const journalEntries = await storage.getAllJournalEntries();
-      for (const je of journalEntries) {
+      const curatedEntries = await storage.getCuratedDatabaseEntries();
+      for (const je of curatedEntries) {
         if (!je.whiskyName) continue;
         const key = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
         const scores = je.personalScore != null && je.personalScore > 0 ? [je.personalScore] : [];
         mergeIntoMap(key, {
           id: je.id, name: je.whiskyName, distillery: je.distillery, region: je.region,
-          country: je.country, category: null, age: je.age, abv: je.abv,
+          country: je.country, category: je.category, age: je.age, abv: je.abv,
           caskType: je.caskType, imageUrl: je.imageUrl,
         }, scores, false);
       }
@@ -12362,9 +12379,10 @@ Rules:
       results.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
 
       res.json(results);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Labs explore whiskies error:", e);
-      res.status(500).json({ message: e.message });
+      const msg = e instanceof Error ? e.message : "Internal error";
+      res.status(500).json({ message: msg });
     }
   });
 

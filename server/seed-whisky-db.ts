@@ -1,9 +1,28 @@
 import OpenAI from "openai";
 import { db, pool } from "./db";
-import { journalEntries } from "@shared/schema";
+import { journalEntries, participants } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 
 const SYSTEM_PARTICIPANT_ID = "casksense-database-system";
+
+async function ensureSystemParticipant(): Promise<void> {
+  const existing = await db.select({ id: participants.id })
+    .from(participants)
+    .where(eq(participants.id, SYSTEM_PARTICIPANT_ID))
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(participants).values({
+      id: SYSTEM_PARTICIPANT_ID,
+      name: "CaskSense Database",
+      role: "system",
+      email: "system@casksense.app",
+    });
+    console.log("✓ Created system participant: casksense-database-system\n");
+  } else {
+    console.log("✓ System participant already exists\n");
+  }
+}
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -25,33 +44,33 @@ interface WhiskyEntry {
 }
 
 const BATCH_CONFIGS: { category: string; region: string; country: string; count: number }[] = [
-  { category: "Single Malt", region: "Speyside", country: "Scotland", count: 250 },
-  { category: "Single Malt", region: "Highland", country: "Scotland", count: 200 },
+  { category: "Single Malt", region: "Speyside", country: "Scotland", count: 270 },
+  { category: "Single Malt", region: "Highland", country: "Scotland", count: 220 },
   { category: "Single Malt", region: "Islay", country: "Scotland", count: 120 },
   { category: "Single Malt", region: "Lowland", country: "Scotland", count: 50 },
   { category: "Single Malt", region: "Campbeltown", country: "Scotland", count: 30 },
-  { category: "Single Malt", region: "Islands", country: "Scotland", count: 80 },
+  { category: "Single Malt", region: "Islands", country: "Scotland", count: 85 },
   { category: "Blended Scotch", region: "Scotland", country: "Scotland", count: 100 },
   { category: "Blended Malt", region: "Scotland", country: "Scotland", count: 40 },
   { category: "Single Grain", region: "Scotland", country: "Scotland", count: 30 },
   { category: "Single Malt", region: "Ireland", country: "Ireland", count: 80 },
   { category: "Blended Irish", region: "Ireland", country: "Ireland", count: 40 },
   { category: "Single Pot Still", region: "Ireland", country: "Ireland", count: 30 },
-  { category: "Bourbon", region: "Kentucky", country: "USA", count: 150 },
+  { category: "Bourbon", region: "Kentucky", country: "USA", count: 160 },
   { category: "Tennessee Whiskey", region: "Tennessee", country: "USA", count: 30 },
   { category: "Rye Whiskey", region: "USA", country: "USA", count: 80 },
   { category: "American Single Malt", region: "USA", country: "USA", count: 30 },
   { category: "Single Malt", region: "Japan", country: "Japan", count: 100 },
   { category: "Blended Japanese", region: "Japan", country: "Japan", count: 40 },
-  { category: "Canadian Whisky", region: "Canada", country: "Canada", count: 40 },
-  { category: "Single Malt", region: "India", country: "India", count: 25 },
-  { category: "Single Malt", region: "Taiwan", country: "Taiwan", count: 20 },
-  { category: "Single Malt", region: "Australia", country: "Australia", count: 20 },
-  { category: "Single Malt", region: "Sweden", country: "Sweden", count: 15 },
-  { category: "Single Malt", region: "Germany", country: "Germany", count: 15 },
-  { category: "Single Malt", region: "France", country: "France", count: 15 },
-  { category: "Single Malt", region: "England", country: "England", count: 10 },
-  { category: "World Whisky", region: "Rest of World", country: "Various", count: 50 },
+  { category: "Canadian Whisky", region: "Canada", country: "Canada", count: 50 },
+  { category: "Single Malt", region: "India", country: "India", count: 35 },
+  { category: "Single Malt", region: "Taiwan", country: "Taiwan", count: 25 },
+  { category: "Single Malt", region: "Australia", country: "Australia", count: 25 },
+  { category: "Single Malt", region: "Sweden", country: "Sweden", count: 35 },
+  { category: "Single Malt", region: "Germany", country: "Germany", count: 35 },
+  { category: "Single Malt", region: "France", country: "France", count: 30 },
+  { category: "Single Malt", region: "England", country: "England", count: 30 },
+  { category: "World Whisky", region: "Rest of World", country: "Various", count: 25 },
 ];
 
 const ITEMS_PER_REQUEST = 50;
@@ -127,7 +146,7 @@ Rules:
     if (!entry.distillery || typeof entry.distillery !== "string") return false;
     if (typeof entry.abv === "string") {
       const abvNum = parseFloat(entry.abv);
-      if (!isNaN(abvNum) && (abvNum < 20 || abvNum > 80)) return false;
+      if (!isNaN(abvNum) && (abvNum < 35 || abvNum > 75)) return false;
     }
     return true;
   }) as WhiskyEntry[];
@@ -183,6 +202,7 @@ async function insertWhiskiesBatch(whiskies: WhiskyEntry[]): Promise<number> {
     distillery: w.distillery || null,
     region: w.region || null,
     country: w.country || null,
+    category: w.category || null,
     age: w.age || null,
     abv: w.abv || null,
     caskType: w.cask_type || null,
@@ -214,6 +234,8 @@ async function insertWhiskiesBatch(whiskies: WhiskyEntry[]): Promise<number> {
 async function main() {
   console.log("🥃 CaskSense Whisky Database Seeder");
   console.log("====================================\n");
+
+  await ensureSystemParticipant();
 
   const totalTarget = BATCH_CONFIGS.reduce((sum, b) => sum + b.count, 0);
   console.log(`Target: ~${totalTarget} whiskies across ${BATCH_CONFIGS.length} categories\n`);

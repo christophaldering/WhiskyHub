@@ -249,6 +249,7 @@ export const journalEntries = pgTable("journal_entries", {
   distillery: text("distillery"),
   region: text("region"),
   country: text("country"),
+  category: text("category"),
   age: text("age"),
   abv: text("abv"),
   caskType: text("cask_type"),

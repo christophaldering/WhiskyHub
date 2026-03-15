@@ -152,7 +152,7 @@ Includes historical reconciliation tools (`GET /api/admin/historical/reconciliat
 -   **html5-qrcode**: For camera-based QR/barcode scanning.
 -   **Replit Object Storage**: For image storage.
 -   **GPT-4o / gpt-image-1**: For AI functionalities and image generation.
--   **AI Whisky Database**: 1500+ curated whisky entries generated via GPT-4o-mini, stored in `journal_entries` with `source="casksense-database"` and `participantId="casksense-database-system"`. Covers 21 regions: Scotland (Speyside, Highland, Islay, Lowland, Campbeltown, Islands), Ireland, USA (Bourbon, Tennessee, Rye), Japan, Canada, India, Taiwan, Australia, Sweden, Germany, France, England, and more. Seeder script: `server/seed-whisky-db.ts` (run via `npx tsx server/seed-whisky-db.ts`, resumable/idempotent).
+-   **AI Whisky Database**: ~1,580 curated whisky entries generated via GPT-4o-mini, stored in `journal_entries` with `source="casksense-database"`, `category` field, and `participantId="casksense-database-system"` (dedicated system participant in `participants` table). Covers 21 regions: Scotland (Speyside, Highland, Islay, Lowland, Campbeltown, Islands), Ireland, USA (Bourbon, Tennessee, Rye), Japan, Canada, India, Taiwan, Australia, Sweden, Germany, France, England, and more. Seeder script: `server/seed-whisky-db.ts` (run via `npx tsx server/seed-whisky-db.ts`, resumable/idempotent). Explore endpoint (`/api/labs/explore/whiskies`) uses `getCuratedDatabaseEntries()` (source-filtered) instead of `getAllJournalEntries()` to avoid exposing private user journal data.
 -   **Recharts**: For data visualization.
 -   **jsPDF**: For PDF generation.
 -   **Framer Motion**: For animations.
