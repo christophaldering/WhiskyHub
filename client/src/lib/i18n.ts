@@ -257,6 +257,7 @@ const resources = {
       },
       explore: {
         sortAZ: "A\u2013Z",
+        sortZA: "Z\u2013A",
         sortRegion: "Region",
         sortCategory: "Category",
         sortAge: "Age",
@@ -6237,6 +6238,7 @@ const resources = {
       },
       explore: {
         sortAZ: "A\u2013Z",
+        sortZA: "Z\u2013A",
         sortRegion: "Region",
         sortCategory: "Kategorie",
         sortAge: "Alter",

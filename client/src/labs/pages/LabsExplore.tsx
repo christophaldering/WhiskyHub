@@ -7,7 +7,7 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
-type SortOption = "alphabetical" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
+type SortOption = "alphabetical" | "alphabetical_desc" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
 type ExploreTab = "bottles" | "drams" | "wishlist" | "all";
 type DramFilter = "all" | "solo" | "tasting";
 
@@ -85,17 +85,26 @@ export default function LabsExplore() {
     };
     switch (sortBy) {
       case "alphabetical": list.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")); break;
+      case "alphabetical_desc": list.sort((a: any, b: any) => (b.name || "").localeCompare(a.name || "")); break;
       case "region": list.sort((a: any, b: any) => (a.region || "zzz").localeCompare(b.region || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
       case "category": list.sort((a: any, b: any) => (a.category || "zzz").localeCompare(b.category || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
       case "age": list.sort((a: any, b: any) => parseNum(b.age) - parseNum(a.age) || (a.name || "").localeCompare(b.name || "")); break;
       case "abv": list.sort((a: any, b: any) => parseNum(b.abv) - parseNum(a.abv) || (a.name || "").localeCompare(b.name || "")); break;
       case "highest_rated":
-        list = list.filter((w: any) => w.avgOverall != null && w.avgOverall > 0);
-        list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || ""));
+        list.sort((a: any, b: any) => {
+          const aHas = a.avgOverall != null && a.avgOverall > 0 ? 1 : 0;
+          const bHas = b.avgOverall != null && b.avgOverall > 0 ? 1 : 0;
+          if (aHas !== bHas) return bHas - aHas;
+          return (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || "");
+        });
         break;
       case "most_rated":
-        list = list.filter((w: any) => w.ratingCount != null && w.ratingCount > 0);
-        list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || ""));
+        list.sort((a: any, b: any) => {
+          const aHas = a.ratingCount != null && a.ratingCount > 0 ? 1 : 0;
+          const bHas = b.ratingCount != null && b.ratingCount > 0 ? 1 : 0;
+          if (aHas !== bHas) return bHas - aHas;
+          return (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || "");
+        });
         break;
     }
     return list;
@@ -183,6 +192,7 @@ export default function LabsExplore() {
 
   const sortLabels: Record<SortOption, string> = {
     alphabetical: t("explore.sortAZ", "A\u2013Z"),
+    alphabetical_desc: t("explore.sortZA", "Z\u2013A"),
     region: t("explore.sortRegion", "Region"),
     category: t("explore.sortCategory", "Category"),
     age: t("explore.sortAge", "Age"),
@@ -358,7 +368,7 @@ export default function LabsExplore() {
                     overflowY: "auto",
                   }}
                 >
-                  {(["alphabetical", "region", "category", "age", "abv", "highest_rated", "most_rated"] as SortOption[]).map((opt) => (
+                  {(["alphabetical", "alphabetical_desc", "highest_rated", "most_rated", "region", "category", "age", "abv"] as SortOption[]).map((opt) => (
                     <button
                       key={opt}
                       className="w-full text-left px-4 py-2.5 text-sm transition-colors"
