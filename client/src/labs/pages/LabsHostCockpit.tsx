@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
-  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff,
+  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
@@ -101,6 +101,12 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
+  const [cockpitWizard, setCockpitWizard] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("labs-cockpit-wizard-mode") === "true";
+    }
+    return false;
+  });
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -176,7 +182,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     const texts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
     let cleanNotes = rawNotes;
     for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
-      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*(.*?)\\s*\\[\\/${d.toUpperCase()}\\]`, "s");
+      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*([\\s\\S]*?)\\s*\\[\\/${d.toUpperCase()}\\]`);
       const m = rawNotes.match(re);
       if (m) {
         cleanNotes = cleanNotes.replace(m[0], "");
@@ -192,7 +198,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         }
       }
     }
-    cleanNotes = cleanNotes.replace(/\[SCORES\].*?\[\/SCORES\]/s, "");
+    cleanNotes = cleanNotes.replace(/\[SCORES\][\s\S]*?\[\/SCORES\]/, "");
     return { chips, texts, cleanNotes: cleanNotes.trim() };
   }, []);
 
@@ -1097,12 +1103,35 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   <Star style={{ width: 12, height: 12 }} />
                   Host Rating
                 </span>
-                {saving && (
-                  <span style={{ fontSize: 10, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4, textTransform: "none" }}>
-                    <Loader2 style={{ width: 10, height: 10, animation: "spin 1s linear infinite" }} />
-                    Saving...
-                  </span>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !cockpitWizard;
+                      setCockpitWizard(next);
+                      localStorage.setItem("labs-cockpit-wizard-mode", String(next));
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "3px 8px", borderRadius: 6,
+                      border: "1px solid var(--labs-border)",
+                      background: cockpitWizard ? "var(--labs-accent-muted)" : "transparent",
+                      color: cockpitWizard ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                      textTransform: "none",
+                    }}
+                    data-testid="cockpit-wizard-toggle"
+                  >
+                    <Sliders style={{ width: 10, height: 10 }} />
+                    {cockpitWizard ? "Wizard" : "Compact"}
+                  </button>
+                  {saving && (
+                    <span style={{ fontSize: 10, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4, textTransform: "none" }}>
+                      <Loader2 style={{ width: 10, height: 10, animation: "spin 1s linear infinite" }} />
+                      Saving...
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
@@ -1156,7 +1185,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     scale={ratingScale}
                     showToggle={false}
                     defaultOpen={true}
-                    compact={true}
+                    compact={!cockpitWizard}
+                    wizard={cockpitWizard}
                   />
 
                   <textarea

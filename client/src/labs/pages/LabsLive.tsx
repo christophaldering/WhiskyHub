@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
+import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 
 const VOICE_MEMOS_ENABLED = false;
 
@@ -190,8 +191,6 @@ function GuidedStepView({
   const activeWhisky = allWhiskies[localIndex] ?? whisky;
   const viewingHostDram = localIndex === whiskyIndex;
 
-  const [activeDim, setActiveDim] = useState<Dimension>("nose");
-  const [flavorExpanded, setFlavorExpanded] = useState(false);
   const revealStep = viewingHostDram ? (tasting.guidedRevealStep ?? 0) : 999;
   const maxScore = tasting.ratingScale || 100;
 
@@ -216,13 +215,18 @@ function GuidedStepView({
   const isNameRevealed = revealedFields.has("name") || isFullyRevealed;
   const isBlindStep = tasting.blindMode && !isNameRevealed;
   const mid = Math.round(maxScore / 2);
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
 
-  const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+  const [dimScores, setDimScores] = useState<Record<DimKey, number>>({ nose: mid, taste: mid, finish: mid, balance: mid });
+  const [overall, setOverall] = useState(mid);
+  const [overrideActive, setOverrideActive] = useState(false);
+  const [chips, setChips] = useState<Record<DimKey, string[]>>({ ...emptyChips });
+  const [dimTexts, setDimTexts] = useState<Record<DimKey, string>>({ ...emptyTexts });
   const [notes, setNotes] = useState("");
   const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guidedCalibrationOpen, setGuidedCalibrationOpen] = useState(false);
-  const [overrideActive, setOverrideActive] = useState(false);
 
   const { data: guidedAllRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
@@ -241,19 +245,77 @@ function GuidedStepView({
     enabled: !!currentParticipant && !!activeWhisky,
   });
 
+  const parseSavedNotes = useCallback((rawNotes: string) => {
+    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    let cleanNotes = rawNotes;
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*([\\s\\S]*?)\\s*\\[\\/${d.toUpperCase()}\\]`);
+      const m = rawNotes.match(re);
+      if (m) {
+        cleanNotes = cleanNotes.replace(m[0], "");
+        const content = m[1].trim();
+        const parts = content.split(" — ");
+        if (parts.length >= 2) {
+          parsedChips[d] = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          parsedTexts[d] = parts.slice(1).join(" — ");
+        } else if (parts.length === 1) {
+          const maybeChips = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          if (maybeChips.every(c => c.length < 20)) parsedChips[d] = maybeChips;
+          else parsedTexts[d] = parts[0];
+        }
+      }
+    }
+    const flavorMarker = /\[(Nose|Taste|Finish)\]\s*([^\n]*)/gi;
+    let fm: RegExpExecArray | null;
+    while ((fm = flavorMarker.exec(cleanNotes)) !== null) {
+      const dim = fm[1].toLowerCase() as DimKey;
+      if (parsedChips[dim].length === 0) {
+        parsedChips[dim] = fm[2].split(",").map(s => s.trim()).filter(Boolean);
+      }
+    }
+    cleanNotes = cleanNotes.replace(/\[(Nose|Taste|Finish)\]\s*[^\n]*/gi, "");
+    cleanNotes = cleanNotes.replace(/\[SCORES\][\s\S]*?\[\/SCORES\]/, "");
+    cleanNotes = cleanNotes.replace(/\n{2,}/g, "\n").trim();
+    return { chips: parsedChips, texts: parsedTexts, cleanNotes };
+  }, []);
+
+  const buildScoresBlock = useCallback(() => {
+    const hasDimData = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+      (d) => chips[d].length > 0 || dimTexts[d].trim()
+    );
+    if (!hasDimData) return "";
+    const parts: string[] = [];
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const chipStr = chips[d].length > 0 ? chips[d].join(", ") : "";
+      const textStr = dimTexts[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.length > 0 ? "\n" + parts.join("\n") : "";
+  }, [chips, dimTexts]);
+
   useEffect(() => {
     if (myRating) {
+      const parsed = parseSavedNotes(myRating.notes || "");
       const n = myRating.nose ?? mid;
       const ta = myRating.taste ?? mid;
       const f = myRating.finish ?? mid;
       const b = myRating.balance ?? mid;
       const o = myRating.overall ?? mid;
-      setScores({ nose: n, taste: ta, finish: f, balance: b, overall: o });
-      setNotes(myRating.notes || "");
+      setDimScores({ nose: n, taste: ta, finish: f, balance: b });
+      setOverall(o);
+      setChips(parsed.chips);
+      setDimTexts(parsed.texts);
+      setNotes(parsed.cleanNotes);
       const auto = Math.round((n + ta + f + b) / 4);
       setOverrideActive(o !== auto);
     } else {
-      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+      setDimScores({ nose: mid, taste: mid, finish: mid, balance: mid });
+      setOverall(mid);
+      setChips({ ...emptyChips });
+      setDimTexts({ ...emptyTexts });
       setNotes("");
       setOverrideActive(false);
     }
@@ -291,56 +353,83 @@ function GuidedStepView({
   }, []);
 
   const debouncedSave = useCallback(
-    (newScores: typeof scores, newNotes: string) => {
+    (freshScores: Record<DimKey, number>, freshOverall: number, freshNotes: string) => {
       if (!currentParticipant || !activeWhisky || !tasting) return;
       if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const s = tastingStatusRef.current;
         if (s !== "open" && s !== "draft") return;
+        const scoresBlock = buildScoresBlock();
+        const combinedNotes = (freshNotes + scoresBlock).trim();
         rateMutation.mutate({
           tastingId,
           whiskyId: activeWhisky.id,
           participantId: currentParticipant.id,
-          ...newScores,
-          notes: newNotes,
+          ...freshScores,
+          overall: freshOverall,
+          notes: combinedNotes,
         });
       }, 800);
     },
-    [currentParticipant, activeWhisky, tasting, tastingId]
+    [currentParticipant, activeWhisky, tasting, tastingId, buildScoresBlock]
   );
 
-  const computeAutoOverall = (s: typeof scores) =>
+  const chipSaveRef = useRef(0);
+  useEffect(() => {
+    if (!activeWhisky) return;
+    chipSaveRef.current++;
+    const gen = chipSaveRef.current;
+    const timer = setTimeout(() => {
+      if (gen !== chipSaveRef.current) return;
+      debouncedSave(dimScores, overall, notes);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [chips, dimTexts]);
+
+  const computeAutoOverall = (s: Record<DimKey, number>) =>
     Math.round((s.nose + s.taste + s.finish + s.balance) / 4);
 
-  const updateScore = (dimension: keyof typeof scores, value: number) => {
-    const newScores = { ...scores, [dimension]: value };
+  const handleScoreChange = (dim: DimKey, value: number) => {
+    const newScores = { ...dimScores, [dim]: value };
+    setDimScores(newScores);
+    let newOverall = overall;
     if (!overrideActive) {
-      newScores.overall = computeAutoOverall(newScores);
+      newOverall = computeAutoOverall(newScores);
+      setOverall(newOverall);
     }
-    setScores(newScores);
-    debouncedSave(newScores, notes);
+    debouncedSave(newScores, newOverall, notes);
   };
 
-  const updateOverall = (value: number) => {
-    const auto = computeAutoOverall(scores);
+  const handleOverallChange = (value: number) => {
+    const auto = computeAutoOverall(dimScores);
     if (value !== auto) setOverrideActive(true);
-    const newScores = { ...scores, overall: value };
-    setScores(newScores);
-    debouncedSave(newScores, notes);
+    setOverall(value);
+    debouncedSave(dimScores, value, notes);
   };
 
   const resetOverride = () => {
     setOverrideActive(false);
-    const auto = computeAutoOverall(scores);
-    const newScores = { ...scores, overall: auto };
-    setScores(newScores);
-    debouncedSave(newScores, notes);
+    const auto = computeAutoOverall(dimScores);
+    setOverall(auto);
+    debouncedSave(dimScores, auto, notes);
+  };
+
+  const handleChipToggle = (dim: DimKey, chip: string) => {
+    setChips(prev => {
+      const current = prev[dim];
+      const next = current.includes(chip) ? current.filter(c => c !== chip) : [...current, chip];
+      return { ...prev, [dim]: next };
+    });
+  };
+
+  const handleTextChange = (dim: DimKey, text: string) => {
+    setDimTexts(prev => ({ ...prev, [dim]: text }));
   };
 
   const updateNotes = (value: string) => {
     setNotes(value);
-    debouncedSave(scores, value);
+    debouncedSave(dimScores, overall, value);
   };
 
   const REVEAL_FIELD_LABELS: Record<string, string> = {
@@ -496,87 +585,25 @@ function GuidedStepView({
 
       {canRate ? (
         <>
-          <div className="flex gap-2 mb-4 labs-fade-in labs-stagger-2">
-            {DIMENSIONS.map((dim) => {
-              const isActive = activeDim === dim;
-              return (
-                <button
-                  key={dim}
-                  className="flex-1 py-2 rounded-lg text-[13px] font-medium transition-all"
-                  style={{
-                    background: isActive ? "var(--labs-accent-muted)" : "transparent",
-                    color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                    border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                  onClick={() => { setActiveDim(dim); setFlavorExpanded(false); }}
-                  data-testid={`guided-dim-${dim}`}
-                >
-                  {dim.charAt(0).toUpperCase() + dim.slice(1)}
-                </button>
-              );
-            })}
+          <div className="labs-fade-in labs-stagger-2">
+            <LabsRatingPanel
+              scores={dimScores}
+              onScoreChange={handleScoreChange}
+              chips={chips}
+              onChipToggle={handleChipToggle}
+              texts={dimTexts}
+              onTextChange={handleTextChange}
+              overall={overall}
+              onOverallChange={handleOverallChange}
+              overallAuto={computeAutoOverall(dimScores)}
+              overrideActive={overrideActive}
+              onResetOverride={resetOverride}
+              scale={maxScore}
+              wizard={true}
+            />
           </div>
 
-          <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium capitalize" style={{ color: "var(--labs-text-secondary)" }}>
-                {activeDim}
-              </span>
-              <span
-                className="text-xl font-bold tabular-nums"
-                style={{ color: "var(--labs-accent)" }}
-                data-testid={`guided-score-${activeDim}`}
-              >
-                {scores[activeDim]}
-              </span>
-            </div>
-
-            <div className="relative mb-5">
-              <div className="labs-slider-track">
-                <div
-                  className="labs-slider-fill"
-                  style={{ width: `${(scores[activeDim] / maxScore) * 100}%` }}
-                />
-                <div
-                  className="labs-slider-thumb"
-                  style={{ left: `${(scores[activeDim] / maxScore) * 100}%` }}
-                />
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={maxScore}
-                value={scores[activeDim]}
-                onChange={(e) => updateScore(activeDim, Number(e.target.value))}
-                className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                style={{ height: 22, top: -8 }}
-                data-testid={`guided-slider-${activeDim}`}
-              />
-            </div>
-
-            <div className="flex justify-between text-[10px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-              <span>0</span>
-              <span>{Math.round(maxScore / 2)}</span>
-              <span>{maxScore}</span>
-            </div>
-
-            {(activeDim === "nose" || activeDim === "taste" || activeDim === "finish") && (
-              <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
-                <InlineFlavorTags
-                  notes={notes}
-                  onNotesChange={updateNotes}
-                  profileId={getEffectiveProfile(activeWhisky || {}, isBlindStep).profileId}
-                  phase={activeDim as "nose" | "taste" | "finish"}
-                  expanded={flavorExpanded}
-                  onToggle={() => setFlavorExpanded(!flavorExpanded)}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
+          <div className="labs-card p-5 mb-4 mt-4 labs-fade-in labs-stagger-3">
             <label
               className="text-xs font-medium mb-2 block"
               style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
@@ -586,7 +613,7 @@ function GuidedStepView({
             <textarea
               className="labs-input"
               rows={3}
-              placeholder={`Your ${activeDim} impressions…`}
+              placeholder="Your general impressions…"
               value={notes}
               onChange={(e) => updateNotes(e.target.value)}
               style={{ resize: "vertical" }}
@@ -609,100 +636,26 @@ function GuidedStepView({
             )}
           </div>
 
-          <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
-            <div className="labs-section-label" style={{ marginBottom: 16 }}>Score Summary</div>
-            <div className="space-y-3 mb-4">
-              {DIMENSIONS.map((dim) => (
-                <div key={dim} className="flex items-center gap-3">
-                  <span className="text-xs font-medium w-14 capitalize" style={{ color: "var(--labs-text-muted)" }}>
-                    {dim}
-                  </span>
-                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--labs-border)" }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${(scores[dim] / maxScore) * 100}%`,
-                        background: "var(--labs-accent)",
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="text-xs font-semibold tabular-nums w-8 text-right"
-                    style={{ color: "var(--labs-text-secondary)" }}
-                    data-testid={`guided-summary-${dim}`}
-                  >
-                    {scores[dim]}
-                  </span>
-                </div>
-              ))}
+          {saveError && (
+            <div
+              className="flex items-center gap-1.5 mb-3 text-xs"
+              style={{ color: "var(--labs-danger, #ef4444)" }}
+              data-testid="guided-save-error"
+            >
+              <AlertTriangle className="w-3 h-3" />
+              {saveError}
             </div>
-
-            <div className="labs-divider" style={{ margin: "16px 0" }} />
-
-            <div style={{ marginBottom: 4 }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
-                  Overall
-                  {overrideActive && (
-                    <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }}>
-                      Manual
-                    </span>
-                  )}
-                </span>
-                <span
-                  className="labs-h1 tabular-nums"
-                  style={{ color: "var(--labs-accent)" }}
-                  data-testid="guided-overall"
-                >
-                  {scores.overall}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={maxScore}
-                value={scores.overall}
-                onChange={(e) => updateOverall(Number(e.target.value))}
-                data-testid="guided-overall-slider"
-                style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: "pointer" }}
-              />
-              {overrideActive && (
-                <button
-                  type="button"
-                  onClick={resetOverride}
-                  data-testid="guided-reset-override"
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "var(--labs-accent)", fontSize: 11, fontWeight: 500,
-                    padding: "4px 0", fontFamily: "inherit", marginTop: 2,
-                  }}
-                >
-                  Reset to suggested ({computeAutoOverall(scores)})
-                </button>
-              )}
+          )}
+          {!saveError && rateMutation.isSuccess && (
+            <div
+              className="flex items-center gap-1.5 mb-3 text-xs"
+              style={{ color: "var(--labs-success)" }}
+              data-testid="guided-saved"
+            >
+              <Check className="w-3 h-3" />
+              Saved
             </div>
-
-            {saveError && (
-              <div
-                className="flex items-center gap-1.5 mt-3 text-xs"
-                style={{ color: "var(--labs-danger, #ef4444)" }}
-                data-testid="guided-save-error"
-              >
-                <AlertTriangle className="w-3 h-3" />
-                {saveError}
-              </div>
-            )}
-            {!saveError && rateMutation.isSuccess && (
-              <div
-                className="flex items-center gap-1.5 mt-3 text-xs"
-                style={{ color: "var(--labs-success)" }}
-                data-testid="guided-saved"
-              >
-                <Check className="w-3 h-3" />
-                Saved
-              </div>
-            )}
-          </div>
+          )}
 
           {allWhiskies.length > 1 && guidedMyRatings.length > 0 && (
             <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="guided-calibration-overview">
