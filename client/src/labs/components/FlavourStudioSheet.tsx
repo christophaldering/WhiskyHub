@@ -212,6 +212,12 @@ function findDescriptorHierarchy(termLower: string, isDE: boolean): DescriptorHi
   return null;
 }
 
+const GUIDE_CATEGORY_ICONS: Record<string, string> = {
+  fruity: "🍎", floral: "🌸", sweet: "🍯", spicy: "🌶️", woody: "🪵",
+  smoky: "🔥", malty: "🌾", maritime: "🌊", nutty: "🥜", herbal: "🌿",
+  earthy: "🍂", creamy: "🧈", mineral: "💎",
+};
+
 function GuidedView({
   selected, onToggle, isDE,
 }: {
@@ -367,27 +373,46 @@ function GuidedView({
                 }}>
                   {t("m2.rating.studioGuideSelected", "Your Selections")}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {selectedPaths.map((p) => (
-                    <button
-                      key={p.descriptorKey}
-                      onClick={() => onToggle(p.descriptorKey)}
-                      data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
-                      style={{
-                        fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                        background: `${p.categoryColor}18`, color: p.categoryColor,
-                        border: `1px solid ${p.categoryColor}44`, cursor: "pointer",
-                        display: "flex", alignItems: "center", gap: 4,
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      <span style={{ fontSize: 8, opacity: 0.7 }}>
-                        {p.subgroupLabel ? `${p.categoryLabel} › ${p.subgroupLabel}` : p.categoryLabel}
-                      </span>
-                      <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
-                      <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
-                    </button>
-                  ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {Array.from(selectedByCategory.entries()).map(([catId, paths]) => {
+                    const cat = FLAVOR_CATEGORIES.find((c) => c.id === catId);
+                    const color = cat?.color || "var(--labs-accent)";
+                    const catLabel = cat ? (isDE ? cat.de : cat.en) : catId;
+                    const icon = GUIDE_CATEGORY_ICONS[catId] || "";
+                    return (
+                      <div key={catId}>
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
+                          fontSize: 10, color, fontWeight: 600,
+                        }}>
+                          <span style={{ fontSize: 12 }}>{icon}</span>
+                          <span>{catLabel}</span>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
+                          {paths.map((p) => (
+                            <button
+                              key={p.descriptorKey}
+                              onClick={() => onToggle(p.descriptorKey)}
+                              data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
+                              style={{
+                                fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+                                background: `${color}18`, color,
+                                border: `1px solid ${color}44`, cursor: "pointer",
+                                display: "flex", alignItems: "center", gap: 4,
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {p.subgroupLabel && (
+                                <span style={{ fontSize: 8, opacity: 0.6 }}>{p.subgroupLabel} ›</span>
+                              )}
+                              <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
+                              <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -421,6 +446,9 @@ function GuidedView({
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
+                      <span style={{ fontSize: 16, lineHeight: 1 }}>
+                        {GUIDE_CATEGORY_ICONS[cat.id] || ""}
+                      </span>
                       <span className="labs-serif" style={{
                         fontSize: 13, fontWeight: 600, color: cat.color,
                       }}>
