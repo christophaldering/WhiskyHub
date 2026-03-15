@@ -868,6 +868,15 @@ function MobileCompanion({
 
   const [mobileEditTitle, setMobileEditTitle] = useState<string | null>(null);
   const mobileEditCancelled = useRef(false);
+  const [mobileWhiskyListOpen, setMobileWhiskyListOpen] = useState<boolean | null>(null);
+  const whiskyListInitRef = useRef(false);
+  useEffect(() => {
+    if (!whiskyListInitRef.current && whiskyCount > 0) {
+      whiskyListInitRef.current = true;
+      setMobileWhiskyListOpen(whiskyCount <= 3);
+    }
+  }, [whiskyCount]);
+  const whiskyListExpanded = mobileWhiskyListOpen ?? true;
   const [mobileWhiskyName, setMobileWhiskyName] = useState("");
   const [mobileShowAdd, setMobileShowAdd] = useState(isDraft && whiskyCount === 0);
   const [mobileAiImport, setMobileAiImport] = useState(false);
@@ -1117,9 +1126,11 @@ function MobileCompanion({
           <LabsSettingsPanel
             tasting={tasting}
             tastingId={tastingId}
-            pid={currentParticipant.id}
+            pid={currentParticipant.id as string}
             queryClient={queryClient}
             navigate={navigate}
+            whiskies={whiskies}
+            participants={participants}
           />
         </div>
       )}
@@ -1593,13 +1604,13 @@ function MobileCompanion({
 
         {isLive && (
           <button
-            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            className="labs-btn-ghost flex items-center justify-center gap-2 w-full"
             onClick={() => navigate(`/labs/live/${tastingId}`)}
-            style={{ background: `color-mix(in srgb, var(--labs-accent) 15%, transparent)`, color: "var(--labs-accent)" }}
+            style={{ color: "var(--labs-accent)", fontSize: 13 }}
             data-testid="mobile-rate-btn"
           >
             <Star className="w-4 h-4" />
-            Rate Whiskies
+            {t("m2.host.myRating", "My Rating")}
           </button>
         )}
       </div>
@@ -1608,8 +1619,20 @@ function MobileCompanion({
         const rv = tasting.blindMode && !tasting.guidedMode ? getRevealState(tasting, whiskyCount) : null;
         return (
           <div className="mt-4">
-            <p className="labs-section-label">Whiskies ({whiskyCount})</p>
-            <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setMobileWhiskyListOpen(!whiskyListExpanded)}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: 0, fontFamily: "inherit" }}
+              data-testid="toggle-whisky-list"
+            >
+              <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
+              <ChevronDown
+                className="w-4 h-4"
+                style={{ color: "var(--labs-text-muted)", transform: whiskyListExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+              />
+            </button>
+            {whiskyListExpanded && (
+            <div className="space-y-2 mt-2">
               {whiskies.map((w: any, i: number) => {
                 const isRevealed = !rv || i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps);
                 const isActive = rv && i === rv.revealIndex && rv.revealStep < rv.maxSteps;
@@ -1649,33 +1672,11 @@ function MobileCompanion({
                 );
               })}
             </div>
+            )}
           </div>
         );
       })()}
 
-      {pid && whiskies.length > 0 && (
-        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--labs-border, rgba(255,255,255,0.08))" }}>
-          <PrintMaterialsSection
-            tasting={tasting as Record<string, unknown>}
-            whiskies={whiskies as Array<Record<string, unknown>>}
-            participants={participants as Array<Record<string, unknown>>}
-            currentParticipant={{ id: pid, name: (currentParticipant as Record<string, unknown>)?.name || "Host" }}
-          />
-        </div>
-      )}
-
-      {pid && (
-        <div className="mt-6">
-          <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-            data-testid="mobile-paper-scan"
-          >
-            <ScanLine className="w-4 h-4" />
-            Paper Sheet Scanner
-          </button>
-        </div>
-      )}
 
       {pid && whiskies.length > 0 && (
         <div className="mt-6">
@@ -2969,12 +2970,16 @@ function LabsSettingsPanel({
   pid,
   queryClient,
   navigate,
+  whiskies,
+  participants,
 }: {
   tasting: Record<string, unknown>;
   tastingId: string;
   pid: string;
   queryClient: ReturnType<typeof useQueryClient>;
   navigate: (path: string) => void;
+  whiskies?: Array<Record<string, unknown>>;
+  participants?: Array<Record<string, unknown>>;
 }) {
   const [open, setOpen] = useState(false);
   const [ratingPrompt, setRatingPrompt] = useState((tasting.ratingPrompt as string) || "");
@@ -3473,6 +3478,28 @@ function LabsSettingsPanel({
               />
             )}
           </div>
+
+          {whiskies && whiskies.length > 0 && participants && (
+            <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
+              <p className="labs-section-label">Tools</p>
+              <div className="space-y-3">
+                <PrintMaterialsSection
+                  tasting={tasting}
+                  whiskies={whiskies}
+                  participants={participants}
+                  currentParticipant={{ id: pid, name: "Host" }}
+                />
+                <button
+                  className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+                  data-testid="settings-paper-scan"
+                >
+                  <ScanLine className="w-4 h-4" />
+                  Paper Sheet Scanner
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }} className="space-y-2">
             <button
