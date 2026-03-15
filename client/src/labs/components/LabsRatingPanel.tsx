@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Mic, Plus, Lock, Sparkles } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
+import FlavourStudioSheet from "./FlavourStudioSheet";
 
 export type DimKey = "nose" | "taste" | "finish" | "balance";
 
@@ -103,6 +104,7 @@ export default function LabsRatingPanel({
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
   const prevSliderVals = useRef<Record<string, number>>({});
+  const [studioOpen, setStudioOpen] = useState(false);
 
   const totalWizardSteps = 5;
   const isWizardOverallStep = wizardStep === 4;
@@ -279,36 +281,73 @@ export default function LabsRatingPanel({
     );
   };
 
+  const handleStudioChipsChange = useCallback((newChips: string[]) => {
+    const currentChips = chips[activeTab] || [];
+    const currentSet = new Set(currentChips.map((c) => c.toLowerCase()));
+    const newSet = new Set(newChips.map((c) => c.toLowerCase()));
+    for (const chip of currentChips) {
+      if (!newSet.has(chip.toLowerCase())) {
+        onChipToggle(activeTab, chip);
+      }
+    }
+    for (const chip of newChips) {
+      if (!currentSet.has(chip.toLowerCase())) {
+        onChipToggle(activeTab, chip);
+      }
+    }
+  }, [activeTab, chips, onChipToggle]);
+
   const renderFlavorCategories = () => {
     const categories: FlavorCategory[] = FLAVOR_CATEGORIES;
     return (
       <div style={{ marginBottom: compact ? 8 : 14 }}>
-        <button
-          type="button"
-          onClick={() => {
-            if (disabled) return;
-            setShowFlavors((prev) => !prev);
-            if (showFlavors) setExpandedCats({});
-          }}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: "none", border: "none", cursor: disabled ? "default" : "pointer",
-            color: "var(--labs-text-muted)", fontSize: 12, fontFamily: "inherit",
-            opacity: disabled ? 0.5 : 1,
-            padding: "4px 0", marginBottom: 6,
-          }}
-          data-testid="button-toggle-flavors"
-        >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            {showFlavors ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
-            {t("m2.rating.addFlavors", "Add flavors")}
-          </span>
-          {activeChips.length > 0 && (
-            <span style={{ fontSize: 10, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>
-              {activeChips.length}
-            </span>
-          )}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (disabled) return;
+              setStudioOpen(true);
+              triggerHaptic("light");
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "linear-gradient(135deg, var(--labs-accent-muted), transparent)",
+              border: "1px solid var(--labs-accent-muted)",
+              borderRadius: 10, cursor: disabled ? "default" : "pointer",
+              color: "var(--labs-accent)", fontSize: 12, fontFamily: "inherit",
+              fontWeight: 600, opacity: disabled ? 0.5 : 1,
+              padding: "8px 14px",
+              transition: "all 0.2s ease",
+            }}
+            data-testid="button-open-flavour-studio"
+          >
+            <Sparkles style={{ width: 14, height: 14 }} />
+            {t("m2.rating.flavourStudio", "Flavour Studio")}
+            {activeChips.length > 0 && (
+              <span style={{ fontSize: 10, background: "var(--labs-accent)", color: "var(--labs-bg)", padding: "1px 7px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
+                {activeChips.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (disabled) return;
+              setShowFlavors((prev) => !prev);
+              if (showFlavors) setExpandedCats({});
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "none", border: "none", cursor: disabled ? "default" : "pointer",
+              color: "var(--labs-text-muted)", fontSize: 11, fontFamily: "inherit",
+              opacity: disabled ? 0.5 : 1, padding: "4px 0",
+            }}
+            data-testid="button-toggle-flavors"
+          >
+            {showFlavors ? <ChevronUp style={{ width: 13, height: 13 }} /> : <ChevronDown style={{ width: 13, height: 13 }} />}
+            {t("m2.rating.quickList", "List")}
+          </button>
+        </div>
 
         {activeChips.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }} data-testid={`selected-chips-${activeTab}`}>
@@ -999,6 +1038,15 @@ export default function LabsRatingPanel({
         </div>
       )}
       {renderOverall()}
+
+      <FlavourStudioSheet
+        open={studioOpen}
+        onOpenChange={setStudioOpen}
+        dimension={activeTab}
+        existingChips={activeChips}
+        onChipsChange={handleStudioChipsChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

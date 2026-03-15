@@ -12283,6 +12283,86 @@ Rules:
     }
   });
 
+  app.post("/api/labs/flavour-assist", async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        description: z.string().max(500).optional(),
+        referenceWhisky: z.string().max(200).optional(),
+        section: z.enum(["nose", "palate", "finish"]).optional().default("nose"),
+        language: z.enum(["en", "de"]).optional().default("en"),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid request body", errors: parsed.error.flatten() });
+      }
+      const { description, referenceWhisky, section } = parsed.data;
+
+      const flavorTerms = [
+        "Apple", "Pear", "Citrus", "Berry", "Tropical", "Dried Fruit",
+        "Rose", "Lavender", "Heather", "Elderflower", "Jasmine",
+        "Honey", "Vanilla", "Caramel", "Toffee", "Chocolate", "Marzipan", "Brown Sugar",
+        "Cinnamon", "Pepper", "Ginger", "Clove", "Nutmeg", "Anise",
+        "Oak", "Cedar", "Sandalwood", "Pine", "Sawdust",
+        "Peat", "Campfire", "Charcoal", "Ash", "Tar", "BBQ",
+        "Cereal", "Biscuit", "Bread", "Toast", "Oatmeal",
+        "Sea Salt", "Brine", "Iodine", "Seaweed", "Oyster",
+        "Walnut", "Hazelnut", "Coconut", "Almond", "Pecan",
+        "Mint", "Eucalyptus", "Grass", "Tea", "Thyme",
+        "Leather", "Tobacco", "Mushroom", "Moss", "Soil",
+        "Butter", "Cream", "Custard", "Milk Chocolate", "Yoghurt",
+        "Flint", "Chalk", "Sulfur", "Iron", "Slate",
+        "Smoke", "Espresso", "Dark chocolate", "Maritime salt",
+        "Orchard fruit", "Vanilla cream", "Barley sugar",
+        "Raisins", "Christmas cake", "Orange peel", "Fig",
+        "Corn sweetness", "Charred oak", "Maple syrup",
+        "Stone fruit", "Beeswax", "Ginger cake",
+        "White flowers", "Green tea", "Incense", "Melon",
+      ];
+
+      let prompt: string;
+      if (referenceWhisky) {
+        prompt = `Given the whisky "${referenceWhisky}", list 8-12 typical tasting terms for the ${section || "nose"} that someone would likely detect. Choose from or similar to: ${flavorTerms.join(", ")}. Return ONLY a JSON array of strings, nothing else.`;
+      } else if (description) {
+        prompt = `A whisky taster describes what they ${section === "palate" ? "taste" : section === "finish" ? "experience in the finish" : "smell"}: "${description}". Map this to 6-10 specific tasting terms. Choose from or similar to: ${flavorTerms.join(", ")}. Return ONLY a JSON array of strings, nothing else.`;
+      } else {
+        return res.json({ terms: [] });
+      }
+
+      try {
+        const openai = new OpenAI({
+          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a whisky flavour expert. Return ONLY valid JSON arrays of flavour term strings." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 300,
+        });
+
+        const content = completion.choices[0]?.message?.content?.trim() || "[]";
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const terms: string[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        res.json({ terms: terms.filter((t: unknown) => typeof t === "string").slice(0, 12) });
+      } catch (aiErr: any) {
+        console.error("AI flavour-assist error, falling back to keyword matching:", aiErr.message);
+        const lower = (description || referenceWhisky || "").toLowerCase();
+        const matched = flavorTerms.filter((t) => {
+          const tLower = t.toLowerCase();
+          return lower.includes(tLower) || tLower.split(" ").some((w) => lower.includes(w));
+        });
+        res.json({ terms: matched.slice(0, 10) });
+      }
+    } catch (e: any) {
+      console.error("Flavour assist error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/labs/explore/whiskies", async (req, res) => {
     try {
       const search = (req.query.search as string || "").toLowerCase().trim();

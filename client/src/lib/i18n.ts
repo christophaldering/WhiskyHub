@@ -4892,6 +4892,8 @@ const resources = {
           overallAuto: "Auto-calculated from average. Slide to override.",
           describePlaceholder: "Describe the {{dim}}...",
           addFlavors: "Add flavors",
+          flavourStudio: "Flavour Studio",
+          quickList: "List",
           customDescriptor: "Custom descriptor...",
         },
         error: {
@@ -10808,6 +10810,8 @@ const resources = {
           overallAuto: "Automatisch berechnet. Schieben zum Überschreiben.",
           describePlaceholder: "Beschreibe {{dim}}...",
           addFlavors: "Aromen hinzufügen",
+          flavourStudio: "Flavour Studio",
+          quickList: "Liste",
           customDescriptor: "Eigener Deskriptor...",
         },
         error: {
