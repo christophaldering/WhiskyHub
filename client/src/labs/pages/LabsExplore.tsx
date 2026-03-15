@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
-type SortOption = "avg_score" | "most_rated" | "alphabetical";
+type SortOption = "alphabetical" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
 type ExploreTab = "bottles" | "drams" | "wishlist" | "all";
 type DramFilter = "all" | "solo" | "tasting";
 
@@ -18,7 +18,8 @@ export default function LabsExplore() {
   const [activeTab, setActiveTab] = useState<ExploreTab>(pid ? "bottles" : "all");
   const [searchText, setSearchText] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>("most_rated");
+  const [sortBy, setSortBy] = useState<SortOption>("alphabetical");
+  const [displayLimit, setDisplayLimit] = useState(50);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortBtnRef = useRef<HTMLButtonElement>(null);
   const [dramFilter, setDramFilter] = useState<DramFilter>("all");
@@ -63,13 +64,26 @@ export default function LabsExplore() {
   const sortedWhiskies = useMemo(() => {
     if (activeTab !== "all" || !whiskies || !Array.isArray(whiskies)) return [];
     const list = [...whiskies];
+    const parseNum = (v: string | null | undefined): number => {
+      if (!v) return 0;
+      const n = parseFloat(v.replace(/[^0-9.]/g, ""));
+      return isNaN(n) ? 0 : n;
+    };
     switch (sortBy) {
-      case "avg_score": list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0)); break;
-      case "most_rated": list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0)); break;
       case "alphabetical": list.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")); break;
+      case "region": list.sort((a: any, b: any) => (a.region || "zzz").localeCompare(b.region || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
+      case "category": list.sort((a: any, b: any) => (a.category || "zzz").localeCompare(b.category || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
+      case "age": list.sort((a: any, b: any) => parseNum(b.age) - parseNum(a.age) || (a.name || "").localeCompare(b.name || "")); break;
+      case "abv": list.sort((a: any, b: any) => parseNum(b.abv) - parseNum(a.abv) || (a.name || "").localeCompare(b.name || "")); break;
+      case "highest_rated": list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || "")); break;
+      case "most_rated": list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || "")); break;
     }
     return list;
   }, [whiskies, sortBy, activeTab]);
+
+  const visibleWhiskies = useMemo(() => sortedWhiskies.slice(0, displayLimit), [sortedWhiskies, displayLimit]);
+
+  useEffect(() => { setDisplayLimit(50); }, [sortBy, searchText, selectedRegion]);
 
   const filteredCollection = useMemo(() => {
     if (!collectionItems || !Array.isArray(collectionItems)) return [];
@@ -148,9 +162,13 @@ export default function LabsExplore() {
   const isLoading = activeTab === "all" ? isLoadingAll : activeTab === "bottles" ? isLoadingCollection : activeTab === "wishlist" ? isLoadingWishlist : (isLoadingJournal || isLoadingHistory);
 
   const sortLabels: Record<SortOption, string> = {
-    avg_score: "Avg Score",
-    most_rated: "Most Rated",
-    alphabetical: "A\u2013Z",
+    alphabetical: t("explore.sortAZ", "A\u2013Z"),
+    region: t("explore.sortRegion", "Region"),
+    category: t("explore.sortCategory", "Category"),
+    age: t("explore.sortAge", "Age"),
+    abv: t("explore.sortAbv", "ABV"),
+    highest_rated: t("explore.sortHighestRated", "Highest Rated"),
+    most_rated: t("explore.sortMostRated", "Most Rated"),
   };
 
   const tabs: { key: ExploreTab; label: string; icon: any }[] = pid
@@ -284,8 +302,10 @@ export default function LabsExplore() {
 
       {activeTab === "all" && (
         <div className="flex items-center justify-between mb-4 labs-fade-in labs-stagger-2">
-          <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-            {sortedWhiskies.length} {sortedWhiskies.length === 1 ? "whisky" : "whiskies"}
+          <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-explore-count">
+            {displayLimit < sortedWhiskies.length
+              ? `${visibleWhiskies.length} / ${sortedWhiskies.length} ${sortedWhiskies.length === 1 ? "whisky" : "whiskies"}`
+              : `${sortedWhiskies.length} ${sortedWhiskies.length === 1 ? "whisky" : "whiskies"}`}
           </p>
           <div style={{ position: "relative" }}>
             <button
@@ -301,7 +321,7 @@ export default function LabsExplore() {
               <>
                 <div className="fixed inset-0" style={{ zIndex: "var(--z-overlay)" }} onClick={() => setShowSortMenu(false)} data-testid="labs-explore-sort-overlay" />
                 <div
-                  className="py-1 min-w-[140px]"
+                  className="py-1 min-w-[160px]"
                   style={{
                     position: "fixed",
                     right: 20,
@@ -314,9 +334,11 @@ export default function LabsExplore() {
                     border: "1px solid var(--labs-border)",
                     borderRadius: "var(--labs-radius-sm)",
                     boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                    maxHeight: "60vh",
+                    overflowY: "auto",
                   }}
                 >
-                  {(["avg_score", "most_rated", "alphabetical"] as SortOption[]).map((opt) => (
+                  {(["alphabetical", "region", "category", "age", "abv", "highest_rated", "most_rated"] as SortOption[]).map((opt) => (
                     <button
                       key={opt}
                       className="w-full text-left px-4 py-2.5 text-sm transition-colors"
@@ -356,7 +378,7 @@ export default function LabsExplore() {
           )}
           {sortedWhiskies.length > 0 && (
             <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-              {sortedWhiskies.map((w: any) => (
+              {visibleWhiskies.map((w: any) => (
                 <div
                   key={w.id}
                   className="labs-list-row"
@@ -370,12 +392,23 @@ export default function LabsExplore() {
                     <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {w.name}
                     </p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
                       {w.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{w.distillery}</span>}
                       {w.region && (
                         <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
                           {w.region}
                         </span>
+                      )}
+                      {(sortBy === "category" && w.category) && (
+                        <span style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4 }}>
+                          {w.category}
+                        </span>
+                      )}
+                      {(sortBy === "age" && w.age) && (
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.age) ? `${w.age}y` : w.age}</span>
+                      )}
+                      {(sortBy === "abv" && w.abv) && (
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{/\d$/.test(w.abv) ? `${w.abv}%` : w.abv}</span>
                       )}
                     </div>
                   </div>
@@ -394,6 +427,16 @@ export default function LabsExplore() {
                 </div>
               ))}
             </div>
+            {displayLimit < sortedWhiskies.length && (
+              <button
+                onClick={() => setDisplayLimit(prev => prev + 50)}
+                className="labs-btn-secondary w-full mt-4"
+                style={{ padding: "12px", fontSize: 13 }}
+                data-testid="labs-explore-load-more"
+              >
+                {t("explore.loadMore", "Show more")} ({sortedWhiskies.length - displayLimit} {t("explore.remaining", "remaining")})
+              </button>
+            )}
           )}
         </>
       )}
