@@ -2022,7 +2022,7 @@ function CustomRevealEditor({ steps, onChange }: {
 }
 
 function LabsSegmentedSelect({ value, options, onChange }: {
-  value: string | number; options: { value: string | number; label: string; desc?: string }[];
+  value: string | number; options: { value: string | number; label: string; desc?: string; disabled?: boolean }[];
   onChange: (v: any) => void;
 }) {
   const cols = options.length <= 4 ? options.length : options.length <= 6 ? 3 : 4;
@@ -2030,21 +2030,24 @@ function LabsSegmentedSelect({ value, options, onChange }: {
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
       {options.map((opt) => {
         const active = value === opt.value;
+        const isDisabled = !!opt.disabled;
         return (
           <button
             key={String(opt.value)}
             type="button"
-            onClick={() => onChange(opt.value)}
+            onClick={() => !isDisabled && onChange(opt.value)}
             className="rounded-lg transition-all text-center"
             style={{
               padding: "10px 4px",
-              background: active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-              border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
-              cursor: "pointer",
+              background: isDisabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+              border: `1.5px solid ${isDisabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+              cursor: isDisabled ? "not-allowed" : "pointer",
+              opacity: isDisabled ? 0.4 : 1,
             }}
+            disabled={isDisabled}
             data-testid={`labs-opt-${opt.value}`}
           >
-            <div className="font-bold" style={{ fontSize: 16, color: active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+            <div className="font-bold" style={{ fontSize: 16, color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
             {opt.desc && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
           </button>
         );
@@ -2293,7 +2296,12 @@ function CreateTastingForm() {
             <div style={{ padding: "0 16px 16px" }} className="space-y-5">
               <LabsToggle
                 checked={guidedMode}
-                onChange={setGuidedMode}
+                onChange={(v: boolean) => {
+                  setGuidedMode(v);
+                  if (v && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
                 icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
                 label="Host Controls the Pace"
                 description="Guide all guests through each dram together"
@@ -2329,7 +2337,7 @@ function CreateTastingForm() {
                 <LabsSegmentedSelect
                   value={sessionUiMode}
                   options={[
-                    { value: "flow", label: "Free Tasting", desc: "Explore all drams freely" },
+                    { value: "flow", label: "Free Tasting", desc: guidedMode ? "Not available with Host Controls" : "Explore all drams freely", disabled: guidedMode },
                     { value: "focus", label: "One at a Time", desc: "Focus on one dram" },
                     { value: "journal", label: "Tasting Journal", desc: "Step-by-step guided notes" },
                   ]}
@@ -3242,7 +3250,14 @@ function LabsSettingsPanel({
 
           <LabsToggle
             checked={!!tasting.guidedMode}
-            onChange={() => handleToggle("guidedMode", !!tasting.guidedMode)}
+            onChange={async () => {
+              const newGuided = !tasting.guidedMode;
+              const patch: Record<string, unknown> = { guidedMode: newGuided };
+              if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                patch.sessionUiMode = "focus";
+              }
+              try { await patchDetails(patch); } catch {}
+            }}
             icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
             label="Host Controls the Pace"
             description="Guide all guests through each dram"
@@ -3257,7 +3272,7 @@ function LabsSettingsPanel({
             <LabsSegmentedSelect
               value={(tasting.sessionUiMode as string) || "flow"}
               options={[
-                { value: "flow", label: "Free", desc: "Explore freely" },
+                { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
                 { value: "focus", label: "One at a Time", desc: "Focus mode" },
                 { value: "journal", label: "Journal", desc: "Guided notes" },
               ]}
@@ -3292,6 +3307,11 @@ function LabsSettingsPanel({
             description="Guests see how whiskies rank"
             testId="labs-settings-toggle-ranking"
           />
+          {tasting.blindMode && tasting.showRanking && (
+            <p className="text-xs mt-1 px-1" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid="blind-ranking-hint">
+              Ranking wird Gästen erst nach dem Reveal angezeigt
+            </p>
+          )}
 
           <LabsToggle
             checked={!!tasting.showGroupAvg}
