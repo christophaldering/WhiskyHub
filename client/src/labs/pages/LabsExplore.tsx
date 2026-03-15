@@ -15,8 +15,14 @@ export default function LabsExplore() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const pid = getParticipantId();
-  const [activeTab, setActiveTab] = useState<ExploreTab>(pid ? "bottles" : "all");
-  const [searchText, setSearchText] = useState("");
+  const initialQuery = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("q") || "";
+    } catch { return ""; }
+  }, []);
+  const [activeTab, setActiveTab] = useState<ExploreTab>(initialQuery ? "all" : (pid ? "bottles" : "all"));
+  const [searchText, setSearchText] = useState(initialQuery);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("alphabetical");
   const [displayLimit, setDisplayLimit] = useState(50);

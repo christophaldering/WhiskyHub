@@ -222,6 +222,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const abortRef = useRef<AbortController | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const isDe = lang === "de";
@@ -237,6 +238,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       document.body.style.overflow = "hidden";
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
+      window.history.pushState({ labsSearch: true }, "");
     } else {
       document.body.style.overflow = "";
     }
@@ -246,6 +248,15 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [open, onClose]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
@@ -424,6 +435,25 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     triggerHaptic("light");
   }, []);
 
+  const handleClearAllRecent = useCallback(() => {
+    try { localStorage.removeItem(RECENT_KEY); } catch {}
+    setRecentSearches([]);
+    triggerHaptic("light");
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartY.current = null;
+    if (deltaY > 100) {
+      handleClose();
+    }
+  }, [handleClose]);
+
   const hasQuery = debouncedQuery.length >= 2;
   const hasResults = allResults.some((g) => g.results.length > 0);
   const isSearching = hasQuery && whiskyLoading;
@@ -432,6 +462,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   return (
     <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       style={{
         position: "fixed",
         inset: 0,
@@ -573,16 +605,45 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           <div style={{ marginBottom: 24, animation: "labsFadeIn 300ms cubic-bezier(0.2, 0.8, 0.4, 1) both" }}>
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                color: "var(--labs-text-muted)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
                 marginBottom: 10,
                 paddingLeft: 4,
+                paddingRight: 4,
               }}
             >
-              {t("search.recent", isDe ? "Letzte Suchen" : "Recent")}
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "var(--labs-text-muted)",
+                }}
+              >
+                {t("search.recent", isDe ? "Letzte Suchen" : "Recent")}
+              </span>
+              <button
+                onClick={handleClearAllRecent}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--labs-accent)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  fontFamily: "inherit",
+                  minHeight: 44,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                data-testid="button-clear-all-recent"
+              >
+                {t("search.clearAll", isDe ? "Alle löschen" : "Clear all")}
+              </button>
             </div>
             {recentSearches.map((q, i) => (
               <div

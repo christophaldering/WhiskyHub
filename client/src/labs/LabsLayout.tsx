@@ -285,8 +285,10 @@ function LabsNotificationBell() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-center w-9 h-9 rounded-full transition-all relative"
+        className="flex items-center justify-center rounded-full transition-all relative"
         style={{
+          width: 44,
+          height: 44,
           background: "var(--labs-surface-elevated)",
           border: "1px solid var(--labs-border)",
           color: "var(--labs-text-secondary)",
