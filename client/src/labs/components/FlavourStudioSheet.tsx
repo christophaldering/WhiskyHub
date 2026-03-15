@@ -493,7 +493,7 @@ function GuidedView({
                         {GUIDE_CATEGORY_ICONS[cat.id] || ""}
                       </span>
                       <span className="labs-serif" style={{
-                        fontSize: 13, fontWeight: 600, color: cat.color,
+                        fontSize: 13, fontWeight: 600, color: count > 0 ? "#f5f0e8" : cat.color,
                       }}>
                         {isDE ? cat.de : cat.en}
                       </span>
@@ -554,11 +554,11 @@ function GuidedView({
                     >
                       <div>
                         <div className="labs-serif" style={{
-                          fontSize: 14, fontWeight: 600, color: navCategory.color,
+                          fontSize: 14, fontWeight: 600, color: sgCount > 0 ? "#f5f0e8" : navCategory.color,
                         }}>
                           {isDE ? sg.de : sg.en}
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                        <div style={{ fontSize: 10, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-muted)", marginTop: 2, opacity: sgCount > 0 ? 0.8 : 1 }}>
                           {sg.descriptors.map((d) => isDE ? d.de : d.en).join(", ")}
                         </div>
                       </div>
@@ -931,8 +931,8 @@ function CompactCompass({
           const color = selectedCat ? CATEGORY_COLORS[selectedCat] : "var(--labs-accent)";
           return (
             <g key={chip.term} onClick={(e) => { e.stopPropagation(); onToggle(chip.term); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
-              <rect x={chip.x - 22} y={chip.y - 7} width={44} height={14} rx={7} fill={isS ? color : "var(--labs-surface)"} fillOpacity={isS ? 0.35 : 0.85} stroke={color} strokeWidth={isS ? 1.2 : 0.5} strokeOpacity={isS ? 0.8 : 0.3} style={{ transition: "all 0.3s ease" }} />
-              <text x={chip.x} y={chip.y + 1} textAnchor="middle" dominantBaseline="middle" fill={isS ? color : "var(--labs-text)"} fontSize={6} fontWeight={isS ? 700 : 400} style={{ pointerEvents: "none" }}>
+              <rect x={chip.x - 22} y={chip.y - 7} width={44} height={14} rx={7} fill={isS ? color : "var(--labs-surface)"} fillOpacity={isS ? 0.5 : 0.85} stroke={color} strokeWidth={isS ? 1.2 : 0.5} strokeOpacity={isS ? 0.8 : 0.3} style={{ transition: "all 0.3s ease" }} />
+              <text x={chip.x} y={chip.y + 1} textAnchor="middle" dominantBaseline="middle" fill={isS ? "#f5f0e8" : "var(--labs-text)"} fontSize={6} fontWeight={isS ? 700 : 400} style={{ pointerEvents: "none" }}>
                 {chip.term.length > 8 ? chip.term.slice(0, 7) + "…" : chip.term}
               </text>
             </g>
@@ -1550,7 +1550,7 @@ function JourneyView({
               <div style={{ fontSize: 32, marginBottom: 8 }}>
                 {GUIDE_ICONS[currentSweepCat.id] || ""}
               </div>
-              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: currentSweepCat.color, marginBottom: 4 }}>
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "#f5f0e8", textShadow: `0 1px 8px ${currentSweepCat.color}88`, marginBottom: 4 }}>
                 {isDE ? currentSweepCat.de : currentSweepCat.en}
               </div>
               <div style={{ fontSize: 12, color: "var(--labs-text)", opacity: 0.8, marginBottom: 10 }}>
@@ -1664,16 +1664,16 @@ function JourneyView({
           }}>
             <span style={{ fontSize: 20 }}>{GUIDE_ICONS[currentDrillCat.id] || ""}</span>
             <div>
-              <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: currentDrillCat.color }}>
+              <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
                 {isDE ? currentDrillCat.de : currentDrillCat.en}
               </div>
               {isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", fontStyle: "italic" }}>
+                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7, fontStyle: "italic" }}>
                   {t("m2.rating.journeyMaybePrompt", "You weren't sure — tap any notes you might detect")}
                 </div>
               )}
               {!isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7 }}>
                   {t("m2.rating.journeyDrillPrompt", "Which specific notes stand out?")}
                 </div>
               )}
@@ -1685,7 +1685,7 @@ function JourneyView({
               {currentDrillCat.subgroups.map((sg) => (
                 <div key={sg.id}>
                   <div style={{
-                    fontSize: 10, fontWeight: 600, color: currentDrillCat.color,
+                    fontSize: 10, fontWeight: 600, color: "var(--labs-text)", opacity: 0.8,
                     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
                   }}>
                     {isDE ? sg.de : sg.en}
