@@ -13,16 +13,24 @@ type DramFilter = "all" | "solo" | "tasting";
 
 export default function LabsExplore() {
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const pid = getParticipantId();
-  const initialQuery = useMemo(() => {
+  const getQueryParam = () => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("q") || "";
+      return new URLSearchParams(window.location.search).get("q") || "";
     } catch { return ""; }
-  }, []);
+  };
+  const initialQuery = getQueryParam();
   const [activeTab, setActiveTab] = useState<ExploreTab>(initialQuery ? "all" : (pid ? "bottles" : "all"));
   const [searchText, setSearchText] = useState(initialQuery);
+
+  useEffect(() => {
+    const q = getQueryParam();
+    if (q && q !== searchText) {
+      setSearchText(q);
+      setActiveTab("all");
+    }
+  }, [location]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("alphabetical");
   const [displayLimit, setDisplayLimit] = useState(50);
