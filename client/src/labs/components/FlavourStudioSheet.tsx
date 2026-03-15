@@ -259,17 +259,17 @@ function GuidedView({
     triggerHaptic("light");
   }, []);
 
-  const countSelectedInCategory = useCallback((cat: FlavorCategory): number => {
-    return cat.subcategories.filter((sub) =>
-      selected.has(sub.en.toLowerCase())
-    ).length;
+  const isTermSelected = useCallback((desc: { en: string; de: string }): boolean => {
+    return selected.has(desc.en.toLowerCase()) || selected.has(desc.de.toLowerCase());
   }, [selected]);
 
+  const countSelectedInCategory = useCallback((cat: FlavorCategory): number => {
+    return cat.subcategories.filter((sub) => isTermSelected(sub)).length;
+  }, [isTermSelected]);
+
   const countSelectedInSubgroup = useCallback((sg: FlavorSubGroup): number => {
-    return sg.descriptors.filter((d) =>
-      selected.has(d.en.toLowerCase())
-    ).length;
-  }, [selected]);
+    return sg.descriptors.filter((d) => isTermSelected(d)).length;
+  }, [isTermSelected]);
 
   const breadcrumbs = useMemo((): GuidedBreadcrumb[] => {
     const crumbs: GuidedBreadcrumb[] = [
@@ -546,7 +546,7 @@ function GuidedView({
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {navCategory.subcategories.map((desc, i) => {
-                      const isS = selected.has(desc.en.toLowerCase());
+                      const isS = isTermSelected(desc);
                       return (
                         <button
                           key={desc.id}
@@ -573,7 +573,7 @@ function GuidedView({
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {navCategory.subcategories.map((desc, i) => {
-                  const isS = selected.has(desc.en.toLowerCase());
+                  const isS = isTermSelected(desc);
                   return (
                     <button
                       key={desc.id}
@@ -603,7 +603,7 @@ function GuidedView({
           <div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {navSubgroup.descriptors.map((desc, i) => {
-                const isS = selected.has(desc.en.toLowerCase());
+                const isS = isTermSelected(desc);
                 return (
                   <button
                     key={desc.id}
