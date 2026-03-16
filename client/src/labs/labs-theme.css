@@ -1,10 +1,10 @@
 .labs-shell {
   --labs-bg: #1a1714;
-  --labs-surface: #2e2621;
-  --labs-surface-hover: #362e27;
-  --labs-surface-elevated: #3d342c;
-  --labs-border: #4a4038;
-  --labs-border-subtle: #3a322b;
+  --labs-surface: #382f28;
+  --labs-surface-hover: #443a31;
+  --labs-surface-elevated: #504539;
+  --labs-border: #6b5f53;
+  --labs-border-subtle: #554a3f;
   --labs-text: #f5f0e8;
   --labs-text-secondary: #c4b99a;
   --labs-text-muted: #b8a88e;
@@ -148,8 +148,8 @@
 }
 
 .labs-shell:not(.labs-light) .labs-card-elevated {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--labs-border);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .labs-btn-primary {

@@ -2126,7 +2126,7 @@ export default function FlavourStudioSheet({
         style={{
           maxHeight: "88vh",
           background: "var(--labs-bg, #1a1714)",
-          borderColor: "var(--labs-border, #3a332b)",
+          borderColor: "var(--labs-border, #6b5f53)",
         }}
         data-testid="flavour-studio-sheet"
       >
