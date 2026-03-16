@@ -192,7 +192,7 @@ function useHeartbeat() {
   useEffect(() => {
     const pid = currentParticipant?.id;
     if (!pid) return;
-    const beat = () => { participantApi.heartbeat(pid).catch(() => {}); };
+    const beat = () => { participantApi.heartbeat(pid, window.location.pathname).catch(() => {}); };
     beat();
     const interval = setInterval(beat, 120000);
     return () => clearInterval(interval);

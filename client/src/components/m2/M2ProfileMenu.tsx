@@ -859,20 +859,22 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/downloads" : "/m2/taste/downloads"); }}
         testId="m2-profile-data"
       />
-      {session.role === "admin" && !isLabs && (
+      {session.role === "admin" && (
         <>
           <MenuButton theme={tv}
             icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
             label={t("m2.profile.admin", "Admin")}
-            onClick={() => { onClose(); navigate("/m2/admin"); }}
+            onClick={() => { onClose(); navigate(isLabs ? "/labs/admin" : "/m2/admin"); }}
             testId="m2-profile-admin"
           />
-          <MenuButton theme={tv}
-            icon={<ArrowLeftRight style={{ width: 18, height: 18, color: tv.accent }} />}
-            label={t("m2.profile.switchClassic", "Switch to Classic UI")}
-            onClick={() => { onClose(); window.location.href = "/tasting"; }}
-            testId="m2-profile-classic"
-          />
+          {!isLabs && (
+            <MenuButton theme={tv}
+              icon={<ArrowLeftRight style={{ width: 18, height: 18, color: tv.accent }} />}
+              label={t("m2.profile.switchClassic", "Switch to Classic UI")}
+              onClick={() => { onClose(); window.location.href = "/tasting"; }}
+              testId="m2-profile-classic"
+            />
+          )}
         </>
       )}
 
