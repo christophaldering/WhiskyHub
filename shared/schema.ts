@@ -733,3 +733,14 @@ export const whiskyGallery = pgTable("whisky_gallery", {
 export const insertWhiskyGallerySchema = createInsertSchema(whiskyGallery).omit({ id: true, createdAt: true });
 export type InsertWhiskyGallery = z.infer<typeof insertWhiskyGallerySchema>;
 export type WhiskyGalleryPhoto = typeof whiskyGallery.$inferSelect;
+
+// --- User Activity Sessions (admin tracking) ---
+export const userActivitySessions = pgTable("user_activity_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  endedAt: timestamp("ended_at").notNull().defaultNow(),
+  durationMinutes: integer("duration_minutes").notNull().default(0),
+  pageContext: text("page_context"),
+});
+export type UserActivitySession = typeof userActivitySessions.$inferSelect;

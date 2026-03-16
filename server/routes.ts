@@ -808,6 +808,7 @@ export async function registerRoutes(
       const participant = await storage.getParticipant(req.params.id);
       if (!participant) return res.status(404).json({ message: "Not found" });
       await storage.updateLastSeen(participant.id);
+      storage.upsertActivitySession(participant.id, req.body?.pageContext).catch(() => {});
       res.json({ ok: true });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -882,6 +883,65 @@ export async function registerRoutes(
         lastSeenAt: p.lastSeenAt,
         role: p.role,
       })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/activity-sessions", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string || req.query.participantId as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const sessions = await storage.getActivitySessions({
+        participantId: req.query.userId as string | undefined,
+        from: req.query.from ? new Date(req.query.from as string) : undefined,
+        to: req.query.to ? new Date(req.query.to as string) : undefined,
+        minDuration: req.query.minDuration ? parseInt(req.query.minDuration as string) : undefined,
+        limit: parseInt(req.query.limit as string) || 200,
+        offset: parseInt(req.query.offset as string) || 0,
+      });
+      res.json(sessions);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/activity-sessions/:participantId", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string || req.query.requesterId as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const sessions = await storage.getActivitySessions({
+        participantId: req.params.participantId,
+        from: req.query.from ? new Date(req.query.from as string) : undefined,
+        to: req.query.to ? new Date(req.query.to as string) : undefined,
+        limit: parseInt(req.query.limit as string) || 200,
+      });
+      res.json(sessions);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/activity-summary", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string || req.query.participantId as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+
+      const summary = await storage.getActivitySummary(from, to);
+      res.json(summary);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

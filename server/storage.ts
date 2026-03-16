@@ -47,6 +47,8 @@ import {
   type InsertVoiceMemo, type VoiceMemo,
   whiskyGallery,
   type InsertWhiskyGallery, type WhiskyGalleryPhoto,
+  userActivitySessions,
+  type UserActivitySession,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -2213,6 +2215,118 @@ export class DatabaseStorage implements IStorage {
   async getWhiskyGalleryCount(whiskyId: string): Promise<number> {
     const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskyGallery).where(eq(whiskyGallery.whiskyId, whiskyId));
     return result?.count || 0;
+  }
+
+  // --- User Activity Sessions ---
+  async upsertActivitySession(participantId: string, pageContext?: string): Promise<void> {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const [existing] = await db.select().from(userActivitySessions)
+      .where(and(
+        eq(userActivitySessions.participantId, participantId),
+        gte(userActivitySessions.endedAt, fiveMinAgo),
+      ))
+      .orderBy(desc(userActivitySessions.endedAt))
+      .limit(1);
+
+    const now = new Date();
+    if (existing) {
+      const durationMs = now.getTime() - new Date(existing.startedAt).getTime();
+      const durationMinutes = Math.round(durationMs / 60000);
+      await db.update(userActivitySessions)
+        .set({ endedAt: now, durationMinutes })
+        .where(eq(userActivitySessions.id, existing.id));
+    } else {
+      await db.insert(userActivitySessions).values({
+        participantId,
+        startedAt: now,
+        endedAt: now,
+        durationMinutes: 0,
+        pageContext: pageContext || null,
+      });
+    }
+  }
+
+  async getActivitySessions(filters: {
+    participantId?: string;
+    from?: Date;
+    to?: Date;
+    minDuration?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<UserActivitySession[]> {
+    const conditions = [];
+    if (filters.participantId) conditions.push(eq(userActivitySessions.participantId, filters.participantId));
+    if (filters.from) conditions.push(gte(userActivitySessions.startedAt, filters.from));
+    if (filters.to) conditions.push(sql`${userActivitySessions.startedAt} <= ${filters.to}`);
+    if (filters.minDuration) conditions.push(gte(userActivitySessions.durationMinutes, filters.minDuration));
+
+    let query = db.select().from(userActivitySessions);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as typeof query;
+    query = query.orderBy(desc(userActivitySessions.startedAt)) as typeof query;
+    if (filters.limit) query = query.limit(filters.limit) as typeof query;
+    if (filters.offset) query = query.offset(filters.offset) as typeof query;
+    return query;
+  }
+
+  async getActivitySummary(from?: Date, to?: Date): Promise<{
+    totalSessions: number;
+    uniqueUsers: number;
+    avgDurationMinutes: number;
+    totalMinutes: number;
+    byDay: { date: string; sessions: number; uniqueUsers: number }[];
+    byHour: { hour: number; sessions: number }[];
+    topUsers: { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: Date | null }[];
+  }> {
+    const conditions = [];
+    if (from) conditions.push(gte(userActivitySessions.startedAt, from));
+    if (to) conditions.push(sql`${userActivitySessions.startedAt} <= ${to}`);
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totals] = await db.select({
+      totalSessions: sql<number>`count(*)::int`,
+      uniqueUsers: sql<number>`count(distinct ${userActivitySessions.participantId})::int`,
+      avgDuration: sql<number>`coalesce(avg(${userActivitySessions.durationMinutes}), 0)::int`,
+      totalMinutes: sql<number>`coalesce(sum(${userActivitySessions.durationMinutes}), 0)::int`,
+    }).from(userActivitySessions).where(whereClause);
+
+    const byDay = await db.select({
+      date: sql<string>`to_char(${userActivitySessions.startedAt}, 'YYYY-MM-DD')`,
+      sessions: sql<number>`count(*)::int`,
+      uniqueUsers: sql<number>`count(distinct ${userActivitySessions.participantId})::int`,
+    }).from(userActivitySessions).where(whereClause)
+      .groupBy(sql`to_char(${userActivitySessions.startedAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${userActivitySessions.startedAt}, 'YYYY-MM-DD')`);
+
+    const byHour = await db.select({
+      hour: sql<number>`extract(hour from ${userActivitySessions.startedAt})::int`,
+      sessions: sql<number>`count(*)::int`,
+    }).from(userActivitySessions).where(whereClause)
+      .groupBy(sql`extract(hour from ${userActivitySessions.startedAt})`)
+      .orderBy(sql`extract(hour from ${userActivitySessions.startedAt})`);
+
+    const topUsers = await db.select({
+      id: userActivitySessions.participantId,
+      name: participants.name,
+      email: participants.email,
+      sessions: sql<number>`count(*)::int`,
+      totalMinutes: sql<number>`coalesce(sum(${userActivitySessions.durationMinutes}), 0)::int`,
+      lastActive: sql<Date | null>`max(${userActivitySessions.endedAt})`,
+    }).from(userActivitySessions)
+      .leftJoin(participants, eq(userActivitySessions.participantId, participants.id))
+      .where(whereClause)
+      .groupBy(userActivitySessions.participantId, participants.name, participants.email)
+      .orderBy(sql`count(*) desc`)
+      .limit(50);
+
+    return {
+      totalSessions: totals?.totalSessions || 0,
+      uniqueUsers: totals?.uniqueUsers || 0,
+      avgDurationMinutes: totals?.avgDuration || 0,
+      totalMinutes: totals?.totalMinutes || 0,
+      byDay: byDay as { date: string; sessions: number; uniqueUsers: number }[],
+      byHour: byHour as { hour: number; sessions: number }[],
+      topUsers: topUsers as { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: Date | null }[],
+    };
   }
 }
 

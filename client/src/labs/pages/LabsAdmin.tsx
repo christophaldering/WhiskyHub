@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
@@ -18,13 +18,14 @@ import {
   BookOpen, ExternalLink, Activity, ChevronLeft,
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "activity" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
+type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
 
 const TAB_CONFIG: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "participants", label: "Participants", icon: Users },
   { id: "tastings", label: "Tastings", icon: Wine },
   { id: "online", label: "Online", icon: Wifi },
   { id: "activity", label: "Activity", icon: Activity },
+  { id: "sessions", label: "Sessions", icon: Clock },
   { id: "ai", label: "AI Controls", icon: Brain },
   { id: "newsletter", label: "Newsletter", icon: Mail },
   { id: "changelog", label: "Changelog", icon: Rocket },
@@ -187,6 +188,7 @@ export default function LabsAdmin() {
       {activeTab === "tastings" && <TastingsTab data={data} pid={pid} />}
       {activeTab === "online" && <OnlineTab />}
       {activeTab === "activity" && <ActivityTab />}
+      {activeTab === "sessions" && <SessionsTab pid={pid} />}
       {activeTab === "ai" && <AITab pid={pid} />}
       {activeTab === "newsletter" && <NewsletterTab participants={data.participants} pid={pid} />}
       {activeTab === "changelog" && <ChangelogTab pid={pid} />}
@@ -534,6 +536,313 @@ function ActivityTab() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function SessionsTab({ pid }: { pid: string }) {
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
+  const [userSearch, setUserSearch] = useState("");
+
+  const getFromDate = () => {
+    if (timeRange === "all") return undefined;
+    const days = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
+    return new Date(Date.now() - days * 86400000).toISOString();
+  };
+
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ["/api/admin/activity-summary", pid, timeRange],
+    queryFn: () => adminApi.getActivitySummary(pid, { from: getFromDate() }),
+  });
+
+  const { data: userSessions = [], isLoading: userSessionsLoading } = useQuery({
+    queryKey: ["/api/admin/activity-sessions", pid, selectedUser, timeRange],
+    queryFn: () => adminApi.getActivitySessionsForUser(pid, selectedUser!, { from: getFromDate() }),
+    enabled: !!selectedUser,
+  });
+
+  const rangeOpts: { value: typeof timeRange; label: string }[] = [
+    { value: "7d", label: "7 Days" },
+    { value: "30d", label: "30 Days" },
+    { value: "90d", label: "90 Days" },
+    { value: "all", label: "All Time" },
+  ];
+
+  const formatDuration = (min: number) => {
+    if (min < 1) return "<1m";
+    if (min < 60) return `${min}m`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
+
+  const formatDate = (ts: string | Date | null) => {
+    if (!ts) return "–";
+    const d = new Date(ts);
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  };
+
+  const formatTime = (ts: string | Date | null) => {
+    if (!ts) return "–";
+    const d = new Date(ts);
+    return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatRelative = (ts: string | Date | null) => {
+    if (!ts) return "–";
+    const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (diffMin < 1) return "now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    const diffD = Math.floor(diffH / 24);
+    return `${diffD}d ago`;
+  };
+
+  const filteredUsers = (summary?.topUsers || []).filter((u: { name: string; email: string }) => {
+    if (!userSearch) return true;
+    const q = userSearch.toLowerCase();
+    return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+  });
+
+  const heatmapData = () => {
+    const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const sessions = summary?.byHour || [];
+    for (const s of sessions) {
+      for (let day = 0; day < 7; day++) {
+        grid[day][s.hour] = (grid[day][s.hour] || 0) + Math.round(s.sessions / 7);
+      }
+    }
+    if (summary?.byDay) {
+      for (const d of summary.byDay) {
+        const date = new Date(d.date);
+        const dow = date.getDay();
+        grid[dow] = grid[dow] || Array(24).fill(0);
+      }
+    }
+    return grid;
+  };
+
+  const heatmapMax = () => {
+    const grid = heatmapData();
+    let max = 1;
+    for (const row of grid) for (const v of row) if (v > max) max = v;
+    return max;
+  };
+
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  if (selectedUser) {
+    const userData = (summary?.topUsers || []).find((u: { id: string }) => u.id === selectedUser);
+    return (
+      <div data-testid="labs-admin-sessions-user-detail">
+        <button
+          onClick={() => setSelectedUser(null)}
+          className="flex items-center gap-1.5 mb-4 text-sm transition-colors"
+          style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          data-testid="sessions-back-btn"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to overview
+        </button>
+        <div className="flex items-center gap-2 mb-4">
+          <User className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{userData?.name || "User"}</span>
+          {userData?.email && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{userData.email}</span>}
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="labs-card p-3 text-center">
+            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{userData?.sessions || 0}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Sessions</div>
+          </div>
+          <div className="labs-card p-3 text-center">
+            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.totalMinutes || 0)}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Time</div>
+          </div>
+          <div className="labs-card p-3 text-center">
+            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.sessions ? Math.round((userData.totalMinutes || 0) / userData.sessions) : 0)}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Avg Duration</div>
+          </div>
+        </div>
+        {userSessionsLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
+        ) : userSessions.length === 0 ? (
+          <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No sessions recorded.</div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Session Timeline</div>
+            {userSessions.map((s: { id: string; startedAt: string; endedAt: string; durationMinutes: number; pageContext: string | null }) => (
+              <div key={s.id} className="labs-card p-3 flex items-center gap-3" data-testid={`session-entry-${s.id}`}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.durationMinutes > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatDate(s.startedAt)}</span>
+                    <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                      {formatTime(s.startedAt)} – {formatTime(s.endedAt)}
+                    </span>
+                  </div>
+                  {s.pageContext && <div className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{s.pageContext}</div>}
+                </div>
+                <div className="text-xs font-semibold flex-shrink-0" style={{ color: "var(--labs-accent)" }}>{formatDuration(s.durationMinutes)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div data-testid="labs-admin-sessions-tab">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Session Tracking</span>
+        </div>
+        <div className="flex gap-1">
+          {rangeOpts.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setTimeRange(opt.value)}
+              className="px-2.5 py-1 text-xs rounded-lg transition-all"
+              style={{
+                border: `1px solid ${timeRange === opt.value ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                background: timeRange === opt.value ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                color: timeRange === opt.value ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+                cursor: "pointer",
+                fontWeight: timeRange === opt.value ? 700 : 500,
+              }}
+              data-testid={`sessions-range-${opt.value}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {summaryLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
+      ) : !summary ? (
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No data available.</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="labs-card p-3 text-center">
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total">{summary.totalSessions}</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Sessions</div>
+            </div>
+            <div className="labs-card p-3 text-center">
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-users">{summary.uniqueUsers}</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Active Users</div>
+            </div>
+            <div className="labs-card p-3 text-center">
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-avg">{formatDuration(summary.avgDurationMinutes)}</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Avg Duration</div>
+            </div>
+            <div className="labs-card p-3 text-center">
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total-time">{formatDuration(summary.totalMinutes)}</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Time</div>
+            </div>
+          </div>
+
+          {(summary.byHour || []).length > 0 && (
+            <div className="labs-card p-3 mb-4">
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Activity by Hour</div>
+              <div className="overflow-x-auto">
+                <div style={{ display: "grid", gridTemplateColumns: "40px repeat(24, 1fr)", gap: 2 }}>
+                  <div />
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <div key={i} className="text-center text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{i}</div>
+                  ))}
+                  {heatmapData().map((row, dayIdx) => (
+                    <Fragment key={dayIdx}>
+                      <div className="text-[10px] flex items-center" style={{ color: "var(--labs-text-muted)" }}>{dayLabels[dayIdx]}</div>
+                      {row.map((val, hourIdx) => {
+                        const intensity = val / heatmapMax();
+                        return (
+                          <div
+                            key={`${dayIdx}-${hourIdx}`}
+                            className="rounded-sm"
+                            style={{
+                              aspectRatio: "1",
+                              background: val === 0 ? "var(--labs-surface)" : `color-mix(in srgb, var(--labs-accent) ${Math.round(15 + intensity * 85)}%, transparent)`,
+                              minWidth: 8,
+                            }}
+                            title={`${dayLabels[dayIdx]} ${hourIdx}:00 - ${val} sessions`}
+                            data-testid={`heatmap-cell-${dayIdx}-${hourIdx}`}
+                          />
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(summary.byDay || []).length > 0 && (
+            <div className="labs-card p-3 mb-4">
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Daily Activity</div>
+              <div className="flex items-end gap-0.5" style={{ height: 80 }}>
+                {summary.byDay.map((d: { date: string; sessions: number; uniqueUsers: number }) => {
+                  const maxSessions = Math.max(...summary.byDay.map((x: { sessions: number }) => x.sessions), 1);
+                  const height = (d.sessions / maxSessions) * 100;
+                  return (
+                    <div
+                      key={d.date}
+                      className="flex-1 rounded-t-sm transition-all"
+                      style={{ height: `${Math.max(height, 4)}%`, background: "var(--labs-accent)", opacity: 0.7 + (height / 100) * 0.3, minWidth: 3 }}
+                      title={`${d.date}: ${d.sessions} sessions, ${d.uniqueUsers} users`}
+                      data-testid={`daily-bar-${d.date}`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{summary.byDay[0]?.date}</span>
+                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{summary.byDay[summary.byDay.length - 1]?.date}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+              <span className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>Users ({filteredUsers.length})</span>
+            </div>
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search users..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="sessions-search-users" />
+            </div>
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No users found.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {filteredUsers.map((u: { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: string | null }) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUser(u.id)}
+                    className="labs-card p-3 w-full text-left flex items-center gap-3 transition-colors"
+                    style={{ cursor: "pointer", border: "none" }}
+                    data-testid={`sessions-user-${u.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name}</div>
+                      {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{u.sessions} sessions</div>
+                      <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{formatDuration(u.totalMinutes)} total</div>
+                      <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{formatRelative(u.lastActive)}</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

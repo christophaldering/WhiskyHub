@@ -659,6 +659,26 @@ export const adminApi = {
     fetchJSON("/admin/participant-ai-profiles", { method: "POST", body: JSON.stringify({ requesterId, pin }) }),
   updateMakingOfAccess: (participantId: string, access: boolean, requesterId: string) =>
     fetchJSON(`/admin/participants/${participantId}/making-of-access`, { method: "PATCH", body: JSON.stringify({ access, requesterId }) }),
+  getActivitySessions: (requesterId: string, filters?: { userId?: string; from?: string; to?: string; minDuration?: number }) => {
+    const params = new URLSearchParams({ participantId: requesterId });
+    if (filters?.userId) params.set("userId", filters.userId);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    if (filters?.minDuration) params.set("minDuration", String(filters.minDuration));
+    return fetchJSON(`/admin/activity-sessions?${params}`);
+  },
+  getActivitySessionsForUser: (requesterId: string, userId: string, filters?: { from?: string; to?: string }) => {
+    const params = new URLSearchParams({ requesterId });
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    return fetchJSON(`/admin/activity-sessions/${userId}?${params}`);
+  },
+  getActivitySummary: (requesterId: string, filters?: { from?: string; to?: string }) => {
+    const params = new URLSearchParams({ participantId: requesterId });
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    return fetchJSON(`/admin/activity-summary?${params}`);
+  },
 };
 
 export const tastingPhotoApi = {
