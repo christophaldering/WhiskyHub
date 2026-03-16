@@ -15,6 +15,30 @@ const CATEGORY_COLORS: Record<CategoryId, string> = {
   bourbon: "#D4A05A", highland: "#9B7DB8", japanese: "#E8A0B4",
 };
 
+function tintBg(hex: string, strength: "subtle" | "medium" | "strong" | "chip"): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const alpha = strength === "subtle" ? 0.35 : strength === "medium" ? 0.5 : strength === "strong" ? 0.65 : 0.45;
+  const bgR = 0x1a, bgG = 0x17, bgB = 0x14;
+  const mr = Math.round(bgR + (r - bgR) * alpha);
+  const mg = Math.round(bgG + (g - bgG) * alpha);
+  const mb = Math.round(bgB + (b - bgB) * alpha);
+  return `#${mr.toString(16).padStart(2, "0")}${mg.toString(16).padStart(2, "0")}${mb.toString(16).padStart(2, "0")}`;
+}
+
+function tintBorder(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const bgR = 0x1a, bgG = 0x17, bgB = 0x14;
+  const alpha = 0.6;
+  const mr = Math.round(bgR + (r - bgR) * alpha);
+  const mg = Math.round(bgG + (g - bgG) * alpha);
+  const mb = Math.round(bgB + (b - bgB) * alpha);
+  return `#${mr.toString(16).padStart(2, "0")}${mg.toString(16).padStart(2, "0")}${mb.toString(16).padStart(2, "0")}`;
+}
+
 function adjustCategoryTextColor(hex: string, isDark: boolean): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -478,8 +502,8 @@ function GuidedView({
                               data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
                               style={{
                                 fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                                background: `${color}38`, color: "var(--labs-text)",
-                                border: `1px solid ${color}66`, cursor: "pointer",
+                                background: tintBg(color, "chip"), color: "#f5f0e8",
+                                border: `1px solid ${tintBorder(color)}`, cursor: "pointer",
                                 display: "flex", alignItems: "center", gap: 4,
                                 transition: "all 0.15s",
                               }}
@@ -519,8 +543,8 @@ function GuidedView({
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "flex-start",
                       padding: "12px 14px", borderRadius: 12, fontFamily: "inherit",
-                      background: count > 0 ? `${cat.color}30` : "var(--labs-surface)",
-                      border: `1.5px solid ${count > 0 ? `${cat.color}70` : "var(--labs-border-subtle)"}`,
+                      background: count > 0 ? tintBg(cat.color, "subtle") : "var(--labs-surface)",
+                      border: `1.5px solid ${count > 0 ? tintBorder(cat.color) : "var(--labs-border-subtle)"}`,
                       cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
                       position: "relative", overflow: "hidden",
                       animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
@@ -584,8 +608,8 @@ function GuidedView({
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                         padding: "14px 16px", borderRadius: 12, fontFamily: "inherit",
-                        background: sgCount > 0 ? `${navCategory.color}30` : "var(--labs-surface)",
-                        border: `1.5px solid ${sgCount > 0 ? `${navCategory.color}66` : "var(--labs-border-subtle)"}`,
+                        background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
+                        border: `1.5px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border-subtle)"}`,
                         cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                         animationDelay: `${i * 60}ms`,
@@ -636,9 +660,9 @@ function GuidedView({
                           data-testid={`guide-term-${desc.id}`}
                           style={{
                             fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
-                            background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
+                            background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
                             color: isS ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                            border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
                             cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
                             fontWeight: isS ? 600 : 400,
                             animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
@@ -663,9 +687,9 @@ function GuidedView({
                       data-testid={`guide-term-${desc.id}`}
                       style={{
                         fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
-                        background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
+                        background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
                         color: isS ? "#f5f0e8" : "var(--labs-text)",
-                        border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                        border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
                         cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
                         fontWeight: isS ? 600 : 400,
                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
@@ -693,9 +717,9 @@ function GuidedView({
                     data-testid={`guide-term-${desc.id}`}
                     style={{
                       fontSize: 13, padding: "10px 18px", borderRadius: 22, fontFamily: "inherit",
-                      background: isS ? `${navCategory.color}40` : "var(--labs-surface)",
+                      background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
                       color: isS ? "#f5f0e8" : "var(--labs-text)",
-                      border: `1.5px solid ${isS ? navCategory.color : "var(--labs-border)"}`,
+                      border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
                       cursor: "pointer", transition: "all 0.2s ease", minHeight: 42,
                       fontWeight: isS ? 600 : 400,
                       animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
@@ -728,9 +752,9 @@ function GuidedView({
                           data-testid={`guide-related-${sg.id}`}
                           style={{
                             fontSize: 11, padding: "6px 12px", borderRadius: 16, fontFamily: "inherit",
-                            background: sgCount > 0 ? `${navCategory.color}30` : "var(--labs-surface)",
+                            background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
                             color: sgCount > 0 ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1px solid ${sgCount > 0 ? `${navCategory.color}66` : "var(--labs-border-subtle)"}`,
+                            border: `1px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border-subtle)"}`,
                             cursor: "pointer", transition: "all 0.15s",
                             display: "flex", alignItems: "center", gap: 4,
                           }}
@@ -802,7 +826,7 @@ function CompactWheel({
             <path
               d={seg.path}
               fill={CATEGORY_COLORS[seg.id]}
-              fillOpacity={seg.isDimmed ? 0.2 : seg.isFocused ? 0.6 : 0.4}
+              fillOpacity={seg.isDimmed ? 0.35 : seg.isFocused ? 0.7 : 0.5}
               stroke={CATEGORY_COLORS[seg.id]}
               strokeWidth={seg.isFocused ? 2 : 1}
               strokeOpacity={seg.isDimmed ? 0.3 : 0.7}
@@ -838,7 +862,7 @@ function CompactWheel({
       {focusedCat && focused && (
         <div style={{
           marginTop: 12, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[focused]}55`,
+          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[focused])}`,
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }} data-testid={`wheel-detail-${focused}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -857,11 +881,11 @@ function CompactWheel({
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isSelected ? `${CATEGORY_COLORS[focused]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
+                    background: isSelected ? tintBg(CATEGORY_COLORS[focused], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
                     color: isSelected ? "#f5f0e8" : "var(--labs-text)",
                     border: `1.5px solid ${isSelected ? CATEGORY_COLORS[focused] : "var(--labs-border)"}`,
                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
-                    boxShadow: isSelected ? `0 0 0 2px ${CATEGORY_COLORS[focused]}55` : "none",
+                    boxShadow: isSelected ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[focused])}` : "none",
                   }}
                 >
                   {isSelected ? "✓ " : ""}{term}
@@ -942,8 +966,8 @@ function CompactCompass({
           const count = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
           return (
             <g key={cat.id} onClick={() => { setSelectedCat(isSelected ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
-              <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.15} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
-              <circle cx={px} cy={py} r={r} fill={color} fillOpacity={isDimmed ? 0.2 : 0.4} stroke={color} strokeWidth={isSelected ? 2 : 1} strokeOpacity={isDimmed ? 0.3 : 0.7} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+              <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.25} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+              <circle cx={px} cy={py} r={r} fill={color} fillOpacity={isDimmed ? 0.35 : 0.55} stroke={color} strokeWidth={isSelected ? 2 : 1} strokeOpacity={isDimmed ? 0.4 : 0.8} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
               <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"} fontSize={10} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {cat.name.split(" / ")[0]}
               </text>
@@ -972,7 +996,7 @@ function CompactCompass({
           const color = selectedCat ? CATEGORY_COLORS[selectedCat] : "var(--labs-accent)";
           return (
             <g key={chip.term} onClick={(e) => { e.stopPropagation(); onToggle(chip.term); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
-              <rect x={chip.x - 22} y={chip.y - 7} width={44} height={14} rx={7} fill={isS ? color : "var(--labs-surface)"} fillOpacity={isS ? 0.5 : 0.85} stroke={color} strokeWidth={isS ? 1.2 : 0.5} strokeOpacity={isS ? 0.8 : 0.3} style={{ transition: "all 0.3s ease" }} />
+              <rect x={chip.x - 22} y={chip.y - 7} width={44} height={14} rx={7} fill={isS ? color : "var(--labs-surface)"} fillOpacity={isS ? 0.65 : 0.85} stroke={color} strokeWidth={isS ? 1.2 : 0.5} strokeOpacity={isS ? 0.9 : 0.4} style={{ transition: "all 0.3s ease" }} />
               <text x={chip.x} y={chip.y + 1} textAnchor="middle" dominantBaseline="middle" fill={isS ? "#f5f0e8" : "var(--labs-text)"} fontSize={6} fontWeight={isS ? 700 : 400} style={{ pointerEvents: "none" }}>
                 {chip.term.length > 8 ? chip.term.slice(0, 7) + "…" : chip.term}
               </text>
@@ -990,7 +1014,7 @@ function CompactCompass({
       {selCat && selectedCat && (
         <div style={{
           marginTop: 10, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedCat]}55`,
+          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[selectedCat])}`,
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }} data-testid={`compass-detail-${selectedCat}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -1008,11 +1032,11 @@ function CompactCompass({
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? `${CATEGORY_COLORS[selectedCat]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
+                    background: isS ? tintBg(CATEGORY_COLORS[selectedCat], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
                     color: isS ? "#f5f0e8" : "var(--labs-text)",
                     border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedCat] : "var(--labs-border)"}`,
                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
-                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedCat]}55` : "none",
+                    boxShadow: isS ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[selectedCat])}` : "none",
                   }}
                 >
                   {isS ? "✓ " : ""}{term}
@@ -1075,7 +1099,7 @@ function CompactRadar({
             <button key={cat.id} onClick={() => toggleCat(cat.id)}
               style={{
                 fontSize: 11, padding: "4px 10px", borderRadius: 20, fontFamily: "inherit", cursor: "pointer",
-                background: isOn ? `${CATEGORY_COLORS[cat.id]}38` : "var(--labs-surface)",
+                background: isOn ? tintBg(CATEGORY_COLORS[cat.id], "chip") : "var(--labs-surface)",
                 border: `1px solid ${isOn ? CATEGORY_COLORS[cat.id] : "var(--labs-border)"}`,
                 color: isOn ? "#f5f0e8" : "var(--labs-text)",
                 transition: "all 0.2s", display: "flex", alignItems: "center", gap: 4,
@@ -1108,7 +1132,7 @@ function CompactRadar({
         })}
         {categories.filter((c) => enabledCats.has(c.id)).map((cat) => (
           <g key={cat.id} onClick={() => { setSelectedRadarCat(selectedRadarCat === cat.id ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
-            <polygon points={getPolygonPoints(RADAR_PROFILES[cat.id])} fill={CATEGORY_COLORS[cat.id]} fillOpacity={0.25} stroke={CATEGORY_COLORS[cat.id]} strokeWidth={1.5} strokeOpacity={0.8} style={{ transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+            <polygon points={getPolygonPoints(RADAR_PROFILES[cat.id])} fill={CATEGORY_COLORS[cat.id]} fillOpacity={0.4} stroke={CATEGORY_COLORS[cat.id]} strokeWidth={1.5} strokeOpacity={0.9} style={{ transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
           </g>
         ))}
         {selected.size > 0 && (
@@ -1170,7 +1194,7 @@ function CompactRadar({
       {selCat && selectedRadarCat && (
         <div style={{
           marginTop: 10, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${CATEGORY_COLORS[selectedRadarCat]}55`,
+          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[selectedRadarCat])}`,
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -1188,11 +1212,11 @@ function CompactRadar({
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
                     fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? `${CATEGORY_COLORS[selectedRadarCat]}40` : "var(--labs-surface-elevated, var(--labs-bg))",
+                    background: isS ? tintBg(CATEGORY_COLORS[selectedRadarCat], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
                     color: isS ? "#f5f0e8" : "var(--labs-text)",
                     border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedRadarCat] : "var(--labs-border)"}`,
                     cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
-                    boxShadow: isS ? `0 0 0 2px ${CATEGORY_COLORS[selectedRadarCat]}55` : "none",
+                    boxShadow: isS ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[selectedRadarCat])}` : "none",
                   }}
                 >
                   {isS ? "✓ " : ""}{term}
@@ -1578,7 +1602,7 @@ function JourneyView({
           ))}
         </div>
 
-        <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75, textAlign: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: "var(--labs-text)", textAlign: "center", marginBottom: 12 }}>
           {t("m2.rating.journeySweepPrompt", "Do you detect this flavour family?")}
         </div>
 
@@ -1586,25 +1610,25 @@ function JourneyView({
           <div className={animClass} key={currentSweepCat.id} style={{ animation: "labsFadeIn 300ms ease both" }}>
             <div style={{
               padding: 20, borderRadius: 16,
-              background: `linear-gradient(135deg, ${currentSweepCat.color}35, ${currentSweepCat.color}20)`,
-              border: `1.5px solid ${currentSweepCat.color}70`,
+              background: `linear-gradient(135deg, ${tintBg(currentSweepCat.color, "medium")}, ${tintBg(currentSweepCat.color, "subtle")})`,
+              border: `1.5px solid ${tintBorder(currentSweepCat.color)}`,
               textAlign: "center", marginBottom: 16,
             }} data-testid={`journey-sweep-card-${currentSweepCat.id}`}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>
                 {GUIDE_ICONS[currentSweepCat.id] || ""}
               </div>
-              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${currentSweepCat.color}88`, marginBottom: 4 }}>
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${tintBorder(currentSweepCat.color)}`, marginBottom: 4 }}>
                 {isDE ? currentSweepCat.de : currentSweepCat.en}
               </div>
-              <div style={{ fontSize: 12, color: "var(--labs-text)", opacity: 0.8, marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: "var(--labs-text)", marginBottom: 10 }}>
                 {isDE ? currentSweepCat.descDe : currentSweepCat.descEn}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
                 {currentSweepCat.subcategories.slice(0, 4).map((sub) => (
                   <span key={sub.id} style={{
                     fontSize: 11, padding: "2px 8px", borderRadius: 10,
-                    background: `${currentSweepCat.color}30`, color: "#f5f0e8",
-                    border: `1px solid ${currentSweepCat.color}55`,
+                    background: tintBg(currentSweepCat.color, "chip"), color: "#f5f0e8",
+                    border: `1px solid ${tintBorder(currentSweepCat.color)}`,
                   }}>
                     {isDE ? sub.de : sub.en}
                   </span>
@@ -1612,7 +1636,7 @@ function JourneyView({
                 {currentSweepCat.subcategories.length > 4 && (
                   <span style={{
                     fontSize: 11, padding: "2px 8px", borderRadius: 10,
-                    background: `${currentSweepCat.color}25`, color: "#f5f0e8", opacity: 0.75,
+                    background: tintBg(currentSweepCat.color, "subtle"), color: "#f5f0e8",
                   }}>
                     +{currentSweepCat.subcategories.length - 4}
                   </span>
@@ -1743,9 +1767,9 @@ function JourneyView({
                           data-testid={`journey-term-${desc.id}`}
                           style={{
                             fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
-                            background: isS ? `${currentDrillCat.color}40` : "var(--labs-surface)",
+                            background: isS ? tintBg(currentDrillCat.color, "chip") : "var(--labs-surface)",
                             color: isS ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                            border: `1.5px solid ${isS ? tintBorder(currentDrillCat.color) : "var(--labs-border)"}`,
                             cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
                             fontWeight: isS ? 600 : 400,
                           }}
@@ -1769,9 +1793,9 @@ function JourneyView({
                     data-testid={`journey-term-${desc.id}`}
                     style={{
                       fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
-                      background: isS ? `${currentDrillCat.color}40` : "var(--labs-surface)",
+                      background: isS ? tintBg(currentDrillCat.color, "chip") : "var(--labs-surface)",
                       color: isS ? "#f5f0e8" : "var(--labs-text)",
-                      border: `1.5px solid ${isS ? currentDrillCat.color : "var(--labs-border)"}`,
+                      border: `1.5px solid ${isS ? tintBorder(currentDrillCat.color) : "var(--labs-border)"}`,
                       cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
                       fontWeight: isS ? 600 : 400,
                     }}
@@ -1971,8 +1995,8 @@ function JourneyView({
                             data-testid={`journey-profile-${desc.id}`}
                             style={{
                               fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                              background: `${cat.color}38`, color: "var(--labs-text)",
-                              border: `1px solid ${cat.color}66`, cursor: "pointer",
+                              background: tintBg(cat.color, "chip"), color: "#f5f0e8",
+                              border: `1px solid ${tintBorder(cat.color)}`, cursor: "pointer",
                               display: "flex", alignItems: "center", gap: 4,
                               transition: "all 0.15s",
                             }}
@@ -2165,7 +2189,7 @@ export default function FlavourStudioSheet({
                       style={{
                         fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
                         whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
-                        background: isS ? `${color}40` : "var(--labs-surface)",
+                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : "var(--labs-surface)",
                         color: isS ? "#f5f0e8" : "var(--labs-text)",
                         border: `1px solid ${isS ? color : "var(--labs-border-subtle)"}`,
                         cursor: "pointer", transition: "all 0.15s",
