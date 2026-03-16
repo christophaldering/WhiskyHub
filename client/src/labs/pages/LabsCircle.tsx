@@ -948,66 +948,66 @@ export default function LabsCircle() {
                 </p>
               )}
             </div>
-            <div className="mb-2">
-              <p className="labs-section-label flex items-center gap-2 mb-2">
-                <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                <span style={{ color: "var(--labs-text-secondary)" }}>All Friends</span>
-                <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{friendList.length}</span>
-              </p>
-            </div>
-            <div className="space-y-2">
-              {[...friendList]
-                .sort((a, b) => {
-                  const aOn = onlineFriendIds.has(a.id as string) ? 0 : 1;
-                  const bOn = onlineFriendIds.has(b.id as string) ? 0 : 1;
-                  return aOn - bOn;
-                })
-                .map((friend, i) => {
-                  const fid = friend.id as string;
-                  const isOnline = onlineFriendIds.has(fid);
-                  const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend");
-                  const onlineInfo = onlineFriendsMap.get(fid);
-                  return (
-                    <div
-                      key={fid || i}
-                      className="labs-card p-4 flex items-center gap-3"
-                      style={{ ...(isOnline ? { borderLeft: "3px solid var(--labs-success)" } : {}), cursor: isOnline ? "pointer" : undefined }}
-                      onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
-                      data-testid={`labs-circle-friendlist-${i}`}
-                    >
-                      <div className="relative flex-shrink-0">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
-                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                        >
-                          {displayName[0]}
-                        </div>
-                        {isOnline && (
-                          <div
-                            className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
-                            style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
-                          />
-                        )}
+            {(() => {
+              const onlineList = friendList.filter(f => onlineFriendIds.has(f.id as string));
+              const offlineList = friendList.filter(f => !onlineFriendIds.has(f.id as string));
+              const renderFriendCard = (friend: Record<string, unknown>, i: number, isOnline: boolean) => {
+                const fid = friend.id as string;
+                const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend");
+                const onlineInfo = onlineFriendsMap.get(fid);
+                return (
+                  <div
+                    key={fid || i}
+                    className="labs-card p-4 flex items-center gap-3"
+                    style={{
+                      ...(isOnline ? { borderLeft: "3px solid var(--labs-success)", background: "color-mix(in srgb, var(--labs-success) 6%, var(--labs-surface))" } : {}),
+                      cursor: isOnline ? "pointer" : undefined,
+                    }}
+                    onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
+                    data-testid={`labs-circle-friendlist-${i}`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
+                        style={{
+                          background: isOnline ? "color-mix(in srgb, var(--labs-success) 20%, var(--labs-surface))" : "var(--labs-accent-muted)",
+                          color: isOnline ? "var(--labs-success)" : "var(--labs-accent)",
+                        }}
+                      >
+                        {displayName[0]}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      {isOnline && (
+                        <div
+                          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
+                          style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
                           {displayName}
                         </p>
-                        {isOnline ? (
-                          <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
-                            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--labs-success)" }} />
-                            Active {timeAgo(onlineInfo?.lastSeenAt)}
-                          </p>
-                        ) : typeof friend.email === "string" && friend.email ? (
-                          <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                            {friend.email}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-2">
                         {isOnline && (
-                          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>
+                            ONLINE
+                          </span>
                         )}
+                      </div>
+                      {isOnline ? (
+                        <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
+                          Active {timeAgo(onlineInfo?.lastSeenAt)}
+                        </p>
+                      ) : typeof friend.email === "string" && friend.email ? (
+                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                          {friend.email}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isOnline && (
+                        <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                      )}
                         <button
                           className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
                           style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "none", cursor: "pointer" }}
@@ -1024,8 +1024,36 @@ export default function LabsCircle() {
                       </div>
                     </div>
                   );
-                })}
-            </div>
+                };
+              return (
+                <>
+                  {onlineList.length > 0 && (
+                    <div className="mb-4">
+                      <p className="labs-section-label flex items-center gap-2 mb-2">
+                        <Wifi className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
+                        <span style={{ color: "var(--labs-success)" }}>Online</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>{onlineList.length}</span>
+                      </p>
+                      <div className="space-y-2">
+                        {onlineList.map((f, i) => renderFriendCard(f, i, true))}
+                      </div>
+                    </div>
+                  )}
+                  {offlineList.length > 0 && (
+                    <div>
+                      <p className="labs-section-label flex items-center gap-2 mb-2">
+                        <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                        <span style={{ color: "var(--labs-text-secondary)" }}>Offline</span>
+                        <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineList.length}</span>
+                      </p>
+                      <div className="space-y-2">
+                        {offlineList.map((f, i) => renderFriendCard(f, i + onlineList.length, false))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
       </div>
