@@ -438,7 +438,7 @@ function GuidedView({
       {level > 1 && (
         <div style={{
           display: "flex", alignItems: "center", gap: 4, marginBottom: 12,
-          fontSize: 11, color: "var(--labs-text-muted)", flexWrap: "wrap",
+          fontSize: 12, color: "var(--labs-text-secondary)", flexWrap: "wrap",
         }} data-testid="guide-breadcrumbs">
           {breadcrumbs.map((crumb, i) => {
             const isLast = i === breadcrumbs.length - 1;
@@ -450,10 +450,10 @@ function GuidedView({
                   data-testid={`guide-breadcrumb-${i}`}
                   style={{
                     background: "none", border: "none", cursor: isLast ? "default" : "pointer",
-                    fontFamily: "inherit", fontSize: 11, padding: "2px 4px", borderRadius: 4,
+                    fontFamily: "inherit", fontSize: 12, padding: "2px 4px", borderRadius: 4,
                     color: isLast
-                      ? (navCategory ? navCategory.color : "var(--labs-text)")
-                      : "var(--labs-text-muted)",
+                      ? (navCategory ? adjustCategoryTextColor(navCategory.color, isDark) : "var(--labs-text)")
+                      : "var(--labs-text-secondary)",
                     fontWeight: isLast ? 600 : 400,
                     textDecoration: isLast ? "none" : "underline",
                     textDecorationColor: "var(--labs-border)",
