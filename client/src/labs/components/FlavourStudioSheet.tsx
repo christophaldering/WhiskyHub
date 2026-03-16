@@ -15,6 +15,44 @@ const CATEGORY_COLORS: Record<CategoryId, string> = {
   bourbon: "#D4A05A", highland: "#9B7DB8", japanese: "#E8A0B4",
 };
 
+function adjustCategoryTextColor(hex: string, isDark: boolean): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (isDark) {
+    if (luminance > 0.6) return hex;
+    const factor = 0.35;
+    const lr = Math.min(255, Math.round(r + (255 - r) * factor));
+    const lg = Math.min(255, Math.round(g + (255 - g) * factor));
+    const lb = Math.min(255, Math.round(b + (255 - b) * factor));
+    return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+  } else {
+    if (luminance < 0.45) return hex;
+    const factor = 0.3;
+    const lr = Math.round(r * (1 - factor));
+    const lg = Math.round(g * (1 - factor));
+    const lb = Math.round(b * (1 - factor));
+    return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+  }
+}
+
+function useIsDarkTheme(): boolean {
+  const [isDark, setIsDark] = useState(true);
+  useEffect(() => {
+    const shell = document.querySelector('.labs-shell');
+    if (shell) {
+      setIsDark(!shell.classList.contains('labs-light'));
+      const observer = new MutationObserver(() => {
+        setIsDark(!shell.classList.contains('labs-light'));
+      });
+      observer.observe(shell, { attributes: true, attributeFilter: ['class'] });
+      return () => observer.disconnect();
+    }
+  }, []);
+  return isDark;
+}
+
 const CATEGORY_ICONS: Record<CategoryId, string> = {
   islay: "\uD83D\uDD25", speyside: "\uD83C\uDF4E", sherry: "\uD83C\uDF77",
   bourbon: "\uD83C\uDF3D", highland: "\u26F0\uFE0F", japanese: "\uD83C\uDDEF\uD83C\uDDF5",
@@ -269,6 +307,7 @@ function GuidedView({
   isDE: boolean;
 }) {
   const { t } = useTranslation();
+  const isDark = useIsDarkTheme();
   const [navCategoryId, setNavCategoryId] = useState<string | null>(null);
   const [navSubgroupId, setNavSubgroupId] = useState<string | null>(null);
   const [animDir, setAnimDir] = useState<"forward" | "back" | null>(null);
@@ -411,7 +450,7 @@ function GuidedView({
             {selectedByCategory.size > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{
-                  fontSize: 9, fontWeight: 600, color: "var(--labs-accent)",
+                  fontSize: 11, fontWeight: 600, color: "var(--labs-accent)",
                   textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
                 }}>
                   {t("m2.rating.studioGuideSelected", "Your Selections")}
@@ -426,7 +465,7 @@ function GuidedView({
                       <div key={catId}>
                         <div style={{
                           display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
-                          fontSize: 10, color, fontWeight: 600,
+                          fontSize: 11, color: adjustCategoryTextColor(color as string, isDark), fontWeight: 600,
                         }}>
                           <span style={{ fontSize: 12 }}>{icon}</span>
                           <span>{catLabel}</span>
@@ -461,7 +500,7 @@ function GuidedView({
             )}
 
             <div style={{
-              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
               textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
             }}>
               {t("m2.rating.studioGuideCategories", "Tap to explore")}
@@ -493,7 +532,7 @@ function GuidedView({
                         {GUIDE_CATEGORY_ICONS[cat.id] || ""}
                       </span>
                       <span className="labs-serif" style={{
-                        fontSize: 13, fontWeight: 600, color: count > 0 ? "#f5f0e8" : cat.color,
+                        fontSize: 13, fontWeight: 600, color: count > 0 ? "#f5f0e8" : adjustCategoryTextColor(cat.color, isDark),
                       }}>
                         {isDE ? cat.de : cat.en}
                       </span>
@@ -508,7 +547,7 @@ function GuidedView({
                       )}
                     </div>
                     <div style={{
-                      fontSize: 9, color: "var(--labs-text-muted)", marginTop: 4,
+                      fontSize: 11, color: "var(--labs-text-secondary)", marginTop: 4,
                       display: "flex", alignItems: "center", gap: 3,
                     }}>
                       <span>
@@ -554,11 +593,11 @@ function GuidedView({
                     >
                       <div>
                         <div className="labs-serif" style={{
-                          fontSize: 14, fontWeight: 600, color: sgCount > 0 ? "#f5f0e8" : navCategory.color,
+                          fontSize: 14, fontWeight: 600, color: sgCount > 0 ? "#f5f0e8" : adjustCategoryTextColor(navCategory.color, isDark),
                         }}>
                           {isDE ? sg.de : sg.en}
                         </div>
-                        <div style={{ fontSize: 10, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-muted)", marginTop: 2, opacity: sgCount > 0 ? 0.8 : 1 }}>
+                        <div style={{ fontSize: 11, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-secondary)", marginTop: 2, opacity: sgCount > 0 ? 0.8 : 1 }}>
                           {sg.descriptors.map((d) => isDE ? d.de : d.en).join(", ")}
                         </div>
                       </div>
@@ -582,7 +621,7 @@ function GuidedView({
                   borderTop: "1px solid var(--labs-border-subtle)",
                 }}>
                   <div style={{
-                    fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+                    fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
                     textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
                   }}>
                     {t("m2.rating.studioGuideAllInCategory", "All in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
@@ -672,7 +711,7 @@ function GuidedView({
             {navCategory.subgroups && navCategory.subgroups.length > 1 && (
               <div style={{ marginTop: 16 }}>
                 <div style={{
-                  fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+                  fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
                   textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
                 }}>
                   {t("m2.rating.studioGuideRelated", "Other groups in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
@@ -727,6 +766,7 @@ function CompactWheel({
   selected: Set<string>;
   onToggle: (term: string) => void;
 }) {
+  const isDark = useIsDarkTheme();
   const [focused, setFocused] = useState<CategoryId | null>(null);
   const cx = 150, cy = 150, outerR = 130, innerR = 45;
 
@@ -770,8 +810,8 @@ function CompactWheel({
             />
             <text
               x={seg.labelX} y={seg.labelY} textAnchor="middle" dominantBaseline="middle"
-              fill={seg.isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"}
-              fontSize={seg.isFocused ? 10 : 8} fontWeight={seg.isFocused ? 700 : 600}
+              fill={seg.isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"}
+              fontSize={seg.isFocused ? 11 : 10} fontWeight={seg.isFocused ? 700 : 600}
               style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               {seg.name.split(" / ")[0]}
@@ -790,7 +830,7 @@ function CompactWheel({
         <text x={cx} y={cy - 4} textAnchor="middle" fill="var(--labs-text)" fontSize={9} fontWeight={600} style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           Flavour
         </text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fill="var(--labs-text-muted)" fontSize={8}>
+        <text x={cx} y={cy + 8} textAnchor="middle" fill="var(--labs-text-secondary)" fontSize={10}>
           Studio
         </text>
       </svg>
@@ -803,7 +843,7 @@ function CompactWheel({
         }} data-testid={`wheel-detail-${focused}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[focused]}</span>
-            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: CATEGORY_COLORS[focused] }}>{focusedCat.name}</span>
+            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[focused], isDark) }}>{focusedCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setFocused(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="button-close-wheel-detail">
               <X style={{ width: 14, height: 14 }} />
             </button>
@@ -844,6 +884,7 @@ function CompactCompass({
   onToggle: (term: string) => void;
 }) {
   const { t } = useTranslation();
+  const isDark = useIsDarkTheme();
   const [selectedCat, setSelectedCat] = useState<CategoryId | null>(null);
   const w = 300, h = 260;
   const selCat = selectedCat ? categories.find((c) => c.id === selectedCat) : null;
@@ -903,10 +944,10 @@ function CompactCompass({
             <g key={cat.id} onClick={() => { setSelectedCat(isSelected ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
               <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.15} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
               <circle cx={px} cy={py} r={r} fill={color} fillOpacity={isDimmed ? 0.2 : 0.4} stroke={color} strokeWidth={isSelected ? 2 : 1} strokeOpacity={isDimmed ? 0.3 : 0.7} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
-              <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"} fontSize={8} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"} fontSize={10} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {cat.name.split(" / ")[0]}
               </text>
-              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"} fontSize={7} style={{ pointerEvents: "none", opacity: isDimmed ? 0.5 : 0.8 }}>
+              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"} fontSize={9} style={{ pointerEvents: "none", opacity: isDimmed ? 0.5 : 0.8 }}>
                 {cat.name.split(" / ")[1] || ""}
               </text>
               {count > 0 && (
@@ -954,7 +995,7 @@ function CompactCompass({
         }} data-testid={`compass-detail-${selectedCat}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[selectedCat]}</span>
-            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: CATEGORY_COLORS[selectedCat] }}>{selCat.name}</span>
+            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedCat], isDark) }}>{selCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setSelectedCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
               <X style={{ width: 14, height: 14 }} />
             </button>
@@ -994,6 +1035,7 @@ function CompactRadar({
   section: TermSection;
 }) {
   const { t } = useTranslation();
+  const isDark = useIsDarkTheme();
   const [enabledCats, setEnabledCats] = useState<Set<CategoryId>>(new Set(["islay", "speyside"]));
   const [selectedRadarCat, setSelectedRadarCat] = useState<CategoryId | null>(null);
   const [selectedAxis, setSelectedAxis] = useState<string | null>(null);
@@ -1060,7 +1102,7 @@ function CompactRadar({
               triggerHaptic("light");
             }} style={{ cursor: "pointer" }}>
               <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="var(--labs-border)" strokeWidth={0.4} strokeOpacity={0.4} />
-              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text)" fontSize={9} fontWeight={500} opacity={0.8}>{axis}</text>
+              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text)" fontSize={11} fontWeight={500} opacity={0.8}>{axis}</text>
             </g>
           );
         })}
@@ -1075,7 +1117,7 @@ function CompactRadar({
       </svg>
       {selected.size > 0 && (
         <div style={{ textAlign: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 9, color: "var(--labs-accent)", fontWeight: 500 }}>— {t("m2.rating.studioYourProfile", "Your tasting profile")} —</span>
+          <span style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 500 }}>— {t("m2.rating.studioYourProfile", "Your tasting profile")} —</span>
         </div>
       )}
       {selectedAxis && !selectedRadarCat && (() => {
@@ -1133,7 +1175,7 @@ function CompactRadar({
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[selectedRadarCat]}</span>
-            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: CATEGORY_COLORS[selectedRadarCat] }}>{selCat.name}</span>
+            <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedRadarCat], isDark) }}>{selCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setSelectedRadarCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
               <X style={{ width: 14, height: 14 }} />
             </button>
@@ -1418,6 +1460,7 @@ function JourneyView({
   isDE: boolean;
 }) {
   const { t } = useTranslation();
+  const isDark = useIsDarkTheme();
   const [phase, setPhase] = useState<JourneyPhase>("sweep");
   const [sweepIndex, setSweepIndex] = useState(0);
   const [decisions, setDecisions] = useState<Record<string, JourneyDecision>>({});
@@ -1510,10 +1553,10 @@ function JourneyView({
           display: "flex", alignItems: "center", justifyContent: "space-between",
           marginBottom: 12,
         }}>
-          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
             {t("m2.rating.journeyPhase1", "Phase 1: First Impressions")}
           </div>
-          <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>
             {sweepIndex + 1} / {orderedCategories.length}
           </div>
         </div>
@@ -1559,7 +1602,7 @@ function JourneyView({
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
                 {currentSweepCat.subcategories.slice(0, 4).map((sub) => (
                   <span key={sub.id} style={{
-                    fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                    fontSize: 11, padding: "2px 8px", borderRadius: 10,
                     background: `${currentSweepCat.color}30`, color: "#f5f0e8",
                     border: `1px solid ${currentSweepCat.color}55`,
                   }}>
@@ -1568,7 +1611,7 @@ function JourneyView({
                 ))}
                 {currentSweepCat.subcategories.length > 4 && (
                   <span style={{
-                    fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                    fontSize: 11, padding: "2px 8px", borderRadius: 10,
                     background: `${currentSweepCat.color}25`, color: "#f5f0e8", opacity: 0.7,
                   }}>
                     +{currentSweepCat.subcategories.length - 4}
@@ -1636,10 +1679,10 @@ function JourneyView({
           display: "flex", alignItems: "center", justifyContent: "space-between",
           marginBottom: 8,
         }}>
-          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
             {t("m2.rating.journeyPhase2", "Phase 2: Specific Notes")}
           </div>
-          <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>
             {drillIndex + 1} / {drillCategories.length}
           </div>
         </div>
@@ -1685,7 +1728,7 @@ function JourneyView({
               {currentDrillCat.subgroups.map((sg) => (
                 <div key={sg.id}>
                   <div style={{
-                    fontSize: 10, fontWeight: 600, color: "var(--labs-text)", opacity: 0.8,
+                    fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
                     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
                   }}>
                     {isDE ? sg.de : sg.en}
@@ -1800,7 +1843,7 @@ function JourneyView({
         display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 12,
       }}>
-        <div style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+        <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
           {t("m2.rating.journeyPhase3", "Phase 3: Your Profile")}
         </div>
         <button
@@ -1863,7 +1906,7 @@ function JourneyView({
 
           <div style={{ marginBottom: 14 }}>
             <div style={{
-              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
               textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
             }}>
               {t("m2.rating.journeyCategoryWeights", "Category Weights")}
@@ -1878,7 +1921,7 @@ function JourneyView({
                   return (
                     <div key={cat.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{GUIDE_ICONS[cat.id]}</span>
-                      <span style={{ fontSize: 11, width: 60, color: cat.color, fontWeight: 600 }}>
+                      <span style={{ fontSize: 11, width: 60, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600 }}>
                         {isDE ? cat.de : cat.en}
                       </span>
                       <div style={{
@@ -1901,7 +1944,7 @@ function JourneyView({
 
           <div>
             <div style={{
-              fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)",
+              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
               textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
             }}>
               {t("m2.rating.journeySelectedNotes", "Selected Notes")} ({totalSelected})
@@ -1915,7 +1958,7 @@ function JourneyView({
                     <div key={cat.id}>
                       <div style={{
                         display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
-                        fontSize: 10, color: cat.color, fontWeight: 600,
+                        fontSize: 11, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600,
                       }}>
                         <span style={{ fontSize: 12 }}>{GUIDE_ICONS[cat.id]}</span>
                         <span>{isDE ? cat.de : cat.en}</span>
@@ -2108,7 +2151,7 @@ export default function FlavourStudioSheet({
         }}>
           {quickTerms.length > 0 && (
             <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
                 {t("m2.rating.studioQuickAdd", "Quick Add")}
               </div>
               <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 4 }}>
@@ -2120,7 +2163,7 @@ export default function FlavourStudioSheet({
                     <button key={term} onClick={() => toggleTerm(term)}
                       data-testid={`studio-quick-${term.replace(/\s+/g, "-").toLowerCase()}`}
                       style={{
-                        fontSize: 10, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
+                        fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
                         whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
                         background: isS ? `${color}40` : "var(--labs-surface)",
                         color: isS ? "#f5f0e8" : "var(--labs-text)",
