@@ -48,6 +48,76 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root:has(.labs-shell) {
+  --labs-bg: #1a1714;
+  --labs-surface: #382f28;
+  --labs-surface-hover: #443a31;
+  --labs-surface-elevated: #504539;
+  --labs-border: #6b5f53;
+  --labs-border-subtle: #554a3f;
+  --labs-text: #f5f0e8;
+  --labs-text-secondary: #c4b99a;
+  --labs-text-muted: #b8a88e;
+  --labs-accent: #c9a76c;
+  --labs-accent-hover: #d4b07a;
+  --labs-accent-muted: rgba(201, 167, 108, 0.12);
+  --labs-accent-glow: rgba(201, 167, 108, 0.06);
+  --labs-success: #7dba84;
+  --labs-success-muted: rgba(125, 186, 132, 0.12);
+  --labs-danger: #c47e7e;
+  --labs-danger-muted: rgba(196, 126, 126, 0.12);
+  --labs-info: #7aafc9;
+  --labs-info-muted: rgba(122, 175, 201, 0.12);
+  --labs-dim-nose: #D9A15B;
+  --labs-dim-taste: #C97845;
+  --labs-dim-finish: #9C6A5E;
+  --labs-dim-balance: #7F8C5A;
+  --labs-accent-dark: #1a1410;
+  --labs-on-accent: #ffffff;
+  --labs-header-bg: rgba(26, 23, 20, 0.97);
+  --labs-nav-bg: rgba(26, 23, 20, 0.92);
+  --labs-radius: 16px;
+  --labs-radius-sm: 10px;
+  --labs-radius-lg: 22px;
+  --labs-radius-xl: 28px;
+  --labs-space-xs: 4px;
+  --labs-space-sm: 8px;
+  --labs-space-md: 16px;
+  --labs-space-lg: 24px;
+  --labs-space-xl: 32px;
+  --labs-space-2xl: 48px;
+}
+
+:root:has(.labs-shell.labs-light) {
+  --labs-bg: #f5f0e8;
+  --labs-surface: #ffffff;
+  --labs-surface-hover: #f0ebe2;
+  --labs-surface-elevated: #faf7f2;
+  --labs-border: #d9cfbf;
+  --labs-border-subtle: #e8e0d4;
+  --labs-text: #2c2418;
+  --labs-text-secondary: #5c4f3a;
+  --labs-text-muted: #8a7e6d;
+  --labs-accent: #b8872e;
+  --labs-accent-hover: #a07526;
+  --labs-accent-muted: rgba(184, 135, 46, 0.10);
+  --labs-accent-glow: rgba(184, 135, 46, 0.05);
+  --labs-success: #4a9a52;
+  --labs-success-muted: rgba(74, 154, 82, 0.10);
+  --labs-danger: #c05050;
+  --labs-danger-muted: rgba(192, 80, 80, 0.10);
+  --labs-info: #4a82b0;
+  --labs-info-muted: rgba(74, 130, 176, 0.10);
+  --labs-dim-nose: #c08a3a;
+  --labs-dim-taste: #a86830;
+  --labs-dim-finish: #8a5848;
+  --labs-dim-balance: #6a7a48;
+  --labs-accent-dark: #f5f0e8;
+  --labs-on-accent: #ffffff;
+  --labs-header-bg: rgba(245, 240, 232, 0.97);
+  --labs-nav-bg: rgba(245, 240, 232, 0.95);
+}
+
 .labs-shell.labs-light {
   --labs-bg: #f5f0e8;
   --labs-surface: #ffffff;
