@@ -1,17 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
-  Users, Heart, Wine, ChevronRight, Activity, Star, UserPlus, Calendar,
+  Users, Wine, ChevronRight, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
-import { communityApi, friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
+import { friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
-type Tab = "people" | "leaderboard" | "friends" | "sessions" | "activity";
+type Tab = "friends" | "leaderboard" | "sessions" | "activity";
 
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
@@ -37,6 +37,8 @@ function timeAgo(iso: string | undefined): string {
 interface LeaderboardEntry {
   id: string;
   name: string;
+  isSelf?: boolean;
+  isFriend?: boolean;
   ratingsCount?: number;
   avgNotesLength?: number;
   avgScore?: number;
@@ -45,11 +47,26 @@ interface LeaderboardEntry {
   tastings?: number;
 }
 
+interface YourRanks {
+  mostActive: number;
+  mostDetailed: number;
+  highestRated: number;
+  explorer: number;
+  total: number;
+  stats: {
+    ratingsCount: number;
+    avgNotesLength: number;
+    avgScore: number;
+    uniqueWhiskies: number;
+  };
+}
+
 interface LeaderboardData {
   mostActive: LeaderboardEntry[];
   mostDetailed: LeaderboardEntry[];
   highestRated: LeaderboardEntry[];
   explorer: LeaderboardEntry[];
+  yourRanks?: YourRanks;
 }
 
 export default function LabsCircle() {
@@ -65,16 +82,10 @@ export default function LabsCircle() {
   const [friendLastName, setFriendLastName] = useState("");
   const [friendEmail, setFriendEmail] = useState("");
 
-  const { data: twins, isLoading: twinsLoading } = useQuery({
-    queryKey: ["taste-twins", pid],
-    queryFn: () => communityApi.getTasteTwins(pid!),
-    enabled: !!pid && tab === "people",
-  });
-
   const { data: friends, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
-    enabled: !!pid && (tab === "people" || tab === "friends"),
+    enabled: !!pid && tab === "friends",
   });
 
   const { data: pendingRequests } = useQuery<unknown[]>({
@@ -91,8 +102,8 @@ export default function LabsCircle() {
     refetchInterval: 30000,
   });
 
-  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery<LeaderboardData | LeaderboardEntry[]>({
-    queryKey: ["leaderboard"],
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery<LeaderboardData>({
+    queryKey: ["leaderboard", pid],
     queryFn: () => leaderboardApi.get(),
     enabled: !!pid && tab === "leaderboard",
   });
@@ -106,7 +117,7 @@ export default function LabsCircle() {
   const { data: tastings } = useQuery({
     queryKey: ["tastings", pid],
     queryFn: () => tastingApi.getAll(pid),
-    enabled: !!pid && (tab === "sessions" || tab === "people" || tab === "friends"),
+    enabled: !!pid && (tab === "sessions" || tab === "friends"),
   });
 
   const addFriendMutation = useMutation({
@@ -177,31 +188,6 @@ export default function LabsCircle() {
     return counts;
   }, [sharedSessions]);
 
-  const peopleFromTastings = useMemo(() => {
-    const map = new Map<string, { name: string; sharedCount: number; sessions: string[] }>();
-    for (const t of sharedSessions) {
-      const participants = (t.participants || []) as Array<Record<string, unknown>>;
-      for (const p of participants) {
-        if (p.id === pid) continue;
-        const key = (p.id || p.name) as string;
-        if (!key) continue;
-        const existing = map.get(key);
-        if (existing) {
-          existing.sharedCount++;
-          existing.sessions.push((t.title || t.id) as string);
-        } else {
-          map.set(key, {
-            name: stripGuestSuffix((p.name as string) || "Unknown"),
-            sharedCount: 1,
-            sessions: [(t.title || t.id) as string],
-          });
-        }
-      }
-    }
-    return Array.from(map.entries())
-      .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.sharedCount - a.sharedCount);
-  }, [sharedSessions, pid]);
 
   if (!pid) {
     return (
@@ -216,7 +202,7 @@ export default function LabsCircle() {
           Your Circle
         </p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-          Sign in to see your tasting connections and discover taste twins
+          Sign in to see your friends, rankings and tastings
         </p>
         <button
           className="labs-btn-primary"
@@ -229,15 +215,11 @@ export default function LabsCircle() {
     );
   }
 
-  const isLoading = twinsLoading || friendsLoading;
-  const twinsList: Array<Record<string, unknown>> = Array.isArray(twins) ? twins : [];
   const friendsList: Array<Record<string, unknown>> = Array.isArray(friends) ? friends : [];
   const pendingList: Array<Record<string, unknown>> = Array.isArray(pendingRequests) ? pendingRequests as Array<Record<string, unknown>> : [];
-  const activityList: Array<Record<string, unknown>> = Array.isArray(friendActivity) ? friendActivity : [];
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Users }> = [
     { key: "friends", label: "Friends", icon: Users },
-    { key: "people", label: "People", icon: Heart },
     { key: "leaderboard", label: "Board", icon: Trophy },
     { key: "sessions", label: "Sessions", icon: Wine },
     { key: "activity", label: "Feed", icon: Activity },
@@ -266,7 +248,7 @@ export default function LabsCircle() {
           )}
         </div>
         <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
-          Your community, rankings & connections
+          Friends, rankings & tastings
         </p>
       </div>
 
@@ -296,7 +278,6 @@ export default function LabsCircle() {
         ))}
       </div>
 
-      {tab === "people" && renderPeopleTab()}
       {tab === "leaderboard" && renderLeaderboardTab()}
       {tab === "friends" && renderFriendsTab()}
       {tab === "sessions" && renderSessionsTab()}
@@ -312,449 +293,214 @@ export default function LabsCircle() {
     </div>
   );
 
-  function renderPeopleTab() {
-    if (isLoading) return <LoadingSkeleton count={3} />;
-
-    const AVATAR_COLORS = [
-      ["#C27B3E", "#8B5E3C"],
-      ["#7A6B5D", "#5C4F42"],
-      ["#9B7B5B", "#6D5A44"],
-      ["#6B7F6B", "#4A5D4A"],
-      ["#7B6B8B", "#5A4D6A"],
-      ["#8B6B6B", "#6A4D4D"],
-    ];
-
-    const getAvatarColor = (name: string) => {
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-    };
-
-    const getInitials = (name: string) => {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-      return name.slice(0, 2).toUpperCase();
-    };
-
-    const MatchRing = ({ pct, size = 44 }: { pct: number; size?: number }) => {
-      const r = (size - 4) / 2;
-      const circ = 2 * Math.PI * r;
-      const filled = circ * (pct / 100);
-      const ringColor = pct >= 70 ? "var(--labs-success)" : pct >= 45 ? "var(--labs-accent)" : "var(--labs-text-muted)";
-      return (
-        <svg width={size} height={size} style={{ position: "absolute", inset: 0 }}>
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--labs-border)" strokeWidth={2} />
-          <circle
-            cx={size / 2} cy={size / 2} r={r} fill="none"
-            stroke={ringColor} strokeWidth={2.5}
-            strokeDasharray={`${filled} ${circ - filled}`}
-            strokeDashoffset={circ / 4}
-            strokeLinecap="round"
-            style={{ transition: "stroke-dasharray 0.6s ease" }}
-          />
-        </svg>
-      );
-    };
-
-    return (
-      <div className="labs-fade-in">
-        {twinsList.length > 0 && (
-          <div className="mb-8">
-            <p className="labs-section-label flex items-center gap-2">
-              <Heart className="w-3.5 h-3.5" />
-              Taste Twins
-            </p>
-            <div className="space-y-2">
-              {twinsList.slice(0, 8).map((twin, idx) => {
-                const matchPct = Math.round(((twin.correlation ?? twin.similarity ?? 0) as number) * 100);
-                const sharedWhiskies = (twin.sharedWhiskies || 0) as number;
-                const twinSessions = (twin.sharedSessions || twin.sharedTastings || 0) as number;
-                const twinName = stripGuestSuffix((twin.participantName || twin.name || "Unknown") as string);
-                const [bgFrom, bgTo] = getAvatarColor(twinName);
-                const initials = getInitials(twinName);
-                return (
-                  <div
-                    key={(twin.participantId as string) || idx}
-                    className="labs-card labs-card-interactive p-4"
-                    data-testid={`labs-circle-twin-${(twin.participantId as string) || idx}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative flex-shrink-0" style={{ width: 44, height: 44 }}>
-                        <MatchRing pct={matchPct} />
-                        <div
-                          className="absolute flex items-center justify-center rounded-full"
-                          style={{
-                            inset: 3,
-                            background: `linear-gradient(135deg, ${bgFrom}, ${bgTo})`,
-                            color: "rgba(255,255,255,0.9)",
-                            fontSize: 13,
-                            fontWeight: 700,
-                            letterSpacing: "0.02em",
-                          }}
-                        >
-                          {initials}
-                        </div>
-                        {matchPct >= 60 && (
-                          <div
-                            className="absolute flex items-center justify-center rounded-full"
-                            style={{
-                              width: 16, height: 16,
-                              bottom: -2, right: -2,
-                              background: "var(--labs-bg)",
-                              border: "2px solid var(--labs-bg)",
-                            }}
-                          >
-                            <Heart
-                              className="w-2.5 h-2.5"
-                              style={{ color: "var(--labs-accent)", fill: "var(--labs-accent)" }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                          {twinName}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          {sharedWhiskies > 0 && (
-                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                              <GlassWater className="w-3 h-3" />
-                              {sharedWhiskies} shared
-                            </span>
-                          )}
-                          {twinSessions > 0 && (
-                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                              <Calendar className="w-3 h-3" />
-                              {twinSessions} sessions
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span
-                          className="text-base font-bold tabular-nums"
-                          style={{
-                            color: matchPct >= 70 ? "var(--labs-success)" : matchPct >= 45 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                          }}
-                        >
-                          {matchPct}%
-                        </span>
-                        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>match</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {peopleFromTastings.length > 0 && (
-          <div className="mb-8">
-            <p className="labs-section-label flex items-center gap-2">
-              <Users className="w-3.5 h-3.5" />
-              Tasting Partners
-            </p>
-            <div className="space-y-2">
-              {peopleFromTastings.slice(0, 10).map((person) => {
-                const [pBgFrom, pBgTo] = getAvatarColor(person.name);
-                const pInitials = getInitials(person.name);
-                return (
-                  <div
-                    key={person.id}
-                    className="labs-card p-4 flex items-center gap-4"
-                    data-testid={`labs-circle-partner-${person.id}`}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold"
-                      style={{
-                        background: `linear-gradient(135deg, ${pBgFrom}, ${pBgTo})`,
-                        color: "rgba(255,255,255,0.9)",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {pInitials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                        {person.name}
-                      </p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                        {person.sharedCount} shared tasting{person.sharedCount !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                    <span
-                      className="text-xs px-2.5 py-1 rounded-full flex-shrink-0 font-semibold tabular-nums"
-                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                    >
-                      {person.sharedCount}×
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {friendsList.length > 0 && (
-          <div className="mb-8">
-            <p className="labs-section-label flex items-center gap-2">
-              <UserPlus className="w-3.5 h-3.5" />
-              Friends
-            </p>
-            <div className="space-y-2">
-              {friendsList.map((friend, idx) => {
-                const fid = friend.id as string;
-                const isOnline = onlineFriendIds.has(fid);
-                const friendName = [friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend";
-                const [fBgFrom, fBgTo] = getAvatarColor(friendName);
-                const fInitials = getInitials(friendName);
-                const onlineInfo = onlineFriendsMap.get(fid);
-                return (
-                  <div
-                    key={fid || idx}
-                    className="labs-card p-4 flex items-center gap-4"
-                    style={{ ...(isOnline ? { borderLeft: "3px solid var(--labs-success)" } : {}), cursor: isOnline ? "pointer" : undefined }}
-                    onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
-                    data-testid={`labs-circle-friend-${fid || idx}`}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold"
-                        style={{
-                          background: `linear-gradient(135deg, ${fBgFrom}, ${fBgTo})`,
-                          color: "rgba(255,255,255,0.9)",
-                          letterSpacing: "0.02em",
-                        }}
-                      >
-                        {fInitials}
-                      </div>
-                      {isOnline && (
-                        <div
-                          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
-                          style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
-                          data-testid={`labs-circle-online-indicator-${fid}`}
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                        {friendName}
-                      </p>
-                      {isOnline ? (
-                        <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
-                          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--labs-success)" }} />
-                          Active {timeAgo(onlineInfo?.lastSeenAt)}
-                        </p>
-                      ) : typeof friend.email === "string" && friend.email ? (
-                        <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                          {friend.email}
-                        </p>
-                      ) : null}
-                    </div>
-                    {isOnline && (
-                      <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {twinsList.length === 0 && friendsList.length === 0 && peopleFromTastings.length === 0 && (
-          <EmptyState
-            icon={Users}
-            title="No connections yet"
-            description="Your circle grows as you taste with others — join or host a session to get started"
-          >
-            <div className="flex gap-3">
-              <button className="labs-btn-primary text-sm px-5 py-2.5" onClick={() => navigate("/labs/join")} data-testid="labs-circle-empty-join">
-                Join a Tasting
-              </button>
-              <button className="labs-btn-secondary text-sm px-5 py-2.5" onClick={() => navigate("/labs/host")} data-testid="labs-circle-empty-host">
-                Host One
-              </button>
-            </div>
-          </EmptyState>
-        )}
-      </div>
-    );
-  }
-
   function renderLeaderboardTab() {
     if (leaderboardLoading) return <LoadingSkeleton count={4} />;
 
     const isStructured = leaderboardData && !Array.isArray(leaderboardData) &&
       ("mostActive" in leaderboardData || "highestRated" in leaderboardData);
 
-    if (isStructured) {
-      const structured = leaderboardData as LeaderboardData;
-      const categories: Array<{
-        key: string;
-        label: string;
-        subtitle: string;
-        icon: typeof Activity;
-        entries: LeaderboardEntry[];
-        format: (e: LeaderboardEntry) => string;
-      }> = [
-        {
-          key: "mostActive",
-          label: "Active",
-          subtitle: "Most ratings submitted",
-          icon: Activity,
-          entries: structured.mostActive || [],
-          format: (e) => `${e.ratingsCount || 0} ratings`,
-        },
-        {
-          key: "mostDetailed",
-          label: "Detailed",
-          subtitle: "Longest tasting notes",
-          icon: FileText,
-          entries: structured.mostDetailed || [],
-          format: (e) => `${Math.round(e.avgNotesLength || 0)} chars`,
-        },
-        {
-          key: "highestRated",
-          label: "Top Rated",
-          subtitle: "Highest average score",
-          icon: Star,
-          entries: structured.highestRated || [],
-          format: (e) => typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "\u2014",
-        },
-        {
-          key: "explorer",
-          label: "Explorer",
-          subtitle: "Greatest variety tasted",
-          icon: Compass,
-          entries: structured.explorer || [],
-          format: (e) => `${e.uniqueWhiskies || 0} whiskies`,
-        },
-      ];
-
-      const activeCat = categories.find((c) => c.key === lbCategory) || categories[0];
-
-      return (
-        <div className="labs-fade-in" data-testid="labs-circle-leaderboard">
-          <div className="grid grid-cols-4 gap-1.5 mb-5">
-            {categories.map((cat) => {
-              const isActive = lbCategory === cat.key;
-              return (
-                <button
-                  key={cat.key}
-                  className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[11px] transition-all"
-                  style={{
-                    background: isActive ? "var(--labs-accent-muted)" : "transparent",
-                    color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                    border: `1px solid ${isActive ? "var(--labs-accent)" : "transparent"}`,
-                    fontWeight: isActive ? 700 : 500,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setLbCategory(cat.key)}
-                  data-testid={`labs-circle-lb-${cat.key}`}
-                >
-                  <cat.icon className="w-4 h-4" />
-                  <span className="truncate max-w-full">{cat.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <p
-            className="text-xs text-center mb-5"
-            style={{ color: "var(--labs-text-muted)" }}
-            data-testid="labs-circle-lb-subtitle"
-          >
-            {activeCat.subtitle}
-          </p>
-
-          {activeCat.entries.length === 0 ? (
-            <EmptyState icon={Trophy} title="No rankings yet" description="Leaderboard data will appear once enough ratings are submitted" />
-          ) : (
-            <div className="space-y-2">
-              {activeCat.entries.map((entry, i) => {
-                const isCurrentUser = entry.id === pid;
-                return (
-                  <div
-                    key={entry.id || i}
-                    className="labs-card p-4 flex items-center gap-3"
-                    style={isCurrentUser ? { border: "1px solid var(--labs-accent)" } : undefined}
-                    data-testid={`labs-circle-lb-entry-${i}`}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: i < 3 ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                        fontSize: i < 3 ? 16 : 13,
-                        fontWeight: 700,
-                        color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                      }}
-                    >
-                      {i < 3 ? MEDALS[i] : i + 1}
-                    </div>
-                    <span
-                      className="flex-1 text-sm font-semibold truncate"
-                      style={{ color: isCurrentUser ? "var(--labs-accent)" : "var(--labs-text)" }}
-                      data-testid={`labs-circle-lb-name-${i}`}
-                    >
-                      {stripGuestSuffix(entry.name)}
-                      {isCurrentUser ? " \u2605" : ""}
-                    </span>
-                    <span
-                      className="labs-serif text-sm font-bold whitespace-nowrap"
-                      style={{ color: "var(--labs-accent)" }}
-                      data-testid={`labs-circle-lb-value-${i}`}
-                    >
-                      {activeCat.format(entry)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const flatList = Array.isArray(leaderboardData) ? leaderboardData : [];
-    if (flatList.length === 0) {
+    if (!isStructured) {
       return <EmptyState icon={Trophy} title="No rankings yet" description="Leaderboard data will appear once enough ratings are submitted" />;
     }
 
+    const structured = leaderboardData as LeaderboardData;
+    const yourRanks = structured.yourRanks;
+
+    const categories: Array<{
+      key: string;
+      label: string;
+      subtitle: string;
+      icon: typeof Activity;
+      entries: LeaderboardEntry[];
+      format: (e: LeaderboardEntry) => string;
+      rankKey: keyof Omit<YourRanks, "total" | "stats">;
+      statKey: keyof YourRanks["stats"];
+      statFormat: (v: number) => string;
+    }> = [
+      {
+        key: "mostActive",
+        label: "Active",
+        subtitle: "Most ratings submitted",
+        icon: Activity,
+        entries: structured.mostActive || [],
+        format: (e) => `${e.ratingsCount || 0} ratings`,
+        rankKey: "mostActive",
+        statKey: "ratingsCount",
+        statFormat: (v) => `${v} ratings`,
+      },
+      {
+        key: "mostDetailed",
+        label: "Detailed",
+        subtitle: "Longest tasting notes",
+        icon: FileText,
+        entries: structured.mostDetailed || [],
+        format: (e) => `${Math.round(e.avgNotesLength || 0)} chars`,
+        rankKey: "mostDetailed",
+        statKey: "avgNotesLength",
+        statFormat: (v) => `${Math.round(v)} chars avg`,
+      },
+      {
+        key: "highestRated",
+        label: "Top Rated",
+        subtitle: "Highest average score",
+        icon: Star,
+        entries: structured.highestRated || [],
+        format: (e) => typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "\u2014",
+        rankKey: "highestRated",
+        statKey: "avgScore",
+        statFormat: (v) => `${v.toFixed(1)} avg`,
+      },
+      {
+        key: "explorer",
+        label: "Explorer",
+        subtitle: "Greatest variety tasted",
+        icon: Compass,
+        entries: structured.explorer || [],
+        format: (e) => `${e.uniqueWhiskies || 0} whiskies`,
+        rankKey: "explorer",
+        statKey: "uniqueWhiskies",
+        statFormat: (v) => `${v} whiskies`,
+      },
+    ];
+
+    const activeCat = categories.find((c) => c.key === lbCategory) || categories[0];
+    const yourRank = yourRanks ? yourRanks[activeCat.rankKey] : 0;
+    const yourTotal = yourRanks?.total || 0;
+    const yourPct = yourTotal > 0 ? Math.round(((yourTotal - yourRank) / yourTotal) * 100) : 0;
+
+    const getEntryStyle = (entry: LeaderboardEntry) => {
+      if (entry.isSelf) return { border: "1px solid var(--labs-accent)", background: "color-mix(in srgb, var(--labs-accent) 8%, var(--labs-surface))" };
+      if (entry.isFriend) return { borderLeft: "3px solid var(--labs-success)" };
+      return undefined;
+    };
+
+    const getNameDisplay = (entry: LeaderboardEntry) => {
+      if (entry.isSelf) return { text: "You", color: "var(--labs-accent)", suffix: " \u2605" };
+      if (entry.isFriend) return { text: stripGuestSuffix(entry.name), color: "var(--labs-text)", suffix: "" };
+      return { text: entry.name, color: "var(--labs-text-muted)", suffix: "" };
+    };
+
     return (
-      <div className="labs-fade-in space-y-2" data-testid="labs-circle-leaderboard">
-        {flatList.map((entry: LeaderboardEntry, i: number) => (
+      <div className="labs-fade-in" data-testid="labs-circle-leaderboard">
+        {yourRanks && (
           <div
-            key={entry.id || i}
-            className="labs-card p-4 flex items-center gap-3"
-            data-testid={`labs-circle-lb-entry-${i}`}
+            className="labs-card p-4 mb-5"
+            style={{ border: "1px solid var(--labs-accent)", background: "color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface))" }}
+            data-testid="labs-circle-your-rank"
           >
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background: i < 3 ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                fontSize: i < 3 ? 16 : 13,
-                fontWeight: 700,
-                color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-              }}
-            >
-              {i < 3 ? MEDALS[i] : i + 1}
-            </div>
-            <span className="flex-1 text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-              {stripGuestSuffix(entry.name)}
-            </span>
-            <div className="text-right">
-              <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
-                {typeof entry.score === "number" ? Math.round(entry.score * 10) / 10 : entry.score}
-              </span>
-              {entry.tastings != null && (
-                <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                  {entry.tastings} tastings
+            <div className="flex items-center gap-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--labs-accent-muted)" }}
+              >
+                <Trophy className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+                  Your Rank \u00B7 {activeCat.label}
                 </p>
-              )}
+                <p className="text-lg font-bold labs-serif" style={{ color: "var(--labs-accent)" }}>
+                  #{yourRank} <span className="text-sm font-normal" style={{ color: "var(--labs-text-secondary)" }}>of {yourTotal}</span>
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                  Top {Math.max(1, 100 - yourPct)}%
+                </span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                  {activeCat.statFormat(yourRanks.stats[activeCat.statKey])}
+                </span>
+              </div>
             </div>
           </div>
-        ))}
+        )}
+
+        <div className="grid grid-cols-4 gap-1.5 mb-5">
+          {categories.map((cat) => {
+            const isActive = lbCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[11px] transition-all"
+                style={{
+                  background: isActive ? "var(--labs-accent-muted)" : "transparent",
+                  color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  border: `1px solid ${isActive ? "var(--labs-accent)" : "transparent"}`,
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
+                }}
+                onClick={() => setLbCategory(cat.key)}
+                data-testid={`labs-circle-lb-${cat.key}`}
+              >
+                <cat.icon className="w-4 h-4" />
+                <span className="truncate max-w-full">{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p
+          className="text-xs text-center mb-5"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-circle-lb-subtitle"
+        >
+          {activeCat.subtitle}
+        </p>
+
+        {activeCat.entries.length === 0 ? (
+          <EmptyState icon={Trophy} title="No rankings yet" description="Leaderboard data will appear once enough ratings are submitted" />
+        ) : (
+          <div className="space-y-2">
+            {activeCat.entries.map((entry, i) => {
+              const nameDisplay = getNameDisplay(entry);
+              return (
+                <div
+                  key={entry.id || i}
+                  className="labs-card p-4 flex items-center gap-3"
+                  style={getEntryStyle(entry)}
+                  data-testid={`labs-circle-lb-entry-${i}`}
+                >
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: i < 3 ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                      fontSize: i < 3 ? 16 : 13,
+                      fontWeight: 700,
+                      color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                    }}
+                  >
+                    {i < 3 ? MEDALS[i] : i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0 flex items-center gap-2">
+                    <span
+                      className="text-sm font-semibold truncate"
+                      style={{ color: nameDisplay.color, fontStyle: !entry.isSelf && !entry.isFriend ? "italic" : "normal" }}
+                      data-testid={`labs-circle-lb-name-${i}`}
+                    >
+                      {nameDisplay.text}{nameDisplay.suffix}
+                    </span>
+                    {entry.isFriend && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>
+                        Friend
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className="labs-serif text-sm font-bold whitespace-nowrap"
+                    style={{ color: "var(--labs-accent)" }}
+                    data-testid={`labs-circle-lb-value-${i}`}
+                  >
+                    {activeCat.format(entry)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-[11px] text-center mt-4" style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }}>
+          Names shown only for you and your friends. Others appear as whisky aliases.
+        </p>
       </div>
     );
   }

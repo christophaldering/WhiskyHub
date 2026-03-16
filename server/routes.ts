@@ -7300,37 +7300,87 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   // ===== GLOBAL LEADERBOARD =====
 
-  app.get("/api/leaderboard", async (_req, res) => {
+  app.get("/api/leaderboard", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+
       const allTastings = await storage.getAllTastings();
-      const allRatings: any[] = [];
+      const allRatings: Array<Record<string, unknown>> = [];
       for (const t of allTastings) {
         const ratings = await storage.getRatingsForTasting(t.id);
         allRatings.push(...ratings);
       }
 
-      const participantData = new Map<string, { ratings: any[] }>();
+      const participantData = new Map<string, { ratings: Array<Record<string, unknown>> }>();
       for (const r of allRatings) {
-        if (!participantData.has(r.participantId)) {
-          participantData.set(r.participantId, { ratings: [] });
+        const pId = r.participantId as string;
+        if (!participantData.has(pId)) {
+          participantData.set(pId, { ratings: [] });
         }
-        participantData.get(r.participantId)!.ratings.push(r);
+        participantData.get(pId)!.ratings.push(r);
       }
+
+      let friendEmails = new Set<string>();
+      if (requesterId) {
+        const friends = await storage.getWhiskyFriends(requesterId);
+        friendEmails = new Set(friends.map(f => (f.email || "").toLowerCase()).filter(Boolean));
+      }
+
+      const participantEmailMap = new Map<string, string>();
+      for (const pId of participantData.keys()) {
+        const p = await storage.getParticipant(pId);
+        if (p?.email) participantEmailMap.set(pId, p.email.toLowerCase());
+      }
+
+      const isFriendOrSelf = (pId: string): boolean => {
+        if (pId === requesterId) return true;
+        const email = participantEmailMap.get(pId);
+        return email ? friendEmails.has(email) : false;
+      };
+
+      const ALIAS_ADJ = [
+        "Peated","Highland","Smoky","Golden","Sherried","Coastal","Mellow",
+        "Velvet","Amber","Vintage","Bold","Gentle","Silent","Misty","Oaken",
+        "Copper","Charred","Honeyed","Spiced","Seasoned","Aged","Refined",
+        "Toasted","Dusky","Twilight","Crimson","Heather","Mossy","Briny",
+        "Rugged","Noble","Swift","Ember","Frosty","Drifting","Wandering",
+        "Ancient","Hidden","Lone","Stormy","Rustic","Burnished","Phantom",
+        "Scarlet","Tawny","Lunar","Craggy","Ashen","Dusty","Roaming",
+      ];
+      const ALIAS_NOUN = [
+        "Fox","Stag","Hawk","Barrel","Dram","Flask","Glen","Cask",
+        "Thistle","Raven","Oak","Peat","Malt","Flame","Stone",
+        "Wolf","Bear","Otter","Heron","Wren","Ridge","Brook",
+        "Storm","Isle","Cliff","Forge","Spirit","Ember","Blaze",
+        "Shadow","Tide","Peak","Moss","Sage","Flint","Thorn",
+        "Birch","Cedar","Crane","Seal","Lynx","Crow","Pike",
+        "Loch","Moor","Vale","Drift","Spark","Frost","Reed",
+      ];
+      const genAlias = (id: string): string => {
+        let h = 0;
+        for (let i = 0; i < id.length; i++) { h = ((h << 5) - h) + id.charCodeAt(i); h |= 0; }
+        h = Math.abs(h);
+        return `${ALIAS_ADJ[h % ALIAS_ADJ.length]} ${ALIAS_NOUN[Math.floor(h / ALIAS_ADJ.length) % ALIAS_NOUN.length]}`;
+      };
 
       const stats = await Promise.all(
         Array.from(participantData.entries()).map(async ([pId, data]) => {
           const participant = await storage.getParticipant(pId);
           const ratingsCount = data.ratings.length;
-          const notesLengths = data.ratings.map(r => (r.notes || "").length);
+          const notesLengths = data.ratings.map(r => ((r.notes as string) || "").length);
           const avgNotesLength = Math.round(notesLengths.reduce((a: number, b: number) => a + b, 0) / ratingsCount);
-          const overalls = data.ratings.map(r => r.overall).filter((v: any) => v != null);
-          const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : 0;
+          const overalls = data.ratings.map(r => r.overall as number | null).filter((v): v is number => v != null);
+          const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a, b) => a + b, 0) / overalls.length) * 10) / 10 : 0;
+          const uniqueWhiskies = new Set(data.ratings.map(r => r.whiskyId as string).filter(Boolean)).size;
 
-          const uniqueWhiskies = new Set(data.ratings.map((r: any) => r.whiskyId).filter(Boolean)).size;
+          const realName = participant?.name || "Unknown";
+          const showReal = isFriendOrSelf(pId);
 
           return {
             id: pId,
-            name: participant?.name || "Unknown",
+            name: showReal ? realName : genAlias(pId),
+            isSelf: pId === requesterId,
+            isFriend: showReal && pId !== requesterId,
             ratingsCount,
             avgNotesLength,
             avgScore,
@@ -7339,33 +7389,42 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         })
       );
 
-      const mostActive = [...stats].sort((a, b) => b.ratingsCount - a.ratingsCount).slice(0, 10).map(s => ({
-        id: s.id,
-        name: s.name,
-        ratingsCount: s.ratingsCount,
-      }));
+      const mapEntry = (s: Record<string, unknown>, fields: string[]) => {
+        const entry: Record<string, unknown> = {
+          id: s.isSelf || s.isFriend ? s.id : undefined,
+          name: s.name,
+          isSelf: s.isSelf,
+          isFriend: s.isFriend,
+        };
+        for (const f of fields) entry[f] = s[f];
+        return entry;
+      };
 
-      const mostDetailed = [...stats].sort((a, b) => b.avgNotesLength - a.avgNotesLength).slice(0, 10).map(s => ({
-        id: s.id,
-        name: s.name,
-        avgNotesLength: s.avgNotesLength,
-      }));
+      const requesterStats = requesterId ? stats.find(s => s.id === requesterId) : undefined;
 
-      const highestRated = [...stats].sort((a, b) => b.avgScore - a.avgScore).slice(0, 10).map(s => ({
-        id: s.id,
-        name: s.name,
-        avgScore: s.avgScore,
-      }));
+      const mostActive = [...stats].sort((a, b) => b.ratingsCount - a.ratingsCount).slice(0, 10).map(s => mapEntry(s, ["ratingsCount"]));
+      const mostDetailed = [...stats].sort((a, b) => b.avgNotesLength - a.avgNotesLength).slice(0, 10).map(s => mapEntry(s, ["avgNotesLength"]));
+      const highestRated = [...stats].sort((a, b) => b.avgScore - a.avgScore).slice(0, 10).map(s => mapEntry(s, ["avgScore"]));
+      const explorer = [...stats].sort((a, b) => b.uniqueWhiskies - a.uniqueWhiskies).slice(0, 10).map(s => mapEntry(s, ["uniqueWhiskies"]));
 
-      const explorer = [...stats].sort((a, b) => b.uniqueWhiskies - a.uniqueWhiskies).slice(0, 10).map(s => ({
-        id: s.id,
-        name: s.name,
-        uniqueWhiskies: s.uniqueWhiskies,
-      }));
+      const yourRanks = requesterStats ? {
+        mostActive: [...stats].sort((a, b) => b.ratingsCount - a.ratingsCount).findIndex(s => s.id === requesterId) + 1,
+        mostDetailed: [...stats].sort((a, b) => b.avgNotesLength - a.avgNotesLength).findIndex(s => s.id === requesterId) + 1,
+        highestRated: [...stats].sort((a, b) => b.avgScore - a.avgScore).findIndex(s => s.id === requesterId) + 1,
+        explorer: [...stats].sort((a, b) => b.uniqueWhiskies - a.uniqueWhiskies).findIndex(s => s.id === requesterId) + 1,
+        total: stats.length,
+        stats: {
+          ratingsCount: requesterStats.ratingsCount,
+          avgNotesLength: requesterStats.avgNotesLength,
+          avgScore: requesterStats.avgScore,
+          uniqueWhiskies: requesterStats.uniqueWhiskies,
+        },
+      } : null;
 
-      res.json({ mostActive, mostDetailed, highestRated, explorer });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
+      res.json({ mostActive, mostDetailed, highestRated, explorer, yourRanks });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message });
     }
   });
 

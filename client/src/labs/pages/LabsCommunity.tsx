@@ -32,7 +32,13 @@ export default function LabsCommunity() {
     } else if (tab === "leaderboard") {
       setLoading(true);
       leaderboardApi.get()
-        .then((d: unknown) => { setLeaderboard(Array.isArray(d) ? d : []); setLoading(false); })
+        .then((d: unknown) => {
+          if (Array.isArray(d)) { setLeaderboard(d); }
+          else if (d && typeof d === "object" && "mostActive" in d) {
+            setLeaderboard((d as Record<string, unknown>).mostActive as Array<Record<string, unknown>> || []);
+          } else { setLeaderboard([]); }
+          setLoading(false);
+        })
         .catch(() => setLoading(false));
     } else if (tab === "twins" && pid) {
       setLoading(true);
