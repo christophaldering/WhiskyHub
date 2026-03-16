@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Check } from "lucide-react";
 import { friendsApi, inviteApi } from "@/lib/api";
@@ -17,6 +18,7 @@ export default function FriendsQuickSelect({
   onToggle,
   selectedEmails,
 }: FriendsQuickSelectProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
 
   const { data: friends = [] } = useQuery<WhiskyFriend[]>({
@@ -79,7 +81,7 @@ export default function FriendsQuickSelect({
             letterSpacing: "0.05em",
           }}
         >
-          Whisky Friends
+          {t("invite.friendsList", "Whisky Friends")}
         </span>
         <span
           className="text-xs"
@@ -236,7 +238,7 @@ export default function FriendsQuickSelect({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {friend.email} (already invited)
+                  {friend.email} ({t("invite.alreadyInvited", "already invited")})
                 </p>
               </div>
             </div>
