@@ -58,7 +58,7 @@ export default function LabsCircle() {
   const pid = currentParticipant?.id || session.pid;
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>("people");
+  const [tab, setTab] = useState<Tab>("friends");
   const [lbCategory, setLbCategory] = useState("mostActive");
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [friendFirstName, setFriendFirstName] = useState("");
@@ -236,9 +236,9 @@ export default function LabsCircle() {
   const activityList: Array<Record<string, unknown>> = Array.isArray(friendActivity) ? friendActivity : [];
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Users }> = [
+    { key: "friends", label: "Friends", icon: Users },
     { key: "people", label: "People", icon: Heart },
     { key: "leaderboard", label: "Board", icon: Trophy },
-    { key: "friends", label: "Friends", icon: Users },
     { key: "sessions", label: "Sessions", icon: Wine },
     { key: "activity", label: "Feed", icon: Activity },
   ];
