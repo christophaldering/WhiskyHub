@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useAppStore } from "@/lib/store";
 import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
+import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy,
@@ -236,6 +237,8 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
   const [copiedLink, setCopiedLink] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const queryClient = useQueryClient();
 
   const activeTastings = tastings.filter(ta => ta.status !== "archived");
   const selectedTasting = activeTastings.find(ta => ta.id === selectedTastingId);
@@ -277,12 +280,13 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
       setResults(data.results || emailList.map(e => ({ email: e, status: "sent" })));
       setEmails("");
       setPersonalNote("");
+      queryClient.invalidateQueries({ queryKey: ["invites", selectedTastingId] });
     } catch {
       setResults(emailList.map(e => ({ email: e, status: "error" })));
     } finally {
       setSending(false);
     }
-  }, [selectedTastingId, emails, personalNote]);
+  }, [selectedTastingId, emails, personalNote, queryClient]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -387,6 +391,23 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
               <Mail style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Email Invite</span>
             </div>
+            {currentParticipant?.id && selectedTastingId && (
+              <FriendsQuickSelect
+                participantId={currentParticipant.id}
+                tastingId={selectedTastingId}
+                selectedEmails={emails.split(/[,;\s]+/).map(e => e.trim()).filter(Boolean)}
+                onToggle={(email, selected) => {
+                  const current = emails.split(/[,;\s]+/).map(e => e.trim()).filter(Boolean);
+                  if (selected) {
+                    if (!current.some(e => e.toLowerCase() === email.toLowerCase())) {
+                      setEmails([...current, email].join(", "));
+                    }
+                  } else {
+                    setEmails(current.filter(e => e.toLowerCase() !== email.toLowerCase()).join(", "));
+                  }
+                }}
+              />
+            )}
             <input
               type="text"
               value={emails}

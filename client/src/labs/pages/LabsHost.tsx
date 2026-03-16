@@ -20,6 +20,7 @@ import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/la
 import LabsRatingPanel, { type DimKey as LabsDimKey } from "@/labs/components/LabsRatingPanel";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
+import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
@@ -4049,6 +4050,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setInviteSent(true);
       setEmailList([]);
       setPersonalNote("");
+      queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
       setTimeout(() => setInviteSent(false), 3000);
     } catch (err) {
       console.error("Failed to send invites:", err);
@@ -4423,6 +4425,23 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
                 <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Email Invitations</span>
               </div>
+
+              {currentParticipant?.id && (
+                <FriendsQuickSelect
+                  participantId={currentParticipant.id}
+                  tastingId={tastingId}
+                  selectedEmails={emailList}
+                  onToggle={(email, selected) => {
+                    if (selected) {
+                      if (!emailList.some(e => e.toLowerCase() === email.toLowerCase())) {
+                        setEmailList([...emailList, email]);
+                      }
+                    } else {
+                      setEmailList(emailList.filter(e => e.toLowerCase() !== email.toLowerCase()));
+                    }
+                  }}
+                />
+              )}
 
               <div className="flex gap-2">
                 <input

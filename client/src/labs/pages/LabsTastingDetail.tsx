@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
@@ -23,8 +23,9 @@ import {
   Trophy,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, inviteApi, friendsApi } from "@/lib/api";
+import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
+import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import QRCode from "qrcode";
 
 interface LabsTastingDetailProps {
@@ -44,6 +45,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
+  const queryClient = useQueryClient();
   const [showQr, setShowQr] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -85,6 +87,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       setInviteResults(mapped);
       setInviteEmails("");
       setInviteNote("");
+      queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
     },
   });
 
@@ -392,6 +395,23 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             <div className="mt-4 space-y-3">
               {!inviteResults ? (
                 <>
+                  {currentParticipant?.id && (
+                    <FriendsQuickSelect
+                      participantId={currentParticipant.id}
+                      tastingId={tastingId}
+                      selectedEmails={inviteEmails.split("\n").map(e => e.trim()).filter(Boolean)}
+                      onToggle={(email, selected) => {
+                        const current = inviteEmails.split("\n").map(e => e.trim()).filter(Boolean);
+                        if (selected) {
+                          if (!current.some(e => e.toLowerCase() === email.toLowerCase())) {
+                            setInviteEmails([...current, email].join("\n"));
+                          }
+                        } else {
+                          setInviteEmails(current.filter(e => e.toLowerCase() !== email.toLowerCase()).join("\n"));
+                        }
+                      }}
+                    />
+                  )}
                   <div>
                     <label className="labs-section-label" style={{ marginBottom: 6, display: "block" }}>Email addresses (one per line)</label>
                     <textarea
