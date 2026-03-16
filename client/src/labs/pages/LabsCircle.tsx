@@ -906,12 +906,12 @@ export default function LabsCircle() {
           <EmptyState icon={Users} title="No friends yet" description="Add your whisky companions to share notes and see their activity" />
         ) : (
           <>
-            {onlineCount > 0 && (
-              <div className="mb-4">
-                <p className="labs-section-label flex items-center gap-2 mb-2">
-                  <Wifi className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
-                  <span style={{ color: "var(--labs-success)" }}>Online Now</span>
-                </p>
+            <div className="mb-4">
+              <p className="labs-section-label flex items-center gap-2 mb-2">
+                <Wifi className="w-3.5 h-3.5" style={{ color: onlineCount > 0 ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
+                <span style={{ color: onlineCount > 0 ? "var(--labs-success)" : "var(--labs-text-muted)" }}>Online Now</span>
+              </p>
+              {onlineCount > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                   {(onlineData?.online || []).map((of) => {
                     const initials = stripGuestSuffix(of.name).trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
@@ -942,8 +942,12 @@ export default function LabsCircle() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }} data-testid="labs-circle-nobody-online">
+                  None of your friends are online right now
+                </p>
+              )}
+            </div>
             <div className="space-y-2">
               {[...friendList]
                 .sort((a, b) => {
