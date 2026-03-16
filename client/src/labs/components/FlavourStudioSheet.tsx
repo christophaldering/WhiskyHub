@@ -512,7 +512,7 @@ function GuidedView({
                                 <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>{p.subgroupLabel} ›</span>
                               )}
                               <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
-                              <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
+                              <span style={{ fontSize: 11, color: "#f5f0e8" }}>×</span>
                             </button>
                           ))}
                         </div>
@@ -2002,7 +2002,7 @@ function JourneyView({
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>{isDE ? desc.de : desc.en}</span>
-                            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
+                            <span style={{ fontSize: 11, color: "#f5f0e8" }}>×</span>
                           </button>
                         ))}
                       </div>
@@ -2223,7 +2223,7 @@ export default function FlavourStudioSheet({
                       }}
                     >
                       {display}
-                      <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-bg)" }}>×</span>
                     </button>
                   );
                 })}
