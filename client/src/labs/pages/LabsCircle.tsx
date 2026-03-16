@@ -948,6 +948,13 @@ export default function LabsCircle() {
                 </p>
               )}
             </div>
+            <div className="mb-2">
+              <p className="labs-section-label flex items-center gap-2 mb-2">
+                <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                <span style={{ color: "var(--labs-text-secondary)" }}>All Friends</span>
+                <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{friendList.length}</span>
+              </p>
+            </div>
             <div className="space-y-2">
               {[...friendList]
                 .sort((a, b) => {
