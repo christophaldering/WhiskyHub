@@ -106,7 +106,7 @@ export function InlineFlavorTags({
         {count > 0 && (
           <span
             style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 600,
               color: "var(--labs-accent)",
               background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
@@ -225,13 +225,13 @@ export default function FlavorTagStrip({
           >
             <span
               className="text-xs font-medium"
-              style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
+              style={{ color: "var(--labs-text-secondary)", letterSpacing: "0.03em" }}
             >
               Flavor Tags
             </span>
             {allTagCount > 0 && (
               <span
-                className="text-[10px]"
+                className="text-[11px]"
                 style={{
                   color: "var(--labs-accent)",
                   background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
@@ -278,7 +278,7 @@ export default function FlavorTagStrip({
                 >
                   {p.en}
                   {count > 0 && (
-                    <span style={{ marginLeft: 4, opacity: 0.7 }}>({count})</span>
+                    <span style={{ marginLeft: 4, opacity: 0.75 }}>({count})</span>
                   )}
                 </button>
               );
@@ -386,7 +386,7 @@ export default function FlavorTagStrip({
                 {catTagCount > 0 && (
                   <span
                     style={{
-                      fontSize: 10,
+                      fontSize: 11,
                       color: cat.color,
                       fontWeight: 600,
                     }}

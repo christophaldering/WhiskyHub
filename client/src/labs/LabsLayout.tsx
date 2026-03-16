@@ -299,7 +299,7 @@ function LabsNotificationBell() {
         <Bell className="w-4 h-4" />
         {count > 0 && (
           <span
-            className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+            className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold"
             style={{ background: "var(--labs-danger)", color: "var(--labs-bg)" }}
             data-testid="labs-notification-count"
           >
@@ -326,7 +326,7 @@ function LabsNotificationBell() {
             <div className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
               Notifications
             </div>
-            <div className="text-xs text-center py-3" style={{ color: "var(--labs-text-muted)" }}>
+            <div className="text-xs text-center py-3" style={{ color: "var(--labs-text-secondary)" }}>
               No new notifications
             </div>
           </div>
@@ -424,7 +424,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             style={{ color: "var(--labs-accent)" }}
             data-testid="labs-logo"
           >
-            CaskSense <span style={{ fontWeight: 400, opacity: 0.7 }}>Labs</span>
+            CaskSense <span style={{ fontWeight: 400, opacity: 0.75 }}>Labs</span>
           </span>
         </Link>
 
@@ -490,7 +490,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           <Download className="w-5 h-5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Install CaskSense</p>
-            <p className="text-[10px]" style={{ color: "var(--labs-text-secondary)" }}>
+            <p className="text-[11px]" style={{ color: "var(--labs-text-secondary)" }}>
               Add to home screen for the best experience
             </p>
           </div>
@@ -569,7 +569,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                           minWidth: 16,
                           height: 16,
                           padding: "0 4px",
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: 700,
                           lineHeight: 1,
                           background: "var(--labs-success)",
@@ -583,8 +583,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                     )}
                   </div>
                   <span
-                    className="text-[10px]"
-                    style={{ fontWeight: isActive ? 600 : 400, letterSpacing: "0.03em", opacity: isActive ? 1 : 0.7 }}
+                    className="text-[11px]"
+                    style={{ fontWeight: isActive ? 600 : 400, letterSpacing: "0.03em" }}
                   >
                     {item.label}
                   </span>

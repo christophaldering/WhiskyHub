@@ -57,7 +57,7 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
   return (
     <span
       style={{
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.08em",
@@ -144,7 +144,7 @@ function LabsDashboardCalendar() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
         {dayNames.map((d) => (
-          <div key={d} style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 0", textTransform: "uppercase" }}>{d}</div>
+          <div key={d} style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 0", textTransform: "uppercase" }}>{d}</div>
         ))}
         {Array.from({ length: startOffset }).map((_, i) => <div key={`e-${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -539,7 +539,7 @@ export default function LabsHostDashboard() {
           >
             <Icon style={{ width: 16, height: 16, color: "var(--labs-accent)", margin: "0 auto 6px", display: "block" }} />
             <div style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
-            <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
           </div>
         ))}
       </div>
@@ -550,7 +550,7 @@ export default function LabsHostDashboard() {
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} margin={{ left: 0, right: 0, top: 4, bottom: 4 }}>
               <XAxis dataKey="dim" tick={{ fill: "var(--labs-text-secondary)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
+              <YAxis domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
               <Tooltip
                 contentStyle={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 8, fontSize: 12, color: "var(--labs-text)" }}
                 labelStyle={{ color: "var(--labs-text)" }}

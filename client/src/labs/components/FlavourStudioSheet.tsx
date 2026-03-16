@@ -181,11 +181,11 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
             onClick={() => { onChange(opt.key); setShowMore(false); triggerHaptic("light"); }}
             data-testid={`studio-view-${opt.key}`}
             style={{
-              flex: 1, padding: "7px 4px", borderRadius: 8,
+              flex: 1, padding: "10px 4px", borderRadius: 8,
               border: "none", cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
+              fontSize: 12, fontWeight: value === opt.key ? 700 : 500,
               background: value === opt.key ? "var(--labs-accent)" : "transparent",
-              color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-secondary)",
               transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
@@ -199,9 +199,9 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
           onClick={() => setShowMore((p) => !p)}
           data-testid="studio-more-tools-toggle"
           style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
+            display: "flex", alignItems: "center", gap: 4, padding: "8px 8px",
             background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-            fontSize: 10, color: isExpertActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
+            fontSize: 11, color: isExpertActive ? "var(--labs-accent)" : "var(--labs-text-secondary)",
             fontWeight: isExpertActive ? 600 : 400,
           }}
         >
@@ -231,10 +231,10 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
                 data-testid={`studio-view-${opt.key}`}
                 style={{
                   display: "flex", alignItems: "center", gap: 4,
-                  padding: "5px 12px", borderRadius: 16, fontFamily: "inherit",
-                  fontSize: 10, fontWeight: value === opt.key ? 700 : 500,
+                  padding: "8px 14px", borderRadius: 16, fontFamily: "inherit",
+                  fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
                   background: value === opt.key ? "var(--labs-accent)" : "var(--labs-surface)",
-                  color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                  color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-secondary)",
                   border: `1px solid ${value === opt.key ? "var(--labs-accent)" : "var(--labs-border-subtle)"}`,
                   cursor: "pointer", transition: "all 0.2s ease",
                 }}
@@ -420,7 +420,7 @@ function GuidedView({
             const isLast = i === breadcrumbs.length - 1;
             return (
               <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {i > 0 && <ChevronRight style={{ width: 12, height: 12, opacity: 0.5 }} />}
+                {i > 0 && <ChevronRight style={{ width: 12, height: 12, opacity: 0.75 }} />}
                 <button
                   onClick={() => { if (!isLast) goBack(crumb.level); }}
                   data-testid={`guide-breadcrumb-${i}`}
@@ -477,18 +477,18 @@ function GuidedView({
                               onClick={() => onToggle(p.descriptorKey)}
                               data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
                               style={{
-                                fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                                background: `${color}38`, color: "#f5f0e8",
+                                fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+                                background: `${color}38`, color: "var(--labs-text)",
                                 border: `1px solid ${color}66`, cursor: "pointer",
                                 display: "flex", alignItems: "center", gap: 4,
                                 transition: "all 0.15s",
                               }}
                             >
                               {p.subgroupLabel && (
-                                <span style={{ fontSize: 8, opacity: 0.6 }}>{p.subgroupLabel} ›</span>
+                                <span style={{ fontSize: 11, opacity: 0.75 }}>{p.subgroupLabel} ›</span>
                               )}
                               <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
-                              <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
+                              <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
                             </button>
                           ))}
                         </div>
@@ -538,7 +538,7 @@ function GuidedView({
                       </span>
                       {count > 0 && (
                         <span style={{
-                          fontSize: 9, padding: "1px 6px", borderRadius: 8,
+                          fontSize: 11, padding: "1px 6px", borderRadius: 8,
                           background: cat.color, color: "var(--labs-bg)", fontWeight: 700,
                           marginLeft: "auto",
                         }}>
@@ -555,12 +555,12 @@ function GuidedView({
                           ? `${cat.subgroups!.length} ${t("m2.rating.studioGuideGroups", "groups")}`
                           : `${cat.subcategories.length} ${t("m2.rating.studioGuideNotes", "notes")}`}
                       </span>
-                      <ChevronRight style={{ width: 10, height: 10, opacity: 0.5 }} />
+                      <ChevronRight style={{ width: 10, height: 10, opacity: 0.75 }} />
                     </div>
                     {count > 0 && (
                       <div style={{
                         position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
-                        background: cat.color, opacity: 0.5,
+                        background: cat.color, opacity: 0.75,
                       }} />
                     )}
                   </button>
@@ -604,7 +604,7 @@ function GuidedView({
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {sgCount > 0 && (
                           <span style={{
-                            fontSize: 9, padding: "1px 6px", borderRadius: 8,
+                            fontSize: 11, padding: "1px 6px", borderRadius: 8,
                             background: navCategory.color, color: "var(--labs-bg)", fontWeight: 700,
                           }}>
                             {sgCount}
@@ -738,7 +738,7 @@ function GuidedView({
                           {isDE ? sg.de : sg.en}
                           {sgCount > 0 && (
                             <span style={{
-                              fontSize: 8, padding: "0 4px", borderRadius: 6,
+                              fontSize: 11, padding: "0 4px", borderRadius: 6,
                               background: navCategory.color, color: "var(--labs-bg)", fontWeight: 700,
                             }}>
                               {sgCount}
@@ -1074,7 +1074,7 @@ function CompactRadar({
           return (
             <button key={cat.id} onClick={() => toggleCat(cat.id)}
               style={{
-                fontSize: 10, padding: "4px 10px", borderRadius: 20, fontFamily: "inherit", cursor: "pointer",
+                fontSize: 11, padding: "4px 10px", borderRadius: 20, fontFamily: "inherit", cursor: "pointer",
                 background: isOn ? `${CATEGORY_COLORS[cat.id]}38` : "var(--labs-surface)",
                 border: `1px solid ${isOn ? CATEGORY_COLORS[cat.id] : "var(--labs-border)"}`,
                 color: isOn ? "#f5f0e8" : "var(--labs-text)",
@@ -1321,7 +1321,7 @@ function DescribeView({
 
       {suggestions.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
             {t("m2.rating.studioSuggestedFlavours", "Suggested Flavours")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -1399,7 +1399,7 @@ function DescribeView({
 
       {refSuggestions.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
             {t("m2.rating.studioTypicalFlavours", "Typical Flavours")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -1578,7 +1578,7 @@ function JourneyView({
           ))}
         </div>
 
-        <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7, textAlign: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75, textAlign: "center", marginBottom: 12 }}>
           {t("m2.rating.journeySweepPrompt", "Do you detect this flavour family?")}
         </div>
 
@@ -1593,7 +1593,7 @@ function JourneyView({
               <div style={{ fontSize: 32, marginBottom: 8 }}>
                 {GUIDE_ICONS[currentSweepCat.id] || ""}
               </div>
-              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "#f5f0e8", textShadow: `0 1px 8px ${currentSweepCat.color}88`, marginBottom: 4 }}>
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${currentSweepCat.color}88`, marginBottom: 4 }}>
                 {isDE ? currentSweepCat.de : currentSweepCat.en}
               </div>
               <div style={{ fontSize: 12, color: "var(--labs-text)", opacity: 0.8, marginBottom: 10 }}>
@@ -1612,7 +1612,7 @@ function JourneyView({
                 {currentSweepCat.subcategories.length > 4 && (
                   <span style={{
                     fontSize: 11, padding: "2px 8px", borderRadius: 10,
-                    background: `${currentSweepCat.color}25`, color: "#f5f0e8", opacity: 0.7,
+                    background: `${currentSweepCat.color}25`, color: "#f5f0e8", opacity: 0.75,
                   }}>
                     +{currentSweepCat.subcategories.length - 4}
                   </span>
@@ -1633,7 +1633,7 @@ function JourneyView({
                 }}
               >
                 <X style={{ width: 18, height: 18 }} />
-                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyNo", "No")}</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{t("m2.rating.journeyNo", "No")}</span>
               </button>
               <button
                 onClick={() => handleDecision("maybe")}
@@ -1647,7 +1647,7 @@ function JourneyView({
                 }}
               >
                 <HelpCircle style={{ width: 18, height: 18 }} />
-                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyMaybe", "Maybe")}</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{t("m2.rating.journeyMaybe", "Maybe")}</span>
               </button>
               <button
                 onClick={() => handleDecision("yes")}
@@ -1662,7 +1662,7 @@ function JourneyView({
                 }}
               >
                 <Check style={{ width: 18, height: 18 }} />
-                <span style={{ fontSize: 10, fontWeight: 600 }}>{t("m2.rating.journeyYes", "Yes")}</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{t("m2.rating.journeyYes", "Yes")}</span>
               </button>
             </div>
           </div>
@@ -1711,12 +1711,12 @@ function JourneyView({
                 {isDE ? currentDrillCat.de : currentDrillCat.en}
               </div>
               {isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7, fontStyle: "italic" }}>
+                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75, fontStyle: "italic" }}>
                   {t("m2.rating.journeyMaybePrompt", "You weren't sure — tap any notes you might detect")}
                 </div>
               )}
               {!isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.7 }}>
+                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75 }}>
                   {t("m2.rating.journeyDrillPrompt", "Which specific notes stand out?")}
                 </div>
               )}
@@ -1853,7 +1853,7 @@ function JourneyView({
             display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
             background: "none", border: "1px solid var(--labs-border-subtle)",
             borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-            fontSize: 10, color: "var(--labs-text-muted)",
+            fontSize: 11, color: "var(--labs-text-muted)",
           }}
         >
           <RotateCcw style={{ width: 10, height: 10 }} />
@@ -1895,7 +1895,7 @@ function JourneyView({
               border: "1px solid var(--labs-accent)",
               textAlign: "center",
             }} data-testid="journey-profile-match">
-              <div style={{ fontSize: 10, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, fontWeight: 600 }}>
+              <div style={{ fontSize: 11, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, fontWeight: 600 }}>
                 {t("m2.rating.journeyProfileMatch", "Profile Match")}
               </div>
               <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)" }}>
@@ -1933,7 +1933,7 @@ function JourneyView({
                           background: cat.color, transition: "width 0.5s ease",
                         }} />
                       </div>
-                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", width: 16, textAlign: "right" }}>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 16, textAlign: "right" }}>
                         {w}
                       </span>
                     </div>
@@ -1970,15 +1970,15 @@ function JourneyView({
                             onClick={() => onToggle(desc.en)}
                             data-testid={`journey-profile-${desc.id}`}
                             style={{
-                              fontSize: 10, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
-                              background: `${cat.color}38`, color: "#f5f0e8",
+                              fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
+                              background: `${cat.color}38`, color: "var(--labs-text)",
                               border: `1px solid ${cat.color}66`, cursor: "pointer",
                               display: "flex", alignItems: "center", gap: 4,
                               transition: "all 0.15s",
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>{isDE ? desc.de : desc.en}</span>
-                            <span style={{ fontSize: 9, opacity: 0.6 }}>×</span>
+                            <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
                           </button>
                         ))}
                       </div>
@@ -2113,7 +2113,7 @@ export default function FlavourStudioSheet({
               Flavour Studio
             </span>
             <span style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 10,
+              fontSize: 11, padding: "2px 8px", borderRadius: 10,
               background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontWeight: 600,
             }}>
               {dimLabel}
@@ -2190,7 +2190,7 @@ export default function FlavourStudioSheet({
                     <button key={lower} onClick={() => toggleTerm(display)}
                       data-testid={`studio-selected-${lower.replace(/\s+/g, "-")}`}
                       style={{
-                        fontSize: 10, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
+                        fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
                         whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
                         background: "var(--labs-accent)", color: "var(--labs-bg)", fontWeight: 600,
                         border: "none", cursor: "pointer", transition: "all 0.15s",
@@ -2199,7 +2199,7 @@ export default function FlavourStudioSheet({
                       }}
                     >
                       {display}
-                      <span style={{ fontSize: 9, opacity: 0.7 }}>×</span>
+                      <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
                     </button>
                   );
                 })}

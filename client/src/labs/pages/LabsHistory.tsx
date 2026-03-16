@@ -168,7 +168,7 @@ function LabsHistoryList() {
           ].map(({ value, label }) => (
             <div key={label} className="labs-card" style={{ padding: "14px 8px", textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
-              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -425,9 +425,9 @@ function LabsHistoryInsights() {
                     {(w.normalizedTotal ?? (w.totalScore != null ? w.totalScore * 10 : null)) != null
                       ? `${Math.round(w.normalizedTotal ?? w.totalScore! * 10)}`
                       : "\u2014"}
-                    {(w.normalizedTotal ?? w.totalScore) != null && <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 2 }}>/100</span>}
+                    {(w.normalizedTotal ?? w.totalScore) != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 2 }}>/100</span>}
                   </span>
-                  <span style={{ fontSize: 10, color: "var(--labs-text-muted)", background: "var(--labs-accent-muted)", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>#{w.tastingNumber}</span>
+                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", background: "var(--labs-accent-muted)", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>#{w.tastingNumber}</span>
                 </div>
               );
             })}
@@ -503,8 +503,8 @@ function LabsHistoryInsights() {
         {analytics.scoreDistribution.filter(d => d.count > 0).length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={analytics.scoreDistribution} margin={{ left: 0, right: 0, top: 4, bottom: 4 }}>
-              <XAxis dataKey="range" tick={{ fill: "var(--labs-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--labs-text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
+              <XAxis dataKey="range" tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
               <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "var(--labs-text)" }} itemStyle={{ color: "var(--labs-accent)" }} />
               <Bar dataKey="count" fill="var(--labs-accent)" radius={[4, 4, 0, 0]} />
             </BarChart>

@@ -52,7 +52,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       style={{
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.08em",
@@ -233,7 +233,7 @@ export default function LabsCalendar() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
               {dayLabels.map(d => (
-                <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", padding: "4px 0" }}>{d}</div>
+                <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", padding: "4px 0" }}>{d}</div>
               ))}
             </div>
 
@@ -307,7 +307,7 @@ export default function LabsCalendar() {
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Wine style={{ width: 10, height: 10 }} /> {ev.whiskyCount}</span>
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Users style={{ width: 10, height: 10 }} /> {ev.participantCount}</span>
                           </div>
-                          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{t("calendar.hostedBy", "Hosted by")} {stripGuestSuffix(ev.hostName)}</p>
+                          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{t("calendar.hostedBy", "Hosted by")} {stripGuestSuffix(ev.hostName)}</p>
                         </div>
                       </Link>
                     ))}
@@ -328,10 +328,10 @@ export default function LabsCalendar() {
                     <Link key={ev.id} href={getTastingRoute(ev, participantId)}>
                       <div style={{ cursor: "pointer", paddingBottom: 8, borderBottom: "1px solid var(--labs-border)" }} data-testid={`link-upcoming-${ev.id}`}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</p>
-                        <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{ev.date} · {ev.location || ""}</p>
+                        <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{ev.date} · {ev.location || ""}</p>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                           <StatusBadge status={ev.status} />
-                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ev.hostName)}</span>
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ev.hostName)}</span>
                         </div>
                       </div>
                     </Link>
@@ -345,13 +345,13 @@ export default function LabsCalendar() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div style={{ textAlign: "center" }}>
                   <div className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-accent)" }}>{filteredEvents.length}</div>
-                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{t("calendar.totalTastings", "Total Tastings")}</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("calendar.totalTastings", "Total Tastings")}</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-accent)" }}>
                     {filteredEvents.filter(e => e.status === "open" || e.status === "draft").length}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{t("calendar.active", "Active")}</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("calendar.active", "Active")}</div>
                 </div>
               </div>
             </div>

@@ -55,7 +55,7 @@ export default function LabsLexicon() {
 
       {filtered.length === 0 ? (
         <div className="labs-empty" data-testid="text-lexicon-no-results">
-          <BookOpen style={{ width: 40, height: 40, color: "var(--labs-text-muted)", opacity: 0.3, margin: "0 auto 12px" }} />
+          <BookOpen style={{ width: 40, height: 40, color: "var(--labs-text-muted)", opacity: 0.75, margin: "0 auto 12px" }} />
           <p style={{ color: "var(--labs-text-muted)" }}>No results found</p>
         </div>
       ) : (

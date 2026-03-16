@@ -27,7 +27,7 @@ export default function LabsGuide() {
             {t("aboutMethod.heroTitle", "The Art of Tasting")}
           </h1>
         </div>
-        <div style={{ width: 48, height: 1, background: "var(--labs-accent)", opacity: 0.3, margin: "12px auto 0" }} />
+        <div style={{ width: 48, height: 1, background: "var(--labs-accent)", opacity: 0.75, margin: "12px auto 0" }} />
       </div>
 
       {sectionKeys.map((key, i) => {

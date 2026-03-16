@@ -467,7 +467,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                 <Wine style={{ width: 56, height: 56, color: "var(--labs-accent)", marginBottom: 24 }} />
                 <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12 }}>Cheers!</h2>
                 <p style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "var(--labs-text-muted)", maxWidth: 400 }}>Thank you for tasting with us.</p>
-                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 24, opacity: 0.5 }}>{tasting.title} \u00B7 CaskSense Labs</p>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 24, opacity: 0.75 }}>{tasting.title} \u00B7 CaskSense Labs</p>
               </div>
             )}
           </motion.div>
@@ -800,12 +800,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const AgreementBadge = ({ stdDev, count }: { stdDev: number | null; count: number }) => {
     if (stdDev == null || count < 2) return null;
     if (stdDev <= 5) return (
-      <span className="labs-badge labs-badge-success text-[10px]" data-testid="badge-consensus">
+      <span className="labs-badge labs-badge-success text-[11px]" data-testid="badge-consensus">
         <Target className="w-3 h-3" /> Consensus
       </span>
     );
     if (stdDev > 10) return (
-      <span className="labs-badge labs-badge-danger text-[10px]" data-testid="badge-debated">
+      <span className="labs-badge labs-badge-danger text-[11px]" data-testid="badge-debated">
         <MessageCircle className="w-3 h-3" /> Debated
       </span>
     );
@@ -840,7 +840,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
               </p>
           {tasting.guidedMode && (
             <span
-              className="labs-badge text-[10px]"
+              className="labs-badge text-[11px]"
               style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
               data-testid="results-guided-badge"
             >
@@ -1059,7 +1059,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                     </p>
                     <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
                     {previousRatingsMap[w.id]?.length > 0 && isRevealed && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px]" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid={`badge-prev-${w.id}`}>
+                      <span className="inline-flex items-center gap-0.5 text-[11px]" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid={`badge-prev-${w.id}`}>
                         <Clock className="w-3 h-3" />
                         {(() => {
                           const mostRecent = previousRatingsMap[w.id][0];
@@ -1146,7 +1146,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           className="absolute h-full rounded-full"
                           style={{
                             background: "var(--labs-accent)",
-                            opacity: 0.4,
+                            opacity: 0.75,
                             left: `${w.overallRange.min}%`,
                             width: `${Math.max(w.overallRange.max - w.overallRange.min, 2)}%`,
                           }}
@@ -1208,7 +1208,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                         </div>
                         {w.myDelta != null && (
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>vs Group:</span>
+                            <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>vs Group:</span>
                             <DeltaIndicator delta={w.myDelta} />
                           </div>
                         )}
@@ -1222,7 +1222,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           { label: "Ø", value: w.myRating.overall },
                         ].map((d) => (
                           <div key={d.label}>
-                            <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
+                            <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
                             <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
                               {d.value != null ? fmt(d.value) : "—"}
                             </p>
@@ -1258,7 +1258,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                               Previously rated ({prevList.length})
                             </span>
                             {histDelta != null && (
-                              <span className="text-[10px] font-semibold" style={{ color: histDelta > 0 ? "var(--labs-success)" : histDelta < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
+                              <span className="text-[11px] font-semibold" style={{ color: histDelta > 0 ? "var(--labs-success)" : histDelta < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
                                 {histDelta > 0 ? `↑+${fmt(histDelta)}` : histDelta < 0 ? `↓${fmt(Math.abs(histDelta))}` : "="}
                               </span>
                             )}
@@ -1283,12 +1283,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
                                     { label: "B", value: pr.balance },
                                   ].map(d => (
                                     <div key={d.label}>
-                                      <p className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
+                                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
                                       <p className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>{d.value != null ? fmt(d.value) : "—"}</p>
                                     </div>
                                   ))}
                                 </div>
-                                {pr.date && <p className="text-[9px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{new Date(pr.date).toLocaleDateString()}</p>}
+                                {pr.date && <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{new Date(pr.date).toLocaleDateString()}</p>}
                               </div>
                             ))}
                           </div>

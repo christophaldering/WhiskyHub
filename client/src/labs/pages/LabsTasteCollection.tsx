@@ -187,7 +187,7 @@ export default function LabsTasteCollection() {
             ].map(s => (
               <div key={s.label} className="text-center">
                 <div className="labs-h3" style={{ color: s.color || "var(--labs-accent)" }}>{s.value}</div>
-                <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
+                <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -195,7 +195,7 @@ export default function LabsTasteCollection() {
           {stats.totalValue > 0 && <p className="text-xs mt-1" style={{ color: "var(--labs-text-muted)" }}>Total Value: <span style={{ color: "var(--labs-accent)", fontWeight: 600 }}>{stats.totalValue.toFixed(0)} EUR</span></p>}
           {stats.topDistilleries.length > 0 && (
             <div className="mt-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-text-muted)" }}>Top Distilleries</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-text-muted)" }}>Top Distilleries</p>
               <div className="flex flex-wrap gap-1">
                 {stats.topDistilleries.map(([name, count]) => (
                   <span key={name} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{name} ({count})</span>
@@ -224,7 +224,7 @@ export default function LabsTasteCollection() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
           {(["name", "rating", "price", "added"] as SortKey[]).map(sk => (
             <button key={sk} onClick={() => setSortBy(sk)}
-              style={{ padding: "5px 10px", fontSize: 10, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer" }}
+              style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer" }}
               data-testid={`labs-sort-${sk}`}>{sk.charAt(0).toUpperCase() + sk.slice(1)}</button>
           ))}
         </div>
@@ -255,7 +255,7 @@ export default function LabsTasteCollection() {
             <p className="text-xs" style={{ color: "var(--labs-text-muted)", maxWidth: 280, lineHeight: 1.5, textAlign: "center" }}>
               Export your collection from <a href="https://www.whiskybase.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "underline" }}>Whiskybase.com</a> as CSV, then import it here.
             </p>
-            <p className="text-xs" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }}>Supported formats: CSV, XLS, XLSX</p>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>Supported formats: CSV, XLS, XLSX</p>
           </div>
         </div>
       ) : (
@@ -286,7 +286,7 @@ export default function LabsTasteCollection() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {item.status && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: statusColor(item.status), border: `1px solid ${statusColor(item.status)}` }}>{statusLabel(item.status)}</span>}
+                    {item.status && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: statusColor(item.status), border: `1px solid ${statusColor(item.status)}` }}>{statusLabel(item.status)}</span>}
                     {item.communityRating && <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-accent)" }}><Star className="w-3 h-3" />{item.communityRating.toFixed(1)}</span>}
                     {!selectMode && !priceSelectMode && (expanded ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />)}
                   </div>

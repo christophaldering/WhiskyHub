@@ -114,7 +114,7 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
                 </div>
                 <div style={{ textAlign: "right", minWidth: 50 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{data.avgScore.toFixed(1)}</div>
-                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{data.count} rated</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{data.count} rated</div>
                 </div>
               </div>
             );
@@ -237,19 +237,19 @@ export default function LabsTasteProfile() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="grid grid-cols-3 gap-3 labs-fade-in labs-stagger-1" data-testid="section-snapshot">
             <div className="labs-card p-4 text-center" data-testid="card-your-style">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Your Style</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Your Style</p>
               <p className="text-sm font-semibold" style={{ color: styleLabel ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
                 {styleLabel || "Building..."}
               </p>
             </div>
             <div className="labs-card p-4 text-center" data-testid="card-sweet-spot">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Sweet Spot</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Sweet Spot</p>
               <p className="text-sm font-semibold" style={{ color: sweetSpotLabel ? "var(--labs-text)" : "var(--labs-text-muted)" }}>
                 {sweetSpotLabel || "Building..."}
               </p>
             </div>
             <div className="labs-card p-4 text-center" data-testid="card-stability">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Stability</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Stability</p>
               <span style={{
                 display: "inline-block", padding: "2px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 500,
                 border: `1px solid ${stabilityInfo.color}`, color: stabilityInfo.color,
@@ -295,7 +295,7 @@ export default function LabsTasteProfile() {
                   <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
                     <PolarGrid stroke="var(--labs-border)" />
                     <PolarAngleAxis dataKey="dimension" tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 9 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} />
                     {(whiskyProfile?.comparisonData || (compareMode === "none" && globalAvg)) && (
                       <Radar
                         name={whiskyProfile?.comparisonData?.mode === "friends" ? "Friends" : "Global"}
@@ -329,7 +329,7 @@ export default function LabsTasteProfile() {
                         }} data-testid={`badge-confidence-${dim}`}>
                           <span style={{ width: 6, height: 6, borderRadius: "50%", background: confColor }} />
                           {dimLabels[dim]}
-                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{conf.percent}%</span>
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{conf.percent}%</span>
                         </span>
                       );
                     })}
@@ -354,7 +354,7 @@ export default function LabsTasteProfile() {
                 ].map(s => (
                   <div key={s.label} style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 6px", textAlign: "center" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
-                    <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -368,7 +368,7 @@ export default function LabsTasteProfile() {
                     {whiskyProfile.ratingStyle.systematicDeviation.avgDelta >= 0 ? "+" : ""}
                     {whiskyProfile.ratingStyle.systematicDeviation.avgDelta.toFixed(1)}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                     Compared across {whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared} whiskies
                   </div>
                 </div>

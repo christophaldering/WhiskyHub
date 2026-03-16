@@ -1399,7 +1399,7 @@ export default function LabsSolo() {
           <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 8, textAlign: "center", lineHeight: 1.5 }}>
             {t("m2.solo.captureSubtitle", "Start with a photo — or choose another method.")}
           </p>
-          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center", opacity: 0.7 }} data-testid="text-photo-rights-hint-solo">
+          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center", opacity: 0.75 }} data-testid="text-photo-rights-hint-solo">
             {t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}
           </p>
 
@@ -1613,7 +1613,7 @@ export default function LabsSolo() {
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                       {item.status && (
                         <span style={{
-                          fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 999,
+                          fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999,
                           color: item.status === "open" ? "var(--labs-success)" : "var(--labs-info)",
                           border: `1px solid ${item.status === "open" ? "var(--labs-success)" : "var(--labs-info)"}`,
                         }}>
@@ -1843,7 +1843,7 @@ export default function LabsSolo() {
                             <img src={entry.imageUrl} alt="" style={{ width: 44, height: 56, borderRadius: 8, objectFit: "cover", border: "1px solid var(--labs-border)", flexShrink: 0 }} />
                           ) : (
                             <div style={{ width: 44, height: 56, borderRadius: 8, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--labs-border)" }}>
-                              <Wine style={{ width: 20, height: 20, color: "var(--labs-accent)", opacity: 0.5 }} />
+                              <Wine style={{ width: 20, height: 20, color: "var(--labs-accent)", opacity: 0.75 }} />
                             </div>
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1935,7 +1935,7 @@ export default function LabsSolo() {
                 <span style={{ textAlign: "center", borderTop: showBorder ? "1px solid var(--labs-border)" : "none", paddingTop: showBorder ? 6 : 0 }}>{renderDelta(currentOverall, lastPrev.overall)}</span>
                 </>); })()}
               </div>
-              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 8 }}>
                 {lastPrev.tastingTitle || new Date(lastPrev.date).toLocaleDateString()}
               </div>
             </div>
@@ -2073,8 +2073,8 @@ export default function LabsSolo() {
               {distillery && <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }} data-testid="text-whisky-distillery">{distillery}</div>}
               {(unknownRegion || unknownCountry || unknownAge || unknownAbv) && (
                 <div style={{ fontSize: 11, marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {unknownRegion && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-region">{unknownRegion}</span>}
-                  {unknownCountry && <span className="labs-badge" style={{ fontSize: 10 }} data-testid="badge-selected-country">{unknownCountry}</span>}
+                  {unknownRegion && <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-selected-region">{unknownRegion}</span>}
+                  {unknownCountry && <span className="labs-badge" style={{ fontSize: 11 }} data-testid="badge-selected-country">{unknownCountry}</span>}
                   {unknownAge && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAge}y</span>}
                   {unknownAbv && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAbv}%</span>}
                 </div>
@@ -2152,7 +2152,7 @@ export default function LabsSolo() {
                   </button>
                 )}
                 {autofillResult && (
-                  <p style={{ fontSize: 10, margin: 0, color: autofillResult === "filled" || autofillResult === "complete" ? "var(--labs-success)" : autofillResult === "no_data" ? "var(--labs-text-muted)" : "var(--labs-danger)" }} data-testid="text-autofill-result">
+                  <p style={{ fontSize: 11, margin: 0, color: autofillResult === "filled" || autofillResult === "complete" ? "var(--labs-success)" : autofillResult === "no_data" ? "var(--labs-text-muted)" : "var(--labs-danger)" }} data-testid="text-autofill-result">
                     {autofillResult === "filled" ? t("m2.solo.autofillDone", "✓ Fields filled") :
                      autofillResult === "complete" ? t("m2.solo.autofillComplete", "✓ All fields already filled") :
                      autofillResult === "no_data" ? t("m2.solo.autofillNoData", "No additional data found") :
@@ -2234,7 +2234,7 @@ export default function LabsSolo() {
                       </button>
                     </div>
                     {wbLookupResult && (
-                      <p style={{ fontSize: 10, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? "var(--labs-success)" : "var(--labs-danger)" }} data-testid="text-wb-result">
+                      <p style={{ fontSize: 11, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? "var(--labs-success)" : "var(--labs-danger)" }} data-testid="text-wb-result">
                         {wbLookupResult === "collection" ? t("m2.solo.wbFromCollection", "\u2713 From collection") :
                          wbLookupResult === "ai" ? t("m2.solo.wbAiRecognized", "\u2713 AI recognized") :
                          wbLookupResult === "not_found" ? t("m2.solo.wbNotFound", "Not found") :
@@ -2295,7 +2295,7 @@ export default function LabsSolo() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                     <div>
                       <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{pr.tastingTitle || new Date(pr.date).toLocaleDateString()}</span>
-                      <span className="labs-badge" style={{ fontSize: 9, marginLeft: 6, opacity: 0.7 }}>{pr.source === "journal" ? "Solo" : "Tasting"}</span>
+                      <span className="labs-badge" style={{ fontSize: 11, marginLeft: 6, opacity: 0.75 }}>{pr.source === "journal" ? "Solo" : "Tasting"}</span>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{typeof pr.overall === "number" ? Math.round(pr.overall * 10) / 10 : pr.overall}</span>
                   </div>
@@ -2307,7 +2307,7 @@ export default function LabsSolo() {
                       <span>B {typeof pr.balance === "number" ? Math.round(pr.balance * 10) / 10 : pr.balance}</span>
                     </div>
                   )}
-                  {pr.date && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}
+                  {pr.date && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}
                 </div>
               ))}
             </div>
@@ -2674,7 +2674,7 @@ function LabsSignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, p
         </label>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
           <input type="checkbox" checked={labsSoloConsent} onChange={(e) => setLabsSoloConsent(e.target.checked)} style={{ marginTop: 3, accentColor: "var(--labs-accent)" }} data-testid="checkbox-labssolo-privacy" />
-          <span style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
             {t('login.privacyConsentLabel')}{" "}
             <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
           </span>

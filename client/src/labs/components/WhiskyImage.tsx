@@ -91,7 +91,7 @@ export default function WhiskyImage({ imageUrl, name, size = 44, height, classNa
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         padding: "0 4px",
         boxShadow: "0 1px 3px rgba(0,0,0,0.3)",

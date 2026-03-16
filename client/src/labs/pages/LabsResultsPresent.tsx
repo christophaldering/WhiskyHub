@@ -356,7 +356,7 @@ function OutroSlide({ tasting }: { tasting: any }) {
       </motion.p>
       <motion.p
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-        style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 24, opacity: 0.5 }}
+        style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 24, opacity: 0.75 }}
       >
         {tasting.title} · CaskSense Labs
       </motion.p>

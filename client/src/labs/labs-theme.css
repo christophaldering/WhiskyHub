@@ -7,7 +7,7 @@
   --labs-border-subtle: #3a322b;
   --labs-text: #f5f0e8;
   --labs-text-secondary: #c4b99a;
-  --labs-text-muted: #a39279;
+  --labs-text-muted: #b8a88e;
   --labs-accent: #c9a76c;
   --labs-accent-hover: #d4b07a;
   --labs-accent-muted: rgba(201, 167, 108, 0.12);
@@ -42,6 +42,8 @@
   color: var(--labs-text);
   min-height: 100dvh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -280,7 +282,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--labs-text-muted);
-  margin-top: var(--labs-space-xl);
+  margin-top: 28px;
   margin-bottom: var(--labs-space-md);
 }
 
@@ -643,3 +645,76 @@
   transform: scale(0.96);
   background: var(--labs-surface-hover);
 }
+
+.labs-body {
+  font-size: 15px;
+  color: var(--labs-text);
+  line-height: 1.5;
+}
+
+.labs-body-secondary {
+  font-size: 14px;
+  color: var(--labs-text-secondary);
+  line-height: 1.5;
+}
+
+.labs-caption {
+  font-size: 12px;
+  color: var(--labs-text-secondary);
+  line-height: 1.4;
+}
+
+.labs-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--labs-text-secondary);
+}
+
+.labs-overline {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--labs-text-muted);
+}
+
+.labs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--labs-text);
+  background: var(--labs-surface);
+  border: 1px solid var(--labs-border);
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.labs-tag-active {
+  background: var(--labs-accent);
+  color: var(--labs-bg);
+  border-color: var(--labs-accent);
+}
+
+.labs-tag-category {
+  border: 1px solid var(--labs-border);
+  color: var(--labs-text);
+}
+
+.labs-tag-sm {
+  font-size: 11px;
+  padding: 4px 10px;
+  min-height: 32px;
+}
+
+.labs-gap-sm { gap: 8px; }
+.labs-gap-md { gap: 16px; }
+.labs-gap-lg { gap: 24px; }

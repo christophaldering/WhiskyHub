@@ -171,7 +171,7 @@ function FlavourWheel({
           </div>
           {(["nose", "palate", "finish"] as TermSection[]).map((section) => (
             <div key={section} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 {section === "nose" ? "Nose / Aromas" : section === "palate" ? "Palate / Taste" : "Finish"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -289,7 +289,7 @@ function StyleCompass({
           </div>
           {(["nose", "palate", "finish"] as TermSection[]).map((section) => (
             <div key={section} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 {section === "nose" ? "Nose / Aromas" : section === "palate" ? "Palate / Taste" : "Finish"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -463,7 +463,7 @@ function AromaRadar({
 
       {hasUserProfile && (
         <div style={{ textAlign: "center", marginTop: 4 }}>
-          <span style={{ fontSize: 10, color: "var(--labs-accent)", fontWeight: 500 }}>
+          <span style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 500 }}>
             — Your tasting profile (from collected terms) —
           </span>
         </div>
@@ -487,7 +487,7 @@ function AromaRadar({
           </div>
           {(["nose", "palate", "finish"] as TermSection[]).map((section) => (
             <div key={section} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 {section === "nose" ? "Nose / Aromas" : section === "palate" ? "Palate / Taste" : "Finish"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -630,7 +630,7 @@ function MyNotesTray({
               if (grouped[section].length === 0) return null;
               return (
                 <div key={section} style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                     {section === "nose" ? "Nose / Aromas" : section === "palate" ? "Palate / Taste" : "Finish"}
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>

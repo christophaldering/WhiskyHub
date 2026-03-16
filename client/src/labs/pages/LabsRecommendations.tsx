@@ -214,7 +214,7 @@ export default function LabsRecommendations() {
                 >
                   <f.icon style={{ width: 12, height: 12 }} />
                   {f.label}
-                  <span style={{ fontSize: 10, opacity: 0.7 }}>{f.pct}</span>
+                  <span style={{ fontSize: 11, opacity: 0.75 }}>{f.pct}</span>
                 </button>
               ))}
             </div>
@@ -241,17 +241,17 @@ export default function LabsRecommendations() {
                       )}
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {rec.whisky.region && (
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
                             <MapPin style={{ width: 9, height: 9 }} />{rec.whisky.region}
                           </span>
                         )}
                         {rec.whisky.caskInfluence && (
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
                             <Droplets style={{ width: 9, height: 9 }} />{rec.whisky.caskInfluence}
                           </span>
                         )}
                         {rec.whisky.peatLevel && (
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-danger) 10%, transparent)", color: "var(--labs-danger)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-danger) 10%, transparent)", color: "var(--labs-danger)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
                             <Flame style={{ width: 9, height: 9 }} />{rec.whisky.peatLevel}
                           </span>
                         )}
@@ -262,7 +262,7 @@ export default function LabsRecommendations() {
                         </div>
                       )}
                       {rec.communityScore && rec.communityRaters && rec.communityRaters >= 2 && (
-                        <div style={{ marginTop: 4, fontSize: 10, color: "var(--labs-text-muted)" }}>
+                        <div style={{ marginTop: 4, fontSize: 11, color: "var(--labs-text-muted)" }}>
                           <Users style={{ width: 10, height: 10, display: "inline", verticalAlign: "text-bottom", marginRight: 3 }} />
                           Community: {rec.communityScore.toFixed(1)} ({rec.communityRaters} ratings)
                         </div>

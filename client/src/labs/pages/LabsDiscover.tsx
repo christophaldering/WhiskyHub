@@ -77,7 +77,7 @@ function LinkRow({ link, t }: { link: DiscoverLink; t: (key: string, fallback: s
             {t(link.descKey, link.descFallback)}
           </div>
         </div>
-        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0 }} />
       </div>
     </Link>
   );

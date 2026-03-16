@@ -16,7 +16,7 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Building2 style={{ width: 14, height: 14, color: "var(--labs-accent)", flexShrink: 0 }} />
             <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{d.name}</span>
-            {d.status && d.status !== "active" && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "var(--labs-border)", color: "var(--labs-text-muted)", textTransform: "uppercase" }}>{d.status}</span>}
+            {d.status && d.status !== "active" && <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 4, background: "var(--labs-border)", color: "var(--labs-text-muted)", textTransform: "uppercase" }}>{d.status}</span>}
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
             <MapPin style={{ width: 11, height: 11 }} />{d.region}, {d.country}
@@ -37,7 +37,7 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
           </div>
           {d.feature && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>{t("discover.keyFact", "Key Fact")}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>{t("discover.keyFact", "Key Fact")}</span>
               <p style={{ fontSize: 11, lineHeight: 1.5, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{d.feature}</p>
             </div>
           )}

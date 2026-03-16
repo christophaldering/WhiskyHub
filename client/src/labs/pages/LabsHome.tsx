@@ -55,7 +55,7 @@ export default function LabsHome() {
           style={{ color: "var(--labs-text)" }}
           data-testid="labs-home-title"
         >
-          CaskSense <span style={{ fontWeight: 400, opacity: 0.65 }}>Labs</span>
+          CaskSense <span style={{ fontWeight: 400, opacity: 0.75 }}>Labs</span>
         </h1>
         <p
           className="text-base leading-relaxed"
@@ -90,7 +90,7 @@ export default function LabsHome() {
                 </h2>
                 <p
                   className="text-sm leading-relaxed"
-                  style={{ color: "var(--labs-text-muted)" }}
+                  style={{ color: "var(--labs-text-secondary)" }}
                 >
                   {action.description}
                 </p>
@@ -102,7 +102,7 @@ export default function LabsHome() {
 
       <p
         className="text-center text-xs mt-10 labs-fade-in labs-stagger-4"
-        style={{ color: "var(--labs-text-muted)", opacity: 0.6 }}
+        style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}
         data-testid="labs-home-footer"
       >
         Refined · Structured · Thoughtful

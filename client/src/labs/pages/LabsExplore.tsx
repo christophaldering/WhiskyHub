@@ -426,12 +426,12 @@ export default function LabsExplore() {
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
                         {w.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{w.distillery}</span>}
                         {w.region && (
-                          <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
                             {w.region}
                           </span>
                         )}
                         {(sortBy === "category" && w.category) && (
-                          <span style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, padding: "1px 6px", borderRadius: 4 }}>
                             {w.category}
                           </span>
                         )}
@@ -454,7 +454,7 @@ export default function LabsExplore() {
                         <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}</span>
                       )}
                     </div>
-                    <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                    <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.75 }} />
                   </div>
                 ))}
               </div>
@@ -518,7 +518,7 @@ export default function LabsExplore() {
                       {item.status && (
                         <span
                           style={{
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 600,
                             padding: "2px 8px",
                             borderRadius: 10,
@@ -583,7 +583,7 @@ export default function LabsExplore() {
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                           {item.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{item.distillery}</span>}
                           {item.region && (
-                            <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
+                            <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
                               {item.region}
                             </span>
                           )}
@@ -593,7 +593,7 @@ export default function LabsExplore() {
                         {item.priority && (
                           <span
                             style={{
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: 600,
                               padding: "2px 8px",
                               borderRadius: 10,
@@ -674,14 +674,14 @@ export default function LabsExplore() {
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
                         {entry.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{entry.distillery}</span>}
                         <span style={{
-                          fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
+                          fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
                           background: entry.source === "journal" ? "rgba(139, 92, 246, 0.15)" : "rgba(59, 130, 246, 0.15)",
                           color: entry.source === "journal" ? "#8B5CF6" : "#3B82F6",
                         }}>
                           {entry.source === "journal" ? "Solo" : "Tasting"}
                         </span>
                         {entry.occasion && (
-                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{entry.occasion}</span>
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{entry.occasion}</span>
                         )}
                       </div>
                       {entry.tastingTitle && (
@@ -698,7 +698,7 @@ export default function LabsExplore() {
                         </div>
                       )}
                       {entry.date && (
-                        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                           {new Date(entry.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                         </span>
                       )}

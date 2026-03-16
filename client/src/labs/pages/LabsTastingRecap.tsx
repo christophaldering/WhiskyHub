@@ -501,7 +501,7 @@ export default function LabsTastingRecap() {
               <XAxis
                 type="number"
                 domain={[0, recap.tasting.ratingScale || 100]}
-                tick={{ fill: "var(--labs-text-muted)", fontSize: 10 }}
+                tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }}
                 axisLine={{ stroke: "var(--labs-border)" }}
                 tickLine={{ stroke: "var(--labs-border)" }}
               />

@@ -230,7 +230,7 @@ export default function LabsRatingPanel({
               padding: compact ? "7px 0" : "10px 0",
               background: isActive ? "var(--labs-accent)" : "transparent",
               border: "none",
-              color: isActive ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              color: isActive ? "var(--labs-bg)" : "var(--labs-text-secondary)",
               fontSize: compact ? 12 : 13,
               fontWeight: isActive ? 700 : 500,
               fontFamily: "inherit",
@@ -276,9 +276,9 @@ export default function LabsRatingPanel({
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>0</span>
-          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{Math.round(scale / 2)}</span>
-          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{scale}</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>0</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{Math.round(scale / 2)}</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{scale}</span>
         </div>
       </div>
     );
@@ -329,7 +329,7 @@ export default function LabsRatingPanel({
               <Sparkles style={{ width: 16, height: 16 }} />
               {t("m2.rating.flavourStudio", "Flavour Studio")}
               {activeChips.length > 0 && (
-                <span style={{ fontSize: 10, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
+                <span style={{ fontSize: 11, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}>
                   {activeChips.length}
                 </span>
               )}
@@ -345,7 +345,7 @@ export default function LabsRatingPanel({
             style={{
               display: "flex", alignItems: "center", gap: 4,
               background: "none", border: "none", cursor: disabled ? "default" : "pointer",
-              color: "var(--labs-text-muted)", fontSize: 11, fontFamily: "inherit",
+              color: "var(--labs-text-secondary)", fontSize: 11, fontFamily: "inherit",
               opacity: disabled ? 0.5 : 1, padding: "4px 0",
             }}
             data-testid="button-toggle-flavors"
@@ -378,7 +378,7 @@ export default function LabsRatingPanel({
                 }}
               >
                 {tag}
-                <span style={{ fontSize: 10, opacity: 0.7 }}>×</span>
+                <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
               </button>
             ))}
           </div>
@@ -417,7 +417,7 @@ export default function LabsRatingPanel({
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {catTagCount > 0 && (
                       <span style={{
-                        fontSize: 10, padding: "1px 7px", borderRadius: 10,
+                        fontSize: 11, padding: "1px 7px", borderRadius: 10,
                         background: `${cat.color}26`, color: cat.color, fontWeight: 600,
                       }}>
                         {catTagCount}
@@ -640,7 +640,7 @@ export default function LabsRatingPanel({
         <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)" }}>
           {t("m2.rating.overall", "Overall")}
           {overrideActive && !overallGated && (
-            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }} data-testid="badge-override">
+            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 11 }} data-testid="badge-override">
               {t("m2.rating.manual", "Manual")}
             </span>
           )}
@@ -828,7 +828,7 @@ export default function LabsRatingPanel({
         <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 16 }}>
           {DIM_KEYS.map((k) => (
             <div key={k} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginBottom: 2 }}>{dimLabels[k]}</div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 2 }}>{dimLabels[k]}</div>
               <div className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: DIM_COLORS[k] }}>{scores[k]}</div>
             </div>
           ))}

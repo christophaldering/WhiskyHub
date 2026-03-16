@@ -299,7 +299,7 @@ export default function LabsTasteDrams() {
               </h2>
               {selectedEntry.distillery && <div className="text-sm mt-1" style={{ color: "var(--labs-text-secondary)" }}>{selectedEntry.distillery}</div>}
               <div className="flex items-center gap-2 mt-1">
-                {selectedEntry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 10 }}>Draft</span>}
+                {selectedEntry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 11 }}>Draft</span>}
                 {selectedEntry.createdAt && (
                   <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
                     <Calendar className="w-3 h-3" />{new Date(selectedEntry.createdAt).toLocaleDateString()}
@@ -310,7 +310,7 @@ export default function LabsTasteDrams() {
             {selectedEntry.personalScore != null && (
               <div style={{ textAlign: "right", flexShrink: 0 }}>
                 <div className="labs-h1" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.personalScore).toFixed(1)}</div>
-                <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Score</div>
+                <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Score</div>
               </div>
             )}
           </div>
@@ -372,13 +372,13 @@ export default function LabsTasteDrams() {
               </div>
             ) : (
               <button onClick={() => imageInputRef.current?.click()} disabled={imageUploading} style={{ width: 72, height: 96, borderRadius: 10, border: "2px dashed var(--labs-border)", background: "var(--labs-accent-muted)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0 }} data-testid="button-labs-add-image">
-                <Camera className="w-5 h-5" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
-                <span style={{ fontSize: 9, color: "var(--labs-text-muted)" }}>Add Photo</span>
+                <Camera className="w-5 h-5" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
+                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Add Photo</span>
               </button>
             )}
             <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} data-testid="input-labs-image-upload" />
             <div className="flex-1 flex flex-col gap-2">
-              <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
+              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
               <EditField label="Whisky Name" value={editForm.whiskyName} onChange={(v) => setEditForm({ ...editForm, whiskyName: v, title: v })} testId="input-labs-edit-whiskyName" />
               <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>
@@ -401,7 +401,7 @@ export default function LabsTasteDrams() {
                 <div className="grid grid-cols-4 gap-2">
                   {(["nose", "taste", "finish", "balance"] as const).map((dim) => (
                     <div key={dim}>
-                      <label className="text-[10px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
                       <input type="number" min="0" max="100" value={editStructured.scores[dim]} onChange={(e) => setEditStructured({ ...editStructured, scores: { ...editStructured.scores, [dim]: e.target.value } })}
                         style={{ width: "100%", padding: "8px 6px", textAlign: "center", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 8, fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", outline: "none", boxSizing: "border-box" }}
                         data-testid={`input-labs-edit-score-${dim}`} />
@@ -470,7 +470,7 @@ export default function LabsTasteDrams() {
               ].map(s => (
                 <div key={s.label} className="text-center">
                   <div className="labs-h2" style={{ color: "var(--labs-accent)" }}>{s.value}</div>
-                  <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
+                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -559,8 +559,8 @@ export default function LabsTasteDrams() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="flex items-center gap-1.5">
                         <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.whiskyName || entry.title || "—"}</div>
-                        {entry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 10, padding: "2px 6px" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>}
-                        {entry.source === "tasting" && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "2px 6px" }}>Tasting</span>}
+                        {entry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 11, padding: "2px 6px" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>}
+                        {entry.source === "tasting" && <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 6px" }}>Tasting</span>}
                       </div>
                       {entry.distillery && <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>{entry.distillery}</div>}
                       <div className="flex items-center gap-2 mt-1 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
@@ -637,7 +637,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
           {(["nose", "taste", "finish", "balance"] as const).map(k => scores[k] != null ? (
             <div key={k} style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
               <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{scores[k]}</div>
-              <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{dimLabels[k]}</div>
+              <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{dimLabels[k]}</div>
             </div>
           ) : null)}
         </div>
@@ -688,7 +688,7 @@ function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; 
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
       <div className="text-[11px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: "var(--labs-text-muted)" }}>
-        <Mic className="w-3 h-3" /> Voice Memo {fmtDuration && <span style={{ fontWeight: 400, fontSize: 10 }}>({fmtDuration})</span>}
+        <Mic className="w-3 h-3" /> Voice Memo {fmtDuration && <span style={{ fontWeight: 400, fontSize: 11 }}>({fmtDuration})</span>}
       </div>
       {url && (
         <button type="button" onClick={togglePlay} className="inline-flex items-center gap-1.5 mb-2" style={{ padding: "6px 14px", borderRadius: 8, background: playing ? "color-mix(in srgb, var(--labs-danger) 15%, transparent)" : "var(--labs-accent-muted)", border: `1px solid ${playing ? "color-mix(in srgb, var(--labs-danger) 30%, transparent)" : "color-mix(in srgb, var(--labs-accent) 20%, transparent)"}`, color: playing ? "var(--labs-danger)" : "var(--labs-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }} data-testid="button-labs-play-voice-memo">
@@ -726,14 +726,14 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="labs-card p-2.5 text-center">
           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{data.count}</div>
-          <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Appearances</div>
+          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Appearances</div>
         </div>
         {(data.avgScoreNormalized ?? data.avgScore) != null && (
           <div className="labs-card p-2.5 text-center">
             <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>
               {Math.round(data.avgScoreNormalized ?? (data.avgScore ?? 0) * 10)}<span className="text-xs font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
             </div>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Avg Score</div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Avg Score</div>
           </div>
         )}
         {data.bestPlacement && (
@@ -742,7 +742,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
               <Trophy className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
               <span className="labs-h3" style={{ color: "var(--labs-accent)" }}>#{data.bestPlacement.rank}</span>
             </div>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Best Rank</div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Best Rank</div>
           </div>
         )}
       </div>
@@ -759,10 +759,10 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
             <div style={{ textAlign: "right", flexShrink: 0 }}>
               {(a.normalizedTotal ?? a.totalScore) != null && (
                 <div className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
-                  {Math.round(a.normalizedTotal ?? (a.totalScore ?? 0) * 10)}<span className="text-[10px] font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
+                  {Math.round(a.normalizedTotal ?? (a.totalScore ?? 0) * 10)}<span className="text-[11px] font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
                 </div>
               )}
-              {a.totalRank != null && <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Rank {a.totalRank}</div>}
+              {a.totalRank != null && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Rank {a.totalRank}</div>}
             </div>
           </button>
         ))}

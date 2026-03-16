@@ -432,7 +432,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                     <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: i < inviteResults.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
                       <span className="text-sm truncate" style={{ color: "var(--labs-text-secondary)" }}>{r.email}</span>
                       <span
-                        className="labs-badge text-[10px]"
+                        className="labs-badge text-[11px]"
                         style={{
                           background: r.status === "sent" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
                           color: r.status === "sent" ? "var(--labs-success)" : "var(--labs-accent)",

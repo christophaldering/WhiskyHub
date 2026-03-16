@@ -132,7 +132,7 @@ function WhiskyCard({ entry, t, isTied }: { entry: HistoricalEntry; t: (k: strin
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>{title}</div>
           {isTied && (
             <span style={{
-              fontSize: 10, fontWeight: 600, color: "var(--labs-accent)",
+              fontSize: 11, fontWeight: 600, color: "var(--labs-accent)",
               background: "var(--labs-accent-muted)", padding: "1px 6px", borderRadius: 6,
               textTransform: "uppercase", letterSpacing: 0.5, display: "inline-block", marginTop: 3,
             }}>
@@ -168,7 +168,7 @@ function WhiskyCard({ entry, t, isTied }: { entry: HistoricalEntry; t: (k: strin
             }}>
               {Math.round(entry.normalizedTotal ?? entry.totalScore * 10)}
             </div>
-            <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
           </div>
         )}
       </div>
@@ -222,8 +222,8 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: (k: 
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{Math.round(min)}</span>
-        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{Math.round(max)}</span>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{Math.round(min)}</span>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{Math.round(max)}</span>
       </div>
     </div>
   );
@@ -372,7 +372,7 @@ export default function LabsHistoricalDetail() {
                 <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: "var(--labs-text-muted)", marginBottom: 2 }}>
                   {t("m2.historicalDetail.winner", "Winner")}
                   {tiedRanks.has(1) && (
-                    <span style={{ marginLeft: 6, fontSize: 10, color: "var(--labs-accent)", fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+                    <span style={{ marginLeft: 6, fontSize: 11, color: "var(--labs-accent)", fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
                       ({t("m2.historicalDetail.tiedRank", "Tied")})
                     </span>
                   )}
@@ -386,7 +386,7 @@ export default function LabsHistoricalDetail() {
                   <div style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
                     {Math.round(winner!.normalizedTotal ?? (winner!.totalScore ?? 0) * 10)}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
                 </div>
               )}
             </div>

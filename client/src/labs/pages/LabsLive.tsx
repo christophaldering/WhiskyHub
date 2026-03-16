@@ -673,7 +673,7 @@ function GuidedStepView({
                   <span className="text-xs font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                     My Scores Overview
                   </span>
-                  <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                     ({guidedMyRatings.length}/{allWhiskies.length} rated)
                   </span>
                 </div>
@@ -704,7 +704,7 @@ function GuidedStepView({
                           }}
                           data-testid={`guided-calibration-row-${idx}`}
                         >
-                          <span className="text-[10px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
+                          <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
                             {idx + 1}
                           </span>
                           <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isCurrent ? "var(--labs-accent)" : "var(--labs-text)" }}>
@@ -730,7 +730,7 @@ function GuidedStepView({
                     const max = Math.max(...overalls);
                     return (
                       <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="guided-calibration-stats">
-                        <div className="flex items-center justify-between text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                        <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                           <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{avg}</strong></span>
                           <span>Range: <strong style={{ color: "var(--labs-text)" }}>{min}–{max}</strong></span>
                           <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{Math.round((max - min) * 10) / 10}</strong></span>
@@ -746,7 +746,7 @@ function GuidedStepView({
       ) : (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
-            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+            <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
               Sign in to rate whiskies
             </p>
           ) : (
@@ -1101,8 +1101,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
       {!whiskies || totalWhiskies === 0 ? (
         <div className="labs-empty">
-          <Wine className="w-12 h-12 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+          <Wine className="w-12 h-12 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
+          <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
             No whiskies in this session yet
           </p>
         </div>
@@ -1251,7 +1251,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   />
                 </div>
 
-                <div className="flex justify-between text-[10px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
                   <span>0</span>
                   <span>{Math.round(maxScore / 2)}</span>
                   <span>{maxScore}</span>
@@ -1342,7 +1342,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
                       Overall
                       {overrideActive && (
-                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 10 }}>
+                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 11 }}>
                           Manual
                         </span>
                       )}
@@ -1418,7 +1418,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       <span className="text-xs font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                         My Scores Overview
                       </span>
-                      <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                         ({myAllRatings.length}/{whiskies.length} rated)
                       </span>
                     </div>
@@ -1450,7 +1450,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                               }}
                               data-testid={`calibration-row-${idx}`}
                             >
-                              <span className="text-[10px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
+                              <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
                                 {idx + 1}
                               </span>
                               <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
@@ -1476,7 +1476,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                         const max = Math.max(...overalls);
                         return (
                           <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="calibration-stats">
-                            <div className="flex items-center justify-between text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                            <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                               <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{avg}</strong></span>
                               <span>Range: <strong style={{ color: "var(--labs-text)" }}>{min}–{max}</strong></span>
                               <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{Math.round((max - min) * 10) / 10}</strong></span>
@@ -1492,7 +1492,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
           ) : (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
               {!currentParticipant ? (
-                <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
                   Sign in to rate whiskies
                 </p>
               ) : tasting.status === "draft" ? (

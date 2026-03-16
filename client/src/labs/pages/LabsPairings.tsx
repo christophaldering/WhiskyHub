@@ -43,7 +43,7 @@ function Tag({ icon: Icon, label, variant }: { icon: React.ElementType; label: s
   const bgMap = { accent: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", gold: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", red: "color-mix(in srgb, var(--labs-danger) 10%, transparent)" };
   const fgMap = { accent: "var(--labs-accent)", gold: "var(--labs-text-secondary)", red: "var(--labs-danger)" };
   return (
-    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: bgMap[variant], color: fgMap[variant], fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: bgMap[variant], color: fgMap[variant], fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
       <Icon style={{ width: 10, height: 10 }} />{label}
     </span>
   );
@@ -176,7 +176,7 @@ export default function LabsPairings() {
 
       {!selectedId && pid && !tL && (
         <div className="labs-empty labs-fade-in" style={{ paddingTop: 40 }}>
-          <Sparkles className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.4 }} />
+          <Sparkles className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
           <p className="labs-serif" style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>Select a tasting to get AI suggestions</p>
         </div>
       )}

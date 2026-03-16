@@ -112,7 +112,7 @@ export default function LabsTastings() {
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>
           Your Tastings
         </p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-secondary)" }}>
           Sign in to see your sessions and join new ones
         </p>
         <Link href="/labs/home">
@@ -161,7 +161,7 @@ export default function LabsTastings() {
               <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Join</span>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Participate</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)", marginTop: -2 }}>Participate</span>
           </div>
         </Link>
         <Link href="/labs/solo">
@@ -176,7 +176,7 @@ export default function LabsTastings() {
               <PenLine className="w-5 h-5" style={{ color: "var(--labs-text-secondary)" }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Solo</span>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Log a dram</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)", marginTop: -2 }}>Log a dram</span>
           </div>
         </Link>
         <Link href="/labs/host">
@@ -191,7 +191,7 @@ export default function LabsTastings() {
               <Crown className="w-5 h-5" style={{ color: "var(--labs-success)" }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Host</span>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -2 }}>Create session</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)", marginTop: -2 }}>Create session</span>
           </div>
         </Link>
       </div>
@@ -279,7 +279,7 @@ export default function LabsTastings() {
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
             {searchQuery ? "No matching tastings" : "No tastings yet"}
           </p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+          <p className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
             {searchQuery
               ? "Try a different search term"
               : timeFilter
@@ -331,7 +331,7 @@ export default function LabsTastings() {
                         {isHost && (
                           <span
                             style={{
-                              fontSize: 10, fontWeight: 600,
+                              fontSize: 11, fontWeight: 600,
                               padding: "2px 6px", borderRadius: 5,
                               background: "var(--labs-accent-muted)",
                               color: "var(--labs-accent)",
@@ -343,7 +343,7 @@ export default function LabsTastings() {
                         )}
                         <span
                           className={`labs-badge ${status.cssClass}`}
-                          style={{ fontSize: 10, padding: "2px 6px" }}
+                          style={{ fontSize: 11, padding: "2px 6px" }}
                           data-testid={`labs-tasting-status-${tasting.id}`}
                         >
                           {isLive && (
@@ -369,7 +369,7 @@ export default function LabsTastings() {
                         }}
                         data-testid={`labs-tasting-hostname-${tasting.id}`}
                       >
-                        <Crown style={{ width: 11, height: 11, opacity: 0.5, flexShrink: 0 }} />
+                        <Crown style={{ width: 11, height: 11, opacity: 0.75, flexShrink: 0 }} />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {stripGuestSuffix(tasting.hostName)}
                         </span>
@@ -384,7 +384,7 @@ export default function LabsTastings() {
                     >
                       {formattedDate && (
                         <span style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-                          <Calendar style={{ width: 12, height: 12, opacity: 0.6, flexShrink: 0 }} />
+                          <Calendar style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
                           {formattedDate}
                         </span>
                       )}
@@ -395,7 +395,7 @@ export default function LabsTastings() {
                             overflow: "hidden", textOverflow: "ellipsis",
                           }}
                         >
-                          <MapPin style={{ width: 12, height: 12, opacity: 0.6, flexShrink: 0 }} />
+                          <MapPin style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{tasting.location}</span>
                         </span>
                       )}
@@ -403,7 +403,7 @@ export default function LabsTastings() {
                   </div>
 
                   <ChevronRight
-                    style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.4, flexShrink: 0, marginTop: 4 }}
+                    style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0, marginTop: 4 }}
                   />
                 </div>
               </Link>

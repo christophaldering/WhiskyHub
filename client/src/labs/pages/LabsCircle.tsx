@@ -285,7 +285,7 @@ export default function LabsCircle() {
               <span
                 className="inline-flex items-center justify-center rounded-full"
                 style={{
-                  width: 16, height: 16, fontSize: 9, fontWeight: 700,
+                  width: 16, height: 16, fontSize: 11, fontWeight: 700,
                   background: "var(--labs-danger)", color: "var(--labs-on-accent)",
                 }}
               >
@@ -439,7 +439,7 @@ export default function LabsCircle() {
                         >
                           {matchPct}%
                         </span>
-                        <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>match</span>
+                        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>match</span>
                       </div>
                     </div>
                   </div>
@@ -642,7 +642,7 @@ export default function LabsCircle() {
               return (
                 <button
                   key={cat.key}
-                  className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[10px] transition-all"
+                  className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[11px] transition-all"
                   style={{
                     background: isActive ? "var(--labs-accent-muted)" : "transparent",
                     color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
@@ -748,7 +748,7 @@ export default function LabsCircle() {
                 {typeof entry.score === "number" ? Math.round(entry.score * 10) / 10 : entry.score}
               </span>
               {entry.tastings != null && (
-                <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                   {entry.tastings} tastings
                 </p>
               )}
@@ -853,7 +853,7 @@ export default function LabsCircle() {
             <p className="labs-section-label flex items-center gap-2">
               Pending Requests
               <span
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold"
                 style={{ background: "var(--labs-danger)", color: "var(--labs-bg)" }}
               >
                 {pendingList.length}
@@ -1071,7 +1071,7 @@ export default function LabsCircle() {
                           </p>
                           {isHost && (
                             <span
-                              className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
+                              className="text-[11px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
                               style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                             >
                               Host
@@ -1171,7 +1171,7 @@ export default function LabsCircle() {
                   )}
                 </p>
                 {typeof item.timestamp === "string" && (
-                  <p className="text-[10px] mt-1" style={{ color: "var(--labs-text-muted)" }}>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>
                     {formatRelativeTime(item.timestamp)}
                   </p>
                 )}
@@ -1317,7 +1317,7 @@ function FriendDetailSheet({
                     <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
                       {(s.title as string) || "Tasting"}
                     </p>
-                    <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                       {new Date(s.date as string).toLocaleDateString()}
                     </p>
                   </div>

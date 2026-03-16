@@ -131,8 +131,8 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
         </svg>
       </div>
       <div className="flex justify-between mt-2">
-        <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[0].label}: avg {Math.round(grouped[0].avg)}/100</span>
-        <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[grouped.length - 1].label}: avg {Math.round(grouped[grouped.length - 1].avg)}/100</span>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[0].label}: avg {Math.round(grouped[0].avg)}/100</span>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[grouped.length - 1].label}: avg {Math.round(grouped[grouped.length - 1].avg)}/100</span>
       </div>
       <div className="flex items-center justify-center gap-1.5 mt-3" style={{ fontSize: 12, color: trendColor }}>
         <TrendIcon style={{ width: 14, height: 14 }} />
@@ -249,7 +249,7 @@ function AIInsightCard({ pid }: { pid: string }) {
         {insight.message}
       </p>
       {insight.type && (
-        <span className="labs-badge labs-badge-accent mt-3" style={{ fontSize: 10, display: "inline-block" }}>
+        <span className="labs-badge labs-badge-accent mt-3" style={{ fontSize: 11, display: "inline-block" }}>
           {insight.type}
         </span>
       )}
@@ -261,7 +261,7 @@ function StatMini({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
       <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-accent)" }}>{value}</div>
-      <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{label}</div>
     </div>
   );
 }

@@ -112,9 +112,9 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
               {chapter.isDown && <AlertTriangle className="inline w-3.5 h-3.5 mr-1.5" />}
               {chapter.titleFallback}
             </h3>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{chapter.dateRange}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{chapter.dateRange}</p>
           </div>
-          <div className="flex gap-3 text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+          <div className="flex gap-3 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
             <span>{chapter.stats.commits} commits</span>
             <span>{chapter.stats.features} features</span>
           </div>
@@ -138,7 +138,7 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
           <div className="space-y-1.5 mb-3 labs-fade-in">
             {chapter.milestones.map((m, i) => (
               <div key={i} className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: "var(--labs-accent)", opacity: 0.5 }} />
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: "var(--labs-accent)", opacity: 0.75 }} />
                 <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{m}</span>
               </div>
             ))}
@@ -147,7 +147,7 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
 
         {chapter.lesson && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
-            <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
+            <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
             <span className="text-[11px] italic" style={{ color: "var(--labs-text-secondary)" }}>{chapter.lesson}</span>
           </div>
         )}

@@ -345,7 +345,7 @@ export default function LabsTasteCompare() {
                               {item.whiskyName}
                             </div>
                             {item.distillery && (
-                              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
                                 {[item.distillery, item.region].filter(Boolean).join(" · ")}
                               </div>
                             )}
@@ -503,7 +503,7 @@ export default function LabsTasteCompare() {
                           {item.whisky.name}
                         </div>
                         {item.whisky.distillery && (
-                          <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                             {[item.whisky.distillery, item.whisky.region].filter(Boolean).join(" · ")}
                           </div>
                         )}
@@ -529,7 +529,7 @@ export default function LabsTasteCompare() {
                         <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
                           <PolarGrid stroke="var(--labs-border)" />
                           <PolarAngleAxis dataKey="dimension" tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} />
-                          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 9 }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} />
                           {selected.map((item, i) => (
                             <Radar
                               key={item.whisky.id}

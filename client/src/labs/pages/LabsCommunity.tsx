@@ -104,7 +104,7 @@ export default function LabsCommunity() {
                       {typeof twin.similarity === "number" ? `${Math.round(twin.similarity as number)}%` : String(twin.similarity)}
                     </span>
                     {twin.sharedWhiskies != null && (
-                      <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{twin.sharedWhiskies as number} shared</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{twin.sharedWhiskies as number} shared</p>
                     )}
                   </div>
                 </div>
@@ -125,13 +125,13 @@ export default function LabsCommunity() {
                   <span className="text-lg w-7 text-center">{i < 3 ? MEDALS[i] : <span className="text-xs font-bold" style={{ color: "var(--labs-text-muted)" }}>{i + 1}</span>}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{item.whiskyName as string}</p>
-                    {item.distillery && <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{item.distillery as string}</p>}
+                    {item.distillery && <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{item.distillery as string}</p>}
                   </div>
                   <div className="text-right">
                     <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
                       {typeof item.avgScore === "number" ? (item.avgScore as number).toFixed(1) : String(item.avgScore)}
                     </span>
-                    {item.count != null && <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{item.count as number} ratings</p>}
+                    {item.count != null && <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{item.count as number} ratings</p>}
                   </div>
                 </div>
               ))}
@@ -152,7 +152,7 @@ export default function LabsCommunity() {
                   <span className="flex-1 text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.name as string}</span>
                   <div className="text-right">
                     <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{entry.score as number}</span>
-                    {entry.tastings != null && <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{entry.tastings as number} tastings</p>}
+                    {entry.tastings != null && <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{entry.tastings as number} tastings</p>}
                   </div>
                 </div>
               ))}

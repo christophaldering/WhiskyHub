@@ -207,15 +207,15 @@ export default function LabsTasteSettings() {
                 <button onClick={() => fileInputRef.current?.click()} className="text-sm" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} data-testid="button-labs-upload-photo">
                   {currentPhotoUrl ? "Change Photo" : "Upload Photo"}
                 </button>
-                <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>JPG, PNG, WebP - max 2 MB</span>
-                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>JPG, PNG, WebP - max 2 MB</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
                 {currentPhotoUrl && (
                   <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); }} className="text-xs" style={{ color: "var(--labs-danger)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} data-testid="button-labs-remove-photo">Remove Photo</button>
                 )}
               </div>
             </div>
           </div>
-          <Field label="Bio"><textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 400))} placeholder="Tell others about yourself..." maxLength={400} style={{ ...inputStyle, minHeight: 80, resize: "none", lineHeight: 1.5 }} data-testid="input-labs-bio" /><p className="text-[10px] text-right mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{bio.length}/400</p></Field>
+          <Field label="Bio"><textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 400))} placeholder="Tell others about yourself..." maxLength={400} style={{ ...inputStyle, minHeight: 80, resize: "none", lineHeight: 1.5 }} data-testid="input-labs-bio" /><p className="text-[11px] text-right mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{bio.length}/400</p></Field>
           <Field label="Favorite Whisky"><input value={favoriteWhisky} onChange={(e) => setFavoriteWhisky(e.target.value)} placeholder="e.g. Lagavulin 16" style={inputStyle} data-testid="input-labs-favorite-whisky" /></Field>
           <Field label="Go-to Dram"><input value={goToDram} onChange={(e) => setGoToDram(e.target.value)} placeholder="Your everyday whisky" style={inputStyle} data-testid="input-labs-go-to-dram" /></Field>
         </div>
@@ -304,7 +304,7 @@ export default function LabsTasteSettings() {
             {openaiApiKey && (
               <button onClick={() => setOpenaiApiKey("")} className="text-xs mt-1.5" style={{ color: "var(--labs-danger)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-labs-clear-api-key">Remove API key</button>
             )}
-            <p className="text-[10px] mt-1.5" style={{ color: "var(--labs-text-muted)" }}>
+            <p className="text-[11px] mt-1.5" style={{ color: "var(--labs-text-muted)" }}>
               Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "none" }}>platform.openai.com</a>
             </p>
           </Field>

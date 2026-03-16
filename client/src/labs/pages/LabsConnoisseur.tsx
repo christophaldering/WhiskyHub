@@ -346,7 +346,7 @@ export default function LabsConnoisseur() {
 
       {!generateMutation.isPending && !latestReport && !isLoading && (
         <div className="labs-card p-8 text-center labs-fade-in" data-testid="connoisseur-empty-state">
-          <Sparkles className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--labs-accent)", opacity: 0.4 }} />
+          <Sparkles className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
           <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
             Generate your first report to discover your whisky personality.
           </p>

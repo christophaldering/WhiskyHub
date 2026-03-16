@@ -351,7 +351,7 @@ function HostRatingPanel({
                 border: "1px solid var(--labs-border)",
                 background: wizardMode ? "var(--labs-accent-muted)" : "transparent",
                 color: wizardMode ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
               }}
               data-testid="host-wizard-toggle"
             >
@@ -360,7 +360,7 @@ function HostRatingPanel({
             </button>
           )}
           {saving && (
-            <span style={{ fontSize: 10, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
               <Loader2 className="w-3 h-3 animate-spin" />
               Saving...
             </span>
@@ -714,7 +714,7 @@ function PrintMaterialsSection({
                   Upload
                   <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} data-testid="input-print-cover-file" />
                 </label>
-                <span className="text-[9px]" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="text-photo-rights-hint-cover">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint-cover">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
                 <button
                   className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
                   onClick={handleAiCover}
@@ -773,7 +773,7 @@ function PrintMaterialsSection({
                       data-testid={`print-participant-${idx}`}
                     >
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
                         style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                       >
                         {pName.charAt(0).toUpperCase()}
@@ -1116,7 +1116,7 @@ function MobileCompanion({
           ].map(({ value, label }) => (
             <div key={label} style={{ flex: 1, background: "var(--labs-surface-elevated)", borderRadius: 10, padding: 10, textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{value}</div>
-              <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -1221,7 +1221,7 @@ function MobileCompanion({
                     if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
                   }}
                 >
-                  <Camera className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
+                  <Camera className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
                   <p className="text-xs text-center" style={{ color: "var(--labs-text-secondary)" }}>
                     Photo, PDF or tasting sheet
                   </p>
@@ -1319,7 +1319,7 @@ function MobileCompanion({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-medium truncate" style={{ margin: 0 }}>{w.name}</p>
-                            {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
+                            {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                           </div>
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                             {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
@@ -1457,7 +1457,7 @@ function MobileCompanion({
                 <Eye className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} />
                 Reveal Progress
               </p>
-              <span className="labs-badge" style={{ background: rv.allRevealed ? "var(--labs-success-muted)" : "var(--labs-info-muted)", color: rv.allRevealed ? "var(--labs-success)" : "var(--labs-info)", fontSize: 10 }}>
+              <span className="labs-badge" style={{ background: rv.allRevealed ? "var(--labs-success-muted)" : "var(--labs-info-muted)", color: rv.allRevealed ? "var(--labs-success)" : "var(--labs-info)", fontSize: 11 }}>
                 {rv.allRevealed ? "Complete" : `Dram ${rv.revealIndex + 1} of ${whiskyCount}`}
               </span>
             </div>
@@ -1497,7 +1497,7 @@ function MobileCompanion({
             </div>
             <div className="flex justify-between">
               {rv.stepLabels.map((label: string, idx: number) => (
-                <span key={label} className="text-[10px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                <span key={label} className="text-[11px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
                   {label}
                 </span>
               ))}
@@ -1518,7 +1518,7 @@ function MobileCompanion({
                   return (
                     <div
                       key={i}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
                       style={{ background: bg, color: fg }}
                     >
                       {i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps) ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
@@ -1665,7 +1665,7 @@ function MobileCompanion({
                       </p>
                     </div>
                     {isActive && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
                         Active
                       </span>
                     )}
@@ -1841,7 +1841,7 @@ function CustomRevealEditor({ steps, onChange }: {
               style={{
                 background: "none", border: "none", cursor: sIdx === 0 ? "default" : "pointer",
                 padding: 0, color: sIdx === 0 ? "var(--labs-border)" : "var(--labs-text-muted)",
-                fontSize: 10, lineHeight: 1,
+                fontSize: 11, lineHeight: 1,
               }}
               data-testid={`reveal-step-up-${sIdx}`}
             >
@@ -1854,7 +1854,7 @@ function CustomRevealEditor({ steps, onChange }: {
               style={{
                 background: "none", border: "none", cursor: sIdx >= steps.length - 1 ? "default" : "pointer",
                 padding: 0, color: sIdx >= steps.length - 1 ? "var(--labs-border)" : "var(--labs-text-muted)",
-                fontSize: 10, lineHeight: 1,
+                fontSize: 11, lineHeight: 1,
               }}
               data-testid={`reveal-step-down-${sIdx}`}
             >
@@ -1863,7 +1863,7 @@ function CustomRevealEditor({ steps, onChange }: {
           </div>
 
           <span style={{
-            fontSize: 10, fontWeight: 700, color: "var(--labs-accent)",
+            fontSize: 11, fontWeight: 700, color: "var(--labs-accent)",
             background: "var(--labs-accent-muted)", borderRadius: 6,
             padding: "2px 6px", flexShrink: 0, minWidth: 16, textAlign: "center",
           }}>
@@ -1894,7 +1894,7 @@ function CustomRevealEditor({ steps, onChange }: {
                     onClick={(e) => { e.stopPropagation(); splitField(sIdx, fIdx); }}
                     style={{
                       background: "none", border: "none", cursor: "pointer",
-                      padding: 0, color: "var(--labs-text-muted)", fontSize: 10, lineHeight: 1,
+                      padding: 0, color: "var(--labs-text-muted)", fontSize: 11, lineHeight: 1,
                     }}
                     title="Split into own step"
                     data-testid={`reveal-split-${field}`}
@@ -1938,7 +1938,7 @@ function CustomRevealEditor({ steps, onChange }: {
           padding: "8px 12px", borderRadius: 10,
           border: `1.5px dashed ${dragOverStep === steps.length ? "var(--labs-accent)" : "var(--labs-border)"}`,
           background: dragOverStep === steps.length ? "var(--labs-accent-muted)" : "transparent",
-          textAlign: "center", fontSize: 10, color: "var(--labs-text-muted)",
+          textAlign: "center", fontSize: 11, color: "var(--labs-text-muted)",
           transition: "all 0.15s",
         }}
       >
@@ -1950,7 +1950,7 @@ function CustomRevealEditor({ steps, onChange }: {
           marginTop: 4, padding: "8px 10px", borderRadius: 8,
           background: "var(--labs-surface)", border: "1px dashed var(--labs-border)",
         }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-text-muted)", marginBottom: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", marginBottom: 4 }}>
             Not included (click to add as new step):
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -1961,7 +1961,7 @@ function CustomRevealEditor({ steps, onChange }: {
                 onClick={() => onChange([...steps, [field]])}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 3,
-                  padding: "2px 7px", borderRadius: 5, fontSize: 10, fontWeight: 600,
+                  padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600,
                   background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)",
                   border: "1px solid var(--labs-border)", cursor: "pointer",
                 }}
@@ -1982,7 +1982,7 @@ function CustomRevealEditor({ steps, onChange }: {
       }}>
         {steps.map((step, i) => (
           <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-            <span style={{ fontWeight: 700, color: "var(--labs-accent)", minWidth: 44, flexShrink: 0, fontSize: 10 }}>
+            <span style={{ fontWeight: 700, color: "var(--labs-accent)", minWidth: 44, flexShrink: 0, fontSize: 11 }}>
               Step {i + 1}:
             </span>
             <span style={{ color: "var(--labs-text)" }}>
@@ -2022,7 +2022,7 @@ function LabsSegmentedSelect({ value, options, onChange }: {
             data-testid={`labs-opt-${opt.value}`}
           >
             <div className="font-bold" style={{ fontSize: 16, color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
-            {opt.desc && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
+            {opt.desc && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
           </button>
         );
       })}
@@ -2094,7 +2094,7 @@ function CreateTastingForm() {
     return (
       <div className="labs-empty labs-fade-in">
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+        <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
           Sign in to host a tasting
         </p>
       </div>
@@ -2110,7 +2110,7 @@ function CreateTastingForm() {
       >
         Host a Tasting
       </h1>
-      <p className="text-sm mb-8" style={{ color: "var(--labs-text-muted)" }}>
+      <p className="text-sm mb-8" style={{ color: "var(--labs-text-secondary)" }}>
         Create a new tasting session for your group
       </p>
 
@@ -2384,7 +2384,7 @@ function CreateTastingForm() {
                   placeholder="https://zoom.us/j/..."
                   data-testid="labs-host-input-video"
                 />
-                <p className="text-xs mt-1" style={{ color: "var(--labs-text-muted)" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--labs-text-secondary)" }}>
                   Add a Zoom, Teams or Google Meet link for remote guests
                 </p>
               </div>
@@ -2913,7 +2913,7 @@ function GuidedTastingEngine({
           </div>
           <div className="flex justify-between mt-1">
             {revealLabels.map((label, idx) => (
-              <span key={label} className="text-[10px]" style={{ color: idx <= revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+              <span key={label} className="text-[11px]" style={{ color: idx <= revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
                 {label}
               </span>
             ))}
@@ -2951,7 +2951,7 @@ function GuidedTastingEngine({
                     <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
                       {stripGuestSuffix((p.name || "Anonymous") as string)}
                     </p>
-                    <p className="text-[10px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
+                    <p className="text-[11px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
                       {hasRated ? "SUBMITTED" : "NOT STARTED"}
                     </p>
                   </div>
@@ -4671,7 +4671,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     </div>
                     <div className="flex justify-between mb-3">
                       {rv.stepLabels.map((label: string, idx: number) => (
-                        <span key={label} className="text-[10px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                        <span key={label} className="text-[11px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
                           {label}
                         </span>
                       ))}
@@ -4687,7 +4687,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         return (
                           <div
                             key={i}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
                             style={{ background: bg, color: fg }}
                           >
                             {fullyDone ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
@@ -4903,7 +4903,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-medium" style={{ margin: 0 }}>{w.name}</p>
-                        {isDupe && <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
+                        {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                       </div>
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                         {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
@@ -4985,7 +4985,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           return whiskyCount === 0 ? (
           <div className="labs-card p-6 text-center">
             <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
-            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+            <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
               No whiskies added yet
             </p>
           </div>
@@ -5071,7 +5071,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {rvActive && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}>
                         Active
                       </span>
                     )}

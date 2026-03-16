@@ -9,7 +9,7 @@ const ICONS: Record<string, string> = { islay: "\uD83D\uDD25", speyside: "\uD83C
 function Pills({ terms }: { terms: string[] }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-      {terms.map((t) => <span key={t} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 20, background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>{t}</span>)}
+      {terms.map((t) => <span key={t} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 20, background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>{t}</span>)}
     </div>
   );
 }
@@ -19,7 +19,7 @@ function Section({ title, terms, id, copied, onCopy }: { title: string; terms: s
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: "var(--labs-accent)" }}>{title}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: "var(--labs-accent)" }}>{title}</span>
         <button onClick={() => onCopy(terms.join(", "), id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 3, color: isCopied ? "var(--labs-success)" : "var(--labs-text-muted)" }} data-testid={`button-copy-${id}`}>
           {isCopied ? <Check style={{ width: 13, height: 13 }} /> : <Copy style={{ width: 13, height: 13 }} />}
         </button>

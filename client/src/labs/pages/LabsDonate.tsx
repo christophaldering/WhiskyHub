@@ -26,7 +26,7 @@ export default function LabsDonate() {
           {t("donate.title", "Donate")}
         </h1>
       </div>
-      <div className="w-12 h-0.5 rounded-full mb-6" style={{ background: "var(--labs-accent)", opacity: 0.3 }} />
+      <div className="w-12 h-0.5 rounded-full mb-6" style={{ background: "var(--labs-accent)", opacity: 0.75 }} />
 
       <div className="space-y-3">
         <div className="labs-card p-4 flex items-start gap-3">
@@ -77,7 +77,7 @@ export default function LabsDonate() {
         </div>
       </div>
 
-      <p className="text-center text-[10px] italic mt-4" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="labs-donate-disclaimer">
+      <p className="text-center text-[11px] italic mt-4" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="labs-donate-disclaimer">
         {t("donate.disclaimer")}
       </p>
     </div>

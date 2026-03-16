@@ -365,7 +365,7 @@ export default function LabsPaperScan() {
                         }}>
                           <FileText style={{ width: 24, height: 24, color: "var(--labs-accent)" }} />
                           <span style={{
-                            fontSize: 10,
+                            fontSize: 11,
                             color: "var(--labs-text-muted)",
                             maxWidth: 100,
                             overflow: "hidden",

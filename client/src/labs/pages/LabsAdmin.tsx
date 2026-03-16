@@ -155,7 +155,7 @@ export default function LabsAdmin() {
           <div key={s.label} className="labs-card text-center py-3 px-2" data-testid={`labs-admin-stat-${s.label.toLowerCase()}`}>
             <s.Icon className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
             <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{s.value}</div>
-            <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -249,8 +249,8 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                    p.role === "host" ? <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} /> :
                    <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
-                  {p.id === pid && <span className="text-[9px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
-                  {p.email?.endsWith("@casksense.local") && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
+                  {p.id === pid && <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
+                  {p.email?.endsWith("@casksense.local") && <span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
                   {p.email || "No email"} · {p.hostedTastings} tastings hosted
@@ -358,8 +358,8 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{tasting.title}</span>
-                  <span className="text-[10px] px-2 rounded-full font-semibold" style={{ background: `${statusColor(tasting.status)}20`, color: statusColor(tasting.status) }}>{tasting.status}</span>
-                  {tasting.isTestData && <span className="text-[9px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
+                  <span className="text-[11px] px-2 rounded-full font-semibold" style={{ background: `${statusColor(tasting.status)}20`, color: statusColor(tasting.status) }}>{tasting.status}</span>
+                  {tasting.isTestData && <span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                   <span className="flex items-center gap-1"><Crown className="w-2.5 h-2.5" />{stripGuestSuffix(tasting.hostName)}</span>
@@ -427,7 +427,7 @@ function OnlineTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name as string}</span>
-                  {u.role === "admin" && <span className="text-[9px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Admin</span>}
+                  {u.role === "admin" && <span className="text-[11px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Admin</span>}
                 </div>
                 {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email as string}</div>}
               </div>
@@ -517,13 +517,13 @@ function ActivityTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name as string}</span>
-                    <span className="text-[9px] px-1.5 rounded uppercase font-semibold" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{u.role as string}</span>
+                    <span className="text-[11px] px-1.5 rounded uppercase font-semibold" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{u.role as string}</span>
                   </div>
                   {u.email && <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email as string}</div>}
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatRel(u.lastSeenAt as string)}</div>
-                  <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>last seen</div>
+                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>last seen</div>
                 </div>
               </div>
               <div className="flex gap-3 mt-2.5 pt-2" style={{ borderTop: "1px solid var(--labs-border)" }}>
@@ -644,7 +644,7 @@ function AITab({ pid }: { pid: string }) {
                   {effective ? <XCircle className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} /> : <CheckCircle className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />}
                   <div>
                     <div className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{f.label}</div>
-                    <div className="text-[10px] font-mono" style={{ color: "var(--labs-text-muted)" }}>{f.route}</div>
+                    <div className="text-[11px] font-mono" style={{ color: "var(--labs-text-muted)" }}>{f.route}</div>
                   </div>
                 </div>
                 <ToggleSwitch on={!disabled} onToggle={() => toggleFeature(f.id)} disabled={!!masterDisabled} testId={`labs-admin-switch-${f.id}`} small />
@@ -691,7 +691,7 @@ function AITab({ pid }: { pid: string }) {
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
           <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>AI-Nutzung pro User</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{usageList.length}</span>
+          <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{usageList.length}</span>
         </div>
         {usageLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
@@ -708,10 +708,10 @@ function AITab({ pid }: { pid: string }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{u.name}</span>
-                      {u.hasOwnKey && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>Own Key</span>}
-                      {overLimit && !u.hasOwnKey && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Limit</span>}
+                      {u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>Own Key</span>}
+                      {overLimit && !u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Limit</span>}
                     </div>
-                    {u.email && <div className="text-[10px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
+                    {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {quota > 0 && (
@@ -739,7 +739,7 @@ function AITab({ pid }: { pid: string }) {
           <div className="max-h-[300px] overflow-y-auto">
             {auditLog.map((entry: Record<string, unknown>, i: number) => (
               <div key={i} className="flex items-center gap-2 py-1.5 text-xs" style={{ borderBottom: "1px solid var(--labs-border)" }}>
-                <span className="text-[10px] whitespace-nowrap" style={{ color: "var(--labs-text-muted)" }}>{new Date(entry.createdAt as string).toLocaleString()}</span>
+                <span className="text-[11px] whitespace-nowrap" style={{ color: "var(--labs-text-muted)" }}>{new Date(entry.createdAt as string).toLocaleString()}</span>
                 <span className="font-medium" style={{ color: "var(--labs-text)" }}>{entry.actorName as string}</span>
                 <span style={{ color: "var(--labs-text-muted)" }}>{entry.action as string}</span>
               </div>
@@ -819,7 +819,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
               <div key={p.id} onClick={() => toggleRecipient(p.id)} className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer" style={{ background: selectedIds.has(p.id) ? "var(--labs-accent-muted)" : "transparent" }} data-testid={`labs-admin-recipient-${p.id}`}>
                 {selectedIds.has(p.id) ? <CheckSquare className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> : <Square className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
                 <span className="text-xs" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
-                <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{p.email}</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{p.email}</span>
               </div>
             ))}
           </div>
@@ -970,9 +970,9 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium flex items-center gap-1" style={{ color: "var(--labs-text)" }}>
                   {ta.title}
-                  {ta.isTestData && <span className="text-[9px] px-1 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
+                  {ta.isTestData && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
-                <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ta.hostName)} · {ta.date} · {ta.status}</div>
+                <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{stripGuestSuffix(ta.hostName)} · {ta.date} · {ta.status}</div>
               </div>
             </div>
           ))}
@@ -1013,7 +1013,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
           <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>Top Whiskies</span>
           {(analytics.topWhiskies as Array<Record<string, unknown>>).slice(0, 10).map((w, i) => (
             <div key={(w.id as string) || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
-              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name as string}</span>{w.distillery && <span className="text-[10px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery as string}</span>}</div>
+              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name as string}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery as string}</span>}</div>
               <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{Number(w.avgScore).toFixed(1)}</span>
             </div>
           ))}
@@ -1074,7 +1074,7 @@ function HistoricalImportTab({ pid }: { pid: string }) {
               {[{ label: "Rows Read", value: latestRun.rowsRead ?? 0 }, { label: "Imported", value: latestRun.rowsImported ?? 0 }, { label: "Skipped", value: latestRun.rowsSkipped ?? 0 }].map(s => (
                 <div key={s.label} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                   <div className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{s.value}</div>
-                  <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
+                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -1091,12 +1091,12 @@ function HistoricalImportTab({ pid }: { pid: string }) {
       </div>
       {dryRunResult && (
         <div className="labs-card p-4 mb-3" style={{ borderColor: "var(--labs-accent)" }}>
-          <div className="flex items-center gap-1.5 mb-2.5"><Play className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Dry-Run Results</span><span className="text-[10px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>DRY RUN</span></div>
+          <div className="flex items-center gap-1.5 mb-2.5"><Play className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Dry-Run Results</span><span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>DRY RUN</span></div>
           <div className="grid grid-cols-2 gap-2">
             {[{ l: "Rows Read", v: dryRunResult.rowsRead }, { l: "Would Import", v: dryRunResult.rowsImported }, { l: "Tastings", v: dryRunResult.tastingsCreated }, { l: "Entries", v: dryRunResult.entriesCreated }].map(s => (
               <div key={s.l} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                 <div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{s.v as number}</div>
-                <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{s.l}</div>
+                <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.l}</div>
               </div>
             ))}
           </div>
@@ -1197,7 +1197,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
                   <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                   <div>
                     <div className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix((m.participantName as string) || (m.participantEmail as string) || (m.participantId as string))}</div>
-                    <span className="text-[10px] font-semibold uppercase px-1.5 rounded" style={{ color: "var(--labs-text-muted)" }}>{m.role as string} · {m.status as string}</span>
+                    <span className="text-[11px] font-semibold uppercase px-1.5 rounded" style={{ color: "var(--labs-text-muted)" }}>{m.role as string} · {m.status as string}</span>
                   </div>
                 </div>
                 <button onClick={() => { if (confirm("Remove this member?")) removeMemberMutation.mutate({ communityId: detail.id as string, participantId: m.participantId as string }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-remove-member-${m.participantId}`}>
@@ -1359,7 +1359,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
                    <User className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />}
                   <div className="min-w-0">
                     <div className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</div>
-                    <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                    <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
                       {p.email || "No email"}{isAdmin && " · always has access"}
                     </div>
                   </div>
@@ -1394,7 +1394,7 @@ function FeedbackTab({ pid }: { pid: string }) {
                 <span className="text-sm">{icons[(fb.category as string)] || "\u{1F4DD}"}</span>
                 <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--labs-accent)" }}>{fb.category as string}</span>
                 {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(fb.participantName as string)}</span>}
-                {fb.createdAt && <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(fb.createdAt as string).toLocaleDateString()}</span>}
+                {fb.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(fb.createdAt as string).toLocaleDateString()}</span>}
               </div>
               <div className="text-xs" style={{ color: "var(--labs-text)", lineHeight: 1.5 }}>{fb.message as string}</div>
             </div>

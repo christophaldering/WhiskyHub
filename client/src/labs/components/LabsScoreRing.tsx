@@ -126,7 +126,7 @@ export default function LabsScoreRing({
       {label && (
         <span
           className="text-[11px] font-medium"
-          style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
+          style={{ color: "var(--labs-text-secondary)", letterSpacing: "0.03em" }}
         >
           {label}
         </span>

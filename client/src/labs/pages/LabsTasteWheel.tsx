@@ -117,15 +117,15 @@ export default function LabsTasteWheel() {
           <div className="grid grid-cols-3 gap-3 labs-fade-in">
             <div className="labs-card p-3 text-center" data-testid="stat-total-mentions">
               <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{totalMentions}</p>
-              <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Total Mentions</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Mentions</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-top-category">
               <p className="labs-h2" style={{ color: topCategory?.color }}>{topCategory ? locName(topCategory) : "—"}</p>
-              <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Top Category</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Top Category</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-unique-flavor">
               <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}</p>
-              <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Most Unique</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Most Unique</p>
             </div>
           </div>
 

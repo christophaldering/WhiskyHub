@@ -98,7 +98,7 @@ export default function LabsTasteWishlist() {
               <div className="flex flex-col gap-3">{[1, 2, 3].map(i => <div key={i} className="labs-card" style={{ height: 80 }} />)}</div>
             ) : entries.length === 0 ? (
               <div className="labs-empty" style={{ minHeight: 200 }}>
-                <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)", opacity: 0.5 }} />
+                <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
                 <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>No wishlist entries yet</p>
                 <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>Add whiskies you want to try</p>
                 <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-2" data-testid="button-labs-wishlist-empty-add">
@@ -117,7 +117,7 @@ export default function LabsTasteWishlist() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="labs-serif font-semibold truncate text-sm" style={{ color: "var(--labs-text)", margin: 0 }}>{entry.whiskyName}</h3>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 999, border: `1px solid ${pc.border}`, background: pc.bg, color: pc.text, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, padding: "2px 8px", borderRadius: 999, border: `1px solid ${pc.border}`, background: pc.bg, color: pc.text, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
                               <PI style={{ width: 10, height: 10 }} /> {pk}
                             </span>
                           </div>
@@ -133,7 +133,7 @@ export default function LabsTasteWishlist() {
                             <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "var(--labs-accent-muted)", border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
-                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>Why Interesting</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>Why Interesting</span>
                               </div>
                               <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }} data-testid={`text-labs-summary-${entry.id}`}>{entry.aiSummary}</p>
                             </div>
@@ -322,7 +322,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
           <div className="labs-card p-3" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>AI Summary</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>AI Summary</span>
             </div>
             <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>{aiSummary}</p>
           </div>

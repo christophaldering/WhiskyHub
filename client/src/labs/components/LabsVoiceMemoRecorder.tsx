@@ -309,7 +309,7 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
               animation: "spin 1s linear infinite",
             }}
           />
-          <span style={{ fontSize: 13, color: "var(--labs-text-muted)", fontFamily: "inherit" }}>
+          <span style={{ fontSize: 13, color: "var(--labs-text-secondary)", fontFamily: "inherit" }}>
             {t("m2.voiceMemo.uploading", "Processing voice memo...")}
           </span>
         </div>
@@ -367,7 +367,7 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
             </button>
           </div>
           {memo.transcript && memo.transcript !== "[Transcription failed]" && (
-            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5, fontStyle: "italic", fontFamily: "inherit" }}>
+            <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.5, fontStyle: "italic", fontFamily: "inherit" }}>
               "{memo.transcript}"
             </div>
           )}
@@ -415,7 +415,7 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
               {t("m2.voiceMemo.title", "Voice Memo")}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--labs-text-muted)", lineHeight: 1.4, marginTop: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--labs-text-secondary)", lineHeight: 1.4, marginTop: 2 }}>
               {t("m2.voiceMemo.tapToSpeak", "Tap to speak · up to 30s")}
             </div>
           </div>

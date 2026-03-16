@@ -63,7 +63,7 @@ const TAB_LABELS: Record<LibraryTab, string> = {
 function EditField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      <label style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -79,7 +79,7 @@ function EditField({ label, value, onChange }: { label: string; value: string; o
 function EditArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      <label style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -244,7 +244,7 @@ export default function LabsBenchmark() {
   const isSaving = saveMutation.isPending || wishlistMutation.isPending || journalMutation.isPending;
 
   const classifyChipStyle = (active: boolean): React.CSSProperties => ({
-    fontSize: 10, padding: "3px 8px", borderRadius: 9999, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "inherit",
+    fontSize: 11, padding: "3px 8px", borderRadius: 9999, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "inherit",
     border: active ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
     background: active ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
     color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
@@ -306,7 +306,7 @@ export default function LabsBenchmark() {
               </p>
               <div className="flex flex-wrap gap-1.5 justify-center mb-4">
                 {["PDF", "Excel", "CSV", "TXT", "JPG/PNG"].map(fmt => (
-                  <span key={fmt} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{fmt}</span>
+                  <span key={fmt} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{fmt}</span>
                 ))}
               </div>
               <input ref={fileInputRef} type="file" accept=".pdf,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={handleFileUpload} data-testid="input-file-upload" />
@@ -342,7 +342,7 @@ export default function LabsBenchmark() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>Results</h2>
-                    <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "2px 8px" }}>{extractedEntries.length} entries</span>
+                    <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>{extractedEntries.length} entries</span>
                     {fileName && <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}><FileText className="w-3 h-3" />{fileName}</span>}
                   </div>
                 </div>
@@ -363,8 +363,8 @@ export default function LabsBenchmark() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="labs-serif text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>{entry.whiskyName}</span>
                             {entry.distillery && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>by {entry.distillery}</span>}
-                            {entry.score != null && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "1px 6px" }}>{entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}</span>}
-                            {entry.region && <span className="text-[10px]" style={{ padding: "1px 6px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{entry.region}</span>}
+                            {entry.score != null && <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}</span>}
+                            {entry.region && <span className="text-[11px]" style={{ padding: "1px 6px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{entry.region}</span>}
                           </div>
                           {entry.noseNotes && <p className="text-xs mt-1 truncate" style={{ color: "var(--labs-text-muted)", maxWidth: 500 }}>Nose: {entry.noseNotes}</p>}
                         </div>
@@ -488,7 +488,7 @@ export default function LabsBenchmark() {
                           <td className="labs-serif" style={{ padding: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{entry.whiskyName}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.distillery || "—"}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.region || "—"}</td>
-                          <td style={{ padding: 8 }}>{entry.score != null ? <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "1px 6px" }}>{entry.score}</span> : "—"}</td>
+                          <td style={{ padding: 8 }}>{entry.score != null ? <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}</span> : "—"}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>{entry.sourceDocument || "—"}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>
                             <span className="flex items-center gap-1"><User className="w-3 h-3" />{entry.uploaderName || "—"}</span>

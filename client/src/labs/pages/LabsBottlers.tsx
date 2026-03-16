@@ -36,9 +36,9 @@ function Card({ b }: { b: Bottler }) {
           </div>
           {b.notableReleases && b.notableReleases.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>Notable Releases</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>Notable Releases</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-                {b.notableReleases.map((r) => <span key={r} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>{r}</span>)}
+                {b.notableReleases.map((r) => <span key={r} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>{r}</span>)}
               </div>
             </div>
           )}
@@ -83,7 +83,7 @@ export default function LabsBottlers() {
         <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{filtered.length} found</span>
         <div style={{ display: "flex", gap: 4 }}>
           {(["name", "founded"] as const).map((s) => (
-            <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? "var(--labs-surface-elevated)" : "transparent", color: sortBy === s ? "var(--labs-accent)" : "var(--labs-text-muted)", fontSize: 10, fontWeight: 500, cursor: "pointer" }} data-testid={`labs-sort-${s}`}>{s === "name" ? "A\u2013Z" : "Founded"}</button>
+            <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? "var(--labs-surface-elevated)" : "transparent", color: sortBy === s ? "var(--labs-accent)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer" }} data-testid={`labs-sort-${s}`}>{s === "name" ? "A\u2013Z" : "Founded"}</button>
           ))}
         </div>
       </div>

@@ -534,7 +534,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         border: current ? "1px solid var(--labs-accent)" : "1px solid transparent",
                       }} data-testid={`cockpit-blind-whisky-${idx}`}>
                         <div style={{
-                          width: 20, height: 20, borderRadius: 10, fontSize: 10, fontWeight: 700,
+                          width: 20, height: 20, borderRadius: 10, fontSize: 11, fontWeight: 700,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           background: done ? "var(--labs-success)" : current ? "var(--labs-accent)" : "var(--labs-border)",
                           color: "#fff",
@@ -644,7 +644,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             {w.name || `Whisky ${idx + 1}`}
                           </div>
                         </div>
-                        <span style={{ fontSize: 10, color: "var(--labs-text-muted)", flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", flexShrink: 0 }}>
                           {ratedCount}/{totalParticipants}
                         </span>
                       </div>
@@ -684,7 +684,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-text)", letterSpacing: "0.02em" }}>
                       GUEST VIEW
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                       What participants see right now
                     </div>
                   </div>
@@ -693,7 +693,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   <Smartphone style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
                   {isLive && (
                     <span style={{
-                      fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                      fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
                       background: "var(--labs-success-muted)", color: "var(--labs-success)",
                     }}>LIVE</span>
                   )}
@@ -703,7 +703,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               <div style={{ padding: 20 }}>
                 {!isLive && isDraft ? (
                   <div style={{ textAlign: "center", padding: "32px 20px", color: "var(--labs-text-muted)" }}>
-                    <Clock style={{ width: 32, height: 32, margin: "0 auto 12px", display: "block", opacity: 0.5 }} />
+                    <Clock style={{ width: 32, height: 32, margin: "0 auto 12px", display: "block", opacity: 0.75 }} />
                     <div style={{ fontSize: 15, fontWeight: 600 }}>Session not started</div>
                     <div style={{ fontSize: 12, marginTop: 4 }}>Guests will see a waiting screen until you start the tasting.</div>
                   </div>
@@ -757,13 +757,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             }}>
                               {!imageRevealed ? (
                                 <>
-                                  <LockKeyhole style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.5 }} />
-                                  <span style={{ fontSize: 8, color: "var(--labs-text-muted)", fontWeight: 600 }}>HIDDEN</span>
+                                  <LockKeyhole style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.75 }} />
+                                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>HIDDEN</span>
                                 </>
                               ) : (
                                 <>
-                                  <ImageOff style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.4 }} />
-                                  <span style={{ fontSize: 8, color: "var(--labs-text-muted)" }}>No image</span>
+                                  <ImageOff style={{ width: 20, height: 20, color: "var(--labs-text-muted)", opacity: 0.75 }} />
+                                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>No image</span>
                                 </>
                               )}
                             </div>
@@ -846,7 +846,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 48, textAlign: "right", fontWeight: 500 }}>{dim}</span>
                               <div style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--labs-surface-elevated)", overflow: "hidden" }}>
-                                <div style={{ width: "50%", height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.3 }} />
+                                <div style={{ width: "50%", height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.75 }} />
                               </div>
                             </div>
                           ))}
@@ -913,7 +913,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                   </div>
                                 </div>
                                 <span style={{
-                                  fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
+                                  fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
                                   background: isRevealed ? "var(--labs-success-muted)" : isCurrent ? "var(--labs-accent-muted)" : "color-mix(in srgb, var(--labs-text-muted) 10%, transparent)",
                                   color: isRevealed ? "var(--labs-success)" : isCurrent ? "var(--labs-accent)" : "var(--labs-text-muted)",
                                 }}>
@@ -928,7 +928,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   </>
                 ) : (
                   <div style={{ textAlign: "center", padding: "24px 20px", color: "var(--labs-text-muted)" }}>
-                    <Wine style={{ width: 28, height: 28, margin: "0 auto 8px", display: "block", opacity: 0.4 }} />
+                    <Wine style={{ width: 28, height: 28, margin: "0 auto 8px", display: "block", opacity: 0.75 }} />
                     <div style={{ fontSize: 13 }}>No whiskies in this tasting yet.</div>
                   </div>
                 )}
@@ -992,7 +992,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           {avgScore !== null && (
                             <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{avgScore}</span>
                           )}
-                          <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{ratedCount}/{totalParticipants} rated</span>
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{ratedCount}/{totalParticipants} rated</span>
                         </div>
                       </div>
                     );
@@ -1073,7 +1073,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                   {totalWhiskiesRated}/{whiskies.length}
                                 </span>
                                 <span style={{
-                                  fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 8,
+                                  fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 8,
                                   background: source === "digital" ? "var(--labs-success-muted)"
                                     : source === "paper" ? "var(--labs-accent-muted)"
                                     : "color-mix(in srgb, var(--labs-text-muted) 12%, transparent)",
@@ -1117,7 +1117,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       border: "1px solid var(--labs-border)",
                       background: cockpitWizard ? "var(--labs-accent-muted)" : "transparent",
                       color: cockpitWizard ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                      fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                      fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                       textTransform: "none",
                     }}
                     data-testid="cockpit-wizard-toggle"
@@ -1126,7 +1126,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     {cockpitWizard ? "Wizard" : "Compact"}
                   </button>
                   {saving && (
-                    <span style={{ fontSize: 10, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4, textTransform: "none" }}>
+                    <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4, textTransform: "none" }}>
                       <Loader2 style={{ width: 10, height: 10, animation: "spin 1s linear infinite" }} />
                       Saving...
                     </span>
@@ -1231,7 +1231,7 @@ function StatPill({ icon, value, label }: { icon: React.ReactNode; value: number
         <span style={{ color: "var(--labs-accent)" }}>{icon}</span>
         <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
       </div>
-      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 500 }}>{label}</span>
     </div>
   );
 }

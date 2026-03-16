@@ -62,7 +62,7 @@ export default function LabsActivity() {
 
       {!pid && (
         <div className="labs-empty" style={{ minHeight: "30vh" }}>
-          <Activity className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.3 }} />
+          <Activity className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
           <p className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-activity-signin">
             Sign in to see your friends' activity.
           </p>
@@ -72,7 +72,7 @@ export default function LabsActivity() {
       {pid && isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="labs-card p-4" style={{ opacity: 0.5 }}>
+            <div key={i} className="labs-card p-4" style={{ opacity: 0.75 }}>
               <div className="h-4 rounded animate-pulse" style={{ background: "var(--labs-border)", width: "60%" }} />
               <div className="h-3 mt-2 rounded animate-pulse" style={{ background: "var(--labs-border)", width: "40%" }} />
             </div>
@@ -108,7 +108,7 @@ export default function LabsActivity() {
                   <span className="labs-serif text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
                     {stripGuestSuffix(a.participantName)}
                   </span>
-                  <span className="text-[10px] flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
+                  <span className="text-[11px] flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
                     {relTime(a.timestamp)}
                   </span>
                 </div>

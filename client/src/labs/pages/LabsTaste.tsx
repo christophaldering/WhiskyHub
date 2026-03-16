@@ -41,7 +41,7 @@ function NavItem({ icon: Icon, label, description, href, testId, badge, locked }
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{description}</div>
         </div>
         {badge != null && (
-          <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "2px 8px" }}>{badge}</span>
+          <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>{badge}</span>
         )}
         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
       </div>
@@ -169,13 +169,13 @@ export default function LabsTaste() {
           <div style={{ maxWidth: 220, margin: "0 auto 6px" }}>
             <div className="flex justify-between mb-1.5">
               <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{whiskyCount} / {ANALYTICS_THRESHOLD}</span>
-              <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>entries</span>
+              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>entries</span>
             </div>
             <div style={{ height: 5, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "linear-gradient(90deg, var(--labs-accent-dark), var(--labs-accent))", borderRadius: 3, transition: "width 0.5s" }} />
             </div>
           </div>
-          <p className="text-[10px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
+          <p className="text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
             {Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more to unlock full analytics
           </p>
           <button className="labs-btn-primary" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
@@ -195,7 +195,7 @@ export default function LabsTaste() {
                 <p className="text-xl font-bold" style={{ color: "var(--labs-accent)" }}>
                   {s.value != null ? (typeof s.value === "number" ? (Number.isInteger(s.value) ? s.value : s.value.toFixed(1)) : s.value) : "—"}
                 </p>
-                <p className="text-[10px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
+                <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -204,7 +204,7 @@ export default function LabsTaste() {
             <div className="labs-card p-4 mb-6 labs-fade-in labs-stagger-2" data-testid="card-taste-insight">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste Insight</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste Insight</span>
               </div>
               <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="text-insight-message">
                 {insight.message}

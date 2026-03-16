@@ -671,7 +671,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               animation: "labsFadeIn 400ms cubic-bezier(0.2, 0.8, 0.4, 1) both",
             }}
           >
-            <Search style={{ width: 40, height: 40, color: "var(--labs-text-muted)", opacity: 0.3, marginBottom: 16 }} />
+            <Search style={{ width: 40, height: 40, color: "var(--labs-text-muted)", opacity: 0.75, marginBottom: 16 }} />
             <p style={{ fontSize: 15, fontWeight: 500, color: "var(--labs-text-secondary)", margin: 0, textAlign: "center" }}>
               {t("search.hint", isDe ? "Whiskys, Seiten, Brennereien oder Begriffe finden" : "Find whiskies, pages, distilleries, or terms")}
             </p>
@@ -796,12 +796,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                               {result.subtitle}
                             </span>
                             {result.extra?.region && result.category === "whiskies" && (
-                              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", flexShrink: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", flexShrink: 0 }}>
                                 {result.extra.region}
                               </span>
                             )}
                             {result.extra?.region && result.category === "lexicon" && (
-                              <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4, background: "var(--labs-success-muted)", color: "var(--labs-success)", flexShrink: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 500, padding: "1px 6px", borderRadius: 4, background: "var(--labs-success-muted)", color: "var(--labs-success)", flexShrink: 0 }}>
                                 {result.extra.region}
                               </span>
                             )}
@@ -813,7 +813,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{result.extra.rating.toFixed(1)}</span>
                           </div>
                         )}
-                        <ChevronRight style={{ width: 14, height: 14, color: "var(--labs-text-muted)", opacity: 0.4, flexShrink: 0 }} />
+                        <ChevronRight style={{ width: 14, height: 14, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0 }} />
                       </div>
                     );
                   })}
