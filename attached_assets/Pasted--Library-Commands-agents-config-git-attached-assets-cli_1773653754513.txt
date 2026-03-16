@@ -1,0 +1,305 @@
+
+Library
+Commands
+
+.agents
+.config
+.git
+attached_assets
+client
+public
+replit_integrations
+src
+assets
+components
+admin
+apple
+landing
+m2
+navigation
+simple
+ui
+ai-tasting-import.tsx
+ambient-toggle.tsx
+attendee-roster.tsx
+back-button.tsx
+briefing-notes.tsx
+build-footer.tsx
+cask-type-select.tsx
+casksense-presentation-pdf.ts
+connoisseur-report-pdf.ts
+curation-wizard.tsx
+discussion-panel.tsx
+donation-prompt.tsx
+evaluation-form.tsx
+feedback-button.tsx
+flight-board.tsx
+focused-tasting.tsx
+guest-preview.tsx
+guided-tasting.tsx
+import-flight-dialog.tsx
+invite-panel.tsx
+language-toggle.tsx
+layout.tsx
+level-onboarding.tsx
+login-dialog.tsx
+nav-redirects.tsx
+ObjectUploader.tsx
+overview-rating.tsx
+pdf-export-dialog.tsx
+printable-tasting-sheets.tsx
+profile-card-dialog.tsx
+reflection-panel.tsx
+reveal-presenter.tsx
+reveal-view.tsx
+rich-text-editor.tsx
+session-control.tsx
+session-sheet.tsx
+spotlight-hint.tsx
+storage-consent.tsx
+suggest-entry-dialog.tsx
+tasting-analytics.tsx
+tasting-menu-pdf.ts
+tasting-note-generator.tsx
+tasting-photos.tsx
+thank-you-dialog.tsx
+theme-toggle.tsx
+view-switcher.tsx
+welcome-overlay.tsx
+data
+hooks
+lab-dark
+labs
+lib
+translations
+ambient.ts
+api.ts
+comparable-baseline.ts
+config.ts
+demoMath.ts
+download.ts
+i18n.ts
+navConfig.ts
+navStack.ts
+pdf.ts
+queryClient.ts
+session.ts
+simple-auth.ts
+store.ts
+theme.ts
+themeVars.ts
+utils.ts
+pages
+m2
+about-dark.tsx
+about-method.tsx
+about.tsx
+account.tsx
+activity-feed.tsx
+admin-panel.tsx
+ai-curation-dark.tsx
+analytics.tsx
+app-entry.tsx
+background.tsx
+badges.tsx
+benchmark-analyzer.tsx
+bottlers.tsx
+community-rankings.tsx
+comparison.tsx
+data-export-dark.tsx
+data-export.tsx
+discover-bottlers-native.tsx
+discover-community-native.tsx
+discover-community.tsx
+discover-distilleries-native.tsx
+discover-distilleries.tsx
+discover-hub.tsx
+discover-lexicon.tsx
+discover-templates.tsx
+discover.tsx
+distillery-encyclopedia.tsx
+distillery-map.tsx
+donate-dark.tsx
+donate.tsx
+downloads-export.tsx
+enter.tsx
+export-notes.tsx
+feature-overview.tsx
+feature-showcase.tsx
+feature-tour.tsx
+CaskSense - Whisky Tasting Application
+
+Overview
+
+CaskSense is a web application designed to facilitate collaborative whisky tastings. It enables users to create events, manage participants, and conduct structured whisky evaluations with features like tasting progression, multi-act reveals with analytics, and personalized tools such as a whisky journal. The project aims to establish a leading platform for structured whisky tasting, fostering a global community and providing advanced tools for whisky enthusiasts. Key capabilities include comprehensive whisky management, personalized analytics, and AI-powered integrations.
+
+User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+System Architecture
+
+Full-Stack Structure
+
+The application is a TypeScript monorepo with separate client, server, and shared code using ESM modules. Data consistency is ensured via a shared schema.ts for Drizzle ORM and Zod validation.
+
+Frontend (client/)
+
+The frontend is a React application built with Vite, Wouter for routing, TanStack React Query for server state, and Zustand for client state. UI components leverage shadcn/ui (New York style) based on Radix UI and Tailwind CSS, featuring a Dark Warm theme with centralized color tokens and support for a Light Warm theme. It incorporates Framer Motion for animations, Recharts for data visualization, and react-i18next for internationalization (English and German), supporting PWA features.
+
+Backend (server/)
+
+The backend is an Express 5 HTTP server providing RESTful API endpoints and serving frontend assets in production.
+
+Database
+
+PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, communities, and community memberships, all identified by UUIDs.
+
+Key Design Decisions
+
+Authentication: Email/password login with session persistence, account management, and guest mode.
+Data Access Security: Enforces x-participant-id header validation and limits non-owner data exposure. Calendar API (/api/calendar) filters by participant: admin sees all, regular users see only own tastings (host or participant). All calendar consumers send x-participant-id header.
+Shared Schema: Ensures consistent data definitions across client and server.
+Session State Machine: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.
+Asynchronous Updates: Uses React Query polling for near real-time session data updates.
+Public Landing Page: Premium Apple-level landing page (client/src/pages/landing-new.tsx) with 14 sections: Hero, Quiet Table, 5-Stage Tasting Flow, Reveal Moment, Taste Intelligence (Recharts radar/ranking/flavors), Connoisseur Features, Guided Tour, Interactive Demo (sliders + reveal), Companion (solo), Circle (community), Downloads, User Roles, Philosophy, Final CTA. Old landing page preserved at /landing-old (client/src/pages/public-landing.tsx).
+Downloads / Printable Sheets: PDF tasting sheets: Page 1 is a cover page (tasting title, cover image, host name, date, location, code, participant QR + whisky lineup for open / numbered sample grid for blind). Page 2+ is a two-column scoring sheet (max 12 whiskies per page, 6 per column, overflow to additional pages), each with 5 individually scored criteria (Nose, Palate, Finish, Balance, Overall). Rating circles adapt to tasting.ratingScale (5/10/20 numbered circles, 100 write-in field). Layout supports portrait/landscape orientation toggle. AI cover page styling: POST /api/tastings/:id/pdf-style (host-only, GPT-4o-mini) generates PdfStyleTheme with tagline, colorScheme (primary/accent/background/textDark/textLight RGB), and mood — applied only to cover page. Dialog UI includes orientation segmented control, collapsible AI style section with prompt textarea, color swatches preview, and reset. Batch PDF generates cover+scoring pages per participant with shared cover image. Key functions: drawCoverPage(), drawScoringPage(), generators in client/src/components/printable-tasting-sheets.tsx. Photo support in PDFs: Whisky thumbnails appear next to lineup entries in tasting menu cards and scoring sheets (non-blind mode only). Participant profile photos appear next to names in the menu card participant list. Connoisseur report title page shows participant photo when participantPhotoUrl is passed.
+Tasting Menu Card: AI-generated cover image + multi-page PDF (cover, participants, whisky lineup). Configurable orientation (portrait/landscape), blind/open mode, optional prompt hint for cover image mood. Backend: POST /api/tastings/:id/menu-cover generates context-aware DALL-E image. Frontend: client/src/components/tasting-menu-pdf.ts generates jsPDF. UI: TastingMenuSection in M2TastingsHost.tsx Step 3.
+Configurable Reveal Order: Blind mode tastings support configurable per-field reveal stages via revealOrder JSON column on tastings table. Presets: Classic (Name→Details→Photo), Photo First, Details First, One by One. Host selects preset in Step 1 wizard; reveal progression, button labels, and participant visibility all respect the custom config. Backward-compatible: null = classic 3-stage behavior. Participant view (LabsLive.tsx GuidedStepView) now parses revealOrder and derives visibility from a revealedFields set instead of hardcoded step numbers. Cockpit Guest View subtitle dynamically shows all revealed detail fields (distillery, age, ABV, region, country, cask, etc.) based on isFieldRevealed() checks.
+Multi-Source Lineup Import: Host wizard Step 2 supports AI-powered lineup import from Excel/CSV/images/PDFs via POST /api/tastings/ai-import. Features drag/drop upload zone, camera capture, import preview with select/deselect, bulk whisky creation, partial-failure feedback. PDF files are parsed via pdf-parse for proper text extraction (not raw binary).
+PDF Analysis: PDF upload support across Labs features. server/pdf-utils.ts provides extractTextFromPdf() and extractPdfInfo() using pdf-parse. Integrated in: (1) Paper Sheet Scanner (/api/tastings/:id/scan-sheet) — accepts PDFs alongside images, extracts text and sends to GPT-4o for score/note extraction; (2) AI Tasting Import (/api/tastings/ai-import) — proper PDF text extraction replacing broken UTF-8 decode. Frontend LabsPaperScan.tsx has dedicated PDF upload button with file-icon preview.
+Tasting Features: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
+Personalization & Analytics: Participant profiles, whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
+Internationalization: Full migration to react-i18next supporting German and English. All M2 page headers, subtitles, action card labels, status badges, filter options, and empty states are fully translated in both languages via client/src/lib/i18n.ts (EN block starts line ~11, DE block starts line ~5492, M2-specific keys in m2: sub-objects at lines ~4255 / ~9702).
+Host Tools: Host briefing notes, tasting curation wizard, dashboard summary, and tasting management.
+AI Integration: AI for bottle identification (GPT-4o Vision direct identification with structured JSON output — name, distillery, age, ABV, cask type, region), content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup. Identification photos are uploaded to Replit Object Storage for persistence (not ephemeral /uploads/ directory). All narrative AI outputs (Connoisseur Report, Session Story, Whisky Insights, Wishlist Summary) support explicit language selection (DE/EN) via AILanguageSelector component (client/src/components/m2/AILanguageSelector.tsx). Language preference persists to DB via PATCH /api/participants/:id/language.
+Custom AI Prompts / PromptEditor: All 4 AI generation endpoints accept an optional customPrompt parameter (max 500 chars, trimmed/sanitized server-side). Reusable PromptEditor component (client/src/components/m2/PromptEditor.tsx) replaces the old Focus Hint UIs. Features: collapsible section with toggle to reveal the AI's base instructions (human-readable description via promptEditor.*Base i18n keys), plus a textarea for user's own additions/specifications. Two variants: collapsible (Connoisseur Report, Session Story) and inline (Wishlist Summary, Whisky Insights). Full i18n EN+DE via promptEditor.* and customPrompt.* keys.
+Connoisseur Report: AI-generated personal whisky profile (connoisseur_reports table). GPT-4o analyzes ratings, collection, journal, flavor indices to produce Markdown report + shareable summary. Stored with dataSnapshot for historical comparison. UI at /m2/taste/connoisseur, PDF export via jsPDF. Endpoints: POST/GET /api/participants/:id/connoisseur-report(s).
+Tasting Session Narrative: AI-generated narrative story for completed tastings (tastings.aiNarrative field). GPT-4o writes 400-600 word journalist-style summary including discussion quotes, reflection themes, voice memo transcripts, and historical context. Host/admin only, language-aware, force-regeneratable. Endpoint: POST /api/tastings/:id/ai-narrative. UI in host Step4Live view.
+Voice Memos: Per-whisky audio recordings during active tastings (voice_memos table). Participants record 15-30s voice memos via MediaRecorder API, uploaded to Object Storage, transcribed via gpt-4o-mini-transcribe (Whisper). Transcripts shown inline, playback via HTML5 Audio, owner/host/admin can delete. Transcripts feed into AI narrative/highlights. Component: VoiceMemoRecorder.tsx, integrated in M2TastingPlay.tsx and M2HostingDashboard.tsx. Endpoints: POST/GET/DELETE /api/tastings/:tastingId/whiskies/:whiskyId/voice-memo(s). Recording UI features a warm gradient progress bar (4px, gold→amber→orange in last 6s), sheen animation, compact REC badge. Solo voice memos: SoloVoiceMemoRecorder.tsx in M2TastingsSolo.tsx, uploads via POST /api/journal/voice-memo, stored in journal_entries table fields (voiceMemoUrl, voiceMemoTranscript, voiceMemoDuration).
+Whiskybase ID Lookup & Barcode Scanner: Auto-filling whisky details via Whiskybase ID or camera-based barcode scanning. Barcode lookup checks local collection only (no AI guessing); if not found, redirects user to photo identification or manual entry.
+Collection Sync: Smart synchronization of Whiskybase collections via CSV re-upload.
+Tasting Hub (/tasting): Central hub for joining, hosting, or logging solo drams. Solo page includes filter/sort controls for completed drams (search, sort by date/score/name, time period filter, score range filter). Tastings list page (M2TastingsHome.tsx) includes search, host role filter (My Tastings/Joined), and location filter alongside existing status/time filters. Solo dram entry uses a Capture-First Flow: tapping "Log new dram" shows a full-page capture screen (hero photo button, secondary Gallery/Barcode/Describe options, skip link) instead of an empty editor. After identification, transitions to the editor with pre-filled data. Editor's identify button reopens the capture screen; old picker bottom sheet removed. soloView states: "hub" | "capture" | "editor", with captureSource tracking navigation origin for context-aware back navigation.
+Host Wizard (Simple Mode): Streamlined 4-step wizard for creating and managing tastings.
+Tasting Results: Displays ranked whiskies by average overall score with detailed breakdowns and export options. Includes synchronized presentation mode: host controls slides from LabsResultsPresent.tsx, slide index synced to DB via presentationSlide column. Participants on the results page see a read-only PresentationViewerOverlay with the current slide (polled every 5s). API: POST /api/tastings/:id/presentation-start|slide|stop.
+Guest Mode: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation.
+Rating System: Unified M2RatingPanel component for detailed, multi-dimensional ratings with flavor chip selection, voice input, and score normalization.
+Score Normalization: All scores normalized to a 0–100 scale for cross-source comparison, with normalization applied at write-time and backfilled on startup.
+Context Level: Three-tier data visibility control within active tasting sessions: Naked, Self, and Full.
+CaskSense Labs (/labs/*): A parallel experimental UX layer focused on refined whisky tasting. Dedicated shell (LabsLayout.tsx) with warm dark/light premium theme (labs-theme.css, CSS variables with .labs-light override), Apple-inspired design, bottom nav (Tastings/Explore/Discover/Taste/Circle). M2↔Labs switching via profile menu (available to all users). Auto-resumes session on load via tryAutoResume(). Reuses all existing backend APIs, auth, and database. Files: client/src/labs/ directory.
+Labs Pages: Landing (Join/Host/Solo), Join (code entry), Tastings (status/role filtering), Tasting Detail, Live Tasting Room (Nose/Taste/Finish/Balance/Overall with auto-save), Host Dashboard (participant status grouping by Rated All/In Progress/Not Started, Session vs Reveal action sections, per-whisky completion grid, desktop two-column layout), Results (personal vs group comparison with delta indicators, score variance/spread, agreement badges, reflection sections — Your Highlights/Group Consensus/Most Debated, summary card). Host routes under /labs/host/ prefix: dashboard, calendar, history, history/insights. Per-tasting page (/labs/host/:id) includes HostRatingPanel with flavor chip tagging (nose/taste/finish/balance), per-dimension text notes, score sliders, overall score, tasting notes textarea with debounced auto-save. Mobile companion mode (MobileCompanion) renders single-column essential controls + embedded rating panel on mobile devices.
+Labs Taste Page: Personal snapshot (total tastings/ratings/avg score/activity count), preference signals from flavorProfileApi (dimension breakdown bars, top regions, cask types, categories), recent rated drams (last 10 with bottle/score/tasting context), recent tastings with Host/Joined role badges.
+Labs Circle Page: Tasting Partners (shared tasting count per person), tabbed layout (People/Sessions/Activity), enhanced Taste Twin cards (match %, shared whiskies/sessions), rich empty states with action buttons, activity feed with whisky name/score detail.
+Labs Explore (/labs/explore): Discovery feature — browse all whiskies across tastings with search, region filter chips, sort (avg score/most rated/alphabetical). Backend: GET /api/labs/explore/whiskies (deduplicates by name+distillery, aggregates ratings), GET /api/labs/explore/whiskies/:id (detail with all ratings, dimensions, tasting history). Client: exploreApi in api.ts.
+Labs Bottle Detail (/labs/explore/bottles/:id): Bottle info, community ratings with dimension breakdown, CSS bar chart rating distribution, user's own ratings, tasting history links.
+Labs Compare (/labs/taste/compare): Full whisky comparison page — your scores vs platform median with delta visualization. Features: search, sort (delta desc/asc, your score, platform score, name A-Z), direction filter (all/above/below), min N filter, date period filter, CSV export, pagination. Radar Overlay section: select up to 3 rated whiskies to compare dimension profiles on a shared radar chart with per-dimension comparison table. All Labs dark-theme tokens.
+Labs AI Insight (Analytics): AI-generated taste insight card on Analytics page using /api/participants/:id/insights endpoint. Shows insight message with type badge when available.
+Labs Guided Tasting Engine: Host-controlled step-by-step tasting progression. Uses existing backend fields: guidedMode, guidedWhiskyIndex, guidedRevealStep on tastings table. Session state: LOBBY (waiting) → STEP X of N (active) → COMPLETED. Host controls: Start Tasting, Reveal Bottle (progressive: blind→name→details→image), Next Dram, End Tasting via guidedApi endpoints. Participant experience: locked to current host-controlled step, blind placeholder names, progressive reveal, rating autosave, step progress dots. Rating locking enforced by backend (403 when status != open/draft). Results page shows "Guided Tasting" badge. Non-guided tastings retain free-browse behavior unchanged.
+Labs Guided Flavor Tags: Tappable flavor tag strip above notes fields in LabsLive (both guided and free-form modes). Funnel approach: 3 phase tabs (Nose/Taste/Finish) → 13 expandable flavor categories (Fruity, Floral, Sweet, Spicy, Woody, Smoky, Malty, Maritime, Nutty, Herbal, Earthy, Creamy, Mineral) → specific descriptors per category. Tags written into notes as [Phase] tag1, tag2 lines. Custom descriptor input with + button. Host sets Flavor Profile per whisky (6 presets: Sherried & Rich, Bourbon & Classic, Peated & Maritime, Highland & Elegant, Speyside & Fruity, Island & Coastal) to sort categories by relevance; auto-detection from region/peat/cask metadata if no explicit profile set. Blind mode blocks auto-detection to prevent metadata leaks. Schema: flavorProfile text column on whiskies table. Files: client/src/labs/data/flavor-data.ts, client/src/labs/components/FlavorTagStrip.tsx.
+Guided Flavour Flow (Flavour Studio): Hierarchical guided tasting note capture as the default first tab ("Guide"/"Geführt") in the Flavour Studio. Data model extended with optional FlavorSubGroup interface for 3-level hierarchy (Category → SubGroup → Descriptor); categories without natural sub-groups keep 2 levels. Subgroups defined for: Fruity (Fresh Fruit / Dark & Dried), Sweet (Sugar & Syrup / Confection), Smoky (Peat Smoke / Wood Smoke), Maritime (Salt & Brine / Coastal & Marine). GuidedView component with drill-down navigation (Level 1: 13 category cards in 2-column grid with selection badges; Level 2: subgroup buttons or direct descriptors; Level 3: individual descriptors with related-group navigation). Breadcrumb trail for hierarchy position. Bottom-up context: selected terms show hierarchy path (Category › SubGroup) in "Your Selections" summary using canonical EN keys for locale-safe toggle. Animated transitions (slideIn/slideBack). Files: client/src/labs/data/flavor-data.ts (FlavorSubGroup, subgroups), client/src/labs/components/FlavourStudioSheet.tsx (GuidedView, StudioView="guide").
+Flavour Studio Tab Simplification: Reduced from 6 equal tabs to 3 primary tabs (Guide / Journey / Describe) + expandable "More Tools" section for expert tools (Wheel, Compass, Radar). StudioView type: "guide" | "journey" | "wheel" | "compass" | "radar" | "describe". "More Tools" toggle shows active dot when an expert tool is selected. Expert tools render as pill buttons in a collapsible row below the primary segmented control.
+Flavour Journey (3-Phase Discover Replacement): Replaced the old flat Tinder-style Discover swiper with a structured 3-phase guided tasting journey. Phase 1 (Category Sweep): walks 13 categories in sensory order (floral→mineral, light→intense) with emoji icons, descriptions, example descriptors, and Yes/Maybe/No buttons + live progress bar. Phase 2 (Descriptor Drill-Down): for Yes categories first then Maybe, shows subgroup sections (where available) or flat descriptor chips, softer prompts for Maybe categories, back/next navigation. Phase 3 (Profile Summary): grouped selections by category with weight bar visualization, static profile match against FLAVOR_PROFILES (sherried-rich, bourbon-classic, etc.), refine/restart options. Journey category order and per-category descriptions defined in JOURNEY_CATEGORY_ORDER in flavor-data.ts. Old DiscoverView and COMPANION_MAP removed. i18n keys for all 3 phases in EN+DE.
+Labs Stability Hardening: All rating save mutations (guided + free-browse) have error handling with user-visible error feedback (AlertTriangle + message), status-gated autosave (skips saves when tasting != open/draft at both schedule and execution time), debounce cleanup on unmount and whisky change to prevent stale writes. GuidedTastingEngine host mutations (start/advance/end/goto) have error feedback via auto-dismissing error banner. Save errors clear on whisky change to prevent cross-dram stale error carryover.
+Labs Apple-Style Design System: Reusable CSS components in labs-theme.css for iOS-inspired UI patterns: labs-segmented + labs-segmented-btn (iOS segmented control), labs-chip + labs-chip-active (pill filter chips), labs-grouped-list + labs-list-row (iOS Settings-style grouped rows with dividers), labs-action-grid + labs-action-item (3-column action card grid). Applied consistently across LabsTastings, LabsExplore, LabsCircle, LabsTasteDrams, and LabsDiscover pages. All page headers use 28px Playfair Display serif font, subtitle in 14px muted text.
+Labs UX Polish Pass: Comprehensive microcopy, empty state, error state, and visual polish across all 11 Labs pages. Improved landing page copy (Join/Host/Solo clarity), nav active state indicator, personal tone on Taste page ("Your Palate"), social warmth on Circle page, "calm debrief" tone on Results page. Fixed LabsBottleDetail DimensionBar scale (was /10, now /100) and rating distribution bucketing (10 buckets for 0-100 range with labeled ranges). Meta tags updated. All empty states provide clear next-action guidance.
+Labs Pilot Readiness: Seed data (server/seed-labs-pilot.ts) generates LABS_TEST_DATA on startup: 1 host + 6 participants (PIN: 1234), 2 tastings (PILOT1 = guided blind Highland vs Speyside, PILOT2 = open World Whiskies), realistic whiskies + ratings. React error boundary (LabsErrorBoundary.tsx) wraps all Labs page content. Structured [LABS] diagnostic logging on key backend events (status changes, joins, guided advance/reveal, rating submissions). Hardened join flow error messages (network, invalid code, duplicate join).
+Module 2 (/m2/*): A fully self-contained parallel UI with a 3-tab bottom navigation (Tasting | Taste | Circle), sharing the same backend, auth, and database.
+Apple-Level Bottom Navigation: Custom SVG icons with Apple-grade visual polish, including GlencairnIcon, RadarIcon, and CircleIcon.
+Apple-Design-System (M2 UI Polish): Comprehensive design upgrades including Playfair Display headers, refined NavRows, dynamic Tasting Cards, enhanced Stat Boxes, iOS-style Segmented Controls, inviting Empty States, and elegant Skeleton Loading.
+Ambient Warm Glow: Subtle, slowly drifting radial gradient (amber/gold at ~4% opacity) behind all M2 content via Module2Shell.tsx. CSS-only m2ambientGlow keyframe animation (20s cycle), GPU-accelerated with willChange: transform, pointer-events: none. Rendered as a position: fixed layer at zIndex: 0 below content (main has position: relative; zIndex: 1). Creates an unconscious warmth like candlelight on dark wood. Respects prefers-reduced-motion.
+Live-Tasting Pulse: Open/reveal tastings "breathe" — left color edge pulses opacity (0.5 to 1 to 0.5, 2.5s cycle via m2livePulse) and status badge pulses box-shadow (0 to 4px spread, 2.5s via m2badgePulse using CSS custom property --pulse-color derived from the tasting's status color). Only active for status === "open" || "reveal". Signals "something is happening now." Keyframes defined centrally in Module2Shell.tsx, not per card.
+Action Cards (Joyn/Host/Solo): Apple-quality primary action cards with distinctive iconography, gradient backgrounds, and subtle touch feedback.
+Hosting Dashboard: Desktop-first live tasting control center with a 3-column layout for session status, whisky lineup, participant roster, and host's rating panel.
+Labs Desktop Hosting Cockpit (LabsHostCockpit.tsx): Three-column live tasting control view accessible from LabsHost via "Desktop Cockpit" toggle button (visible on desktop when tasting is draft/open/closed/reveal). Left column (280px): session status, live controls (start/next dram/close/reveal), blind reveal stepper with host-vs-participant visibility helper, guided dram navigation, whisky lineup with per-dram rating counts. Center column (flex): per-dram progress with progress bars and avg scores, participant roster with digital/paper/pending source badges and per-whisky rated counts. Right column (360px): host rating panel using LabsRatingPanel component with flavor chips/texts/notes, guest view preview showing what participants see. Real-time polling (3s tasting, 5s whiskies/participants/ratings). All Labs dark-theme design system tokens.
+Historical Tastings: Production-grade archive of externally imported tasting data with detailed views, insights, and robust community-gated access control.
+Collection Analysis: Comprehensive analytics page for user's Whiskybase collection.
+Circle Tab: Features community rankings, "Taste Twins," leaderboards, activity feeds, and friend management with real-time online notifications.
+Making-Of Timeline (/m2/making-of): Interactive "Making of CaskSense" page telling the development story in 7 whisky-metaphor chapters (The First Pour → The Finish). Built from real git history (1,625 commits over 20 days). Access controlled via participants.makingOfAccess boolean (admin can toggle per participant via Admin > Making-Of tab). Backend serves hardcoded timeline data via GET /api/making-of. Features: vertical golden timeline, animated stat cards, chapter narratives with milestones, lesson-learned cards, scroll-triggered fade-in animations.
+Paper Participants: Full support for tasting participants who prefer pen & paper. Features: (1) Personalized printable tasting sheets with participant-specific QR codes via PrintableTastingSheets batch mode (jsPDF + qrcode). (2) AI-powered handwritten score extraction via GPT-4o Vision (POST /api/tastings/:id/scan-sheet), returns structured scores for review before saving (POST /api/tastings/:id/confirm-scores). (3) Self-scan page at /m2/tastings/:id/scan?participant=:pid — participants photograph their own sheets via QR link, no app login needed. (4) Host rating completion overview showing digital/paper/pending status per participant with progress bar. (5) source column on ratings table tracks "app" vs "paper" origin. Print buttons available in both TastingCard list and HostControl live page. Client API: paperScanApi in client/src/lib/api.ts.
+Admin Tools: Functionalities for managing test data, AI controls, and platform settings. Community member list shows participant names and emails (not UUIDs) via backend JOIN on participants table.
+CSS Animation Architecture (M2)
+
+All M2-specific keyframe animations are defined centrally in a single <style> block within Module2Shell.tsx:
+
+m2ambientGlow — Background glow drift (20s cycle)
+m2fadeInUp — Card entrance animation (opacity + translateY)
+m2livePulse — Live tasting edge breathing (opacity cycle)
+m2badgePulse — Live badge box-shadow pulse (uses var(--pulse-color))
+prefers-reduced-motion media query disables all animations globally Page-specific animations (m2spin, m2shimmer) remain inline in their respective components.
+Labs Tasting Session Features (Task #2)
+
+Labs Tasting Session pages port key M2 features into the Labs dark-theme design system:
+
+Paper Sheet Scanner (LabsPaperScan.tsx, route /labs/tastings/:id/scan): Multi-step flow (select participant → confirm → capture photos → AI scan → review/edit scores → success). Host-initiated with participant picker when no participant ID in URL.
+Tasting Recap (LabsTastingRecap.tsx, route /labs/tastings/:id/recap): Post-session summary with top-rated whiskies (medals), most divisive, overall averages bar chart (recharts), participant highlights, PDF export (jsPDF), copy/print actions.
+QR Code & Join Code (in LabsTastingDetail.tsx): QR code generation via qrcode library with Labs-themed colors, join code display with copy, link copy, and QR download.
+Email Invitations (in LabsTastingDetail.tsx): Host-only collapsible invite panel with email textarea, personal note, send via inviteApi, result display with status badges.
+Ambient Sounds (in LabsLive.tsx): LabsAmbientPanel component with 4 soundscapes (fireplace, rain, night, bagpipe), volume slider, play/stop toggle. Uses existing lib/ambient.ts engine.
+Voice Memos in Sessions (in LabsLive.tsx): LabsVoiceMemoRecorder integrated in tasting notes area. Transcriptions auto-append to notes.
+Labs Host Dashboard & History Features (Task #3)
+
+Labs Host Dashboard, Calendar, and Historical Archive pages ported from M2 into the Labs dark-theme design system:
+
+Host Dashboard (LabsHostDashboard.tsx, route /labs/dashboard): Command center with 3-stat overview (tastings/guests/whiskies), average scores bar chart (recharts), embedded calendar widget, recent tastings list, top whiskies list, invitations panel (QR + email), quick tool links.
+Tasting Calendar (LabsCalendar.tsx, route /labs/calendar): Full-page calendar with monthly grid, all/mine/friends filter tabs, event day-dots with status colors, selected-day event cards, upcoming events sidebar, stats panel.
+Historical Archive (LabsHistory.tsx, route /labs/history): Searchable, sortable list of historical tastings with community membership gating, stat cards (tastings/whiskies/regions/smoky%), insights link card. Archive items link to /labs/results/:id.
+Historical Insights (LabsHistory.tsx, route /labs/history/insights): Cross-tasting analytics with stat cards, top 20 whiskies list, regional bar chart, smoky vs non-smoky pie chart, cask type comparison bars, score distribution histogram, group taste profile radar chart, summary cards (top region/cask/peat level).
+Labs Taste Profile & Analytics (Task #4)
+
+Labs Taste Profile, Analytics, and Flavor Wheel pages ported from M2 into Labs dark-theme design system:
+
+Taste Hub (LabsTaste.tsx, route /labs/taste): Hub page with stat snapshot (stability/exploration/smoke/tastings), AI insight card, palate bars (nose/taste/finish/balance), progress tracker for analytics unlock (10-whisky threshold), navigation to sub-pages (Profile, Analytics, Flavor Wheel, Compare), recent tastings list.
+CaskSense Profile (LabsTasteProfile.tsx, route /labs/taste/profile): Recharts RadarChart with nose/taste/finish/balance/overall dimensions, compare modes (Just Me/Friends/Global), confidence badges per dimension, style/sweet spot/stability snapshot cards, rating style stats (mean/stddev/range/count), systematic deviation vs platform, expandable breakdown sections (region/cask/peat), whisky comparison table (You vs Platform with delta).
+Analytics (LabsTasteAnalytics.tsx, route /labs/taste/analytics): Taste evolution SVG time series chart (monthly avg scores), trend detection (rising/dropping/consistent), rating consistency card with stability score circle + label, spread analysis, locked state with progress bar (10-whisky threshold), unlock banner animation.
+Flavor Wheel (LabsTasteWheel.tsx, route /labs/taste/wheel): Recharts nested PieChart (inner categories, outer subcategories), 8 flavor categories (fruity/floral/sweet/spicy/woody/smoky/malty/maritime), keyword frequency analysis from journal entries + rating notes, interactive category selection with detail panel, stat cards (total mentions/top category/most unique), legend with category toggle buttons.
+Labs AI & Insights Pages (Task #6)
+
+Six AI-powered Labs pages ported from M2 into Labs dark-theme design system, accessible from "AI & Insights" nav section in LabsTaste.tsx:
+
+Recommendations (LabsRecommendations.tsx, route /labs/taste/recommendations): Client-side scoring engine with factor toggles (region, cask, peat, age, ABV), recommendation cards with match scores, locked behind 10-whisky analytics threshold.
+Pairings (LabsPairings.tsx, route /labs/taste/pairings): Select a tasting, view lineup summary with score rings, get AI pairing suggestions per whisky.
+Benchmark (LabsBenchmark.tsx, route /labs/taste/benchmark): Host/admin-only file upload (text/PDF), AI text extraction to structured whisky entries, library tabs (all/wishlist/journal), classify entries to wishlist or journal, search/remove saved entries.
+Collection Analysis (LabsCollectionAnalysis.tsx, route /labs/taste/collection-analysis): Deep stats on collection — region/age/ABV/cask/price/rating horizontal bar breakdowns, top rated bottles, vintage timeline, expandable lists.
+Connoisseur Report (LabsConnoisseur.tsx, route /labs/taste/connoisseur): AI report generation with inline language selector (EN/DE), markdown renderer, copy/download/delete actions, expandable report history.
+AI Curation (LabsAICuration.tsx, route /labs/taste/ai-curation): Select a tasting, get curated whisky discovery suggestions based on lineup context.
+Labs Discover & Knowledge Hub (Task #7)
+
+Nine Labs Discover pages ported from M2 into Labs dark-theme design system, accessible from "Discover" bottom nav tab:
+
+Discover Hub (LabsDiscover.tsx, route /labs/discover): Central navigation page with cards linking to all knowledge sub-pages.
+Lexicon (LabsLexicon.tsx, route /labs/discover/lexicon): Searchable, categorized whisky dictionary (5 categories, EN/DE).
+Distilleries (LabsDistilleries.tsx, route /labs/discover/distilleries): List + map views, country filter chips, search, expandable detail cards.
+Bottlers (LabsBottlers.tsx, route /labs/discover/bottlers): Searchable/sortable bottler database with Whiskybase links, notable releases.
+Templates (LabsTemplates.tsx, route /labs/discover/templates): Copy-paste vocabulary cards per whisky style (Islay/Speyside/etc), nose/palate/finish sections.
+Guide (LabsGuide.tsx, route /labs/discover/guide): Step-by-step tasting guide with section images.
+Research (LabsResearch.tsx, route /labs/discover/research): Science of perception wrapper using shared Research component.
+Rabbit Hole (LabsRabbitHole.tsx, route /labs/discover/rabbit-hole): Deep-dive navigation hub (rating models, statistics, research).
+Vocabulary (LabsVocabulary.tsx, route /labs/discover/vocabulary): Copy-paste vocabulary cards by region/style with expert tips.
+Bottom Nav: "Discover" tab added to LabsLayout.tsx with BookOpen icon.
+Test Suite
+
+A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
+
+Production Auto-Seed
+
+On production startup, seedProductionData() automatically seeds missing data like the default community and historical tastings from an Excel file, linking them with community_only visibility.
+
+Data Quality & Admin Tools
+
+Includes historical reconciliation tools (GET /api/admin/historical/reconciliation) for auditing imported data and optimized DB indexes (idx_historical_tastings_tasting_number, idx_historical_entries_tasting_id).
+
+External Dependencies
+
+PostgreSQL: Primary database.
+Google Fonts: For typography.
+Nodemailer: For email notifications.
+ExcelJS: For Excel file processing.
+qrcode: For QR code generation.
+html5-qrcode: For camera-based QR/barcode scanning.
+Replit Object Storage: For image storage.
+GPT-4o / gpt-image-1: For AI functionalities and image generation.
+AI Whisky Database: ~1,580 curated whisky entries generated via GPT-4o-mini, stored in journal_entries with source="casksense-database", category field, and participantId="casksense-database-system" (dedicated system participant in participants table). Covers 21 regions: Scotland (Speyside, Highland, Islay, Lowland, Campbeltown, Islands), Ireland, USA (Bourbon, Tennessee, Rye), Japan, Canada, India, Taiwan, Australia, Sweden, Germany, France, England, and more. Seeder script: server/seed-whisky-db.ts (run via npx tsx server/seed-whisky-db.ts, resumable/idempotent). Explore endpoint (/api/labs/explore/whiskies) uses getCuratedDatabaseEntries() (source-filtered) instead of getAllJournalEntries() to avoid exposing private user journal data.
+Recharts: For data visualization.
+jsPDF: For PDF generation.
+Framer Motion: For animations.
+Capacitor: For native mobile application wrapping.
