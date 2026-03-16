@@ -197,7 +197,7 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
     <div style={{ marginBottom: 16 }}>
       <div style={{
         display: "flex", gap: 2, padding: 3, borderRadius: 10,
-        background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
+        background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
       }} data-testid="studio-segmented-control">
         {primaryOptions.map((opt) => (
           <button
@@ -259,7 +259,7 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
                   fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
                   background: value === opt.key ? "var(--labs-accent)" : "var(--labs-surface)",
                   color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-                  border: `1px solid ${value === opt.key ? "var(--labs-accent)" : "var(--labs-border-subtle)"}`,
+                  border: `1px solid ${value === opt.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
                   cursor: "pointer", transition: "all 0.2s ease",
                 }}
               >
@@ -444,7 +444,7 @@ function GuidedView({
             const isLast = i === breadcrumbs.length - 1;
             return (
               <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {i > 0 && <ChevronRight style={{ width: 12, height: 12, opacity: 0.75 }} />}
+                {i > 0 && <ChevronRight style={{ width: 12, height: 12, color: "var(--labs-text-secondary)" }} />}
                 <button
                   onClick={() => { if (!isLast) goBack(crumb.level); }}
                   data-testid={`guide-breadcrumb-${i}`}
@@ -509,10 +509,10 @@ function GuidedView({
                               }}
                             >
                               {p.subgroupLabel && (
-                                <span style={{ fontSize: 11, opacity: 0.75 }}>{p.subgroupLabel} ›</span>
+                                <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>{p.subgroupLabel} ›</span>
                               )}
                               <span style={{ fontWeight: 600 }}>{p.descriptorLabel}</span>
-                              <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
+                              <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
                             </button>
                           ))}
                         </div>
@@ -544,7 +544,7 @@ function GuidedView({
                       display: "flex", flexDirection: "column", alignItems: "flex-start",
                       padding: "12px 14px", borderRadius: 12, fontFamily: "inherit",
                       background: count > 0 ? tintBg(cat.color, "subtle") : "var(--labs-surface)",
-                      border: `1.5px solid ${count > 0 ? tintBorder(cat.color) : "var(--labs-border-subtle)"}`,
+                      border: `1.5px solid ${count > 0 ? tintBorder(cat.color) : "var(--labs-border)"}`,
                       cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
                       position: "relative", overflow: "hidden",
                       animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
@@ -579,12 +579,12 @@ function GuidedView({
                           ? `${cat.subgroups!.length} ${t("m2.rating.studioGuideGroups", "groups")}`
                           : `${cat.subcategories.length} ${t("m2.rating.studioGuideNotes", "notes")}`}
                       </span>
-                      <ChevronRight style={{ width: 10, height: 10, opacity: 0.75 }} />
+                      <ChevronRight style={{ width: 10, height: 10, color: "var(--labs-text-secondary)" }} />
                     </div>
                     {count > 0 && (
                       <div style={{
                         position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
-                        background: cat.color, opacity: 0.75,
+                        background: cat.color,
                       }} />
                     )}
                   </button>
@@ -609,7 +609,7 @@ function GuidedView({
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                         padding: "14px 16px", borderRadius: 12, fontFamily: "inherit",
                         background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
-                        border: `1.5px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border-subtle)"}`,
+                        border: `1.5px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
                         cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                         animationDelay: `${i * 60}ms`,
@@ -621,7 +621,7 @@ function GuidedView({
                         }}>
                           {isDE ? sg.de : sg.en}
                         </div>
-                        <div style={{ fontSize: 11, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-secondary)", marginTop: 2, opacity: sgCount > 0 ? 0.8 : 1 }}>
+                        <div style={{ fontSize: 11, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-secondary)", marginTop: 2 }}>
                           {sg.descriptors.map((d) => isDE ? d.de : d.en).join(", ")}
                         </div>
                       </div>
@@ -754,7 +754,7 @@ function GuidedView({
                             fontSize: 11, padding: "6px 12px", borderRadius: 16, fontFamily: "inherit",
                             background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
                             color: sgCount > 0 ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border-subtle)"}`,
+                            border: `1px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
                             cursor: "pointer", transition: "all 0.15s",
                             display: "flex", alignItems: "center", gap: 4,
                           }}
@@ -951,10 +951,10 @@ function CompactCompass({
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 320, margin: "0 auto", display: "block" }}>
         <line x1={30} y1={h / 2} x2={w - 30} y2={h / 2} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
         <line x1={w / 2} y1={20} x2={w / 2} y2={h - 20} stroke="var(--labs-border)" strokeWidth={0.8} strokeDasharray="4 4" />
-        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text)" fontSize={8} textAnchor="end" opacity={0.7}>{t("m2.rating.studioAxisFullBodied", "Full-Bodied")}</text>
-        <text x={35} y={h / 2 - 6} fill="var(--labs-text)" fontSize={8} textAnchor="start" opacity={0.7}>{t("m2.rating.studioAxisLight", "Light")}</text>
-        <text x={w / 2} y={28} fill="var(--labs-text)" fontSize={8} textAnchor="middle" opacity={0.7}>{t("m2.rating.studioAxisSmoky", "Smoky")}</text>
-        <text x={w / 2} y={h - 16} fill="var(--labs-text)" fontSize={8} textAnchor="middle" opacity={0.7}>{t("m2.rating.studioAxisSweet", "Sweet")}</text>
+        <text x={w - 28} y={h / 2 - 6} fill="var(--labs-text-secondary)" fontSize={8} textAnchor="end">{t("m2.rating.studioAxisFullBodied", "Full-Bodied")}</text>
+        <text x={35} y={h / 2 - 6} fill="var(--labs-text-secondary)" fontSize={8} textAnchor="start">{t("m2.rating.studioAxisLight", "Light")}</text>
+        <text x={w / 2} y={28} fill="var(--labs-text-secondary)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSmoky", "Smoky")}</text>
+        <text x={w / 2} y={h - 16} fill="var(--labs-text-secondary)" fontSize={8} textAnchor="middle">{t("m2.rating.studioAxisSweet", "Sweet")}</text>
         {categories.map((cat) => {
           const pos = COMPASS_POSITIONS[cat.id];
           const px = 30 + pos.x * (w - 60);
@@ -971,7 +971,7 @@ function CompactCompass({
               <text x={px} y={py - 3} textAnchor="middle" fill={isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"} fontSize={10} fontWeight={600} style={{ transition: "all 0.3s ease", pointerEvents: "none", fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {cat.name.split(" / ")[0]}
               </text>
-              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-secondary)" : "#f5f0e8"} fontSize={9} style={{ pointerEvents: "none", opacity: isDimmed ? 0.5 : 0.8 }}>
+              <text x={px} y={py + 7} textAnchor="middle" fill={isDimmed ? "var(--labs-text-muted)" : "#f5f0e8"} fontSize={9} style={{ pointerEvents: "none" }}>
                 {cat.name.split(" / ")[1] || ""}
               </text>
               {count > 0 && (
@@ -1126,7 +1126,7 @@ function CompactRadar({
               triggerHaptic("light");
             }} style={{ cursor: "pointer" }}>
               <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="var(--labs-border)" strokeWidth={0.4} strokeOpacity={0.4} />
-              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text)" fontSize={11} fontWeight={500} opacity={0.8}>{axis}</text>
+              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-text-secondary)" fontSize={11} fontWeight={500}>{axis}</text>
             </g>
           );
         })}
@@ -1379,7 +1379,7 @@ function DescribeView({
         style={{
           display: "flex", alignItems: "center", gap: 6, width: "100%",
           padding: "10px 14px", borderRadius: 10,
-          background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
+          background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
           cursor: "pointer", fontFamily: "inherit", color: "var(--labs-text)",
           fontSize: 12, fontWeight: 500,
         }}
@@ -1389,7 +1389,7 @@ function DescribeView({
       </button>
 
       {tastesLikeOpen && (
-        <div style={{ marginTop: 8, padding: 12, background: "var(--labs-surface)", borderRadius: 10, border: "1px solid var(--labs-border-subtle)", animation: "labsFadeIn 200ms ease both" }}>
+        <div style={{ marginTop: 8, padding: 12, background: "var(--labs-surface)", borderRadius: 10, border: "1px solid var(--labs-border)", animation: "labsFadeIn 200ms ease both" }}>
           <input
             className="labs-input"
             placeholder={t("m2.rating.studioSearchWhisky", "Search whisky...")}
@@ -1595,7 +1595,7 @@ function JourneyView({
               style={{
                 flex: 1, borderRadius: 2,
                 background: bar.active ? bar.color : bar.decided ? "var(--labs-border-subtle)" : "var(--labs-surface)",
-                opacity: bar.maybe ? 0.5 : 1,
+                opacity: bar.maybe ? 0.6 : 1,
                 transition: "all 0.3s ease",
               }}
             />
@@ -1651,13 +1651,13 @@ function JourneyView({
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                   padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
-                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-border)",
+                  background: "var(--labs-surface-elevated)", border: "1.5px solid var(--labs-text-muted)",
                   cursor: "pointer", color: "var(--labs-text)", transition: "all 0.15s",
                   minWidth: 70,
                 }}
               >
                 <X style={{ width: 18, height: 18 }} />
-                <span style={{ fontSize: 11, fontWeight: 600 }}>{t("m2.rating.journeyNo", "No")}</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{t("m2.rating.journeyNo", "No")}</span>
               </button>
               <button
                 onClick={() => handleDecision("maybe")}
@@ -1665,7 +1665,7 @@ function JourneyView({
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                   padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
-                  background: "var(--labs-surface)", border: "1.5px solid var(--labs-accent)",
+                  background: "var(--labs-surface-elevated)", border: "1.5px solid var(--labs-accent)",
                   cursor: "pointer", color: "var(--labs-accent)", transition: "all 0.15s",
                   minWidth: 70,
                 }}
@@ -1719,7 +1719,7 @@ function JourneyView({
             <div key={cat.id} style={{
               flex: 1, borderRadius: 2,
               background: i <= drillIndex ? cat.color : "var(--labs-border-subtle)",
-              opacity: i < drillIndex ? 0.5 : 1,
+              opacity: i < drillIndex ? 0.65 : 1,
               transition: "all 0.3s ease",
             }} />
           ))}
@@ -1735,12 +1735,12 @@ function JourneyView({
                 {isDE ? currentDrillCat.de : currentDrillCat.en}
               </div>
               {isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75, fontStyle: "italic" }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", fontStyle: "italic" }}>
                   {t("m2.rating.journeyMaybePrompt", "You weren't sure — tap any notes you might detect")}
                 </div>
               )}
               {!isMaybe && (
-                <div style={{ fontSize: 11, color: "var(--labs-text)", opacity: 0.75 }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-secondary)" }}>
                   {t("m2.rating.journeyDrillPrompt", "Which specific notes stand out?")}
                 </div>
               )}
@@ -1821,9 +1821,9 @@ function JourneyView({
               }}
               data-testid="journey-drill-back"
               style={{
-                fontSize: 11, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
-                background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
-                cursor: "pointer", color: "var(--labs-text-muted)",
+                fontSize: 12, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
+                background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-text-muted)",
+                cursor: "pointer", color: "var(--labs-text)",
               }}
             >
               {t("common.back", "Back")}
@@ -1875,9 +1875,9 @@ function JourneyView({
           data-testid="journey-restart"
           style={{
             display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
-            background: "none", border: "1px solid var(--labs-border-subtle)",
+            background: "none", border: "1px solid var(--labs-border)",
             borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-            fontSize: 11, color: "var(--labs-text-muted)",
+            fontSize: 11, color: "var(--labs-text-secondary)",
           }}
         >
           <RotateCcw style={{ width: 10, height: 10 }} />
@@ -2002,7 +2002,7 @@ function JourneyView({
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>{isDE ? desc.de : desc.en}</span>
-                            <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
+                            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
                           </button>
                         ))}
                       </div>
@@ -2189,9 +2189,9 @@ export default function FlavourStudioSheet({
                       style={{
                         fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
                         whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
-                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : "var(--labs-surface)",
+                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : "var(--labs-surface-elevated)",
                         color: isS ? "#f5f0e8" : "var(--labs-text)",
-                        border: `1px solid ${isS ? color : "var(--labs-border-subtle)"}`,
+                        border: `1px solid ${isS ? color : "var(--labs-text-muted)"}`,
                         cursor: "pointer", transition: "all 0.15s",
                       }}
                     >
@@ -2223,7 +2223,7 @@ export default function FlavourStudioSheet({
                       }}
                     >
                       {display}
-                      <span style={{ fontSize: 11, opacity: 0.75 }}>×</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>×</span>
                     </button>
                   );
                 })}
@@ -2239,7 +2239,7 @@ export default function FlavourStudioSheet({
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
               disabled={disabled}
-              style={{ flex: 1, fontSize: 12, padding: "6px 10px" }}
+              style={{ flex: 1, fontSize: 12, padding: "6px 10px", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-text-muted)" }}
               data-testid="studio-custom-input"
             />
             <button onClick={addCustomTag} disabled={!customInput.trim() || disabled}
