@@ -14,6 +14,7 @@ import "./labs-theme.css";
 
 interface OnlineUserInfo {
   participantId: string;
+  friendId?: string;
   name: string;
 }
 
@@ -217,7 +218,7 @@ function useFriendOnlineNotifications(): number {
 
     const check = async () => {
       try {
-        const res = await fetch(`/api/participants/${pid}/platform-online`, {
+        const res = await fetch(`/api/participants/${pid}/friends/online`, {
           headers: pidHeaders(),
         });
         if (cancelled) return;
@@ -229,7 +230,7 @@ function useFriendOnlineNotifications(): number {
         if (cancelled) return;
         const currentOnline = new Map<string, string>();
         for (const u of (onlineRes.online || []) as OnlineUserInfo[]) {
-          currentOnline.set(u.participantId, u.name);
+          currentOnline.set(u.friendId || u.participantId, u.name);
         }
         setOnlineCount(currentOnline.size);
 
@@ -246,7 +247,7 @@ function useFriendOnlineNotifications(): number {
             });
           } else if (newlyOnline.length > 1) {
             toast({
-              title: `${newlyOnline.length} Nutzer sind online`,
+              title: `${newlyOnline.length} Freunde sind online`,
               description: newlyOnline.slice(0, 3).join(", ") + (newlyOnline.length > 3 ? ` +${newlyOnline.length - 3} weitere` : ""),
             });
           }

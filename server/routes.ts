@@ -3090,8 +3090,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/participants/:id/friends/online", async (req, res) => {
     try {
-      const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
       const friends = await storage.getWhiskyFriends(req.params.id);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
       const allParticipants = await Promise.all(
