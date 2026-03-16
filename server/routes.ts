@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -3095,15 +3095,20 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const friends = await storage.getWhiskyFriends(req.params.id);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
       const allParticipants = await Promise.all(
-        friends.map(async (f: any) => {
-          const matches = await storage.getParticipantByEmail(f.email);
-          return matches ? { friendId: f.id, name: `${f.firstName} ${f.lastName}`.trim(), email: f.email, participantId: matches.id, lastSeenAt: matches.lastSeenAt } : null;
+        friends.map(async (f: WhiskyFriend) => {
+          let match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
+          if (!match) {
+            const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
+            if (fullName) match = await storage.getParticipantByName(fullName);
+          }
+          return match ? { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt } : null;
         })
       );
-      const onlineFriends = allParticipants.filter((p: any) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
+      const onlineFriends = allParticipants.filter((p) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
       res.json({ online: onlineFriends, count: onlineFriends.length });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: msg });
     }
   });
 
