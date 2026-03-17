@@ -2270,7 +2270,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     return res.status(401).json({ ok: false, message: "Invalid password" });
   };
 
-  const handleResume = (req: Request, res: Response) => {
+  const handleResume = async (req: Request, res: Response) => {
     const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
     const now = Date.now();
     const rEntry = sessionResumeAttempts.get(clientIp);
@@ -2291,6 +2291,18 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     if (!stored || now > stored.expiresAt) {
       if (stored) sessionResumeTokens.delete(resumeToken);
       return res.status(401).json({ ok: false });
+    }
+    if (stored.pid) {
+      try {
+        const participant = await storage.getParticipant(stored.pid);
+        if (participant) {
+          const resumeVerCheck = checkEmailVerification(participant);
+          if (resumeVerCheck.blocked) {
+            sessionResumeTokens.delete(resumeToken);
+            return res.status(403).json({ ok: false, message: resumeVerCheck.message, code: resumeVerCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: participant.id });
+          }
+        }
+      } catch {}
     }
     return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user" });
   };

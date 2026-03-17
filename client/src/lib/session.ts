@@ -182,6 +182,14 @@ export async function tryAutoResume(): Promise<boolean> {
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
+        } else if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.code === "EMAIL_VERIFICATION_EXPIRED") {
+            clearRemember();
+            try { localStorage.removeItem("casksense_participant_id"); } catch {}
+            syncStoreParticipant(undefined);
+            return false;
+          }
         }
       } catch {}
       clearRemember();
@@ -191,6 +199,18 @@ export async function tryAutoResume(): Promise<boolean> {
     const storePid = useAppStore.getState().currentParticipant?.id;
     const candidatePid = storedPid || storePid;
     if (candidatePid) {
+      try {
+        const verRes = await fetch(`/api/participants/${candidatePid}/verification-status`, { headers: { "x-participant-id": candidatePid } });
+        if (verRes.ok) {
+          const verData = await verRes.json();
+          if (!verData.emailVerified && verData.expired) {
+            try { localStorage.removeItem("casksense_participant_id"); } catch {}
+            clearRemember();
+            syncStoreParticipant(undefined);
+            return false;
+          }
+        }
+      } catch {}
       try {
         const res = await fetch(`/api/participants/${candidatePid}`, { headers: { "x-participant-id": candidatePid } });
         if (res.ok) {
