@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
-import { friendsApi, activityApi, tastingApi, leaderboardApi } from "@/lib/api";
+import { friendsApi, activityApi, tastingApi, leaderboardApi, pidHeaders } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
@@ -98,7 +98,7 @@ export default function LabsCircle() {
 
   const { data: onlineData } = useQuery<{ online: OnlineFriend[]; count: number }>({
     queryKey: ["friends-online", pid],
-    queryFn: () => fetch(`/api/participants/${pid}/friends/online`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/participants/${pid}/friends/online`, { headers: pidHeaders() }).then((r) => r.json()),
     enabled: !!pid,
     refetchInterval: 30000,
   });
