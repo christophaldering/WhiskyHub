@@ -4151,7 +4151,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       tastingId,
       name: newWhiskyName.trim(),
       distillery: extFields.distillery || "",
-      abv: extFields.abv ? parseFloat(extFields.abv) || null : null,
+      abv: normalizeAbv(extFields.abv),
       caskInfluence: extFields.caskType || "",
       age: extFields.age || "",
       category: extFields.category || "",
@@ -4161,7 +4161,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       vintage: extFields.vintage || "",
       whiskybaseId: extFields.whiskybaseId || "",
       wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
-      price: extFields.price ? parseFloat(extFields.price) || null : null,
+      price: normalizePrice(extFields.price),
       peatLevel: extFields.peatLevel || "",
       ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
       hostSummary: extFields.hostSummary || "",
@@ -4195,7 +4195,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       region: w.region || "",
       bottler: w.bottler || "",
       vintage: w.vintage || "",
-      price: w.price ? String(w.price) : "",
+      price: w.price ? String(w.price).replace(".", ",") : "",
       hostSummary: w.hostSummary || "",
       notes: w.notes || "",
       flavorProfile: w.flavorProfile || "",
@@ -5260,7 +5260,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder="Region" value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
                 <input className="labs-input" placeholder="Bottler" value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
                 <input className="labs-input" placeholder="Vintage" value={extFields.vintage || ""} onChange={e => setExtFields({ ...extFields, vintage: e.target.value })} data-testid="labs-ext-vintage" />
-                <input className="labs-input" placeholder="Price" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
+                <input className="labs-input" placeholder="Price (EUR)" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
                 <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
                 <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
@@ -5312,7 +5312,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder="Country" value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
                       <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
                       <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
-                      <input className="labs-input" placeholder="Price" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <input className="labs-input" placeholder="Price (EUR)" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
                       <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
                         <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
                         <option value="none">None (no ordering)</option>

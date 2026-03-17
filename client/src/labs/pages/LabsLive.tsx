@@ -486,6 +486,7 @@ function GuidedStepView({
     if (revealedFields.has("bottler") && activeWhisky?.bottler) detailParts.push(activeWhisky.bottler);
     if (revealedFields.has("vintage") && activeWhisky?.vintage) detailParts.push(`${activeWhisky.vintage}`);
     if (revealedFields.has("peatLevel") && activeWhisky?.peatLevel) detailParts.push(activeWhisky.peatLevel);
+    if (revealedFields.has("price") && activeWhisky?.price) detailParts.push(Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €");
     displaySub = detailParts.join(" · ");
   }
 
