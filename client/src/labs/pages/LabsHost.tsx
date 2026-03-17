@@ -3900,6 +3900,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [inviteSent, setInviteSent] = useState(false);
   const [topDuplicating, setTopDuplicating] = useState(false);
   const [showDesktopTransfer, setShowDesktopTransfer] = useState(false);
+  const [desktopConfirmDelete, setDesktopConfirmDelete] = useState(false);
   const [desktopTransferTargetId, setDesktopTransferTargetId] = useState<string | null>(null);
   const [desktopTransferring, setDesktopTransferring] = useState(false);
 
@@ -5823,6 +5824,48 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {!desktopConfirmDelete ? (
+            <button
+              className="w-full flex items-center justify-center gap-2 text-sm py-2.5 mt-3 rounded-lg cursor-pointer"
+              style={{
+                background: "none",
+                color: "var(--labs-danger, #e74c3c)",
+                border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 40%, transparent)",
+              }}
+              onClick={() => setDesktopConfirmDelete(true)}
+              data-testid="labs-desktop-delete"
+            >
+              <Trash2 className="w-4 h-4" />
+              Tasting löschen
+            </button>
+          ) : (
+            <div className="flex gap-2 mt-3">
+              <button
+                className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
+                style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
+                onClick={async () => {
+                  try {
+                    await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant.id);
+                    navigate("/labs/tastings");
+                  } catch (e: any) {
+                    console.error("Delete failed:", e);
+                  }
+                }}
+                data-testid="labs-desktop-confirm-delete"
+              >
+                Ja, löschen
+              </button>
+              <button
+                className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
+                style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "none" }}
+                onClick={() => setDesktopConfirmDelete(false)}
+                data-testid="labs-desktop-cancel-delete"
+              >
+                Abbrechen
+              </button>
             </div>
           )}
         </div>
