@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
   BookOpen, Building2, Package, FileText, Map,
-  FlaskConical, BookMarked, MessageSquare, ChevronRight, ChevronLeft,
+  BookMarked, MessageSquare, ChevronRight, ChevronLeft,
   Sparkles, Info, Heart, BarChart3,
 } from "lucide-react";
 import type { ElementType } from "react";
@@ -48,7 +48,6 @@ const SECTIONS: DiscoverSection[] = [
     titleFallback: "Deep Dives",
     links: [
       { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
-      { icon: FlaskConical, labelKey: "discover.research", labelFallback: "Research", descKey: "discover.researchDesc", descFallback: "Science of perception & bibliography", href: "/labs/discover/research", testId: "labs-link-discover-research" },
       { icon: BarChart3, labelKey: "discover.insights", labelFallback: "Historical Insights", descKey: "discover.insightsDesc", descFallback: "Cross-tasting analytics & trends", href: "/labs/host/history/insights", testId: "labs-link-discover-historical-insights" },
     ],
   },

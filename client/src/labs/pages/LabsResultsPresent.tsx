@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users, BarChart3,
   Star, Target, MessageCircle, Maximize, Minimize, Loader2,
-  TrendingUp, TrendingDown, MapPin, Calendar, Download,
-  Sparkles, Quote, Flame, Eye,
+  Award, TrendingUp, TrendingDown, MapPin, Calendar, Download,
+  Sparkles, Quote, Hash, Clock, Flame, Eye,
 } from "lucide-react";
 import { tastingApi, whiskyApi, ratingApi, presentationApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";

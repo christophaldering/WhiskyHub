@@ -7,9 +7,9 @@ export default function LabsResearch() {
   const { t } = useTranslation();
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: 700 }} data-testid="labs-discover-research-page">
-      <Link href="/labs/discover" style={{ textDecoration: "none" }}>
+      <Link href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-research">
-          <ChevronLeft className="w-4 h-4" /> Discover
+          <ChevronLeft className="w-4 h-4" /> Rabbit Hole
         </button>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
