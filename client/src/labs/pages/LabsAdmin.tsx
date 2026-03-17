@@ -51,6 +51,7 @@ interface AdminParticipant {
   newsletterOptIn: boolean;
   communityContributor: boolean;
   makingOfAccess: boolean;
+  emailVerified: boolean;
 }
 
 interface AdminTasting {
@@ -254,9 +255,17 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   {p.id === pid && <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
                   {p.email?.endsWith("@casksense.local") && <span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
-                <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                  {p.email || "No email"} · {p.hostedTastings} tastings hosted
-                  {p.createdAt && ` · ${new Date(p.createdAt).toLocaleDateString()}`}
+                <div className="text-[11px] mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--labs-text-muted)" }}>
+                  <span>{p.email || "No email"}</span>
+                  {p.email && !p.email.endsWith("@casksense.local") && (
+                    p.emailVerified ? (
+                      <CheckCircle className="w-3 h-3 inline" style={{ color: "var(--labs-success)" }} />
+                    ) : (
+                      <XCircle className="w-3 h-3 inline" style={{ color: "var(--labs-danger)" }} />
+                    )
+                  )}
+                  <span>· {p.hostedTastings} tastings hosted</span>
+                  {p.createdAt && <span>· {new Date(p.createdAt).toLocaleDateString()}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">

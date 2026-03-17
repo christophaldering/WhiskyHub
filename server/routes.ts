@@ -29,6 +29,23 @@ import { searchOnline, getProviderStatus } from "./lib/onlineSearch.js";
 
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
+const ADMIN_CONTACT_EMAIL = process.env.ADMIN_CONTACT_EMAIL || "christoph.aldering@googlemail.com";
+const VERIFICATION_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
+
+function checkEmailVerification(participant: Participant): { blocked: boolean; message?: string; code?: string } {
+  if (!participant.email) return { blocked: false };
+  if (participant.email.endsWith("@casksense.local")) return { blocked: false };
+  if (participant.emailVerified) return { blocked: false };
+  if (!participant.createdAt) return { blocked: false };
+  const elapsed = Date.now() - new Date(participant.createdAt).getTime();
+  if (elapsed < VERIFICATION_GRACE_PERIOD_MS) return { blocked: false };
+  return {
+    blocked: true,
+    message: `Deine E-Mail wurde nicht rechtzeitig bestätigt. Bitte wende dich an den Administrator: ${ADMIN_CONTACT_EMAIL}`,
+    code: "EMAIL_VERIFICATION_EXPIRED",
+  };
+}
+
 const identifyRateLimit = new Map<string, { count: number; resetAt: number }>();
 const IDENTIFY_RATE_LIMIT = 10;
 const IDENTIFY_RATE_WINDOW_MS = 3 * 60 * 1000;
@@ -503,11 +520,21 @@ export async function registerRoutes(
             await storage.updateParticipantRole(existing.id, "admin");
           }
           const updated = await storage.getParticipant(existing.id);
-          if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
+          if (updated) {
+            const verCheck = checkEmailVerification(updated);
+            if (verCheck.blocked) {
+              return res.status(403).json({ message: verCheck.message, code: verCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: updated.id });
+            }
+            storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false);
+          }
           return res.json(updated);
         }
         if (!(await verifyPassword(data.pin || "", existing.pin))) {
           return res.status(401).json({ message: "Invalid password" });
+        }
+        const verCheckExisting = checkEmailVerification(existing);
+        if (verCheckExisting.blocked) {
+          return res.status(403).json({ message: verCheckExisting.message, code: verCheckExisting.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: existing.id });
         }
         if (privacyConsent && !existing.privacyConsentAt) {
           await storage.setPrivacyConsent(existing.id);
@@ -626,11 +653,21 @@ export async function registerRoutes(
           await storage.updateParticipant(existing.id, { experienceLevel });
         }
         const updated = await storage.getParticipant(existing.id);
-        if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
+        if (updated) {
+          const verCheck = checkEmailVerification(updated);
+          if (verCheck.blocked) {
+            return res.status(403).json({ message: verCheck.message, code: verCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: updated.id });
+          }
+          storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false);
+        }
         return res.json(updated);
       }
       if (!(await verifyPassword(pin || "", existing.pin || ""))) {
         return res.status(401).json({ message: "Invalid password" });
+      }
+      const loginVerCheck = checkEmailVerification(existing);
+      if (loginVerCheck.blocked) {
+        return res.status(403).json({ message: loginVerCheck.message, code: loginVerCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: existing.id });
       }
       if (experienceLevel && typeof experienceLevel === "string" && ["guest", "explorer", "connoisseur", "analyst"].includes(experienceLevel)) {
         await storage.updateParticipant(existing.id, { experienceLevel });
@@ -1013,6 +1050,28 @@ export async function registerRoutes(
       }
       const verified = await storage.verifyEmail(participant.id);
       res.json(verified);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/verification-status", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (!participant.email) return res.json({ emailVerified: true, exempt: true });
+      if (participant.emailVerified) return res.json({ emailVerified: true });
+      const createdAt = participant.createdAt ? new Date(participant.createdAt).getTime() : Date.now();
+      const deadline = createdAt + VERIFICATION_GRACE_PERIOD_MS;
+      const remainingMs = Math.max(0, deadline - Date.now());
+      return res.json({
+        emailVerified: false,
+        remainingMs,
+        expired: remainingMs === 0,
+        adminEmail: ADMIN_CONTACT_EMAIL,
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -2142,6 +2201,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const valid = await verifyPassword(credential.trim(), participant.pin);
       console.log(`[SESSION][AUTH] bcrypt result: ${valid}`);
       if (valid) {
+        const sessionVerCheck = checkEmailVerification(participant);
+        if (sessionVerCheck.blocked) {
+          return res.status(403).json({ ok: false, message: sessionVerCheck.message, code: sessionVerCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: participant.id });
+        }
         if (!participant.pin.startsWith("$2b$") && !participant.pin.startsWith("$2a$")) {
           try {
             const hashed = await hashPassword(credential.trim());
@@ -7661,6 +7724,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             communityContributor: p.communityContributor || false,
             experienceLevel: p.experienceLevel || "connoisseur",
             makingOfAccess: p.makingOfAccess || false,
+            emailVerified: p.emailVerified || false,
           };
         })
       );

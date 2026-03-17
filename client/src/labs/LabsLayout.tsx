@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Search } from "lucide-react";
+import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Search, Mail, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -350,6 +350,104 @@ function useLabsTheme() {
   return { theme, toggle };
 }
 
+function useVerificationBanner() {
+  const { currentParticipant } = useAppStore();
+  const [status, setStatus] = useState<{ emailVerified: boolean; remainingMs?: number; expired?: boolean; adminEmail?: string } | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const [showVerifyInput, setShowVerifyInput] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
+  const [remainingMs, setRemainingMs] = useState(0);
+
+  useEffect(() => {
+    const pid = currentParticipant?.id;
+    if (!pid) { setStatus(null); return; }
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/participants/${pid}/verification-status`, { headers: { "x-participant-id": pid } });
+        if (cancelled || !res.ok) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setStatus(data);
+          if (data.remainingMs) setRemainingMs(data.remainingMs);
+        }
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [currentParticipant?.id]);
+
+  useEffect(() => {
+    if (!remainingMs || remainingMs <= 0) return;
+    const interval = setInterval(() => {
+      setRemainingMs(prev => Math.max(0, prev - 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [remainingMs > 0]);
+
+  const handleVerify = async () => {
+    const pid = currentParticipant?.id;
+    if (!pid || !verifyCode.trim()) return;
+    setVerifyLoading(true);
+    setVerifyError("");
+    try {
+      await participantApi.verify(pid, verifyCode.trim());
+      setStatus({ emailVerified: true });
+      setShowVerifyInput(false);
+      toast({ title: "E-Mail verifiziert!" });
+    } catch (e: unknown) {
+      setVerifyError((e as Error).message || "Ungültiger Code");
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    const pid = currentParticipant?.id;
+    if (!pid) return;
+    setResendLoading(true);
+    setResendSuccess(false);
+    try {
+      await participantApi.resendVerification(pid);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 5000);
+    } catch {} finally {
+      setResendLoading(false);
+    }
+  };
+
+  const formatRemaining = (ms: number) => {
+    const hours = Math.floor(ms / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
+
+  const needsBanner = status && !status.emailVerified && !status.expired && !dismissed;
+
+  return {
+    needsBanner,
+    remainingMs,
+    formatRemaining,
+    showVerifyInput,
+    setShowVerifyInput,
+    verifyCode,
+    setVerifyCode,
+    verifyLoading,
+    verifyError,
+    handleVerify,
+    resendLoading,
+    resendSuccess,
+    handleResend,
+    dismiss: () => setDismissed(true),
+  };
+}
+
 const scrollCache = new Map<string, number>();
 
 export function useLabsBack(fallback: string) {
@@ -374,6 +472,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   useHeartbeat();
   const onlineFriendsCount = useFriendOnlineNotifications();
   const { theme } = useLabsTheme();
+  const vb = useVerificationBanner();
   const prevLocationRef = useRef(location);
 
   useEffect(() => {
@@ -511,6 +610,103 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           >
             <X className="w-3.5 h-3.5" />
           </button>
+        </div>
+      )}
+
+      {vb.needsBanner && (
+        <div
+          className="mx-4 mt-3 rounded-xl p-3 labs-fade-in"
+          style={{
+            background: "rgba(201, 167, 108, 0.12)",
+            border: "1px solid var(--labs-accent)",
+          }}
+          data-testid="labs-verification-banner"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "var(--labs-accent)" }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>
+                E-Mail noch nicht verifiziert
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
+                Noch {vb.formatRemaining(vb.remainingMs)} Zeit, um deine E-Mail zu bestätigen.
+              </p>
+              {!vb.showVerifyInput ? (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => vb.setShowVerifyInput(true)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }}
+                    data-testid="labs-verification-enter-code-btn"
+                  >
+                    Code eingeben
+                  </button>
+                  <button
+                    onClick={vb.handleResend}
+                    disabled={vb.resendLoading}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ background: "transparent", color: "var(--labs-accent)", border: "1px solid var(--labs-accent)", cursor: "pointer", opacity: vb.resendLoading ? 0.5 : 1 }}
+                    data-testid="labs-verification-resend-btn"
+                  >
+                    {vb.resendLoading ? "Senden..." : vb.resendSuccess ? "Gesendet!" : "Code erneut senden"}
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      value={vb.verifyCode}
+                      onChange={e => vb.setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="6-stelliger Code"
+                      maxLength={6}
+                      inputMode="numeric"
+                      className="flex-1 px-3 py-1.5 rounded-lg text-center text-sm font-mono tracking-widest"
+                      style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)" }}
+                      data-testid="labs-verification-code-input"
+                      onKeyDown={e => e.key === "Enter" && vb.handleVerify()}
+                      autoFocus
+                    />
+                    <button
+                      onClick={vb.handleVerify}
+                      disabled={vb.verifyLoading || vb.verifyCode.length < 6}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                      style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer", opacity: vb.verifyLoading || vb.verifyCode.length < 6 ? 0.5 : 1 }}
+                      data-testid="labs-verification-submit-btn"
+                    >
+                      {vb.verifyLoading ? "..." : "Bestätigen"}
+                    </button>
+                  </div>
+                  {vb.verifyError && <p className="text-[11px]" style={{ color: "var(--labs-danger)" }}>{vb.verifyError}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => vb.setShowVerifyInput(false)}
+                      className="text-[11px]"
+                      style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      onClick={vb.handleResend}
+                      disabled={vb.resendLoading}
+                      className="text-[11px] underline"
+                      style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", opacity: vb.resendLoading ? 0.5 : 1 }}
+                      data-testid="labs-verification-resend-inline-btn"
+                    >
+                      {vb.resendLoading ? "Senden..." : vb.resendSuccess ? "Gesendet!" : "Code erneut senden"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={vb.dismiss}
+              className="w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0"
+              style={{ background: "transparent", border: "none", color: "var(--labs-text-muted)", cursor: "pointer" }}
+              data-testid="labs-verification-dismiss-btn"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 

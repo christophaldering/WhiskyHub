@@ -21,7 +21,7 @@ The backend is an Express 5 HTTP server providing RESTful API endpoints and serv
 PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, communities, community memberships, and user_activity_sessions, all identified by UUIDs.
 
 ### Key Design Decisions
--   **Authentication**: Email/password login with session persistence, account management, and guest mode.
+-   **Authentication**: Email/password login with session persistence, account management, and guest mode. **Mandatory email verification** with 24h grace period: after registration, users have 24 hours to verify their email. After that, login is blocked with admin contact info (`ADMIN_CONTACT_EMAIL` env var, default: `christoph.aldering@googlemail.com`). Labs shows a verification reminder banner during the grace period. Admin can see verification status in the Participants tab. Guest accounts (no email) and test accounts (`@casksense.local`) are exempt.
 -   **Data Access Security**: Enforces `x-participant-id` header validation and limits non-owner data exposure. Calendar API (`/api/calendar`) filters by participant: admin sees all, regular users see only own tastings (host or participant). All calendar consumers send `x-participant-id` header.
 -   **Shared Schema**: Ensures consistent data definitions across client and server.
 -   **Session State Machine**: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.

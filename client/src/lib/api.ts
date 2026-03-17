@@ -23,7 +23,11 @@ async function fetchJSON(url: string, options?: RequestInit) {
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || "Request failed");
+    const err = new Error(error.message || "Request failed") as Error & { code?: string; adminEmail?: string; participantId?: string };
+    if (error.code) err.code = error.code;
+    if (error.adminEmail) err.adminEmail = error.adminEmail;
+    if (error.participantId) err.participantId = error.participantId;
+    throw err;
   }
   if (res.status === 204) return null;
   return res.json();

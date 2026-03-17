@@ -7,7 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle, Shield } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle } from "lucide-react";
 
 
 interface LoginDialogProps {
@@ -46,6 +46,12 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetParticipantId, setResetParticipantId] = useState("");
 
+  const [verificationBlocked, setVerificationBlocked] = useState(false);
+  const [blockedAdminEmail, setBlockedAdminEmail] = useState("");
+  const [blockedParticipantId, setBlockedParticipantId] = useState("");
+  const [blockedResendLoading, setBlockedResendLoading] = useState(false);
+  const [blockedResendSuccess, setBlockedResendSuccess] = useState(false);
+
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async () => {
@@ -77,7 +83,13 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           onClose();
         }
       } catch (e: any) {
-        setError(e.message || "Login failed");
+        if (e.code === "EMAIL_VERIFICATION_EXPIRED" || (e.message && e.message.includes("nicht rechtzeitig bestätigt"))) {
+          setVerificationBlocked(true);
+          setBlockedAdminEmail(e.adminEmail || "");
+          setBlockedParticipantId(e.participantId || "");
+        } else {
+          setError(e.message || "Login failed");
+        }
       } finally {
         setLoading(false);
       }
@@ -227,6 +239,76 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setResetError("");
     setResetParticipantId("");
   };
+
+  if (verificationBlocked) {
+    const handleBlockedResend = async () => {
+      if (!blockedParticipantId) return;
+      setBlockedResendLoading(true);
+      setBlockedResendSuccess(false);
+      try {
+        await participantApi.resendVerification(blockedParticipantId);
+        setBlockedResendSuccess(true);
+        setTimeout(() => setBlockedResendSuccess(false), 5000);
+      } catch {
+        // silently fail
+      } finally {
+        setBlockedResendLoading(false);
+      }
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-6 h-6" />
+              {t('verify.blockedTitle', 'Konto gesperrt')}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {t('verify.blockedSubtitle', 'E-Mail-Verifizierung nicht abgeschlossen')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-verification-blocked-message">
+              {t('verify.blockedMessage', 'Deine E-Mail wurde nicht rechtzeitig bestätigt. Bitte wende dich an den Administrator:')}
+            </p>
+            <div className="rounded-lg p-3 bg-secondary/30 border border-border">
+              <a href={`mailto:${blockedAdminEmail}`} className="text-sm font-semibold text-primary hover:underline" data-testid="link-admin-email">
+                {blockedAdminEmail}
+              </a>
+            </div>
+            {blockedParticipantId && (
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('verify.blockedResendHint', 'Falls du deinen Verifizierungscode erneut benötigst:')}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBlockedResend}
+                  disabled={blockedResendLoading}
+                  className="w-full"
+                  data-testid="button-blocked-resend"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  {blockedResendLoading ? t('verify.resending', 'Wird gesendet...') : blockedResendSuccess ? t('verify.resent', 'Code gesendet!') : t('verify.resend', 'Code erneut senden')}
+                </Button>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => { setVerificationBlocked(false); setBlockedAdminEmail(""); setBlockedParticipantId(""); }}
+            className="w-full"
+            data-testid="button-back-from-blocked"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {t('verify.backToLogin', 'Zurück zum Login')}
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (consentGate && pendingLoginParticipant) {
     const handleConsentAccept = async () => {
