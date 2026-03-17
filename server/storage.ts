@@ -2043,14 +2043,14 @@ export class DatabaseStorage implements IStorage {
       .from(historicalTastingEntries)
       .innerJoin(historicalTastings, eq(historicalTastingEntries.historicalTastingId, historicalTastings.id))
       .where(entryScoreFilter)
-      .orderBy(desc(sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10)`))
+      .orderBy(desc(sql`LEAST(COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10), 100)`))
       .limit(20);
 
     const topWhiskies = topWhiskiesRows.map(r => ({
       distillery: r.distillery,
       name: r.name,
       totalScore: r.totalScore,
-      normalizedTotal: r.normalizedTotal ?? (r.totalScore != null ? r.totalScore * 10 : null),
+      normalizedTotal: (() => { const v = r.normalizedTotal ?? (r.totalScore != null ? r.totalScore * 10 : null); return v != null ? Math.min(v, 100) : null; })(),
       tastingNumber: r.tastingNumber,
     }));
 

@@ -230,7 +230,7 @@ export default function M2HistoricalInsights() {
   const smokyPct = smokyTotal > 0 ? Math.round((analytics.smokyBreakdown.smoky / smokyTotal) * 100) : 0;
 
   const avgScore = analytics.totalEntries > 0 && topWhiskies.length > 0
-    ? Math.round(topWhiskies.reduce((sum, w) => sum + (w.normalizedTotal ?? (w.totalScore ?? 0) * 10), 0) / topWhiskies.length).toString()
+    ? Math.round(topWhiskies.reduce((sum, w) => sum + Math.min(w.normalizedTotal ?? (w.totalScore ?? 0) * 10, 100), 0) / topWhiskies.length).toString()
     : "—";
 
   const profileData = [
@@ -301,7 +301,7 @@ export default function M2HistoricalInsights() {
                   </div>
                   <span style={{ color: v.accent, fontWeight: 600, fontVariantNumeric: "tabular-nums", fontSize: 13, flexShrink: 0 }}>
                     {(w.normalizedTotal ?? (w.totalScore != null ? w.totalScore * 10 : null)) != null
-                      ? `${Math.round(w.normalizedTotal ?? w.totalScore! * 10)}`
+                      ? `${Math.min(Math.round(w.normalizedTotal ?? w.totalScore! * 10), 100)}`
                       : "—"}
                     {(w.normalizedTotal ?? w.totalScore) != null && (
                       <span style={{ fontSize: 10, color: v.muted, fontWeight: 400, marginLeft: 2 }}>/100</span>

@@ -20,6 +20,7 @@ interface LabsResultsPresentProps {
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 const MEDAL_LABELS = ["Gold", "Silver", "Bronze"];
+const MEDAL_BG = ["rgba(255,215,0,0.08)", "rgba(192,192,192,0.06)", "rgba(205,127,50,0.06)"];
 
 const slideVariants = {
   enter: (direction: number) => ({
