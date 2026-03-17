@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check, Info } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check, Info } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +12,7 @@ import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadBlob } from "@/lib/download";
+import { stripGuestSuffix } from "@/lib/utils";
 import jsPDF from "jspdf";
 
 async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
@@ -339,38 +340,58 @@ function ViewerDimBar({ label, value, maxScore }: { label: string; value: number
   );
 }
 
-function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCount, totalRatings, maxScore }: {
-  tasting: { title?: string; date?: string; location?: string };
+function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCount, totalRatings, maxScore, participants, whiskies }: {
+  tasting: { title?: string; date?: string; location?: string; coverImageUrl?: string; blindMode?: boolean };
   slideIndex: number;
   sorted: { id: string; name?: string; distillery?: string; imageUrl?: string; ratingCount: number; avgOverall: number | null; avgNose: number | null; avgTaste: number | null; avgFinish: number | null; overallStdDev: number | null }[];
   participantCount: number;
   totalRatings: number;
   maxScore: number;
+  participants?: any[];
+  whiskies?: any[];
 }) {
   const slides: { type: string; data?: Record<string, unknown> }[] = useMemo(() => {
     const s: { type: string; data?: Record<string, unknown> }[] = [];
     s.push({ type: "title" });
-    if (sorted.length > 1) s.push({ type: "overview" });
-    sorted.forEach((w, i) => s.push({ type: "whisky", data: { whisky: w, rank: i + 1 } }));
-    if (sorted.length >= 3) s.push({ type: "podium", data: { top3: sorted.slice(0, 3) } });
+    if (sorted.length > 1) s.push({ type: "lineup" });
+    if (participants && participants.length > 0) s.push({ type: "tasters" });
+    if (sorted.length > 0) s.push({ type: "funstats" });
+    if (sorted.length > 3) s.push({ type: "transition", data: { title: "The Tasting", subtitle: "From the lineup to the leaderboard — let's see how they ranked." } });
+    const reversed = [...sorted].reverse();
+    reversed.forEach((w, i) => {
+      const rank = sorted.length - i;
+      s.push({ type: "whisky", data: { whisky: w, rank } });
+    });
+    if (sorted.length >= 3) {
+      s.push({ type: "transition", data: { title: "And the Winner is…", subtitle: "The moment you've been waiting for." } });
+      s.push({ type: "winner", data: { whisky: sorted[0] } });
+      s.push({ type: "podium", data: { top3: sorted.slice(0, 3) } });
+    }
     s.push({ type: "outro" });
     return s;
-  }, [sorted]);
+  }, [sorted, participants]);
 
   const clamped = Math.max(0, Math.min(slideIndex, slides.length - 1));
   const slide = slides[clamped];
   const totalSlides = slides.length;
+  const hasCover = !!tasting.coverImageUrl;
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden" }}
+      style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)" as any, background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden" }}
       data-testid="viewer-overlay"
     >
+      <style>{`
+        @keyframes viewer-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes viewer-glow { 0%, 100% { box-shadow: 0 0 40px rgba(255,215,0,0.15); } 50% { box-shadow: 0 0 80px rgba(255,215,0,0.3); } }
+        .viewer-winner-title { background: linear-gradient(90deg, var(--labs-accent), #e8c878, var(--labs-accent)); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: viewer-shimmer 3s linear infinite; }
+      `}</style>
       <div style={{ position: "absolute", top: 12, left: 16, right: 16, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}>
-        <span style={{ fontSize: 12, color: "var(--labs-accent)", fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(212,162,86,0.12)", backdropFilter: "blur(8px)", pointerEvents: "auto" }} data-testid="viewer-live-badge">
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--labs-accent)", padding: "5px 12px", borderRadius: 8, background: "rgba(212,162,86,0.1)", border: "1px solid rgba(212,162,86,0.2)", backdropFilter: "blur(8px)", letterSpacing: "0.04em", pointerEvents: "auto" }} data-testid="viewer-live-badge">
+          <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
           LIVE
         </span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)", fontVariantNumeric: "tabular-nums" }} data-testid="viewer-slide-indicator">
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", backdropFilter: "blur(8px)", fontVariantNumeric: "tabular-nums" }} data-testid="viewer-slide-indicator">
           {clamped + 1} / {totalSlides}
         </span>
       </div>
@@ -386,45 +407,150 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
             style={{ width: "100%", height: "100%" }}
           >
             {slide.type === "title" && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px" }}>
-                <Wine style={{ width: 48, height: 48, color: "var(--labs-accent)", marginBottom: 24 }} />
-                <h1 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 56px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12, lineHeight: 1.1 }}>
-                  {tasting.title || "Tasting Results"}
-                </h1>
-                <p style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "var(--labs-text-muted)", marginBottom: 32 }}>
-                  {[tasting.date, tasting.location].filter(Boolean).join(" \u00B7 ")}
-                </p>
-                <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}>
-                  {[
-                    { icon: <Wine style={{ width: 20, height: 20 }} />, value: sorted.length, label: "Whiskies" },
-                    { icon: <Users style={{ width: 20, height: 20 }} />, value: participantCount, label: "Tasters" },
-                    { icon: <Star style={{ width: 20, height: 20 }} />, value: totalRatings, label: "Ratings" },
-                  ].map((s, i) => (
-                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <div style={{ color: "var(--labs-accent)" }}>{s.icon}</div>
-                      <span style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)" }}>{s.value}</span>
-                      <span style={{ fontSize: 12, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
+                {hasCover && <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${tasting.coverImageUrl})`, backgroundSize: "cover", backgroundPosition: "center", opacity: 0.15, filter: "blur(8px) saturate(0.7)" }} />}
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 18, margin: "0 auto 24px", background: "linear-gradient(135deg, rgba(212,162,86,0.15), rgba(212,162,86,0.05))", border: "1px solid rgba(212,162,86,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Wine style={{ width: 28, height: 28, color: "var(--labs-accent)" }} />
+                  </div>
+                  <h1 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 56px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12, lineHeight: 1.05 }}>
+                    {tasting.title || "Tasting Results"}
+                  </h1>
+                  <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", marginBottom: 32 }}>
+                    {[tasting.date, tasting.location].filter(Boolean).join(" · ")}
+                  </p>
+                  <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+                    {[
+                      { icon: <Wine style={{ width: 18, height: 18 }} />, value: sorted.length, label: "Whiskies" },
+                      { icon: <Users style={{ width: 18, height: 18 }} />, value: participantCount, label: "Tasters" },
+                      { icon: <Star style={{ width: 18, height: 18 }} />, value: totalRatings, label: "Ratings" },
+                    ].map((s, i) => (
+                      <div key={i} style={{ padding: "14px 24px", borderRadius: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
+                        <div style={{ color: "var(--labs-accent)", marginBottom: 6, display: "flex", justifyContent: "center" }}>{s.icon}</div>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {slide.type === "lineup" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <Wine style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Tonight's Lineup</span>
+                </div>
+                <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
+                  {(whiskies || sorted).length} Whiskies Tasted
+                </h2>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "center", maxWidth: 800 }}>
+                  {(whiskies || sorted).map((w: any, i: number) => (
+                    <div key={w.id} style={{ padding: 14, borderRadius: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center", width: "clamp(90px, 14vw, 130px)" }}>
+                      <div style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}>
+                        <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={50} height={60} whiskyId={w.id} />
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {tasting.blindMode ? `Dram ${String.fromCharCode(65 + i)}` : (w.name || `#${i + 1}`)}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {slide.type === "overview" && (
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", height: "100%", padding: "40px 24px", maxWidth: 700, margin: "0 auto", width: "100%" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-                  <BarChart3 style={{ width: 24, height: 24, color: "var(--labs-accent)" }} />
-                  <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>Rankings Overview</h2>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {sorted.slice(0, 8).map((w, i) => (
-                    <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: i < 3 ? "rgba(212, 162, 86, 0.08)" : "transparent", border: i < 3 ? "1px solid rgba(212, 162, 86, 0.15)" : "1px solid transparent" }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, background: i < 3 ? MEDAL_COLORS[i] : "rgba(255,255,255,0.06)", color: i === 0 ? "#78350f" : i === 1 ? "#1f2937" : i === 2 ? "#451a03" : "var(--labs-text-muted)" }}>{i + 1}</span>
-                      <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name || "Unknown"}</span>
-                      <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : "\u2014"}</span>
+            {slide.type === "tasters" && (() => {
+              const names = (participants || []).map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <Users style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>The Tasters</span>
+                  </div>
+                  <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 28px", textAlign: "center" }}>
+                    {names.length} Palates, One Mission
+                  </h2>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 650, marginBottom: 28 }}>
+                    {names.map((name, i) => (
+                      <div key={i} style={{ padding: "7px 16px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)", display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, var(--labs-accent), #e8c878)", color: "var(--labs-bg)", fontSize: 10, fontWeight: 700 }}>
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{totalRatings}</div>
+                      <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ratings Given</div>
                     </div>
-                  ))}
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{sorted.length}</div>
+                      <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Whiskies</div>
+                    </div>
+                  </div>
                 </div>
+              );
+            })()}
+
+            {slide.type === "funstats" && (() => {
+              const groupAvg = sorted.length > 0 ? sorted.reduce((s, w) => s + (w.avgOverall || 0), 0) / sorted.length : 0;
+              const withStdDev = sorted.filter(w => w.overallStdDev != null && w.ratingCount >= 2);
+              const mostAgreed = [...withStdDev].sort((a, b) => (a.overallStdDev || 999) - (b.overallStdDev || 999))[0];
+              const mostDebated = [...withStdDev].sort((a, b) => (b.overallStdDev || 0) - (a.overallStdDev || 0))[0];
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <Sparkles style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Highlights</span>
+                  </div>
+                  <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
+                    By the Numbers
+                  </h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, maxWidth: 600, width: "100%" }}>
+                    <div style={{ padding: "16px 20px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <BarChart3 style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Group Average</span>
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)" }}>{Math.round(groupAvg * 10) / 10}</div>
+                    </div>
+                    {mostAgreed && (
+                      <div style={{ padding: "16px 20px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <Target style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Most Agreed</span>
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>{mostAgreed.name || "Unknown"}</div>
+                      </div>
+                    )}
+                    {mostDebated && mostDebated.id !== mostAgreed?.id && (
+                      <div style={{ padding: "16px 20px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <MessageCircle style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Most Debated</span>
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>{mostDebated.name || "Unknown"}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {slide.type === "transition" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px" }}>
+                <Trophy style={{ width: 40, height: 40, color: "var(--labs-accent)", marginBottom: 20 }} />
+                <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.05, maxWidth: 600 }}>
+                  {(slide.data?.title as string) || ""}
+                </h2>
+                {slide.data?.subtitle && (
+                  <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", marginTop: 12, maxWidth: 450 }}>
+                    {slide.data.subtitle as string}
+                  </p>
+                )}
               </div>
             )}
 
@@ -435,24 +561,46 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px", maxWidth: 600, margin: "0 auto", width: "100%" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    {isTop3 && <span style={{ width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: MEDAL_COLORS[rank - 1], color: rank === 1 ? "#78350f" : rank === 2 ? "#1f2937" : "#451a03" }}>{rank}</span>}
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>#{rank} of {sorted.length}</span>
+                    {isTop3 && <span style={{ width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: MEDAL_COLORS[rank - 1], color: rank === 1 ? "#78350f" : rank === 2 ? "#1f2937" : "#451a03", boxShadow: `0 4px 12px ${MEDAL_COLORS[rank - 1]}66` }}>{rank}</span>}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>#{rank} of {sorted.length}</span>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={120} height={120} whiskyId={w.id} />
+                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={120} height={140} whiskyId={w.id} />
                   </div>
-                  <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 4vw, 38px)", fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginBottom: 4, lineHeight: 1.15 }}>{w.name || "Unknown"}</h2>
+                  <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 4vw, 38px)", fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginBottom: 4, lineHeight: 1.1 }}>{w.name || "Unknown"}</h2>
                   {w.distillery && <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 4, textAlign: "center" }}>{w.distillery}</p>}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
-                    {w.ratingCount > 0 && <span style={{ fontSize: 12, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}><Users style={{ width: 12, height: 12 }} /> {w.ratingCount} ratings</span>}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", justifyContent: "center" }}>
+                    {w.ratingCount > 0 && <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}><Users style={{ width: 11, height: 11 }} /> {w.ratingCount} ratings</span>}
                   </div>
-                  <div style={{ marginBottom: 24 }}>
-                    <LabsScoreRing score={w.avgOverall ?? 0} maxScore={maxScore} size={110} strokeWidth={7} showValue />
+                  <div style={{ marginBottom: 20 }}>
+                    <LabsScoreRing score={w.avgOverall ?? 0} maxScore={maxScore} size={100} strokeWidth={6} showValue />
                   </div>
-                  <div style={{ width: "100%", maxWidth: 400 }}>
+                  <div style={{ width: "100%", maxWidth: 380 }}>
                     <ViewerDimBar label="Nose" value={w.avgNose} maxScore={maxScore} />
                     <ViewerDimBar label="Taste" value={w.avgTaste} maxScore={maxScore} />
                     <ViewerDimBar label="Finish" value={w.avgFinish} maxScore={maxScore} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {slide.type === "winner" && (() => {
+              const w = slide.data!.whisky as typeof sorted[number];
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px", textAlign: "center" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", background: MEDAL_COLORS[0], color: "#78350f", marginBottom: 8, boxShadow: `0 0 30px ${MEDAL_COLORS[0]}66` }}>
+                    <Trophy style={{ width: 22, height: 22 }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>Tonight's Winner</span>
+                  <div style={{ marginBottom: 14 }}>
+                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={140} height={170} whiskyId={w.id} />
+                  </div>
+                  <h2 className="labs-serif viewer-winner-title" style={{ fontSize: "clamp(28px, 5vw, 48px)", fontWeight: 700, marginBottom: 6, lineHeight: 1.1 }}>
+                    {w.name || "Unknown"}
+                  </h2>
+                  {w.distillery && <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 16 }}>{w.distillery}</p>}
+                  <div style={{ borderRadius: "50%", animation: "viewer-glow 3s ease-in-out infinite" }}>
+                    <LabsScoreRing score={w.avgOverall ?? 0} maxScore={maxScore} size={120} strokeWidth={7} showValue />
                   </div>
                 </div>
               );
@@ -466,8 +614,8 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
-                    <Trophy style={{ width: 32, height: 32, color: "var(--labs-accent)" }} />
-                    <h2 className="labs-serif" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>Podium</h2>
+                    <Trophy style={{ width: 28, height: 28, color: "var(--labs-accent)" }} />
+                    <h2 className="labs-serif" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>The Podium</h2>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(12px, 3vw, 32px)", maxWidth: 700, width: "100%" }}>
                     {podiumOrder.map((w, i) => {
@@ -475,12 +623,12 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                       const h = podiumHeights[i] || 130;
                       return (
                         <div key={w.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 200 }}>
-                          <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 80 : 64} height={actualRank === 0 ? 80 : 64} whiskyId={w.id} />
-                          <p className="labs-serif" style={{ fontSize: actualRank === 0 ? 16 : 14, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginTop: 8, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{w.name || "Unknown"}</p>
-                          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 8 }}>{w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : "\u2014"}</span>
-                          <div style={{ width: "100%", height: h, borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${MEDAL_COLORS[actualRank]}33 0%, ${MEDAL_COLORS[actualRank]}11 100%)`, border: `1px solid ${MEDAL_COLORS[actualRank]}44`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 16 }}>
-                            <span style={{ width: 40, height: 40, borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, background: MEDAL_COLORS[actualRank], color: actualRank === 0 ? "#78350f" : actualRank === 1 ? "#1f2937" : "#451a03" }}>{actualRank + 1}</span>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{MEDAL_LABELS[actualRank]}</span>
+                          <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 85 : 65} height={actualRank === 0 ? 90 : 70} whiskyId={w.id} />
+                          <p className="labs-serif" style={{ fontSize: actualRank === 0 ? 16 : 13, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginTop: 8, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{w.name || "Unknown"}</p>
+                          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 8, fontVariantNumeric: "tabular-nums" }}>{w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : "—"}</span>
+                          <div style={{ width: "100%", height: h, borderRadius: "14px 14px 0 0", background: `linear-gradient(180deg, ${MEDAL_COLORS[actualRank]}22 0%, ${MEDAL_COLORS[actualRank]}08 100%)`, border: `1px solid ${MEDAL_COLORS[actualRank]}33`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 18 }}>
+                            <span style={{ width: 42, height: 42, borderRadius: 21, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, background: MEDAL_COLORS[actualRank], color: actualRank === 0 ? "#78350f" : actualRank === 1 ? "#1f2937" : "#451a03", boxShadow: `0 4px 16px ${MEDAL_COLORS[actualRank]}55` }}>{actualRank + 1}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", marginTop: 7, textTransform: "uppercase", letterSpacing: "0.06em" }}>{MEDAL_LABELS[actualRank]}</span>
                           </div>
                         </div>
                       );
@@ -492,10 +640,12 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
 
             {slide.type === "outro" && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px" }}>
-                <Wine style={{ width: 56, height: 56, color: "var(--labs-accent)", marginBottom: 24 }} />
-                <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12 }}>Cheers!</h2>
-                <p style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "var(--labs-text-muted)", maxWidth: 400 }}>Thank you for tasting with us.</p>
-                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 24, opacity: 0.75 }}>{tasting.title} \u00B7 CaskSense Labs</p>
+                <div style={{ width: 72, height: 72, borderRadius: 20, margin: "0 auto 24px", background: "linear-gradient(135deg, rgba(212,162,86,0.12), rgba(212,162,86,0.04))", border: "1px solid rgba(212,162,86,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Wine style={{ width: 32, height: 32, color: "var(--labs-accent)" }} />
+                </div>
+                <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12 }}>Slàinte Mhath!</h2>
+                <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", maxWidth: 400, lineHeight: 1.6 }}>Thank you for sharing this tasting journey with us.</p>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 28, opacity: 0.6 }}>{tasting.title} · CaskSense Labs</p>
               </div>
             )}
           </motion.div>
@@ -503,11 +653,11 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 16px 20px", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(transparent, var(--labs-bg))", zIndex: 10 }}>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
           {slides.map((_, i) => (
             <div
               key={i}
-              style={{ width: i === clamped ? 20 : 8, height: 8, borderRadius: 4, background: i === clamped ? "var(--labs-accent)" : "rgba(255,255,255,0.15)", transition: "all 0.25s ease" }}
+              style={{ width: i === clamped ? 18 : 6, height: 6, borderRadius: 3, background: i === clamped ? "var(--labs-accent)" : "rgba(255,255,255,0.12)", transition: "all 0.25s ease" }}
             />
           ))}
         </div>
@@ -792,6 +942,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
         participantCount={participantCount}
         totalRatings={totalRatings}
         maxScore={maxScore}
+        participants={participants}
+        whiskies={whiskies}
       />
     );
   }
