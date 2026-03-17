@@ -1045,6 +1045,9 @@ function MobileCompanion({
   }, [whiskyCount]);
   const whiskyListExpanded = mobileWhiskyListOpen ?? true;
   const [mobileWhiskyName, setMobileWhiskyName] = useState("");
+  const [mobileWbId, setMobileWbId] = useState("");
+  const [mobileWbLoading, setMobileWbLoading] = useState(false);
+  const [mobileWbResult, setMobileWbResult] = useState("");
   const [mobileShowAdd, setMobileShowAdd] = useState(isDraft && whiskyCount === 0);
   const [mobileAiImport, setMobileAiImport] = useState(false);
   const [mobileAiFiles, setMobileAiFiles] = useState<File[]>([]);
@@ -1074,6 +1077,8 @@ function MobileCompanion({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setMobileWhiskyName("");
+      setMobileWbId("");
+      setMobileWbResult("");
     },
   });
 
@@ -1117,9 +1122,33 @@ function MobileCompanion({
     addWhiskyMut.mutate({
       tastingId,
       name: mobileWhiskyName.trim(),
+      ...(mobileWbId.trim() ? { whiskybaseId: mobileWbId.trim() } : {}),
       sortOrder: whiskyCount + 1,
     });
   };
+
+  const handleMobileWbLookup = useCallback(async () => {
+    const id = mobileWbId.trim();
+    if (!id || !/^\d+$/.test(id)) return;
+    setMobileWbLoading(true);
+    setMobileWbResult("");
+    try {
+      const headers: Record<string, string> = {};
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
+      const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
+      if (!res.ok) {
+        setMobileWbResult(res.status === 429 ? "rate_limit" : res.status === 400 ? "invalid" : "not_found");
+        return;
+      }
+      const data = await res.json();
+      if (data.name) setMobileWhiskyName(data.name);
+      setMobileWbResult("ok");
+    } catch {
+      setMobileWbResult("error");
+    } finally {
+      setMobileWbLoading(false);
+    }
+  }, [currentParticipant?.id, mobileWbId]);
 
   const [mobileAiError, setMobileAiError] = useState("");
   const [mobileAiSummary, setMobileAiSummary] = useState<{ added: number; duplicatesAdded: number; duplicatesSkipped: number; failed: number } | null>(null);
@@ -1538,24 +1567,49 @@ function MobileCompanion({
           )}
 
           {mobileShowAdd && (
-            <div className="labs-card p-3 mb-3 flex gap-2">
-              <input
-                className="labs-input flex-1"
-                placeholder="Whisky name..."
-                value={mobileWhiskyName}
-                onChange={e => setMobileWhiskyName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleMobileAdd()}
-                data-testid="mobile-whisky-name-input"
-                autoFocus
-              />
-              <button
-                className="labs-btn-primary px-4"
-                onClick={handleMobileAdd}
-                disabled={!mobileWhiskyName.trim() || addWhiskyMut.isPending}
-                data-testid="mobile-whisky-add-btn"
-              >
-                {addWhiskyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-              </button>
+            <div className="labs-card p-3 mb-3 space-y-2">
+              <div className="flex gap-1.5 items-center">
+                <input
+                  className="labs-input"
+                  placeholder="WB #"
+                  value={mobileWbId}
+                  onChange={e => { setMobileWbId(e.target.value.replace(/[^0-9]/g, "")); setMobileWbResult(""); }}
+                  onKeyDown={e => { if (e.key === "Enter" && mobileWbId.trim()) handleMobileWbLookup(); }}
+                  style={{ width: 64, fontSize: 12, textAlign: "center" }}
+                  data-testid="mobile-wb-lookup-input"
+                />
+                <button
+                  className="labs-btn-ghost p-1"
+                  onClick={handleMobileWbLookup}
+                  disabled={!mobileWbId.trim() || mobileWbLoading}
+                  data-testid="mobile-wb-lookup-btn"
+                  style={{ color: mobileWbResult === "ok" ? "var(--labs-success)" : mobileWbResult && mobileWbResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
+                >
+                  {mobileWbLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : mobileWbResult === "ok" ? <Check className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                </button>
+                <input
+                  className="labs-input flex-1"
+                  placeholder="Whisky name..."
+                  value={mobileWhiskyName}
+                  onChange={e => setMobileWhiskyName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleMobileAdd()}
+                  data-testid="mobile-whisky-name-input"
+                  autoFocus
+                />
+                <button
+                  className="labs-btn-primary px-3"
+                  onClick={handleMobileAdd}
+                  disabled={!mobileWhiskyName.trim() || addWhiskyMut.isPending}
+                  data-testid="mobile-whisky-add-btn"
+                >
+                  {addWhiskyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+                </button>
+              </div>
+              {mobileWbResult && mobileWbResult !== "ok" && (
+                <p className="text-xs" style={{ color: "var(--labs-danger)", margin: 0 }}>
+                  {mobileWbResult === "not_found" ? "WB ID not found" : mobileWbResult === "rate_limit" ? "Too many lookups" : mobileWbResult === "invalid" ? "Invalid ID" : "Lookup failed"}
+                </p>
+              )}
             </div>
           )}
 
@@ -3928,6 +3982,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [extFields, setExtFields] = useState<Record<string, string>>({});
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
+  const [wbLookupId, setWbLookupId] = useState("");
+  const [wbLookupLoading, setWbLookupLoading] = useState(false);
+  const [wbLookupResult, setWbLookupResult] = useState<string>("");
+  const [editWbLookupId, setEditWbLookupId] = useState("");
+  const [editWbLookupLoading, setEditWbLookupLoading] = useState(false);
+  const [editWbLookupResult, setEditWbLookupResult] = useState<string>("");
   const [showAiImport, setShowAiImport] = useState(false);
   const [aiImportFiles, setAiImportFiles] = useState<File[]>([]);
   const [aiImportText, setAiImportText] = useState("");
@@ -3952,6 +4012,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setExtFields({});
       setShowExtendedFields(false);
       setShowAddWhisky(false);
+      setWbLookupId("");
+      setWbLookupResult("");
     },
   });
 
@@ -4145,6 +4207,68 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     }
   };
 
+  const handleWbLookup = useCallback(async (wbIdRaw: string, target: "add" | "edit") => {
+    const id = wbIdRaw.trim().replace(/^[Ww][Bb]\s*/i, "");
+    if (!id || !/^\d+$/.test(id)) return;
+    const setLoading = target === "add" ? setWbLookupLoading : setEditWbLookupLoading;
+    const setResult = target === "add" ? setWbLookupResult : setEditWbLookupResult;
+    setLoading(true);
+    setResult("");
+    try {
+      const headers: Record<string, string> = {};
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
+      const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
+      if (!res.ok) {
+        if (res.status === 429) { setResult("rate_limit"); return; }
+        if (res.status === 400) { setResult("invalid"); return; }
+        setResult("not_found"); return;
+      }
+      const data = await res.json();
+      if (target === "add") {
+        if (data.name) setNewWhiskyName(data.name);
+        setExtFields(prev => ({
+          ...prev,
+          ...(data.distillery && !prev.distillery ? { distillery: data.distillery } : {}),
+          ...(data.age ? { age: String(data.age) } : {}),
+          ...(data.abv ? { abv: String(data.abv) } : {}),
+          ...(data.caskType && !prev.caskType ? { caskType: data.caskType } : {}),
+          ...(data.region && !prev.region ? { region: data.region } : {}),
+          ...(data.country && !prev.country ? { country: data.country } : {}),
+          ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
+          ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
+          ...(data.vintage ? { vintage: String(data.vintage) } : {}),
+          ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
+          ...(data.category && !prev.category ? { category: data.category } : {}),
+          whiskybaseId: id,
+        }));
+        setShowExtendedFields(true);
+        setResult("ok");
+      } else {
+        setEditFields(prev => ({
+          ...prev,
+          ...(data.name && !prev.name ? { name: data.name } : {}),
+          ...(data.distillery && !prev.distillery ? { distillery: data.distillery } : {}),
+          ...(data.age ? { age: String(data.age) } : {}),
+          ...(data.abv ? { abv: String(data.abv) } : {}),
+          ...(data.caskType && !prev.caskType ? { caskType: data.caskType } : {}),
+          ...(data.region && !prev.region ? { region: data.region } : {}),
+          ...(data.country && !prev.country ? { country: data.country } : {}),
+          ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
+          ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
+          ...(data.vintage ? { vintage: String(data.vintage) } : {}),
+          ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
+          ...(data.category && !prev.category ? { category: data.category } : {}),
+          whiskybaseId: id,
+        }));
+        setResult("ok");
+      }
+    } catch {
+      setResult("error");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentParticipant?.id]);
+
   const handleAddWhiskyExtended = () => {
     if (!newWhiskyName.trim()) return;
     addWhiskyMutation.mutate({
@@ -4179,11 +4303,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
     if (coerced.caskType !== undefined) { coerced.caskInfluence = coerced.caskType; delete coerced.caskType; }
     if (coerced.flavorProfile !== undefined) { coerced.flavorProfile = coerced.flavorProfile === "auto" || !coerced.flavorProfile ? null : coerced.flavorProfile; }
+    if (editWbLookupId.trim()) coerced.whiskybaseId = editWbLookupId.trim();
     updateWhiskyMutation.mutate({ id: whiskyId, data: coerced });
   };
 
   const startEditWhisky = (w: any) => {
     setEditingWhiskyId(w.id);
+    setEditWbLookupId(w.whiskybaseId ? String(w.whiskybaseId) : "");
+    setEditWbLookupResult("");
     setEditFields({
       name: w.name || "",
       distillery: w.distillery || "",
@@ -4333,6 +4460,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       addWhiskyMutation.mutate({
         tastingId,
         name: newWhiskyName.trim(),
+        ...(wbLookupId.trim() ? { whiskybaseId: wbLookupId.trim() } : {}),
         sortOrder: (whiskies?.length || 0) + 1,
       });
     }
@@ -5224,7 +5352,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
         {showAddWhisky && tasting.status === "draft" && (
           <div className="labs-card p-4 mb-3 space-y-3">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-1" style={{ position: "relative" }}>
+                <input
+                  className="labs-input"
+                  placeholder="WB #"
+                  value={wbLookupId}
+                  onChange={e => { setWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setWbLookupResult(""); }}
+                  onKeyDown={e => { if (e.key === "Enter" && wbLookupId.trim()) handleWbLookup(wbLookupId, "add"); }}
+                  style={{ width: 80, fontSize: 13, textAlign: "center" }}
+                  data-testid="labs-wb-lookup-input"
+                />
+                <button
+                  className="labs-btn-ghost p-1.5"
+                  onClick={() => handleWbLookup(wbLookupId, "add")}
+                  disabled={!wbLookupId.trim() || wbLookupLoading}
+                  title="Lookup Whiskybase"
+                  data-testid="labs-wb-lookup-btn"
+                  style={{ color: wbLookupResult === "ok" ? "var(--labs-success)" : wbLookupResult && wbLookupResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
+                >
+                  {wbLookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : wbLookupResult === "ok" ? <Check className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                </button>
+              </div>
               <input
                 className="labs-input flex-1"
                 placeholder="Whisky name..."
@@ -5249,6 +5398,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 {addWhiskyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
               </button>
             </div>
+            {wbLookupResult && wbLookupResult !== "ok" && (
+              <p className="text-xs" style={{ color: "var(--labs-danger)", margin: 0 }}>
+                {wbLookupResult === "not_found" ? "Whiskybase ID not found" : wbLookupResult === "rate_limit" ? "Too many lookups, please wait" : wbLookupResult === "invalid" ? "Invalid Whiskybase ID" : "Lookup failed"}
+              </p>
+            )}
             {showExtendedFields && (
               <div className="grid grid-cols-2 gap-2">
                 <input className="labs-input" placeholder="Distillery" value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
@@ -5302,6 +5456,33 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               if (editingWhiskyId === w.id) {
                 return (
                   <div key={w.id} className="labs-card p-4 space-y-2" data-testid={`labs-host-whisky-edit-${w.id}`}>
+                    <div className="flex gap-2 items-center mb-2">
+                      <input
+                        className="labs-input"
+                        placeholder="WB #"
+                        value={editWbLookupId}
+                        onChange={e => { setEditWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setEditWbLookupResult(""); }}
+                        onKeyDown={e => { if (e.key === "Enter" && editWbLookupId.trim()) handleWbLookup(editWbLookupId, "edit"); }}
+                        style={{ width: 80, fontSize: 13, textAlign: "center" }}
+                        data-testid="labs-edit-wb-lookup-input"
+                      />
+                      <button
+                        className="labs-btn-ghost p-1.5"
+                        onClick={() => handleWbLookup(editWbLookupId, "edit")}
+                        disabled={!editWbLookupId.trim() || editWbLookupLoading}
+                        title="Lookup Whiskybase"
+                        data-testid="labs-edit-wb-lookup-btn"
+                        style={{ color: editWbLookupResult === "ok" ? "var(--labs-success)" : editWbLookupResult && editWbLookupResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
+                      >
+                        {editWbLookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : editWbLookupResult === "ok" ? <Check className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                      </button>
+                      {editWbLookupResult && editWbLookupResult !== "ok" && (
+                        <span className="text-xs" style={{ color: "var(--labs-danger)" }}>
+                          {editWbLookupResult === "not_found" ? "Not found" : editWbLookupResult === "rate_limit" ? "Rate limit" : editWbLookupResult === "invalid" ? "Invalid ID" : "Failed"}
+                        </span>
+                      )}
+                      <span className="text-xs flex-1" style={{ color: "var(--labs-text-muted)", textAlign: "right" }}>Whiskybase Lookup</span>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input className="labs-input col-span-2" placeholder="Name" value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
                       <input className="labs-input" placeholder="Distillery" value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
