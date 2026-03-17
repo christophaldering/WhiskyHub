@@ -20,7 +20,6 @@ interface LabsResultsPresentProps {
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 const MEDAL_LABELS = ["Gold", "Silver", "Bronze"];
-const MEDAL_BG = ["rgba(255,215,0,0.08)", "rgba(192,192,192,0.06)", "rgba(205,127,50,0.06)"];
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -374,7 +373,7 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
 
         <motion.div
           initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-          style={{ flex: 1, minWidth: 280 }}
+          style={{ flex: 1, minWidth: 0 }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -1004,9 +1003,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
               backdropFilter: "blur(8px)",
             }}
             data-testid="present-exit-btn"
+            aria-label="Exit presentation"
           >
             <X style={{ width: 14, height: 14 }} />
-            <span className="hidden sm:inline">Exit</span>
           </button>
           <span style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -1100,25 +1099,33 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
           <ChevronLeft style={{ width: 20, height: 20 }} />
         </button>
 
-        <div style={{ display: "flex", gap: 4, alignItems: "center", maxWidth: 400, overflow: "hidden" }} data-testid="present-dots">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              style={{
-                width: i === currentSlide ? 18 : 6,
-                height: 6,
-                borderRadius: 3,
-                border: "none",
-                background: i === currentSlide ? "var(--labs-accent)" : "rgba(255,255,255,0.12)",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
-                padding: 0,
-                flexShrink: 0,
-              }}
-              data-testid={`present-dot-${i}`}
-            />
-          ))}
+        <div style={{ display: "flex", gap: 3, alignItems: "center", maxWidth: 300, overflow: "hidden" }} data-testid="present-dots">
+          {slides.map((_, i) => {
+            const distance = Math.abs(i - currentSlide);
+            const isActive = i === currentSlide;
+            const isNear = distance <= 3;
+            const isFar = distance > 5;
+            if (totalSlides > 15 && isFar) return null;
+            return (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                style={{
+                  width: isActive ? 18 : (totalSlides > 15 && !isNear ? 4 : 6),
+                  height: isActive ? 6 : (totalSlides > 15 && !isNear ? 4 : 6),
+                  borderRadius: 3,
+                  border: "none",
+                  background: isActive ? "var(--labs-accent)" : `rgba(255,255,255,${isNear ? 0.15 : 0.08})`,
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  padding: 0,
+                  flexShrink: 0,
+                  opacity: totalSlides > 15 && distance > 4 ? 0.5 : 1,
+                }}
+                data-testid={`present-dot-${i}`}
+              />
+            );
+          })}
         </div>
 
         <button

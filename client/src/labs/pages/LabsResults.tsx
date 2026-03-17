@@ -382,6 +382,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
       data-testid="viewer-overlay"
     >
       <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes viewer-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
         @keyframes viewer-glow { 0%, 100% { box-shadow: 0 0 40px rgba(255,215,0,0.15); } 50% { box-shadow: 0 0 80px rgba(255,215,0,0.3); } }
         .viewer-winner-title { background: linear-gradient(90deg, var(--labs-accent), #e8c878, var(--labs-accent)); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: viewer-shimmer 3s linear infinite; }
@@ -653,13 +654,27 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 16px 20px", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(transparent, var(--labs-bg))", zIndex: 10 }}>
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          {slides.map((_, i) => (
-            <div
-              key={i}
-              style={{ width: i === clamped ? 18 : 6, height: 6, borderRadius: 3, background: i === clamped ? "var(--labs-accent)" : "rgba(255,255,255,0.12)", transition: "all 0.25s ease" }}
-            />
-          ))}
+        <div style={{ display: "flex", gap: 3, alignItems: "center", maxWidth: 300, overflow: "hidden" }}>
+          {slides.map((_, i) => {
+            const distance = Math.abs(i - clamped);
+            const isActive = i === clamped;
+            const isNear = distance <= 3;
+            const isFar = distance > 5;
+            if (totalSlides > 15 && isFar) return null;
+            return (
+              <div
+                key={i}
+                style={{
+                  width: isActive ? 18 : (totalSlides > 15 && !isNear ? 4 : 6),
+                  height: isActive ? 6 : (totalSlides > 15 && !isNear ? 4 : 6),
+                  borderRadius: 3,
+                  background: isActive ? "var(--labs-accent)" : `rgba(255,255,255,${isNear ? 0.15 : 0.08})`,
+                  transition: "all 0.25s ease",
+                  opacity: totalSlides > 15 && distance > 4 ? 0.5 : 1,
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
