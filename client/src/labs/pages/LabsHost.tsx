@@ -25,6 +25,69 @@ import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
 import QRCode from "qrcode";
+import * as XLSX from "xlsx";
+
+const EXCEL_MAX_SIZE = 5 * 1024 * 1024;
+const EXCEL_MAX_ROWS = 500;
+const EXCEL_ALLOWED_FIELDS = new Set([
+  "sortOrder", "name", "distillery", "age", "abv", "category", "region",
+  "country", "caskInfluence", "peatLevel", "ppm", "bottler", "vintage",
+  "price", "whiskybaseId", "notes", "hostSummary",
+]);
+const EXCEL_HEADER_MAP: Record<string, string> = {
+  "#": "sortOrder", "name": "name", "name *": "name",
+  "distillery": "distillery", "age": "age", "abv %": "abv", "abv": "abv",
+  "category": "category", "region": "region", "country": "country",
+  "cask type": "caskInfluence", "cask influence": "caskInfluence",
+  "peat level": "peatLevel", "ppm": "ppm", "bottler": "bottler",
+  "vintage": "vintage", "price": "price", "whiskybase id": "whiskybaseId",
+  "notes": "notes", "host summary": "hostSummary",
+};
+
+function parseExcelWhiskies(file: File): Promise<any[]> {
+  if (file.size > EXCEL_MAX_SIZE) {
+    return Promise.reject(new Error("Excel file too large (max 5 MB)."));
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        if (!sheet) { resolve([]); return; }
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        if (rows.length > EXCEL_MAX_ROWS) {
+          reject(new Error(`Too many rows (${rows.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`));
+          return;
+        }
+        const whiskies = rows
+          .map((row) => {
+            const mapped: Record<string, any> = Object.create(null);
+            for (const [rawKey, val] of Object.entries(row)) {
+              const field = EXCEL_HEADER_MAP[rawKey.trim().toLowerCase()];
+              if (field && EXCEL_ALLOWED_FIELDS.has(field) && val !== undefined && val !== "") {
+                mapped[field] = String(val).trim();
+              }
+            }
+            return mapped;
+          })
+          .filter((w) => w.name && w.name.length > 0);
+        resolve(whiskies);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function isExcelFile(file: File): boolean {
+  return /\.(xlsx|xls)$/i.test(file.name) ||
+    file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    file.type === "application/vnd.ms-excel";
+}
 
 interface LabsHostProps {
   params?: { id?: string };
@@ -1056,18 +1119,36 @@ function MobileCompanion({
     setMobileAiError("");
     setMobileAiSummary(null);
     try {
-      const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
-      if (result?.whiskies?.length) {
-        setMobileAiResults(result.whiskies);
+      const excelFile = mobileAiFiles.find(isExcelFile);
+      let parsedWhiskies: any[] | null = null;
+      if (excelFile) {
+        parsedWhiskies = await parseExcelWhiskies(excelFile);
+      }
+      if (parsedWhiskies && parsedWhiskies.length > 0) {
+        setMobileAiResults(parsedWhiskies);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
-            !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+          parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
+            !existingList.some((ew: any) => isSimilarWhisky(parsedWhiskies![i].name || "", parsedWhiskies![i].distillery || "", ew.name || "", ew.distillery || ""))
           )
         );
         setMobileAiSelected(nonDupeIndices);
+      } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
+        setMobileAiError("No whiskies found in Excel file. Make sure the 'Name' column is filled.");
       } else {
-        setMobileAiError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
+        const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
+        if (result?.whiskies?.length) {
+          setMobileAiResults(result.whiskies);
+          const existingList = (whiskies || []) as Array<Record<string, unknown>>;
+          const nonDupeIndices = new Set(
+            result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
+              !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+            )
+          );
+          setMobileAiSelected(nonDupeIndices);
+        } else {
+          setMobileAiError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
+        }
       }
     } catch (e: unknown) {
       setMobileAiError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
@@ -1099,7 +1180,11 @@ function MobileCompanion({
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: w.price ? parseFloat(w.price) || null : null,
-            sortOrder: whiskyCount + added + dupeAdded + 1,
+            vintage: w.vintage || "",
+            whiskybaseId: w.whiskybaseId || "",
+            notes: w.notes || "",
+            hostSummary: w.hostSummary || "",
+            sortOrder: w.sortOrder ? parseInt(w.sortOrder) || (whiskyCount + added + dupeAdded + 1) : (whiskyCount + added + dupeAdded + 1),
           });
           if (isDupe) dupeAdded++; else added++;
         } catch { fail++; }
@@ -1301,10 +1386,21 @@ function MobileCompanion({
                     if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
                   }}
                 >
-                  <Camera className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
+                  <Upload className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
                   <p className="text-xs text-center" style={{ color: "var(--labs-text-secondary)" }}>
-                    Photo, PDF or tasting sheet
+                    Drop photos, PDFs, Excel or files here
                   </p>
+                  <a
+                    href="/CaskSense_Whisky_Import_Template.xlsx"
+                    download
+                    className="text-[10px] underline"
+                    style={{ color: "var(--labs-accent)", opacity: 0.7 }}
+                    onClick={e => e.stopPropagation()}
+                    data-testid="mobile-download-excel-template"
+                  >
+                    <Download className="w-3 h-3 inline mr-0.5" />
+                    Download Excel Template
+                  </a>
                   <div className="flex gap-2">
                     <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1.5" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none" }}>
                       <Camera className="w-3 h-3" />
@@ -1354,8 +1450,8 @@ function MobileCompanion({
                   }}
                   data-testid="mobile-ai-import-analyze"
                 >
-                  {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {mobileAiLoading ? "Analyzing..." : "Analyze with AI"}
+                  {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : mobileAiFiles.some(isExcelFile) ? <Upload className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                  {mobileAiLoading ? "Importing..." : mobileAiFiles.some(isExcelFile) ? "Import Excel" : "Analyze with AI"}
                 </button>
 
                 {mobileAiError && (
@@ -3942,18 +4038,36 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     setAiImportError("");
     setAiImportSummary(null);
     try {
-      const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
-      if (result?.whiskies?.length) {
-        setAiImportResults(result.whiskies);
+      const excelFile = aiImportFiles.find(isExcelFile);
+      let parsedWhiskies: any[] | null = null;
+      if (excelFile) {
+        parsedWhiskies = await parseExcelWhiskies(excelFile);
+      }
+      if (parsedWhiskies && parsedWhiskies.length > 0) {
+        setAiImportResults(parsedWhiskies);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
-          result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
-            !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+          parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
+            !existingList.some((ew: any) => isSimilarWhisky(parsedWhiskies![i].name || "", parsedWhiskies![i].distillery || "", ew.name || "", ew.distillery || ""))
           )
         );
         setAiImportSelected(nonDupeIndices);
+      } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
+        setAiImportError("No whiskies found in Excel file. Make sure the 'Name' column is filled.");
       } else {
-        setAiImportError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
+        const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
+        if (result?.whiskies?.length) {
+          setAiImportResults(result.whiskies);
+          const existingList = (whiskies || []) as Array<Record<string, unknown>>;
+          const nonDupeIndices = new Set(
+            result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
+              !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
+            )
+          );
+          setAiImportSelected(nonDupeIndices);
+        } else {
+          setAiImportError(t("labs.aiImport.noResults", "No whiskies found. Try a clearer photo or text."));
+        }
       }
     } catch (e: unknown) {
       setAiImportError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
@@ -3985,7 +4099,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: w.price ? parseFloat(w.price) || null : null,
-            sortOrder: (whiskies?.length || 0) + added + dupeAdded + 1,
+            vintage: w.vintage || "",
+            whiskybaseId: w.whiskybaseId || "",
+            notes: w.notes || "",
+            hostSummary: w.hostSummary || "",
+            sortOrder: w.sortOrder ? parseInt(w.sortOrder) || ((whiskies?.length || 0) + added + dupeAdded + 1) : ((whiskies?.length || 0) + added + dupeAdded + 1),
           });
           if (isDupe) dupeAdded++; else added++;
         } catch {
@@ -4928,7 +5046,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               }}
             >
               <Upload className="w-6 h-6" />
-              <p>Drop photos, PDFs or files here</p>
+              <p>Drop photos, PDFs, Excel or files here</p>
+              <a
+                href="/CaskSense_Whisky_Import_Template.xlsx"
+                download
+                className="text-[10px] underline"
+                style={{ color: "var(--labs-accent)", opacity: 0.7 }}
+                onClick={e => e.stopPropagation()}
+                data-testid="desktop-download-excel-template"
+              >
+                <Download className="w-3 h-3 inline mr-0.5" />
+                Download Excel Template
+              </a>
               <div className="flex gap-2 mt-1">
                 <label className="labs-btn-ghost text-xs cursor-pointer">
                   <Camera className="w-3 h-3 inline mr-1" />
@@ -4983,8 +5112,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 disabled={aiImportLoading || (aiImportFiles.length === 0 && !aiImportText.trim())}
                 data-testid="labs-ai-import-analyze"
               >
-                {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {aiImportLoading ? "Analyzing..." : "Analyze"}
+                {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : aiImportFiles.some(isExcelFile) ? <Upload className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {aiImportLoading ? "Importing..." : aiImportFiles.some(isExcelFile) ? "Import Excel" : "Analyze"}
               </button>
             </div>
 
