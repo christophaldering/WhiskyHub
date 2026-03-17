@@ -21,6 +21,7 @@ import {
   Download,
   Mail,
   Trophy,
+  Settings,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
@@ -193,14 +194,27 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <div className="flex items-start justify-between gap-3 mb-2">
           <h1
             className="labs-h2"
-            style={{ color: "var(--labs-text)" }}
+            style={{ color: "var(--labs-text)", flex: 1, minWidth: 0 }}
             data-testid="labs-detail-title"
           >
             {tasting.title}
           </h1>
-          <span className={`labs-badge ${status.className} flex-shrink-0`} data-testid="labs-detail-status">
-            {status.label}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isHost && (
+              <button
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                className="labs-btn-ghost"
+                style={{ padding: 6, color: "var(--labs-accent)" }}
+                title="Tasting bearbeiten"
+                data-testid="labs-detail-edit-btn"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            )}
+            <span className={`labs-badge ${status.className}`} data-testid="labs-detail-status">
+              {status.label}
+            </span>
+          </div>
         </div>
 
         {tasting.description && (
@@ -482,14 +496,36 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       )}
 
       <div className="space-y-3 labs-stagger-5">
-        {(isLive || isDraft || isReveal) && (
+        {isHost && isDraft && (
+          <button
+            className="labs-btn-primary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/host/${tastingId}`)}
+            data-testid="labs-detail-manage"
+          >
+            <Settings className="w-4 h-4" />
+            Tasting konfigurieren
+          </button>
+        )}
+
+        {(isLive || isReveal) && (
           <button
             className="labs-btn-primary w-full flex items-center justify-center gap-2"
             onClick={() => navigate(`/labs/live/${tastingId}`)}
             data-testid="labs-detail-join-live"
           >
             <Play className="w-4 h-4" />
-            {isLive ? "Enter Live Session" : isReveal ? "View Reveal" : "Enter Session"}
+            {isLive ? "Enter Live Session" : "View Reveal"}
+          </button>
+        )}
+
+        {isDraft && !isHost && (
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/live/${tastingId}`)}
+            data-testid="labs-detail-join-live"
+          >
+            <Play className="w-4 h-4" />
+            Enter Session
           </button>
         )}
 
@@ -514,35 +550,36 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </>
         )}
 
+        {isHost && !isDraft && (
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/host/${tastingId}`)}
+            data-testid="labs-detail-manage"
+          >
+            <Settings className="w-4 h-4" />
+            Manage Session
+          </button>
+        )}
+
         {isHost && (
-          <>
-            <button
-              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-              onClick={() => navigate(`/labs/host/${tastingId}`)}
-              data-testid="labs-detail-manage"
-            >
-              <Clock className="w-4 h-4" />
-              Manage Session
-            </button>
-            <button
-              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-              onClick={async () => {
-                setDuplicating(true);
-                try {
-                  const pid = currentParticipant?.id;
-                  if (!pid) return;
-                  const newTasting = await tastingApi.duplicate(tastingId, pid);
-                  if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
-                } catch {}
-                setDuplicating(false);
-              }}
-              disabled={duplicating}
-              data-testid="labs-detail-duplicate"
-            >
-              <Copy className="w-4 h-4" />
-              {duplicating ? "Kopiere..." : "Tasting kopieren"}
-            </button>
-          </>
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={async () => {
+              setDuplicating(true);
+              try {
+                const pid = currentParticipant?.id;
+                if (!pid) return;
+                const newTasting = await tastingApi.duplicate(tastingId, pid);
+                if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
+              } catch {}
+              setDuplicating(false);
+            }}
+            disabled={duplicating}
+            data-testid="labs-detail-duplicate"
+          >
+            <Copy className="w-4 h-4" />
+            {duplicating ? "Kopiere..." : "Tasting kopieren"}
+          </button>
         )}
       </div>
     </div>
