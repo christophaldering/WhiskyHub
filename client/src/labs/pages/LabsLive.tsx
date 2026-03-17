@@ -18,7 +18,7 @@ interface LabsLiveProps {
   params: { id: string };
 }
 
-const DIMENSIONS = ["nose", "taste", "finish", "balance"] as const;
+const DIMENSIONS = ["nose", "taste", "finish"] as const;
 type Dimension = (typeof DIMENSIONS)[number];
 
 function GuidedLobby({ tasting, participantCount }: { tasting: any; participantCount: number }) {
@@ -215,10 +215,10 @@ function GuidedStepView({
   const isNameRevealed = revealedFields.has("name") || isFullyRevealed;
   const isBlindStep = tasting.blindMode && !isNameRevealed;
   const mid = Math.round(maxScore / 2);
-  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
 
-  const [dimScores, setDimScores] = useState<Record<DimKey, number>>({ nose: mid, taste: mid, finish: mid, balance: mid });
+  const [dimScores, setDimScores] = useState<Record<DimKey, number>>({ nose: mid, taste: mid, finish: mid });
   const [overall, setOverall] = useState(mid);
   const [overrideActive, setOverrideActive] = useState(false);
   const [chips, setChips] = useState<Record<DimKey, string[]>>({ ...emptyChips });
@@ -246,10 +246,10 @@ function GuidedStepView({
   });
 
   const parseSavedNotes = useCallback((rawNotes: string) => {
-    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
+    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
     let cleanNotes = rawNotes;
-    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
       const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*([\\s\\S]*?)\\s*\\[\\/${d.toUpperCase()}\\]`);
       const m = rawNotes.match(re);
       if (m) {
@@ -281,12 +281,12 @@ function GuidedStepView({
   }, []);
 
   const buildScoresBlock = useCallback(() => {
-    const hasDimData = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+    const hasDimData = (["nose", "taste", "finish"] as DimKey[]).some(
       (d) => chips[d].length > 0 || dimTexts[d].trim()
     );
     if (!hasDimData) return "";
     const parts: string[] = [];
-    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
       const chipStr = chips[d].length > 0 ? chips[d].join(", ") : "";
       const textStr = dimTexts[d].trim();
       if (chipStr || textStr) {
@@ -302,17 +302,16 @@ function GuidedStepView({
       const n = myRating.nose ?? mid;
       const ta = myRating.taste ?? mid;
       const f = myRating.finish ?? mid;
-      const b = myRating.balance ?? mid;
       const o = myRating.overall ?? mid;
-      setDimScores({ nose: n, taste: ta, finish: f, balance: b });
+      setDimScores({ nose: n, taste: ta, finish: f });
       setOverall(o);
       setChips(parsed.chips);
       setDimTexts(parsed.texts);
       setNotes(parsed.cleanNotes);
-      const auto = Math.round((n + ta + f + b) / 4);
+      const auto = Math.round((n + ta + f) / 3);
       setOverrideActive(o !== auto);
     } else {
-      setDimScores({ nose: mid, taste: mid, finish: mid, balance: mid });
+      setDimScores({ nose: mid, taste: mid, finish: mid });
       setOverall(mid);
       setChips({ ...emptyChips });
       setDimTexts({ ...emptyTexts });
@@ -388,7 +387,7 @@ function GuidedStepView({
   }, [chips, dimTexts]);
 
   const computeAutoOverall = (s: Record<DimKey, number>) =>
-    Math.round((s.nose + s.taste + s.finish + s.balance) / 4);
+    Math.round((s.nose + s.taste + s.finish) / 3);
 
   const handleScoreChange = (dim: DimKey, value: number) => {
     const newScores = { ...dimScores, [dim]: value };
@@ -804,7 +803,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const maxScore = tasting?.ratingScale || 100;
   const mid2 = Math.round(maxScore / 2);
 
-  const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, balance: mid2, overall: mid2 });
+  const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
@@ -826,14 +825,13 @@ export default function LabsLive({ params }: LabsLiveProps) {
       const n = myRating.nose ?? mid2;
       const ta = myRating.taste ?? mid2;
       const f = myRating.finish ?? mid2;
-      const b = myRating.balance ?? mid2;
       const o = myRating.overall ?? mid2;
-      setScores({ nose: n, taste: ta, finish: f, balance: b, overall: o });
+      setScores({ nose: n, taste: ta, finish: f, overall: o });
       setNotes(myRating.notes || "");
-      const auto = Math.round((n + ta + f + b) / 4);
+      const auto = Math.round((n + ta + f) / 3);
       setOverrideActive(o !== auto);
     } else {
-      setScores({ nose: mid2, taste: mid2, finish: mid2, balance: mid2, overall: mid2 });
+      setScores({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
       setNotes("");
       setOverrideActive(false);
     }
@@ -890,7 +888,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   );
 
   const computeAutoOverall = (s: typeof scores) =>
-    Math.round((s.nose + s.taste + s.finish + s.balance) / 4);
+    Math.round((s.nose + s.taste + s.finish) / 3);
 
   const updateScore = (dimension: keyof typeof scores, value: number) => {
     const newScores = { ...scores, [dimension]: value };

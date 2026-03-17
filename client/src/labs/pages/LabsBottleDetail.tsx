@@ -72,7 +72,6 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
   const avgNose = agg.avgNose != null ? Number(agg.avgNose).toFixed(1) : null;
   const avgTaste = agg.avgTaste != null ? Number(agg.avgTaste).toFixed(1) : null;
   const avgFinish = agg.avgFinish != null ? Number(agg.avgFinish).toFixed(1) : null;
-  const avgBalance = agg.avgBalance != null ? Number(agg.avgBalance).toFixed(1) : null;
   const ratingCount = agg.ratingCount || 0;
   const tastingCount = (whisky.relatedTastings || []).length || 0;
 
@@ -177,7 +176,6 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
                 {avgNose && <DimensionBar label="Nose" value={avgNose} />}
                 {avgTaste && <DimensionBar label="Taste" value={avgTaste} />}
                 {avgFinish && <DimensionBar label="Finish" value={avgFinish} />}
-                {avgBalance && <DimensionBar label="Balance" value={avgBalance} />}
               </div>
             </div>
             {tastingCount > 0 && (
@@ -225,9 +223,6 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
                       )}
                       {r.finish != null && (
                         <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>F: {r.finish}</span>
-                      )}
-                      {r.balance != null && (
-                        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>B: {r.balance}</span>
                       )}
                     </div>
                   </div>

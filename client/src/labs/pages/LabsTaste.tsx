@@ -136,13 +136,12 @@ export default function LabsTaste() {
   const smoke = participantObj?.smokeAffinityIndex ?? null;
   const insight = insightData?.insight ?? null;
 
-  const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 };
-  const dimensionMax = Math.max(avgScores.nose, avgScores.taste, avgScores.finish, avgScores.balance, 1);
+  const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, overall: 0 };
+  const dimensionMax = Math.max(avgScores.nose, avgScores.taste, avgScores.finish, 1);
   const dimensions = [
     { label: "Nose", value: avgScores.nose, color: "var(--labs-dim-nose)" },
     { label: "Taste", value: avgScores.taste, color: "var(--labs-dim-taste)" },
     { label: "Finish", value: avgScores.finish, color: "var(--labs-dim-finish)" },
-    { label: "Balance", value: avgScores.balance, color: "var(--labs-dim-balance)" },
   ];
 
   const recentTastings = tastings

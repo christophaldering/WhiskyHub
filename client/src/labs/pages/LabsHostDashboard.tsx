@@ -21,7 +21,7 @@ interface HostSummary {
   totalTastings: number;
   totalParticipants: number;
   totalWhiskies: number;
-  averageScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+  averageScores: { nose: number; taste: number; finish: number; overall: number };
   topWhiskies: { name: string; distillery: string; imageUrl: string | null; averageScore: number; tastingTitle: string }[];
   recentTastings: { id: string; title: string; date: string; status: string; participantCount: number; code?: string }[];
 }
@@ -511,7 +511,7 @@ export default function LabsHostDashboard() {
 
   const s = summary ?? {
     totalTastings: 0, totalParticipants: 0, totalWhiskies: 0,
-    averageScores: { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 },
+    averageScores: { nose: 0, taste: 0, finish: 0, overall: 0 },
     topWhiskies: [], recentTastings: [],
   };
   const hasData = s.totalTastings > 0;
@@ -520,7 +520,6 @@ export default function LabsHostDashboard() {
     { dim: "Nose", score: Math.round(s.averageScores.nose), fill: "var(--labs-dim-nose)" },
     { dim: "Taste", score: Math.round(s.averageScores.taste), fill: "var(--labs-dim-taste)" },
     { dim: "Finish", score: Math.round(s.averageScores.finish), fill: "var(--labs-dim-finish)" },
-    { dim: "Balance", score: Math.round(s.averageScores.balance), fill: "var(--labs-dim-balance)" },
     { dim: "Overall", score: Math.round(s.averageScores.overall), fill: "var(--labs-accent)" },
   ];
 

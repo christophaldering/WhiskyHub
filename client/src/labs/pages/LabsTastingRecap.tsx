@@ -20,7 +20,7 @@ interface RecapData {
   whiskyCount: number;
   topRated: { name: string; distillery: string; avgScore: number; imageUrl: string | null }[];
   mostDivisive: { name: string; stddev: number } | null;
-  overallAverages: { nose: number; taste: number; finish: number; balance: number; overall: number };
+  overallAverages: { nose: number; taste: number; finish: number; overall: number };
   participantHighlights: { name: string; ratingsCount: number; avgScore: number }[];
 }
 
@@ -97,7 +97,7 @@ export default function LabsTastingRecap() {
     }
     lines.push("");
     const avg = recap.overallAverages;
-    lines.push(`${t("evaluation.nose")}: ${avg.nose.toFixed(1)} | ${t("evaluation.taste")}: ${avg.taste.toFixed(1)} | ${t("evaluation.finish")}: ${avg.finish.toFixed(1)} | ${t("evaluation.balance")}: ${avg.balance.toFixed(1)} | ${t("evaluation.overall")}: ${avg.overall.toFixed(1)}`);
+    lines.push(`${t("evaluation.nose")}: ${avg.nose.toFixed(1)} | ${t("evaluation.taste")}: ${avg.taste.toFixed(1)} | ${t("evaluation.finish")}: ${avg.finish.toFixed(1)} | ${t("evaluation.overall")}: ${avg.overall.toFixed(1)}`);
     lines.push("");
     lines.push(t("m2.pdf.signature", "- CaskSense"));
     return lines.join("\n");
@@ -236,7 +236,6 @@ export default function LabsTastingRecap() {
       { label: t("evaluation.nose"), value: recap.overallAverages.nose },
       { label: t("evaluation.taste"), value: recap.overallAverages.taste },
       { label: t("evaluation.finish"), value: recap.overallAverages.finish },
-      { label: t("evaluation.balance"), value: recap.overallAverages.balance },
       { label: t("evaluation.overall"), value: recap.overallAverages.overall },
     ];
     const barMaxW = cw - 46;
@@ -324,7 +323,6 @@ export default function LabsTastingRecap() {
     { dimension: t("evaluation.nose"), value: recap.overallAverages.nose },
     { dimension: t("evaluation.taste"), value: recap.overallAverages.taste },
     { dimension: t("evaluation.finish"), value: recap.overallAverages.finish },
-    { dimension: t("evaluation.balance"), value: recap.overallAverages.balance },
     { dimension: t("evaluation.overall"), value: recap.overallAverages.overall },
   ];
 

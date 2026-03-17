@@ -15,7 +15,7 @@ const CHART_COLORS = ["#d4a256", "#6aa8d4", "#d97c5a"];
 
 interface RatedWhiskyItem {
   whisky: { id: string; name: string; distillery: string | null; region: string | null; imageUrl: string | null };
-  rating: { overall: number; nose: number; taste: number; finish: number; balance: number; notes: string | null };
+  rating: { overall: number; nose: number; taste: number; finish: number; notes: string | null };
 }
 
 interface WhiskyComparisonItem {
@@ -54,7 +54,6 @@ const DIMS = [
   { key: "nose", label: "Nose" },
   { key: "taste", label: "Taste" },
   { key: "finish", label: "Finish" },
-  { key: "balance", label: "Balance" },
   { key: "overall", label: "Overall" },
 ];
 

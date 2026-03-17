@@ -75,7 +75,7 @@ export interface WhiskyOfTheDay {
   whisky: Whisky;
   avgRating: number;
   ratingCount: number;
-  categories: { nose: number; taste: number; finish: number; balance: number };
+  categories: { nose: number; taste: number; finish: number };
 }
 
 export interface IStorage {
@@ -190,7 +190,7 @@ export interface IStorage {
 
   // Flavor Profile (aggregated ratings with whisky metadata)
   getFlavorProfile(participantId: string): Promise<{
-    avgScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+    avgScores: { nose: number; taste: number; finish: number; overall: number };
     regionBreakdown: Record<string, { count: number; avgScore: number }>;
     caskBreakdown: Record<string, { count: number; avgScore: number }>;
     peatBreakdown: Record<string, { count: number; avgScore: number }>;
@@ -213,7 +213,6 @@ export interface IStorage {
     avgNose: number;
     avgTaste: number;
     avgFinish: number;
-    avgBalance: number;
     totalRatings: number;
     totalRaters: number;
     region: string | null;
@@ -236,7 +235,7 @@ export interface IStorage {
   hardDeleteTasting(id: string): Promise<void>;
 
   // Global Averages
-  getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; balance: number; overall: number; totalRatings: number; totalParticipants: number }>;
+  getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; overall: number; totalRatings: number; totalParticipants: number }>;
 
   // Admin
   getAllParticipants(): Promise<Participant[]>;
@@ -702,7 +701,6 @@ export class DatabaseStorage implements IStorage {
         ratingNose: ratings.nose,
         ratingTaste: ratings.taste,
         ratingFinish: ratings.finish,
-        ratingBalance: ratings.balance,
         ratingOverall: ratings.overall,
         ratingNotes: ratings.notes,
         ratingUpdatedAt: ratings.updatedAt,
@@ -934,7 +932,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFlavorProfile(participantId: string): Promise<{
-    avgScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+    avgScores: { nose: number; taste: number; finish: number; overall: number };
     regionBreakdown: Record<string, { count: number; avgScore: number }>;
     caskBreakdown: Record<string, { count: number; avgScore: number }>;
     peatBreakdown: Record<string, { count: number; avgScore: number }>;
@@ -956,7 +954,7 @@ export class DatabaseStorage implements IStorage {
       : [];
     const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
 
-    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
+    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumOverall = 0;
     const regionAcc: Record<string, { total: number; count: number }> = {};
     const caskAcc: Record<string, { total: number; count: number }> = {};
     const peatAcc: Record<string, { total: number; count: number }> = {};
@@ -966,7 +964,7 @@ export class DatabaseStorage implements IStorage {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
       sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
-      sumBalance += r.balance * norm; sumOverall += r.overall * norm;
+      sumOverall += r.overall * norm;
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
         const normOverall = r.overall * norm;
@@ -1034,7 +1032,6 @@ export class DatabaseStorage implements IStorage {
         nose: Math.round((sumNose / n) * 10) / 10,
         taste: Math.round((sumTaste / n) * 10) / 10,
         finish: Math.round((sumFinish / n) * 10) / 10,
-        balance: Math.round((sumBalance / n) * 10) / 10,
         overall: Math.round((sumOverall / nOverall) * 10) / 10,
       },
       regionBreakdown: toBreakdown(regionAcc),
@@ -1057,10 +1054,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tastings).where(eq(tastings.id, id));
   }
 
-  async getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; balance: number; overall: number; totalRatings: number; totalParticipants: number }> {
+  async getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; overall: number; totalRatings: number; totalParticipants: number }> {
     const allRatings = await db.select().from(ratings);
     if (allRatings.length === 0) {
-      return { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
+      return { nose: 0, taste: 0, finish: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
     }
     const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
     const tastingRows = tastingIds.length > 0
@@ -1069,17 +1066,17 @@ export class DatabaseStorage implements IStorage {
     const testTastingIds = new Set(tastingRows.filter(t => t.isTestData).map(t => t.id));
     const filteredRatings = allRatings.filter(r => !testTastingIds.has(r.tastingId));
     if (filteredRatings.length === 0) {
-      return { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
+      return { nose: 0, taste: 0, finish: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
     }
     const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
 
-    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
+    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumOverall = 0;
     const participantIds: string[] = [];
     for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
       sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
-      sumBalance += r.balance * norm; sumOverall += r.overall * norm;
+      sumOverall += r.overall * norm;
       if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
     }
     const n = filteredRatings.length;
@@ -1088,7 +1085,6 @@ export class DatabaseStorage implements IStorage {
       nose: Math.round((sumNose / n) * 10) / 10,
       taste: Math.round((sumTaste / n) * 10) / 10,
       finish: Math.round((sumFinish / n) * 10) / 10,
-      balance: Math.round((sumBalance / n) * 10) / 10,
       overall: Math.round((sumOverall / n) * 10) / 10,
       totalRatings: n,
       totalParticipants: uniquePersons,
@@ -1413,7 +1409,6 @@ export class DatabaseStorage implements IStorage {
     avgNose: number;
     avgTaste: number;
     avgFinish: number;
-    avgBalance: number;
     totalRatings: number;
     totalRaters: number;
     region: string | null;
@@ -1430,7 +1425,7 @@ export class DatabaseStorage implements IStorage {
     const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
 
     const grouped: Record<string, {
-      ratings: Array<{ nose: number; taste: number; finish: number; balance: number; overall: number; participantId: string }>;
+      ratings: Array<{ nose: number; taste: number; finish: number; overall: number; participantId: string }>;
       whisky: typeof whiskies.$inferSelect;
     }> = {};
 
@@ -1450,7 +1445,7 @@ export class DatabaseStorage implements IStorage {
       }
       grouped[key].ratings.push({
         nose: r.nose, taste: r.taste, finish: r.finish,
-        balance: r.balance, overall: r.overall, participantId: r.participantId,
+        overall: r.overall, participantId: r.participantId,
       });
     }
 
@@ -1471,7 +1466,6 @@ export class DatabaseStorage implements IStorage {
         avgNose: avg(rList.map(r => r.nose)),
         avgTaste: avg(rList.map(r => r.taste)),
         avgFinish: avg(rList.map(r => r.finish)),
-        avgBalance: avg(rList.map(r => r.balance)),
         totalRatings: rList.length,
         totalRaters: raters.size,
         region: w.region,

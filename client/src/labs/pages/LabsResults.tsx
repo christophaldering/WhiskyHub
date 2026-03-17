@@ -139,8 +139,8 @@ function labsExportPdf(tasting: any, whiskyResults: any[]) {
     doc.text(`${r.ratingCount} ${r.ratingCount === 1 ? "rating" : "ratings"}`, pageW - marginX, y + 8, { align: "right" });
 
     const barY = y + 12;
-    const barLabels = ["Nose", "Taste", "Finish", "Balance"];
-    const barVals = [r.avgNose, r.avgTaste, r.avgFinish, r.avgBalance];
+    const barLabels = ["Nose", "Taste", "Finish"];
+    const barVals = [r.avgNose, r.avgTaste, r.avgFinish];
     const barMaxW = contentW - 50;
 
     barLabels.forEach((lbl, bi) => {
@@ -313,7 +313,7 @@ function ViewerDimBar({ label, value, maxScore }: { label: string; value: number
 function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCount, totalRatings, maxScore }: {
   tasting: { title?: string; date?: string; location?: string };
   slideIndex: number;
-  sorted: { id: string; name?: string; distillery?: string; imageUrl?: string; ratingCount: number; avgOverall: number | null; avgNose: number | null; avgTaste: number | null; avgFinish: number | null; avgBalance: number | null; overallStdDev: number | null }[];
+  sorted: { id: string; name?: string; distillery?: string; imageUrl?: string; ratingCount: number; avgOverall: number | null; avgNose: number | null; avgTaste: number | null; avgFinish: number | null; overallStdDev: number | null }[];
   participantCount: number;
   totalRatings: number;
   maxScore: number;
@@ -424,7 +424,6 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                     <ViewerDimBar label="Nose" value={w.avgNose} maxScore={maxScore} />
                     <ViewerDimBar label="Taste" value={w.avgTaste} maxScore={maxScore} />
                     <ViewerDimBar label="Finish" value={w.avgFinish} maxScore={maxScore} />
-                    <ViewerDimBar label="Balance" value={w.avgBalance} maxScore={maxScore} />
                   </div>
                 </div>
               );
@@ -499,7 +498,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const goBack = useLabsBack("/labs/tastings");
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
-  const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>>({});
+  const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
 
   const { data: tasting, isLoading: loadingTasting, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -582,7 +581,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
       if (fp !== "fp:|") currentFpToId[fp] = w.id;
     }
 
-    const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]> = {};
+    const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]> = {};
     for (const t of tastingHistoryData.tastings) {
       if (t.id === tastingId) continue;
       for (const w of t.whiskies || []) {
@@ -597,7 +596,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
           nose: w.myRating.nose,
           taste: w.myRating.taste,
           finish: w.myRating.finish,
-          balance: w.myRating.balance,
           overall: w.myRating.overall,
         });
       }
@@ -639,7 +637,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
       const avgNose = avg("nose");
       const avgTaste = avg("taste");
       const avgFinish = avg("finish");
-      const avgBalance = avg("balance");
       const overallRange = minMax("overall");
       const overallStdDev = stdDev("overall");
 
@@ -659,7 +656,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
         avgNose,
         avgTaste,
         avgFinish,
-        avgBalance,
         myRating,
         myDelta,
         overallRange,
@@ -1110,7 +1106,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       { label: "Nose", value: w.avgNose },
                       { label: "Taste", value: w.avgTaste },
                       { label: "Finish", value: w.avgFinish },
-                      { label: "Balance", value: w.avgBalance },
                     ].map((dim) => (
                       <div key={dim.label} className="flex items-center justify-between">
                         <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
@@ -1213,12 +1208,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           </div>
                         )}
                       </div>
-                      <div className="grid grid-cols-5 gap-2 text-center">
+                      <div className="grid grid-cols-4 gap-2 text-center">
                         {[
                           { label: "N", value: w.myRating.nose },
                           { label: "T", value: w.myRating.taste },
                           { label: "F", value: w.myRating.finish },
-                          { label: "B", value: w.myRating.balance },
                           { label: "Ø", value: w.myRating.overall },
                         ].map((d) => (
                           <div key={d.label}>
@@ -1275,12 +1269,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
                                   </span>
                                   <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{fmt(pr.overall)}</span>
                                 </div>
-                                <div className="grid grid-cols-4 gap-2 text-center">
+                                <div className="grid grid-cols-3 gap-2 text-center">
                                   {[
                                     { label: "N", value: pr.nose },
                                     { label: "T", value: pr.taste },
                                     { label: "F", value: pr.finish },
-                                    { label: "B", value: pr.balance },
                                   ].map(d => (
                                     <div key={d.label}>
                                       <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>

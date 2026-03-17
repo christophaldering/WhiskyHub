@@ -250,7 +250,6 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
         <DimBar label="Nose" value={whisky.avgNose} maxScore={maxScore} delay={500} />
         <DimBar label="Taste" value={whisky.avgTaste} maxScore={maxScore} delay={600} />
         <DimBar label="Finish" value={whisky.avgFinish} maxScore={maxScore} delay={700} />
-        <DimBar label="Balance" value={whisky.avgBalance} maxScore={maxScore} delay={800} />
       </motion.div>
     </div>
   );
@@ -423,7 +422,6 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         avgNose: avg("nose"),
         avgTaste: avg("taste"),
         avgFinish: avg("finish"),
-        avgBalance: avg("balance"),
         overallStdDev: stdDev("overall"),
       };
     });

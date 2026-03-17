@@ -47,7 +47,7 @@ export default function LabsMethod() {
           </p>
           <ul style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
             <li>{t("methodPage.noTypologies", "No typologies — we don't label you as a \"peat lover\" or \"sherry head\".")}</li>
-            <li>{t("methodPage.multidimensional", "Multidimensional radar — your preferences across nose, taste, finish, and balance dimensions.")}</li>
+            <li>{t("methodPage.multidimensional", "Multidimensional radar — your preferences across nose, taste, and finish dimensions.")}</li>
             <li>{t("methodPage.behaviorOnly", "Behaviour only — derived purely from your scores and tasting notes, never from questionnaires.")}</li>
             <li>{t("methodPage.comparisonsOptIn", "Comparisons are opt-in — see how you relate to the community average, but only if you choose to.")}</li>
             <li>{t("methodPage.sampleSize", "Sample size matters — your profile becomes more stable and reliable as you taste more whiskies.")}</li>
@@ -59,7 +59,7 @@ export default function LabsMethod() {
 
         <Section title={t("methodPage.forExperts", "For Experts")} defaultOpen={false}>
           {[
-            { title: "dimensionalModel", titleFb: "Dimensional Scoring Model", text: "dimensionalModelText", textFb: "Each whisky is scored across four dimensions: Nose, Taste, Finish, and Balance. These are not arbitrary — they reflect the standard evaluation framework used by professional blenders and competition judges." },
+            { title: "dimensionalModel", titleFb: "Dimensional Scoring Model", text: "dimensionalModelText", textFb: "Each whisky is scored across three dimensions: Nose, Taste, and Finish. These are not arbitrary — they reflect the standard evaluation framework used by professional blenders and competition judges." },
             { title: "platformBasis", titleFb: "Platform-Wide Basis", text: "platformBasisText", textFb: "Your scores are compared against the platform median for each whisky. This gives you a relative positioning without imposing any 'correct' way to taste." },
             { title: "iqr", titleFb: "Interquartile Range (IQR)", text: "iqrText", textFb: "We use IQR-based outlier detection to flag scores that deviate significantly from the community distribution, helping identify unique preferences rather than errors." },
           ].map(({ title, titleFb, text, textFb }) => (

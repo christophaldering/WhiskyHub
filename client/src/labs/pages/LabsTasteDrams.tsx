@@ -36,12 +36,12 @@ const DATE_PERIODS: { key: DatePeriod; label: string; days: number }[] = [
 
 function parseNoseNotes(raw: string) {
   let cleanText = raw;
-  let scores: { nose?: number; taste?: number; finish?: number; balance?: number } = {};
+  let scores: { nose?: number; taste?: number; finish?: number } = {};
   const dims: Record<string, { chips: string[]; text: string }> = {};
-  const scoresRx = /\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/gi;
-  const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/i);
+  const scoresRx = /\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES]/gi;
+  const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES]/i);
   if (scoresMatch) {
-    scores = { nose: +scoresMatch[1], taste: +scoresMatch[2], finish: +scoresMatch[3], balance: +scoresMatch[4] };
+    scores = { nose: +scoresMatch[1], taste: +scoresMatch[2], finish: +scoresMatch[3] };
     cleanText = cleanText.replace(scoresRx, "");
   }
   for (const d of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
@@ -83,7 +83,7 @@ export default function LabsTasteDrams() {
   const [editStructured, setEditStructured] = useState<{
     hasStructured: boolean;
     generalNotes: string;
-    scores: { nose: string; taste: string; finish: string; balance: string };
+    scores: { nose: string; taste: string; finish: string };
     dims: Record<string, { chips: string; text: string }>;
   } | null>(null);
 
@@ -210,8 +210,8 @@ export default function LabsTasteDrams() {
       const parsed = parseNoseNotes(raw);
       setEditStructured({
         hasStructured: true, generalNotes: parsed.cleanText,
-        scores: { nose: parsed.scores.nose != null ? String(parsed.scores.nose) : "", taste: parsed.scores.taste != null ? String(parsed.scores.taste) : "", finish: parsed.scores.finish != null ? String(parsed.scores.finish) : "", balance: parsed.scores.balance != null ? String(parsed.scores.balance) : "" },
-        dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" }, balance: { chips: parsed.dims.balance?.chips.join(", ") || "", text: parsed.dims.balance?.text || "" } },
+        scores: { nose: parsed.scores.nose != null ? String(parsed.scores.nose) : "", taste: parsed.scores.taste != null ? String(parsed.scores.taste) : "", finish: parsed.scores.finish != null ? String(parsed.scores.finish) : "" },
+        dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" } },
       });
     } else { setEditStructured(null); }
     setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv || "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: entry.tasteNotes || "", finishNotes: entry.finishNotes || "", body: entry.body || "" });
@@ -222,10 +222,10 @@ export default function LabsTasteDrams() {
     if (!editStructured) return editForm.noseNotes;
     let result = editStructured.generalNotes.trim();
     const s = editStructured.scores;
-    if (s.nose || s.taste || s.finish || s.balance) {
-      result += `\n\n[SCORES] Nose:${s.nose || "0"} Taste:${s.taste || "0"} Finish:${s.finish || "0"} Balance:${s.balance || "0"} [/SCORES]`;
+    if (s.nose || s.taste || s.finish) {
+      result += `\n\n[SCORES] Nose:${s.nose || "0"} Taste:${s.taste || "0"} Finish:${s.finish || "0"} [/SCORES]`;
     }
-    for (const dim of ["nose", "taste", "finish", "balance"] as const) {
+    for (const dim of ["nose", "taste", "finish"] as const) {
       const d = editStructured.dims[dim];
       if (d && (d.chips.trim() || d.text.trim())) {
         const tag = dim.toUpperCase();
@@ -399,7 +399,7 @@ export default function LabsTasteDrams() {
               <div>
                 <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Sub-Scores</label>
                 <div className="grid grid-cols-4 gap-2">
-                  {(["nose", "taste", "finish", "balance"] as const).map((dim) => (
+                  {(["nose", "taste", "finish"] as const).map((dim) => (
                     <div key={dim}>
                       <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
                       <input type="number" min="0" max="100" value={editStructured.scores[dim]} onChange={(e) => setEditStructured({ ...editStructured, scores: { ...editStructured.scores, [dim]: e.target.value } })}
@@ -409,7 +409,7 @@ export default function LabsTasteDrams() {
                   ))}
                 </div>
               </div>
-              {(["nose", "taste", "finish", "balance"] as const).map((dim) => {
+              {(["nose", "taste", "finish"] as const).map((dim) => {
                 const d = editStructured.dims[dim];
                 if (!d) return null;
                 return (
@@ -623,7 +623,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
   const { cleanText, scores, dims } = parseNoseNotes(raw);
   const hasScores = Object.keys(scores).length > 0;
   const hasDims = Object.keys(dims).length > 0;
-  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance" };
+  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish" };
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
       {cleanText && (
@@ -634,7 +634,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
       )}
       {hasScores && (
         <div className="flex flex-wrap gap-2" style={{ marginBottom: hasDims ? 12 : 0 }}>
-          {(["nose", "taste", "finish", "balance"] as const).map(k => scores[k] != null ? (
+          {(["nose", "taste", "finish"] as const).map(k => scores[k] != null ? (
             <div key={k} style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
               <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{scores[k]}</div>
               <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{dimLabels[k]}</div>
@@ -644,7 +644,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
       )}
       {hasDims && (
         <div className="flex flex-col gap-2.5">
-          {(["nose", "taste", "finish", "balance"] as const).map(k => {
+          {(["nose", "taste", "finish"] as const).map(k => {
             const dim = dims[k];
             if (!dim) return null;
             return (

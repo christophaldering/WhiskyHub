@@ -176,11 +176,11 @@ export default function LabsSolo() {
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionStatusFilter, setCollectionStatusFilter] = useState<"all" | "open" | "closed">("all");
 
-  const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0, balance: 0 });
+  const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
-  const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [], balance: [] });
-  const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "", balance: "" });
+  const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [] });
+  const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "" });
 
   const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
 
@@ -305,11 +305,11 @@ export default function LabsSolo() {
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
       setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
-      setDetailedScores({ nose: 0, taste: 0, finish: 0, balance: 0 });
+      setDetailedScores({ nose: 0, taste: 0, finish: 0 });
       setDetailTouched(false);
       setOverrideActive(false);
-      setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
-      setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
+      setDetailChips({ nose: [], taste: [], finish: [] });
+      setDetailTexts({ nose: "", taste: "", finish: "" });
       setSoloVoiceMemo(null);
       setCandidates([]);
       setSelectedCandidate(null);
@@ -319,22 +319,22 @@ export default function LabsSolo() {
 
       if (d.noseNotes) {
         let cleaned = d.noseNotes;
-        cleaned = cleaned.replace(/\[SCORES\]\s*Nose:\d+\s*Taste:\d+\s*Finish:\d+\s*Balance:\d+\s*\[\/SCORES\]/gi, "");
+        cleaned = cleaned.replace(/\[SCORES\]\s*Nose:\d+\s*Taste:\d+\s*Finish:\d+(?:\s*Balance:\d+)?\s*\[\/SCORES\]/gi, "");
         for (const tag of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
           cleaned = cleaned.replace(new RegExp(`\\[${tag}\\]\\s*[\\s\\S]*?\\[\\/${tag}\\]`, "gi"), "");
         }
         cleaned = cleaned.trim();
         setNotes(cleaned);
 
-        const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES\]/);
+        const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES\]/);
         if (scoresMatch) {
-          setDetailedScores({ nose: parseInt(scoresMatch[1]), taste: parseInt(scoresMatch[2]), finish: parseInt(scoresMatch[3]), balance: parseInt(scoresMatch[4]) });
+          setDetailedScores({ nose: parseInt(scoresMatch[1]), taste: parseInt(scoresMatch[2]), finish: parseInt(scoresMatch[3]) });
           setDetailTouched(true);
         }
 
-        const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
-        const restoredChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-        const restoredTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+        const dims: DimKey[] = ["nose", "taste", "finish"];
+        const restoredChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
+        const restoredTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
         for (const dim of dims) {
           const tag = dim.toUpperCase();
           const dimMatch = d.noseNotes.match(new RegExp(`\\[${tag}\\]\\s*(.+?)\\s*\\[\\/${tag}\\]`));
@@ -375,12 +375,12 @@ export default function LabsSolo() {
   }, []);
 
   const buildScoresBlock = useCallback(() => {
-    const hasChipsOrTexts = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+    const hasChipsOrTexts = (["nose", "taste", "finish"] as DimKey[]).some(
       (d) => detailChips[d].length > 0 || detailTexts[d].trim()
     );
     if (!detailTouched && !hasChipsOrTexts) return "";
-    const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`];
-    const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
+    const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} [/SCORES]`];
+    const dims: DimKey[] = ["nose", "taste", "finish"];
     for (const d of dims) {
       const chipStr = detailChips[d].length > 0 ? detailChips[d].join(", ") : "";
       const textStr = detailTexts[d].trim();
@@ -474,7 +474,7 @@ export default function LabsSolo() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => { autoSaveDraft(); }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, detailedScores.balance, soloVoiceMemo?.audioUrl, soloVoiceMemo?.transcript, soloVoiceMemo?.durationSeconds,
+  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, soloVoiceMemo?.audioUrl, soloVoiceMemo?.transcript, soloVoiceMemo?.durationSeconds,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     JSON.stringify(detailChips), JSON.stringify(detailTexts)]);
 
@@ -500,7 +500,7 @@ export default function LabsSolo() {
   const barcodeScannerRef = useRef<any>(null);
   const barcodeVideoRef = useRef<HTMLDivElement>(null);
 
-  const [previousRatings, setPreviousRatings] = useState<{ date: string; tastingTitle: string; source: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>([]);
+  const [previousRatings, setPreviousRatings] = useState<{ date: string; tastingTitle: string; source: string; nose: number; taste: number; finish: number; overall: number }[]>([]);
   const [prevRatingsExpanded, setPrevRatingsExpanded] = useState(false);
   const [matchedWhiskyRegion, setMatchedWhiskyRegion] = useState("");
   const [matchedWhiskyCountry, setMatchedWhiskyCountry] = useState("");
@@ -518,7 +518,7 @@ export default function LabsSolo() {
               for (const tasting of history) {
                 for (const w of tasting.whiskies || []) {
                   if (w.id === whiskyId && w.myRating) {
-                    prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", source: "tasting", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
+                    prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", source: "tasting", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, overall: w.myRating.overall });
                   }
                 }
               }
@@ -533,7 +533,7 @@ export default function LabsSolo() {
               const nameNorm = whiskyNameForJournal.trim().toLowerCase();
               for (const e of entries) {
                 if ((e.whiskyName || e.title || "").trim().toLowerCase() === nameNorm && e.personalScore != null) {
-                  prev.push({ date: e.createdAt || e.updatedAt || "", tastingTitle: e.title || "Solo dram", source: "journal", nose: 0, taste: 0, finish: 0, balance: 0, overall: Math.round(e.personalScore) });
+                  prev.push({ date: e.createdAt || e.updatedAt || "", tastingTitle: e.title || "Solo dram", source: "journal", nose: 0, taste: 0, finish: 0, overall: Math.round(e.personalScore) });
                 }
               }
             })
@@ -547,7 +547,7 @@ export default function LabsSolo() {
   }, [pid]);
 
   const calcOverall = (scores: typeof detailedScores) =>
-    Math.round((scores.nose + scores.taste + scores.finish + scores.balance) / 4);
+    Math.round((scores.nose + scores.taste + scores.finish) / 3);
 
   const lookupWhiskybaseId = useCallback(async (wbId: string) => {
     const id = wbId.trim().replace(/^[Ww][Bb]\s*/i, "");
@@ -1123,7 +1123,7 @@ export default function LabsSolo() {
     } catch {}
   };
 
-  const dimsScoredForFinalize = detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0 && detailedScores.balance > 0;
+  const dimsScoredForFinalize = detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0;
 
   const handleFinalize = async () => {
     if (!whiskyName.trim()) return;
@@ -1180,10 +1180,10 @@ export default function LabsSolo() {
     setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
     setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
     setPhotoUrl(""); setCandidates([]); setSelectedCandidate(null); setIsMenuMode(false);
-    setDetailedScores({ nose: 0, taste: 0, finish: 0, balance: 0 });
+    setDetailedScores({ nose: 0, taste: 0, finish: 0 });
     setDetailTouched(false); setOverrideActive(false);
-    setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
-    setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
+    setDetailChips({ nose: [], taste: [], finish: [] });
+    setDetailTexts({ nose: "", taste: "", finish: "" });
     setSoloVoiceMemo(null); stopVoice(); setWbLookupResult(""); setAutofillResult("");
     setPreviousRatings([]); setPrevRatingsExpanded(false);
     setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
@@ -1887,7 +1887,7 @@ export default function LabsSolo() {
   if (saved && draftStatus === "finalized") {
     const lastPrev = previousRatings.length > 0 ? previousRatings[0] : null;
     const currentOverall = overrideActive ? score : (detailTouched ? calcOverall(detailedScores) : score);
-    const dims: { key: DimKey; label: string }[] = [{ key: "nose", label: "Nose" }, { key: "taste", label: "Taste" }, { key: "finish", label: "Finish" }, { key: "balance", label: "Balance" }];
+    const dims: { key: DimKey; label: string }[] = [{ key: "nose", label: "Nose" }, { key: "taste", label: "Taste" }, { key: "finish", label: "Finish" }];
     const renderDelta = (curr: number, prev: number) => {
       const d = curr - prev;
       if (d === 0) return <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>=</span>;
@@ -2304,7 +2304,6 @@ export default function LabsSolo() {
                       <span>N {typeof pr.nose === "number" ? Math.round(pr.nose * 10) / 10 : pr.nose}</span>
                       <span>T {typeof pr.taste === "number" ? Math.round(pr.taste * 10) / 10 : pr.taste}</span>
                       <span>F {typeof pr.finish === "number" ? Math.round(pr.finish * 10) / 10 : pr.finish}</span>
-                      <span>B {typeof pr.balance === "number" ? Math.round(pr.balance * 10) / 10 : pr.balance}</span>
                     </div>
                   )}
                   {pr.date && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}
@@ -2397,10 +2396,10 @@ export default function LabsSolo() {
       <FlavourStudioSheet
         open={tastingToolsOpen}
         onOpenChange={setTastingToolsOpen}
-        dimension={activeDimension === "balance" ? "nose" : activeDimension}
-        existingChips={detailChips[activeDimension === "balance" ? "nose" : activeDimension]}
+        dimension={activeDimension}
+        existingChips={detailChips[activeDimension]}
         onChipsChange={(chips) => {
-          const dim = activeDimension === "balance" ? "nose" : activeDimension;
+          const dim = activeDimension;
           setDetailChips((prev) => ({ ...prev, [dim]: chips }));
         }}
         initialView={tastingToolsView}

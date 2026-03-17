@@ -5,7 +5,7 @@ import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data"
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import FlavourStudioSheet from "./FlavourStudioSheet";
 
-export type DimKey = "nose" | "taste" | "finish" | "balance";
+export type DimKey = "nose" | "taste" | "finish";
 
 const LEGACY_CHIP_MAP: Record<string, string> = {
   "Peaty": "Peat",
@@ -25,20 +25,18 @@ function normalizeLegacyChip(chip: string): string {
 }
 
 
-const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
+const DIM_KEYS: DimKey[] = ["nose", "taste", "finish"];
 
 const DIM_COLORS: Record<DimKey, string> = {
   nose: "var(--labs-dim-nose)",
   taste: "var(--labs-dim-taste)",
   finish: "var(--labs-dim-finish)",
-  balance: "var(--labs-dim-balance)",
 };
 
 const DIM_HINTS: Record<DimKey, { en: string; de: string }> = {
   nose: { en: "How does the whisky smell?", de: "Wie riecht der Whisky?" },
   taste: { en: "How does it taste on your palate?", de: "Wie schmeckt er am Gaumen?" },
   finish: { en: "How is the finish?", de: "Wie ist der Abgang?" },
-  balance: { en: "How well balanced is it overall?", de: "Wie ausgewogen ist er insgesamt?" },
 };
 
 const SpeechRecognitionAPI =
@@ -108,11 +106,11 @@ export default function LabsRatingPanel({
   const prevSliderVals = useRef<Record<string, number>>({});
   const [studioOpen, setStudioOpen] = useState(false);
 
-  const totalWizardSteps = 5;
-  const isWizardOverallStep = wizardStep === 4;
+  const totalWizardSteps = 4;
+  const isWizardOverallStep = wizardStep === 3;
 
   useEffect(() => {
-    if (wizard && wizardStep < 4) {
+    if (wizard && wizardStep < 3) {
       setActiveTab(DIM_KEYS[wizardStep]);
       setExpandedCats({});
       setShowFlavors(false);
@@ -124,9 +122,9 @@ export default function LabsRatingPanel({
   const wizardNavigate = useCallback((dir: "next" | "prev") => {
     setWizardTransition(true);
     setTimeout(() => {
-      if (dir === "next" && wizardStep < 4) {
+      if (dir === "next" && wizardStep < 3) {
         setWizardStep(wizardStep + 1);
-        if (wizardStep + 1 === 4) {
+        if (wizardStep + 1 === 3) {
           setWizardRevealed(false);
           setTimeout(() => setWizardRevealed(true), 300);
         }
@@ -202,7 +200,6 @@ export default function LabsRatingPanel({
     nose: t("m2.rating.nose", "Nose"),
     taste: t("m2.rating.taste", "Taste"),
     finish: t("m2.rating.finish", "Finish"),
-    balance: t("m2.rating.balance", "Balance"),
   };
 
   const activeChips = chips[activeTab];
@@ -237,7 +234,7 @@ export default function LabsRatingPanel({
               cursor: disabled ? "default" : "pointer",
               transition: "all 0.15s",
               opacity: disabled ? 0.5 : 1,
-              borderRight: key !== "balance" ? "1px solid var(--labs-border)" : "none",
+              borderRight: key !== "finish" ? "1px solid var(--labs-border)" : "none",
             }}
           >
             {dimLabels[key]}
@@ -305,7 +302,7 @@ export default function LabsRatingPanel({
     return (
       <div style={{ marginBottom: compact ? 8 : 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          {activeTab !== "balance" && (
+          {(
             <button
               type="button"
               onClick={() => {
@@ -695,8 +692,8 @@ export default function LabsRatingPanel({
     <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }} data-testid="wizard-progress">
       {Array.from({ length: totalWizardSteps }).map((_, i) => {
         const isActive = i === wizardStep;
-        const isCompleted = i < 4 ? scores[DIM_KEYS[i]] > 0 : !overallGated;
-        const dimColor = i < 4 ? DIM_COLORS[DIM_KEYS[i]] : "var(--labs-accent)";
+        const isCompleted = i < 3 ? scores[DIM_KEYS[i]] > 0 : !overallGated;
+        const dimColor = i < 3 ? DIM_COLORS[DIM_KEYS[i]] : "var(--labs-accent)";
         return (
           <button
             key={i}
@@ -841,11 +838,11 @@ export default function LabsRatingPanel({
 
   const renderWizardNavigation = () => {
     const canGoBack = wizardStep > 0;
-    const canGoForward = wizardStep < 4;
-    const currentDim = wizardStep < 4 ? DIM_KEYS[wizardStep] : null;
+    const canGoForward = wizardStep < 3;
+    const currentDim = wizardStep < 3 ? DIM_KEYS[wizardStep] : null;
     const stepLabel = isWizardOverallStep
       ? `${t("m2.rating.overall", "Overall")}`
-      : `${wizardStep + 1} / 4`;
+      : `${wizardStep + 1} / 3`;
 
     return (
       <div style={{
@@ -949,7 +946,7 @@ export default function LabsRatingPanel({
                 {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
               </span>
               <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
-                {t("m2.rating.detailedTastingDesc", "Score nose, taste, finish & balance individually")}
+                {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
               </span>
             </div>
             <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
@@ -1039,7 +1036,7 @@ export default function LabsRatingPanel({
               {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
             </span>
             <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
-              {t("m2.rating.detailedTastingDesc", "Score nose, taste, finish & balance individually")}
+              {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
             </span>
           </div>
           <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />

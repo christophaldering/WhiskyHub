@@ -113,7 +113,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   archived: { label: "Completed", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
 };
 
-type DimKey = "nose" | "taste" | "finish" | "balance";
+type DimKey = "nose" | "taste" | "finish";
 
 const WIZARD_PREF_KEY = "labs-host-rating-wizard";
 
@@ -150,8 +150,8 @@ function HostRatingPanel({
 
   const scaleMax = ratingScale || 100;
   const scaleDefault = Math.round(scaleMax / 2);
-  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
 
   const useWizard = isMobile || wizardMode;
 
@@ -167,10 +167,10 @@ function HostRatingPanel({
   });
 
   const parseSavedNotes = useCallback((rawNotes: string) => {
-    const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-    const texts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
+    const texts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
     let cleanNotes = rawNotes;
-    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
       const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*([\\s\\S]*?)\\s*\\[\\/${d.toUpperCase()}\\]`);
       const m = rawNotes.match(re);
       if (m) {
@@ -204,12 +204,12 @@ function HostRatingPanel({
   const buildScoresBlock = useCallback((wId: string) => {
     const ch = hostChips[wId] || emptyChips;
     const tx = hostTexts[wId] || emptyTexts;
-    const hasDimData = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+    const hasDimData = (["nose", "taste", "finish"] as DimKey[]).some(
       (d) => ch[d].length > 0 || tx[d].trim()
     );
     if (!hasDimData) return "";
     const parts: string[] = [];
-    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
       const chipStr = ch[d].length > 0 ? ch[d].join(", ") : "";
       const textStr = tx[d].trim();
       if (chipStr || textStr) {
@@ -228,7 +228,7 @@ function HostRatingPanel({
           const existing = await ratingApi.getMyRating(participantId, w.id);
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
-            setHostScores(prev => ({ ...prev, [w.id]: { nose: existing.nose ?? scaleDefault, taste: existing.taste ?? scaleDefault, finish: existing.finish ?? scaleDefault, balance: existing.balance ?? scaleDefault } }));
+            setHostScores(prev => ({ ...prev, [w.id]: { nose: existing.nose ?? scaleDefault, taste: existing.taste ?? scaleDefault, finish: existing.finish ?? scaleDefault } }));
             setHostOverall(prev => ({ ...prev, [w.id]: existing.overall ?? scaleDefault }));
             setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
             setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
@@ -250,7 +250,7 @@ function HostRatingPanel({
         participantId,
         whiskyId,
         tastingId,
-        nose: freshScores.nose, taste: freshScores.taste, finish: freshScores.finish, balance: freshScores.balance,
+        nose: freshScores.nose, taste: freshScores.taste, finish: freshScores.finish,
         overall: freshOverall,
         notes: combinedNotes,
       }, { onSettled: () => setSaving(false) });
@@ -265,7 +265,7 @@ function HostRatingPanel({
     chipSaveRef.current++;
     const gen = chipSaveRef.current;
     const sc = hostScores[wId];
-    const ov = hostOverall[wId] ?? Math.round((sc.nose + sc.taste + sc.finish + sc.balance) / 4);
+    const ov = hostOverall[wId] ?? Math.round((sc.nose + sc.taste + sc.finish) / 3);
     const notes = hostNotes[wId] || "";
     const timer = setTimeout(() => {
       if (gen !== chipSaveRef.current) return;
@@ -274,12 +274,12 @@ function HostRatingPanel({
     return () => clearTimeout(timer);
   }, [hostChips, hostTexts]);
 
-  const defaultScores = (): Record<DimKey, number> => ({ nose: scaleDefault, taste: scaleDefault, finish: scaleDefault, balance: scaleDefault });
+  const defaultScores = (): Record<DimKey, number> => ({ nose: scaleDefault, taste: scaleDefault, finish: scaleDefault });
   const getScores = (wId: string): Record<DimKey, number> => hostScores[wId] || defaultScores();
   const getOverall = (wId: string) => hostOverall[wId] ?? scaleDefault;
   const getOverallAuto = (wId: string) => {
     const sc = getScores(wId);
-    return Math.round((sc.nose + sc.taste + sc.finish + sc.balance) / 4);
+    return Math.round((sc.nose + sc.taste + sc.finish) / 3);
   };
 
   const handleScoreChange = (wId: string, dim: DimKey, val: number) => {
@@ -288,7 +288,7 @@ function HostRatingPanel({
     setHostScores(prev => ({ ...prev, [wId]: updated }));
     let freshOverall: number;
     if (!hostOverride[wId]) {
-      freshOverall = Math.round((updated.nose + updated.taste + updated.finish + updated.balance) / 4);
+      freshOverall = Math.round((updated.nose + updated.taste + updated.finish) / 3);
       setHostOverall(prev => ({ ...prev, [wId]: freshOverall }));
     } else {
       freshOverall = hostOverall[wId] ?? scaleDefault;

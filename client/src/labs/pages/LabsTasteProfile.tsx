@@ -18,7 +18,7 @@ import {
 
 interface BreakdownEntry { count: number; avgScore: number }
 interface FlavorProfileData {
-  avgScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+  avgScores: { nose: number; taste: number; finish: number; overall: number };
   regionBreakdown: Record<string, BreakdownEntry>;
   caskBreakdown: Record<string, BreakdownEntry>;
   peatBreakdown: Record<string, BreakdownEntry>;
@@ -180,8 +180,8 @@ export default function LabsTasteProfile() {
   const styleLabel = profile ? deriveStyle(profile.regionBreakdown || {}, profile.peatBreakdown || {}) : null;
   const sweetSpotLabel = profile ? deriveSweetSpot(profile.regionBreakdown || {}, profile.caskBreakdown || {}) : null;
 
-  const dims = ["nose", "taste", "finish", "balance", "overall"];
-  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance", overall: "Overall" };
+  const dims = ["nose", "taste", "finish", "overall"];
+  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish", overall: "Overall" };
 
   const radarData = whiskyProfile?.tasteStructure
     ? dims.map(d => ({

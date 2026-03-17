@@ -486,7 +486,7 @@ export default function LabsPaperScan() {
                     {score.whiskyName || `Whisky #${(score.whiskyIndex ?? idx) + 1}`}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                    {["nose", "taste", "finish", "balance", "overall"].map((dim) => (
+                    {["nose", "taste", "finish", "overall"].map((dim) => (
                       <div key={dim} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <label style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 48, textTransform: "capitalize" }}>
                           {t(`m2.paperScan.${dim}`, dim)}
