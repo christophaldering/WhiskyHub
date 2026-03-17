@@ -2227,7 +2227,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match via ${email ? "email" : "name"})`);
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
-        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: participant.photoUrl || undefined };
+        let signinPhotoUrl: string | undefined;
+        try { const prof = await storage.getProfile(participant.id); if (prof?.photoUrl) signinPhotoUrl = prof.photoUrl; } catch {}
+        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: signinPhotoUrl };
         const token = generateResumeToken();
         sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, role: participant.role || "user", expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
@@ -2310,8 +2312,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     let resumePhotoUrl: string | undefined;
     if (stored.pid) {
       try {
-        const p = await storage.getParticipant(stored.pid);
-        if (p?.photoUrl) resumePhotoUrl = p.photoUrl;
+        const prof = await storage.getProfile(stored.pid);
+        if (prof?.photoUrl) resumePhotoUrl = prof.photoUrl;
       } catch {}
     }
     return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user", photoUrl: resumePhotoUrl });
@@ -3193,7 +3195,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
               const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
               if (fullName) match = await storage.getParticipantByName(fullName);
             }
-            return { ...f, photoUrl: match?.photoUrl || null };
+            let friendPhoto: string | null = null;
+            if (match) { try { const prof = await storage.getProfile(match.id); if (prof?.photoUrl) friendPhoto = prof.photoUrl; } catch {} }
+            return { ...f, photoUrl: friendPhoto };
           } catch { return { ...f, photoUrl: null }; }
         })
       );
@@ -3216,7 +3220,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
             if (fullName) match = await storage.getParticipantByName(fullName);
           }
-          return match ? { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt, photoUrl: match.photoUrl || null } : null;
+          if (!match) return null;
+          let friendPhoto: string | null = null;
+          try { const prof = await storage.getProfile(match.id); if (prof?.photoUrl) friendPhoto = prof.photoUrl; } catch {}
+          return { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt, photoUrl: friendPhoto };
         })
       );
       const onlineFriends = allParticipants.filter((p) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);

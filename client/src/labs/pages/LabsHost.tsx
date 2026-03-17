@@ -393,7 +393,7 @@ function HostRatingPanel({
             }}
             data-testid={`host-rating-tab-${idx}`}
           >
-            {String.fromCharCode(65 + idx)}
+            {idx + 1}
           </button>
         ))}
       </div>
@@ -2639,7 +2639,7 @@ function ParticipantStatusSection({
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
                       style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                     >
-                      {String.fromCharCode(65 + i)}
+                      {i + 1}
                     </div>
                     <span className="text-sm font-medium truncate flex-1 min-w-0">
                       {w.name || `Whisky ${i + 1}`}
@@ -3868,6 +3868,52 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     reorderMutation.mutate(reordered.map((w: any, i: number) => ({ id: w.id, sortOrder: i + 1 })));
   };
 
+  const dragState = useRef<{ dragIdx: number; overIdx: number } | null>(null);
+  const [dragActiveIdx, setDragActiveIdx] = useState<number | null>(null);
+  const touchStartY = useRef<number>(0);
+  const whiskyListRef = useRef<HTMLDivElement>(null);
+
+  const commitDrag = () => {
+    if (!dragState.current || !whiskies) return;
+    const { dragIdx, overIdx } = dragState.current;
+    if (dragIdx !== overIdx) {
+      const reordered = [...whiskies];
+      const [moved] = reordered.splice(dragIdx, 1);
+      reordered.splice(overIdx, 0, moved);
+      reorderMutation.mutate(reordered.map((w: any, i: number) => ({ id: w.id, sortOrder: i + 1 })));
+    }
+    dragState.current = null;
+    setDragActiveIdx(null);
+  };
+
+  const handleTouchStart = (idx: number, e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    dragState.current = { dragIdx: idx, overIdx: idx };
+    setDragActiveIdx(idx);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragState.current || !whiskyListRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const cards = whiskyListRef.current.querySelectorAll("[data-whisky-drag-idx]");
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+        const newIdx = parseInt(card.getAttribute("data-whisky-drag-idx") || "0", 10);
+        if (dragState.current.overIdx !== newIdx) {
+          dragState.current.overIdx = newIdx;
+          setDragActiveIdx(dragState.current.dragIdx);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    commitDrag();
+  };
+
   const handleWhiskyImageUpload = async (whiskyId: string, file: File) => {
     try {
       await whiskyApi.uploadImage(whiskyId, file);
@@ -5088,7 +5134,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2" ref={whiskyListRef}>
             {whiskies?.map((w: any, i: number) => {
               const whiskyRatings = ratings?.filter((r: any) => r.whiskyId === w.id) || [];
               const avgScore = whiskyRatings.length > 0
@@ -5133,13 +5179,35 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 );
               }
 
+              const isDragging = dragActiveIdx === i;
               return (
                 <div
                   key={w.id}
                   className="labs-card p-4 flex items-center gap-3"
-                  style={{ opacity: rvHidden ? 0.4 : 1, transition: "opacity 300ms" }}
+                  style={{
+                    opacity: rvHidden ? 0.4 : isDragging ? 0.6 : 1,
+                    transition: "opacity 300ms, transform 150ms",
+                    transform: isDragging ? "scale(0.98)" : undefined,
+                  }}
                   data-testid={`labs-host-whisky-${w.id}`}
+                  data-whisky-drag-idx={i}
+                  draggable={tasting.status === "draft"}
+                  onDragStart={(e) => { dragState.current = { dragIdx: i, overIdx: i }; setDragActiveIdx(i); e.dataTransfer.effectAllowed = "move"; }}
+                  onDragOver={(e) => { e.preventDefault(); if (dragState.current) dragState.current.overIdx = i; }}
+                  onDragEnd={commitDrag}
                 >
+                  {tasting.status === "draft" && (
+                    <div
+                      className="flex-shrink-0 cursor-grab active:cursor-grabbing"
+                      style={{ color: "var(--labs-text-muted)", touchAction: "none" }}
+                      onTouchStart={(e) => handleTouchStart(i, e)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      data-testid={`labs-host-drag-handle-${w.id}`}
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                  )}
                   {w.imageUrl && rvShowDetails ? (
                     <img
                       src={w.imageUrl}
@@ -5154,12 +5222,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         color: rvRevealed && rvDesktop ? "var(--labs-success)" : rvActive ? "var(--labs-info)" : "var(--labs-accent)",
                       }}
                     >
-                      {rvRevealed && rvDesktop ? <Check className="w-3.5 h-3.5" /> : String.fromCharCode(65 + i)}
+                      {rvRevealed && rvDesktop ? <Check className="w-3.5 h-3.5" /> : i + 1}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {rvShowName ? (w.name || `Whisky ${i + 1}`) : `Dram ${String.fromCharCode(65 + i)}`}
+                      {rvShowName ? (w.name || `Whisky ${i + 1}`) : `Dram ${i + 1}`}
                     </p>
                     <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                       {rvShowDetails
@@ -5183,26 +5251,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     )}
                     {tasting.status === "draft" && (
                       <>
-                        <div className="flex flex-col">
-                          <button
-                            className="labs-btn-ghost p-0.5"
-                            onClick={() => handleMoveWhisky(i, "up")}
-                            disabled={i === 0 || reorderMutation.isPending}
-                            style={{ opacity: i === 0 ? 0.3 : 1 }}
-                            data-testid={`labs-host-move-up-${w.id}`}
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            className="labs-btn-ghost p-0.5"
-                            onClick={() => handleMoveWhisky(i, "down")}
-                            disabled={i === (whiskies?.length || 0) - 1 || reorderMutation.isPending}
-                            style={{ opacity: i === (whiskies?.length || 0) - 1 ? 0.3 : 1 }}
-                            data-testid={`labs-host-move-down-${w.id}`}
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        </div>
                         <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
                           <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                           <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
