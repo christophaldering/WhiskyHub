@@ -1859,9 +1859,9 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                             {w.name}
                           </span>
                         </div>
-                        {(w.distillery || w.abv) && (
+                        {(w.distillery || w.abv || w.caskInfluence || w.peatLevel || w.ppm != null) && (
                           <div style={{ fontSize: 11, color: v.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {[w.distillery, w.abv ? `${w.abv}%` : null, w.caskInfluence].filter(Boolean).join(" · ")}
+                            {[w.distillery, w.abv ? `${w.abv}%` : null, w.caskInfluence, w.peatLevel, w.ppm != null ? `${w.ppm} ppm` : null].filter(Boolean).join(" · ")}
                           </div>
                         )}
                       </div>

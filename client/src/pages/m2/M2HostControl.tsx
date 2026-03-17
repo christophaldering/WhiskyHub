@@ -704,9 +704,9 @@ export default function M2HostControl() {
                 <div style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {w.name || t("m2.hostControl.unnamed", "Unnamed")}
                 </div>
-                {(w.distillery || w.abv) && (
+                {(w.distillery || w.abv || w.peatLevel || w.ppm != null) && (
                   <div style={{ fontSize: 11, color: v.muted }}>
-                    {[w.distillery, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                    {[w.distillery, w.abv ? `${w.abv}%` : null, w.peatLevel, w.ppm != null ? `${w.ppm} ppm` : null].filter(Boolean).join(" · ")}
                   </div>
                 )}
               </div>

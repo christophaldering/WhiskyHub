@@ -950,7 +950,7 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
                       {w.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: idx + 1 })}
                     </div>
                     <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
-                      {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+                      {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.peatLevel, w.ppm != null ? `${w.ppm} ppm` : null].filter(Boolean).join(" · ") || "—"}
                     </div>
                     {isBlind && (
                       <div style={{ fontSize: 10, color: v.accent, marginTop: 2 }}>
@@ -1155,7 +1155,7 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
               {currentWhisky.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: hostRatingWhiskyIdx + 1 })}
             </div>
             <div style={{ fontSize: 11, color: v.muted, marginBottom: 16 }}>
-              {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+              {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null, currentWhisky.peatLevel, currentWhisky.ppm != null ? `${currentWhisky.ppm} ppm` : null].filter(Boolean).join(" · ") || "—"}
             </div>
 
             <M2RatingPanel
