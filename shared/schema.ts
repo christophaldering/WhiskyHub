@@ -237,10 +237,11 @@ export const ratings = pgTable("ratings", {
   blindVsOpenDelta: real("blind_vs_open_delta"),
   confidenceWeight: real("confidence_weight"),
   source: text("source").default("app"),
+  createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, updatedAt: true });
+export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertRating = z.infer<typeof insertRatingSchema>;
 export type Rating = typeof ratings.$inferSelect;
 
