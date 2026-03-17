@@ -83,6 +83,29 @@ function parseExcelWhiskies(file: File): Promise<any[]> {
   });
 }
 
+function normalizeAbv(raw: any): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  let val = typeof raw === "string" ? parseFloat(raw.replace(",", ".")) : Number(raw);
+  if (isNaN(val)) return null;
+  if (val > 0 && val < 1) val = val * 100;
+  if (val < 10 || val > 95) return null;
+  return Math.round(val * 10) / 10;
+}
+
+function normalizePrice(raw: any): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const val = typeof raw === "string" ? parseFloat(raw.replace(",", ".")) : Number(raw);
+  if (isNaN(val) || val < 0) return null;
+  return Math.round(val * 100) / 100;
+}
+
+function formatPrice(price: number | string | null | undefined): string {
+  if (price === null || price === undefined || price === "") return "";
+  const val = typeof price === "string" ? parseFloat(price.replace(",", ".")) : Number(price);
+  if (isNaN(val)) return "";
+  return val.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €";
+}
+
 function isExcelFile(file: File): boolean {
   return /\.(xlsx|xls)$/i.test(file.name) ||
     file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
@@ -1170,7 +1193,7 @@ function MobileCompanion({
             tastingId,
             name: w.name || "",
             distillery: w.distillery || "",
-            abv: w.abv ? parseFloat(w.abv) || null : null,
+            abv: normalizeAbv(w.abv),
             caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
@@ -1179,7 +1202,7 @@ function MobileCompanion({
             bottler: w.bottler || "",
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
-            price: w.price ? parseFloat(w.price) || null : null,
+            price: normalizePrice(w.price),
             vintage: w.vintage || "",
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
@@ -4089,7 +4112,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             tastingId,
             name: w.name || "",
             distillery: w.distillery || "",
-            abv: w.abv ? parseFloat(w.abv) || null : null,
+            abv: normalizeAbv(w.abv),
             caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
@@ -4098,7 +4121,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             bottler: w.bottler || "",
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
-            price: w.price ? parseFloat(w.price) || null : null,
+            price: normalizePrice(w.price),
             vintage: w.vintage || "",
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
@@ -4150,8 +4173,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const handleSaveEditWhisky = (whiskyId: string) => {
     const coerced: Record<string, unknown> = { ...editFields };
-    if (coerced.abv !== undefined) coerced.abv = coerced.abv ? parseFloat(coerced.abv as string) || null : null;
-    if (coerced.price !== undefined) coerced.price = coerced.price ? parseFloat(coerced.price as string) || null : null;
+    if (coerced.abv !== undefined) coerced.abv = normalizeAbv(coerced.abv);
+    if (coerced.price !== undefined) coerced.price = normalizePrice(coerced.price);
     if (coerced.ppm !== undefined) coerced.ppm = coerced.ppm ? parseFloat(coerced.ppm as string) || null : null;
     if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
     if (coerced.caskType !== undefined) { coerced.caskInfluence = coerced.caskType; delete coerced.caskType; }
