@@ -4484,6 +4484,10 @@ const resources = {
         },
         scoresNormalizedHint: "Scores normalized to 100-point scale",
         scoresNormalizedMultiScale: "Contains ratings from different scales, normalized to 100 points",
+        statStabilityDesc: "Rating consistency",
+        statExplorationDesc: "Variety of regions & styles",
+        statSmokeDesc: "Peat & smoke affinity",
+        statTastingsDesc: "Sessions joined",
       },
       m2: {
         ai: {
@@ -10491,6 +10495,10 @@ const resources = {
         },
         scoresNormalizedHint: "Werte auf 100-Punkte-Skala normalisiert",
         scoresNormalizedMultiScale: "Enthält Bewertungen aus verschiedenen Skalen, auf 100 Punkte normalisiert",
+        statStabilityDesc: "Bewertungskonsistenz",
+        statExplorationDesc: "Vielfalt bei Regionen & Stilen",
+        statSmokeDesc: "Vorliebe für Rauch & Torf",
+        statTastingsDesc: "Teilgenommene Sessions",
       },
       m2: {
         ai: {

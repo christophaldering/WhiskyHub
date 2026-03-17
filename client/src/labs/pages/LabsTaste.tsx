@@ -193,16 +193,17 @@ export default function LabsTaste() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 labs-fade-in labs-stagger-1">
             {[
-              { label: "Stability", value: stability, id: "stability" },
-              { label: "Exploration", value: exploration, id: "exploration" },
-              { label: "Smoke", value: smoke, id: "smoke" },
-              { label: "Tastings", value: totalTastings, id: "tastings" },
+              { label: "Stability", value: stability, id: "stability", desc: t("labs.statStabilityDesc", "Rating consistency") },
+              { label: "Exploration", value: exploration, id: "exploration", desc: t("labs.statExplorationDesc", "Variety of regions & styles") },
+              { label: "Smoke", value: smoke, id: "smoke", desc: t("labs.statSmokeDesc", "Peat & smoke affinity") },
+              { label: "Tastings", value: totalTastings, id: "tastings", desc: t("labs.statTastingsDesc", "Sessions joined") },
             ].map(s => (
               <div key={s.id} className="labs-card p-4 text-center" data-testid={`labs-taste-stat-${s.id}`}>
                 <p className="text-xl font-bold" style={{ color: "var(--labs-accent)" }}>
                   {s.value != null ? (typeof s.value === "number" ? (Number.isInteger(s.value) ? s.value : s.value.toFixed(1)) : s.value) : "—"}
                 </p>
                 <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{s.desc}</p>
               </div>
             ))}
           </div>
