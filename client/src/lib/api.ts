@@ -208,6 +208,7 @@ export const inviteApi = {
       method: "POST",
       body: JSON.stringify({ participantId }),
     }),
+  getMyInvites: () => fetchJSON(`/my-invites`),
   smtpStatus: () => fetchJSON(`/smtp/status`),
 };
 

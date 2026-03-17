@@ -3388,6 +3388,39 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  // ===== MY INVITES (open invitations for logged-in user) =====
+
+  app.get("/api/my-invites", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+
+      const email = auth.participant.email;
+      if (!email) return res.json([]);
+
+      const invites = await storage.getInvitesByEmail(email);
+      const results = await Promise.all(
+        invites.map(async (invite) => {
+          const tasting = await storage.getTasting(invite.tastingId);
+          if (!tasting) return null;
+          const host = await storage.getParticipant(tasting.hostId);
+          return {
+            inviteId: invite.id,
+            token: invite.token,
+            tastingId: tasting.id,
+            tastingName: tasting.title,
+            hostName: host?.name || "Unknown",
+            date: tasting.date,
+          };
+        })
+      );
+
+      res.json(results.filter(Boolean));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== SESSION INVITES =====
 
   app.get("/api/tastings/:id/invites", async (req, res) => {

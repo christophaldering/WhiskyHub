@@ -138,6 +138,7 @@ export interface IStorage {
   // Session Invites
   createInvite(data: InsertSessionInvite): Promise<SessionInvite>;
   getInvitesByTasting(tastingId: string): Promise<SessionInvite[]>;
+  getInvitesByEmail(email: string): Promise<SessionInvite[]>;
   getInviteByToken(token: string): Promise<SessionInvite | undefined>;
   updateInviteStatus(id: string, status: string, acceptedAt?: Date): Promise<SessionInvite | undefined>;
 
@@ -747,6 +748,15 @@ export class DatabaseStorage implements IStorage {
 
   async getInvitesByTasting(tastingId: string): Promise<SessionInvite[]> {
     return db.select().from(sessionInvites).where(eq(sessionInvites.tastingId, tastingId));
+  }
+
+  async getInvitesByEmail(email: string): Promise<SessionInvite[]> {
+    return db.select().from(sessionInvites).where(
+      and(
+        eq(sessionInvites.email, email.toLowerCase()),
+        eq(sessionInvites.status, "invited")
+      )
+    );
   }
 
   async getInviteByToken(token: string): Promise<SessionInvite | undefined> {

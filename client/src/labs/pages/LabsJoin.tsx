@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User } from "lucide-react";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar } from "lucide-react";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, inviteApi } from "@/lib/api";
 import { signIn } from "@/lib/session";
 
 interface PendingTasting {
   id: string;
   guestMode: string;
+}
+
+interface MyInvite {
+  inviteId: string;
+  token: string;
+  tastingId: string;
+  tastingName: string;
+  hostName: string;
+  date: string;
 }
 
 export default function LabsJoin() {
@@ -39,6 +48,36 @@ export default function LabsJoin() {
 
   const isLoggedIn = session.signedIn && !!currentParticipant;
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
+
+  const [myInvites, setMyInvites] = useState<MyInvite[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      setInvitesLoading(true);
+      inviteApi.getMyInvites()
+        .then((data: MyInvite[]) => setMyInvites(data || []))
+        .catch(() => setMyInvites([]))
+        .finally(() => setInvitesLoading(false));
+    }
+  }, [isLoggedIn]);
+
+  const handleAcceptInvite = async (invite: MyInvite) => {
+    setAcceptingInviteId(invite.inviteId);
+    try {
+      await inviteApi.accept(invite.token, currentParticipant!.id);
+      navigate(`/labs/tastings/${invite.tastingId}`);
+    } catch (e: any) {
+      const msg = (e as Error).message || "";
+      if (msg.toLowerCase().includes("already")) {
+        navigate(`/labs/tastings/${invite.tastingId}`);
+      } else {
+        setError(msg || "Could not accept invitation. Please try again.");
+      }
+      setAcceptingInviteId(null);
+    }
+  };
 
   useEffect(() => {
     if (queryCode && !autoJoinAttempted) {
@@ -452,6 +491,87 @@ export default function LabsJoin() {
           Enter the code your host shared to join the session.
         </p>
       </div>
+
+      {isLoggedIn && (invitesLoading || myInvites.length > 0) && (
+        <div className="mb-6 labs-stagger-1 labs-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Mail className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--labs-text-muted)" }}
+              data-testid="text-open-invites-label"
+            >
+              Open Invitations
+            </span>
+          </div>
+          {invitesLoading ? (
+            <div className="labs-card p-4 text-center">
+              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Loading invitations...</span>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {myInvites.map((invite) => (
+                  <button
+                    key={invite.inviteId}
+                    className="labs-card w-full text-left p-4 flex items-center gap-3 transition-transform active:scale-[0.98]"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleAcceptInvite(invite)}
+                    disabled={acceptingInviteId === invite.inviteId}
+                    data-testid={`card-invite-${invite.inviteId}`}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "var(--labs-accent-muted)" }}
+                    >
+                      <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className="font-medium text-sm truncate"
+                        style={{ color: "var(--labs-text)" }}
+                        data-testid={`text-invite-name-${invite.inviteId}`}
+                      >
+                        {invite.tastingName}
+                      </div>
+                      <div
+                        className="text-xs flex items-center gap-2 mt-0.5"
+                        style={{ color: "var(--labs-text-muted)" }}
+                      >
+                        <span data-testid={`text-invite-host-${invite.inviteId}`}>{invite.hostName}</span>
+                        {invite.date && (
+                          <>
+                            <span>·</span>
+                            <span className="flex items-center gap-1" data-testid={`text-invite-date-${invite.inviteId}`}>
+                              <Calendar className="w-3 h-3" />
+                              {invite.date}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {acceptingInviteId === invite.inviteId ? (
+                        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Joining...</span>
+                      ) : (
+                        <ArrowRight className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="text-center mt-3">
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--labs-text-muted)" }}
+                >
+                  or enter a code manually
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="labs-card p-6 labs-stagger-1 labs-fade-in">
         <label
