@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
-import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles } from "lucide-react";
+import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface RatingNote {
   id: string;
@@ -284,12 +285,20 @@ export default function LabsTasteAnalytics() {
   const session = useSession();
   const pid = session.pid;
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["labs-participant-stats-threshold", pid],
     queryFn: () => statsApi.get(pid!),
     enabled: !!pid,
     staleTime: 60000,
+  });
+
+  const { data: scaleInfo } = useQuery<{ hasMultipleScales?: boolean }>({
+    queryKey: ["labs-whisky-profile-scale-info", pid],
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    enabled: !!pid,
+    staleTime: 120000,
   });
 
   const typedStats = stats as ParticipantStats | undefined;
@@ -309,9 +318,15 @@ export default function LabsTasteAnalytics() {
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-analytics-title">
         Analytics
       </h1>
-      <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
+      <p className="text-sm mb-4 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
         Your taste evolution & rating consistency
       </p>
+      {scaleInfo?.hasMultipleScales && (
+        <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="analytics-normalized-hint">
+          <Info className="w-3 h-3 flex-shrink-0" />
+          {t("labs.scoresNormalizedMultiScale", "Contains ratings from different scales, normalized to 100 points")}
+        </p>
+      )}
 
       {!session.signedIn || !pid ? (
         <div className="labs-card p-6 text-center labs-fade-in">

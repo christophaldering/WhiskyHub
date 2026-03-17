@@ -12,10 +12,12 @@ import {
   Users,
   User,
   ChevronDown,
+  Info,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
 import { exploreApi } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 interface LabsBottleDetailProps {
   params: { id: string };
@@ -25,6 +27,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
   const whiskyId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
 
   const { data: whisky, isLoading, isError } = useQuery({
     queryKey: ["labs-explore-whisky", whiskyId],
@@ -181,6 +184,14 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
             {tastingCount > 0 && (
               <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                 Featured in {tastingCount} tasting{tastingCount !== 1 ? "s" : ""}
+              </p>
+            )}
+            {whisky.hasNonStandardScale && (
+              <p className="text-xs flex items-center gap-1 mt-2" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="labs-bottle-normalized-hint">
+                <Info className="w-3 h-3 flex-shrink-0" />
+                {tastingCount > 1
+                  ? t("labs.scoresNormalizedMultiScale", "Contains ratings from different scales, normalized to 100 points")
+                  : t("labs.scoresNormalizedHint", "Scores normalized to 100-point scale")}
               </p>
             )}
           </div>

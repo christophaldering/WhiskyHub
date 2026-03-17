@@ -126,6 +126,7 @@ export interface IStorage {
   // Ratings
   getRatingsForWhisky(whiskyId: string): Promise<Rating[]>;
   getRatingsForTasting(tastingId: string): Promise<Rating[]>;
+  getRatingsForParticipant(participantId: string): Promise<Rating[]>;
   getAllRatings(): Promise<Rating[]>;
   getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined>;
   upsertRating(data: InsertRating): Promise<Rating>;
@@ -653,6 +654,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(ratings).where(eq(ratings.tastingId, tastingId));
   }
 
+  async getRatingsForParticipant(participantId: string): Promise<Rating[]> {
+    return db.select().from(ratings).where(eq(ratings.participantId, participantId));
+  }
+
   async getAllRatings(): Promise<Rating[]> {
     return db.select().from(ratings);
   }
@@ -963,11 +968,11 @@ export class DatabaseStorage implements IStorage {
     for (const r of allRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
-      sumOverall += r.overall * norm;
+      sumNose += (r.normalizedNose ?? r.nose * norm); sumTaste += (r.normalizedTaste ?? r.taste * norm); sumFinish += (r.normalizedFinish ?? r.finish * norm);
+      sumOverall += (r.normalizedScore ?? r.overall * norm);
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
-        const normOverall = r.overall * norm;
+        const normOverall = (r.normalizedScore ?? r.overall * norm);
         if (w.region) {
           if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
           regionAcc[w.region].total += normOverall; regionAcc[w.region].count++;
@@ -1075,8 +1080,8 @@ export class DatabaseStorage implements IStorage {
     for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
-      sumOverall += r.overall * norm;
+      sumNose += (r.normalizedNose ?? r.nose * norm); sumTaste += (r.normalizedTaste ?? r.taste * norm); sumFinish += (r.normalizedFinish ?? r.finish * norm);
+      sumOverall += (r.normalizedScore ?? r.overall * norm);
       if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
     }
     const n = filteredRatings.length;
@@ -1421,6 +1426,8 @@ export class DatabaseStorage implements IStorage {
   }>> {
     const allWhiskyRows = await db.select().from(whiskies);
     const allRatings = await db.select().from(ratings);
+    const allTastingsRows = await db.select().from(tastings);
+    const tastingScaleMap = new Map(allTastingsRows.map(t => [t.id, t.ratingScale ?? 100]));
 
     const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
 
@@ -1443,9 +1450,10 @@ export class DatabaseStorage implements IStorage {
       if (!grouped[key].whisky.imageUrl && w.imageUrl) {
         grouped[key].whisky = w;
       }
+      const scaleNorm = 100 / (tastingScaleMap.get(r.tastingId) ?? 100);
       grouped[key].ratings.push({
-        nose: r.nose, taste: r.taste, finish: r.finish,
-        overall: r.overall, participantId: r.participantId,
+        nose: r.normalizedNose ?? r.nose * scaleNorm, taste: r.normalizedTaste ?? r.taste * scaleNorm, finish: r.normalizedFinish ?? r.finish * scaleNorm,
+        overall: r.normalizedScore ?? r.overall * scaleNorm, participantId: r.participantId,
       });
     }
 
@@ -1497,12 +1505,16 @@ export class DatabaseStorage implements IStorage {
         inArray(ratings.whiskyId, myWhiskyIds)
       ));
 
-    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.normalizedScore ?? r.overall]));
+    const allTastingsForTwins = await db.select().from(tastings);
+    const twinsScaleMap = new Map(allTastingsForTwins.map(t => [t.id, t.ratingScale ?? 100]));
+    const twinsNorm = (r: typeof myRatings[0]) => 100 / (twinsScaleMap.get(r.tastingId) ?? 100);
+
+    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.normalizedScore ?? r.overall * twinsNorm(r)]));
 
     const byParticipant: Record<string, Array<{ whiskyId: string; score: number }>> = {};
     for (const r of otherRatings) {
       if (!byParticipant[r.participantId]) byParticipant[r.participantId] = [];
-      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, score: r.normalizedScore ?? r.overall });
+      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, score: r.normalizedScore ?? r.overall * twinsNorm(r) });
     }
 
     const allParticipants = await db.select().from(participants);

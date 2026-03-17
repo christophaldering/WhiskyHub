@@ -2570,15 +2570,18 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const whiskyRatings = await storage.getRatingsForWhisky(whisky.id);
       const count = whiskyRatings.length;
+      const allTastingsWotd = await storage.getAllTastings();
+      const tastingScaleWotd = new Map(allTastingsWotd.map(t => [t.id, t.ratingScale ?? 100]));
+      const normWotd = (r: typeof whiskyRatings[0]) => 100 / (tastingScaleWotd.get(r.tastingId) ?? 100);
 
       let avgRating = 0;
       let categories = { nose: 0, taste: 0, finish: 0 };
       if (count > 0) {
-        avgRating = Math.round((whiskyRatings.reduce((s, r) => s + r.overall, 0) / count) * 10) / 10;
+        avgRating = Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedScore ?? r.overall * normWotd(r)), 0) / count) * 10) / 10;
         categories = {
-          nose: Math.round((whiskyRatings.reduce((s, r) => s + r.nose, 0) / count) * 10) / 10,
-          taste: Math.round((whiskyRatings.reduce((s, r) => s + r.taste, 0) / count) * 10) / 10,
-          finish: Math.round((whiskyRatings.reduce((s, r) => s + r.finish, 0) / count) * 10) / 10,
+          nose: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedNose ?? r.nose * normWotd(r)), 0) / count) * 10) / 10,
+          taste: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedTaste ?? r.taste * normWotd(r)), 0) / count) * 10) / 10,
+          finish: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedFinish ?? r.finish * normWotd(r)), 0) / count) * 10) / 10,
         };
       }
 
@@ -2610,6 +2613,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       ]);
 
       const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
+      const scale = tasting.ratingScale ?? 100;
+      const normFactor = 100 / scale;
 
       const grouped: Record<string, typeof allRatings> = {};
       for (const r of allRatings) {
@@ -2621,10 +2626,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const results = allWhiskies.map((w) => {
         const rats = grouped[w.id] || [];
-        const overalls = rats.map((r) => r.overall).filter((v): v is number => v != null);
-        const noses = rats.map((r) => r.nose).filter((v): v is number => v != null);
-        const tastes = rats.map((r) => r.taste).filter((v): v is number => v != null);
-        const finishes = rats.map((r) => r.finish).filter((v): v is number => v != null);
+        const overalls = rats.map((r) => r.normalizedScore ?? r.overall * normFactor).filter((v): v is number => v != null);
+        const noses = rats.map((r) => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null);
+        const tastes = rats.map((r) => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null);
+        const finishes = rats.map((r) => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null);
 
         return {
           whiskyId: w.id,
@@ -2642,10 +2647,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           avgFinish: avg(finishes),
           ratings: rats.map((r) => ({
             participantId: r.participantId,
-            overall: r.overall,
-            nose: r.nose,
-            taste: r.taste,
-            finish: r.finish,
+            overall: r.normalizedScore ?? r.overall * normFactor,
+            nose: r.normalizedNose ?? r.nose * normFactor,
+            taste: r.normalizedTaste ?? r.taste * normFactor,
+            finish: r.normalizedFinish ?? r.finish * normFactor,
             notes: r.notes,
           })),
         };
@@ -2658,6 +2663,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         title: tasting.title,
         status: tasting.status,
         blindMode: tasting.blindMode,
+        ratingScale: tasting.ratingScale ?? 100,
         whiskyCount: allWhiskies.length,
         totalRatings: allRatings.length,
         results,
@@ -2695,9 +2701,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             Age: w.age ?? "",
             ABV: w.abv ?? "",
             "Avg Overall": avg(overalls)?.toFixed(1) ?? "",
-            "Avg Nose": avg(rats.map(r => r.nose).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Taste": avg(rats.map(r => r.taste).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Finish": avg(rats.map(r => r.finish).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Nose": avg(rats.map(r => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Taste": avg(rats.map(r => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Finish": avg(rats.map(r => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
             Ratings: rats.length,
           };
         })
@@ -2740,13 +2746,17 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       const maxScale = tasting.ratingScale || 100;
-      let normalizedScore: number | null = null;
-      if (data.overall != null) {
-        const clamped = Math.max(0, Math.min(data.overall, maxScale));
-        normalizedScore = maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
-      }
+      const normalizeDim = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        const clamped = Math.max(0, Math.min(v, maxScale));
+        return maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
+      };
+      const normalizedScore = normalizeDim(data.overall);
+      const normalizedNose = normalizeDim(data.nose);
+      const normalizedTaste = normalizeDim(data.taste);
+      const normalizedFinish = normalizeDim(data.finish);
 
-      const rating = await storage.upsertRating({ ...data, normalizedScore });
+      const rating = await storage.upsertRating({ ...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });
       if (process.env.LABS_DEBUG) console.log(`[LABS] Rating submitted: participant=${data.participantId} whisky=${data.whiskyId} overall=${data.overall} normalized=${normalizedScore} tasting=${data.tastingId}`);
       res.json(rating);
     } catch (e: any) {
@@ -2808,12 +2818,14 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const stdDev = Math.sqrt(variance);
       const iqr = calcIQR(overallScores);
 
-      const categoryAvg = (key: string) => {
-        const vals = wr.map(r => norm((r as any)[key] as number));
+      const categoryAvg = (key: "nose" | "taste" | "finish") => {
+        const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
+        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
         return vals.reduce((a, b) => a + b, 0) / count;
       };
-      const categoryMedian = (key: string) => {
-        const vals = wr.map(r => norm((r as any)[key] as number));
+      const categoryMedian = (key: "nose" | "taste" | "finish") => {
+        const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
+        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
         return calcMedian(vals);
       };
 
@@ -2963,8 +2975,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const avg = overallScores.reduce((a, b) => a + b, 0) / count;
       const median = calcMedian(overallScores);
       const variance = overallScores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / count;
-      const catAvg = (key: string) => {
-        const vals = wr.map(r => norm((r as any)[key] as number));
+      const catAvg = (key: "nose" | "taste" | "finish") => {
+        const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
+        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
         return vals.reduce((a, b) => a + b, 0) / count;
       };
       return { whisky: w, count, avg: r1(avg), median: r1(median), stdDev: r1(Math.sqrt(variance)), noseAvg: r1(catAvg("nose")), tasteAvg: r1(catAvg("taste")), finishAvg: r1(catAvg("finish")) };
@@ -6251,7 +6264,12 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const auth = await requireOwnerOrAdmin(req, req.params.id);
       if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       const profile = await storage.getFlavorProfile(req.params.id);
-      res.json(profile);
+      const userRatings = await storage.getRatingsForParticipant(req.params.id);
+      const userTastingIds = [...new Set(userRatings.map(r => r.tastingId))];
+      const userTastings = await Promise.all(userTastingIds.map(id => storage.getTasting(id)));
+      const scales = new Set(userTastings.filter(Boolean).map(t => t!.ratingScale ?? 100));
+      const hasMultipleScales = scales.size > 1 || (scales.size === 1 && !scales.has(100));
+      res.json({ ...profile, hasMultipleScales });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -6321,8 +6339,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         const norm = 100 / scale;
         return {
           whiskyId: r.whiskyId,
-          nose: r.nose * norm, taste: r.taste * norm, finish: r.finish * norm,
-          overall: r.overall * norm,
+          nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm,
+          overall: r.normalizedScore ?? r.overall * norm,
           ratedAt: r.updatedAt || null,
         };
       });
@@ -6384,7 +6402,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       for (const r of allRatingsRaw) {
         const scale = tastingScaleMap.get(r.tastingId) ?? 100;
         const norm = 100 / scale;
-        const normOverall = r.overall * norm;
+        const normOverall = r.normalizedScore ?? r.overall * norm;
         platformAllOveralls.push(normOverall);
         platformParticipantIds.add(r.participantId);
 
@@ -6392,9 +6410,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           platformByWhisky[r.whiskyId] = { overalls: [], nose: [], taste: [], finish: [] };
         }
         platformByWhisky[r.whiskyId].overalls.push(normOverall);
-        platformByWhisky[r.whiskyId].nose.push(r.nose * norm);
-        platformByWhisky[r.whiskyId].taste.push(r.taste * norm);
-        platformByWhisky[r.whiskyId].finish.push(r.finish * norm);
+        platformByWhisky[r.whiskyId].nose.push(r.normalizedNose ?? r.nose * norm);
+        platformByWhisky[r.whiskyId].taste.push(r.normalizedTaste ?? r.taste * norm);
+        platformByWhisky[r.whiskyId].finish.push(r.normalizedFinish ?? r.finish * norm);
       }
 
       const platformMedianOverall = calcMedian(platformAllOveralls);
@@ -6482,10 +6500,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             for (const r of friendRatings) {
               const scale = tastingScaleMap.get(r.tastingId) ?? 100;
               const norm = 100 / scale;
-              friendDimScores.nose.push(r.nose * norm);
-              friendDimScores.taste.push(r.taste * norm);
-              friendDimScores.finish.push(r.finish * norm);
-              friendDimScores.overall.push(r.overall * norm);
+              friendDimScores.nose.push(r.normalizedNose ?? r.nose * norm);
+              friendDimScores.taste.push(r.normalizedTaste ?? r.taste * norm);
+              friendDimScores.finish.push(r.normalizedFinish ?? r.finish * norm);
+              friendDimScores.overall.push(r.normalizedScore ?? r.overall * norm);
             }
             const friendMedians: Record<string, number> = {};
             for (const dim of dims) {
@@ -6504,10 +6522,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         for (const r of allRatingsRaw) {
           const scale = tastingScaleMap.get(r.tastingId) ?? 100;
           const norm = 100 / scale;
-          platformDimScores.nose.push(r.nose * norm);
-          platformDimScores.taste.push(r.taste * norm);
-          platformDimScores.finish.push(r.finish * norm);
-          platformDimScores.overall.push(r.overall * norm);
+          platformDimScores.nose.push(r.normalizedNose ?? r.nose * norm);
+          platformDimScores.taste.push(r.normalizedTaste ?? r.taste * norm);
+          platformDimScores.finish.push(r.normalizedFinish ?? r.finish * norm);
+          platformDimScores.overall.push(r.normalizedScore ?? r.overall * norm);
         }
         const platformMedians: Record<string, number> = {};
         for (const dim of dims) {
@@ -6527,12 +6545,17 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         };
       }
 
+      const userTastingIds = new Set(userRatingsRaw.map(r => r.tastingId));
+      const userScales = new Set(Array.from(userTastingIds).map(id => tastingScaleMap.get(id) ?? 100));
+      const hasMultipleScales = userScales.size > 1 || (userScales.size === 1 && !userScales.has(100));
+
       res.json({
         ratingStyle,
         tasteStructure: dimAvgs,
         whiskyComparison,
         confidence,
         comparisonData,
+        hasMultipleScales,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -8352,9 +8375,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const allParticipants = await storage.getAllParticipants();
       const participantMap = new Map(allParticipants.map(p => [p.id, p.name]));
 
+      const detailScale = tasting.ratingScale ?? 100;
+      const detailNorm = 100 / detailScale;
       const whiskyDetails = whiskiesData.map(w => {
         const wRatings = ratingsData.filter(r => r.whiskyId === w.id);
-        const overallScores = wRatings.map(r => r.overall).filter((v): v is number => v != null);
+        const overallScores = wRatings.map(r => r.normalizedScore ?? r.overall * detailNorm).filter((v): v is number => v != null);
         const avgOverall = overallScores.length > 0 ? overallScores.reduce((a, b) => a + b, 0) / overallScores.length : null;
 
         return {
@@ -8372,10 +8397,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           ratings: wRatings.map(r => ({
             participantName: participantMap.get(r.participantId) || "Unknown",
             participantId: r.participantId,
-            nose: r.nose,
-            taste: r.taste,
-            finish: r.finish,
-            overall: r.overall,
+            nose: r.normalizedNose ?? r.nose * detailNorm,
+            taste: r.normalizedTaste ?? r.taste * detailNorm,
+            finish: r.normalizedFinish ?? r.finish * detailNorm,
+            overall: r.normalizedScore ?? r.overall * detailNorm,
             notes: r.notes,
           })),
         };
@@ -10175,12 +10200,14 @@ Important rules:
             Nose: "", Taste: "", Finish: "", Balance: "", Overall: "", Notes: ""
           });
         }
+        const exportScale = t.ratingScale ?? 100;
+        const exportNorm = 100 / exportScale;
         for (const r of myRatings) {
           const w = whiskies.find((w: any) => w.id === r.whiskyId);
           rows.push({
             Tasting: t.title, Date: t.date, Location: t.location, Status: t.status,
             Whisky: w?.name || "", Distillery: w?.distillery || "", Age: w?.age || "", ABV: w?.abv || "",
-            Nose: r.nose, Taste: r.taste, Finish: r.finish, Overall: r.overall,
+            Nose: r.normalizedNose ?? r.nose * exportNorm, Taste: r.normalizedTaste ?? r.taste * exportNorm, Finish: r.normalizedFinish ?? r.finish * exportNorm, Overall: r.normalizedScore ?? r.overall * exportNorm,
             Notes: r.notes || ""
           });
         }
@@ -10316,11 +10343,13 @@ Important rules:
         const whiskies = await storage.getWhiskiesForTasting(t.id);
         const ratings = await storage.getRatingsForTasting(t.id);
         const myRatings = ratings.filter((r: any) => r.participantId === participantId);
+        const expScale = t.ratingScale ?? 100;
+        const expNorm = 100 / expScale;
         for (const r of myRatings) {
           const w = whiskies.find((w: any) => w.id === r.whiskyId);
           tastingRows.push({
             Tasting: t.title, Date: t.date, Whisky: w?.name || "", Distillery: w?.distillery || "",
-            ABV: w?.abv || "", Nose: r.nose, Taste: r.taste, Finish: r.finish, Overall: r.overall, Notes: r.notes || ""
+            ABV: w?.abv || "", Nose: r.normalizedNose ?? r.nose * expNorm, Taste: r.normalizedTaste ?? r.taste * expNorm, Finish: r.normalizedFinish ?? r.finish * expNorm, Overall: r.normalizedScore ?? r.overall * expNorm, Notes: r.notes || ""
           });
         }
       }
@@ -11116,7 +11145,7 @@ Important rules:
       // 2a. Category Correlations: Pearson correlation between sub-scores and overall
       const corrData = allRatings.map(r => {
         const norm = 100 / r.scale;
-        return { nose: r.nose * norm, taste: r.taste * norm, finish: r.finish * norm, overall: r.overall * norm };
+        return { nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm, overall: r.normalizedScore ?? r.overall * norm };
       });
       const pearson = (xs: number[], ys: number[]): number => {
         const n = xs.length;
@@ -11148,7 +11177,7 @@ Important rules:
           const val = w[prop];
           if (!val) continue;
           if (!acc[val]) acc[val] = { total: 0, count: 0 };
-          acc[val].total += r.overall * (100 / r.scale);
+          acc[val].total += (r.normalizedScore ?? r.overall * (100 / r.scale));
           acc[val].count++;
         }
         const values = Object.entries(acc)
@@ -11164,9 +11193,9 @@ Important rules:
         const pRatings = allRatings.filter(r => r.participantId === pid);
         if (pRatings.length < 3) return null;
         const norm = (r: typeof pRatings[0]) => 100 / r.scale;
-        const avgNose = pRatings.reduce((a, r) => a + r.nose * norm(r), 0) / pRatings.length;
-        const avgTaste = pRatings.reduce((a, r) => a + r.taste * norm(r), 0) / pRatings.length;
-        const avgFinish = pRatings.reduce((a, r) => a + r.finish * norm(r), 0) / pRatings.length;
+        const avgNose = pRatings.reduce((a, r) => a + (r.normalizedNose ?? r.nose * norm(r)), 0) / pRatings.length;
+        const avgTaste = pRatings.reduce((a, r) => a + (r.normalizedTaste ?? r.taste * norm(r)), 0) / pRatings.length;
+        const avgFinish = pRatings.reduce((a, r) => a + (r.normalizedFinish ?? r.finish * norm(r)), 0) / pRatings.length;
         return { participantId: pid, name: participantMap.get(pid) ?? "Unknown", nose: avgNose, taste: avgTaste, finish: avgFinish, ratingCount: pRatings.length };
       }).filter(Boolean);
 
@@ -11183,11 +11212,14 @@ Important rules:
 
       // --- SUMMARY ---
       const uniqueAnalyticsParticipants = await getUniquePersonCount(participantIds);
+      const uniqueScales = new Set(completedTastings.map(t => t.ratingScale ?? 100));
+      const hasMultipleScales = uniqueScales.size > 1 || (uniqueScales.size === 1 && !uniqueScales.has(100));
       const summary = {
         totalTastings: completedTastings.length,
         totalRatings: allRatings.length,
         totalParticipants: uniqueAnalyticsParticipants,
         totalWhiskies: new Set(allRatings.map(r => r.whiskyId)).size,
+        hasMultipleScales,
       };
 
       res.json({
@@ -12449,10 +12481,14 @@ Rules:
         const finish = clamp(score.finish);
         const overall = clamp(score.overall);
 
-        let normalizedScore: number | null = null;
-        if (overall != null) {
-          normalizedScore = maxScale === 100 ? overall : Math.round((overall / maxScale) * 1000) / 10;
-        }
+        const normDim = (v: number | null): number | null => {
+          if (v == null) return null;
+          return maxScale === 100 ? v : Math.round((v / maxScale) * 1000) / 10;
+        };
+        const normalizedScore = normDim(overall);
+        const normalizedNose = normDim(nose);
+        const normalizedTaste = normDim(taste);
+        const normalizedFinish = normDim(finish);
 
         const rating = await storage.upsertRating({
           tastingId,
@@ -12465,6 +12501,9 @@ Rules:
           overall,
           notes: score.notes || "",
           normalizedScore,
+          normalizedNose,
+          normalizedTaste,
+          normalizedFinish,
           source: "paper",
         });
         savedRatings.push(rating);
@@ -12702,13 +12741,15 @@ Rules:
 
       const whiskyRatings = await storage.getRatingsForWhisky(whiskyId);
       const allTastings = await storage.getAllTastings();
+      const tastingScaleExplore = new Map(allTastings.map(t => [t.id, t.ratingScale ?? 100]));
 
       const tasting = allTastings.find(t => t.id === whisky.tastingId);
+      const exploreNorm = (r: typeof whiskyRatings[0]) => 100 / (tastingScaleExplore.get(r.tastingId) ?? 100);
 
-      const noseScores = whiskyRatings.map(r => r.nose).filter((v): v is number => v != null && v > 0);
-      const tasteScores = whiskyRatings.map(r => r.taste).filter((v): v is number => v != null && v > 0);
-      const finishScores = whiskyRatings.map(r => r.finish).filter((v): v is number => v != null && v > 0);
-      const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
+      const noseScores = whiskyRatings.map(r => r.normalizedNose ?? r.nose * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
+      const tasteScores = whiskyRatings.map(r => r.normalizedTaste ?? r.taste * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
+      const finishScores = whiskyRatings.map(r => r.normalizedFinish ?? r.finish * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
+      const overallScores = whiskyRatings.map(r => r.normalizedScore ?? r.overall * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
 
       const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
       const minMax = (arr: number[]) => arr.length > 0 ? { min: Math.min(...arr), max: Math.max(...arr) } : null;
@@ -12722,6 +12763,8 @@ Rules:
       const relatedTastings = allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => ({
         id: t.id, title: t.title, date: t.date, status: t.status,
       }));
+      const relatedScales = new Set(allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => t.ratingScale ?? 100));
+      const hasNonStandardScale = relatedScales.size > 1 || (relatedScales.size === 1 && !relatedScales.has(100));
 
       const requesterId = req.query.participantId as string | undefined;
       const requester = requesterId ? await storage.getParticipant(requesterId) : null;
@@ -12749,6 +12792,7 @@ Rules:
         },
         tastingContext: isAuthenticated && tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
         relatedTastings: isAuthenticated ? relatedTastings : [],
+        hasNonStandardScale,
       });
     } catch (e: any) {
       console.error("Labs explore whisky detail error:", e);

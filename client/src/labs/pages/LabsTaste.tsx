@@ -4,8 +4,9 @@ import {
   Wine, Calendar, ChevronRight, BookOpen,
   BarChart3, Target, Compass, Award,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
-  Download, Brain, Utensils, Library,
+  Download, Brain, Utensils, Library, Info,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
 import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi } from "@/lib/api";
@@ -54,6 +55,7 @@ export default function LabsTaste() {
   const session = useSession();
   const pid = currentParticipant?.id || session.pid;
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
 
   const { data: tastings } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -154,9 +156,15 @@ export default function LabsTaste() {
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
         My Taste
       </h1>
-      <p className="text-sm mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
+      <p className="text-sm mb-4 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
         Your personal whisky world
       </p>
+      {!analyticsLocked && flavorProfile?.hasMultipleScales && (
+        <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="taste-normalized-hint">
+          <Info className="w-3 h-3 flex-shrink-0" />
+          {t("labs.scoresNormalizedMultiScale", "Contains ratings from different scales, normalized to 100 points")}
+        </p>
+      )}
 
       {analyticsLocked ? (
         <div className="labs-card p-6 mb-6 text-center labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">

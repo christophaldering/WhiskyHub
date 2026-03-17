@@ -8,8 +8,9 @@ import {
 } from "recharts";
 import {
   ChevronLeft, GitCompareArrows, Search, Download, ChevronDown,
-  Wine, ArrowUpDown, Filter, X,
+  Wine, ArrowUpDown, Filter, X, Info,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const CHART_COLORS = ["#d4a256", "#6aa8d4", "#d97c5a"];
 
@@ -109,6 +110,7 @@ export default function LabsTasteCompare() {
   const pid = session.pid || "";
   const searchStr = useSearch();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [radarSearch, setRadarSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -121,7 +123,7 @@ export default function LabsTasteCompare() {
     navigate(`/labs/taste/compare${buildSearch(next)}`, { replace: true });
   };
 
-  const { data, isLoading } = useQuery<{ ratedWhiskies: RatedWhiskyItem[]; whiskyComparison?: WhiskyComparisonItem[] }>({
+  const { data, isLoading } = useQuery<{ ratedWhiskies: RatedWhiskyItem[]; whiskyComparison?: WhiskyComparisonItem[]; hasMultipleScales?: boolean }>({
     queryKey: ["flavor-profile-compare", pid],
     queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all", "platform"),
     enabled: !!pid,
@@ -217,9 +219,15 @@ export default function LabsTasteCompare() {
           Compare
         </h1>
       </div>
-      <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
+      <p className="text-sm mb-4 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
         Your scores vs. the platform community
       </p>
+      {data?.hasMultipleScales && (
+        <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="compare-normalized-hint">
+          <Info className="w-3 h-3 flex-shrink-0" />
+          {t("labs.scoresNormalizedMultiScale", "Contains ratings from different scales, normalized to 100 points")}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="labs-card p-8 text-center"><div className="labs-spinner mx-auto" /></div>

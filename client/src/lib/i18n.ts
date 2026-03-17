@@ -4470,6 +4470,8 @@ const resources = {
           noResults: "No whiskies found. Try a clearer photo or text.",
           importFailed: "AI import failed. Please try again.",
         },
+        scoresNormalizedHint: "Scores normalized to 100-point scale",
+        scoresNormalizedMultiScale: "Contains ratings from different scales, normalized to 100 points",
       },
       m2: {
         ai: {
@@ -10463,6 +10465,8 @@ const resources = {
           noResults: "Keine Whiskys gefunden. Versuche ein klareres Foto oder Text.",
           importFailed: "AI-Import fehlgeschlagen. Bitte erneut versuchen.",
         },
+        scoresNormalizedHint: "Werte auf 100-Punkte-Skala normalisiert",
+        scoresNormalizedMultiScale: "Enthält Bewertungen aus verschiedenen Skalen, auf 100 Punkte normalisiert",
       },
       m2: {
         ai: {

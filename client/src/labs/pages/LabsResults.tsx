@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check, Info } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
@@ -924,6 +924,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
         )}
       </div>
+
+      {maxScore !== 100 && (
+        <p className="text-xs flex items-center gap-1 mb-4 labs-fade-in" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="results-normalized-hint">
+          <Info className="w-3 h-3 flex-shrink-0" />
+          {t("labs.scoresNormalizedHint", "Scores normalized to 100-point scale")}
+        </p>
+      )}
 
       {topWhisky && topWhisky.avgOverall != null && (
         <div

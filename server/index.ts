@@ -149,8 +149,36 @@ async function backfillNormalizedScores() {
     );
     const rCount = (rResult as any)?.rowCount ?? 0;
 
-    if (htCount > 0 || rCount > 0) {
-      log(`Backfill: normalized ${htCount} historical entries, ${rCount} ratings to 0-100 scale`, "seed");
+    const rDimResult = await dbInst.execute(
+      sqlTag`UPDATE ratings r
+             SET
+               normalized_nose = CASE
+                 WHEN r.nose IS NULL THEN r.normalized_nose
+                 WHEN t.rating_scale = 100 THEN LEAST(GREATEST(r.nose, 0), 100)
+                 ELSE ROUND((LEAST(GREATEST(r.nose, 0), t.rating_scale) / t.rating_scale * 100)::numeric, 1)
+               END,
+               normalized_taste = CASE
+                 WHEN r.taste IS NULL THEN r.normalized_taste
+                 WHEN t.rating_scale = 100 THEN LEAST(GREATEST(r.taste, 0), 100)
+                 ELSE ROUND((LEAST(GREATEST(r.taste, 0), t.rating_scale) / t.rating_scale * 100)::numeric, 1)
+               END,
+               normalized_finish = CASE
+                 WHEN r.finish IS NULL THEN r.normalized_finish
+                 WHEN t.rating_scale = 100 THEN LEAST(GREATEST(r.finish, 0), 100)
+                 ELSE ROUND((LEAST(GREATEST(r.finish, 0), t.rating_scale) / t.rating_scale * 100)::numeric, 1)
+               END
+             FROM tastings t
+             WHERE r.tasting_id = t.id
+               AND (
+                 (r.normalized_nose IS NULL AND r.nose IS NOT NULL)
+                 OR (r.normalized_taste IS NULL AND r.taste IS NOT NULL)
+                 OR (r.normalized_finish IS NULL AND r.finish IS NOT NULL)
+               )`
+    );
+    const rDimCount = (rDimResult as any)?.rowCount ?? 0;
+
+    if (htCount > 0 || rCount > 0 || rDimCount > 0) {
+      log(`Backfill: normalized ${htCount} historical entries, ${rCount} rating overalls, ${rDimCount} rating dimensions to 0-100 scale`, "seed");
     }
   } catch (e) {
     log(`Backfill normalized scores failed: ${(e as Error).message}`, "seed");

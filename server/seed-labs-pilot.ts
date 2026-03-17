@@ -145,11 +145,11 @@ export async function seedLabsPilotData() {
       const nose = randomScore(50, 95);
       const taste = randomScore(50, 95);
       const finish = randomScore(45, 90);
-      const balance = randomScore(50, 92);
-      const overall = Math.round(((nose + taste + finish + balance) / 4) * 10) / 10;
+      const overall = Math.round(((nose + taste + finish) / 3) * 10) / 10;
       await db.insert(ratings).values({
         tastingId: tastingA.id, whiskyId: w.id, participantId: p.id,
-        nose, taste, finish, balance, overall, normalizedScore: overall,
+        nose, taste, finish, balance: 0, overall, normalizedScore: overall,
+        normalizedNose: nose, normalizedTaste: taste, normalizedFinish: finish,
       });
       ratingsCreated++;
     }
