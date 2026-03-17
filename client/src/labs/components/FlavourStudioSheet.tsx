@@ -2118,7 +2118,7 @@ export default function FlavourStudioSheet({
 
   const quickTerms = useMemo(() => getQuickAddTerms(categories, section), [categories, section]);
 
-  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : dimension === "finish" ? (isDE ? "Abgang" : "Finish") : (isDE ? "Balance" : "Balance");
+  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : (isDE ? "Abgang" : "Finish");
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(o); }}>
