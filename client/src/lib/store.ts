@@ -28,8 +28,8 @@ interface WishlistTransfer {
 export const LANDING_VERSION = 3;
 
 interface AppState extends AmbientState {
-  currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null;
-  setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null) => void;
+  currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; photoUrl?: string } | null;
+  setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; photoUrl?: string } | null) => void;
   lastSeenLandingVersion: number;
   setLastSeenLandingVersion: (version: number) => void;
   storageConsentDismissed: boolean;

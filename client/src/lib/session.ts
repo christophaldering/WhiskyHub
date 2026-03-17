@@ -7,6 +7,7 @@ const SK_MODE = "session_mode";
 const SK_NAME = "session_name";
 const SK_PID = "session_pid";
 const SK_ROLE = "session_role";
+const SK_PHOTO_URL = "session_photo_url";
 
 const LK_REMEMBER = "session_remember";
 const LK_TOKEN = "session_resume_token";
@@ -21,6 +22,7 @@ export interface SessionState {
   name?: string | null;
   pid?: string;
   role?: string;
+  photoUrl?: string;
   remember?: boolean;
 }
 
@@ -31,14 +33,15 @@ export function getSession(): SessionState {
     const name = sessionStorage.getItem(SK_NAME) || null;
     const pid = sessionStorage.getItem(SK_PID) || undefined;
     const role = sessionStorage.getItem(SK_ROLE) || undefined;
+    const photoUrl = sessionStorage.getItem(SK_PHOTO_URL) || undefined;
     const remember = localStorage.getItem(LK_REMEMBER) === "1";
-    return { signedIn, mode, name, pid, role, remember };
+    return { signedIn, mode, name, pid, role, photoUrl, remember };
   } catch {
     return { signedIn: false };
   }
 }
 
-function setSessionStorage(mode: SessionMode, name?: string | null, pid?: string, role?: string) {
+function setSessionStorage(mode: SessionMode, name?: string | null, pid?: string, role?: string, photoUrl?: string) {
   try {
     sessionStorage.setItem(SK_SIGNED_IN, "1");
     sessionStorage.setItem(SK_MODE, mode);
@@ -48,6 +51,8 @@ function setSessionStorage(mode: SessionMode, name?: string | null, pid?: string
     else sessionStorage.removeItem(SK_PID);
     if (role) sessionStorage.setItem(SK_ROLE, role);
     else sessionStorage.removeItem(SK_ROLE);
+    if (photoUrl) sessionStorage.setItem(SK_PHOTO_URL, photoUrl);
+    else sessionStorage.removeItem(SK_PHOTO_URL);
   } catch {}
 }
 
@@ -58,6 +63,7 @@ function clearSessionStorage() {
     sessionStorage.removeItem(SK_NAME);
     sessionStorage.removeItem(SK_PID);
     sessionStorage.removeItem(SK_ROLE);
+    sessionStorage.removeItem(SK_PHOTO_URL);
   } catch {}
 }
 
@@ -86,10 +92,10 @@ export function setSessionPid(pid: string) {
   } catch {}
 }
 
-export function syncStoreParticipant(pid?: string, name?: string | null, role?: string) {
+export function syncStoreParticipant(pid?: string, name?: string | null, role?: string, photoUrl?: string) {
   try {
     if (pid) {
-      useAppStore.getState().setParticipant({ id: pid, name: name || "", role });
+      useAppStore.getState().setParticipant({ id: pid, name: name || "", role, photoUrl });
     } else {
       useAppStore.getState().setParticipant(null);
     }
@@ -128,11 +134,12 @@ export async function signIn(opts: {
   const displayName = data.name || opts.name || null;
   const pid = data.pid || undefined;
   const role = data.role || undefined;
-  setSessionStorage(opts.mode, displayName, pid, role);
+  const photoUrl = data.photoUrl || undefined;
+  setSessionStorage(opts.mode, displayName, pid, role, photoUrl);
   if (pid) {
     try { localStorage.setItem("casksense_participant_id", pid); } catch {}
   }
-  syncStoreParticipant(pid, displayName, role);
+  syncStoreParticipant(pid, displayName, role, photoUrl);
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
   } else {
@@ -174,11 +181,12 @@ export async function tryAutoResume(): Promise<boolean> {
             const name = data.name || localStorage.getItem(LK_NAME) || null;
             const pid = data.pid || undefined;
             const role = data.role || undefined;
-            setSessionStorage(mode, name, pid, role);
+            const photoUrl = data.photoUrl || undefined;
+            setSessionStorage(mode, name, pid, role, photoUrl);
             if (pid) {
               try { localStorage.setItem("casksense_participant_id", pid); } catch {}
             }
-            syncStoreParticipant(pid, name, role);
+            syncStoreParticipant(pid, name, role, photoUrl);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
@@ -223,9 +231,9 @@ export async function tryAutoResume(): Promise<boolean> {
           const p = await res.json();
           if (p?.id) {
             const mode = (localStorage.getItem(LK_MODE) || "log") as SessionMode;
-            setSessionStorage(mode, p.name || null, p.id, p.role || undefined);
+            setSessionStorage(mode, p.name || null, p.id, p.role || undefined, p.photoUrl || undefined);
             try { localStorage.setItem("casksense_participant_id", p.id); } catch {}
-            syncStoreParticipant(p.id, p.name, p.role);
+            syncStoreParticipant(p.id, p.name, p.role, p.photoUrl || undefined);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }

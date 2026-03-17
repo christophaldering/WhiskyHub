@@ -21,6 +21,7 @@ interface OnlineFriend {
   email?: string;
   participantId?: string;
   lastSeenAt?: string;
+  photoUrl?: string | null;
 }
 
 function timeAgo(iso: string | undefined): string {
@@ -670,12 +671,21 @@ export default function LabsCircle() {
                         data-testid={`labs-circle-online-avatar-${of.friendId}`}
                       >
                         <div className="relative">
+                          {of.photoUrl ? (
+                            <img
+                              src={of.photoUrl}
+                              alt=""
+                              className="w-12 h-12 rounded-full"
+                              style={{ objectFit: "cover", border: "2px solid var(--labs-success)" }}
+                            />
+                          ) : (
                           <div
                             className="w-12 h-12 rounded-full flex items-center justify-center text-[14px] font-bold"
                             style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "2px solid var(--labs-success)" }}
                           >
                             {initials}
                           </div>
+                          )}
                           <div
                             className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
                             style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
@@ -713,6 +723,17 @@ export default function LabsCircle() {
                     data-testid={`labs-circle-friendlist-${i}`}
                   >
                     <div className="relative flex-shrink-0">
+                      {(friend as any).photoUrl ? (
+                        <img
+                          src={(friend as any).photoUrl}
+                          alt=""
+                          className="w-10 h-10 rounded-full"
+                          style={{
+                            objectFit: "cover",
+                            border: isOnline ? "2px solid var(--labs-success)" : "2px solid var(--labs-accent-muted)",
+                          }}
+                        />
+                      ) : (
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
                         style={{
@@ -722,6 +743,7 @@ export default function LabsCircle() {
                       >
                         {displayName[0]}
                       </div>
+                      )}
                       {isOnline && (
                         <div
                           className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"

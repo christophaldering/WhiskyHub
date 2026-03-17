@@ -558,7 +558,16 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             }}
             data-testid="labs-profile-btn"
           >
-            <User className="w-4 h-4" />
+            {currentParticipant?.photoUrl ? (
+              <img
+                src={currentParticipant.photoUrl}
+                alt=""
+                style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", border: "1.5px solid var(--labs-accent)" }}
+                data-testid="labs-profile-avatar"
+              />
+            ) : (
+              <User className="w-4 h-4" />
+            )}
             {currentParticipant?.name?.split(" ")[0] || "Profile"}
           </button>
         </div>

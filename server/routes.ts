@@ -2227,7 +2227,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match via ${email ? "email" : "name"})`);
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
-        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user" };
+        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: participant.photoUrl || undefined };
         const token = generateResumeToken();
         sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, role: participant.role || "user", expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
@@ -2307,7 +2307,14 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         return res.status(503).json({ ok: false, message: "Verification check temporarily unavailable. Please try again." });
       }
     }
-    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user" });
+    let resumePhotoUrl: string | undefined;
+    if (stored.pid) {
+      try {
+        const p = await storage.getParticipant(stored.pid);
+        if (p?.photoUrl) resumePhotoUrl = p.photoUrl;
+      } catch {}
+    }
+    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user", photoUrl: resumePhotoUrl });
   };
 
   const handleSignout = (req: Request, res: Response) => {
@@ -3175,10 +3182,22 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.get("/api/participants/:id/friends", async (req, res) => {
     try {
-      const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
       const friends = await storage.getWhiskyFriends(req.params.id);
-      res.json(friends);
+      const enriched = await Promise.all(
+        friends.map(async (f: any) => {
+          try {
+            let match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
+            if (!match) {
+              const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
+              if (fullName) match = await storage.getParticipantByName(fullName);
+            }
+            return { ...f, photoUrl: match?.photoUrl || null };
+          } catch { return { ...f, photoUrl: null }; }
+        })
+      );
+      res.json(enriched);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -3197,7 +3216,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
             if (fullName) match = await storage.getParticipantByName(fullName);
           }
-          return match ? { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt } : null;
+          return match ? { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt, photoUrl: match.photoUrl || null } : null;
         })
       );
       const onlineFriends = allParticipants.filter((p) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
