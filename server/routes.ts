@@ -1034,7 +1034,9 @@ export async function registerRoutes(
     if (!participant) return res.status(404).json({ message: "Not found" });
     const requesterId = req.headers["x-participant-id"] as string;
     if (requesterId === participant.id) {
-      res.json(participant);
+      let photoUrl: string | undefined;
+      try { const prof = await storage.getProfile(participant.id); if (prof?.photoUrl) photoUrl = prof.photoUrl; } catch {}
+      res.json({ ...participant, photoUrl });
     } else {
       res.json({ id: participant.id, name: participant.name, role: participant.role, language: participant.language });
     }
