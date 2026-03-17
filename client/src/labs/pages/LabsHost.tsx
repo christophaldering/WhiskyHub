@@ -44,6 +44,88 @@ const EXCEL_HEADER_MAP: Record<string, string> = {
   "notes": "notes", "host summary": "hostSummary",
 };
 
+function _parseStandardRows(rows: any[]): any[] {
+  return rows
+    .map((row) => {
+      const mapped: Record<string, any> = Object.create(null);
+      for (const [rawKey, val] of Object.entries(row)) {
+        const field = EXCEL_HEADER_MAP[rawKey.trim().toLowerCase()];
+        if (field && EXCEL_ALLOWED_FIELDS.has(field) && val !== undefined && val !== "") {
+          mapped[field] = String(val).trim();
+        }
+      }
+      return mapped;
+    })
+    .filter((w) => w.name && w.name.length > 0);
+}
+
+function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
+  const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  if (rawRows.length === 0) return null;
+
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
+    const row = rawRows[i];
+    if (!Array.isArray(row) || row.length === 0) continue;
+    const asStrings = row.map((c: any) => String(c).trim().toLowerCase());
+    const matchedFields = asStrings.filter((s: string) => EXCEL_HEADER_MAP[s] !== undefined);
+    const hasName = matchedFields.some((s: string) => EXCEL_HEADER_MAP[s] === "name");
+    if (matchedFields.length >= 2 || (matchedFields.length >= 1 && hasName)) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  if (headerRowIdx >= 0) {
+    const headerRow = rawRows[headerRowIdx].map((c: any) => String(c).trim());
+    const dataRows = rawRows.slice(headerRowIdx + 1);
+    const jsonRows = dataRows
+      .filter((r: any[]) => r.some((c: any) => c !== ""))
+      .map((r: any[]) => {
+        const obj: Record<string, any> = {};
+        headerRow.forEach((h: string, idx: number) => {
+          if (h) obj[h] = idx < r.length ? r[idx] : "";
+        });
+        return obj;
+      });
+    const whiskies = _parseStandardRows(jsonRows);
+    if (whiskies.length > 0) return whiskies;
+  }
+
+  const firstCol = rawRows.map((r: any[]) => (r.length > 0 ? String(r[0]).trim().toLowerCase() : ""));
+  const transposedMatchedFields = firstCol.filter((s: string) => EXCEL_HEADER_MAP[s] !== undefined);
+  const transposedHasName = transposedMatchedFields.some((s: string) => EXCEL_HEADER_MAP[s] === "name");
+  if (transposedMatchedFields.length >= 2 || (transposedMatchedFields.length >= 1 && transposedHasName)) {
+    const attrRowIndices: number[] = [];
+    const attrKeys: string[] = [];
+    firstCol.forEach((label: string, idx: number) => {
+      if (EXCEL_HEADER_MAP[label] !== undefined) {
+        attrRowIndices.push(idx);
+        attrKeys.push(label);
+      }
+    });
+
+    const numCols = Math.max(...rawRows.map((r: any[]) => r.length));
+    const jsonRows: Record<string, any>[] = [];
+    for (let col = 1; col < numCols; col++) {
+      const obj: Record<string, any> = {};
+      let hasValue = false;
+      attrRowIndices.forEach((rowIdx: number, ai: number) => {
+        const val = rowIdx < rawRows.length && col < rawRows[rowIdx].length ? rawRows[rowIdx][col] : "";
+        if (val !== "" && val !== undefined) {
+          obj[attrKeys[ai]] = val;
+          hasValue = true;
+        }
+      });
+      if (hasValue) jsonRows.push(obj);
+    }
+    const whiskies = _parseStandardRows(jsonRows);
+    if (whiskies.length > 0) return whiskies;
+  }
+
+  return null;
+}
+
 function parseExcelWhiskies(file: File): Promise<any[]> {
   if (file.size > EXCEL_MAX_SIZE) {
     return Promise.reject(new Error("Excel file too large (max 5 MB)."));
@@ -54,26 +136,22 @@ function parseExcelWhiskies(file: File): Promise<any[]> {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        if (!sheet) { resolve([]); return; }
-        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        if (rows.length > EXCEL_MAX_ROWS) {
-          reject(new Error(`Too many rows (${rows.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`));
+
+        let bestResult: any[] = [];
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName];
+          if (!sheet) continue;
+          const result = _tryParseSheet(sheet);
+          if (result && result.length > bestResult.length) {
+            bestResult = result;
+          }
+        }
+
+        if (bestResult.length > EXCEL_MAX_ROWS) {
+          reject(new Error(`Too many rows (${bestResult.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`));
           return;
         }
-        const whiskies = rows
-          .map((row) => {
-            const mapped: Record<string, any> = Object.create(null);
-            for (const [rawKey, val] of Object.entries(row)) {
-              const field = EXCEL_HEADER_MAP[rawKey.trim().toLowerCase()];
-              if (field && EXCEL_ALLOWED_FIELDS.has(field) && val !== undefined && val !== "") {
-                mapped[field] = String(val).trim();
-              }
-            }
-            return mapped;
-          })
-          .filter((w) => w.name && w.name.length > 0);
-        resolve(whiskies);
+        resolve(bestResult);
       } catch (err) {
         reject(err);
       }
@@ -1188,7 +1266,7 @@ function MobileCompanion({
         );
         setMobileAiSelected(nonDupeIndices);
       } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
-        setMobileAiError("No whiskies found in Excel file. Make sure the 'Name' column is filled.");
+        setMobileAiError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
         const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
         if (result?.whiskies?.length) {
@@ -4162,7 +4240,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         );
         setAiImportSelected(nonDupeIndices);
       } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
-        setAiImportError("No whiskies found in Excel file. Make sure the 'Name' column is filled.");
+        setAiImportError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
         const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
         if (result?.whiskies?.length) {
