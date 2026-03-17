@@ -1,5 +1,6 @@
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { Users, Mic, FlaskConical } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 function GlencairnHero({ size = 48 }: { size?: number }) {
   const glass = "M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z";
@@ -45,6 +46,11 @@ const ACTIONS = [
 
 export default function LabsHome() {
   const [, navigate] = useLocation();
+  const { currentParticipant } = useAppStore();
+
+  if (currentParticipant) {
+    return <Redirect to="/labs/tastings" />;
+  }
 
   return (
     <div className="labs-page" style={{ paddingTop: 40, paddingBottom: 40, maxWidth: 480 }}>

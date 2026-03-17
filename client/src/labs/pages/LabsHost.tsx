@@ -1012,6 +1012,7 @@ function MobileCompanion({
   queryClient,
   tastingId,
   navigate,
+  onSwitchToManage,
 }: {
   tasting: Record<string, unknown>;
   whiskies: Array<Record<string, unknown>>;
@@ -1021,6 +1022,7 @@ function MobileCompanion({
   queryClient: ReturnType<typeof useQueryClient>;
   tastingId: string;
   navigate: (path: string) => void;
+  onSwitchToManage?: () => void;
 }) {
   const goBack = useLabsBack("/labs/tastings");
   const statusCfg = STATUS_CONFIG[(tasting.status as string)] || STATUS_CONFIG.draft;
@@ -1867,6 +1869,17 @@ function MobileCompanion({
             {t("m2.host.myRating", "My Rating")}
           </button>
         )}
+
+        {onSwitchToManage && (
+          <button
+            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            onClick={onSwitchToManage}
+            data-testid="mobile-switch-manage"
+          >
+            <Settings className="w-4 h-4" />
+            Tasting verwalten
+          </button>
+        )}
       </div>
 
       {!isDraft && whiskyCount > 0 && (() => {
@@ -2356,6 +2369,15 @@ function CreateTastingForm() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+      <button
+        onClick={goBack}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-create-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Zurück
+      </button>
       <h1
         className="labs-h2 mb-2"
         style={{ color: "var(--labs-text)" }}
@@ -3889,6 +3911,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const goBack = useLabsBack("/labs/tastings");
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const [forceDesktopView, setForceDesktopView] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -4511,7 +4534,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const totalExpected = whiskyCount * participantCount;
   const ratingProgress = totalExpected > 0 ? Math.round((ratingCount / totalExpected) * 100) : 0;
 
-  if (isMobile && currentParticipant) {
+  if (isMobile && currentParticipant && !forceDesktopView) {
     return (
       <MobileCompanion
         tasting={tasting}
@@ -4522,11 +4545,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         queryClient={queryClient}
         tastingId={tastingId}
         navigate={navigate}
+        onSwitchToManage={() => setForceDesktopView(true)}
       />
     );
   }
 
   const showCockpitButton = !isMobile && tasting && (tasting.status === "open" || tasting.status === "reveal");
+  const showBackToCompanion = isMobile && forceDesktopView;
 
   if (cockpitMode && tasting && currentParticipant && (tasting.status === "open" || tasting.status === "reveal")) {
     return (
@@ -4539,15 +4564,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   return (
     <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-host-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Tastings
-      </button>
+      <div className="flex items-center gap-2 -ml-2 mb-4">
+        <button
+          onClick={showBackToCompanion ? () => setForceDesktopView(false) : goBack}
+          className="labs-btn-ghost flex items-center gap-1"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-host-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {showBackToCompanion ? "Zurück zur Session" : "Tastings"}
+        </button>
+      </div>
 
       <div className="flex items-start justify-between mb-6">
         <div className="flex-1 min-w-0">

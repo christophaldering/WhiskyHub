@@ -138,7 +138,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
   const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
   const isLive = tasting?.status === "open";
-  const isCompleted = tasting?.status === "archived";
+  const isCompleted = tasting?.status === "archived" || tasting?.status === "closed";
   const isReveal = tasting?.status === "reveal";
   const isDraft = tasting?.status === "draft";
   const status = STATUS_CONFIG[tasting?.status] || STATUS_CONFIG.draft;

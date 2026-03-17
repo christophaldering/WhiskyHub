@@ -612,7 +612,7 @@ function Router() {
 
         {/* === CASKSENSE LABS === */}
         <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
-        <Route path="/labs">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/labs">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/labs/*">
           <LabsLayout>
             <Switch>

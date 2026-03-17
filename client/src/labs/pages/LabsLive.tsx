@@ -1514,13 +1514,13 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
                   This session has not started yet
                 </p>
-              ) : tasting.status === "archived" ? (
+              ) : tasting.status === "archived" || tasting.status === "closed" ? (
                 <div>
                   {tasting.presentationSlide != null && (
                     <PresentationLiveBanner tastingId={tastingId} />
                   )}
                   <p className="text-sm mb-3" style={{ color: "var(--labs-text-muted)" }}>
-                    This session has been completed
+                    {tasting.status === "archived" ? "This session has been completed" : "Ratings are closed"}
                   </p>
                   <button
                     className="labs-btn-secondary"
@@ -1531,11 +1531,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     View Results
                   </button>
                 </div>
-              ) : (
-                <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-                  Ratings are currently closed
-                </p>
-              )}
+              ) : null}
             </div>
           )}
         </>
