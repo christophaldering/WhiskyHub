@@ -3722,7 +3722,12 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         }
       }
 
-      const updated = await storage.updateTastingBlindMode(req.params.id, { guidedWhiskyIndex: idx, guidedRevealStep: step });
+      const updateData: any = { guidedWhiskyIndex: idx, guidedRevealStep: step };
+      if (tasting.blindMode) {
+        updateData.revealIndex = idx;
+        updateData.revealStep = step;
+      }
+      const updated = await storage.updateTastingBlindMode(req.params.id, updateData);
       const allComplete = idx >= totalWhiskies - 1 && step >= maxSteps;
       console.log(`[LABS] Guided advance: whisky=${idx}/${totalWhiskies} step=${step}/${maxSteps} complete=${allComplete} tasting=${req.params.id}`);
       res.json({ ...updated, allComplete });

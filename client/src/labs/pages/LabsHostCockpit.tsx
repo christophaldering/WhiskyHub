@@ -282,6 +282,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const isBlind = tasting.blindMode;
   const isGuided = tasting.guidedMode;
   const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
+  const guidedRevealStep = tasting.guidedRevealStep ?? 0;
   const ratingScale = tasting.ratingScale ?? 100;
   const scaleDefault = Math.round(ratingScale / 2);
   const isLive = status === "open" || status === "reveal";
@@ -846,7 +847,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 </div>
                 {isBlind && isLive && (
                   <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                    Unveiled: {rv?.revealIndex ?? 0} / {whiskies.length}
+                    Unveiled: {isGuided ? Math.max(0, guidedIdx) : (rv?.revealIndex ?? 0)} / {whiskies.length}
                   </span>
                 )}
               </div>
@@ -943,21 +944,37 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   </button>
                 )}
 
-                {isLive && isGuided && (
+                {isLive && isGuided && (() => {
+                  const allDramsDone = guidedIdx >= whiskies.length - 1 && (!isBlind || guidedRevealStep >= (rv?.maxSteps ?? 0));
+                  let guidedBtnLabel = "Next Dram";
+                  if (guidedIdx < 0) {
+                    guidedBtnLabel = "Start First Dram";
+                  } else if (allDramsDone) {
+                    guidedBtnLabel = "All Drams Done";
+                  } else if (isBlind && rv) {
+                    if (guidedRevealStep < rv.maxSteps) {
+                      const lbl = rv.stepLabels[guidedRevealStep];
+                      guidedBtnLabel = lbl ? `Reveal ${lbl}` : "Reveal Next";
+                    } else {
+                      guidedBtnLabel = "Next Dram";
+                    }
+                  }
+                  return (
                   <button
                     onClick={() => guidedAdvanceMut.mutate()}
-                    disabled={guidedAdvanceMut.isPending || guidedIdx >= whiskies.length - 1}
+                    disabled={guidedAdvanceMut.isPending || allDramsDone}
                     className="cockpit-action-btn cockpit-action-primary"
                     data-testid="cockpit-next-dram"
                   >
                     {guidedAdvanceMut.isPending
                       ? <Loader2 style={{ width: 15, height: 15, animation: "spin 1s linear infinite" }} />
                       : <SkipForward style={{ width: 15, height: 15 }} />}
-                    {guidedIdx < 0 ? "Start First Dram" : guidedIdx >= whiskies.length - 1 ? "All Drams Done" : "Next Dram"}
+                    {guidedBtnLabel}
                   </button>
-                )}
+                  );
+                })()}
 
-                {isLive && isBlind && (
+                {isLive && isBlind && !isGuided && (
                   rv && rv.revealIndex < whiskies.length ? (
                     <button
                       onClick={() => revealNextMut.mutate()}
