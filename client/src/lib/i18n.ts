@@ -303,6 +303,57 @@ const resources = {
           scrollHint: "Scroll down to explore features & tour",
           learnMore: "Learn More",
           avgRating: "Average Score",
+          eyebrow: "WHISKY TASTING PLATFORM",
+          subline: "Where tasting becomes reflection.",
+          body: "What the community knows about every whisky. What your ratings reveal about you.",
+          startTasting: "Start Tasting",
+        },
+        twoways: {
+          solo: {
+            title: "Tasting alone",
+            text: "Log your dram. Build your palate profile. Discover patterns only your ratings reveal.",
+          },
+          together: {
+            title: "Tasting together",
+            text: "Host a blind round. Compare scores. Reveal together — and see how differently you taste.",
+          },
+        },
+        reveal: {
+          label: "THE REVEAL",
+          quote: "The moment everyone reveals their score. Nothing tastes the same after.",
+        },
+        benchmark: {
+          community: {
+            eyebrow: "COMMUNITY INTELLIGENCE",
+            title: "What 1,580 tastings know about every whisky.",
+          },
+          palate: {
+            eyebrow: "PALATE INTELLIGENCE",
+            title: "What your ratings reveal about you.",
+            heading: "Your Palate Profile",
+            dims: "5 dimensions",
+            you: "You",
+            communityLabel: "Community",
+          },
+          nose: "Nose",
+          taste: "Taste",
+          finish: "Finish",
+          smoke: "Smoke",
+          sweetness: "Sweetness",
+          fruit: "Fruit",
+          spice: "Spice",
+          body: "Body",
+          ratings: "ratings",
+        },
+        proof: {
+          whiskies: "Whiskies",
+          regions: "Regions",
+          dimensions: "Dimensions",
+          tagline: "One benchmark. Built by every tasting.",
+        },
+        cta: {
+          title: "Your next tasting starts here.",
+          button: "Start Tasting",
         },
         quickJoin: {
           label: "Invited to a tasting?",
@@ -434,11 +485,6 @@ const resources = {
             cta: "Sign In",
           },
           switchHint: "You can switch between modes anytime. Naked participants can sign up later — all ratings are preserved.",
-        },
-        cta: {
-          title: "Ready for the next tasting?",
-          desc: "Start a tasting, invite friends, and capture what you really perceive. Free to use — no account needed to start.",
-          button: "Open CaskSense",
         },
         footer: {
           about: "About CaskSense",
@@ -6348,6 +6394,10 @@ const resources = {
           scrollHint: "Scrolle nach unten für Features & Rundgang",
           learnMore: "Mehr erfahren",
           avgRating: "Durchschnittsnote",
+          eyebrow: "WHISKY TASTING PLATTFORM",
+          subline: "Wo Verkosten zur Reflexion wird.",
+          body: "Was die Community über jeden Whisky weiß. Was deine Bewertungen über dich verraten.",
+          startTasting: "Tasting starten",
         },
         quickJoin: {
           label: "Zum Tasting eingeladen?",
@@ -6358,6 +6408,53 @@ const resources = {
           fullAccess: "Voller CaskSense-Zugang mit allen Features?",
           noCode: "Kein Code?",
           noCodeLink: "So funktioniert's — weiter unten",
+        },
+        twoways: {
+          solo: {
+            title: "Solo verkosten",
+            text: "Halte deinen Dram fest. Baue dein Geschmacksprofil. Entdecke Muster, die nur deine Bewertungen zeigen.",
+          },
+          together: {
+            title: "Gemeinsam verkosten",
+            text: "Veranstalte eine Blind-Runde. Vergleiche Bewertungen. Enthüllt gemeinsam — und seht, wie unterschiedlich ihr schmeckt.",
+          },
+        },
+        reveal: {
+          label: "DAS REVEAL",
+          quote: "Der Moment, in dem alle ihre Bewertung aufdecken. Danach schmeckt nichts mehr gleich.",
+        },
+        benchmark: {
+          community: {
+            eyebrow: "COMMUNITY INTELLIGENZ",
+            title: "Was 1.580 Tastings über jeden Whisky wissen.",
+          },
+          palate: {
+            eyebrow: "GAUMEN-INTELLIGENZ",
+            title: "Was deine Bewertungen über dich verraten.",
+            heading: "Dein Geschmacksprofil",
+            dims: "5 Dimensionen",
+            you: "Du",
+            communityLabel: "Community",
+          },
+          nose: "Nase",
+          taste: "Geschmack",
+          finish: "Finish",
+          smoke: "Rauch",
+          sweetness: "Süße",
+          fruit: "Frucht",
+          spice: "Würze",
+          body: "Körper",
+          ratings: "Bewertungen",
+        },
+        proof: {
+          whiskies: "Whiskies",
+          regions: "Regionen",
+          dimensions: "Dimensionen",
+          tagline: "Ein Benchmark. Aufgebaut von jedem Tasting.",
+        },
+        cta: {
+          title: "Dein nächstes Tasting beginnt hier.",
+          button: "Tasting starten",
         },
         stats: {
           tastings: "Tastings",
@@ -6479,11 +6576,6 @@ const resources = {
             cta: "Anmelden",
           },
           switchHint: "Du kannst jederzeit zwischen den Modi wechseln. Naked-Teilnehmer können sich später anmelden — alle Bewertungen bleiben erhalten.",
-        },
-        cta: {
-          title: "Bereit für das nächste Tasting?",
-          desc: "Starte ein Tasting, lade Freunde ein und halte fest, was du wirklich wahrnimmst. Kostenlos nutzbar – ohne Konto zum Start.",
-          button: "CaskSense öffnen",
         },
         footer: {
           about: "Über CaskSense",

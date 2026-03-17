@@ -1,16 +1,10 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, useInView } from "framer-motion";
-import {
-  ChevronRight, Eye,
-  Users, FileText, Download,
-  Sparkles, BookOpen, BarChart3,
-  Camera, Lock, Printer,
-} from "lucide-react";
+import { ChevronRight, Wine, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";
-import { generateCaskSensePresentation } from "@/components/casksense-presentation-pdf";
 
 const ACCENT = "#c8a97e";
 const ACCENT_DIM = "#a8834a";
@@ -127,7 +121,7 @@ function JoinCodeInput() {
           letterSpacing: "0.04em",
         }}
       >
-        Have a tasting code? Join instantly — no account needed.
+        {t("landing.quickJoin.sublabel")}
       </p>
       <div
         style={{
@@ -179,11 +173,34 @@ function JoinCodeInput() {
           }}
           data-testid="button-join-code"
         >
-          Join
+          {t("landing.quickJoin.go")}
         </button>
       </div>
     </div>
   );
+}
+
+function AnimatedNumber({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const startTime = Date.now() + delay;
+    const duration = 1400;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 0) return;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress >= 1) clearInterval(interval);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [inView, value, delay]);
+
+  return <span ref={ref}>{inView ? display.toLocaleString() : "0"}{suffix}</span>;
 }
 
 function HeroSection() {
@@ -263,7 +280,7 @@ function HeroSection() {
             zIndex: 2,
           }}
         >
-          Whisky Tasting Platform
+          {t("landing.hero.eyebrow")}
         </p>
       </FadeUp>
 
@@ -299,7 +316,7 @@ function HeroSection() {
             zIndex: 2,
           }}
         >
-          Where tasting becomes reflection.
+          {t("landing.hero.subline")}
         </p>
       </FadeUp>
 
@@ -310,13 +327,13 @@ function HeroSection() {
             fontSize: "clamp(14px, 1.5vw, 17px)",
             color: v.mutedLight,
             lineHeight: 1.65,
-            maxWidth: 400,
+            maxWidth: 440,
             margin: "0 auto 44px",
             position: "relative",
             zIndex: 2,
           }}
         >
-          The most thoughtful way to explore whisky — alone or together.
+          {t("landing.hero.body")}
         </p>
       </FadeUp>
 
@@ -351,7 +368,7 @@ function HeroSection() {
               letterSpacing: "0.01em",
             }}
           >
-            Start Tasting
+            {t("landing.hero.startTasting")}
             <ChevronRight style={{ width: 17, height: 17 }} />
           </Link>
 
@@ -396,376 +413,118 @@ function HeroSection() {
   );
 }
 
-function ValueProofSection() {
+function TwoWaysSection() {
   const { t } = useTranslation();
 
   const cards = [
     {
-      icon: <Users style={{ width: 22, height: 22 }} />,
-      title: t("premium.proofHostTitle"),
-      desc: t("premium.proofHostDesc"),
+      icon: <Wine style={{ width: 28, height: 28 }} />,
+      title: t("landing.twoways.solo.title"),
+      desc: t("landing.twoways.solo.text"),
+      href: "/labs/tastings/solo",
+      testId: "card-solo",
     },
     {
-      icon: <BarChart3 style={{ width: 22, height: 22 }} />,
-      title: t("premium.proofTasteTitle"),
-      desc: t("premium.proofTasteDesc"),
-    },
-    {
-      icon: <Printer style={{ width: 22, height: 22 }} />,
-      title: t("premium.proofBeautyTitle"),
-      desc: t("premium.proofBeautyDesc"),
+      icon: <Users style={{ width: 28, height: 28 }} />,
+      title: t("landing.twoways.together.title"),
+      desc: t("landing.twoways.together.text"),
+      href: "/m2",
+      testId: "card-together",
     },
   ];
 
   return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-value-proof">
-      <div style={container}>
+    <section style={{ padding: "80px 24px" }} data-testid="section-two-ways">
+      <div style={{ ...container, maxWidth: 760 }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 20,
-            maxWidth: 920,
-            margin: "0 auto",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 24,
           }}
         >
           {cards.map((card, i) => (
-            <FadeUp key={i} delay={0.06 + i * 0.08}>
-              <div
-                style={{
-                  background: v.card,
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 16,
-                  padding: "32px 28px",
-                  textAlign: "center",
-                  height: "100%",
-                }}
-                data-testid={`card-proof-${i}`}
-              >
+            <FadeUp key={i} delay={i * 0.1}>
+              <Link href={card.href} style={{ textDecoration: "none", display: "block", height: "100%" }} data-testid={`link-${card.testId}`}>
                 <div
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 14,
-                    background: `${ACCENT}0a`,
+                    padding: "40px 32px",
+                    borderRadius: 20,
+                    border: `1px solid rgba(201,151,43,0.18)`,
+                    background: "rgba(255,255,255,0.02)",
+                    backdropFilter: "blur(12px)",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    textAlign: "center",
+                    height: "100%",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    color: ACCENT,
-                    margin: "0 auto 20px",
+                    gap: 16,
+                  }}
+                  data-testid={card.testId}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(201,151,43,0.4)";
+                    e.currentTarget.style.boxShadow = `0 0 40px rgba(201,151,43,0.08)`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(201,151,43,0.18)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  {card.icon}
-                </div>
-                <h3
-                  style={{
-                    fontFamily: font.display,
-                    fontSize: 20,
-                    fontWeight: 500,
-                    color: v.text,
-                    marginBottom: 10,
-                    letterSpacing: "-0.01em",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {card.title}
-                </h3>
-                <p
-                  style={{
-                    fontFamily: font.body,
-                    fontSize: 14,
-                    color: v.muted,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {card.desc}
-                </p>
-              </div>
-            </FadeUp>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorksSection() {
-  const { t } = useTranslation();
-
-  const steps = [
-    {
-      num: "1",
-      title: t("premium.step1Title"),
-      desc: t("premium.step1Desc"),
-    },
-    {
-      num: "2",
-      title: t("premium.step2Title"),
-      desc: t("premium.step2Desc"),
-    },
-    {
-      num: "3",
-      title: t("premium.step3Title"),
-      desc: t("premium.step3Desc"),
-    },
-  ];
-
-  return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-how-it-works">
-      <div style={container}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <p
-              style={{
-                fontFamily: font.body,
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: ACCENT_DIM,
-                marginBottom: 14,
-              }}
-            >
-              {t("premium.howEyebrow")}
-            </p>
-            <h2
-              style={{
-                fontFamily: font.display,
-                fontSize: "clamp(26px, 4vw, 40px)",
-                fontWeight: 400,
-                color: v.text,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.15,
-                marginBottom: 12,
-              }}
-            >
-              {t("premium.howTitle")}
-            </h2>
-            <p
-              style={{
-                fontFamily: font.body,
-                fontSize: 15,
-                color: v.muted,
-                lineHeight: 1.6,
-                maxWidth: 440,
-                margin: "0 auto",
-              }}
-            >
-              {t("premium.howSub")}
-            </p>
-          </div>
-        </FadeUp>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: 20,
-            maxWidth: 820,
-            margin: "0 auto",
-          }}
-        >
-          {steps.map((step, i) => (
-            <FadeUp key={step.num} delay={0.06 + i * 0.08}>
-              <div
-                style={{
-                  position: "relative",
-                  padding: "28px 24px",
-                  background: v.card,
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 14,
-                  textAlign: "center",
-                }}
-                data-testid={`card-step-${step.num}`}
-              >
-                <div
-                  style={{
-                    fontFamily: font.display,
-                    fontSize: 48,
-                    fontWeight: 300,
-                    color: `${ACCENT}15`,
-                    lineHeight: 1,
-                    position: "absolute",
-                    top: 12,
-                    right: 16,
-                  }}
-                >
-                  {step.num}
-                </div>
-                <h3
-                  style={{
-                    fontFamily: font.display,
-                    fontSize: 20,
-                    fontWeight: 500,
-                    color: v.text,
-                    marginBottom: 8,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {step.title}
-                </h3>
-                <p
-                  style={{
-                    fontFamily: font.body,
-                    fontSize: 13,
-                    color: v.muted,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {step.desc}
-                </p>
-              </div>
-            </FadeUp>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ExperienceSection() {
-  const { t } = useTranslation();
-
-  const features = [
-    {
-      icon: <Eye style={{ width: 18, height: 18 }} />,
-      title: t("premium.expBlindTitle"),
-      desc: t("premium.expBlindDesc"),
-    },
-    {
-      icon: <Sparkles style={{ width: 18, height: 18 }} />,
-      title: t("premium.expRevealTitle"),
-      desc: t("premium.expRevealDesc"),
-    },
-    {
-      icon: <Camera style={{ width: 18, height: 18 }} />,
-      title: t("premium.expJournalTitle"),
-      desc: t("premium.expJournalDesc"),
-    },
-    {
-      icon: <BarChart3 style={{ width: 18, height: 18 }} />,
-      title: t("premium.expAnalyticsTitle"),
-      desc: t("premium.expAnalyticsDesc"),
-    },
-    {
-      icon: <BookOpen style={{ width: 18, height: 18 }} />,
-      title: t("premium.expKnowledgeTitle"),
-      desc: t("premium.expKnowledgeDesc"),
-    },
-    {
-      icon: <Lock style={{ width: 18, height: 18 }} />,
-      title: t("premium.expCircleTitle"),
-      desc: t("premium.expCircleDesc"),
-    },
-  ];
-
-  return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-experience">
-      <div style={{ ...container, maxWidth: 860 }}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <p
-              style={{
-                fontFamily: font.body,
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: ACCENT_DIM,
-                marginBottom: 14,
-              }}
-            >
-              {t("premium.expEyebrow")}
-            </p>
-            <h2
-              style={{
-                fontFamily: font.display,
-                fontSize: "clamp(26px, 4vw, 40px)",
-                fontWeight: 400,
-                color: v.text,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.15,
-                marginBottom: 12,
-              }}
-            >
-              {t("premium.expTitle")}
-            </h2>
-            <p
-              style={{
-                fontFamily: font.body,
-                fontSize: 15,
-                color: v.muted,
-                lineHeight: 1.6,
-                maxWidth: 460,
-                margin: "0 auto",
-              }}
-            >
-              {t("premium.expSub")}
-            </p>
-          </div>
-        </FadeUp>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {features.map((feat, i) => (
-            <FadeUp key={i} delay={0.04 + i * 0.05}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 14,
-                  padding: "20px 18px",
-                  background: v.card,
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 12,
-                  height: "100%",
-                }}
-                data-testid={`card-exp-${i}`}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    flexShrink: 0,
-                    background: `${ACCENT}08`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: ACCENT,
-                  }}
-                >
-                  {feat.icon}
-                </div>
-                <div>
-                  <h4
+                  <div
                     style={{
-                      fontFamily: font.body,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: v.text,
-                      marginBottom: 4,
+                      width: 56,
+                      height: 56,
+                      borderRadius: 16,
+                      background: `${ACCENT}0a`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: ACCENT,
                     }}
                   >
-                    {feat.title}
-                  </h4>
+                    {card.icon}
+                  </div>
+                  <h3
+                    style={{
+                      fontFamily: font.display,
+                      fontSize: 24,
+                      fontWeight: 500,
+                      color: v.text,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {card.title}
+                  </h3>
                   <p
                     style={{
                       fontFamily: font.body,
-                      fontSize: 13,
+                      fontSize: 15,
                       color: v.muted,
-                      lineHeight: 1.5,
+                      lineHeight: 1.6,
+                      maxWidth: 260,
                     }}
                   >
-                    {feat.desc}
+                    {card.desc}
                   </p>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: ACCENT,
+                      marginTop: "auto",
+                      paddingTop: 8,
+                    }}
+                  >
+                    {t("landing.hero.cta")}
+                    <ChevronRight style={{ width: 14, height: 14 }} />
+                  </span>
                 </div>
-              </div>
+              </Link>
             </FadeUp>
           ))}
         </div>
@@ -775,12 +534,15 @@ function ExperienceSection() {
 }
 
 const REVEAL_NAME = "Talisker 10";
+const REVEAL_SCORE = "87.4";
 
-function RevealSection() {
+function RevealMomentSection() {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const [charCount, setCharCount] = useState(0);
+  const [scoreCount, setScoreCount] = useState(0);
+  const [showScore, setShowScore] = useState(false);
 
   useEffect(() => {
     if (!inView) return;
@@ -788,50 +550,50 @@ function RevealSection() {
     const interval = setInterval(() => {
       i++;
       setCharCount(i);
-      if (i >= REVEAL_NAME.length) clearInterval(interval);
-    }, 120);
+      if (i >= REVEAL_NAME.length) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setShowScore(true);
+          let s = 0;
+          const scoreInterval = setInterval(() => {
+            s++;
+            setScoreCount(s);
+            if (s >= REVEAL_SCORE.length) clearInterval(scoreInterval);
+          }, 100);
+        }, 400);
+      }
+    }, 100);
     return () => clearInterval(interval);
   }, [inView]);
 
   return (
-    <section style={{ padding: "80px 24px" }} ref={ref} data-testid="section-reveal">
-      <div style={{ ...container, maxWidth: 560, textAlign: "center" }}>
-        <FadeUp>
-          <p
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: ACCENT_DIM,
-              marginBottom: 16,
-            }}
-          >
-            {t("premium.revealEyebrow")}
-          </p>
-          <h2
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(24px, 3.5vw, 36px)",
-              fontWeight: 400,
-              color: v.text,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.2,
-              marginBottom: 36,
-            }}
-          >
-            {t("premium.revealTitle")}
-          </h2>
-        </FadeUp>
+    <section
+      ref={ref}
+      style={{
+        padding: "100px 24px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+      data-testid="section-reveal"
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${ACCENT}06 0%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
 
-        <FadeUp delay={0.1}>
+      <div style={{ ...container, maxWidth: 700, textAlign: "center", position: "relative", zIndex: 1 }}>
+        <FadeUp>
           <div
             style={{
               background: v.card,
               border: `1px solid ${v.border}`,
-              borderRadius: 16,
-              padding: "44px 28px",
+              borderRadius: 20,
+              padding: "56px 32px",
+              marginBottom: 40,
             }}
             data-testid="reveal-card"
           >
@@ -846,16 +608,17 @@ function RevealSection() {
                 marginBottom: 14,
               }}
             >
-              {t("premium.revealLabel")}
+              {t("landing.reveal.label")}
             </div>
             <div
               style={{
                 fontFamily: font.display,
-                fontSize: "clamp(32px, 5vw, 48px)",
+                fontSize: "clamp(32px, 5vw, 52px)",
                 fontWeight: 400,
                 color: v.text,
                 letterSpacing: "-0.02em",
                 minHeight: "1.2em",
+                marginBottom: 8,
               }}
               data-testid="text-reveal"
             >
@@ -870,77 +633,59 @@ function RevealSection() {
                 </motion.span>
               )}
             </div>
+            {showScore && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                data-testid="text-reveal-score"
+                style={{
+                  fontFamily: font.body,
+                  fontSize: "clamp(40px, 6vw, 64px)",
+                  fontWeight: 700,
+                  color: ACCENT,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {REVEAL_SCORE.slice(0, scoreCount)}
+                {scoreCount < REVEAL_SCORE.length && (
+                  <motion.span
+                    animate={{ opacity: [1, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    style={{ color: ACCENT }}
+                  >
+                    |
+                  </motion.span>
+                )}
+              </motion.div>
+            )}
             <motion.div
               initial={{ width: 0 }}
               animate={inView ? { width: "50%" } : {}}
               transition={{ duration: 1.5, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{
                 height: 1,
-                margin: "20px auto 0",
+                margin: "24px auto 0",
                 background: `linear-gradient(90deg, transparent, ${ACCENT}35, transparent)`,
               }}
             />
           </div>
         </FadeUp>
-      </div>
-    </section>
-  );
-}
 
-function PhilosophySection() {
-  const { t } = useTranslation();
-
-  return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-philosophy">
-      <div style={{ ...container, maxWidth: 600, textAlign: "center" }}>
-        <FadeUp>
+        <FadeUp delay={0.15}>
           <p
             style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: ACCENT_DIM,
-              marginBottom: 14,
-            }}
-          >
-            {t("premium.philEyebrow")}
-          </p>
-          <h2
-            style={{
               fontFamily: font.display,
-              fontSize: "clamp(24px, 3.5vw, 36px)",
+              fontSize: "clamp(18px, 2.5vw, 26px)",
               fontWeight: 400,
-              color: v.text,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.25,
-              marginBottom: 20,
-            }}
-          >
-            {t("premium.philTitle")}
-          </h2>
-          <p
-            style={{
-              fontFamily: font.body,
-              fontSize: 15,
-              color: v.muted,
-              lineHeight: 1.7,
-              marginBottom: 12,
-            }}
-          >
-            {t("premium.philP1")}
-          </p>
-          <p
-            style={{
-              fontFamily: font.display,
-              fontSize: 17,
               fontStyle: "italic",
               color: v.textSecondary,
               lineHeight: 1.5,
+              maxWidth: 500,
+              margin: "0 auto",
             }}
           >
-            {t("premium.philQuote")}
+            {t("landing.reveal.quote")}
           </p>
         </FadeUp>
       </div>
@@ -948,95 +693,267 @@ function PhilosophySection() {
   );
 }
 
-function DownloadsSection() {
+function BenchmarkSection() {
   const { t } = useTranslation();
-  const [downloading, setDownloading] = useState(false);
-
-  const handleFeatureDownload = async () => {
-    setDownloading(true);
-    try {
-      await generateCaskSensePresentation();
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   return (
-    <section style={{ padding: "48px 24px" }} data-testid="section-downloads">
-      <div style={{ ...container, maxWidth: 560, textAlign: "center" }}>
-        <FadeUp>
-          <p
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: ACCENT_DIM,
-              marginBottom: 20,
-            }}
-          >
-            {t("premium.downloadTitle")}
-          </p>
+    <section style={{ padding: "80px 24px" }} data-testid="section-benchmark">
+      <div style={{ ...container, maxWidth: 920 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: 32,
+          }}
+        >
+          <FadeUp>
+            <div
+              style={{
+                padding: "36px 32px",
+                borderRadius: 20,
+                border: `1px solid ${v.border}`,
+                background: v.card,
+                height: "100%",
+              }}
+              data-testid="card-benchmark-community"
+            >
+              <p
+                style={{
+                  fontFamily: font.body,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: ACCENT_DIM,
+                  marginBottom: 12,
+                }}
+              >
+                {t("landing.benchmark.community.eyebrow")}
+              </p>
+              <h3
+                style={{
+                  fontFamily: font.display,
+                  fontSize: "clamp(20px, 2.5vw, 28px)",
+                  fontWeight: 400,
+                  color: v.text,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.2,
+                  marginBottom: 28,
+                }}
+              >
+                {t("landing.benchmark.community.title")}
+              </h3>
 
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 20,
+                  padding: "20px 16px",
+                  borderRadius: 14,
+                  background: `${ACCENT}06`,
+                  border: `1px solid ${ACCENT}15`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: "50%",
+                    border: `3px solid ${ACCENT}40`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ fontFamily: font.body, fontSize: 22, fontWeight: 700, color: ACCENT, fontVariantNumeric: "tabular-nums" }}>
+                    84.2
+                  </span>
+                </div>
+                <div>
+                  <div style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 4 }}>
+                    Lagavulin 16
+                  </div>
+                  <div style={{ fontFamily: font.body, fontSize: 12, color: v.muted, lineHeight: 1.4 }}>
+                    Islay · 16y · 43% · 127 {t("landing.benchmark.ratings")}
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                    {[
+                      { label: t("landing.benchmark.nose"), val: "86" },
+                      { label: t("landing.benchmark.taste"), val: "85" },
+                      { label: t("landing.benchmark.finish"), val: "82" },
+                    ].map((d) => (
+                      <div key={d.label} style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums" }}>{d.val}</div>
+                        <div style={{ fontSize: 9, color: v.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>{d.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.12}>
+            <div
+              style={{
+                padding: "36px 32px",
+                borderRadius: 20,
+                border: `1px solid ${v.border}`,
+                background: v.card,
+                height: "100%",
+              }}
+              data-testid="card-benchmark-palate"
+            >
+              <p
+                style={{
+                  fontFamily: font.body,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: ACCENT_DIM,
+                  marginBottom: 12,
+                }}
+              >
+                {t("landing.benchmark.palate.eyebrow")}
+              </p>
+              <h3
+                style={{
+                  fontFamily: font.display,
+                  fontSize: "clamp(20px, 2.5vw, 28px)",
+                  fontWeight: 400,
+                  color: v.text,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.2,
+                  marginBottom: 28,
+                }}
+              >
+                {t("landing.benchmark.palate.title")}
+              </h3>
+
+              <div
+                style={{
+                  padding: "20px 16px",
+                  borderRadius: 14,
+                  background: `${ACCENT}06`,
+                  border: `1px solid ${ACCENT}15`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <span style={{ fontFamily: font.display, fontSize: 14, fontWeight: 600, color: v.text }}>{t("landing.benchmark.palate.heading")}</span>
+                  <span style={{ fontSize: 11, color: v.muted }}>{t("landing.benchmark.palate.dims")}</span>
+                </div>
+                {[
+                  { label: t("landing.benchmark.smoke"), you: 78, avg: 62, delta: "+16" },
+                  { label: t("landing.benchmark.sweetness"), you: 45, avg: 58, delta: "−13" },
+                  { label: t("landing.benchmark.fruit"), you: 72, avg: 70, delta: "+2" },
+                  { label: t("landing.benchmark.spice"), you: 68, avg: 55, delta: "+13" },
+                  { label: t("landing.benchmark.body"), you: 82, avg: 71, delta: "+11" },
+                ].map((dim) => (
+                  <div key={dim.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <span style={{ width: 64, fontSize: 12, fontWeight: 500, color: v.muted, textAlign: "right" }}>{dim.label}</span>
+                    <div style={{ flex: 1, height: 5, borderRadius: 3, background: `${ACCENT}10`, position: "relative", overflow: "hidden" }}>
+                      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${dim.avg}%`, background: `${ACCENT}25`, borderRadius: 3 }} />
+                      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${dim.you}%`, background: ACCENT, borderRadius: 3 }} />
+                    </div>
+                    <span style={{
+                      width: 32, fontSize: 11, fontWeight: 700, textAlign: "right",
+                      color: dim.delta.startsWith("+") ? v.success : dim.delta.startsWith("−") ? v.danger : v.muted,
+                      fontVariantNumeric: "tabular-nums",
+                    }}>
+                      {dim.delta}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12 }}>
+                  <span style={{ fontSize: 10, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ width: 12, height: 3, borderRadius: 2, background: ACCENT, display: "inline-block" }} /> {t("landing.benchmark.palate.you")}
+                  </span>
+                  <span style={{ fontSize: 10, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ width: 12, height: 3, borderRadius: 2, background: `${ACCENT}25`, display: "inline-block" }} /> {t("landing.benchmark.palate.communityLabel")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </FadeUp>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SocialProofSection() {
+  const { t } = useTranslation();
+
+  const stats = [
+    { value: 1580, suffix: "+", label: t("landing.proof.whiskies") },
+    { value: 21, suffix: "", label: t("landing.proof.regions") },
+    { value: 5, suffix: "", label: t("landing.proof.dimensions") },
+  ];
+
+  return (
+    <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-proof">
+      <div style={container}>
+        <FadeUp>
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 10,
+              justifyContent: "center",
+              gap: "clamp(32px, 6vw, 80px)",
+              marginBottom: 40,
+              flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
-              onClick={handleFeatureDownload}
-              disabled={downloading}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "11px 24px",
-                borderRadius: 10,
-                background: "transparent",
-                border: `1px solid ${v.border}`,
-                color: v.muted,
-                fontFamily: font.body,
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: downloading ? "not-allowed" : "pointer",
-                opacity: downloading ? 0.5 : 1,
-                transition: "all 0.2s",
-              }}
-              data-testid="button-download-feature-pdf"
-            >
-              <Download style={{ width: 14, height: 14 }} />
-              {downloading ? t("premium.downloadCreating") : t("premium.downloadFeature")}
-            </button>
-            <button
-              type="button"
-              disabled
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "11px 24px",
-                borderRadius: 10,
-                background: "transparent",
-                border: `1px solid ${v.border}`,
-                color: v.muted,
-                fontFamily: font.body,
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "default",
-                opacity: 0.45,
-                transition: "all 0.2s",
-              }}
-              data-testid="button-download-guided-pdf"
-            >
-              <FileText style={{ width: 14, height: 14 }} />
-              {t("premium.downloadGuided")}
-            </button>
+            {stats.map((stat, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: "clamp(36px, 6vw, 64px)",
+                    fontWeight: 400,
+                    color: v.text,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                    marginBottom: 8,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                  data-testid={`stat-${i}`}
+                >
+                  <AnimatedNumber value={stat.value} suffix={stat.suffix} delay={i * 200} />
+                </div>
+                <div
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: v.muted,
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
+        </FadeUp>
+        <FadeUp delay={0.15}>
+          <p
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(16px, 2vw, 22px)",
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: v.muted,
+              maxWidth: 480,
+              margin: "0 auto",
+              lineHeight: 1.5,
+            }}
+          >
+            {t("landing.proof.tagline")}
+          </p>
         </FadeUp>
       </div>
     </section>
@@ -1047,47 +964,74 @@ function CTASection() {
   const { t } = useTranslation();
 
   return (
-    <section style={{ padding: "80px 24px 60px", textAlign: "center" }} data-testid="section-cta">
-      <div style={container}>
+    <section
+      style={{
+        padding: "100px 24px 60px",
+        textAlign: "center",
+        position: "relative",
+      }}
+      data-testid="section-cta"
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(ellipse 60% 50% at 50% 40%, ${ACCENT}04 0%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <div style={{ ...container, position: "relative", zIndex: 1 }}>
         <FadeUp>
           <h2
             style={{
               fontFamily: font.display,
-              fontSize: "clamp(26px, 4vw, 42px)",
+              fontSize: "clamp(28px, 4.5vw, 48px)",
               fontWeight: 400,
+              fontStyle: "italic",
               color: v.text,
               letterSpacing: "-0.02em",
               lineHeight: 1.15,
-              marginBottom: 32,
+              marginBottom: 40,
             }}
           >
-            {t("premium.finalCtaTitle")}
+            {t("landing.cta.title")}
           </h2>
         </FadeUp>
         <FadeUp delay={0.1}>
-          <Link
-            href="/labs/home"
-            data-testid="cta-final-primary"
+          <div
             style={{
-              display: "inline-flex",
+              display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: 10,
-              padding: "17px 52px",
-              background: ACCENT,
-              color: v.bg,
-              fontFamily: font.body,
-              fontSize: 16,
-              fontWeight: 600,
-              borderRadius: 50,
-              textDecoration: "none",
-              boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`,
-              transition: "transform 0.2s, box-shadow 0.2s",
-              letterSpacing: "0.01em",
+              gap: 24,
             }}
           >
-            {t("premium.ctaPrimary")}
-            <ChevronRight style={{ width: 17, height: 17 }} />
-          </Link>
+            <Link
+              href="/labs/home"
+              data-testid="cta-final-primary"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "17px 52px",
+                background: ACCENT,
+                color: v.bg,
+                fontFamily: font.body,
+                fontSize: 16,
+                fontWeight: 600,
+                borderRadius: 50,
+                textDecoration: "none",
+                boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`,
+                transition: "transform 0.2s, box-shadow 0.2s",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {t("landing.cta.button")}
+              <ChevronRight style={{ width: 17, height: 17 }} />
+            </Link>
+
+            <JoinCodeInput />
+          </div>
         </FadeUp>
       </div>
     </section>
@@ -1197,12 +1141,10 @@ export default function LandingNew() {
         }
       `}</style>
       <HeroSection />
-      <ValueProofSection />
-      <HowItWorksSection />
-      <ExperienceSection />
-      <RevealSection />
-      <PhilosophySection />
-      <DownloadsSection />
+      <TwoWaysSection />
+      <RevealMomentSection />
+      <BenchmarkSection />
+      <SocialProofSection />
       <CTASection />
       <Footer />
     </div>

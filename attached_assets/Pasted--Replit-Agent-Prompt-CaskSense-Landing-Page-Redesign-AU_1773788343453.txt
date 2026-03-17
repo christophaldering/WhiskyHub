@@ -1,0 +1,163 @@
+# Replit Agent Prompt — CaskSense Landing Page Redesign
+
+-----
+
+## AUFGABE
+
+Überarbeite die bestehende Landing Page `client/src/pages/landing-new.tsx` mit einer neuen, schärferen Seitenarchitektur. Die alte Version bleibt unverändert unter `/landing-old` erhalten (client/src/pages/public-landing.tsx). Alle bestehenden Links, Routing-Verbindungen und funktionalen Elemente (Code-Join, Start Tasting Button, DE/EN Sprachwechsel) bleiben vollständig erhalten.
+
+-----
+
+## DESIGN-PRINZIPIEN
+
+Halte den bestehenden visuellen Stil exakt bei:
+
+- Dark warm background (#0A0806 / sehr dunkles Braun-Schwarz)
+- Playfair Display für Headlines (inkl. Italic-Variante)
+- Gold/Amber Akzentfarbe (#C9972B / #E8B84B)
+- Cream-Text (#F0E6D3)
+- Bestehende Tailwind-Klassen und CSS-Variablen unverändert lassen
+- Bestehende Framer Motion Animationen als Referenz nutzen
+
+-----
+
+## NEUE SEITENSTRUKTUR
+
+Ersetze die 14 bestehenden Sektionen durch folgende 6 Sektionen:
+
+-----
+
+### SEKTION 1: HERO (bestehende Logik beibehalten, nur Text anpassen)
+
+Behalte exakt die bestehende Hero-Struktur bei:
+
+- DE/EN Sprachumschalter oben rechts (bestehende i18n-Logik)
+- Glencairn-Gläser Bild (bestehende Bildquelle)
+- Eyebrow: “WHISKY TASTING PLATFORM”
+- Haupttitel: “CaskSense” (bestehende Typografie)
+- Italic Subline: *“Where tasting becomes reflection.”*
+- Body Text NEU:
+  - EN: “What the community knows about every whisky. What your ratings reveal about you.”
+  - DE: “Was die Community über jeden Whisky weiß. Was deine Bewertungen über dich verraten.”
+- “Start Tasting” Button (bestehender Link zu /m2 oder /labs)
+- Code-Join Feld (bestehende Funktionalität vollständig erhalten)
+
+-----
+
+### SEKTION 2: ZWEI WEGE
+
+Zwei nebeneinander stehende Karten (auf Mobile untereinander), kein weiterer Erklärungstext außer den Karten selbst.
+
+**Karte 1 — Solo**
+
+- Icon: Einzelnes Glencairn-Glas (SVG oder bestehendes Icon)
+- Titel EN: “Tasting alone” / DE: “Solo verkosten”
+- Text EN: “Log your dram. Build your palate profile.” / DE: “Jeden Dram dokumentieren. Dein Geschmacksprofil aufbauen.”
+- Link → /labs/tastings/solo (bestehende Route)
+
+**Karte 2 — Together**
+
+- Icon: Gruppe von Gläsern (SVG oder bestehendes Icon)
+- Titel EN: “Tasting together” / DE: “Gemeinsam verkosten”
+- Text EN: “Host a blind round. Reveal together.” / DE: “Blind verkosten. Gemeinsam aufdecken.”
+- Link → /m2 oder bestehender Host-Einstiegspunkt
+
+Kartendesign: Glassmorphism, border rgba(201,151,43,0.18), hover mit leichtem Gold-Glow — analog zu bestehenden Action Cards in Module2Shell.
+
+-----
+
+### SEKTION 3: DER REVEAL-MOMENT
+
+Volle Bildschirmbreite, minimaler Text, emotional.
+
+- Großes visuelles Element: bestehende Reveal-Visualisierung aus der alten Landing Page falls vorhanden, sonst ein einfaches Score-Aufdeckungs-Visual (animierte Zahlen, die sich enthüllen)
+- Einziger Text:
+  - EN: *“The moment everyone reveals their score. Nothing tastes the same after.”*
+  - DE: *“Der Moment, wenn alle ihren Score aufdecken. Kein Whisky ist danach noch derselbe.”*
+- Kein Button, kein weiterer Text
+
+-----
+
+### SEKTION 4: BENCHMARK INTELLIGENZ
+
+Zweispaltig (auf Mobile einspaltig). Dies ist das Herzstück — zeige was die Datenbank zurückgibt.
+
+**Linke Spalte — Whisky-Perspektive**
+
+- Eyebrow EN: “Community Intelligence” / DE: “Community-Intelligenz”
+- Titel EN: “What 1,580 tastings know about every whisky.” / DE: “Was 1.580 Verkostungen über jeden Whisky wissen.”
+- Visuelles Element: Beispiel-Whisky-Karte mit Community-Score (statisch, kein API-Call), Radar-Chart-Miniatur (bestehende Recharts-Komponente als Referenz)
+
+**Rechte Spalte — Trinker-Perspektive**
+
+- Eyebrow EN: “Palate Intelligence” / DE: “Gaumen-Intelligenz”
+- Titel EN: “What your ratings reveal about you.” / DE: “Was deine Ratings über dich verraten.”
+- Visuelles Element: Persönliches Radar-Profil Beispiel (statisch), Score-Abweichung vom Community-Schnitt als Delta-Anzeige (bestehende Delta-Visualisierung aus Labs Compare als Referenz)
+
+-----
+
+### SEKTION 5: SOCIAL PROOF — ZAHLEN
+
+Zentriert, groß, minimalistisch. Keine Testimonials.
+
+Drei Zahlen nebeneinander:
+
+- “1,580+ Whiskies”
+- “21 Regions”
+- “5 Dimensions”
+
+Darunter eine einzige Zeile:
+
+- EN: *“One benchmark. Built by every tasting.”*
+- DE: *“Eine Benchmark. Aufgebaut durch jede Verkostung.”*
+
+Bestehende Stat-Animationen (CountUp oder ähnlich) aus der alten Landing Page übernehmen falls vorhanden.
+
+-----
+
+### SEKTION 6: FINALER CTA
+
+Exakt so reduziert wie der Hero. Kein Feature-Listing, kein Text-Block.
+
+- Titel EN: *“Your next tasting starts here.”* / DE: *“Deine nächste Verkostung beginnt hier.”*
+- Italic in Playfair Display
+- Ein einziger Button: “Start Tasting →” (bestehender Link)
+- Darunter klein: Code-Join Feld (identisch wie im Hero, bestehende Komponente wiederverwenden)
+
+-----
+
+## I18N
+
+Alle neuen Texte in beide Sprachblöcke eintragen:
+
+- EN Block: ab ca. Zeile 11 in `client/src/lib/i18n.ts`
+- DE Block: ab ca. Zeile 5492 in `client/src/lib/i18n.ts`
+
+Neue i18n-Keys unter dem Namespace `landing:` anlegen, z.B.:
+
+- `landing.hero.body`
+- `landing.twoways.solo.title`
+- `landing.reveal.quote`
+- `landing.benchmark.community.title`
+- `landing.cta.title`
+
+-----
+
+## WAS NICHT VERÄNDERT WERDEN DARF
+
+- Routing in `client/src/App.tsx` — keine Änderungen
+- `/landing-old` Route bleibt bestehen
+- Code-Join Funktionalität (POST /api/tastings/join oder bestehender Endpoint)
+- DE/EN Sprachumschalter Logik
+- Alle bestehenden CSS-Variablen und Tailwind-Konfiguration
+- Bestehende Navbar-Komponente falls vorhanden
+
+-----
+
+## VORGEHEN
+
+1. Bestehende `landing-new.tsx` sichern (Kommentar oben mit Datum)
+1. I18n-Keys anlegen
+1. Sektion für Sektion ersetzen — Hero zuletzt, da er bestehende Funktionalität trägt
+1. Mobile-Responsiveness prüfen (Breakpoint md: für Zwei-Spalten-Layouts)
+1. Framer Motion Animationen: fade-in + translateY für alle neuen Sektionen, analog zum bestehenden Stil
