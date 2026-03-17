@@ -7,6 +7,8 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getSession, useSession } from "@/lib/session";
 import { Crown, Users, Wine, ChevronRight, Copy, Check, QrCode, User, Image as ImageIcon } from "lucide-react";
+import { M2ParticipantDownloads } from "@/components/ParticipantDownloads";
+import type { Tasting } from "@shared/schema";
 import QRCode from "qrcode";
 
 export default function M2TastingSession() {
@@ -350,6 +352,8 @@ export default function M2TastingSession() {
           </div>
         </section>
       )}
+
+      {!isHost && <M2ParticipantDownloads tasting={tasting as Tasting} />}
 
       <section>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 12 }}>

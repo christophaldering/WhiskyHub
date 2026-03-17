@@ -72,6 +72,7 @@ export const tastings = pgTable("tastings", {
   showGroupAvg: boolean("show_group_avg").default(true),
   showReveal: boolean("show_reveal").default(true),
   isTestData: boolean("is_test_data").default(false),
+  sharedPrintMaterials: text("shared_print_materials"),
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),

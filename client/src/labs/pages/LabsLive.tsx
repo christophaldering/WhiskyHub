@@ -11,6 +11,8 @@ import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import { CompactDownloadButton } from "@/components/ParticipantDownloads";
+import type { Tasting } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
 
@@ -1015,15 +1017,18 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
     return (
       <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
-        <button
-          onClick={goBack}
-          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-          style={{ color: "var(--labs-text-muted)" }}
-          data-testid="labs-live-back"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Tasting
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={goBack}
+            className="labs-btn-ghost flex items-center gap-1 -ml-2"
+            style={{ color: "var(--labs-text-muted)" }}
+            data-testid="labs-live-back"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Tasting
+          </button>
+          {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+        </div>
 
         {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
 
@@ -1050,15 +1055,18 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   return (
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-live-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Tasting
-      </button>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-live-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Tasting
+        </button>
+        {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+      </div>
 
       {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
 

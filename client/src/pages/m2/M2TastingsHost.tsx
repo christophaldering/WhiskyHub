@@ -117,6 +117,7 @@ interface TastingFull {
   revealOrder?: string | null;
   revealIndex?: number;
   revealStep?: number;
+  sharedPrintMaterials?: string | null;
 }
 
 interface Rating {
@@ -2183,6 +2184,7 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
 
       <PrintableTemplatesSection />
       <TastingMenuSection tasting={tasting} pid={pid} />
+      <SharePrintMaterialsSection tasting={tasting} />
 
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={onBack} style={{ padding: "12px 16px", fontSize: 14, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 6 }} data-testid="button-back-step2">
@@ -2247,6 +2249,96 @@ function PrintableTemplatesSection() {
           <Download style={{ width: 14, height: 14, marginLeft: "auto", color: v.muted, flexShrink: 0 }} />
         </button>
       </div>
+    </div>
+  );
+}
+
+function SharePrintMaterialsSection({ tasting }: { tasting: TastingFull }) {
+  const { t } = useTranslation();
+  const parsedShared = (() => {
+    try {
+      const raw = tasting.sharedPrintMaterials as string | null;
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  })();
+  const [shared, setShared] = useState<Record<string, boolean>>({
+    menuCard: !!parsedShared.menuCard,
+    scoreSheets: !!parsedShared.scoreSheets,
+    tastingMat: !!parsedShared.tastingMat,
+    masterSheet: !!parsedShared.masterSheet,
+  });
+
+  const saveShared = async (next: Record<string, boolean>) => {
+    const prev = { ...shared };
+    setShared(next);
+    const hasAny = Object.values(next).some(Boolean);
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/shared-print-materials`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-participant-id": tasting.hostId },
+        body: JSON.stringify({ sharedPrintMaterials: hasAny ? next : null }),
+      });
+      if (!res.ok) {
+        setShared(prev);
+      }
+    } catch {
+      setShared(prev);
+    }
+  };
+
+  const toggleShared = (key: string) => {
+    const next = { ...shared, [key]: !shared[key] };
+    saveShared(next);
+  };
+
+  const items = [
+    { key: "menuCard", label: t("printableSheets.menuCard", "Menu Card") },
+    { key: "scoreSheets", label: t("printableSheets.scoreSheets", "Score Sheets") },
+    { key: "tastingMat", label: t("printableSheets.tastingMat", "Tasting Mat") },
+    { key: "masterSheet", label: t("printableSheets.masterSheet", "Master Sheet") },
+  ];
+
+  return (
+    <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "16px", marginBottom: 16 }} data-testid="m2-share-print-section">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <Share2 style={{ width: 16, height: 16, color: v.accent }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }}>
+          {t("printableSheets.shareWithParticipants", "Share with Participants")}
+        </span>
+      </div>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px 0" }}>
+        {t("printableSheets.shareWithParticipantsDesc", "Allow participants to download these materials")}
+      </p>
+      {items.map(({ key, label }, idx) => (
+        <div
+          key={key}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "10px 0",
+            borderBottom: idx < items.length - 1 ? `1px solid ${v.border}` : "none",
+          }}
+          data-testid={`m2-toggle-share-${key}`}
+        >
+          <span style={{ fontSize: 13, color: v.text }}>{label}</span>
+          <div
+            style={{
+              width: 36, height: 20, borderRadius: 10,
+              background: shared[key] ? v.accent : v.border,
+              position: "relative", transition: "background 0.2s", cursor: "pointer",
+            }}
+            onClick={() => toggleShared(key)}
+          >
+            <div
+              style={{
+                width: 16, height: 16, borderRadius: 8, background: "#fff",
+                position: "absolute", top: 2,
+                left: shared[key] ? 18 : 2,
+                transition: "left 0.2s",
+              }}
+            />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

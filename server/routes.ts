@@ -1413,6 +1413,22 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/tastings/:id/shared-print-materials", async (req: Request, res: Response) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const requesterId = req.headers["x-participant-id"] as string || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Only the host can update shared print materials" });
+      const { sharedPrintMaterials } = req.body;
+      const updated = await storage.updateTasting(req.params.id, {
+        sharedPrintMaterials: sharedPrintMaterials ? JSON.stringify(sharedPrintMaterials) : null,
+      });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/tastings/:id/duplicate", async (req, res) => {
     try {
       const { hostId } = req.body;

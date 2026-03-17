@@ -26,6 +26,8 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
+import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
+import type { Tasting } from "@shared/schema";
 import QRCode from "qrcode";
 
 interface LabsTastingDetailProps {
@@ -315,6 +317,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
         </div>
       )}
+
+      {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
 
       {tasting.code && (
         <div className="labs-card p-4 mb-6 labs-stagger-4" data-testid="labs-detail-code-section">

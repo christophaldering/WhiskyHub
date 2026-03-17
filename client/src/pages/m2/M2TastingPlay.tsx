@@ -11,6 +11,8 @@ import VoiceMemoRecorder from "@/components/m2/VoiceMemoRecorder";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession, useSession, setSessionPid, syncStoreParticipant } from "@/lib/session";
+import { CompactDownloadButton } from "@/components/ParticipantDownloads";
+import type { Tasting } from "@shared/schema";
 import { playSoundscape, stopSoundscape, setVolume as setAmbientVolume, getState as getAmbientState } from "@/lib/ambient";
 import {
   Star,
@@ -1278,6 +1280,7 @@ export default function M2TastingPlay() {
           {t("m2.play.title", "Tasting Room")}
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {pid !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
           <AmbientSoundButton />
           <StatusBadge status={tasting.status} />
           <span

@@ -462,6 +462,7 @@ function PrintMaterialsSection({
   participants: Array<Record<string, unknown>>;
   currentParticipant: Record<string, unknown>;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
   const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
@@ -469,6 +470,42 @@ function PrintMaterialsSection({
   const [coverPreview, setCoverPreview] = useState<string | null>(tasting.coverImageUrl as string || null);
   const [generating, setGenerating] = useState<string | null>(null);
   const [aiCoverLoading, setAiCoverLoading] = useState(false);
+
+  const parsedShared = (() => {
+    try {
+      const raw = tasting.sharedPrintMaterials as string | null;
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  })();
+  const [shared, setShared] = useState<Record<string, boolean>>({
+    menuCard: !!parsedShared.menuCard,
+    scoreSheets: !!parsedShared.scoreSheets,
+    tastingMat: !!parsedShared.tastingMat,
+    masterSheet: !!parsedShared.masterSheet,
+  });
+
+  const saveShared = async (next: Record<string, boolean>) => {
+    const prev = { ...shared };
+    setShared(next);
+    const hasAny = Object.values(next).some(Boolean);
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/shared-print-materials`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-participant-id": tasting.hostId as string },
+        body: JSON.stringify({ sharedPrintMaterials: hasAny ? next : null }),
+      });
+      if (!res.ok) {
+        setShared(prev);
+      }
+    } catch {
+      setShared(prev);
+    }
+  };
+
+  const toggleShared = (key: string) => {
+    const next = { ...shared, [key]: !shared[key] };
+    saveShared(next);
+  };
 
   const whiskyCount = whiskies.length;
   if (whiskyCount === 0) return null;
@@ -831,6 +868,48 @@ function PrintMaterialsSection({
               {generating === "mat" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {generating === "mat" ? "Generating..." : "Download Tasting Mat"}
             </button>
+          </div>
+
+          <div className="labs-card p-4" data-testid="print-share-section">
+            <p className="text-sm font-semibold mb-1" style={{ color: "var(--labs-text)" }}>
+              <Share2 className="w-3.5 h-3.5 inline mr-1.5" style={{ verticalAlign: "-2px" }} />
+              {t("printableSheets.shareWithParticipants", "Share with Participants")}
+            </p>
+            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+              {t("printableSheets.shareWithParticipantsDesc", "Allow participants to download these materials")}
+            </p>
+            {([
+              { key: "menuCard", label: t("printableSheets.menuCard", "Menu Card") },
+              { key: "scoreSheets", label: t("printableSheets.scoreSheets", "Score Sheets") },
+              { key: "tastingMat", label: t("printableSheets.tastingMat", "Tasting Mat") },
+              { key: "masterSheet", label: t("printableSheets.masterSheet", "Master Sheet") },
+            ] as const).map(({ key, label }) => (
+              <label
+                key={key}
+                className="flex items-center justify-between py-2"
+                style={{ borderBottom: key !== "masterSheet" ? "1px solid var(--labs-border-subtle)" : "none", cursor: "pointer" }}
+                data-testid={`toggle-share-${key}`}
+              >
+                <span className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>{label}</span>
+                <div
+                  style={{
+                    width: 36, height: 20, borderRadius: 10,
+                    background: shared[key] ? "var(--labs-accent)" : "var(--labs-border)",
+                    position: "relative", transition: "background 0.2s", cursor: "pointer",
+                  }}
+                  onClick={() => toggleShared(key)}
+                >
+                  <div
+                    style={{
+                      width: 16, height: 16, borderRadius: 8, background: "#fff",
+                      position: "absolute", top: 2,
+                      left: shared[key] ? 18 : 2,
+                      transition: "left 0.2s",
+                    }}
+                  />
+                </div>
+              </label>
+            ))}
           </div>
         </div>
       )}
