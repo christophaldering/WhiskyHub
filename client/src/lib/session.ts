@@ -209,8 +209,14 @@ export async function tryAutoResume(): Promise<boolean> {
             syncStoreParticipant(undefined);
             return false;
           }
+        } else if (verRes.status === 503) {
+          syncStoreParticipant(undefined);
+          return false;
         }
-      } catch {}
+      } catch {
+        syncStoreParticipant(undefined);
+        return false;
+      }
       try {
         const res = await fetch(`/api/participants/${candidatePid}`, { headers: { "x-participant-id": candidatePid } });
         if (res.ok) {

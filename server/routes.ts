@@ -2302,7 +2302,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             return res.status(403).json({ ok: false, message: resumeVerCheck.message, code: resumeVerCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: participant.id });
           }
         }
-      } catch {}
+      } catch (verErr) {
+        console.warn("[SESSION][RESUME] verification check failed, denying resume:", verErr);
+        return res.status(503).json({ ok: false, message: "Verification check temporarily unavailable. Please try again." });
+      }
     }
     return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user" });
   };
