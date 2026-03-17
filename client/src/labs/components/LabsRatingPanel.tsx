@@ -900,59 +900,60 @@ export default function LabsRatingPanel({
     );
   };
 
+  const renderDetailedToggle = () => (
+    <button
+      type="button"
+      onClick={() => setShowDetailed(!showDetailed)}
+      data-testid="button-toggle-detailed"
+      style={{
+        width: "100%",
+        marginTop: 8,
+        background: showDetailed
+          ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
+          : "var(--labs-surface)",
+        border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
+        borderRadius: 12,
+        cursor: "pointer",
+        color: "var(--labs-text)",
+        fontSize: 14,
+        fontFamily: "inherit",
+        padding: "14px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        textAlign: "left" as const,
+        transition: "all 0.2s ease",
+        boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
+      }}
+    >
+      <span style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+        flexShrink: 0,
+        transition: "all 0.2s",
+      }}>
+        <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
+          {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
+        </span>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
+          {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
+        </span>
+      </div>
+      <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
+    </button>
+  );
+
   if (wizard) {
     return (
       <div data-testid="labs-rating-panel">
-        {showToggle && (
-          <button
-            type="button"
-            onClick={() => setShowDetailed(!showDetailed)}
-            data-testid="button-toggle-detailed"
-            style={{
-              width: "100%",
-              background: showDetailed
-                ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
-                : "var(--labs-surface)",
-              border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
-              borderRadius: 12,
-              cursor: "pointer",
-              color: "var(--labs-text)",
-              fontSize: 14,
-              fontFamily: "inherit",
-              padding: "14px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              textAlign: "left" as const,
-              transition: "all 0.2s ease",
-              boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
-            }}
-          >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
-              flexShrink: 0,
-              transition: "all 0.2s",
-            }}>
-              <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
-                {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
-                {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
-              </span>
-            </div>
-            <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
-          </button>
-        )}
-
         {(!showToggle || showDetailed) && (
           <div style={{ paddingTop: 8, marginTop: 4 }}>
             {renderWizardProgressDots()}
@@ -975,9 +976,13 @@ export default function LabsRatingPanel({
               )}
             </div>
 
+            {showToggle && renderDetailedToggle()}
+
             {renderWizardNavigation()}
           </div>
         )}
+
+        {showToggle && !showDetailed && renderDetailedToggle()}
 
         <FlavourStudioSheet
           open={studioOpen}
@@ -993,62 +998,15 @@ export default function LabsRatingPanel({
 
   return (
     <div data-testid="labs-rating-panel">
-      {showToggle && (
-        <button
-          type="button"
-          onClick={() => setShowDetailed(!showDetailed)}
-          data-testid="button-toggle-detailed"
-          style={{
-            width: "100%",
-            background: showDetailed
-              ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
-              : "var(--labs-surface)",
-            border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
-            borderRadius: 12,
-            cursor: "pointer",
-            color: "var(--labs-text)",
-            fontSize: 14,
-            fontFamily: "inherit",
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            textAlign: "left" as const,
-            transition: "all 0.2s ease",
-            boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
-          }}
-        >
-          <span style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
-            flexShrink: 0,
-            transition: "all 0.2s",
-          }}>
-            <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
-              {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
-            </span>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
-              {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
-            </span>
-          </div>
-          <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
-        </button>
-      )}
-
       {(!showToggle || showDetailed) && (
         <div style={{ paddingTop: 8, marginTop: 4 }}>
           {renderTabBar()}
           {renderActiveTabContent()}
         </div>
       )}
+
+      {showToggle && renderDetailedToggle()}
+
       {renderOverall()}
 
       <FlavourStudioSheet
