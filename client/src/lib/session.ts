@@ -92,6 +92,21 @@ export function setSessionPid(pid: string) {
   } catch {}
 }
 
+export function updateSessionPhotoUrl(photoUrl: string | null | undefined) {
+  try {
+    if (photoUrl) {
+      sessionStorage.setItem(SK_PHOTO_URL, photoUrl);
+    } else {
+      sessionStorage.removeItem(SK_PHOTO_URL);
+    }
+    const current = useAppStore.getState().currentParticipant;
+    if (current) {
+      useAppStore.getState().setParticipant({ ...current, photoUrl: photoUrl || undefined });
+    }
+    window.dispatchEvent(new Event("session-change"));
+  } catch {}
+}
+
 export function syncStoreParticipant(pid?: string, name?: string | null, role?: string, photoUrl?: string) {
   try {
     if (pid) {
@@ -160,6 +175,7 @@ export async function tryAutoResume(): Promise<boolean> {
         sessionStorage.getItem(SK_PID) || undefined,
         sessionStorage.getItem(SK_NAME),
         sessionStorage.getItem(SK_ROLE) || undefined,
+        sessionStorage.getItem(SK_PHOTO_URL) || undefined,
       );
       return true;
     }

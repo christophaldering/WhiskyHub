@@ -2236,7 +2236,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
         let signinPhotoUrl: string | undefined;
-        try { const prof = await storage.getProfile(participant.id); if (prof?.photoUrl) signinPhotoUrl = prof.photoUrl; } catch {}
+        try { const prof = await storage.getProfile(participant.id); if (prof?.photoUrl) signinPhotoUrl = prof.photoUrl; } catch (err) { console.warn(`[SESSION][SIGNIN] failed to load profile photo for pid=${participant.id}:`, err); }
         const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: signinPhotoUrl };
         const token = generateResumeToken();
         sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, role: participant.role || "user", expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
@@ -2252,11 +2252,15 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const e = sessionSigninAttempts.get(clientIp);
       if (e) e.count = 0;
       let globalPid: string | undefined;
+      let globalPhotoUrl: string | undefined;
       if (displayName) {
         const found = await storage.getParticipantByName(displayName);
-        if (found) globalPid = found.id;
+        if (found) {
+          globalPid = found.id;
+          try { const prof = await storage.getProfile(found.id); if (prof?.photoUrl) globalPhotoUrl = prof.photoUrl; } catch (err) { console.warn(`[SESSION][SIGNIN] failed to load profile photo for global-PIN pid=${found.id}:`, err); }
+        }
       }
-      const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid };
+      const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid, photoUrl: globalPhotoUrl };
       const token = generateResumeToken();
       sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: globalPid, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
       result.resumeToken = token;
@@ -2322,7 +2326,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       try {
         const prof = await storage.getProfile(stored.pid);
         if (prof?.photoUrl) resumePhotoUrl = prof.photoUrl;
-      } catch {}
+      } catch (err) {
+        console.warn(`[SESSION][RESUME] failed to load profile photo for pid=${stored.pid}:`, err);
+      }
     }
     return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user", photoUrl: resumePhotoUrl });
   };

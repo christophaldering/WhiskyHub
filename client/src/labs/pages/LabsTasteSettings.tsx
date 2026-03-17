@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
-import { signOut } from "@/lib/session";
+import { signOut, updateSessionPhotoUrl } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -84,8 +84,14 @@ export default function LabsTasteSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!currentParticipant) return;
-      if (removePhoto && !photoFile) await profileApi.deletePhoto(currentParticipant.id);
-      if (photoFile) await profileApi.uploadPhoto(currentParticipant.id, photoFile);
+      if (removePhoto && !photoFile) {
+        await profileApi.deletePhoto(currentParticipant.id);
+        updateSessionPhotoUrl(null);
+      }
+      if (photoFile) {
+        const photoResult = await profileApi.uploadPhoto(currentParticipant.id, photoFile);
+        if (photoResult?.photoUrl) updateSessionPhotoUrl(photoResult.photoUrl);
+      }
       await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, openaiApiKey: openaiApiKey.trim() || null, friendNotificationsEnabled });
       const participantUpdates: any = {};
       if (displayName.trim() && displayName !== participant?.name) participantUpdates.name = displayName.trim();
@@ -99,7 +105,10 @@ export default function LabsTasteSettings() {
       }
       if (Object.keys(participantUpdates).length > 0) {
         const updated = await participantUpdateApi.update(currentParticipant.id, participantUpdates);
-        if (updated.name !== currentParticipant.name) setParticipant({ ...currentParticipant, name: updated.name });
+        if (updated.name !== currentParticipant.name) {
+          const freshState = useAppStore.getState().currentParticipant;
+          setParticipant({ ...(freshState || currentParticipant), name: updated.name });
+        }
       }
     },
     onSuccess: () => {

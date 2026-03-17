@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
-import { signOut } from "@/lib/session";
+import { signOut, updateSessionPhotoUrl } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -106,9 +106,11 @@ export default function Profile() {
 
       if (removePhoto && !photoFile) {
         await profileApi.deletePhoto(currentParticipant.id);
+        updateSessionPhotoUrl(null);
       }
       if (photoFile) {
-        await profileApi.uploadPhoto(currentParticipant.id, photoFile);
+        const photoResult = await profileApi.uploadPhoto(currentParticipant.id, photoFile);
+        if (photoResult?.photoUrl) updateSessionPhotoUrl(photoResult.photoUrl);
       }
 
       await profileApi.update(currentParticipant.id, {
@@ -149,7 +151,8 @@ export default function Profile() {
       if (Object.keys(participantUpdates).length > 0) {
         const updated = await participantUpdateApi.update(currentParticipant.id, participantUpdates);
         if (updated.name !== currentParticipant.name) {
-          setParticipant({ ...currentParticipant, name: updated.name });
+          const freshState = useAppStore.getState().currentParticipant;
+          setParticipant({ ...(freshState || currentParticipant), name: updated.name });
         }
       }
     },
