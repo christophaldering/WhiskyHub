@@ -489,6 +489,12 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   }, [location]);
 
   useEffect(() => {
+    if (!localStorage.getItem("casksense_onboarded") && location !== "/labs/onboarding") {
+      window.location.replace("/labs/onboarding");
+    }
+  }, []);
+
+  useEffect(() => {
     const session = getSession();
     if (session.signedIn) return;
     tryAutoResume().then((resumed) => {

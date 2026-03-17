@@ -1873,9 +1873,31 @@ export default function LabsSolo() {
                 })()}
               </div>
             ) : hubDrafts.length === 0 && (
-              <div className="labs-empty" data-testid="text-no-drams">
-                <Wine style={{ width: 40, height: 40, marginBottom: 12, color: "var(--labs-text-muted)" }} />
-                {t("m2.solo.noDrams", "No drams yet — start your first one!")}
+              <div
+                className="labs-empty labs-fade-in"
+                data-testid="text-no-drams"
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 56, paddingBottom: 56 }}
+              >
+                <svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke="var(--labs-accent)" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 20, opacity: 0.7 }}>
+                  <path d="M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z" />
+                  <line x1="10" y1="17.6" x2="14" y2="17.6" />
+                  <line x1="9" y1="20" x2="15" y2="20" />
+                  <line x1="12" y1="17.6" x2="12" y2="20" />
+                </svg>
+                <h3 className="labs-serif" style={{ fontSize: 20, fontWeight: 400, fontStyle: "italic", color: "var(--labs-text)", marginBottom: 8 }}>
+                  {t("solo.empty.title")}
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", maxWidth: 260, lineHeight: 1.5, marginBottom: 24 }}>
+                  {t("solo.empty.subtitle")}
+                </p>
+                <button
+                  className="labs-btn-primary"
+                  onClick={() => { handleReset(); setCaptureSource("hub"); setSoloView("capture"); }}
+                  data-testid="button-solo-first-dram"
+                  style={{ fontSize: 14, padding: "12px 28px", borderRadius: 50 }}
+                >
+                  {t("solo.empty.button")}
+                </button>
               </div>
             )}
           </>

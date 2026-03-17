@@ -287,6 +287,33 @@ const resources = {
       whatsNew: {
         banner: "New at CaskSense — see what's changed!",
       },
+      onboarding: {
+        title: "What would you like to do?",
+        solo: {
+          title: "Tasting alone",
+          subtitle: "Log a dram. Build your palate.",
+        },
+        host: {
+          title: "Host a tasting",
+          subtitle: "Run a blind round. Reveal together.",
+        },
+        join: {
+          title: "Join a tasting",
+          subtitle: "Got a code? Join instantly.",
+          go: "Join",
+        },
+        signIn: {
+          label: "Already have an account?",
+          link: "Sign in",
+        },
+      },
+      solo: {
+        empty: {
+          title: "Your first dram awaits.",
+          subtitle: "Every great collection starts with one glass. What are you drinking tonight?",
+          button: "Log your first dram",
+        },
+      },
       landing: {
         nav: {
           explore: "Explore",
@@ -6377,6 +6404,33 @@ const resources = {
       },
       whatsNew: {
         banner: "Neu bei CaskSense — schau was sich getan hat!",
+      },
+      onboarding: {
+        title: "Was möchtest du heute tun?",
+        solo: {
+          title: "Solo verkosten",
+          subtitle: "Dram erfassen. Profil aufbauen.",
+        },
+        host: {
+          title: "Tasting leiten",
+          subtitle: "Blind verkosten. Gemeinsam aufdecken.",
+        },
+        join: {
+          title: "Tasting beitreten",
+          subtitle: "Code erhalten? Sofort einsteigen.",
+          go: "Beitreten",
+        },
+        signIn: {
+          label: "Bereits registriert?",
+          link: "Anmelden",
+        },
+      },
+      solo: {
+        empty: {
+          title: "Dein erstes Dram wartet.",
+          subtitle: "Jede große Sammlung beginnt mit einem Glas. Was trinkst du heute Abend?",
+          button: "Erstes Dram erfassen",
+        },
       },
       landing: {
         nav: {

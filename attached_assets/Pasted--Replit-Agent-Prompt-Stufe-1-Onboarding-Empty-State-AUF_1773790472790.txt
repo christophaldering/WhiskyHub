@@ -1,0 +1,141 @@
+# Replit Agent Prompt — Stufe 1: Onboarding + Empty State
+
+-----
+
+## AUFGABE
+
+Zwei klar abgegrenzte Änderungen. Nichts anderes wird angefasst.
+
+-----
+
+## ÄNDERUNG 1: ONBOARDING SCREEN
+
+### Was & Wo
+
+Erstelle eine neue Komponente `client/src/labs/pages/LabsOnboarding.tsx`.
+
+Zeige diesen Screen **genau einmal** beim allerersten App-Start — danach nie wieder. Speichere den Status via `localStorage.setItem('casksense_onboarded', 'true')`.
+
+In `client/src/labs/LabsLayout.tsx`: Prüfe beim Mount ob `localStorage.getItem('casksense_onboarded')` gesetzt ist. Falls nicht → redirect zu `/labs/onboarding`. Nach Auswahl → redirect zu entsprechendem Ziel, dann Flag setzen.
+
+### Design
+
+Vollbild, dark warm theme, zentriert. Kein Navbar, kein Bottom Nav.
+
+**Aufbau von oben nach unten:**
+
+1. Logo: “CaskSense” in Playfair Display, 28px, mit Gold-Dot links
+1. Großer Titel:
+- EN: *“What would you like to do?”*
+- DE: *“Was möchtest du heute tun?”*
+- Font: Playfair Display Italic, 36px, color: var(–cream)
+1. Drei Karten, vertikal gestapelt, volle Breite, max-width 400px, zentriert
+
+**Karte 1 — Solo**
+
+- Icon: einzelnes Glencairn-Glas SVG (warm gold, 32px)
+- Titel EN: “Tasting alone” / DE: “Solo verkosten”
+- Subtitle EN: “Log a dram. Build your palate.” / DE: “Dram erfassen. Profil aufbauen.”
+- Link → `/labs/tastings/solo`
+
+**Karte 2 — Host**
+
+- Icon: drei Gläser SVG (32px)
+- Titel EN: “Host a tasting” / DE: “Tasting leiten”
+- Subtitle EN: “Run a blind round. Reveal together.” / DE: “Blind verkosten. Gemeinsam aufdecken.”
+- Link → `/m2` (bestehender Host-Einstieg)
+
+**Karte 3 — Join**
+
+- Icon: QR-Code / Ticket SVG (32px)
+- Titel EN: “Join a tasting” / DE: “Tasting beitreten”
+- Subtitle EN: “Got a code? Join instantly.” / DE: “Code erhalten? Sofort einsteigen.”
+- Beim Tap: zeigt ein kleines inline Input-Feld für den Code — identische Logik wie bestehender Code-Join auf der Landing Page
+
+**Karten-Design:**
+
+- Background: rgba(255,255,255,0.035)
+- Border: 1px solid rgba(201,151,43,0.18)
+- Border-radius: 20px
+- Padding: 20px 24px
+- Display: flex, align-items: center, gap: 16px
+- Hover: border-color rgba(201,151,43,0.4), transform translateY(-2px)
+- Transition: all 0.3s cubic-bezier(0.16,1,0.3,1)
+- Tap/Click: speichert Flag, navigiert zum Ziel
+
+**Animationen:**
+
+- Logo: fade-in, delay 0s
+- Titel: fade-in + translateY(16px), delay 0.15s
+- Karte 1: fade-in + translateY(16px), delay 0.25s
+- Karte 2: fade-in + translateY(16px), delay 0.35s
+- Karte 3: fade-in + translateY(16px), delay 0.45s
+- Alle mit cubic-bezier(0.16,1,0.3,1), duration 0.6s
+
+1. Unten, klein, muted:
+- EN: “Already have an account? Sign in” / DE: “Bereits registriert? Anmelden”
+- Link → bestehender Login-Flow
+
+### I18n
+
+Neue Keys unter `onboarding.*` in beiden Sprachblöcken von `client/src/lib/i18n.ts` anlegen.
+
+-----
+
+## ÄNDERUNG 2: EMPTY STATE — SOLO JOURNAL
+
+### Was & Wo
+
+In `client/src/labs/pages/LabsSoloTasting.tsx` (bzw. dem entsprechenden bestehenden Solo-Component in Labs oder M2): Den bestehenden leeren Zustand wenn keine Drams vorhanden sind ersetzen.
+
+Aktuell: leere Liste, generischer Text.
+Neu: warmer, einladender Empty State.
+
+### Design
+
+Zentriert, padding 60px 24px, kein Card-Wrapper.
+
+**Aufbau:**
+
+1. Illustration: Ein einzelnes Glencairn-Glas als SVG, 80px hoch, gold stroke (rgba(201,151,43,0.6)), kein Fill, stroke-width 1.5. Darunter ein sehr subtiler Glow: radial-gradient ellipse, rgba(201,151,43,0.08), 80px Radius.
+1. Titel in Playfair Display Italic, 26px:
+- EN: *“Your first dram awaits.”*
+- DE: *“Dein erstes Dram wartet.”*
+1. Subtitle, 15px, muted, font-weight 300, line-height 1.6, max-width 280px:
+- EN: “Every great collection starts with one glass. What are you drinking tonight?”
+- DE: “Jede große Sammlung beginnt mit einem Glas. Was trinkst du heute Abend?”
+1. Button: identisch mit bestehendem Primary-Button-Style in Labs
+- EN: “Log your first dram” / DE: “Erstes Dram erfassen”
+- Führt zum Erfassungsformular
+- Gold gradient, border-radius 100px, padding 14px 32px
+
+**Animation:**
+
+- Glas-SVG: leichte breathe-Animation, scale 1 → 1.04 → 1, 4s cycle, ease-in-out, prefers-reduced-motion respektieren
+- Text + Button: fade-in beim Mount, delay 0.2s
+
+### I18n
+
+Neue Keys unter `solo.empty.*` in beiden Sprachblöcken anlegen.
+
+-----
+
+## WAS NICHT ANGEFASST WIRD
+
+- Kein bestehendes Routing verändert außer dem Onboarding-Redirect
+- Keine bestehenden Komponenten umgebaut
+- Kein Backend, keine API-Änderungen
+- Keine Datenbank-Migrationen
+- Das Onboarding-Flag nur in localStorage — kein DB-Eintrag
+
+-----
+
+## VORGEHEN
+
+1. `LabsOnboarding.tsx` erstellen
+1. I18n-Keys für Onboarding anlegen
+1. Redirect-Logik in `LabsLayout.tsx` einbauen
+1. Route `/labs/onboarding` registrieren
+1. Empty State im Solo-Component ersetzen
+1. I18n-Keys für Empty State anlegen
+1. Testen: localStorage leeren → App öffnen → Onboarding erscheint → Auswahl → Flag gesetzt → beim nächsten Start kein Onboarding mehr
