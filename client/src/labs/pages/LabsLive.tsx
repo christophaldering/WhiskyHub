@@ -688,7 +688,19 @@ function GuidedStepView({
                       const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
                       const overall = rating?.overall;
                       const isCurrent = idx === localIndex;
-                      const label = isBlindStep
+                      const idxNameHidden = (() => {
+                        if (!tasting.blindMode) return false;
+                        const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
+                        const guidedStep = tasting.guidedRevealStep ?? 0;
+                        if (idx < guidedIdx) return false;
+                        if (idx > guidedIdx) return true;
+                        const revealedForIdx = new Set<string>();
+                        for (let s = 0; s < guidedStep && s < stepGroups.length; s++) {
+                          for (const f of stepGroups[s]) revealedForIdx.add(f);
+                        }
+                        return !revealedForIdx.has("name") && guidedStep < stepGroups.length;
+                      })();
+                      const label = idxNameHidden
                         ? `Dram ${String.fromCharCode(65 + idx)}`
                         : (w.name || `Dram ${idx + 1}`);
                       const isNavigable = idx <= hostMaxIndex;

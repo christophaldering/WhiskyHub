@@ -214,7 +214,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
             borderRadius: 10,
             padding: 6,
             minWidth: 160,
-            zIndex: "var(--z-toast)",
+            zIndex: 50,
             boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           }}
           data-testid="dropdown-labs-export-menu"
@@ -747,7 +747,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
   }
 
   const topWhisky = sorted[0];
-  const participantCount = participants?.length || 0;
+  const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
+  const participantCount = Math.max(participants?.length || 0, uniqueRaters);
   const totalRatings = allRatings?.length || 0;
   const maxScore = tasting?.ratingScale || 100;
   const isHost = currentParticipant?.id === tasting.hostId;
@@ -821,8 +822,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </button>
 
       <div className="mb-6 labs-stagger-1 labs-fade-in">
-        <div className="flex items-start justify-between gap-3">
-          <div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ flex: "1 1 0", minWidth: 200 }}>
             <h1
               className="labs-h2 mb-1"
               style={{ color: "var(--labs-text)" }}
@@ -846,7 +847,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </div>
           </div>
           {sorted.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
               {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
                 <button
                   className="labs-btn-primary flex items-center gap-2"
