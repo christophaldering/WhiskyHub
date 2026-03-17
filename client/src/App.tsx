@@ -12,6 +12,25 @@ import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
 import { pushRoute } from "@/lib/navStack";
 
+window.addEventListener("unhandledrejection", (event) => {
+  const msg = String(event.reason?.message || event.reason || "");
+  if (
+    msg.includes("Failed to fetch dynamically imported module") ||
+    msg.includes("Loading chunk") ||
+    msg.includes("error loading dynamically imported module") ||
+    msg.includes("Importing a module script failed") ||
+    msg.includes("Unable to preload CSS")
+  ) {
+    const key = "cs_chunk_reload";
+    const last = sessionStorage.getItem(key);
+    const now = Date.now();
+    if (!last || now - parseInt(last, 10) > 10000) {
+      sessionStorage.setItem(key, String(now));
+      window.location.reload();
+    }
+  }
+});
+
 // ── Core pages (eager-loaded: critical navigation paths) ──
 import TastingHubSimple from "@/pages/tasting-hub-simple";
 import MyTastePage from "@/pages/my-taste";
@@ -242,6 +261,19 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   static getDerivedStateFromError(error: Error) { return { error }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    fetch("/api/client-error", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack?.slice(0, 2000),
+        componentStack: info.componentStack?.slice(0, 1000),
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+        boundary: "global",
+      }),
+    }).catch(() => {});
   }
   render() {
     if (this.state.error) {

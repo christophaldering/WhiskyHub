@@ -405,6 +405,14 @@ export async function registerRoutes(
     });
   }
 
+  app.post("/api/client-error", (req: Request, res: Response) => {
+    const { message, stack, componentStack, url, userAgent, timestamp } = req.body || {};
+    log(`[CLIENT ERROR] ${message || "unknown"} at ${url || "?"} (${userAgent?.slice(0, 80) || "?"})`, "error");
+    if (stack) log(`  Stack: ${String(stack).slice(0, 500)}`, "error");
+    if (componentStack) log(`  Component: ${String(componentStack).slice(0, 300)}`, "error");
+    res.json({ ok: true });
+  });
+
   // ===== HEALTH CHECK =====
   app.get("/api/health", async (_req: Request, res: Response) => {
     let dbOk = false;
