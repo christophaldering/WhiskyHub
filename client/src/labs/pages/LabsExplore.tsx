@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Star, Wine, ChevronRight, ArrowUpDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
+import { Search, Star, Wine, ChevronRight, ChevronDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -10,6 +10,8 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 type SortOption = "alphabetical" | "alphabetical_desc" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
 type ExploreTab = "bottles" | "drams" | "wishlist" | "all";
 type DramFilter = "all" | "solo" | "tasting";
+
+const BATCH_SIZE = 50;
 
 export default function LabsExplore() {
   const { t } = useTranslation();
@@ -33,10 +35,12 @@ export default function LabsExplore() {
   }, [location]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("alphabetical");
-  const [displayLimit, setDisplayLimit] = useState(50);
+  const [displayLimit, setDisplayLimit] = useState(BATCH_SIZE);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortBtnRef = useRef<HTMLButtonElement>(null);
   const [dramFilter, setDramFilter] = useState<DramFilter>("all");
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data: whiskies, isLoading: isLoadingAll } = useQuery({
     queryKey: ["labs-explore-whiskies", searchText, selectedRegion],
@@ -75,6 +79,8 @@ export default function LabsExplore() {
     return Array.from(regionSet).sort();
   }, [whiskies, activeTab]);
 
+  const collator = useMemo(() => new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }), []);
+
   const sortedWhiskies = useMemo(() => {
     if (activeTab !== "all" || !whiskies || !Array.isArray(whiskies)) return [];
     let list = [...whiskies];
@@ -84,18 +90,18 @@ export default function LabsExplore() {
       return isNaN(n) ? 0 : n;
     };
     switch (sortBy) {
-      case "alphabetical": list.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")); break;
-      case "alphabetical_desc": list.sort((a: any, b: any) => (b.name || "").localeCompare(a.name || "")); break;
-      case "region": list.sort((a: any, b: any) => (a.region || "zzz").localeCompare(b.region || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
-      case "category": list.sort((a: any, b: any) => (a.category || "zzz").localeCompare(b.category || "zzz") || (a.name || "").localeCompare(b.name || "")); break;
-      case "age": list.sort((a: any, b: any) => parseNum(b.age) - parseNum(a.age) || (a.name || "").localeCompare(b.name || "")); break;
-      case "abv": list.sort((a: any, b: any) => parseNum(b.abv) - parseNum(a.abv) || (a.name || "").localeCompare(b.name || "")); break;
+      case "alphabetical": list.sort((a: any, b: any) => collator.compare(a.name || "", b.name || "")); break;
+      case "alphabetical_desc": list.sort((a: any, b: any) => collator.compare(b.name || "", a.name || "")); break;
+      case "region": list.sort((a: any, b: any) => collator.compare(a.region || "zzz", b.region || "zzz") || collator.compare(a.name || "", b.name || "")); break;
+      case "category": list.sort((a: any, b: any) => collator.compare(a.category || "zzz", b.category || "zzz") || collator.compare(a.name || "", b.name || "")); break;
+      case "age": list.sort((a: any, b: any) => parseNum(b.age) - parseNum(a.age) || collator.compare(a.name || "", b.name || "")); break;
+      case "abv": list.sort((a: any, b: any) => parseNum(b.abv) - parseNum(a.abv) || collator.compare(a.name || "", b.name || "")); break;
       case "highest_rated":
         list.sort((a: any, b: any) => {
           const aHas = a.avgOverall != null && a.avgOverall > 0 ? 1 : 0;
           const bHas = b.avgOverall != null && b.avgOverall > 0 ? 1 : 0;
           if (aHas !== bHas) return bHas - aHas;
-          return (b.avgOverall || 0) - (a.avgOverall || 0) || (a.name || "").localeCompare(b.name || "");
+          return (b.avgOverall || 0) - (a.avgOverall || 0) || collator.compare(a.name || "", b.name || "");
         });
         break;
       case "most_rated":
@@ -103,16 +109,44 @@ export default function LabsExplore() {
           const aHas = a.ratingCount != null && a.ratingCount > 0 ? 1 : 0;
           const bHas = b.ratingCount != null && b.ratingCount > 0 ? 1 : 0;
           if (aHas !== bHas) return bHas - aHas;
-          return (b.ratingCount || 0) - (a.ratingCount || 0) || (a.name || "").localeCompare(b.name || "");
+          return (b.ratingCount || 0) - (a.ratingCount || 0) || collator.compare(a.name || "", b.name || "");
         });
         break;
     }
     return list;
-  }, [whiskies, sortBy, activeTab]);
+  }, [whiskies, sortBy, activeTab, collator]);
 
   const visibleWhiskies = useMemo(() => sortedWhiskies.slice(0, displayLimit), [sortedWhiskies, displayLimit]);
 
-  useEffect(() => { setDisplayLimit(50); }, [sortBy, searchText, selectedRegion]);
+  useEffect(() => {
+    setDisplayLimit(BATCH_SIZE);
+    if (listTopRef.current) {
+      listTopRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [sortBy, searchText, selectedRegion]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setDisplayLimit(prev => {
+            if (prev >= sortedWhiskies.length) return prev;
+            return prev + BATCH_SIZE;
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [sortedWhiskies.length]);
+
+  const handleSortChange = useCallback((opt: SortOption) => {
+    setSortBy(opt);
+    setShowSortMenu(false);
+  }, []);
 
   const filteredCollection = useMemo(() => {
     if (!collectionItems || !Array.isArray(collectionItems)) return [];
@@ -222,6 +256,14 @@ export default function LabsExplore() {
     empty: "Empty",
   };
 
+  const searchPlaceholder = activeTab === "all"
+    ? t("explore.searchDatabase", "Search by name, distillery, region\u2026")
+    : activeTab === "bottles"
+    ? t("explore.searchCollection", "Search your collection\u2026")
+    : activeTab === "wishlist"
+    ? t("explore.searchWishlist", "Search your wishlist\u2026")
+    : t("explore.searchDrams", "Search your drams\u2026");
+
   return (
     <div className="labs-page-wide">
       <div style={{ marginBottom: 20 }}>
@@ -301,7 +343,7 @@ export default function LabsExplore() {
         <input
           className="labs-input"
           style={{ paddingLeft: 40, fontSize: 15, height: 44 }}
-          placeholder={activeTab === "all" ? "Search by name, distillery, region..." : "Search..."}
+          placeholder={searchPlaceholder}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           data-testid="labs-explore-search"
@@ -309,19 +351,32 @@ export default function LabsExplore() {
       </div>
 
       {activeTab === "all" && regions.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 labs-fade-in labs-stagger-2" style={{ scrollbarWidth: "none" }}>
+        <div
+          className="labs-fade-in labs-stagger-2"
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 16,
+            overflowX: "auto",
+            paddingBottom: 4,
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <button
             className={`labs-chip ${!selectedRegion ? "labs-chip-active" : ""}`}
             onClick={() => setSelectedRegion(null)}
+            style={{ whiteSpace: "nowrap", flexShrink: 0 }}
             data-testid="labs-explore-region-all"
           >
-            All Regions
+            {t("allRegions", "All Regions")}
           </button>
           {regions.map((region) => (
             <button
               key={region}
               className={`labs-chip ${selectedRegion === region ? "labs-chip-active" : ""}`}
               onClick={() => setSelectedRegion(selectedRegion === region ? null : region)}
+              style={{ whiteSpace: "nowrap", flexShrink: 0 }}
               data-testid={`labs-explore-region-${region}`}
             >
               {region}
@@ -331,57 +386,85 @@ export default function LabsExplore() {
       )}
 
       {activeTab === "all" && (
-        <div className="flex items-center justify-between mb-4 labs-fade-in labs-stagger-2">
-          <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-explore-count">
-            {displayLimit < sortedWhiskies.length
-              ? `${visibleWhiskies.length} / ${sortedWhiskies.length} ${sortedWhiskies.length === 1 ? "whisky" : "whiskies"}`
-              : `${sortedWhiskies.length} ${sortedWhiskies.length === 1 ? "whisky" : "whiskies"}`}
+        <div ref={listTopRef} className="flex items-center justify-between mb-4 labs-fade-in labs-stagger-2">
+          <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="labs-explore-count">
+            {t("explore.whiskyCount", { count: sortedWhiskies.length })}
           </p>
           <div style={{ position: "relative" }}>
             <button
               ref={sortBtnRef}
-              className="labs-btn-ghost flex items-center gap-1.5 text-xs py-1.5 px-3"
               onClick={() => setShowSortMenu(!showSortMenu)}
               data-testid="labs-explore-sort-toggle"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--labs-accent)",
+                background: "var(--labs-accent-muted)",
+                border: "1px solid var(--labs-accent)",
+                borderRadius: 20,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
             >
-              <ArrowUpDown className="w-3.5 h-3.5" />
               {sortLabels[sortBy]}
+              <ChevronDown style={{ width: 14, height: 14, transition: "transform 0.2s", transform: showSortMenu ? "rotate(180deg)" : "rotate(0)" }} />
             </button>
             {showSortMenu && (
               <>
                 <div className="fixed inset-0" style={{ zIndex: "var(--z-overlay)" }} onClick={() => setShowSortMenu(false)} data-testid="labs-explore-sort-overlay" />
                 <div
-                  className="py-1 min-w-[160px]"
                   style={{
                     position: "fixed",
                     right: 20,
                     top: (() => {
                       const r = sortBtnRef.current?.getBoundingClientRect();
-                      return r ? r.bottom + 4 : 100;
+                      return r ? r.bottom + 6 : 100;
                     })(),
                     zIndex: "var(--z-toast)",
                     background: "var(--labs-surface-elevated)",
                     border: "1px solid var(--labs-border)",
-                    borderRadius: "var(--labs-radius-sm)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                    borderRadius: 12,
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
                     maxHeight: "60vh",
                     overflowY: "auto",
+                    padding: "6px 0",
+                    minWidth: 180,
                   }}
                 >
-                  {(["alphabetical", "alphabetical_desc", "highest_rated", "most_rated", "region", "category", "age", "abv"] as SortOption[]).map((opt) => (
-                    <button
-                      key={opt}
-                      className="w-full text-left px-4 py-2.5 text-sm transition-colors"
-                      style={{
-                        color: sortBy === opt ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-                        background: sortBy === opt ? "var(--labs-accent-muted)" : "transparent",
-                      }}
-                      onClick={() => { setSortBy(opt); setShowSortMenu(false); }}
-                      data-testid={`labs-explore-sort-${opt}`}
-                    >
-                      {sortLabels[opt]}
-                    </button>
-                  ))}
+                  {(["alphabetical", "alphabetical_desc", "highest_rated", "most_rated", "region", "category", "age", "abv"] as SortOption[]).map((opt) => {
+                    const active = sortBy === opt;
+                    return (
+                      <button
+                        key={opt}
+                        className="w-full text-left transition-colors"
+                        style={{
+                          padding: "10px 16px",
+                          fontSize: 14,
+                          fontWeight: active ? 600 : 400,
+                          color: active ? "var(--labs-accent)" : "var(--labs-text)",
+                          background: active ? "var(--labs-accent-muted)" : "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                        onClick={() => handleSortChange(opt)}
+                        data-testid={`labs-explore-sort-${opt}`}
+                      >
+                        <span>{sortLabels[opt]}</span>
+                        {active && (
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--labs-accent)" }} />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -397,12 +480,14 @@ export default function LabsExplore() {
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-empty">
               <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
               <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-                {searchText || selectedRegion ? "No matching whiskies" : "No whiskies yet"}
+                {searchText || selectedRegion
+                  ? t("explore.noMatchingWhiskies", "No matching whiskies")
+                  : t("explore.noWhiskiesYet", "No whiskies yet")}
               </p>
               <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                 {searchText || selectedRegion
-                  ? "Try adjusting your search or filters"
-                  : "Whiskies will appear here once they're added to a tasting session"}
+                  ? t("explore.adjustFilters", "Try adjusting your search or filters")
+                  : t("explore.whiskiesWillAppear", "Whiskies will appear here once they\u2019re added to a tasting session")}
               </p>
             </div>
           )}
@@ -451,7 +536,9 @@ export default function LabsExplore() {
                         </div>
                       )}
                       {w.ratingCount != null && w.ratingCount > 0 && (
-                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}</span>
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                          {w.ratingCount} {w.ratingCount === 1 ? t("explore.rating", "rating") : t("explore.ratings", "ratings")}
+                        </span>
                       )}
                     </div>
                     <ChevronRight style={{ width: 16, height: 16, flexShrink: 0, color: "var(--labs-text-muted)", opacity: 0.75 }} />
@@ -459,14 +546,27 @@ export default function LabsExplore() {
                 ))}
               </div>
               {displayLimit < sortedWhiskies.length && (
-                <button
-                  onClick={() => setDisplayLimit(prev => prev + 50)}
-                  className="labs-btn-secondary w-full mt-4"
-                  style={{ padding: "12px", fontSize: 13 }}
-                  data-testid="labs-explore-load-more"
+                <div ref={sentinelRef} style={{ height: 1 }} />
+              )}
+              {displayLimit < sortedWhiskies.length && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "20px 0 8px",
+                  }}
                 >
-                  {t("explore.loadMore", "Show more")} ({sortedWhiskies.length - displayLimit} {t("explore.remaining", "remaining")})
-                </button>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      border: "2.5px solid var(--labs-border)",
+                      borderTopColor: "var(--labs-accent)",
+                      borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                </div>
               )}
             </>
           )}
