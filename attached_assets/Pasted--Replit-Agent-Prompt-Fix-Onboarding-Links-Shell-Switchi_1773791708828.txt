@@ -1,0 +1,88 @@
+# Replit Agent Prompt — Fix: Onboarding Links + Shell-Switching
+
+-----
+
+## PROBLEM 1: “Tasting alone” zeigt “Tasting not found”
+
+Die Route `/labs/tastings/solo` wird vom Router als `/labs/tastings/:id` interpretiert.
+
+### Fix
+
+In der Routing-Konfiguration (wahrscheinlich `client/src/App.tsx` oder `client/src/labs/LabsLayout.tsx`):
+
+Die Route `/labs/tastings/solo` muss **vor** der Route `/labs/tastings/:id` registriert sein. Wouter matcht in Reihenfolge — solo wird sonst als id=“solo” behandelt.
+
+```tsx
+// RICHTIGE REIHENFOLGE:
+<Route path="/labs/tastings/solo" component={LabsSoloTasting} />
+<Route path="/labs/tastings/:id" component={LabsTastingDetail} />
+
+// FALSCHE REIHENFOLGE (aktuell wahrscheinlich so):
+<Route path="/labs/tastings/:id" component={LabsTastingDetail} />
+<Route path="/labs/tastings/solo" component={LabsSoloTasting} />
+```
+
+Stelle sicher dass `/labs/tastings/solo` als erste der beiden Routen registriert ist.
+
+-----
+
+## PROBLEM 2: App switcht zwischen Labs (dark) und alter heller Version
+
+Der Onboarding Screen rendert außerhalb des Labs-Shells — beim Weiterklicken lädt die App die falsche Layout-Wrapper-Komponente.
+
+### Fix
+
+`LabsOnboarding.tsx` muss **innerhalb** des Labs-Routers liegen, also unter dem `LabsLayout`-Wrapper, nicht auf Root-Level.
+
+In `client/src/App.tsx`: Prüfe wo `/labs/onboarding` registriert ist. Es muss innerhalb des gleichen Route-Blocks liegen wie alle anderen `/labs/*` Routen:
+
+```tsx
+// RICHTIG — innerhalb des Labs-Blocks:
+<Route path="/labs" nest>
+  <LabsLayout>
+    <Route path="/onboarding" component={LabsOnboarding} />
+    <Route path="/tastings/solo" component={LabsSoloTasting} />
+    <Route path="/tastings/:id" component={LabsTastingDetail} />
+    ...
+  </LabsLayout>
+</Route>
+
+// FALSCH — auf Root-Level außerhalb von Labs:
+<Route path="/labs/onboarding" component={LabsOnboarding} />
+```
+
+Außerdem: Der Onboarding Screen selbst soll **keinen** Bottom-Nav und keine Topbar zeigen. Falls `LabsLayout` diese automatisch rendert, füge in `LabsLayout.tsx` eine Ausnahme hinzu:
+
+```tsx
+const isOnboarding = location === '/labs/onboarding';
+
+// Bottom Nav und Topbar nur anzeigen wenn nicht Onboarding:
+{!isOnboarding && <LabsBottomNav />}
+{!isOnboarding && <LabsTopBar />}
+```
+
+-----
+
+## PROBLEM 3: “Host a tasting” Link-Ziel prüfen
+
+Der Link auf der Onboarding-Karte “Host a tasting” zeigt auf `/m2` — das ist die alte helle Version.
+
+Ändere den Link zu `/labs/dashboard` (bestehende Labs Host Dashboard Route) damit der Nutzer in der Labs-Shell bleibt.
+
+```tsx
+// Alt:
+href="/m2"
+
+// Neu:
+href="/labs/dashboard"
+```
+
+-----
+
+## VORGEHEN
+
+1. Route-Reihenfolge in App.tsx oder LabsLayout.tsx prüfen und korrigieren
+1. `/labs/onboarding` in den Labs-Route-Block verschieben falls nötig
+1. LabsLayout: Bottom Nav + Topbar auf Onboarding-Route ausblenden
+1. “Host a tasting” Link auf `/labs/dashboard` ändern
+1. Testen: alle drei Karten tippen → jede landet in der dark Labs-Shell, kein Shell-Switching

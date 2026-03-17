@@ -505,6 +505,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   }, []);
 
   const isLabsHome = location === "/labs" || location === "/labs/";
+  const isOnboarding = location === "/labs/onboarding";
 
   const handleButtonHaptic = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
@@ -512,6 +513,14 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       triggerHaptic("light");
     }
   }, []);
+
+  if (isOnboarding) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} onTouchStart={handleButtonHaptic}>

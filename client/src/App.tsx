@@ -613,11 +613,11 @@ function Router() {
 
         {/* === CASKSENSE LABS === */}
         <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
-        <Route path="/labs/onboarding" component={LabsOnboarding} />
         <Route path="/labs">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/labs/*">
           <LabsLayout>
             <Switch>
+              <Route path="/labs/onboarding" component={LabsOnboarding} />
               <Route path="/labs/join/:code" component={LabsJoin} />
               <Route path="/labs/join" component={LabsJoin} />
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />

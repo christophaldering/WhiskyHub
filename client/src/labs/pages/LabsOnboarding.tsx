@@ -98,7 +98,7 @@ export default function LabsOnboarding() {
       subtitleKey: "onboarding.solo.subtitle",
       testId: "card-onboard-solo",
       action: "navigate",
-      href: "/labs/tastings/solo",
+      href: "/labs/solo",
     },
     {
       icon: <GlencairnTriple size={32} />,
