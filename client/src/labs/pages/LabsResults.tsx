@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check, Info } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId } from "@/lib/api";
@@ -172,15 +173,40 @@ function labsExportPdf(tasting: any, whiskyResults: any[]) {
 function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: string; tasting: any; whiskyResults: any[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        btnRef.current && !btnRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+      const close = () => setOpen(false);
+      window.addEventListener("scroll", close, true);
+      window.addEventListener("resize", close);
+      return () => {
+        window.removeEventListener("scroll", close, true);
+        window.removeEventListener("resize", close);
+      };
+    }
   }, [open]);
 
   const handleServerExport = async (format: "csv" | "xlsx") => {
@@ -194,8 +220,9 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
   };
 
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div style={{ display: "inline-block" }}>
       <button
+        ref={btnRef}
         className="labs-btn-secondary flex items-center gap-2"
         onClick={() => setOpen(!open)}
         data-testid="button-labs-export-menu"
@@ -203,18 +230,19 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
         <Download className="w-4 h-4" />
         Export
       </button>
-      {open && (
+      {open && pos && createPortal(
         <div
+          ref={dropdownRef}
           style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            right: 0,
+            position: "fixed",
+            top: pos.top,
+            right: pos.right,
             background: "var(--labs-surface-elevated)",
             border: "1px solid var(--labs-border)",
             borderRadius: 10,
             padding: 6,
             minWidth: 160,
-            zIndex: 50,
+            zIndex: 9999,
             boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           }}
           data-testid="dropdown-labs-export-menu"
@@ -286,7 +314,8 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
             <Download style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
             PDF
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
