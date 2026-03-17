@@ -858,6 +858,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
+  const presentationSlideVal = tasting?.presentationSlide;
+  const isHost = currentParticipant?.id === tasting?.hostId;
+  useEffect(() => {
+    if (presentationSlideVal != null && !isHost && tastingId) {
+      navigate(`/labs/results/${tastingId}`);
+    }
+  }, [presentationSlideVal, isHost, tastingId, navigate]);
+
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
