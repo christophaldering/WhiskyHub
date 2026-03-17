@@ -18,3 +18,9 @@ id = "ff4kQ_2xGS2g1sljoMKKH"
 uri = "file://casksense-whisky-database.csv"
 type = "table"
 title = "CaskSense Whisky Database CSV (1.578 Einträge)"
+
+[[outputs]]
+id = "LUGBqQq87bcGe84WXo-ax"
+uri = "file://CaskSense_Whisky_Import_Template.xlsx"
+type = "table"
+title = "CaskSense Whisky Import Template"

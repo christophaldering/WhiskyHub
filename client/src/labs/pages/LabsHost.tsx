@@ -2867,7 +2867,7 @@ function GuidedTastingEngine({
                   {i < guidedIndex ? (
                     <Check className="w-3.5 h-3.5" />
                   ) : (
-                    String.fromCharCode(65 + i)
+                    i + 1
                   )}
                 </button>
               );
