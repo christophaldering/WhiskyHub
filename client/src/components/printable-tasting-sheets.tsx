@@ -83,7 +83,8 @@ async function generateParticipantQR(
     doc.addImage(dataUrl, 'PNG', x, y, size, size);
     doc.setFontSize(6);
     doc.setTextColor(...PRINT_TEXTMUTED_RGB);
-    doc.text(participantName, x + size / 2, y + size + 3, { align: 'center' });
+    const qrLabel = doc.splitTextToSize(participantName, size + 4);
+    doc.text(qrLabel[0] ?? '', x + size / 2, y + size + 3, { align: 'center' });
   } catch (e) {
     console.warn('[Print] QR generation failed:', e);
   }
@@ -276,217 +277,162 @@ async function drawCoverPage(
 ) {
   const pageW = orientation === "landscape" ? 297 : 210;
   const pageH = orientation === "landscape" ? 210 : 297;
-  const marginX = orientation === "landscape" ? 22 : 18;
-  const contentW = pageW - marginX * 2;
+  const margin = 18;
+  const usableWidth = pageW - margin * 2;
 
-  const bgColor: RGB = styleTheme?.colorScheme?.background || [252, 251, 248];
-  const primaryColor: RGB = styleTheme?.colorScheme?.primary || NAVY;
-  const accentColor: RGB = styleTheme?.colorScheme?.accent || AMBER;
-  const textDark: RGB = styleTheme?.colorScheme?.textDark || NAVY;
-  const textLight: RGB = styleTheme?.colorScheme?.textLight || [255, 255, 255];
-
-  doc.setFillColor(...bgColor);
-  doc.rect(0, 0, pageW, pageH, "F");
-
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageW, 6, "F");
-  doc.setFillColor(...accentColor);
-  doc.rect(0, 6, pageW, 1.5, "F");
-
-  let y = 22;
-
-  if (isBlind) {
-    doc.setFillColor(...accentColor);
-    doc.roundedRect(marginX, y - 5, 42, 10, 2, 2, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...textLight);
-    doc.text(tp("printableSheets.pdfBlindTasting", lang), marginX + 21, y + 1, { align: "center" });
-    y += 12;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
-  doc.setTextColor(...textDark);
-  const titleLines = doc.splitTextToSize(tasting.title, contentW);
-  doc.text(titleLines, marginX, y);
-  y += titleLines.length * 10 + 4;
-
-  if (styleTheme?.tagline) {
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(11);
-    doc.setTextColor(...accentColor);
-    const taglineLines = doc.splitTextToSize(styleTheme.tagline, contentW);
-    doc.text(taglineLines, marginX, y);
-    y += taglineLines.length * 5 + 2;
-  }
-
-  doc.setDrawColor(...accentColor);
-  doc.setLineWidth(1);
-  doc.line(marginX, y, marginX + 40, y);
-  y += 8;
-
-  const metaFontSize = 9;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(metaFontSize);
-  doc.setTextColor(...SLATE);
-
-  if (hostName) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(tp("printableSheets.pdfCoverHost", lang).toUpperCase(), marginX, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(metaFontSize);
-    doc.setTextColor(...textDark);
-    doc.text(hostName, marginX + 22, y);
-    y += 6;
-  }
-
-  const dateStr = formatDate(tasting.date, lang);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...MUTED);
-  doc.text(tp("printableSheets.pdfCoverDate", lang).toUpperCase(), marginX, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(metaFontSize);
-  doc.setTextColor(...textDark);
-  doc.text(dateStr, marginX + 22, y);
-  y += 6;
-
-  if (tasting.location && tasting.location !== "—") {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(tp("printableSheets.pdfCoverLocation", lang).toUpperCase(), marginX, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(metaFontSize);
-    doc.setTextColor(...textDark);
-    doc.text(tasting.location, marginX + 22, y);
-    y += 6;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...MUTED);
-  doc.text("CODE", marginX, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(metaFontSize);
-  doc.setTextColor(...textDark);
-  doc.text(tasting.code, marginX + 22, y);
-  y += 10;
+  let y = margin + 8;
 
   if (coverImageBase64) {
-    const imgMaxW = contentW;
+    const imgMaxW = usableWidth;
     const imgMaxH = 60;
     try {
       const src = coverImageBase64.startsWith("data:") ? coverImageBase64 : `data:image/jpeg;base64,${coverImageBase64}`;
-      doc.addImage(src, "JPEG", marginX, y, imgMaxW, imgMaxH, undefined, "FAST");
+      doc.addImage(src, "JPEG", margin, y, imgMaxW, imgMaxH, undefined, "FAST");
       y += imgMaxH + 8;
     } catch {
       y += 4;
     }
   }
 
+  drawGoldLine(doc, margin, y, usableWidth, 0.4);
+  y += 5;
+
+  doc.setFontSize(7);
+  doc.setTextColor(...GOLD_RGB);
+  doc.setFont('helvetica', 'normal');
+  doc.text('C A S K S E N S E', pageW / 2, y + 3, { align: 'center' });
+  y += 8;
+
+  doc.setFontSize(20);
+  doc.setTextColor(...PRINT_BLACK_RGB);
+  doc.setFont('helvetica', 'italic');
+  const titleLines = doc.splitTextToSize(tasting.title, usableWidth);
+  doc.text(titleLines, pageW / 2, y, { align: 'center' });
+  y += titleLines.length * 8 + 3;
+
+  if (isBlind) {
+    doc.setFontSize(8);
+    doc.setTextColor(...GOLD_RGB);
+    doc.setFont('helvetica', 'normal');
+    doc.text('BLIND TASTING', pageW / 2, y, { align: 'center' });
+    y += 6;
+  }
+
+  const tagline = styleTheme?.tagline ?? null;
+  if (tagline) {
+    doc.setFontSize(10);
+    doc.setTextColor(...GOLD_RGB);
+    doc.setFont('helvetica', 'italic');
+    doc.text(`"${tagline}"`, pageW / 2, y, { align: 'center' });
+    y += 8;
+  }
+
+  drawGoldLine(doc, margin, y, usableWidth, 0.4);
+  y += 6;
+
+  const metaItems = [
+    { label: 'DATUM', value: tasting.date ? formatDate(tasting.date, lang) : '—' },
+    { label: 'ORT',   value: tasting.location ?? '—' },
+    { label: 'HOST',  value: hostName ?? '—' },
+    { label: 'DRAMS', value: String(whiskies.length) },
+  ];
+  const colW = usableWidth / metaItems.length;
+  metaItems.forEach((item, idx) => {
+    const cx = margin + idx * colW + colW / 2;
+    doc.setFontSize(6);
+    doc.setTextColor(...GOLD_RGB);
+    doc.setFont('helvetica', 'normal');
+    doc.text(item.label, cx, y + 3, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(...PRINT_BLACK_RGB);
+    doc.text(item.value, cx, y + 9, { align: 'center' });
+  });
+  y += 16;
+
   if (participant) {
-    y = await drawParticipantInfo(doc, participant, y, marginX, pageW, lang, tasting.id);
-    y += 4;
-  } else {
+    doc.setFontSize(7);
+    doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+    doc.setFont('helvetica', 'normal');
     const nameLabel = tp("printableSheets.pdfParticipant", lang);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...SLATE);
-    doc.text(`${nameLabel}: `, marginX, y);
-    const nameFieldX = marginX + doc.getTextWidth(`${nameLabel}: `);
-    doc.setDrawColor(...LINE_GRAY);
-    doc.setLineWidth(0.3);
-    doc.line(nameFieldX, y + 1, pageW - marginX, y + 1);
-    y += 10;
+    const participantLine = `${nameLabel}: ${participant.name}`;
+    const partLines = doc.splitTextToSize(participantLine, usableWidth);
+    doc.text(partLines, margin, y);
+    y += partLines.length * 3.5 + 2;
   }
 
   if (!isBlind) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...textDark);
-    doc.text(tp("printableSheets.pdfCoverLineup", lang).toUpperCase(), marginX, y);
-    y += 6;
-
-    doc.setDrawColor(...LINE_GRAY);
-    doc.setLineWidth(0.3);
-    doc.line(marginX, y, marginX + contentW, y);
+    doc.setFontSize(7);
+    doc.setTextColor(...GOLD_RGB);
+    doc.text('WHISKY LINEUP', margin, y);
+    y += 5;
+    drawGoldLine(doc, margin, y, usableWidth, 0.3);
     y += 4;
 
-    const lineupFontSize = whiskies.length > 8 ? 7 : 8;
-    const lineupSpacing = whiskies.length > 8 ? 5 : 6;
+    whiskies.forEach((whisky, idx) => {
+      if (y > pageH - 20) { doc.addPage([pageW, pageH]); y = margin; }
 
-    for (let i = 0; i < whiskies.length; i++) {
-      const w = whiskies[i];
-      if (y > pageH - 20) break;
+      doc.setFontSize(14);
+      doc.setTextColor(...GOLD_RGB);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(idx + 1), margin, y + 5);
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(lineupFontSize);
-      doc.setTextColor(...textDark);
-      const numStr = `${i + 1}.`;
-      doc.text(numStr, marginX + 2, y);
+      doc.setFontSize(12);
+      doc.setTextColor(...PRINT_BLACK_RGB);
+      doc.setFont('helvetica', 'italic');
+      const nameLines2 = doc.splitTextToSize(whisky.name ?? '', usableWidth - 15);
+      doc.text(nameLines2, margin + 10, y + 5);
 
-      doc.setFont("helvetica", "bold");
-      doc.text(w.name, marginX + 10, y);
+      const parts = [
+        whisky.distillery,
+        whisky.age ? `${whisky.age}y` : null,
+        whisky.abv ? `${whisky.abv}%` : null,
+        whisky.caskInfluence,
+        whisky.region,
+      ].filter(Boolean);
+      doc.setFontSize(7);
+      doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+      doc.setFont('helvetica', 'normal');
+      const metaText = doc.splitTextToSize(parts.join(' · '), usableWidth - 15);
+      doc.text(metaText, margin + 10, y + 10);
 
-      const meta = getWhiskyMeta(w);
-      if (meta) {
-        const nameW = doc.getTextWidth(w.name + "  ");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(lineupFontSize - 1);
-        doc.setTextColor(...MUTED);
-        doc.text(meta, marginX + 10 + nameW, y);
-      }
-
-      y += lineupSpacing;
-    }
+      y += 10 + nameLines2.length * 5 + metaText.length * 4;
+      drawGoldLine(doc, margin, y, usableWidth, 0.15);
+      y += 3;
+    });
   } else {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(...SLATE);
-    doc.text(tp("printableSheets.pdfBlindSamplesAwait", lang, { count: whiskies.length }), marginX, y);
-    y += 14;
+    doc.setFontSize(10);
+    doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+    doc.text(tp("printableSheets.pdfBlindSamplesAwait", lang, { count: whiskies.length }), margin, y);
+    y += 12;
 
     const cols = Math.min(whiskies.length, 4);
-    const rows = Math.ceil(whiskies.length / cols);
-    const cellW = Math.min(30, (contentW - (cols - 1) * 4) / cols);
+    const cellW2 = Math.min(30, (usableWidth - (cols - 1) * 4) / cols);
     const cellH = 18;
-    const gridW = cols * cellW + (cols - 1) * 4;
-    const gridX = marginX + (contentW - gridW) / 2;
+    const gridW = cols * cellW2 + (cols - 1) * 4;
+    const gridX = margin + (usableWidth - gridW) / 2;
 
     for (let i = 0; i < whiskies.length; i++) {
-      if (y + rows * (cellH + 4) > pageH - 20) break;
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const cx = gridX + col * (cellW + 4);
+      const cx = gridX + col * (cellW2 + 4);
       const cy = y + row * (cellH + 4);
 
-      doc.setDrawColor(...LINE_GRAY);
+      doc.setDrawColor(...GOLD_RGB);
       doc.setLineWidth(0.5);
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(cx, cy, cellW, cellH, 2, 2, "FD");
+      doc.roundedRect(cx, cy, cellW2, cellH, 2, 2, "S");
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(...textDark);
-      doc.text(`#${i + 1}`, cx + cellW / 2, cy + cellH / 2 + 1, { align: "center" });
+      doc.setTextColor(...GOLD_RGB);
+      doc.text(`#${i + 1}`, cx + cellW2 / 2, cy + cellH / 2 + 1, { align: "center" });
     }
   }
 
-  doc.setDrawColor(...LINE_GRAY);
-  doc.setLineWidth(0.3);
-  doc.line(marginX, pageH - 14, pageW - marginX, pageH - 14);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(...MUTED);
-  doc.text("CaskSense", marginX, pageH - 9);
-  doc.text("casksense.com", pageW - marginX, pageH - 9, { align: "right" });
-  const totalScoringPages = Math.max(1, Math.ceil(whiskies.length / 12));
-  const totalPages = 1 + totalScoringPages;
-  doc.text(`1 / ${totalPages}`, pageW / 2, pageH - 9, { align: "center" });
+  doc.setFontSize(6);
+  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+  doc.text("CaskSense", margin, pageH - 8);
+  doc.text("casksense.com", pageW - margin, pageH - 8, { align: "right" });
 }
 
 function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, circleGap: number, maxScore: number, availableW: number) {
@@ -683,6 +629,112 @@ async function drawScoringPage(
   doc.text('casksense.com', pageW - margin, pageH - 8, { align: 'right' });
 }
 
+async function drawTastingMat(
+  doc: jsPDF,
+  tasting: Tasting,
+  whiskies: Whisky[],
+  lang: string,
+  isBlind: boolean,
+  participant?: ParticipantInfo,
+  orientation: "portrait" | "landscape" = "portrait",
+  hostName?: string,
+) {
+  const pageW = orientation === "portrait" ? 210 : 297;
+  const pageH = orientation === "portrait" ? 297 : 210;
+  const margin = 15;
+  const usableWidth = pageW - 2 * margin;
+
+  doc.addPage([pageW, pageH]);
+
+  let y = margin;
+
+  doc.setFontSize(7);
+  doc.setTextColor(...GOLD_RGB);
+  doc.text('TASTING-MATTE', margin, y + 3);
+
+  doc.setFontSize(14);
+  doc.setTextColor(...PRINT_BLACK_RGB);
+  doc.setFont('helvetica', 'italic');
+  doc.text(tasting.title, margin, y + 10);
+
+  const dramsLabel = `${whiskies.length} ${whiskies.length === 1 ? 'Dram' : 'Drams'}`;
+  const dateStr = tasting.date ? formatDate(tasting.date, lang) : '';
+  doc.setFontSize(7);
+  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+  doc.setFont('helvetica', 'normal');
+  doc.text([dramsLabel, dateStr, hostName].filter(Boolean).join(' · '), margin, y + 15);
+
+  if (participant?.id && tasting.id) {
+    const qrX = pageW - margin - 22;
+    await generateParticipantQR(tasting.id, participant.id, participant.name, doc, qrX, y, 20);
+  }
+
+  y += 22;
+  drawGoldLine(doc, margin, y, usableWidth, 0.4);
+  y += 6;
+
+  doc.setFontSize(6);
+  doc.setTextColor(...GOLD_RGB);
+  doc.text('#', margin, y);
+  doc.text('STICHWORT', margin + 14, y);
+  doc.text('SCORE / 100', usableWidth * 0.55 + margin, y);
+  doc.text('FAVORIT', usableWidth * 0.78 + margin, y);
+  y += 4;
+  drawGoldLine(doc, margin, y, usableWidth, 0.3);
+  y += 4;
+
+  for (let i = 0; i < whiskies.length; i++) {
+    const whisky = whiskies[i];
+    const rowY = y;
+
+    doc.setFontSize(18);
+    doc.setTextColor(...GOLD_RGB);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(i + 1), margin, rowY + 7);
+
+    doc.setFontSize(8);
+    doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+    doc.setFont('helvetica', 'italic');
+    const displayName = isBlind ? `${tp("printableSheets.pdfSample", lang)}` : (whisky.name ?? '');
+    const matNameLines = doc.splitTextToSize(displayName, usableWidth * 0.38);
+    doc.text(matNameLines, margin + 14, rowY + 4);
+
+    drawGoldLine(doc, margin + 14, rowY + 8, usableWidth * 0.38, 0.4);
+    doc.setFontSize(6);
+    doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Stichwort', margin + 14, rowY + 7);
+
+    const scoreX = usableWidth * 0.55 + margin;
+    drawGoldLine(doc, scoreX, rowY + 8, usableWidth * 0.18, 0.4);
+    doc.setFontSize(6);
+    doc.setTextColor(...GOLD_RGB);
+    doc.text('/ 100', scoreX + usableWidth * 0.19, rowY + 7.5);
+
+    const cbX = usableWidth * 0.78 + margin;
+    doc.setDrawColor(...GOLD_RGB);
+    doc.setLineWidth(0.4);
+    doc.rect(cbX, rowY + 3, 5, 5, 'S');
+    doc.setFontSize(6);
+    doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+    doc.text('Ja', cbX + 7, rowY + 7);
+
+    y += 14;
+    drawGoldLine(doc, margin, y, usableWidth, 0.15);
+    y += 3;
+
+    if (y > pageH - 25 && i < whiskies.length - 1) {
+      doc.addPage([pageW, pageH]);
+      y = margin;
+    }
+  }
+
+  doc.setFontSize(6);
+  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+  doc.text('CaskSense', margin, pageH - 8);
+  doc.text('casksense.com', pageW - margin, pageH - 8, { align: 'right' });
+}
+
 async function preloadWhiskyImages(whiskies: Whisky[], isBlind: boolean): Promise<Map<number, string>> {
   const cache = new Map<number, string>();
   if (isBlind) return cache;
@@ -704,11 +756,11 @@ export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whis
     coverImageBase64 = await loadImageAsBase64(tasting.coverImageUrl);
   }
 
-  const whiskyImageCache = await preloadWhiskyImages(whiskies, false);
-
   await drawCoverPage(doc, tasting, whiskies, lang, false, participant, coverImageBase64, hostName, orientation, styleTheme);
 
-  await drawScoringPage(doc, tasting, whiskies, lang, false, participant, orientation, whiskyImageCache);
+  await drawScoringPage(doc, tasting, whiskies, lang, false, participant, orientation, undefined, hostName);
+
+  await drawTastingMat(doc, tasting, whiskies, lang, false, participant, orientation, hostName);
 
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
@@ -724,7 +776,9 @@ export async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: W
 
   await drawCoverPage(doc, tasting, whiskies, lang, true, participant, coverImageBase64, hostName, orientation, styleTheme);
 
-  await drawScoringPage(doc, tasting, whiskies, lang, true, participant, orientation);
+  await drawScoringPage(doc, tasting, whiskies, lang, true, participant, orientation, undefined, hostName);
+
+  await drawTastingMat(doc, tasting, whiskies, lang, true, participant, orientation, hostName);
 
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
@@ -744,7 +798,6 @@ export async function generateBatchPersonalizedPdf(
 
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
   const isBlind = type === "blind";
-  const whiskyImageCache = await preloadWhiskyImages(whiskies, isBlind);
 
   let coverImageBase64: string | null = null;
   if (tasting.coverImageUrl) {
@@ -761,7 +814,9 @@ export async function generateBatchPersonalizedPdf(
 
     await drawCoverPage(doc, tasting, whiskies, lang, isBlind, participantInfo, coverImageBase64, hostName, orientation, styleTheme);
 
-    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, whiskyImageCache);
+    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, undefined, hostName);
+
+    await drawTastingMat(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, hostName);
   }
 
   const suffix = isBlind ? "Bewertungsbogen" : "Notizblatt";
