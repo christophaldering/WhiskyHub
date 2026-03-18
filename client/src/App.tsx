@@ -364,16 +364,16 @@ function Router() {
         </Route>
 
         {/* ── Archived M2/V2/lab-dark → redirect to Labs ── */}
-        <Route path="/m2/tastings/session/:id/results">{(params: any) => <Redirect to={`/labs/results/${params.id}`} />}</Route>
-        <Route path="/m2/tastings/session/:id/dashboard">{(params: any) => <Redirect to={`/labs/host/${params.id}`} />}</Route>
-        <Route path="/m2/tastings/session/:id/host">{(params: any) => <Redirect to={`/labs/host/${params.id}`} />}</Route>
-        <Route path="/m2/tastings/session/:id/recap">{(params: any) => <Redirect to={`/labs/tastings/${params.id}/recap`} />}</Route>
-        <Route path="/m2/tastings/session/:id/play">{(params: any) => <Redirect to={`/labs/live/${params.id}`} />}</Route>
-        <Route path="/m2/tastings/session/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}`} />}</Route>
-        <Route path="/m2/tastings/join/:code">{(params: any) => <Redirect to={`/labs/join/${params.code}`} />}</Route>
-        <Route path="/m2/tastings/:id/scan">{(params: any) => <Redirect to={`/labs/tastings/${params.id}/scan`} />}</Route>
-        <Route path="/m2/invite/:token">{(params: any) => <Redirect to={`/labs/invite/${params.token}`} />}</Route>
-        <Route path="/m2/tastings/host/:id">{(params: any) => <Redirect to={`/labs/host/${params.id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id/results">{({ id }: { id: string }) => <Redirect to={`/labs/results/${id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id/dashboard">{({ id }: { id: string }) => <Redirect to={`/labs/host/${id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id/host">{({ id }: { id: string }) => <Redirect to={`/labs/host/${id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id/recap">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
+        <Route path="/m2/tastings/session/:id/play">{({ id }: { id: string }) => <Redirect to={`/labs/live/${id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
+        <Route path="/m2/tastings/join/:code">{({ code }: { code: string }) => <Redirect to={`/labs/join/${code}`} />}</Route>
+        <Route path="/m2/tastings/:id/scan">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/scan`} />}</Route>
+        <Route path="/m2/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
+        <Route path="/m2/tastings/host/:id">{({ id }: { id: string }) => <Redirect to={`/labs/host/${id}`} />}</Route>
         <Route path="/m2/tastings/host">{() => <Redirect to="/labs/host" />}</Route>
         <Route path="/m2/tastings/dashboard">{() => <Redirect to="/labs/host/dashboard" />}</Route>
         <Route path="/m2/tastings/solo">{() => <Redirect to="/labs/solo" />}</Route>
@@ -392,7 +392,7 @@ function Router() {
         <Route path="/m2/taste/wishlist">{() => <Redirect to="/labs/taste/wishlist" />}</Route>
         <Route path="/m2/taste/settings">{() => <Redirect to="/labs/taste/settings" />}</Route>
         <Route path="/m2/taste/historical/insights">{() => <Redirect to="/labs/host/history/insights" />}</Route>
-        <Route path="/m2/taste/historical/:id">{(params: any) => <Redirect to={`/labs/host/history/${params.id}`} />}</Route>
+        <Route path="/m2/taste/historical/:id">{({ id }: { id: string }) => <Redirect to={`/labs/host/history/${id}`} />}</Route>
         <Route path="/m2/taste/historical">{() => <Redirect to="/labs/host/history" />}</Route>
         <Route path="/m2/taste">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/m2/discover/lexicon">{() => <Redirect to="/labs/discover/lexicon" />}</Route>
@@ -414,11 +414,11 @@ function Router() {
         <Route path="/m2/making-of">{() => <Redirect to="/labs/making-of" />}</Route>
         <Route path="/m2/admin">{() => <Redirect to="/labs/admin" />}</Route>
         <Route path="/m2/*">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/app/join/:code">{(params: any) => <Redirect to={`/labs/join/${params.code}`} />}</Route>
-        <Route path="/app/naked/:code">{(params: any) => <Redirect to={`/naked/${params.code}`} />}</Route>
-        <Route path="/app/session/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}`} />}</Route>
-        <Route path="/app/invite/:token">{(params: any) => <Redirect to={`/labs/invite/${params.token}`} />}</Route>
-        <Route path="/app/recap/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}/recap`} />}</Route>
+        <Route path="/app/join/:code">{({ code }: { code: string }) => <Redirect to={`/labs/join/${code}`} />}</Route>
+        <Route path="/app/naked/:code">{({ code }: { code: string }) => <Redirect to={`/naked/${code}`} />}</Route>
+        <Route path="/app/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
+        <Route path="/app/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
+        <Route path="/app/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
         <Route path="/app/home">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/app/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/app/discover">{() => <Redirect to="/labs/discover" />}</Route>
@@ -429,19 +429,19 @@ function Router() {
         <Route path="/lab-dark/home">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/lab-dark/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/discover">{() => <Redirect to="/labs/discover" />}</Route>
-        <Route path="/lab-dark/session/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}`} />}</Route>
+        <Route path="/lab-dark/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/lab-dark/*">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/home">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/legacy/tasting/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/tasting/calendar">{() => <Redirect to="/labs/host/calendar" />}</Route>
         <Route path="/legacy/tasting/host">{() => <Redirect to="/labs/host/dashboard" />}</Route>
-        <Route path="/legacy/tasting/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}`} />}</Route>
+        <Route path="/legacy/tasting/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/legacy/tasting">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/discover">{() => <Redirect to="/labs/discover" />}</Route>
         <Route path="/legacy/profile">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/legacy/admin">{() => <Redirect to="/admin" />}</Route>
-        <Route path="/legacy/invite/:token">{(params: any) => <Redirect to={`/labs/invite/${params.token}`} />}</Route>
-        <Route path="/legacy/recap/:id">{(params: any) => <Redirect to={`/labs/tastings/${params.id}/recap`} />}</Route>
+        <Route path="/legacy/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
+        <Route path="/legacy/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
         <Route path="/legacy/*">{() => <Redirect to="/labs/tastings" />}</Route>
 
         {/* === CASKSENSE LABS === */}
