@@ -264,6 +264,8 @@
   cursor: pointer;
   transition: background-color 200ms ease, border-color 200ms ease, transform 160ms cubic-bezier(0.2, 0.8, 0.4, 1);
   font-family: inherit;
+  text-align: center;
+  justify-content: center;
 }
 
 .labs-btn-secondary:hover {
