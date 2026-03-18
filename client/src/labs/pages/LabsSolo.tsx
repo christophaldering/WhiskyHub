@@ -724,7 +724,9 @@ export default function LabsSolo() {
           const err = await res.json().catch(() => ({}));
           if (res.status === 429) {
             const mins = Math.ceil((err.retryAfter || 180) / 60);
-            throw new Error(t("m2.solo.tooManyRequests", "Limit reached — try again in {{minutes}} min.", { minutes: mins }));
+            const rateErr: any = new Error(t("m2.solo.tooManyRequests", "Limit reached — try again in {{minutes}} min.", { minutes: mins }));
+            rateErr.isRateLimit = true;
+            throw rateErr;
           }
           throw new Error(err.message || t("m2.solo.identificationFailed", "Identification failed."));
         }
@@ -741,7 +743,13 @@ export default function LabsSolo() {
       setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
       setSheetView("candidates");
     } catch (err: any) {
-      setError(err?.message || t("m2.solo.identificationFailed", "Identification failed."));
+      console.error('[Solo Capture] Identification failed:', err);
+      setError(
+        err?.isRateLimit
+          ? err.message
+          : t("m2.solo.identificationFailedFriendly",
+              "The bottle could not be identified. You can enter the whisky manually.")
+      );
       setSheetView("none");
     } finally {
       setScanning(false);
@@ -1429,9 +1437,26 @@ export default function LabsSolo() {
         </button>
 
         {error && (
-          <div style={{ background: "var(--labs-danger-muted)", border: "1px solid var(--labs-danger)", borderRadius: "var(--labs-radius-sm)", padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-            <X style={{ width: 16, height: 16, color: "var(--labs-danger)", flexShrink: 0, cursor: "pointer" }} onClick={() => setError("")} />
-            <span style={{ fontSize: 13, color: "var(--labs-danger)" }}>{error}</span>
+          <div
+            onClick={() => setError("")}
+            style={{
+              padding: '12px 16px',
+              borderRadius: '10px',
+              border: '0.5px solid var(--labs-text-muted)',
+              fontSize: '13px',
+              marginBottom: '1rem',
+              fontFamily: 'var(--font-ui, Inter, sans-serif)',
+              lineHeight: 1.5,
+              color: 'var(--labs-text-secondary)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+            }}
+            data-testid="text-capture-error"
+          >
+            <X style={{ width: 14, height: 14, flexShrink: 0, marginTop: 2, opacity: 0.5 }} />
+            <span>{error}</span>
           </div>
         )}
 
