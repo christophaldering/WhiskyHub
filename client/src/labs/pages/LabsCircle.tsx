@@ -297,7 +297,7 @@ export default function LabsCircle() {
       ("mostActive" in leaderboardData || "highestRated" in leaderboardData);
 
     if (!isStructured) {
-      return <EmptyState icon={Trophy} title="No rankings yet" description="Leaderboard data will appear once enough ratings are submitted" />;
+      return <EmptyState icon={Trophy} title="Noch keine Rangliste" description="Rangdaten erscheinen, sobald genug Bewertungen abgegeben wurden." />;
     }
 
     const structured = leaderboardData as LeaderboardData;
@@ -445,7 +445,7 @@ export default function LabsCircle() {
         </p>
 
         {activeCat.entries.length === 0 ? (
-          <EmptyState icon={Trophy} title="No rankings yet" description="Leaderboard data will appear once enough ratings are submitted" />
+          <EmptyState icon={Trophy} title="Noch keine Rangliste" description="Rangdaten erscheinen, sobald genug Bewertungen abgegeben wurden." />
         ) : (
           <div className="space-y-2">
             {activeCat.entries.map((entry, i) => {
@@ -646,7 +646,7 @@ export default function LabsCircle() {
         )}
 
         {friendList.length === 0 && !addFriendOpen ? (
-          <EmptyState icon={Users} title="No friends yet" description="Add your whisky companions to share notes and see their activity" />
+          <EmptyState icon={Users} title="Dein Kreis ist noch still" description="Füge Freunde hinzu, um Notizen zu teilen und ihre Aktivitäten zu sehen." />
         ) : (
           <>
             <div className="mb-4">
@@ -907,9 +907,9 @@ export default function LabsCircle() {
             </div>
           </>
         ) : (
-          <EmptyState icon={Wine} title="No shared sessions yet" description="Completed sessions will appear here once you've tasted with others">
+          <EmptyState icon={Wine} title="Noch keine gemeinsamen Sessions" description="Abgeschlossene Sessions erscheinen hier, sobald ihr zusammen verkostet habt.">
             <button className="labs-empty-action" onClick={() => navigate("/labs/join")} data-testid="labs-circle-empty-sessions-join">
-              Join a Tasting
+              Tasting beitreten
             </button>
           </EmptyState>
         )}
@@ -927,7 +927,7 @@ export default function LabsCircle() {
         : [];
 
     if (items.length === 0) {
-      return <EmptyState icon={Activity} title="No activity yet" description="Add friends to see their recent tastings and ratings here" />;
+      return <EmptyState icon={Activity} title="Noch keine Aktivität" description="Füge Freunde hinzu, um ihre Tastings und Bewertungen zu sehen." />;
     }
 
     return (

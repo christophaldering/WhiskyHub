@@ -29,6 +29,9 @@
   --labs-radius-sm: 10px;
   --labs-radius-lg: 22px;
   --labs-radius-xl: 28px;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mood: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --labs-space-xs: 4px;
   --labs-space-sm: 8px;
@@ -386,7 +389,7 @@
 }
 
 .labs-empty-title {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 400;
   line-height: 1.3;
@@ -395,7 +398,7 @@
 }
 
 .labs-empty-sub {
-  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-mood);
   font-size: 15px;
   font-weight: 300;
   font-style: italic;
@@ -407,7 +410,7 @@
 
 .labs-empty-action {
   margin-top: 2rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 400;
   opacity: 0.6;
@@ -435,7 +438,7 @@
 }
 
 .labs-lobby-eyebrow {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.13em;
@@ -445,7 +448,7 @@
 }
 
 .labs-lobby-title {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--font-display);
   font-size: 26px;
   font-weight: 400;
   line-height: 1.2;
@@ -454,7 +457,7 @@
 }
 
 .labs-lobby-meta {
-  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-mood);
   font-size: 15px;
   font-weight: 300;
   font-style: italic;
@@ -472,7 +475,7 @@
 }
 
 .labs-lobby-hint {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 12px;
   opacity: 0.35;
   font-style: italic;

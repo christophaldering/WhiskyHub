@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock, Monitor, Archive, Check, Info } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -268,7 +268,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
             disabled={loading === "csv"}
             data-testid="button-labs-export-csv"
           >
-            {loading === "csv" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <FileText style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
+            {loading === "csv" ? <span className="labs-pulse-dot" style={{ width: 8, height: 8 }} /> : <FileText style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
             CSV
           </button>
           <button
@@ -291,7 +291,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
             disabled={loading === "xlsx"}
             data-testid="button-labs-export-excel"
           >
-            {loading === "xlsx" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <FileSpreadsheet style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
+            {loading === "xlsx" ? <span className="labs-pulse-dot" style={{ width: 8, height: 8 }} /> : <FileSpreadsheet style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
             Excel
           </button>
           <button

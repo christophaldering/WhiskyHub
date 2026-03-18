@@ -431,11 +431,11 @@ export default function LabsTaste() {
               <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
               <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
             </svg>
-            <h2 className="labs-empty-title">Not enough data yet</h2>
+            <h2 className="labs-empty-title">Noch nicht genug Daten</h2>
             <p className="labs-empty-sub" style={{ marginBottom: '1rem' }}>
               {whiskyCount > 0
-                ? `${Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more drams to unlock your profile.`
-                : 'Your first dram is one breath away.'}
+                ? `Noch ${Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} Drams bis zu deinem Profil.`
+                : 'Dein erster Dram ist nur einen Atemzug entfernt.'}
             </p>
             <div style={{ maxWidth: 180, margin: "0 auto 1.5rem", width: '100%' }}>
               <div style={{ height: 3, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>

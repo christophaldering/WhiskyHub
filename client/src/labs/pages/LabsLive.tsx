@@ -30,14 +30,13 @@ function GuidedLobby({ tasting, participantCount }: { tasting: any; participantC
       <p className="labs-lobby-eyebrow" data-testid="guided-lobby-title">{tasting.title}</p>
       <div className="labs-pulse-dot" />
       <h1 className="labs-lobby-title">
-        {tasting.isBlind ? 'Blind Tasting' : 'Tasting'}<br />
-        <em>begins shortly</em>
+        Tasting beginnt gleich
       </h1>
       <div className="labs-lobby-divider" />
       <p className="labs-lobby-meta" data-testid="guided-lobby-waiting">
         {tasting.whiskies?.length ?? '?'} Drams · {participantCount} {participantCount === 1 ? 'taster' : 'tasters'}
       </p>
-      <p className="labs-lobby-hint" data-testid="guided-lobby-count">Sit back. The host will begin.</p>
+      <p className="labs-lobby-hint" data-testid="guided-lobby-count">Warte ruhig. Der Host beginnt.</p>
     </div>
   );
 }

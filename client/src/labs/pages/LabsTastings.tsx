@@ -287,18 +287,18 @@ export default function LabsTastings() {
             <rect x="14" y="8" width="12" height="8" rx="2" fill="currentColor" opacity="0.2"/>
           </svg>
           <h2 className="labs-empty-title">
-            {searchQuery ? "No matching tastings" : "No tastings yet"}
+            {searchQuery ? "Keine Ergebnisse" : "Noch keine Tastings"}
           </h2>
           <p className="labs-empty-sub">
             {searchQuery
-              ? "Try a different search term."
+              ? "Versuche einen anderen Suchbegriff."
               : timeFilter
-              ? "No tastings match this filter."
-              : "Create your first tasting or join one."}
+              ? "Kein Tasting passt zu diesem Filter."
+              : "Erstelle dein erstes Tasting oder tritt einem bei."}
           </p>
           {!searchQuery && !timeFilter && (
             <button className="labs-empty-action" onClick={() => navigate("/labs/host")} data-testid="button-tastings-create">
-              Start a tasting
+              Tasting starten
             </button>
           )}
         </div>
