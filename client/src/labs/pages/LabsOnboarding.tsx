@@ -78,16 +78,10 @@ export default function LabsOnboarding() {
     navigate(dest);
   }, [navigate]);
 
-  useEffect(() => {
-    if (localStorage.getItem("casksense_onboarded")) {
-      navigate("/labs/home", { replace: true });
-    }
-  }, [navigate]);
-
   const handleJoin = useCallback(() => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed) {
-      completeOnboarding(`/quick/${trimmed}`);
+      completeOnboarding(`/labs/join/${trimmed}`);
     }
   }, [code, completeOnboarding]);
 
