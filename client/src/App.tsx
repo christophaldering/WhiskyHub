@@ -90,6 +90,7 @@ const LabsConnoisseur = lazy(() => import("@/labs/pages/LabsConnoisseur"));
 const LabsAICuration = lazy(() => import("@/labs/pages/LabsAICuration"));
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
 const LabsDiscover = lazy(() => import("@/labs/pages/LabsDiscover"));
+const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
@@ -483,6 +484,7 @@ function Router() {
               <Route path="/labs/discover/flavour-map" component={LabsVocabulary} />
               <Route path="/labs/discover/vocabulary">{() => { window.location.replace("/labs/discover/flavour-map"); return null; }}</Route>
               <Route path="/labs/discover" component={LabsDiscover} />
+              <Route path="/labs/entdecken" component={LabsEntdecken} />
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
               <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />
               <Route path="/labs/taste/wheel" component={LabsTasteWheel} />

@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, Compass, BookOpen, Bell, Download, X, RefreshCw, Search, Mail, AlertTriangle } from "lucide-react";
+import { User, Bell, Download, X, Search, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -79,11 +79,39 @@ function GlencairnRefresh({ pullProgress, refreshing, triggered }: { pullProgres
   );
 }
 
+function NavIconEntdecken({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NavIconMeineWelt({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <polygon points="12,3 20,8 20,16 12,21 4,16 4,8" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" opacity={active ? 0.6 : 0.3} />
+    </svg>
+  );
+}
+
+function NavIconCircle({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+      <circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+      <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" fill="none" />
+      <path d="M16 15c2 0 4 1.5 4 5" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS = [
   { href: "/labs/tastings", icon: "glencairn" as const, label: "Tastings" },
-  { href: "/labs/explore", icon: "compass" as const, label: "Explore" },
-  { href: "/labs/taste", icon: "radar" as const, label: "Taste" },
-  { href: "/labs/discover", icon: "book" as const, label: "Discover" },
+  { href: "/labs/entdecken", icon: "entdecken" as const, label: "Entdecken" },
+  { href: "/labs/taste", icon: "meinewelt" as const, label: "Meine Welt" },
   { href: "/labs/circle", icon: "circle" as const, label: "Circle" },
 ];
 
@@ -742,44 +770,52 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       {!isLabsHome && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around"
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-start justify-around"
           style={{
             background: "var(--labs-nav-bg)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderTop: "1px solid var(--labs-border-subtle)",
-            paddingTop: 6,
-            paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderTop: "0.5px solid var(--labs-border, rgba(255,255,255,0.1))",
+            paddingTop: 4,
+            paddingBottom: "env(safe-area-inset-bottom, 8px)",
           }}
         >
           {NAV_ITEMS.map((item) => {
             const isActive =
               location === item.href ||
-              (item.href !== "/labs/tastings" && location.startsWith(item.href)) ||
-              (item.href === "/labs/tastings" && (location.startsWith("/labs/tastings") || location.startsWith("/labs/live") || location.startsWith("/labs/results") || location.startsWith("/labs/host/")));
+              (item.href === "/labs/tastings" && (
+                location.startsWith("/labs/tastings") || location.startsWith("/labs/live") ||
+                location.startsWith("/labs/results") || location.startsWith("/labs/host") ||
+                location.startsWith("/labs/join") || location.startsWith("/labs/solo")
+              )) ||
+              (item.href === "/labs/entdecken" && (
+                location.startsWith("/labs/entdecken") || location.startsWith("/labs/explore") ||
+                location.startsWith("/labs/discover")
+              )) ||
+              (item.href === "/labs/taste" && location.startsWith("/labs/taste")) ||
+              (item.href === "/labs/circle" && location.startsWith("/labs/circle"));
 
             const color = isActive ? "var(--labs-accent)" : "var(--labs-text-muted)";
             const isCircle = item.href === "/labs/circle";
+            const testLabel = item.label.toLowerCase().replace(/\s+/g, "-");
 
             return (
               <Link key={item.href} href={item.href}>
                 <div
                   className={`labs-nav-item${isActive ? " labs-nav-item-active" : ""}`}
                   style={{ color }}
-                  data-testid={`labs-nav-${item.label.toLowerCase()}`}
+                  data-testid={`labs-nav-${testLabel}`}
                 >
                   {isActive && <div className="labs-nav-dot" />}
                   <div className="labs-nav-icon" style={{ position: "relative" }}>
                     {item.icon === "glencairn" ? (
                       <GlencairnIcon color={color} size={22} />
-                    ) : item.icon === "radar" ? (
-                      <Radar className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
-                    ) : item.icon === "compass" ? (
-                      <Compass className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
-                    ) : item.icon === "book" ? (
-                      <BookOpen className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                    ) : item.icon === "entdecken" ? (
+                      <NavIconEntdecken active={isActive} />
+                    ) : item.icon === "meinewelt" ? (
+                      <NavIconMeineWelt active={isActive} />
                     ) : (
-                      <Users className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.2 : 1.5} />
+                      <NavIconCircle active={isActive} />
                     )}
                     {isCircle && onlineFriendsCount > 0 && (
                       <span
@@ -804,8 +840,15 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                     )}
                   </div>
                   <span
-                    className="text-[11px]"
-                    style={{ fontWeight: isActive ? 600 : 400, letterSpacing: "0.03em" }}
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: isActive ? 500 : 400,
+                      letterSpacing: "0.02em",
+                      lineHeight: 1,
+                      fontFamily: isActive
+                        ? "var(--font-display, 'Playfair Display', serif)"
+                        : "var(--font-ui, 'Inter', sans-serif)",
+                    }}
                   >
                     {item.label}
                   </span>
