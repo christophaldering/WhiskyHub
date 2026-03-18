@@ -1881,7 +1881,7 @@ export default function LabsSolo() {
         </p>
 
         <button
-          onClick={() => { handleReset(); setCaptureSource("hub"); setSoloView("capture"); }}
+          onClick={() => { handleReset(); setError(""); setCaptureSource("hub"); setSoloView("capture"); }}
           className="labs-btn-primary"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginBottom: 24, padding: "14px 20px", fontSize: 16 }}
           data-testid="button-new-dram"
@@ -2113,7 +2113,7 @@ export default function LabsSolo() {
                 </p>
                 <button
                   className="labs-btn-primary"
-                  onClick={() => { handleReset(); setCaptureSource("hub"); setSoloView("capture"); }}
+                  onClick={() => { handleReset(); setError(""); setCaptureSource("hub"); setSoloView("capture"); }}
                   data-testid="button-solo-first-dram"
                   style={{ fontSize: 14, padding: "12px 28px", borderRadius: 50 }}
                 >
@@ -2355,7 +2355,7 @@ export default function LabsSolo() {
               <input
                 type="text"
                 value={whiskyName}
-                onChange={(e) => setWhiskyName(e.target.value)}
+                onChange={(e) => { if (error) setError(""); setWhiskyName(e.target.value); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (whiskyName.trim() && !scanning) handleDescribeSubmit(whiskyName.trim()); } }}
                 className="labs-input"
                 style={{ height: 48, paddingRight: 44 }}
@@ -2365,7 +2365,7 @@ export default function LabsSolo() {
               />
               <button
                 type="button"
-                onClick={() => { if (!scanning) { setCaptureSource("editor"); setSoloView("capture"); } }}
+                onClick={() => { if (!scanning) { setError(""); setCaptureSource("editor"); setSoloView("capture"); } }}
                 data-testid="button-identify"
                 style={{
                   position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
