@@ -9,7 +9,7 @@ import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { v } from "@/lib/themeVars";
 import { Button } from "@/components/ui/button";
-import PromptEditor from "@/components/m2/PromptEditor";
+import PromptEditor from "@/components/PromptEditor";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";

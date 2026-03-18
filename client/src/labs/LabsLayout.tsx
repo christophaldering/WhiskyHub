@@ -6,7 +6,7 @@ import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
-import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
+import M2ProfileMenu from "@/components/ProfileMenu";
 import LabsErrorBoundary from "./LabsErrorBoundary";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";

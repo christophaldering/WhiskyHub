@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { X, Lock, ImageIcon, Check } from "lucide-react";
-import { useLayoutFullBleed } from "@/components/layout";
+const useLayoutFullBleed = (_active: boolean) => {};
 import { motion } from "framer-motion";
 import type { Whisky, Tasting } from "@shared/schema";
 
