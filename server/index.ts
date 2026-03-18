@@ -304,6 +304,22 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
     ready = true;
     log("Application fully initialized");
+
+    (async () => {
+      try {
+        const { db } = await import("./db");
+        const { participants } = await import("@shared/schema");
+        const { sql, eq, and, lt } = await import("drizzle-orm");
+        const cutoff = new Date("2026-03-19T00:00:00Z");
+        await db.update(participants)
+          .set({ emailVerified: true })
+          .where(and(eq(participants.emailVerified, false), lt(participants.createdAt, cutoff)));
+        log("Auto-verified all pre-existing accounts", "startup");
+      } catch (e: any) {
+        log(`Auto-verify migration skipped: ${e.message}`, "startup");
+      }
+    })();
+
     warmupGmailToken();
 
     seedProductionData()

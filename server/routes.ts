@@ -32,13 +32,16 @@ const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
 const ADMIN_CONTACT_EMAIL = process.env.ADMIN_CONTACT_EMAIL || "christoph.aldering@googlemail.com";
 const VERIFICATION_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
+const VERIFICATION_CUTOFF_DATE = new Date("2026-03-19T00:00:00Z");
 
 function checkEmailVerification(participant: Participant): { blocked: boolean; message?: string; code?: string } {
   if (!participant.email) return { blocked: false };
   if (participant.email.endsWith("@casksense.local")) return { blocked: false };
   if (participant.emailVerified) return { blocked: false };
   if (!participant.createdAt) return { blocked: false };
-  const elapsed = Date.now() - new Date(participant.createdAt).getTime();
+  const createdAt = new Date(participant.createdAt);
+  if (createdAt < VERIFICATION_CUTOFF_DATE) return { blocked: false };
+  const elapsed = Date.now() - createdAt.getTime();
   if (elapsed < VERIFICATION_GRACE_PERIOD_MS) return { blocked: false };
   return {
     blocked: true,
@@ -7928,6 +7931,22 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           totalAdmins: allParticipants.filter(p => p.role === "admin").length,
         },
       });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/:id/verify-email", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const updated = await storage.verifyEmail(req.params.id);
+      if (!updated) return res.status(404).json({ message: "Participant not found" });
+      res.json({ message: "Email verified", participant: updated });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
