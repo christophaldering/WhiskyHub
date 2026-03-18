@@ -1416,7 +1416,7 @@ export default function LabsSolo() {
 
   if (soloView === "capture") {
     return (
-      <div className="labs-fade-in" style={{ padding: "16px", minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-capture">
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-capture">
         {hiddenFileInputs}
         <button
           onClick={() => setSoloView(captureSource)}
@@ -1701,7 +1701,7 @@ export default function LabsSolo() {
     const selectedTags = detailChips.nose || [];
 
     return (
-      <div className="labs-fade-in" style={{ padding: "16px", minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-quick-rate">
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-quick-rate">
         <button
           onClick={() => { handleReset(true); }}
           className="labs-btn-ghost"
@@ -1842,7 +1842,7 @@ export default function LabsSolo() {
 
   if (soloView === "hub") {
     return (
-      <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-solo-page">
         <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-labs">
           <ChevronLeft className="w-4 h-4" />
           Taste
@@ -2111,7 +2111,7 @@ export default function LabsSolo() {
       return <span style={{ color: d > 0 ? "var(--labs-success)" : "var(--labs-danger)", fontSize: 11, fontWeight: 600 }}>{d > 0 ? `\u2191+${d}` : `\u2193${d}`}</span>;
     };
     return (
-      <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-solo-page">
         <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-success-muted)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Check style={{ width: 28, height: 28, color: "var(--labs-success)" }} />
@@ -2173,7 +2173,7 @@ export default function LabsSolo() {
 
   if (saved) {
     return (
-      <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-solo-page">
         <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-success-muted)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Check style={{ width: 28, height: 28, color: "var(--labs-success)" }} />
@@ -2196,7 +2196,7 @@ export default function LabsSolo() {
   }
 
   return (
-    <div className="labs-fade-in" style={{ padding: "16px", paddingBottom: 100 }} data-testid="labs-solo-page">
+    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-solo-page">
       {hiddenFileInputs}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "12px 0 8px", gap: 8 }} data-testid="editor-action-bar">
