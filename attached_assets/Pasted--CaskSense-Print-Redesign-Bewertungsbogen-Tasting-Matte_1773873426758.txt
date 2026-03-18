@@ -1,0 +1,554 @@
+# CaskSense — Print Redesign
+## Bewertungsbogen · Tasting-Matte · Menükarte
+## Datei: client/src/components/printable-tasting-sheets.tsx
+
+---
+
+## Überblick
+
+Drei Druckdokumente werden überarbeitet. Alle drei teilen dieselben Designprinzipien:
+
+**Printer-friendly zuerst** — kein dunkler Hintergrund, keine Vollfarb-Blöcke.
+Nur goldene Linien, Rahmen und Akzente. Druckt auf jedem Drucker sauber,
+auch schwarzweiß.
+
+**Typografie-System** — konsistent mit der App:
+- Whisky-Namen: Playfair Display, kursiv, immer vollständig, nie abgeschnitten
+- Labels/Kategorien: DM Sans, Uppercase, letter-spacing
+- Body: DM Sans, normal
+
+**Persönlicher QR-Code** — jeder Bogen gehört jemandem.
+
+**Korrekte Dimensionen** — Nase · Gaumen · Abgang · Gesamt (4 Dimensionen).
+Balance wurde entfernt. Nicht wieder einfügen.
+
+**Flavour-Tags** — NUR wenn `whisky.flavorProfile` gesetzt ist. Nie erfinden.
+Aus dem flavorProfile werden max. 3 Tags abgeleitet. Ist kein Profil gesetzt:
+keine Tags, kein leerer Bereich.
+
+---
+
+## FARBPALETTE (für alle drei Dokumente)
+
+```typescript
+const PRINT_COLORS = {
+  gold:        '#8b6914',          // Primärakzent — Zahlen, Labels, Linien
+  goldLight:   'rgba(139,105,20,0.2)',  // Trennlinien zwischen Whiskies
+  goldMid:     'rgba(139,105,20,0.4)', // Haupttrennlinien, Rahmen
+  goldBorder:  'rgba(139,105,20,0.6)', // Score-Kreise, Checkboxen
+  black:       '#1a1208',          // Überschriften, Whisky-Namen
+  textDark:    '#2d2010',          // Body-Text
+  textMuted:   '#888070',          // Metadaten, Untertitel
+  white:       '#ffffff',          // Hintergrund — immer weiß
+};
+// Kein dunkler Hintergrund. Keine Vollfarb-Blöcke. Ausnahme: Cover-Seite
+// der Menükarte darf einen sehr hellen Rahmen (2pt goldMid) haben.
+```
+
+---
+
+## SCHRITT 1 — Hilfsfunktionen (neu oder ersetzen)
+
+### In `printable-tasting-sheets.tsx` — am Anfang der Datei einfügen:
+
+```typescript
+// ── QR-Code pro Teilnehmer ──────────────────────────────────────────────
+// Generiert einen individuellen QR-Code der zu
+// /labs/tastings/:tastingId/scan?participant=:participantId führt.
+// Verwendet die bestehende qrcode-Library.
+
+import QRCode from 'qrcode';
+
+async function generateParticipantQR(
+  tastingId: string,
+  participantId: string,
+  doc: jsPDF,
+  x: number,
+  y: number,
+  size: number = 20  // mm
+): Promise<void> {
+  const url = `${window.location.origin}/labs/tastings/${tastingId}/scan?participant=${participantId}`;
+  try {
+    const dataUrl = await QRCode.toDataURL(url, {
+      width: 200,
+      margin: 1,
+      color: { dark: '#1a1208', light: '#ffffff' },
+    });
+    doc.addImage(dataUrl, 'PNG', x, y, size, size);
+    doc.setFontSize(6);
+    doc.setTextColor(PRINT_COLORS.textMuted);
+    doc.text(participantName, x + size / 2, y + size + 3, { align: 'center' });
+  } catch (e) {
+    // QR-Fehler still ignorieren — Dokument trotzdem generieren
+    console.warn('[Print] QR generation failed:', e);
+  }
+}
+
+// ── Flavour-Tags aus flavorProfile ──────────────────────────────────────
+// Leitet max. 3 lesbare Tags aus dem flavorProfile-String ab.
+// Gibt leeres Array zurück wenn kein Profil gesetzt.
+
+function getFlavorTags(whisky: Whisky): string[] {
+  if (!whisky.flavorProfile) return [];
+  const profileMap: Record<string, string[]> = {
+    'sherried-rich':      ['Sherry', 'Trockenfrüchte', 'Würze'],
+    'bourbon-classic':    ['Vanille', 'Karamell', 'Eiche'],
+    'peated-maritime':    ['Rauch', 'Salz', 'Torf'],
+    'highland-elegant':   ['Honig', 'Blumen', 'Frucht'],
+    'speyside-fruity':    ['Apfel', 'Birne', 'Malz'],
+    'island-coastal':     ['Meeresluft', 'Heide', 'Gewürz'],
+  };
+  return profileMap[whisky.flavorProfile] ?? [];
+}
+
+// ── Score-Kreise zeichnen ────────────────────────────────────────────────
+// Zeichnet 10 nummerierte Kreise (1-10) in einer Zeile.
+// Printer-friendly: nur Kontur, kein Farbfill.
+
+function drawScoreCircles(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  circleSize: number = 5  // mm Durchmesser
+): void {
+  for (let i = 1; i <= 10; i++) {
+    const cx = x + (i - 1) * (circleSize + 1);
+    doc.setDrawColor(PRINT_COLORS.gold);
+    doc.setLineWidth(0.3);
+    doc.circle(cx + circleSize / 2, y + circleSize / 2, circleSize / 2, 'S');
+    doc.setFontSize(6);
+    doc.setTextColor(PRINT_COLORS.gold);
+    doc.text(String(i), cx + circleSize / 2, y + circleSize / 2 + 1.5, { align: 'center' });
+  }
+}
+
+// ── Goldene Trennlinie ───────────────────────────────────────────────────
+function drawGoldLine(doc: jsPDF, x: number, y: number, width: number, opacity: number = 0.3): void {
+  doc.setDrawColor(139, 105, 20);
+  doc.setLineWidth(0.3);
+  doc.setGState(doc.GState({ opacity }));
+  doc.line(x, y, x + width, y);
+  doc.setGState(doc.GState({ opacity: 1 }));
+}
+```
+
+---
+
+## SCHRITT 2 — Bewertungsbogen: `drawScoringPage()` ersetzen
+
+### Vollständig neue Implementierung:
+
+```typescript
+async function drawScoringPage(
+  doc: jsPDF,
+  tasting: Tasting,
+  whiskies: Whisky[],
+  participant: Participant,
+  pageWidth: number,
+  pageHeight: number,
+  margin: number = 15
+): Promise<void> {
+  const usableWidth = pageWidth - 2 * margin;
+  let y = margin;
+
+  // ── HEADER ─────────────────────────────────────────────────────────────
+  // Tasting-Name links, QR-Code + Teilnehmer rechts
+  // Kein dunkler Hintergrund — nur goldene Trennlinie darunter
+
+  // Label
+  doc.setFontSize(7);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.setFont('helvetica', 'normal');
+  doc.text('BEWERTUNGSBOGEN', margin, y + 3);
+
+  // Tasting-Name
+  doc.setFontSize(14);
+  doc.setTextColor(PRINT_COLORS.black);
+  doc.setFont('helvetica', 'italic');
+  doc.text(tasting.title, margin, y + 10);
+
+  // Datum + Host
+  doc.setFontSize(7);
+  doc.setTextColor(PRINT_COLORS.textMuted);
+  doc.setFont('helvetica', 'normal');
+  const meta = [
+    tasting.date ? formatDate(tasting.date) : '',
+    tasting.hostName ?? '',
+  ].filter(Boolean).join(' · ');
+  doc.text(meta, margin, y + 15);
+
+  // QR-Code oben rechts (20x20mm)
+  const qrX = pageWidth - margin - 22;
+  await generateParticipantQR(tasting.id, participant.id, doc, qrX, y, 20);
+
+  // Goldene Linie unter dem Header
+  y += 22;
+  drawGoldLine(doc, margin, y, usableWidth, 0.4);
+  y += 5;
+
+  // ── WHISKY-BLÖCKE ──────────────────────────────────────────────────────
+  const DIMS = ['Nase', 'Gaumen', 'Abgang', 'Gesamt'] as const;
+  // WICHTIG: Balance ist entfernt. Nur diese 4 Dimensionen.
+
+  const whiskyChunkSize = tasting.isLandscape ? 6 : 4;
+  // Max. Whiskies pro Seite — bei Überlauf neue Seite
+
+  for (let i = 0; i < whiskies.length; i++) {
+    const whisky = whiskies[i];
+
+    // Seitenumbruch prüfen
+    if (y > pageHeight - 40) {
+      doc.addPage();
+      y = margin;
+    }
+
+    // Nummer + Name
+    doc.setFontSize(16);
+    doc.setTextColor(PRINT_COLORS.gold);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(i + 1), margin, y + 6);
+
+    // Whisky-Name — kursiv, nie abschneiden
+    const whiskyName = whisky.name ?? 'Unbekannt';
+    doc.setFontSize(12);
+    doc.setTextColor(PRINT_COLORS.black);
+    doc.setFont('helvetica', 'italic');
+    // Lange Namen umbrechen statt abschneiden
+    const nameLines = doc.splitTextToSize(whiskyName, usableWidth - 30);
+    doc.text(nameLines, margin + 10, y + 6);
+
+    // Meta-Info
+    const metaParts = [
+      whisky.distillery,
+      whisky.age ? `${whisky.age}y` : null,
+      whisky.abv ? `${whisky.abv}%` : null,
+      whisky.region,
+      whisky.caskType,
+    ].filter(Boolean);
+    doc.setFontSize(7);
+    doc.setTextColor(PRINT_COLORS.gold);
+    doc.setFont('helvetica', 'normal');
+    doc.text(metaParts.join(' · ').toUpperCase(), margin + 10, y + 11);
+
+    // Flavour-Tags (nur wenn vorhanden)
+    const tags = getFlavorTags(whisky);
+    if (tags.length > 0) {
+      let tagX = margin + 10;
+      const tagY = y + 15;
+      tags.forEach(tag => {
+        const tagWidth = doc.getTextWidth(tag) + 4;
+        doc.setDrawColor(PRINT_COLORS.gold);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(tagX, tagY - 3, tagWidth, 5, 1, 1, 'S');
+        doc.setFontSize(6);
+        doc.setTextColor(PRINT_COLORS.gold);
+        doc.text(tag, tagX + 2, tagY + 0.5);
+        tagX += tagWidth + 3;
+      });
+      y += 7;
+    }
+
+    y += 16;
+
+    // Score-Kreise pro Dimension
+    DIMS.forEach(dim => {
+      doc.setFontSize(7);
+      doc.setTextColor(PRINT_COLORS.gold);
+      doc.setFont('helvetica', 'normal');
+      doc.text(dim.toUpperCase(), margin + 10, y + 3.5);
+      drawScoreCircles(doc, margin + 30, y, 4.5);
+      y += 7;
+    });
+
+    // Notiz-Zeile
+    doc.setFontSize(7);
+    doc.setTextColor(PRINT_COLORS.textMuted);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Notiz:', margin + 10, y + 3);
+    drawGoldLine(doc, margin + 22, y + 2, usableWidth - 22, 0.3);
+    y += 6;
+
+    // Trennlinie zwischen Whiskies
+    drawGoldLine(doc, margin, y, usableWidth, 0.2);
+    y += 5;
+  }
+
+  // ── FOOTER ─────────────────────────────────────────────────────────────
+  doc.setFontSize(6);
+  doc.setTextColor(PRINT_COLORS.textMuted);
+  doc.text('CaskSense', margin, pageHeight - 8);
+  doc.text('casksense.com', pageWidth - margin, pageHeight - 8, { align: 'right' });
+}
+```
+
+---
+
+## SCHRITT 3 — Tasting-Matte: `drawTastingMat()` ersetzen
+
+```typescript
+async function drawTastingMat(
+  doc: jsPDF,
+  tasting: Tasting,
+  whiskies: Whisky[],
+  participant: Participant,
+  pageWidth: number,
+  pageHeight: number,
+  margin: number = 15
+): Promise<void> {
+  const usableWidth = pageWidth - 2 * margin;
+  let y = margin;
+
+  // ── HEADER ─────────────────────────────────────────────────────────────
+  doc.setFontSize(7);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.text('TASTING-MATTE', margin, y + 3);
+
+  doc.setFontSize(14);
+  doc.setTextColor(PRINT_COLORS.black);
+  doc.setFont('helvetica', 'italic');
+  doc.text(tasting.title, margin, y + 10);
+
+  const dramsLabel = `${whiskies.length} ${whiskies.length === 1 ? 'Dram' : 'Drams'}`;
+  const dateStr = tasting.date ? formatDate(tasting.date) : '';
+  doc.setFontSize(7);
+  doc.setTextColor(PRINT_COLORS.textMuted);
+  doc.setFont('helvetica', 'normal');
+  doc.text([dramsLabel, dateStr, tasting.hostName].filter(Boolean).join(' · '), margin, y + 15);
+
+  // QR-Code oben rechts
+  const qrX = pageWidth - margin - 22;
+  await generateParticipantQR(tasting.id, participant.id, doc, qrX, y, 20);
+
+  y += 22;
+  drawGoldLine(doc, margin, y, usableWidth, 0.4);
+  y += 6;
+
+  // ── SPALTEN-HEADER ──────────────────────────────────────────────────────
+  doc.setFontSize(6);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.text('#', margin, y);
+  doc.text('STICHWORT', margin + 14, y);
+  doc.text('SCORE / 100', usableWidth * 0.55 + margin, y);
+  doc.text('FAVORIT', usableWidth * 0.78 + margin, y);
+  y += 4;
+  drawGoldLine(doc, margin, y, usableWidth, 0.3);
+  y += 4;
+
+  // ── WHISKY-ZEILEN ───────────────────────────────────────────────────────
+  for (let i = 0; i < whiskies.length; i++) {
+    const whisky = whiskies[i];
+    const rowY = y;
+
+    // Nummer
+    doc.setFontSize(18);
+    doc.setTextColor(PRINT_COLORS.gold);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(i + 1), margin, rowY + 7);
+
+    // Blind-Name oder echter Name (je nach tasting.isBlind)
+    doc.setFontSize(8);
+    doc.setTextColor(PRINT_COLORS.textMuted);
+    doc.setFont('helvetica', 'italic');
+    const displayName = tasting.isBlind ? 'Blind Sample' : (whisky.name ?? '');
+    doc.text(displayName, margin + 14, rowY + 4);
+
+    // Stichwort-Linie
+    drawGoldLine(doc, margin + 14, rowY + 8, usableWidth * 0.38, 0.4);
+    doc.setFontSize(6);
+    doc.setTextColor(PRINT_COLORS.textMuted);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Stichwort', margin + 14, rowY + 7);
+
+    // Score-Feld
+    const scoreX = usableWidth * 0.55 + margin;
+    drawGoldLine(doc, scoreX, rowY + 8, usableWidth * 0.18, 0.4);
+    doc.setFontSize(6);
+    doc.setTextColor(PRINT_COLORS.gold);
+    doc.text('/ 100', scoreX + usableWidth * 0.19, rowY + 7.5);
+
+    // Favorit-Checkbox
+    const cbX = usableWidth * 0.78 + margin;
+    doc.setDrawColor(PRINT_COLORS.gold);
+    doc.setLineWidth(0.4);
+    doc.rect(cbX, rowY + 3, 5, 5, 'S');
+    doc.setFontSize(6);
+    doc.setTextColor(PRINT_COLORS.textMuted);
+    doc.text('Ja', cbX + 7, rowY + 7);
+
+    y += 14;
+    drawGoldLine(doc, margin, y, usableWidth, 0.15);
+    y += 3;
+
+    // Seitenumbruch
+    if (y > pageHeight - 25 && i < whiskies.length - 1) {
+      doc.addPage();
+      y = margin;
+    }
+  }
+
+  // ── FOOTER ─────────────────────────────────────────────────────────────
+  doc.setFontSize(6);
+  doc.setTextColor(PRINT_COLORS.textMuted);
+  doc.text('CaskSense', margin, pageHeight - 8);
+  doc.text('casksense.com', pageWidth - margin, pageHeight - 8, { align: 'right' });
+}
+```
+
+---
+
+## SCHRITT 4 — Menükarte: `drawCoverPage()` überarbeiten
+
+### Nur diese Teile ändern — bestehende Logik für Bild-Upload behalten:
+
+```typescript
+// HEADER-BEREICH der Cover-Seite (nach dem Cover-Bild):
+
+// ── Titel ────────────────────────────────────────────────────────────────
+// Printer-friendly: kein Vollhintergrund. Goldener Rahmen oben/unten.
+drawGoldLine(doc, margin, y, usableWidth, 0.4);
+y += 5;
+
+doc.setFontSize(7);
+doc.setTextColor(PRINT_COLORS.gold);
+doc.setFont('helvetica', 'normal');
+doc.text('C A S K S E N S E', pageWidth / 2, y + 3, { align: 'center' });
+y += 8;
+
+doc.setFontSize(20);
+doc.setTextColor(PRINT_COLORS.black);
+doc.setFont('helvetica', 'italic');
+// Langen Tasting-Namen umbrechen — nie abschneiden
+const titleLines = doc.splitTextToSize(tasting.title, usableWidth);
+doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
+y += titleLines.length * 8 + 3;
+
+// ── KI-Tagline (falls vorhanden) ─────────────────────────────────────────
+// Aus tasting.aiTagline (neues optionales Feld) ODER
+// aus dem bestehenden pdfStyle.tagline — was vorhanden ist.
+const tagline = tasting.pdfStyle?.tagline ?? tasting.aiTagline ?? null;
+if (tagline) {
+  doc.setFontSize(10);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.setFont('helvetica', 'italic');
+  doc.text(`"${tagline}"`, pageWidth / 2, y, { align: 'center' });
+  y += 8;
+}
+
+drawGoldLine(doc, margin, y, usableWidth, 0.4);
+y += 6;
+
+// ── Meta-Zeile: Datum · Ort · Host · Drams ──────────────────────────────
+const metaItems = [
+  { label: 'DATUM', value: tasting.date ? formatDate(tasting.date) : '—' },
+  { label: 'ORT',   value: tasting.location ?? '—' },
+  { label: 'HOST',  value: tasting.hostName ?? '—' },
+  { label: 'DRAMS', value: String(whiskies.length) },
+];
+const colW = usableWidth / metaItems.length;
+metaItems.forEach((item, idx) => {
+  const cx = margin + idx * colW + colW / 2;
+  doc.setFontSize(6);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.setFont('helvetica', 'normal');
+  doc.text(item.label, cx, y + 3, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setTextColor(PRINT_COLORS.black);
+  doc.text(item.value, cx, y + 9, { align: 'center' });
+});
+y += 16;
+
+// ── LINEUP-SEITE ──────────────────────────────────────────────────────────
+// Whisky-Namen NIEMALS abschneiden — splitTextToSize verwenden
+
+doc.setFontSize(7);
+doc.setTextColor(PRINT_COLORS.gold);
+doc.text('WHISKY LINEUP', margin, y);
+y += 5;
+drawGoldLine(doc, margin, y, usableWidth, 0.3);
+y += 4;
+
+whiskies.forEach((whisky, idx) => {
+  // Seitenumbruch
+  if (y > pageHeight - 20) { doc.addPage(); y = margin; }
+
+  doc.setFontSize(14);
+  doc.setTextColor(PRINT_COLORS.gold);
+  doc.setFont('helvetica', 'normal');
+  doc.text(String(idx + 1), margin, y + 5);
+
+  // Vollständiger Name — nie abschneiden
+  doc.setFontSize(12);
+  doc.setTextColor(PRINT_COLORS.black);
+  doc.setFont('helvetica', 'italic');
+  const nameLines = doc.splitTextToSize(whisky.name ?? '', usableWidth - 15);
+  doc.text(nameLines, margin + 10, y + 5);
+
+  // Meta
+  const parts = [
+    whisky.distillery,
+    whisky.age ? `${whisky.age}y` : null,
+    whisky.abv ? `${whisky.abv}%` : null,
+    whisky.caskType,
+    whisky.region,
+  ].filter(Boolean);
+  doc.setFontSize(7);
+  doc.setTextColor(PRINT_COLORS.textMuted);
+  doc.setFont('helvetica', 'normal');
+  const metaText = doc.splitTextToSize(parts.join(' · '), usableWidth - 15);
+  doc.text(metaText, margin + 10, y + 10);
+
+  y += 10 + nameLines.length * 5 + metaText.length * 4;
+  drawGoldLine(doc, margin, y, usableWidth, 0.15);
+  y += 3;
+});
+```
+
+---
+
+## SCHRITT 5 — Batch-PDF: Teilnehmer-Namen auf jeden Bogen
+
+### In der bestehenden Batch-Generierungsfunktion:
+
+```typescript
+// VORHER: alle Teilnehmer bekommen denselben generischen Bogen
+// NACHHER: jeder Bogen enthält den Namen und QR des jeweiligen Teilnehmers
+
+for (const participant of participants) {
+  const doc = new jsPDF({ ... });
+
+  // Cover-Seite (geteilt — gleich für alle)
+  await drawCoverPage(doc, tasting, whiskies, pageWidth, pageHeight);
+  doc.addPage();
+
+  // Bewertungsbogen (personalisiert)
+  await drawScoringPage(doc, tasting, whiskies, participant, pageWidth, pageHeight);
+
+  // Tasting-Matte (personalisiert)
+  doc.addPage();
+  await drawTastingMat(doc, tasting, whiskies, participant, pageWidth, pageHeight);
+
+  // Als separate Datei speichern: "Bogen_UdoMueller.pdf"
+  const filename = `Bogen_${participant.name?.replace(/\s+/g, '') ?? participant.id}.pdf`;
+  doc.save(filename);
+}
+```
+
+---
+
+## Was NICHT geändert wird
+
+- Keine Backend-Änderungen
+- Kein neues DB-Schema
+- Die bestehende Cover-Bild-Logik (DALL-E Upload) bleibt unberührt
+- Die bestehende Orientierungs-Logik (Portrait/Landscape) bleibt
+- Die bestehende Rating-Skalen-Logik (5/10/20/100) bleibt —
+  die Score-Kreise zeigen weiterhin 1-10, die Skala gilt für die App
+
+---
+
+## Die vier unbrechbaren Regeln
+
+1. **Kein dunkler Hintergrund** — printer-friendly bedeutet weißer Grund.
+2. **Whisky-Namen nie abschneiden** — immer `doc.splitTextToSize()`.
+3. **Keine Balance-Dimension** — nur Nase · Gaumen · Abgang · Gesamt.
+4. **Flavour-Tags nur aus flavorProfile** — nie erfunden, nie geraten.
