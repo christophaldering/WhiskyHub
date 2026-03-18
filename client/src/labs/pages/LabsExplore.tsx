@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Star, Wine, ChevronRight, ChevronDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
+import { Search, Star, ChevronRight, ChevronDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -478,16 +478,20 @@ export default function LabsExplore() {
         <>
           {sortedWhiskies.length === 0 && (
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-empty">
-              <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-              <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+                <path d="M14 12h12l-1 16H15L14 12z" fill="currentColor" opacity="0.15"/>
+                <path d="M12 10h16" stroke="currentColor" strokeWidth="0.8" opacity="0.3"/>
+                <rect x="17" y="28" width="6" height="3" rx="1" fill="currentColor" opacity="0.15"/>
+              </svg>
+              <h2 className="labs-empty-title">
                 {searchText || selectedRegion
                   ? t("explore.noMatchingWhiskies", "No matching whiskies")
                   : t("explore.noWhiskiesYet", "No whiskies yet")}
-              </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+              </h2>
+              <p className="labs-empty-sub">
                 {searchText || selectedRegion
-                  ? t("explore.adjustFilters", "Try adjusting your search or filters")
-                  : t("explore.whiskiesWillAppear", "Whiskies will appear here once they\u2019re added to a tasting session")}
+                  ? t("explore.adjustFilters", "Adjust your search or filters.")
+                  : t("explore.whiskiesWillAppear", "Whiskies appear here once added to a session.")}
               </p>
             </div>
           )}
@@ -577,12 +581,16 @@ export default function LabsExplore() {
         <>
           {filteredCollection.length === 0 && (
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-collection-empty">
-              <Archive className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-              <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+                <rect x="8" y="10" width="24" height="20" rx="3" fill="currentColor" opacity="0.1"/>
+                <rect x="12" y="14" width="16" height="2" rx="1" fill="currentColor" opacity="0.15"/>
+                <rect x="12" y="20" width="10" height="2" rx="1" fill="currentColor" opacity="0.1"/>
+              </svg>
+              <h2 className="labs-empty-title">
                 {searchText ? "No matching bottles" : "No bottles in your collection"}
-              </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                {searchText ? "Try a different search" : "Add bottles from tastings or import your collection"}
+              </h2>
+              <p className="labs-empty-sub">
+                {searchText ? "Try a different search." : "Add bottles from tastings or import your collection."}
               </p>
             </div>
           )}
@@ -649,12 +657,15 @@ export default function LabsExplore() {
         <>
           {filteredWishlist.length === 0 && (
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-wishlist-empty">
-              <Heart className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-              <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+                <path d="M20 30 Q10 22 10 16 A6 6 0 0 1 20 14 A6 6 0 0 1 30 16 Q30 22 20 30Z"
+                  fill="currentColor" opacity="0.12"/>
+              </svg>
+              <h2 className="labs-empty-title">
                 {searchText ? t("myTastePage.noMatchingWishlist", "No matching whiskies") : t("myTastePage.emptyWishlist", "Your wishlist is empty")}
-              </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                {searchText ? t("myTastePage.tryDifferentSearch", "Try a different search") : t("myTastePage.wishlistHint", "Add whiskies you'd like to try")}
+              </h2>
+              <p className="labs-empty-sub">
+                {searchText ? t("myTastePage.tryDifferentSearch", "Try a different search.") : t("myTastePage.wishlistHint", "Add whiskies you'd like to try.")}
               </p>
             </div>
           )}
@@ -743,12 +754,17 @@ export default function LabsExplore() {
           </div>
           {dramsData.length === 0 && (
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-drams-empty">
-              <BookOpen className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-              <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+                <rect x="9" y="8" width="22" height="24" rx="2" fill="currentColor" opacity="0.1"/>
+                <rect x="13" y="13" width="14" height="1.5" rx="0.75" fill="currentColor" opacity="0.15"/>
+                <rect x="13" y="18" width="10" height="1.5" rx="0.75" fill="currentColor" opacity="0.1"/>
+                <rect x="13" y="23" width="12" height="1.5" rx="0.75" fill="currentColor" opacity="0.08"/>
+              </svg>
+              <h2 className="labs-empty-title">
                 {searchText ? "No matching drams" : "No drams logged yet"}
-              </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                {searchText ? "Try a different search" : "Your tastings and journal entries will appear here"}
+              </h2>
+              <p className="labs-empty-sub">
+                {searchText ? "Try a different search." : "Your tastings and journal entries will appear here."}
               </p>
             </div>
           )}

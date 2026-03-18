@@ -361,11 +361,15 @@ export default function LabsTaste() {
 
   if (!currentParticipant) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p className="text-lg font-medium mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>Sign in to discover your personal tasting patterns</p>
-        <button className="labs-btn-secondary" onClick={() => navigate("/labs")} data-testid="labs-taste-goto-home">Go to Labs Home</button>
+      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
+          <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
+          <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
+        </svg>
+        <h2 className="labs-empty-title">Your Taste Profile</h2>
+        <p className="labs-empty-sub">Sign in to discover your personal tasting patterns.</p>
+        <button className="labs-empty-action" onClick={() => navigate("/labs")} data-testid="labs-taste-goto-home">Go to Home</button>
       </div>
     );
   }
@@ -421,25 +425,27 @@ export default function LabsTaste() {
 
       {analyticsLocked ? (
         <>
-          <div className="labs-card p-6 mb-6 text-center labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🥃</div>
-            <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</h2>
-            <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 280, margin: "0 auto 16px" }}>
-              Rate whiskies and log drams to unlock your personal taste profile
+          <div className="labs-empty labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
+            <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
+              <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
+              <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
+            </svg>
+            <h2 className="labs-empty-title">Not enough data yet</h2>
+            <p className="labs-empty-sub" style={{ marginBottom: '1rem' }}>
+              {whiskyCount > 0
+                ? `${Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more drams to unlock your profile.`
+                : 'Your first dram is one breath away.'}
             </p>
-            <div style={{ maxWidth: 220, margin: "0 auto 6px" }}>
-              <div className="flex justify-between mb-1.5">
-                <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{whiskyCount} / {ANALYTICS_THRESHOLD}</span>
-                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>entries</span>
+            <div style={{ maxWidth: 180, margin: "0 auto 1.5rem", width: '100%' }}>
+              <div style={{ height: 3, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "var(--labs-accent)", borderRadius: 3, transition: "width 0.5s", opacity: 0.6 }} />
               </div>
-              <div style={{ height: 5, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "linear-gradient(90deg, var(--labs-accent-dark), var(--labs-accent))", borderRadius: 3, transition: "width 0.5s" }} />
-              </div>
+              <p style={{ fontSize: 10, color: "var(--labs-text-muted)", opacity: 0.5, marginTop: 6, textAlign: "center" }}>
+                {whiskyCount} / {ANALYTICS_THRESHOLD}
+              </p>
             </div>
-            <p className="text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
-              {Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more to unlock full analytics
-            </p>
-            <button className="labs-btn-primary" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
+            <button className="labs-empty-action" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
               {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}
             </button>
           </div>

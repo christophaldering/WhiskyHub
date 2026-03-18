@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId } from "@/lib/api";
 import { useTranslation } from "react-i18next";
-import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadBlob } from "@/lib/download";
@@ -897,15 +896,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
   if (tastingError) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Results not available</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+          <line x1="14" y1="14" x2="26" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+          <line x1="26" y1="14" x2="14" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+        </svg>
+        <h2 className="labs-empty-title">Results not available</h2>
+        <p className="labs-empty-sub">This tasting may have been removed or the link is incorrect.</p>
         <button
-          className="labs-btn-secondary"
+          className="labs-empty-action"
           onClick={goBack}
           data-testid="results-error-back"
         >
-          Tastings
+          Back to Tastings
         </button>
       </div>
     );
@@ -913,13 +916,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
   if (isLoading) {
     return (
-      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div className="space-y-4">
-          <SkeletonLine width="40%" height={24} />
-          <SkeletonLine width="60%" height={14} />
-          <div style={{ height: 16 }} />
-          <SkeletonList count={3} showAvatar />
-        </div>
+      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh", display: "flex", flexDirection: "column", gap: 16, padding: "2rem 1.5rem" }}>
+        <div className="labs-skeleton" style={{ height: 22, width: "45%", marginBottom: 4 }} />
+        <div className="labs-skeleton" style={{ height: 14, width: "65%" }} />
+        <div style={{ height: 12 }} />
+        <div className="labs-skeleton" style={{ height: 56, width: "100%", borderRadius: "var(--labs-radius)" }} />
+        <div className="labs-skeleton" style={{ height: 56, width: "100%", borderRadius: "var(--labs-radius)" }} />
+        <div className="labs-skeleton" style={{ height: 56, width: "100%", borderRadius: "var(--labs-radius)" }} />
       </div>
     );
   }
@@ -927,15 +930,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
   if (!tasting) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Results not available</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting could not be loaded.</p>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+          <line x1="14" y1="14" x2="26" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+          <line x1="26" y1="14" x2="14" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+        </svg>
+        <h2 className="labs-empty-title">Results not available</h2>
+        <p className="labs-empty-sub">This tasting could not be loaded.</p>
         <button
-          className="labs-btn-secondary"
+          className="labs-empty-action"
           onClick={goBack}
           data-testid="results-back-tastings"
         >
-          Tastings
+          Back to Tastings
         </button>
       </div>
     );
@@ -1502,14 +1509,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </div>
 
       {sorted.length === 0 && (
-        <div className="labs-empty">
-          <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-            No results yet
-          </p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-            Results will appear once participants have submitted their ratings
-          </p>
+        <div className="labs-empty labs-fade-in">
+          <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
+            <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
+          </svg>
+          <h2 className="labs-empty-title">No results yet</h2>
+          <p className="labs-empty-sub">Results appear once participants submit their ratings.</p>
         </div>
       )}
 

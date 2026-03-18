@@ -193,20 +193,16 @@ export default function LabsCircle() {
   if (!pid) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-          style={{ background: "var(--labs-accent-muted)" }}
-        >
-          <Users className="w-8 h-8" style={{ color: "var(--labs-accent)" }} />
-        </div>
-        <p className="text-lg font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
-          Your Circle
-        </p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-          Sign in to see your friends, rankings and tastings
-        </p>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="15" cy="16" r="5" fill="currentColor" opacity="0.12"/>
+          <circle cx="25" cy="16" r="5" fill="currentColor" opacity="0.12"/>
+          <path d="M8 30 Q8 24 15 24 Q20 24 20 28" fill="currentColor" opacity="0.08"/>
+          <path d="M32 30 Q32 24 25 24 Q20 24 20 28" fill="currentColor" opacity="0.08"/>
+        </svg>
+        <h2 className="labs-empty-title">Your Circle</h2>
+        <p className="labs-empty-sub">Sign in to see your friends, rankings and tastings.</p>
         <button
-          className="labs-btn-primary"
+          className="labs-empty-action"
           onClick={() => navigate("/labs")}
           data-testid="labs-circle-signin"
         >
@@ -912,7 +908,7 @@ export default function LabsCircle() {
           </>
         ) : (
           <EmptyState icon={Wine} title="No shared sessions yet" description="Completed sessions will appear here once you've tasted with others">
-            <button className="labs-btn-primary text-sm px-5 py-2.5" onClick={() => navigate("/labs/join")} data-testid="labs-circle-empty-sessions-join">
+            <button className="labs-empty-action" onClick={() => navigate("/labs/join")} data-testid="labs-circle-empty-sessions-join">
               Join a Tasting
             </button>
           </EmptyState>
@@ -1160,18 +1156,15 @@ function EmptyState({
 }) {
   return (
     <div className="labs-empty labs-fade-in" style={{ minHeight: "30vh" }}>
-      <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-        style={{ background: "var(--labs-accent-muted)" }}
-      >
-        <Icon className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
+      <div className="labs-empty-icon" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg viewBox="0 0 40 40" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+          <circle cx="20" cy="20" r="10" stroke="currentColor" strokeWidth="0.3" opacity="0.1"/>
+        </svg>
+        <Icon className="w-5 h-5" style={{ color: "currentColor", opacity: 0.3, position: "relative" }} />
       </div>
-      <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
-        {title}
-      </p>
-      <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-        {description}
-      </p>
+      <h2 className="labs-empty-title">{title}</h2>
+      <p className="labs-empty-sub">{description}</p>
       {children}
     </div>
   );

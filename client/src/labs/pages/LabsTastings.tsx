@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine, Users } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
-import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live" | "past";
@@ -108,15 +107,15 @@ export default function LabsTastings() {
   if (!currentParticipant) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>
-          Your Tastings
-        </p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-secondary)" }}>
-          Sign in to see your sessions and join new ones
-        </p>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <path d="M10 14 Q9 20 9 26 L9 34 Q9 37 12 37 L28 37 Q31 37 31 34 L31 26 Q31 20 30 14 Z"
+            fill="currentColor" opacity="0.15"/>
+          <rect x="14" y="8" width="12" height="8" rx="2" fill="currentColor" opacity="0.1"/>
+        </svg>
+        <h2 className="labs-empty-title">Your Tastings</h2>
+        <p className="labs-empty-sub">Sign in to see your sessions and join new ones.</p>
         <Link href="/labs/home">
-          <button className="labs-btn-secondary" data-testid="labs-tastings-goto-home">
+          <button className="labs-empty-action" data-testid="labs-tastings-goto-home">
             Home
           </button>
         </Link>
@@ -272,20 +271,36 @@ export default function LabsTastings() {
       </div>
 
       {isLoading ? (
-        <SkeletonList count={4} showAvatar />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '1.5rem' }}>
+          <div className="labs-skeleton" style={{ height: '20px', width: '60%' }} />
+          <div className="labs-skeleton" style={{ height: '14px', width: '40%' }} />
+          <div className="labs-skeleton" style={{ height: '14px', width: '80%', marginTop: '8px' }} />
+          <div className="labs-skeleton" style={{ height: '20px', width: '55%', marginTop: '12px' }} />
+          <div className="labs-skeleton" style={{ height: '14px', width: '45%' }} />
+          <div className="labs-skeleton" style={{ height: '14px', width: '70%', marginTop: '8px' }} />
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="labs-empty labs-fade-in" style={{ paddingTop: 40, paddingBottom: 40 }}>
-          <Clock className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+        <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
+          <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+            <path d="M10 14 Q9 20 9 26 L9 34 Q9 37 12 37 L28 37 Q31 37 31 34 L31 26 Q31 20 30 14 Z"
+              fill="currentColor" opacity="0.3"/>
+            <rect x="14" y="8" width="12" height="8" rx="2" fill="currentColor" opacity="0.2"/>
+          </svg>
+          <h2 className="labs-empty-title">
             {searchQuery ? "No matching tastings" : "No tastings yet"}
-          </p>
-          <p className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+          </h2>
+          <p className="labs-empty-sub">
             {searchQuery
-              ? "Try a different search term"
+              ? "Try a different search term."
               : timeFilter
-              ? "No tastings match this filter"
-              : "Join a session or host one to get started"}
+              ? "No tastings match this filter."
+              : "Create your first tasting or join one."}
           </p>
+          {!searchQuery && !timeFilter && (
+            <button className="labs-empty-action" onClick={() => navigate("/labs/host")} data-testid="button-tastings-create">
+              Start a tasting
+            </button>
+          )}
         </div>
       ) : (
         <div className="labs-grouped-list labs-fade-in labs-stagger-3">

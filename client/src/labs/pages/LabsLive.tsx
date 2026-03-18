@@ -2,10 +2,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
-import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
@@ -27,60 +26,18 @@ type Dimension = (typeof DIMENSIONS)[number];
 
 function GuidedLobby({ tasting, participantCount }: { tasting: any; participantCount: number }) {
   return (
-    <div className="labs-fade-in" style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", textAlign: "center" }}>
-      <div
-        className="labs-card-elevated"
-        style={{ padding: "40px 32px", maxWidth: 420, width: "100%", borderRadius: "var(--labs-radius-lg)" }}
-      >
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-          style={{ background: "var(--labs-accent-muted)" }}
-        >
-          <Clock className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
-        </div>
-
-        <h2
-          className="labs-h2 mb-2"
-          style={{ color: "var(--labs-text)" }}
-          data-testid="guided-lobby-title"
-        >
-          {tasting.title}
-        </h2>
-
-        {tasting.date && (
-          <div className="flex items-center justify-center gap-1.5 mb-5">
-            <Calendar className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-            <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-              {new Date(tasting.date).toLocaleDateString()}
-            </span>
-          </div>
-        )}
-
-        <p
-          className="text-base mb-6"
-          style={{ color: "var(--labs-text-secondary)" }}
-          data-testid="guided-lobby-waiting"
-        >
-          Waiting for host to start the tasting...
-        </p>
-
-        <div
-          className="flex items-center justify-center gap-2 py-3 px-5 rounded-full mx-auto"
-          style={{ background: "var(--labs-accent-muted)", width: "fit-content" }}
-        >
-          <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-sm font-medium" style={{ color: "var(--labs-accent)" }} data-testid="guided-lobby-count">
-            {participantCount} {participantCount === 1 ? "participant" : "participants"} joined
-          </span>
-        </div>
-
-        <div className="mt-6">
-          <div
-            className="w-2 h-2 rounded-full mx-auto animate-pulse"
-            style={{ background: "var(--labs-accent)" }}
-          />
-        </div>
-      </div>
+    <div className="labs-lobby labs-fade-in" data-testid="guided-lobby">
+      <p className="labs-lobby-eyebrow" data-testid="guided-lobby-title">{tasting.title}</p>
+      <div className="labs-pulse-dot" />
+      <h1 className="labs-lobby-title">
+        {tasting.isBlind ? 'Blind Tasting' : 'Tasting'}<br />
+        <em>begins shortly</em>
+      </h1>
+      <div className="labs-lobby-divider" />
+      <p className="labs-lobby-meta" data-testid="guided-lobby-waiting">
+        {tasting.whiskies?.length ?? '?'} Drams · {participantCount} {participantCount === 1 ? 'taster' : 'tasters'}
+      </p>
+      <p className="labs-lobby-hint" data-testid="guided-lobby-count">Sit back. The host will begin.</p>
     </div>
   );
 }
@@ -1046,23 +1003,26 @@ export default function LabsLive({ params }: LabsLiveProps) {
   if (tastingError) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may not exist or you don't have access.</p>
-        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-live-not-found-back">Tastings</button>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+          <line x1="14" y1="14" x2="26" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+          <line x1="26" y1="14" x2="14" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+        </svg>
+        <h2 className="labs-empty-title">Tasting not found</h2>
+        <p className="labs-empty-sub">This tasting may not exist or you don't have access.</p>
+        <button className="labs-empty-action" onClick={goBack} data-testid="labs-live-not-found-back">Back to Tastings</button>
       </div>
     );
   }
 
   if (tastingLoading) {
     return (
-      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh" }}>
-        <div className="space-y-4">
-          <SkeletonLine width="50%" height={22} />
-          <SkeletonLine width="35%" height={13} />
-          <div style={{ height: 16 }} />
-          <SkeletonList count={2} />
-        </div>
+      <div className="labs-page labs-fade-in" style={{ minHeight: "60vh", display: "flex", flexDirection: "column", gap: 16, padding: "2rem 1.5rem" }}>
+        <div className="labs-skeleton" style={{ height: 22, width: "50%", marginBottom: 4 }} />
+        <div className="labs-skeleton" style={{ height: 13, width: "35%" }} />
+        <div style={{ height: 16 }} />
+        <div className="labs-skeleton" style={{ height: 56, width: "100%", borderRadius: "var(--labs-radius)" }} />
+        <div className="labs-skeleton" style={{ height: 56, width: "100%", borderRadius: "var(--labs-radius)" }} />
       </div>
     );
   }
@@ -1070,10 +1030,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
   if (!tasting) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may not exist or you don't have access.</p>
-        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-live-notfound-back">Tastings</button>
+        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+          <line x1="14" y1="14" x2="26" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+          <line x1="26" y1="14" x2="14" y2="26" stroke="currentColor" strokeWidth="0.8" opacity="0.2"/>
+        </svg>
+        <h2 className="labs-empty-title">Tasting not found</h2>
+        <p className="labs-empty-sub">This tasting may not exist or you don't have access.</p>
+        <button className="labs-empty-action" onClick={goBack} data-testid="labs-live-notfound-back">Back to Tastings</button>
       </div>
     );
   }
@@ -1181,11 +1145,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
       </div>
 
       {!whiskies || totalWhiskies === 0 ? (
-        <div className="labs-empty">
-          <Wine className="w-12 h-12 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
-            No whiskies in this session yet
-          </p>
+        <div className="labs-empty labs-fade-in">
+          <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
+            <path d="M10 14 Q9 20 9 26 L9 34 Q9 37 12 37 L28 37 Q31 37 31 34 L31 26 Q31 20 30 14 Z"
+              fill="currentColor" opacity="0.15"/>
+            <rect x="14" y="8" width="12" height="8" rx="2" fill="currentColor" opacity="0.1"/>
+          </svg>
+          <h2 className="labs-empty-title">No whiskies yet</h2>
+          <p className="labs-empty-sub">The session is being prepared.</p>
         </div>
       ) : (
         <>
