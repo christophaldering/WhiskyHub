@@ -1,0 +1,580 @@
+# CaskSense — Navigation Redesign + i18n
+## 6 Dateien. Kein Backend. Kein Schema. Vollständige EN+DE Keys.
+
+---
+
+## Übersicht der Änderungen
+
+| Datei | Art | Was |
+|---|---|---|
+| `client/index.html` | Ergänzung | Google Fonts |
+| `client/src/labs/LabsLayout.tsx` | Änderung | 5 → 4 Tabs, neue Icons, i18n |
+| `client/src/labs/pages/LabsLanding.tsx` | Änderung | Neuer Intent-Startbildschirm |
+| `client/src/labs/pages/LabsEntdecken.tsx` | Neu | Entdecken-Hub-Seite |
+| `client/src/App.tsx` | Ergänzung | Neue Route /labs/entdecken |
+| `client/src/lib/i18n.ts` | Ergänzung | 25 neue Key-Paare EN + DE |
+
+**Reihenfolge einhalten:** i18n zuerst, dann Komponenten, dann Layout, dann Routing.
+
+---
+
+## SCHRITT 1 — i18n.ts: Neue Keys einfügen
+
+### Datei: `client/src/lib/i18n.ts`
+
+#### Im EN-Block (ca. Zeile 11) — nach dem letzten bestehenden Key im `nav:`-Objekt einfügen:
+
+```typescript
+nav: {
+  // ... bestehende Keys behalten ...
+  tastings: "Tastings",
+  discover: "Discover",
+  myWorld: "My World",
+  circle: "Circle",
+},
+
+home: {
+  greeting: "What brings you\nto CaskSense?",
+  greetingSub: "Choose your path — you can switch anytime.",
+  solo: "Log a dram",
+  soloSub: "Solo · quick · just for me",
+  join: "Enter a code",
+  joinSub: "I've been invited · join a tasting",
+  host: "Host a tasting",
+  hostSub: "I'm the host · invite a group",
+  noAccount: "No account needed to start.",
+  moreAppears: "More features appear as you taste.",
+},
+
+discover: {
+  title: "Whiskies & Knowledge",
+  sub: "Browse bottles or dive into the world of whisky.",
+  whiskies: "Whiskies",
+  knowledge: "Knowledge",
+  allWhiskies: "All Whiskies",
+  allWhiskiesSub: "Browse community ratings",
+  compare: "Compare",
+  compareSub: "Your scores vs. platform median",
+  lexicon: "Lexicon",
+  lexiconSub: "Terms & definitions",
+  distilleries: "Distilleries",
+  distilleriesSub: "Map & details",
+  guide: "Tasting Guide",
+  guideSub: "Step by step",
+  templates: "Templates",
+  templatesSub: "Notes & vocabulary",
+  vocabulary: "Vocabulary",
+  vocabularySub: "By region & style",
+  research: "Research",
+  researchSub: "The science of taste",
+},
+```
+
+#### Im DE-Block (ca. Zeile 5492) — dieselben Keys auf Deutsch:
+
+```typescript
+nav: {
+  // ... bestehende Keys behalten ...
+  tastings: "Tastings",
+  discover: "Entdecken",
+  myWorld: "Meine Welt",
+  circle: "Circle",
+},
+
+home: {
+  greeting: "Was bringst du\nzu CaskSense?",
+  greetingSub: "Wähle deinen Einstieg — du kannst jederzeit wechseln.",
+  solo: "Einen Dram loggen",
+  soloSub: "Solo · schnell · für mich",
+  join: "Code eingeben",
+  joinSub: "Ich bin eingeladen · Tasting beitreten",
+  host: "Tasting veranstalten",
+  hostSub: "Ich bin der Host · Gruppe einladen",
+  noAccount: "Keine Registrierung nötig zum Starten.",
+  moreAppears: "Weitere Funktionen erscheinen mit der Zeit.",
+},
+
+discover: {
+  title: "Whiskies & Wissen",
+  sub: "Stöbere durch Flaschen oder tauche in die Welt des Whiskys ein.",
+  whiskies: "Whiskies",
+  knowledge: "Wissen",
+  allWhiskies: "Alle Whiskies",
+  allWhiskiesSub: "Community-Bewertungen durchsuchen",
+  compare: "Vergleichen",
+  compareSub: "Deine Scores vs. Plattform-Median",
+  lexicon: "Lexikon",
+  lexiconSub: "Begriffe & Definitionen",
+  distilleries: "Destillerien",
+  distilleriesSub: "Karte & Details",
+  guide: "Tasting-Guide",
+  guideSub: "Schritt für Schritt",
+  templates: "Vorlagen",
+  templatesSub: "Notizen & Vokabular",
+  vocabulary: "Wortschatz",
+  vocabularySub: "Nach Region & Stil",
+  research: "Forschung",
+  researchSub: "Wissenschaft des Geschmacks",
+},
+```
+
+---
+
+## SCHRITT 2 — LabsLayout.tsx: 5 Tabs → 4 Tabs
+
+### Datei: `client/src/labs/LabsLayout.tsx`
+
+Ersetze das gesamte bestehende navItems-Array und das Nav-Rendering.
+
+#### Neues navItems-Array:
+
+```tsx
+const navItems = [
+  {
+    pathPrefix: '/labs/tastings',
+    matchPaths: ['/labs/tastings', '/labs/live', '/labs/join', '/labs/host'],
+    labelKey: 'nav.tastings',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 4h6l1 5c0 3-1.5 4.5-4 5.5v3.5H8V14.5C5.5 13.5 4 12 4 9z"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.15 : 0}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    pathPrefix: '/labs/entdecken',
+    matchPaths: ['/labs/entdecken', '/labs/explore', '/labs/discover'],
+    labelKey: 'nav.discover',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle
+          cx="11" cy="11" r="7"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.15 : 0}
+        />
+        <path
+          d="M16.5 16.5L21 21"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    pathPrefix: '/labs/taste',
+    matchPaths: ['/labs/taste'],
+    labelKey: 'nav.myWorld',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <polygon
+          points="12,3 20,8 20,16 12,21 4,16 4,8"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+          strokeLinejoin="round"
+        />
+        <circle
+          cx="12" cy="12" r="2"
+          fill="currentColor"
+          opacity={active ? 0.55 : 0.2}
+        />
+      </svg>
+    ),
+  },
+  {
+    pathPrefix: '/labs/circle',
+    matchPaths: ['/labs/circle'],
+    labelKey: 'nav.circle',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="8" cy="8" r="3"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.15 : 0}
+        />
+        <circle cx="16" cy="8" r="3"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.15 : 0}
+        />
+        <path d="M2 20c0-2.5 2.5-4 6-4s6 1.5 6 4"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path d="M16 16c1.5 0 4 1 4 4"
+          stroke="currentColor"
+          strokeWidth={active ? 1.75 : 1.25}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
+    ),
+  },
+];
+```
+
+#### Nav-Container und Item-Rendering ersetzen:
+
+```tsx
+<nav style={{
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-around',
+  borderTop: '0.5px solid var(--labs-border, rgba(255,255,255,0.12))',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  backgroundColor: 'var(--labs-nav-bg, rgba(18,14,10,0.94))',
+  paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+  paddingTop: '6px',
+  zIndex: 100,
+}}>
+  {navItems.map((item) => {
+    const isActive = item.matchPaths.some(p => location.startsWith(p));
+    return (
+      <Link
+        key={item.pathPrefix}
+        href={item.pathPrefix}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '3px',
+          padding: '6px 0 4px',
+          flex: 1,
+          textDecoration: 'none',
+          color: isActive
+            ? 'var(--labs-gold, #bf8f3e)'
+            : 'var(--labs-text-muted, rgba(255,255,255,0.45))',
+          transition: 'color 0.15s ease',
+        }}
+      >
+        {item.icon(isActive)}
+        <span style={{
+          fontSize: '10px',
+          fontFamily: isActive
+            ? 'var(--font-display, "Playfair Display", serif)'
+            : 'var(--font-ui, "DM Sans", sans-serif)',
+          fontWeight: isActive ? 500 : 400,
+          letterSpacing: '0.02em',
+          lineHeight: 1,
+        }}>
+          {t(item.labelKey)}
+        </span>
+      </Link>
+    );
+  })}
+</nav>
+```
+
+---
+
+## SCHRITT 3 — LabsLanding.tsx: Neuer Startbildschirm
+
+### Datei: `client/src/labs/pages/LabsLanding.tsx`
+
+Ersetze den bestehenden Hero-/Einstiegsbereich mit diesem Intent-Bildschirm.
+**Bestehende Join/Host/Solo-Logik darunter bleibt erhalten** — nur der
+visuelle Einstieg ändert sich.
+
+```tsx
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
+
+// Im Komponenten-Body:
+const { t } = useTranslation();
+const [, navigate] = useLocation();
+
+// Ersetze den bestehenden Hero-JSX:
+return (
+  <div style={{ padding: '2rem 1.25rem 6rem', maxWidth: '440px', margin: '0 auto' }}>
+
+    {/* Header */}
+    <p className="ty-label" style={{ marginBottom: '0.75rem' }}>
+      CaskSense
+    </p>
+    <h1 className="ty-h1" style={{ marginBottom: '0.5rem', whiteSpace: 'pre-line' }}>
+      {t('home.greeting')}
+    </h1>
+    <p className="ty-sub" style={{ marginBottom: '2rem', opacity: 0.6 }}>
+      {t('home.greetingSub')}
+    </p>
+
+    {/* Die drei Intent-Karten */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '2rem' }}>
+
+      {/* Solo */}
+      <button
+        onClick={() => navigate('/labs/tastings?mode=solo')}
+        style={{
+          width: '100%',
+          padding: '1rem 1.25rem',
+          border: '0.5px solid var(--labs-border)',
+          borderRadius: '14px',
+          background: 'transparent',
+          textAlign: 'left',
+          cursor: 'pointer',
+          transition: 'opacity 0.15s',
+        }}
+      >
+        <div className="ty-ui">{t('home.solo')}</div>
+        <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
+          {t('home.soloSub')}
+        </div>
+      </button>
+
+      {/* Join */}
+      <button
+        onClick={() => navigate('/labs/join')}
+        style={{
+          width: '100%',
+          padding: '1rem 1.25rem',
+          border: '0.5px solid var(--labs-border)',
+          borderRadius: '14px',
+          background: 'transparent',
+          textAlign: 'left',
+          cursor: 'pointer',
+          transition: 'opacity 0.15s',
+        }}
+      >
+        <div className="ty-ui">{t('home.join')}</div>
+        <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
+          {t('home.joinSub')}
+        </div>
+      </button>
+
+      {/* Host */}
+      <button
+        onClick={() => navigate('/labs/host/new')}
+        style={{
+          width: '100%',
+          padding: '1rem 1.25rem',
+          border: '0.5px solid var(--labs-border)',
+          borderRadius: '14px',
+          background: 'transparent',
+          textAlign: 'left',
+          cursor: 'pointer',
+          transition: 'opacity 0.15s',
+        }}
+      >
+        <div className="ty-ui">{t('home.host')}</div>
+        <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
+          {t('home.hostSub')}
+        </div>
+      </button>
+
+    </div>
+
+    {/* Stille Fußnote */}
+    <p className="ty-caption" style={{ textAlign: 'center', opacity: 0.4, fontStyle: 'italic' }}>
+      {t('home.noAccount')}
+    </p>
+
+  </div>
+);
+```
+
+---
+
+## SCHRITT 4 — LabsEntdecken.tsx: Neue Seite erstellen
+
+### Neue Datei: `client/src/labs/pages/LabsEntdecken.tsx`
+
+```tsx
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
+
+export default function LabsEntdecken() {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  const knowledgeItems = [
+    { key: 'lexicon',       path: '/labs/discover/lexicon' },
+    { key: 'distilleries', path: '/labs/discover/distilleries' },
+    { key: 'guide',        path: '/labs/discover/guide' },
+    { key: 'templates',    path: '/labs/discover/templates' },
+    { key: 'vocabulary',   path: '/labs/discover/vocabulary' },
+    { key: 'research',     path: '/labs/discover/research' },
+  ];
+
+  return (
+    <div style={{ padding: '1.5rem 1.25rem 6rem', maxWidth: '440px', margin: '0 auto' }}>
+
+      {/* Header */}
+      <p className="ty-label" style={{ marginBottom: '0.5rem' }}>
+        {t('nav.discover')}
+      </p>
+      <h1 className="ty-h1" style={{ marginBottom: '0.35rem' }}>
+        {t('discover.title')}
+      </h1>
+      <p className="ty-sub" style={{ marginBottom: '2rem', opacity: 0.6 }}>
+        {t('discover.sub')}
+      </p>
+
+      {/* Sektion: Whiskies */}
+      <p className="ty-label" style={{ marginBottom: '0.75rem' }}>
+        {t('discover.whiskies')}
+      </p>
+      <div className="labs-grouped-list" style={{ marginBottom: '2rem' }}>
+        <div
+          className="labs-list-row"
+          onClick={() => navigate('/labs/explore')}
+          style={{ cursor: 'pointer' }}
+        >
+          <div>
+            <div className="ty-ui">{t('discover.allWhiskies')}</div>
+            <div className="ty-caption" style={{ marginTop: '2px', opacity: 0.6 }}>
+              {t('discover.allWhiskiesSub')}
+            </div>
+          </div>
+          <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+        </div>
+        <div
+          className="labs-list-row"
+          onClick={() => navigate('/labs/taste/compare')}
+          style={{ cursor: 'pointer' }}
+        >
+          <div>
+            <div className="ty-ui">{t('discover.compare')}</div>
+            <div className="ty-caption" style={{ marginTop: '2px', opacity: 0.6 }}>
+              {t('discover.compareSub')}
+            </div>
+          </div>
+          <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+        </div>
+      </div>
+
+      {/* Sektion: Wissen */}
+      <p className="ty-label" style={{ marginBottom: '0.75rem' }}>
+        {t('discover.knowledge')}
+      </p>
+      <div className="labs-grouped-list">
+        {knowledgeItems.map((item, idx) => (
+          <div
+            key={item.key}
+            className="labs-list-row"
+            onClick={() => navigate(item.path)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div>
+              <div className="ty-ui">{t(`discover.${item.key}`)}</div>
+              <div className="ty-caption" style={{ marginTop: '2px', opacity: 0.6 }}>
+                {t(`discover.${item.key}Sub`)}
+              </div>
+            </div>
+            <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+```
+
+---
+
+## SCHRITT 5 — App.tsx: Route hinzufügen
+
+### Datei: `client/src/App.tsx`
+
+Füge nach den bestehenden Labs-Routen ein:
+
+```tsx
+import LabsEntdecken from './labs/pages/LabsEntdecken';
+
+// In der Router-Konfiguration:
+<Route path="/labs/entdecken" component={LabsEntdecken} />
+
+// Optional: Redirect alter Explore-Tab-Direkteinstieg
+// Bestehende /labs/explore und /labs/discover Routen NICHT entfernen
+// — sie bleiben für Deep Links erreichbar
+```
+
+---
+
+## SCHRITT 6 — client/index.html: Fonts sicherstellen
+
+### Datei: `client/index.html`
+
+Prüfe ob dieser Link bereits vorhanden ist. Falls nicht, einfügen:
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+  rel="stylesheet"
+/>
+```
+
+---
+
+## Kontrastfix — gleichzeitig erledigen
+
+### In `labs-theme.css`:
+
+```css
+/* VORHER */
+--labs-text-muted:     rgba(255, 255, 255, 0.40);
+--labs-text-secondary: rgba(255, 255, 255, 0.55);
+--labs-border:         rgba(255, 255, 255, 0.08);
+
+/* NACHHER — WCAG AA */
+--labs-text-muted:     rgba(255, 255, 255, 0.55);
+--labs-text-secondary: rgba(255, 255, 255, 0.72);
+--labs-text-primary:   rgba(255, 255, 255, 0.96);
+--labs-border:         rgba(255, 255, 255, 0.14);
+```
+
+---
+
+## Nach der Implementierung: Tests prüfen
+
+Die Vitest Test-Suite enthält möglicherweise Snapshots oder Assertions
+auf alte Tab-Labels oder Routen. Nach dem Umbau einmal ausführen:
+
+```bash
+npx vitest run
+```
+
+Fehlschlagende Tests die auf alte Nav-Labels prüfen entsprechend anpassen.
+
+---
+
+## Was NICHT geändert wird
+
+- Kein Backend
+- Kein Schema / keine DB
+- Keine bestehenden Seiten-Inhalte
+- `/labs/explore` bleibt erreichbar (kein Redirect)
+- `/labs/discover/*` bleibt erreichbar (kein Redirect)
+- Alle bestehenden i18n-Keys bleiben unverändert
+- `SmartRedirectToLabs` in App.tsx bleibt unberührt
+- Keine Änderungen an Auth-Logik
+
+---
+
+## Die eine Regel für alle neuen Texte
+
+Jeder neue String der in der UI erscheint
+muss über `t('key')` aus i18n.ts kommen.
+Kein hardcodierter Text in Komponenten — weder Deutsch noch Englisch.
