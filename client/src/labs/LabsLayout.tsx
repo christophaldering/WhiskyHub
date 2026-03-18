@@ -24,10 +24,10 @@ interface LabsLayoutProps {
   children: ReactNode;
 }
 
-function GlencairnIcon({ color, size = 22 }: { color: string; size?: number }) {
+function GlencairnIcon({ color, size = 22, strokeWidth = 1.75 }: { color: string; size?: number; strokeWidth?: number }) {
   const glass = "M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z";
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       <path d={glass} />
       <line x1="10" y1="17.6" x2="14" y2="17.6" />
       <line x1="9" y1="20" x2="15" y2="20" />
@@ -812,7 +812,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                   {isActive && <div className="labs-nav-dot" />}
                   <div className="labs-nav-icon" style={{ position: "relative" }}>
                     {item.icon === "glencairn" ? (
-                      <GlencairnIcon color={color} size={22} />
+                      <GlencairnIcon color={color} size={22} strokeWidth={isActive ? 1.75 : 1.25} />
                     ) : item.icon === "entdecken" ? (
                       <NavIconEntdecken active={isActive} />
                     ) : item.icon === "meinewelt" ? (

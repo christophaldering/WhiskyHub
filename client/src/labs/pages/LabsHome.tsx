@@ -88,9 +88,18 @@ export default function LabsHome() {
         </button>
       </div>
 
-      <p className="ty-caption" style={{ textAlign: 'center', opacity: 0.4, fontStyle: 'italic' }} data-testid="labs-home-footer">
-        {t('home.noAccount')}
+      <p className="ty-caption" style={{ textAlign: 'center', opacity: 0.35 }} data-testid="labs-home-more">
+        {t('home.moreAppears')}
       </p>
+
+      <div style={{ marginTop: '3rem', textAlign: 'center' }} data-testid="labs-home-stille">
+        <p className="ty-caption" style={{ opacity: 0.3, fontStyle: 'italic', letterSpacing: '0.08em' }}>
+          Stille
+        </p>
+        <p className="ty-caption" style={{ opacity: 0.3, marginTop: '4px' }}>
+          {t('home.noAccount')}
+        </p>
+      </div>
     </div>
   );
 }
