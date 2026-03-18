@@ -1,0 +1,354 @@
+# Replit Agent Prompt — Echtzeit Reveal via Server-Sent Events (SSE)
+
+# Der emotionale Höhepunkt bekommt Echtzeit-Verbindung
+
+-----
+
+## KONZEPT
+
+Nur für einen einzigen Moment: den Reveal.
+Wenn der Host “Reveal” drückt, sehen alle Teilnehmer
+es sofort — ohne Wartezeit, ohne Polling-Verzögerung.
+
+Technisch: Server-Sent Events (SSE) — einfacher als WebSockets,
+einweg (Server → Client), perfekt für diesen Anwendungsfall.
+Alles andere (Ratings, Teilnehmer-Status etc.) kann weiter pollen.
+
+-----
+
+## BACKEND
+
+### Neue Datei: `server/sse.ts`
+
+```typescript
+import { Request, Response } from 'express';
+
+// Aktive SSE Verbindungen pro Tasting
+// Map<tastingId, Set<Response>>
+const connections = new Map<string, Set<Response>>();
+
+export function addConnection(tastingId: string, res: Response) {
+  if (!connections.has(tastingId)) {
+    connections.set(tastingId, new Set());
+  }
+  connections.get(tastingId)!.add(res);
+}
+
+export function removeConnection(tastingId: string, res: Response) {
+  connections.get(tastingId)?.delete(res);
+  if (connections.get(tastingId)?.size === 0) {
+    connections.delete(tastingId);
+  }
+}
+
+export function broadcastToTasting(tastingId: string, event: string, data: object) {
+  const tastingConnections = connections.get(tastingId);
+  if (!tastingConnections) return;
+  
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  
+  tastingConnections.forEach(res => {
+    try {
+      res.write(message);
+    } catch (e) {
+      // Verbindung unterbrochen — entfernen
+      removeConnection(tastingId, res);
+    }
+  });
+}
+```
+
+-----
+
+### Neuer Endpoint in `server/routes.ts`
+
+```typescript
+import { addConnection, removeConnection } from './sse';
+
+// SSE Verbindung öffnen
+// Teilnehmer subscriben wenn sie die Live-Tasting Seite öffnen
+GET /api/tastings/:id/events
+
+app.get('/api/tastings/:id/events', (req: Request, res: Response) => {
+  const tastingId = req.params.id;
+  
+  // SSE Headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // wichtig für Nginx/Proxy
+  res.flushHeaders();
+  
+  // Verbindung registrieren
+  addConnection(tastingId, res);
+  
+  // Heartbeat alle 30s damit die Verbindung nicht abbricht
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': heartbeat\n\n');
+    } catch (e) {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
+  
+  // Cleanup wenn Client die Verbindung trennt
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    removeConnection(tastingId, res);
+  });
+});
+```
+
+-----
+
+### Bestehende Reveal-Endpoints erweitern
+
+In den bestehenden Endpoints die den Reveal auslösen
+(suche nach `guidedRevealStep`, `revealOrder`, oder
+`status: 'reveal'` in server/routes.ts):
+
+Nach dem DB-Update den SSE Broadcast hinzufügen:
+
+```typescript
+import { broadcastToTasting } from './sse';
+
+// Nach dem DB-Update für Reveal:
+broadcastToTasting(tastingId, 'reveal_triggered', {
+  tastingId,
+  revealStep: newRevealStep,      // welcher Schritt wurde aufgedeckt
+  whiskyId: currentWhiskyId,      // welcher Whisky
+  timestamp: new Date().toISOString(),
+});
+
+// Nach dem Tasting-Status-Wechsel zu 'reveal':
+broadcastToTasting(tastingId, 'status_changed', {
+  tastingId,
+  status: 'reveal',
+  timestamp: new Date().toISOString(),
+});
+
+// Nach "Next Dram" (Guided Mode):
+broadcastToTasting(tastingId, 'dram_advanced', {
+  tastingId,
+  whiskyIndex: newWhiskyIndex,
+  timestamp: new Date().toISOString(),
+});
+```
+
+-----
+
+## FRONTEND
+
+### Neuer Hook: `client/src/labs/hooks/useTastingEvents.ts`
+
+```typescript
+import { useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface TastingEvent {
+  type: 'reveal_triggered' | 'status_changed' | 'dram_advanced';
+  data: {
+    tastingId: string;
+    revealStep?: number;
+    whiskyId?: string;
+    whiskyIndex?: number;
+    status?: string;
+    timestamp: string;
+  };
+}
+
+export function useTastingEvents(
+  tastingId: string | undefined,
+  onReveal?: (data: TastingEvent['data']) => void,
+  onStatusChange?: (data: TastingEvent['data']) => void,
+  onDramAdvanced?: (data: TastingEvent['data']) => void,
+) {
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    if (!tastingId) return;
+    
+    const eventSource = new EventSource(
+      `/api/tastings/${tastingId}/events`
+    );
+    
+    // Reveal Event
+    eventSource.addEventListener('reveal_triggered', (e) => {
+      const data = JSON.parse(e.data);
+      
+      // Query Cache sofort invalidieren — kein Warten auf Polling
+      queryClient.invalidateQueries({ queryKey: ['tasting', tastingId] });
+      queryClient.invalidateQueries({ queryKey: ['whiskies', tastingId] });
+      
+      onReveal?.(data);
+    });
+    
+    // Status Change Event
+    eventSource.addEventListener('status_changed', (e) => {
+      const data = JSON.parse(e.data);
+      queryClient.invalidateQueries({ queryKey: ['tasting', tastingId] });
+      onStatusChange?.(data);
+    });
+    
+    // Dram Advanced Event
+    eventSource.addEventListener('dram_advanced', (e) => {
+      const data = JSON.parse(e.data);
+      queryClient.invalidateQueries({ queryKey: ['tasting', tastingId] });
+      onDramAdvanced?.(data);
+    });
+    
+    // Fehlerbehandlung
+    eventSource.onerror = () => {
+      // SSE Verbindung unterbrochen — EventSource reconnected automatisch
+      // Kein User-facing Error nötig
+    };
+    
+    return () => {
+      eventSource.close();
+    };
+  }, [tastingId, queryClient, onReveal, onStatusChange, onDramAdvanced]);
+}
+```
+
+-----
+
+### Integration in `LabsLive.tsx`
+
+```typescript
+import { useTastingEvents } from '../hooks/useTastingEvents';
+import { useCallback, useState } from 'react';
+
+// In der Komponente:
+const [revealFlash, setRevealFlash] = useState(false);
+
+const handleReveal = useCallback((data) => {
+  // 1. Visuelles Flash-Feedback
+  setRevealFlash(true);
+  setTimeout(() => setRevealFlash(false), 600);
+  
+  // 2. Haptisches Feedback auf iOS (falls verfügbar)
+  if ('vibrate' in navigator) {
+    navigator.vibrate([50, 30, 50]);
+  }
+  
+  // 3. Query Cache wurde bereits im Hook invalidiert
+  // → React Query lädt automatisch neu, UI updatet sofort
+}, []);
+
+useTastingEvents(
+  tasting?.id,
+  handleReveal,           // onReveal
+  undefined,              // onStatusChange (handled by existing polling)
+  undefined,              // onDramAdvanced
+);
+
+// Flash-Overlay im JSX:
+{revealFlash && (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(201,151,43,0.08)',
+    pointerEvents: 'none',
+    zIndex: 500,
+    animation: 'revealFlash 0.6s ease-out forwards',
+  }} />
+)}
+```
+
+Flash Animation in labs-theme.css:
+
+```css
+@keyframes revealFlash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+```
+
+-----
+
+### Integration in `LabsHostCockpit.tsx` und `LabsHostDashboard.tsx`
+
+Host bekommt Bestätigung dass der Reveal angekommen ist:
+
+```typescript
+const handleRevealConfirmed = useCallback((data) => {
+  // Kurze Bestätigungs-Animation am Reveal-Button
+  setRevealConfirmed(true);
+  setTimeout(() => setRevealConfirmed(false), 1500);
+}, []);
+
+useTastingEvents(tasting?.id, handleRevealConfirmed);
+```
+
+-----
+
+### Polling reduzieren
+
+Da SSE jetzt kritische Events sofort liefert, kann das
+bestehende Polling-Interval erhöht werden um Server-Last zu sparen:
+
+In allen Labs Live-Komponenten:
+
+```typescript
+// Alt:
+refetchInterval: 3000,  // alle 3 Sekunden
+
+// Neu:
+refetchInterval: 15000, // alle 15 Sekunden — nur als Fallback
+```
+
+Das Polling bleibt als Fallback falls die SSE Verbindung
+unterbrochen ist. SSE übernimmt die Echtzeit-Aufgabe.
+
+-----
+
+## FEHLERBEHANDLUNG & FALLBACK
+
+EventSource reconnected bei Verbindungsabbruch automatisch
+(Browser-Standard). Kein zusätzlicher Code nötig.
+
+Falls SSE nicht verfügbar (sehr alte Browser, bestimmte Proxies):
+
+```typescript
+// Im Hook — graceful degradation:
+if (typeof EventSource === 'undefined') {
+  // SSE nicht verfügbar → bestehendes Polling übernimmt
+  console.log('[CaskSense] SSE not available, using polling fallback');
+  return;
+}
+```
+
+-----
+
+## TESTEN
+
+Nach der Implementierung:
+
+1. Zwei Browser-Tabs öffnen — einer als Host, einer als Teilnehmer
+1. Host drückt Reveal
+1. Teilnehmer-Tab soll sich in unter 500ms aktualisieren
+1. Network Tab im Browser zeigt:
+- `GET /api/tastings/:id/events` mit Status 200 und
+  Content-Type: text/event-stream (bleibt offen)
+- Bei Reveal: neues Event erscheint im Stream
+
+-----
+
+## WAS NICHT VERÄNDERT WIRD
+
+- Bestehende Polling-Logik — bleibt als Fallback
+- Bestehende Reveal-UI und Animationen
+- Alle anderen API Endpoints
+- Datenbank-Schema
+
+-----
+
+## PRIORISIERUNG
+
+1. `server/sse.ts` erstellen
+1. SSE Endpoint `/api/tastings/:id/events` registrieren
+1. Broadcast in bestehende Reveal-Endpoints einbauen
+1. `useTastingEvents` Hook erstellen
+1. In `LabsLive.tsx` integrieren + Flash-Animation
+1. Polling-Interval erhöhen
+1. Testen mit zwei Tabs
