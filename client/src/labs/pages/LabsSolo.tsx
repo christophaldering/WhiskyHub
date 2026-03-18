@@ -744,13 +744,14 @@ export default function LabsSolo() {
       setSheetView("candidates");
     } catch (err: any) {
       console.error('[Solo Capture] Identification failed:', err);
-      setError(
-        err?.isRateLimit
-          ? err.message
-          : t("m2.solo.identificationFailedFriendly",
-              "The bottle could not be identified. You can enter the whisky manually.")
-      );
+      const msg = err?.isRateLimit
+        ? err.message
+        : t("m2.solo.identificationFailedFriendly",
+            "The bottle could not be identified. You can enter the whisky manually.");
+      setError(msg);
       setSheetView("none");
+      setSoloView("editor");
+      setShowManual(true);
     } finally {
       setScanning(false);
     }
@@ -2296,9 +2297,26 @@ export default function LabsSolo() {
       )}
 
       {error && (
-        <div style={{ background: "var(--labs-danger-muted)", border: "1px solid var(--labs-danger)", borderRadius: "var(--labs-radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--labs-danger)", display: "flex", alignItems: "center", justifyContent: "space-between" }} data-testid="text-error">
+        <div
+          onClick={() => setError("")}
+          style={{
+            padding: '12px 16px',
+            borderRadius: '10px',
+            border: '0.5px solid var(--labs-text-muted)',
+            fontSize: '13px',
+            marginBottom: '1rem',
+            fontFamily: 'var(--font-ui, Inter, sans-serif)',
+            lineHeight: 1.5,
+            color: 'var(--labs-text-secondary)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+          }}
+          data-testid="text-error"
+        >
+          <X style={{ width: 14, height: 14, flexShrink: 0, marginTop: 2, opacity: 0.5 }} />
           <span>{error}</span>
-          <button onClick={() => setError("")} style={{ background: "none", border: "none", color: "var(--labs-danger)", cursor: "pointer", padding: 4 }}><X style={{ width: 14, height: 14 }} /></button>
         </div>
       )}
 
