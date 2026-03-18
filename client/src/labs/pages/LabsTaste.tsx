@@ -75,11 +75,13 @@ function extractTeaser(reportContent: string): string {
 function PalateLetterCard({
   reports,
   whiskyCount,
+  isGenerating,
   navigate,
   t,
 }: {
   reports: ConnoisseurReport[];
   whiskyCount: number;
+  isGenerating: boolean;
   navigate: (path: string) => void;
   t: (key: string, fallback?: string, opts?: Record<string, unknown>) => string;
 }) {
@@ -87,8 +89,9 @@ function PalateLetterCard({
   const sorted = [...reports].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
   const latestReport = sorted.length > 0 ? sorted[0] : null;
   const hasReport = !!latestReport;
-  const isLocked = !hasReport && whiskyCount < ANALYTICS_THRESHOLD;
-  const canGenerate = !hasReport && whiskyCount >= ANALYTICS_THRESHOLD;
+  const isLocked = !hasReport && whiskyCount < ANALYTICS_THRESHOLD && !isGenerating;
+  const canGenerate = !hasReport && whiskyCount >= ANALYTICS_THRESHOLD && !isGenerating;
+  const isClickable = hasReport || canGenerate;
 
   const formatTimestamp = (date: string): string => {
     const diff = Date.now() - new Date(date).getTime();
@@ -98,7 +101,7 @@ function PalateLetterCard({
     return t("palateLetter.card.updatedDays", "Updated {{days}} days ago", { days });
   };
 
-  const showGold = hasReport || canGenerate;
+  const showGold = !isLocked;
   const cardStyle: React.CSSProperties = {
     background: showGold
       ? "linear-gradient(135deg, rgba(201,151,43,0.10) 0%, rgba(232,184,75,0.05) 100%)"
@@ -109,17 +112,19 @@ function PalateLetterCard({
     margin: "20px 0",
     position: "relative",
     overflow: "hidden",
-    cursor: (hasReport || canGenerate) ? "pointer" : "default",
+    cursor: isClickable ? "pointer" : "default",
     transition: "all 0.35s cubic-bezier(0.16,1,0.3,1)",
     opacity: isLocked ? 0.7 : 1,
-    ...((hasReport || canGenerate) && hovered
+    ...(isClickable && hovered
       ? {
           borderColor: "rgba(201,151,43,0.45)",
           transform: "translateY(-2px)",
           boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 40px rgba(201,151,43,0.06)",
         }
       : {}),
-    animation: "palateLetterFadeIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both",
+    ...(isGenerating
+      ? { animation: "palateLetterPulse 2s ease-in-out infinite" }
+      : { animation: "palateLetterFadeIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both" }),
   };
 
   return (
@@ -134,20 +139,19 @@ function PalateLetterCard({
           to { transform: rotate(360deg); }
         }
         @keyframes palateLetterPulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
         }
       `}</style>
       <div
         style={cardStyle}
-        onClick={(hasReport || canGenerate) ? () => navigate("/labs/taste/connoisseur") : undefined}
+        onClick={isClickable ? () => navigate("/labs/taste/connoisseur") : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         data-testid="card-palate-letter-teaser"
       >
         <div
           style={{
-            content: "''",
             position: "absolute",
             top: -60,
             right: -60,
@@ -160,7 +164,14 @@ function PalateLetterCard({
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Sparkles style={{ width: 14, height: 14, color: "#E8B84B" }} />
+            <Sparkles
+              style={{
+                width: 14,
+                height: 14,
+                color: "#E8B84B",
+                ...(isGenerating ? { animation: "palateLetterSpin 4s linear infinite" } : {}),
+              }}
+            />
             <span
               style={{
                 fontSize: 11,
@@ -173,14 +184,28 @@ function PalateLetterCard({
               {t("palateLetter.card.eyebrow", "YOUR PALATE LETTER")}
             </span>
           </div>
-          {hasReport && (
+          {hasReport && !isGenerating && (
             <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 300 }}>
               {formatTimestamp(latestReport.generatedAt)}
             </span>
           )}
         </div>
 
-        {hasReport ? (
+        {isGenerating ? (
+          <p
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontStyle: "italic",
+              fontSize: 16,
+              lineHeight: 1.65,
+              color: "rgba(240,230,211,0.5)",
+              margin: "14px 0 0",
+            }}
+            data-testid="text-palate-letter-generating"
+          >
+            {t("palateLetter.card.generating", "Writing your palate profile...")}
+          </p>
+        ) : hasReport ? (
           <>
             <p
               style={{
@@ -310,7 +335,7 @@ export default function LabsTaste() {
     enabled: !!pid,
   });
 
-  const { data: connoisseurReports = [] } = useQuery<ConnoisseurReport[]>({
+  const { data: connoisseurReports = [], isFetching: isConnoisseurFetching } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
     queryFn: async () => {
       if (!pid) return [];
@@ -422,6 +447,7 @@ export default function LabsTaste() {
           <PalateLetterCard
             reports={connoisseurReports}
             whiskyCount={whiskyCount}
+            isGenerating={isConnoisseurFetching && connoisseurReports.length === 0}
             navigate={navigate}
             t={t}
           />
@@ -484,6 +510,7 @@ export default function LabsTaste() {
           <PalateLetterCard
             reports={connoisseurReports}
             whiskyCount={whiskyCount}
+            isGenerating={isConnoisseurFetching && connoisseurReports.length === 0}
             navigate={navigate}
             t={t}
           />
