@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { User, Bell, Download, X, Search, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
@@ -81,38 +82,38 @@ function GlencairnRefresh({ pullProgress, refreshing, triggered }: { pullProgres
 
 function NavIconEntdecken({ active }: { active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
-      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} strokeLinecap="round" />
     </svg>
   );
 }
 
 function NavIconMeineWelt({ active }: { active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <polygon points="12,3 20,8 20,16 12,21 4,16 4,8" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="2" fill="currentColor" opacity={active ? 0.6 : 0.3} />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <polygon points="12,3 20,8 20,16 12,21 4,16 4,8" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" opacity={active ? 0.55 : 0.2} />
     </svg>
   );
 }
 
 function NavIconCircle({ active }: { active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
-      <circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
-      <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" fill="none" />
-      <path d="M16 15c2 0 4 1.5 4 5" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" fill="none" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+      <circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+      <path d="M2 20c0-2.5 2.5-4 6-4s6 1.5 6 4" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} strokeLinecap="round" fill="none" />
+      <path d="M16 16c1.5 0 4 1 4 4" stroke="currentColor" strokeWidth={active ? 1.75 : 1.25} strokeLinecap="round" fill="none" />
     </svg>
   );
 }
 
 const NAV_ITEMS = [
-  { href: "/labs/tastings", icon: "glencairn" as const, label: "Tastings" },
-  { href: "/labs/entdecken", icon: "entdecken" as const, label: "Entdecken" },
-  { href: "/labs/taste", icon: "meinewelt" as const, label: "Meine Welt" },
-  { href: "/labs/circle", icon: "circle" as const, label: "Circle" },
+  { href: "/labs/tastings", icon: "glencairn" as const, labelKey: "nav.tastings" },
+  { href: "/labs/entdecken", icon: "entdecken" as const, labelKey: "nav.discover" },
+  { href: "/labs/taste", icon: "meinewelt" as const, labelKey: "nav.myWorld" },
+  { href: "/labs/circle", icon: "circle" as const, labelKey: "nav.circle" },
 ];
 
 
@@ -491,6 +492,7 @@ export function useLabsBack(fallback: string) {
 
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { currentParticipant, setParticipant } = useAppStore();
@@ -795,12 +797,13 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               (item.href === "/labs/taste" && location.startsWith("/labs/taste")) ||
               (item.href === "/labs/circle" && location.startsWith("/labs/circle"));
 
-            const color = isActive ? "var(--labs-accent)" : "var(--labs-text-muted)";
+            const color = isActive ? "var(--labs-gold, #bf8f3e)" : "var(--labs-text-muted, rgba(255,255,255,0.45))";
             const isCircle = item.href === "/labs/circle";
-            const testLabel = item.label.toLowerCase().replace(/\s+/g, "-");
+            const label = t(item.labelKey);
+            const testLabel = item.labelKey.split('.').pop()!.toLowerCase().replace(/\s+/g, "-");
 
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
                 <div
                   className={`labs-nav-item${isActive ? " labs-nav-item-active" : ""}`}
                   style={{ color }}
@@ -847,10 +850,10 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                       lineHeight: 1,
                       fontFamily: isActive
                         ? "var(--font-display, 'Playfair Display', serif)"
-                        : "var(--font-ui, 'Inter', sans-serif)",
+                        : "var(--font-ui, 'DM Sans', sans-serif)",
                     }}
                   >
-                    {item.label}
+                    {label}
                   </span>
                 </div>
               </Link>
