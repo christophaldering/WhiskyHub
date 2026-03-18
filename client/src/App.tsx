@@ -425,6 +425,7 @@ function Router() {
         <Route path="/app/cellar">{() => <Redirect to="/labs/taste/collection" />}</Route>
         <Route path="/app/more">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/app/admin">{() => <Redirect to="/admin" />}</Route>
+        <Route path="/app">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/app/*">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/home">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/lab-dark/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
@@ -442,7 +443,9 @@ function Router() {
         <Route path="/legacy/admin">{() => <Redirect to="/admin" />}</Route>
         <Route path="/legacy/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
         <Route path="/legacy/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
+        <Route path="/legacy">{() => <Redirect to="/labs/home" />}</Route>
         <Route path="/legacy/*">{() => <Redirect to="/labs/tastings" />}</Route>
+        <Route path="/onboarding">{() => <Redirect to="/labs/onboarding" />}</Route>
 
         {/* === CASKSENSE LABS === */}
         <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
