@@ -321,6 +321,18 @@ const resources = {
         blind: "Blind Tasting",
         create: "Create tasting & generate code",
       },
+      palateLetter: {
+        card: {
+          eyebrow: "YOUR PALATE LETTER",
+          cta: "Read your full profile",
+          locked: "After ten drams, CaskSense will write you a personal tasting profile — the patterns in your behaviour you haven't named yet.",
+          count: "{{count}} of 10 drams",
+          generating: "Writing your palate profile...",
+          updatedToday: "Updated today",
+          updatedYesterday: "Updated yesterday",
+          updatedDays: "Updated {{days}} days ago",
+        },
+      },
       landing: {
         nav: {
           explore: "Explore",
@@ -6461,6 +6473,18 @@ const resources = {
         howMany: "Wie viele Whiskys?",
         blind: "Blind Tasting",
         create: "Tasting erstellen & Code generieren",
+      },
+      palateLetter: {
+        card: {
+          eyebrow: "DEIN PALATE LETTER",
+          cta: "Vollständiges Profil lesen",
+          locked: "Nach zehn Drams schreibt dir CaskSense ein persönliches Verkostungsprofil — die Muster in deinem Verhalten, die du noch nicht benannt hast.",
+          count: "{{count}} von 10 Drams",
+          generating: "Dein Profil wird geschrieben...",
+          updatedToday: "Heute aktualisiert",
+          updatedYesterday: "Gestern aktualisiert",
+          updatedDays: "Vor {{days}} Tagen aktualisiert",
+        },
       },
       landing: {
         nav: {

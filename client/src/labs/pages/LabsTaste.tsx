@@ -1,15 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
   Wine, Calendar, ChevronRight, BookOpen,
-  BarChart3, Target, Compass, Award,
+  BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
   Download, Brain, Utensils, Library, Info,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
-import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi } from "@/lib/api";
+import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi, pidHeaders } from "@/lib/api";
 
 const ANALYTICS_THRESHOLD = 10;
 
@@ -47,6 +48,222 @@ function NavItem({ icon: Icon, label, description, href, testId, badge, locked }
         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
       </div>
     </Link>
+  );
+}
+
+interface ConnoisseurReport {
+  id: string;
+  participantId: string;
+  generatedAt: string;
+  reportContent: string;
+  summary: string;
+  language: string;
+}
+
+function extractTeaser(reportContent: string): string {
+  const plain = reportContent
+    .replace(/#{1,6}\s/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/\n/g, " ")
+    .trim();
+  const firstSentence = plain.split(/[.!?]/)[0];
+  if (firstSentence && firstSentence.length <= 120) return firstSentence + ".";
+  return plain.substring(0, 120) + "...";
+}
+
+function PalateLetterCard({
+  reports,
+  whiskyCount,
+  navigate,
+  t,
+}: {
+  reports: ConnoisseurReport[];
+  whiskyCount: number;
+  navigate: (path: string) => void;
+  t: (key: string, fallback?: string, opts?: Record<string, unknown>) => string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const sorted = [...reports].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
+  const latestReport = sorted.length > 0 ? sorted[0] : null;
+  const hasReport = !!latestReport;
+  const isLocked = !hasReport && whiskyCount < ANALYTICS_THRESHOLD;
+  const canGenerate = !hasReport && whiskyCount >= ANALYTICS_THRESHOLD;
+
+  const formatTimestamp = (date: string): string => {
+    const diff = Date.now() - new Date(date).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return t("palateLetter.card.updatedToday", "Updated today");
+    if (days === 1) return t("palateLetter.card.updatedYesterday", "Updated yesterday");
+    return t("palateLetter.card.updatedDays", "Updated {{days}} days ago", { days });
+  };
+
+  const showGold = hasReport || canGenerate;
+  const cardStyle: React.CSSProperties = {
+    background: showGold
+      ? "linear-gradient(135deg, rgba(201,151,43,0.10) 0%, rgba(232,184,75,0.05) 100%)"
+      : "rgba(255,255,255,0.025)",
+    border: `1px solid rgba(201,151,43,${showGold ? 0.28 : 0.14})`,
+    borderRadius: 20,
+    padding: 24,
+    margin: "20px 0",
+    position: "relative",
+    overflow: "hidden",
+    cursor: (hasReport || canGenerate) ? "pointer" : "default",
+    transition: "all 0.35s cubic-bezier(0.16,1,0.3,1)",
+    opacity: isLocked ? 0.7 : 1,
+    ...((hasReport || canGenerate) && hovered
+      ? {
+          borderColor: "rgba(201,151,43,0.45)",
+          transform: "translateY(-2px)",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 40px rgba(201,151,43,0.06)",
+        }
+      : {}),
+    animation: "palateLetterFadeIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both",
+  };
+
+  return (
+    <>
+      <style>{`
+        @keyframes palateLetterFadeIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: ${isLocked ? 0.7 : 1}; transform: none; }
+        }
+        @keyframes palateLetterSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes palateLetterPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
+      <div
+        style={cardStyle}
+        onClick={(hasReport || canGenerate) ? () => navigate("/labs/taste/connoisseur") : undefined}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        data-testid="card-palate-letter-teaser"
+      >
+        <div
+          style={{
+            content: "''",
+            position: "absolute",
+            top: -60,
+            right: -60,
+            width: 160,
+            height: 160,
+            background: "radial-gradient(circle, rgba(201,151,43,0.12), transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles style={{ width: 14, height: 14, color: "#E8B84B" }} />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#E8B84B",
+              }}
+            >
+              {t("palateLetter.card.eyebrow", "YOUR PALATE LETTER")}
+            </span>
+          </div>
+          {hasReport && (
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 300 }}>
+              {formatTimestamp(latestReport.generatedAt)}
+            </span>
+          )}
+        </div>
+
+        {hasReport ? (
+          <>
+            <p
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontStyle: "italic",
+                fontSize: 16,
+                lineHeight: 1.65,
+                color: "rgba(240,230,211,0.85)",
+                margin: "14px 0 18px",
+              }}
+              data-testid="text-palate-letter-teaser"
+            >
+              {extractTeaser(latestReport.summary || latestReport.reportContent)}
+            </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: "#E8B84B" }}>
+              <span>{t("palateLetter.card.cta", "Read your full profile")}</span>
+              <ChevronRight
+                style={{
+                  width: 14,
+                  height: 14,
+                  transition: "transform 0.2s",
+                  transform: hovered ? "translateX(4px)" : "none",
+                }}
+              />
+            </div>
+          </>
+        ) : canGenerate ? (
+          <>
+            <p
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontStyle: "italic",
+                fontSize: 16,
+                lineHeight: 1.65,
+                color: "rgba(240,230,211,0.85)",
+                margin: "14px 0 18px",
+              }}
+              data-testid="text-palate-letter-ready"
+            >
+              {t(
+                "palateLetter.card.locked",
+                "After ten drams, CaskSense will write you a personal tasting profile — the patterns in your behaviour you haven't named yet."
+              )}
+            </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: "#E8B84B" }}>
+              <span>{t("palateLetter.card.cta", "Read your full profile")}</span>
+              <ChevronRight
+                style={{
+                  width: 14,
+                  height: 14,
+                  transition: "transform 0.2s",
+                  transform: hovered ? "translateX(4px)" : "none",
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <p
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontStyle: "italic",
+                fontSize: 16,
+                lineHeight: 1.65,
+                color: "rgba(240,230,211,0.5)",
+                margin: "14px 0 18px",
+              }}
+              data-testid="text-palate-letter-locked"
+            >
+              {t(
+                "palateLetter.card.locked",
+                "After ten drams, CaskSense will write you a personal tasting profile — the patterns in your behaviour you haven't named yet."
+              )}
+            </p>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+                {t("palateLetter.card.count", "{{count}} of 10 drams", { count: whiskyCount })}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -90,6 +307,17 @@ export default function LabsTaste() {
   const { data: insightData } = useQuery({
     queryKey: ["participant-insights", pid],
     queryFn: () => fetch(`/api/participants/${pid}/insights`, { headers: { "x-participant-id": pid! } }).then(r => r.ok ? r.json() : null),
+    enabled: !!pid,
+  });
+
+  const { data: connoisseurReports = [] } = useQuery<ConnoisseurReport[]>({
+    queryKey: ["connoisseur-reports", pid],
+    queryFn: async () => {
+      if (!pid) return [];
+      const res = await fetch(`/api/participants/${pid}/connoisseur-reports`, { headers: pidHeaders() });
+      if (!res.ok) return [];
+      return res.json();
+    },
     enabled: !!pid,
   });
 
@@ -167,28 +395,37 @@ export default function LabsTaste() {
       )}
 
       {analyticsLocked ? (
-        <div className="labs-card p-6 mb-6 text-center labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🥃</div>
-          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</h2>
-          <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 280, margin: "0 auto 16px" }}>
-            Rate whiskies and log drams to unlock your personal taste profile
-          </p>
-          <div style={{ maxWidth: 220, margin: "0 auto 6px" }}>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{whiskyCount} / {ANALYTICS_THRESHOLD}</span>
-              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>entries</span>
+        <>
+          <div className="labs-card p-6 mb-6 text-center labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🥃</div>
+            <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Your Taste Profile</h2>
+            <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 280, margin: "0 auto 16px" }}>
+              Rate whiskies and log drams to unlock your personal taste profile
+            </p>
+            <div style={{ maxWidth: 220, margin: "0 auto 6px" }}>
+              <div className="flex justify-between mb-1.5">
+                <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{whiskyCount} / {ANALYTICS_THRESHOLD}</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>entries</span>
+              </div>
+              <div style={{ height: 5, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "linear-gradient(90deg, var(--labs-accent-dark), var(--labs-accent))", borderRadius: 3, transition: "width 0.5s" }} />
+              </div>
             </div>
-            <div style={{ height: 5, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "linear-gradient(90deg, var(--labs-accent-dark), var(--labs-accent))", borderRadius: 3, transition: "width 0.5s" }} />
-            </div>
+            <p className="text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
+              {Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more to unlock full analytics
+            </p>
+            <button className="labs-btn-primary" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
+              {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}
+            </button>
           </div>
-          <p className="text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
-            {Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} more to unlock full analytics
-          </p>
-          <button className="labs-btn-primary" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
-            {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}
-          </button>
-        </div>
+
+          <PalateLetterCard
+            reports={connoisseurReports}
+            whiskyCount={whiskyCount}
+            navigate={navigate}
+            t={t}
+          />
+        </>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 labs-fade-in labs-stagger-1">
@@ -243,6 +480,13 @@ export default function LabsTaste() {
               </div>
             </div>
           )}
+
+          <PalateLetterCard
+            reports={connoisseurReports}
+            whiskyCount={whiskyCount}
+            navigate={navigate}
+            t={t}
+          />
         </>
       )}
 
@@ -269,7 +513,6 @@ export default function LabsTaste() {
           <NavItem icon={Utensils} label="Pairings" description="Lineup-based pairing suggestions" href="/labs/taste/pairings" testId="labs-taste-link-pairings" />
           <NavItem icon={Brain} label="Benchmark" description="AI text extraction & library" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" />
           <NavItem icon={Library} label="Collection Analysis" description="Deep stats on your bottles" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" />
-          <NavItem icon={Award} label="Palate Letter" description="A personal letter about your whisky journey" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" />
           <NavItem icon={Compass} label="AI Curation" description="Curated whisky discovery" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" />
         </div>
       </div>
