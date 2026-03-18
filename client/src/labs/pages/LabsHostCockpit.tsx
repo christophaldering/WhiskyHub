@@ -10,9 +10,10 @@ import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 
-const POLL_FAST = 3000;
-const POLL_NORMAL = 5000;
+const POLL_FAST = 15000;
+const POLL_NORMAL = 15000;
 
 function blindLabel(idx: number): string {
   return String.fromCharCode(65 + idx);
@@ -175,6 +176,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const ratingUpsertMut = useMutation({
     mutationFn: (data: Record<string, unknown>) => ratingApi.upsert(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] }),
+  });
+
+  useTastingEvents({
+    tastingId,
+    enabled: !!tastingId,
   });
 
   const parseSavedNotes = useCallback((rawNotes: string) => {

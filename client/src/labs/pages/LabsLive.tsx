@@ -13,6 +13,7 @@ import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
+import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import type { Tasting } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -817,27 +818,45 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [revealFlash, setRevealFlash] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
     queryFn: () => tastingApi.get(tastingId),
     enabled: !!tastingId,
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const { data: whiskies } = useQuery({
     queryKey: ["whiskies", tastingId],
     queryFn: () => whiskyApi.getForTasting(tastingId),
     enabled: !!tastingId,
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const { data: participants } = useQuery({
     queryKey: ["tasting-participants", tastingId],
     queryFn: () => tastingApi.getParticipants(tastingId),
     enabled: !!tastingId && !!tasting?.guidedMode,
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
+
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useTastingEvents({
+    tastingId,
+    enabled: !!tastingId,
+    onReveal: useCallback(() => {
+      setRevealFlash(true);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = setTimeout(() => setRevealFlash(false), 600);
+      try { navigator.vibrate?.(80); } catch {}
+    }, []),
+  });
+
+  useEffect(() => {
+    return () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); };
+  }, []);
 
   const currentWhisky = whiskies?.[currentIndex];
 
@@ -1107,7 +1126,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
   }
 
   return (
-    <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
+    <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in" style={{ position: "relative" }}>
+      {revealFlash && (
+        <div className="labs-reveal-flash" data-testid="reveal-flash-overlay" />
+      )}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goBack}

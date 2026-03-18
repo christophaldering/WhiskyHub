@@ -15,6 +15,7 @@ import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import { addConnection, broadcastToTasting } from "./sse";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { hashPassword, verifyPassword } from "./lib/auth";
@@ -423,6 +424,38 @@ export async function registerRoutes(
       dbOk = true;
     }
     res.json({ status: "ok", db: dbOk, timestamp: new Date().toISOString() });
+  });
+
+  app.get("/api/tastings/:id/events", async (req, res) => {
+    const tastingId = req.params.id;
+    const participantId = (req.query.pid as string) || (req.headers["x-participant-id"] as string);
+    if (!participantId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const tasting = await storage.getTasting(tastingId);
+    if (!tasting) {
+      return res.status(404).json({ message: "Tasting not found" });
+    }
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (participant.role !== "admin" && tasting.hostId !== participantId) {
+      const tps = await storage.getTastingParticipants(tastingId);
+      const isMember = tps.some(tp => tp.participantId === participantId);
+      if (!isMember) {
+        return res.status(403).json({ message: "Not a member of this tasting" });
+      }
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+    res.write(`event: connected\ndata: {"tastingId":"${tastingId}"}\n\n`);
+    addConnection(tastingId, res);
+    req.on("close", () => {});
   });
 
   // ===== SHARED EXPORT HELPERS =====
@@ -1358,6 +1391,7 @@ export async function registerRoutes(
     const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
     if (!updated) return res.status(404).json({ message: "Not found" });
     console.log(`[LABS] Session status: ${tasting.status} → ${status} | tasting=${req.params.id} "${tasting.title}"`);
+    broadcastToTasting(req.params.id, { type: "status_changed", data: { status, previousStatus: tasting.status } });
 
     if (status === "reveal") {
       try {
@@ -3636,6 +3670,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (req.body.reflectionVisibility !== undefined) updates.reflectionVisibility = req.body.reflectionVisibility;
       if (req.body.customPrompts !== undefined) updates.customPrompts = req.body.customPrompts;
       const updated = await storage.updateTastingBlindMode(req.params.id, updates);
+      broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "blind-mode", ...updates } });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3673,6 +3708,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const updated = await storage.updateTastingBlindMode(req.params.id, { revealIndex, revealStep });
       const allRevealed = revealIndex >= totalExpressions - 1 && revealStep >= maxSteps;
       console.log(`[LABS] Reveal advance: idx=${revealIndex} step=${revealStep} allRevealed=${allRevealed} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "reveal-next", revealIndex, revealStep, allRevealed } });
       res.json({ ...updated, allRevealed });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3693,6 +3729,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (req.body.guidedRevealStep !== undefined) updates.guidedRevealStep = req.body.guidedRevealStep;
       const updated = await storage.updateTastingBlindMode(req.params.id, updates);
       console.log(`[LABS] Guided mode updated: ${JSON.stringify(updates)} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "status_changed", data: { source: "guided-mode", ...updates } });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3738,6 +3775,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const updated = await storage.updateTastingBlindMode(req.params.id, updateData);
       const allComplete = idx >= totalWhiskies - 1 && step >= maxSteps;
       console.log(`[LABS] Guided advance: whisky=${idx}/${totalWhiskies} step=${step}/${maxSteps} complete=${allComplete} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "guided-advance", guidedWhiskyIndex: idx, guidedRevealStep: step, allComplete } });
       res.json({ ...updated, allComplete });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3759,6 +3797,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         guidedRevealStep: revealStep ?? 0,
       });
       console.log(`[LABS] Guided goto: whisky=${whiskyIndex} step=${revealStep ?? 0} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "guided-goto", guidedWhiskyIndex: whiskyIndex, guidedRevealStep: revealStep ?? 0 } });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3775,6 +3814,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (!allowedStatuses.includes(tasting.status || "")) return res.status(400).json({ message: "Tasting is not in a presentable state" });
       const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: 0 });
       console.log(`[LABS] Presentation started: tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "presentation_changed", data: { action: "start", slide: 0 } });
       res.json(updated);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Unknown error";
@@ -3791,6 +3831,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (typeof slide !== "number" || slide < 0) return res.status(400).json({ message: "Invalid slide index" });
       const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: slide });
       console.log(`[LABS] Presentation slide: ${slide} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "presentation_changed", data: { action: "slide", slide } });
       res.json(updated);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Unknown error";
@@ -3806,6 +3847,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can stop the presentation" });
       const updated = await storage.updateTastingBlindMode(req.params.id, { presentationSlide: null });
       console.log(`[LABS] Presentation stopped: tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "presentation_changed", data: { action: "stop" } });
       res.json(updated);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Unknown error";
@@ -4648,6 +4690,7 @@ ALWAYS respond in ${langLabel}. Write as if you know this person through their t
       if (!tasting.blindMode) return res.status(400).json({ message: "Tasting is not in blind mode" });
 
       const updated = await storage.updateWhisky(req.params.id, { photoRevealed: revealed !== false });
+      broadcastToTasting(tasting.id, { type: "reveal_triggered", data: { source: "reveal-photo", whiskyId: req.params.id, revealed: revealed !== false } });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -4669,6 +4712,7 @@ ALWAYS respond in ${langLabel}. Write as if you know this person through their t
       const updated = await Promise.all(
         tastingWhiskies.map(w => storage.updateWhisky(w.id, { photoRevealed: revealValue }))
       );
+      broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "reveal-all-photos", revealed: revealValue } });
       res.json({ count: updated.length, revealed: revealValue });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
