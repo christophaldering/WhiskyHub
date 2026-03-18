@@ -1773,6 +1773,14 @@ export async function registerRoutes(
       }
       res.status(201).json(whisky);
     } catch (e: any) {
+      if (e instanceof z.ZodError) {
+        const fieldMessages = e.errors.map((err: z.ZodIssue) => {
+          const field = err.path.join(".");
+          if (field === "name" || field === "tastingId") return `${field === "name" ? "Whisky name" : "Tasting ID"} is required`;
+          return `${field}: ${err.message}`;
+        });
+        return res.status(400).json({ message: fieldMessages.join("; ") || "Validation failed" });
+      }
       res.status(400).json({ message: e.message });
     }
   });

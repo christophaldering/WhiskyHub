@@ -20,6 +20,7 @@ import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/la
 import LabsRatingPanel, { type DimKey as LabsDimKey } from "@/labs/components/LabsRatingPanel";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -1161,12 +1162,22 @@ function MobileCompanion({
       setMobileWhiskyName("");
       setMobileWbId("");
       setMobileWbResult("");
+      toast({ title: t("labs.whisky.added", "Whisky added") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.addFailed", "Failed to add whisky"), description: e.message, variant: "destructive" });
     },
   });
 
   const deleteWhiskyMut = useMutation({
     mutationFn: (id: string) => whiskyApi.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      toast({ title: t("labs.whisky.deleted", "Whisky removed") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.deleteFailed", "Failed to remove whisky"), description: e.message, variant: "destructive" });
+    },
   });
 
   const updateWhiskyMut = useMutation({
@@ -1174,6 +1185,10 @@ function MobileCompanion({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setMobileEditId(null);
+      toast({ title: t("labs.whisky.updated", "Whisky updated") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.updateFailed", "Failed to update whisky"), description: e.message, variant: "destructive" });
     },
   });
 
@@ -3959,6 +3974,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setShowAddWhisky(false);
       setWbLookupId("");
       setWbLookupResult("");
+      toast({ title: t("labs.whisky.added", "Whisky added") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.addFailed", "Failed to add whisky"), description: e.message, variant: "destructive" });
     },
   });
 
@@ -3966,6 +3985,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     mutationFn: (id: string) => whiskyApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      toast({ title: t("labs.whisky.deleted", "Whisky removed") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.deleteFailed", "Failed to remove whisky"), description: e.message, variant: "destructive" });
     },
   });
 
@@ -3975,6 +3998,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setEditingWhiskyId(null);
       setEditFields({});
+      toast({ title: t("labs.whisky.updated", "Whisky updated") });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.updateFailed", "Failed to update whisky"), description: e.message, variant: "destructive" });
     },
   });
 
@@ -3982,6 +4009,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(tastingId, order),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    },
+    onError: (e: Error) => {
+      toast({ title: t("labs.whisky.reorderFailed", "Failed to reorder whiskies"), description: e.message, variant: "destructive" });
     },
   });
 
