@@ -120,9 +120,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteNote, setInviteNote] = useState("");
-  const [duplicating, setDuplicating] = useState(false);
   const [inviteResults, setInviteResults] = useState<Array<{ email: string; status: string; link?: string }> | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showWhiskies, setShowWhiskies] = useState(true);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
@@ -231,22 +229,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     sendInviteMutation.mutate({ emailList, note: inviteNote.trim() || undefined });
   };
 
-  const handleDuplicate = async () => {
-    setDuplicating(true);
-    const pid = currentParticipant?.id;
-    if (!pid) { setDuplicating(false); return; }
-    try {
-      const newTasting = await tastingApi.duplicate(tastingId, pid);
-      if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
-    } finally {
-      setDuplicating(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant?.id);
-    navigate("/labs/tastings");
-  };
 
   const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
   const isLive = tasting?.status === "open";
@@ -856,61 +838,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
       {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
 
-      {isHost && (
-        <div className="mt-8 mb-4 labs-stagger-5">
-          <div className="labs-divider mb-6" />
-          <div className="space-y-3">
-            <button
-              className="labs-btn-ghost w-full flex items-center justify-center gap-2 text-sm"
-              onClick={handleDuplicate}
-              disabled={duplicating}
-              style={{ color: "var(--labs-text-secondary)" }}
-              data-testid="labs-detail-duplicate"
-            >
-              <Copy className="w-4 h-4" />
-              {duplicating ? "Duplicating..." : "Duplicate Tasting"}
-            </button>
-
-            {!confirmDelete ? (
-              <button
-                className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg"
-                style={{
-                  background: "none",
-                  color: "var(--labs-danger, #e74c3c)",
-                  border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 25%, transparent)",
-                  cursor: "pointer",
-                  opacity: 0.7,
-                  fontFamily: "inherit",
-                }}
-                onClick={() => setConfirmDelete(true)}
-                data-testid="labs-detail-delete"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Tasting
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  className="flex-1 py-2.5 text-sm font-semibold rounded-lg"
-                  style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={handleDelete}
-                  data-testid="labs-detail-confirm-delete"
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  className="flex-1 py-2.5 text-sm rounded-lg"
-                  style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => setConfirmDelete(false)}
-                  data-testid="labs-detail-cancel-delete"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

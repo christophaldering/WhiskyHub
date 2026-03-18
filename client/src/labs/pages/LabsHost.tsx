@@ -828,31 +828,19 @@ function PrintMaterialsSection({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          width: "100%",
-          padding: "14px 16px",
-          fontFamily: "inherit",
-        }}
+        className="labs-btn-secondary w-full flex items-center justify-center gap-2"
         data-testid="toggle-print-materials"
       >
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Printer className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.02em" }}>Print & Materials</span>
-        </span>
+        <Printer className="w-4 h-4" />
+        Print & Materials
         <ChevronDown
           className="w-4 h-4"
-          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease" }}
+          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease", marginLeft: "auto" }}
         />
       </button>
 
       {expanded && (
-        <div style={{ padding: "0 16px 16px", animation: "toolsSlideDown 0.2s ease" }} className="space-y-4">
+        <div style={{ paddingTop: 12, animation: "toolsSlideDown 0.2s ease" }} className="space-y-4">
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
 
