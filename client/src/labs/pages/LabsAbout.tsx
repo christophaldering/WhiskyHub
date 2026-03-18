@@ -13,7 +13,7 @@ export default function LabsAbout() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-about-page">
       <button
-        onClick={() => navigate("/labs/discover")}
+        onClick={() => navigate("/labs/entdecken")}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-about-back"

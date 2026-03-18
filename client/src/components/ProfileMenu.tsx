@@ -53,7 +53,7 @@ function mapRouteToCounterpart(path: string): { target: string; isLabs: boolean 
     "/m2/discover/activity": "/labs/activity",
     "/m2/discover/community": "/labs/community",
     "/m2/discover/donate": "/labs/donate",
-    "/m2/discover": "/labs/discover",
+    "/m2/discover": "/labs/entdecken",
     "/m2/impressum": "/labs/impressum",
     "/m2/privacy": "/labs/privacy",
     "/m2/making-of": "/labs/making-of",

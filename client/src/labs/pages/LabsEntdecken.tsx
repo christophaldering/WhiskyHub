@@ -14,6 +14,10 @@ export default function LabsEntdecken() {
     { key: 'research',      path: '/labs/discover/research' },
   ];
 
+  const deepDiveItems = [
+    { key: 'rabbitHole',    path: '/labs/discover/rabbit-hole' },
+  ];
+
   return (
     <div style={{ padding: '1.5rem 1.25rem 6rem', maxWidth: '440px', margin: '0 auto' }} data-testid="labs-entdecken-page">
       <p className="ty-label" style={{ marginBottom: '0.5rem' }}>
@@ -65,6 +69,29 @@ export default function LabsEntdecken() {
       </p>
       <div className="labs-grouped-list">
         {knowledgeItems.map((item) => (
+          <div
+            key={item.key}
+            className="labs-list-row"
+            onClick={() => navigate(item.path)}
+            style={{ cursor: 'pointer' }}
+            data-testid={`link-entdecken-${item.key}`}
+          >
+            <div>
+              <div className="ty-ui">{t(`discover.${item.key}`)}</div>
+              <div className="ty-caption" style={{ marginTop: '2px', opacity: 0.6 }}>
+                {t(`discover.${item.key}Sub`)}
+              </div>
+            </div>
+            <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="ty-label" style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>
+        {t('discover.sectionDeepDive', 'Deep Dives')}
+      </p>
+      <div className="labs-grouped-list">
+        {deepDiveItems.map((item) => (
           <div
             key={item.key}
             className="labs-list-row"
