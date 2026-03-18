@@ -5662,15 +5662,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
             <button
               className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-              onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-              data-testid="desktop-paper-scan"
-            >
-              <ScanLine className="w-4 h-4" />
-              Paper Sheet Scanner
-            </button>
-
-            <button
-              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
               onClick={async () => {
                 setTopDuplicating(true);
                 try {
