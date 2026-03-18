@@ -870,7 +870,7 @@ function PrintMaterialsSection({
       </button>
 
       {expanded && (
-        <div style={{ padding: "0 16px 16px" }} className="space-y-4">
+        <div style={{ padding: "0 16px 16px", animation: "toolsSlideDown 0.2s ease" }} className="space-y-4">
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
 
@@ -4000,7 +4000,7 @@ function LabsSettingsPanel({
                   </button>
 
                   {showSessionTools && (
-                    <div style={{ padding: "0 16px 16px" }} className="space-y-2">
+                    <div style={{ padding: "0 16px 16px", animation: "toolsSlideDown 0.2s ease" }} className="space-y-2">
                       <button
                         className="labs-btn-secondary w-full flex items-center justify-center gap-2"
                         onClick={handleDuplicate}

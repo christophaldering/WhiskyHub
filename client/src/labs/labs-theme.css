@@ -583,6 +583,11 @@
   100% { transform: rotate(0deg); }
 }
 
+@keyframes toolsSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .labs-glencairn-refresh-active {
   animation: labsGlencairnSway 1.2s ease-in-out infinite;
   transform-origin: center bottom;
