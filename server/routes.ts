@@ -119,9 +119,11 @@ const memUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req: any, file: any, cb: any) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, WebP, and GIF images are allowed"));
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+    const heicExtensions = [".heic", ".heif"];
+    const ext = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf(".")) : "";
+    if (allowed.includes(file.mimetype) || heicExtensions.includes(ext)) cb(null, true);
+    else cb(new Error("Only JPG, PNG, WebP, GIF, and HEIC images are allowed"));
   },
 });
 
@@ -1481,7 +1483,14 @@ export async function registerRoutes(
       const hostId = req.body.hostId;
       if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can update the cover image" });
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
-      const coverImageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      let buffer = req.file.buffer;
+      let contentType = req.file.mimetype;
+      const ext = req.file.originalname ? req.file.originalname.toLowerCase().slice(req.file.originalname.lastIndexOf(".")) : "";
+      if (contentType === "image/heic" || contentType === "image/heif" || ext === ".heic" || ext === ".heif") {
+        buffer = await sharp(buffer).rotate().jpeg({ quality: 90 }).toBuffer();
+        contentType = "image/jpeg";
+      }
+      const coverImageUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
       const updated = await storage.updateTastingDetails(req.params.id, { coverImageUrl });
       res.json(updated);
     } catch (e: any) {

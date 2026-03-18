@@ -856,8 +856,8 @@ function PrintMaterialsSection({
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
 
-            <div className="flex gap-3 mb-3">
-              <div className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <div className="flex-1 min-w-0">
                 <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Orientation</p>
                 <div className="flex gap-1">
                   <button
@@ -878,7 +878,7 @@ function PrintMaterialsSection({
                   </button>
                 </div>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Content Mode</p>
                 <div className="flex gap-1">
                   <button
@@ -968,18 +968,18 @@ function PrintMaterialsSection({
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 min-w-0">
               <button
-                className="labs-btn-primary text-sm flex items-center gap-2 flex-1 justify-center"
+                className="labs-btn-primary text-sm flex items-center gap-2 flex-1 justify-center min-w-0"
                 onClick={handleGenerateBatchSheets}
                 disabled={generating === "sheets" || participants.length === 0}
                 data-testid="print-generate-sheets"
               >
-                {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-                {generating === "sheets" ? "Generating..." : `All Sheets (${participants.length})`}
+                {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /> : <Users className="w-4 h-4 flex-shrink-0" />}
+                <span className="truncate">{generating === "sheets" ? "Generating..." : `All Sheets (${participants.length})`}</span>
               </button>
               <button
-                className="labs-btn-secondary text-sm flex items-center gap-2 justify-center"
+                className="labs-btn-secondary text-sm flex items-center gap-2 justify-center flex-shrink-0"
                 onClick={handleGenerateMasterSheet}
                 disabled={generating === "master"}
                 data-testid="print-generate-master-sheet"
@@ -988,7 +988,7 @@ function PrintMaterialsSection({
                 Master
               </button>
               <button
-                className="labs-btn-ghost text-sm flex items-center gap-2 justify-center"
+                className="labs-btn-ghost text-sm flex items-center gap-2 justify-center flex-shrink-0"
                 onClick={handleGenerateBlankSheet}
                 disabled={generating === "blank"}
                 data-testid="print-generate-blank-sheet"
@@ -3468,16 +3468,22 @@ function TastingSetupSection({
     try { await patchDetails({ reflectionVisibility: vis }); } catch {}
   };
 
+  const [coverUploadError, setCoverUploadError] = useState<string | null>(null);
   const handleCoverUpload = async (file: File) => {
+    setCoverUploadError(null);
     const previewUrl = URL.createObjectURL(file);
     setLocalCoverUrl(previewUrl);
     try {
       await tastingApi.uploadCoverImage(tastingId, file, pid);
-      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-    } catch {
+      URL.revokeObjectURL(previewUrl);
       setLocalCoverUrl(null);
-      setSaveStatus("Upload failed");
-      setTimeout(() => setSaveStatus(null), 3000);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    } catch (e: any) {
+      setLocalCoverUrl(null);
+      const msg = e?.message || "Upload failed";
+      setCoverUploadError(msg);
+      setSaveStatus(msg);
+      setTimeout(() => setSaveStatus(null), 4000);
     }
   };
 
@@ -3786,6 +3792,11 @@ function TastingSetupSection({
                 onChange={e => { if (e.target.files?.[0]) handleCoverUpload(e.target.files[0]); }}
               />
             </label>
+            {coverUploadError && (
+              <p className="text-xs mt-1.5" style={{ color: "var(--labs-error, #ef4444)" }} data-testid="labs-settings-cover-error">
+                {coverUploadError}
+              </p>
+            )}
             {(localCoverUrl || (tasting.coverImageUrl as string)) && (
               <img
                 src={localCoverUrl || (tasting.coverImageUrl as string) || ""}
