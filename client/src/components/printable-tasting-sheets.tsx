@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Printer, FileDown, ClipboardList, EyeOff, Download, Users, Loader2, Monitor, Smartphone, Sparkles, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
-import { saveOrPrintJsPdf } from "@/lib/pdf";
+import { saveOrPrintJsPdf, saveJsPdf } from "@/lib/pdf";
 import i18n from "@/lib/i18n";
 import QRCodeLib from "qrcode";
 
@@ -1205,7 +1205,7 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, 292, { align: "center" });
 
-  doc.save(`${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
+  saveJsPdf(doc, `${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
 }
 
 export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 10) {
@@ -1257,5 +1257,5 @@ export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 1
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
 
-  doc.save(`${tp("printableSheets.pdfTastingMat", lang).replace(/\s+/g, "_")}.pdf`);
+  saveJsPdf(doc, `${tp("printableSheets.pdfTastingMat", lang).replace(/\s+/g, "_")}.pdf`);
 }

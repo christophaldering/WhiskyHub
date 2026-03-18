@@ -12,6 +12,7 @@ import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadBlob } from "@/lib/download";
+import { saveJsPdf } from "@/lib/pdf";
 import { stripGuestSuffix } from "@/lib/utils";
 import jsPDF from "jspdf";
 
@@ -168,7 +169,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[]) {
 
   drawFooter();
   const safeName = (tasting.title || "results").replace(/[^a-zA-Z0-9]/g, "_");
-  doc.save(`${safeName}_results.pdf`);
+  saveJsPdf(doc, `${safeName}_results.pdf`);
 }
 
 function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: string; tasting: any; whiskyResults: any[] }) {

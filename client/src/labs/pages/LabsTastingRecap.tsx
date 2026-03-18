@@ -11,6 +11,7 @@ import {
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 import { Link } from "wouter";
 
 interface RecapData {
@@ -280,7 +281,7 @@ export default function LabsTastingRecap() {
 
     drawFooter();
     const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    doc.save(`casksense-${slug}-recap.pdf`);
+    saveJsPdf(doc, `casksense-${slug}-recap.pdf`);
   };
 
   if (isLoading) {

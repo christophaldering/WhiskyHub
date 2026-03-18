@@ -9,6 +9,7 @@ import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown, Chec
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
@@ -275,7 +276,7 @@ export default function M2TastingRecap() {
     drawFooter();
 
     const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    doc.save(`casksense-${slug}-recap.pdf`);
+    saveJsPdf(doc, `casksense-${slug}-recap.pdf`);
   };
 
   const card = (children: React.ReactNode, testId?: string) => (

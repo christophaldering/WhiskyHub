@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 
 const BG = "#1a1714";
 const CARD = "#242018";
@@ -1712,5 +1713,5 @@ export async function generateCaskSensePresentation() {
   drawCTAPage(doc);
   addPageNumbers(doc);
 
-  doc.save("CaskSense-Feature-Presentation.pdf");
+  saveJsPdf(doc, "CaskSense-Feature-Presentation.pdf");
 }

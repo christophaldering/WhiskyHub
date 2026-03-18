@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText, AlertTriangle, Info } from "lucide-react";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
 type WizardStep = "welcome" | "rating" | "recap" | "done";
@@ -797,7 +798,7 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
       y += 22;
     });
 
-    doc.save(`${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
+    saveJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
   };
 
   if (hideRanking) {

@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
 
@@ -254,7 +255,7 @@ export default function TastingRecap() {
     doc.text("CaskSense", pw / 2, 288, { align: "center" });
 
     const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    doc.save(`casksense-${slug}-recap.pdf`);
+    saveJsPdf(doc, `casksense-${slug}-recap.pdf`);
   };
 
   if (!params.id && !selectedTastingId) {

@@ -11,6 +11,7 @@ import { Trophy, ChevronDown, Download, FileSpreadsheet, FileText, ClipboardList
 import { downloadBlob } from "@/lib/download";
 import { getParticipantId, collectionApi } from "@/lib/api";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 
 const CONFETTI_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32", "#d4a256"];
 
@@ -426,7 +427,7 @@ function exportPdf(data: ResultsData, t: (key: string, fallback?: string, opts?:
   });
 
   drawFooter();
-  doc.save(`${data.title.replace(/[^a-zA-Z0-9]/g, "_")}_results.pdf`);
+  saveJsPdf(doc, `${data.title.replace(/[^a-zA-Z0-9]/g, "_")}_results.pdf`);
 }
 
 function ExportDropdown({ data }: { data: ResultsData }) {

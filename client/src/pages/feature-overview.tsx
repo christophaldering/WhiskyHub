@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 
 const ACCENT = "#c8a97e";
 
@@ -281,7 +282,7 @@ function generateFeatureOverviewPDF() {
     doc.text(`${i} / ${totalPages}`, pw - marginLeft, ph - 8, { align: "right" });
   }
 
-  doc.save("CaskSense-Feature-Overview.pdf");
+  saveJsPdf(doc, "CaskSense-Feature-Overview.pdf");
 }
 
 function CategorySection({ category, index }: { category: Category; index: number }) {

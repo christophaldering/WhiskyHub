@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
+import { saveJsPdf } from "@/lib/pdf";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
@@ -314,7 +315,7 @@ export default function M2TasteCollection() {
       doc.text(i.estimatedPrice ? `${i.estimatedPrice.toFixed(0)} EUR` : (i.pricePaid ? `${i.pricePaid.toFixed(0)} ${i.currency || "EUR"}` : ""), x, y);
       y += 5;
     });
-    doc.save(`whisky-sammlung-${new Date().toISOString().split("T")[0]}.pdf`);
+    saveJsPdf(doc, `whisky-sammlung-${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
   const getExportItems = (): WhiskybaseCollectionItem[] => {

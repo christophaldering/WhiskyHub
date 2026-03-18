@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileDown, ImageIcon, Loader2 } from "lucide-react";
 import type { Whisky, Tasting, Participant } from "@shared/schema";
 import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
 
 type RGB = [number, number, number];
 
@@ -669,7 +670,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         addFooter();
       }
 
-      doc.save(`${title.replace(/[^a-zA-Z0-9]/g, "_")}_menu.pdf`);
+      saveJsPdf(doc, `${title.replace(/[^a-zA-Z0-9]/g, "_")}_menu.pdf`);
     } finally {
       setGenerating(false);
     }
