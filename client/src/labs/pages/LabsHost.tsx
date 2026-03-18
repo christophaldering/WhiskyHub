@@ -620,11 +620,15 @@ function PrintMaterialsSection({
   whiskies,
   participants,
   currentParticipant,
+  navigate,
+  tastingId,
 }: {
   tasting: Record<string, unknown>;
   whiskies: Array<Record<string, unknown>>;
   participants: Array<Record<string, unknown>>;
   currentParticipant: Record<string, unknown>;
+  navigate: (to: string) => void;
+  tastingId: string;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -838,25 +842,35 @@ function PrintMaterialsSection({
   };
 
   return (
-    <div className="mb-6">
+    <div>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: 0, fontFamily: "inherit" }}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          padding: "14px 16px",
+          fontFamily: "inherit",
+        }}
         data-testid="toggle-print-materials"
       >
-        <h2 className="labs-section-label mb-0 flex items-center gap-2">
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Printer className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          Print & Materials
-        </h2>
+          <span className="text-sm font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.02em" }}>Print & Materials</span>
+        </span>
         <ChevronDown
           className="w-4 h-4"
-          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease" }}
         />
       </button>
 
       {expanded && (
-        <div className="mt-3 space-y-4">
+        <div style={{ padding: "0 16px 16px" }} className="space-y-4">
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
 
@@ -1075,6 +1089,15 @@ function PrintMaterialsSection({
               </label>
             ))}
           </div>
+
+          <button
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+            data-testid="settings-paper-scan"
+          >
+            <ScanLine className="w-4 h-4" />
+            Paper Sheet Scanner
+          </button>
         </div>
       )}
     </div>
@@ -3435,6 +3458,7 @@ function LabsSettingsPanel({
   const [showTransferHost, setShowTransferHost] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
   const [transferring, setTransferring] = useState(false);
+  const [showSessionTools, setShowSessionTools] = useState(false);
 
   const { data: settingsParticipants } = useQuery({
     queryKey: ["participants", tastingId],
@@ -3923,146 +3947,189 @@ function LabsSettingsPanel({
           {whiskies && whiskies.length > 0 && participants && (
             <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
               <p className="labs-section-label">Tools</p>
-              <div className="space-y-3">
+
+              <div
+                style={{
+                  background: "var(--labs-surface)",
+                  border: "1px solid var(--labs-border)",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                }}
+              >
                 <PrintMaterialsSection
                   tasting={tasting}
                   whiskies={whiskies}
                   participants={participants}
                   currentParticipant={{ id: pid, name: "Host" }}
+                  navigate={navigate}
+                  tastingId={tastingId}
                 />
-                <button
-                  className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-                  onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-                  data-testid="settings-paper-scan"
-                >
-                  <ScanLine className="w-4 h-4" />
-                  Paper Sheet Scanner
-                </button>
+
+                <div style={{ height: 1, background: "var(--labs-border)" }} />
+
+                {/* Session Management accordion */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowSessionTools(!showSessionTools); if (showSessionTools) { setShowTransferHost(false); setTransferTargetId(null); } }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "14px 16px",
+                      fontFamily: "inherit",
+                    }}
+                    data-testid="toggle-session-tools"
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Settings className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      <span className="text-sm font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.02em" }}>Session</span>
+                    </span>
+                    <ChevronDown
+                      className="w-4 h-4"
+                      style={{
+                        color: "var(--labs-text-muted)",
+                        transform: showSessionTools ? "rotate(180deg)" : "none",
+                        transition: "transform 0.25s ease",
+                      }}
+                    />
+                  </button>
+
+                  {showSessionTools && (
+                    <div style={{ padding: "0 16px 16px" }} className="space-y-2">
+                      <button
+                        className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                        onClick={handleDuplicate}
+                        disabled={duplicating}
+                        data-testid="labs-settings-duplicate"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        {duplicating ? "Duplicating..." : "Duplicate Tasting"}
+                      </button>
+
+                      <button
+                        className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
+                        style={{
+                          background: "none",
+                          color: "var(--labs-text-muted)",
+                          border: "1px solid var(--labs-border)",
+                        }}
+                        onClick={() => { setShowTransferHost(!showTransferHost); setTransferTargetId(null); }}
+                        data-testid="labs-settings-transfer-host"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                        Host übertragen
+                      </button>
+
+                      {showTransferHost && (
+                        <div
+                          className="p-3 rounded-lg space-y-2"
+                          style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
+                          data-testid="labs-transfer-host-panel"
+                        >
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
+                          </p>
+                          {transferableGuests.length === 0 ? (
+                            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                              Keine anderen Teilnehmer vorhanden.
+                            </p>
+                          ) : (
+                            <div className="space-y-1">
+                              {transferableGuests.map((tp: { participant: { id: string; name: string } }) => (
+                                <label
+                                  key={tp.participant.id}
+                                  className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
+                                  style={{
+                                    background: transferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
+                                    border: transferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
+                                  }}
+                                  data-testid={`labs-transfer-target-${tp.participant.id}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="transferTarget"
+                                    checked={transferTargetId === tp.participant.id}
+                                    onChange={() => setTransferTargetId(tp.participant.id)}
+                                    style={{ accentColor: "var(--labs-accent)" }}
+                                  />
+                                  <span className="text-sm" style={{ color: "var(--labs-text)" }}>
+                                    {stripGuestSuffix(tp.participant.name || "Anonymous")}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {transferTargetId && (
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                className="labs-btn-primary text-sm flex-1"
+                                onClick={handleTransferHost}
+                                disabled={transferring}
+                                data-testid="labs-transfer-host-confirm"
+                              >
+                                {transferring ? "Übertrage..." : "Host übertragen"}
+                              </button>
+                              <button
+                                className="labs-btn-ghost text-sm"
+                                onClick={() => { setShowTransferHost(false); setTransferTargetId(null); }}
+                                data-testid="labs-transfer-host-cancel"
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Delete — isolated, visually separated */}
+              <div style={{ marginTop: 16 }}>
+                {!confirmDelete ? (
+                  <button
+                    className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
+                    style={{
+                      background: "none",
+                      color: "var(--labs-danger, #e74c3c)",
+                      border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 30%, transparent)",
+                      opacity: 0.8,
+                    }}
+                    onClick={() => setConfirmDelete(true)}
+                    data-testid="labs-settings-delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Tasting
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
+                      style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
+                      onClick={handleDelete}
+                      data-testid="labs-settings-confirm-delete"
+                    >
+                      Yes, Delete
+                    </button>
+                    <button
+                      className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
+                      style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+                      onClick={() => setConfirmDelete(false)}
+                      data-testid="labs-settings-cancel-delete"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
-
-          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }} className="space-y-2">
-            <button
-              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-              onClick={handleDuplicate}
-              disabled={duplicating}
-              data-testid="labs-settings-duplicate"
-            >
-              <RefreshCw className="w-4 h-4" />
-              {duplicating ? "Duplicating..." : "Duplicate Tasting"}
-            </button>
-
-            <button
-              className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
-              style={{
-                background: "none",
-                color: "var(--labs-text-muted)",
-                border: "1px solid var(--labs-border)",
-              }}
-              onClick={() => { setShowTransferHost(!showTransferHost); setTransferTargetId(null); }}
-              data-testid="labs-settings-transfer-host"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              Host übertragen
-            </button>
-
-            {showTransferHost && (
-              <div
-                className="p-3 rounded-lg space-y-2"
-                style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)" }}
-                data-testid="labs-transfer-host-panel"
-              >
-                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                  Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
-                </p>
-                {transferableGuests.length === 0 ? (
-                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    Keine anderen Teilnehmer vorhanden.
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {transferableGuests.map((tp: { participant: { id: string; name: string } }) => (
-                      <label
-                        key={tp.participant.id}
-                        className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
-                        style={{
-                          background: transferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
-                          border: transferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
-                        }}
-                        data-testid={`labs-transfer-target-${tp.participant.id}`}
-                      >
-                        <input
-                          type="radio"
-                          name="transferTarget"
-                          checked={transferTargetId === tp.participant.id}
-                          onChange={() => setTransferTargetId(tp.participant.id)}
-                          style={{ accentColor: "var(--labs-accent)" }}
-                        />
-                        <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                          {stripGuestSuffix(tp.participant.name || "Anonymous")}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-                {transferTargetId && (
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      className="labs-btn-primary text-sm flex-1"
-                      onClick={handleTransferHost}
-                      disabled={transferring}
-                      data-testid="labs-transfer-host-confirm"
-                    >
-                      {transferring ? "Übertrage..." : "Host übertragen"}
-                    </button>
-                    <button
-                      className="labs-btn-ghost text-sm"
-                      onClick={() => { setShowTransferHost(false); setTransferTargetId(null); }}
-                      data-testid="labs-transfer-host-cancel"
-                    >
-                      Abbrechen
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!confirmDelete ? (
-              <button
-                className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
-                style={{
-                  background: "none",
-                  color: "var(--labs-danger, #e74c3c)",
-                  border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 40%, transparent)",
-                }}
-                onClick={() => setConfirmDelete(true)}
-                data-testid="labs-settings-delete"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Tasting
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
-                  style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
-                  onClick={handleDelete}
-                  data-testid="labs-settings-confirm-delete"
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
-                  style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
-                  onClick={() => setConfirmDelete(false)}
-                  data-testid="labs-settings-cancel-delete"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>
