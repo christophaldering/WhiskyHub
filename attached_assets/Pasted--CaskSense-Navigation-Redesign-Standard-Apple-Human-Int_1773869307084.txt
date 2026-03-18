@@ -1,0 +1,447 @@
+# CaskSense — Navigation Redesign
+## Standard: Apple Human Interface Guidelines · WCAG AA · Senior-Level
+
+---
+
+## Kontext & Priorität
+
+Echtes Nutzerfeedback (Udo, Ersttester):
+- Solo-Dram-Funktion bricht beim ersten Versuch
+- Einstieg zu verwirrend, zu viele Optionen gleichzeitig
+- Text auf kleinem Screen ohne Brille zu blass
+- Frage: Was ist der primäre Zweck der App?
+
+Diese drei Probleme lösen wir in dieser Reihenfolge:
+1. Bug: Solo-Dram-Identifikation schlägt fehler nach Foto
+2. Navigation: 5 Tabs → 4 Tabs, klare Hierarchie
+3. Kontrast: Alle Texte auf WCAG AA anheben
+
+---
+
+## TEIL 1 — Bug fix: Solo-Dram Foto-Identifikation
+
+### Problem
+Nach Kamera-Aufnahme in der Solo-Capture-Flow schlägt die KI-Identifikation
+mit einem generischen Fehler fehl. Der Nutzer landet in einem Fehlerzustand
+ohne klaren Weg zurück.
+
+### Fix in `client/src/labs/pages/LabsTastings.tsx` (Solo-Flow)
+
+Stelle sicher dass der catch-Block im Solo-Capture-Flow immer einen
+nutzerfreundlichen Zustand rendert:
+
+```tsx
+// Suche den try/catch rund um die Identifikations-API
+// VORHER: generischer catch ohne UX
+catch (error) {
+  console.error(error);
+  // ... kein UI-Feedback
+}
+
+// NACHHER: immer ein klarer Fehlerzustand mit Ausweg
+catch (error) {
+  console.error('[Solo Capture] Identification failed:', error);
+  setSoloView('editor'); // zurück zum Editor
+  setIdentificationError(
+    'Die Flasche konnte nicht erkannt werden. ' +
+    'Du kannst den Whisky manuell eingeben.'
+  );
+}
+```
+
+Füge direkt unter dem Foto-Bereich im Editor-State eine Fehleranzeige ein:
+
+```tsx
+{identificationError && (
+  <div style={{
+    padding: '12px 16px',
+    borderRadius: '10px',
+    border: '0.5px solid currentColor',
+    opacity: 0.7,
+    fontSize: '13px',
+    marginBottom: '1rem',
+    fontFamily: 'var(--font-ui)',
+    lineHeight: 1.5,
+  }}>
+    {identificationError}
+  </div>
+)}
+```
+
+---
+
+## TEIL 2 — Navigation: 5 Tabs → 4 Tabs
+
+### Datei: `client/src/labs/LabsLayout.tsx`
+
+### Neue Tab-Struktur
+
+```
+HEUTE:   Tastings | Explore | Discover | Taste | Circle
+NEU:     Tastings | Entdecken | Meine Welt | Circle
+```
+
+### Warum genau diese 4
+
+- **Tastings** — Der primäre Job. Alles Aktive: joinen, hosten, solo loggen.
+- **Entdecken** — Explore (Whiskies) + Discover (Wissen) unter einem Dach.
+  Der Nutzer denkt nicht in dieser Unterscheidung.
+- **Meine Welt** — Taste, Analytics, Connoisseur, Journal, Compare, Collection.
+  Alles Persönliche an einem Ort.
+- **Circle** — Soziales. Kommt bewusst zuletzt — erst relevant nach echten Tastings.
+
+### Implementierung in `LabsLayout.tsx`
+
+```tsx
+// NEUES NAV-ARRAY — ersetzt das bestehende navItems / tabs Array
+const navItems = [
+  {
+    path: '/labs/tastings',
+    matchPaths: ['/labs/tastings', '/labs/live', '/labs/join', '/labs/host'],
+    label: 'Tastings',
+    labelDe: 'Tastings',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* Glencairn-Glas — schlankes Profil */}
+        <path
+          d="M9 3h6l1 6c0 3-1.5 5-4 6v4H8v-4C5.5 14 4 12 4 9L5 3z"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    path: '/labs/entdecken',
+    matchPaths: ['/labs/explore', '/labs/discover', '/labs/entdecken'],
+    label: 'Entdecken',
+    labelDe: 'Entdecken',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle
+          cx="11" cy="11" r="7"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+        />
+        <path
+          d="M16.5 16.5L21 21"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    path: '/labs/taste',
+    matchPaths: ['/labs/taste'],
+    label: 'Meine Welt',
+    labelDe: 'Meine Welt',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* Radar / Geschmacksprofil */}
+        <polygon
+          points="12,3 20,8 20,16 12,21 4,16 4,8"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="2"
+          fill="currentColor"
+          opacity={active ? 0.6 : 0.3}
+        />
+      </svg>
+    ),
+  },
+  {
+    path: '/labs/circle',
+    matchPaths: ['/labs/circle'],
+    label: 'Circle',
+    labelDe: 'Circle',
+    icon: (active: boolean) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="9" cy="8" r="3"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+        />
+        <circle cx="16" cy="8" r="3"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          fill={active ? 'currentColor' : 'none'}
+          fillOpacity={active ? 0.12 : 0}
+        />
+        <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path d="M16 15c2 0 4 1.5 4 5"
+          stroke="currentColor"
+          strokeWidth={active ? 1.5 : 1}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
+    ),
+  },
+];
+```
+
+### Nav-Item Rendering — Apple-Stil
+
+```tsx
+// Das einzelne Nav-Item — ersetzt den bestehenden JSX-Block
+<Link
+  key={item.path}
+  href={item.path}
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '3px',
+    padding: '8px 0 4px',
+    flex: 1,
+    textDecoration: 'none',
+    color: isActive ? 'var(--labs-gold, #bf8f3e)' : 'var(--labs-text-muted)',
+    transition: 'color 0.15s ease',
+    // Kein Hintergrund, kein Balken — nur Farbe und Gewicht
+  }}
+>
+  {item.icon(isActive)}
+  <span style={{
+    fontSize: '10px',
+    fontFamily: 'var(--font-ui, "DM Sans", sans-serif)',
+    fontWeight: isActive ? 500 : 400,
+    letterSpacing: '0.02em',
+    lineHeight: 1,
+    // Aktiver Tab: Playfair für den Label — der einzige visuelle Unterschied
+    fontFamily: isActive
+      ? 'var(--font-display, "Playfair Display", serif)'
+      : 'var(--font-ui, "DM Sans", sans-serif)',
+    fontSize: isActive ? '10px' : '10px',
+  }}>
+    {i18n.language === 'de' ? item.labelDe : item.label}
+  </span>
+</Link>
+```
+
+### Nav-Container — Apple Bottom Bar
+
+```tsx
+<nav style={{
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-around',
+  // Kein Hintergrund-Chip, keine Schatten-Orgie
+  borderTop: '0.5px solid var(--labs-border, rgba(255,255,255,0.1))',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  backgroundColor: 'var(--labs-nav-bg, rgba(18,14,10,0.92))',
+  paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+  paddingTop: '4px',
+  zIndex: 100,
+}}>
+```
+
+---
+
+## TEIL 3 — Neue Entdecken-Hub-Seite
+
+### Neue Datei: `client/src/labs/pages/LabsEntdecken.tsx`
+
+Diese Seite ersetzt die direkte Weiterleitung zu Explore.
+Sie ist die Eingangstür zu allem passiven Erkunden.
+
+```tsx
+import { useLocation } from 'wouter';
+
+export default function LabsEntdecken() {
+  const [, navigate] = useLocation();
+
+  return (
+    <div style={{ padding: '1.5rem 1.25rem 6rem' }}>
+
+      {/* Header */}
+      <p className="ty-label" style={{ marginBottom: '0.75rem' }}>
+        Entdecken
+      </p>
+      <h1 className="ty-h1" style={{ marginBottom: '0.5rem' }}>
+        Whiskies & Wissen
+      </h1>
+      <p className="ty-sub" style={{ marginBottom: '2rem', opacity: 0.6 }}>
+        Stöbere durch Flaschen oder tauche in die Welt des Whiskys ein.
+      </p>
+
+      {/* Sektion 1: Whiskies */}
+      <p className="ty-label" style={{ marginBottom: '1rem' }}>Whiskies</p>
+
+      <div
+        onClick={() => navigate('/labs/explore')}
+        className="labs-list-row"
+        style={{ cursor: 'pointer', marginBottom: '0.5rem' }}
+      >
+        <div>
+          <div className="ty-ui">Alle Whiskies</div>
+          <div className="ty-caption" style={{ marginTop: '2px' }}>
+            Community-Bewertungen durchsuchen
+          </div>
+        </div>
+        <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+      </div>
+
+      <div
+        onClick={() => navigate('/labs/taste/compare')}
+        className="labs-list-row"
+        style={{ cursor: 'pointer', marginBottom: '2rem' }}
+      >
+        <div>
+          <div className="ty-ui">Vergleichen</div>
+          <div className="ty-caption" style={{ marginTop: '2px' }}>
+            Deine Scores vs. Plattform-Median
+          </div>
+        </div>
+        <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+      </div>
+
+      {/* Sektion 2: Wissen */}
+      <p className="ty-label" style={{ marginBottom: '1rem' }}>Wissen</p>
+
+      {[
+        { path: '/labs/discover/lexicon',      label: 'Lexikon',        sub: 'Begriffe & Definitionen' },
+        { path: '/labs/discover/distilleries', label: 'Destillerien',   sub: 'Karte & Details' },
+        { path: '/labs/discover/guide',        label: 'Tasting-Guide',  sub: 'Schritt für Schritt' },
+        { path: '/labs/discover/templates',    label: 'Vorlagen',       sub: 'Notizen & Vokabular' },
+        { path: '/labs/discover/vocabulary',   label: 'Wortschatz',     sub: 'Nach Region & Stil' },
+        { path: '/labs/discover/research',     label: 'Forschung',      sub: 'Wissenschaft des Geschmacks' },
+      ].map((item) => (
+        <div
+          key={item.path}
+          onClick={() => navigate(item.path)}
+          className="labs-list-row"
+          style={{ cursor: 'pointer', marginBottom: '0.5rem' }}
+        >
+          <div>
+            <div className="ty-ui">{item.label}</div>
+            <div className="ty-caption" style={{ marginTop: '2px' }}>{item.sub}</div>
+          </div>
+          <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+        </div>
+      ))}
+
+    </div>
+  );
+}
+```
+
+### Route in `App.tsx` oder Router hinzufügen:
+
+```tsx
+<Route path="/labs/entdecken" component={LabsEntdecken} />
+// Redirect: alter Explore-Tab-Klick landet jetzt hier
+```
+
+---
+
+## TEIL 4 — Kontrast: WCAG AA für alle Texte
+
+### Udo's Feedback: „Schrift sehr blässlich ohne Brille auf kleinem Screen"
+
+Apple verlangt WCAG AA: mindestens 4.5:1 für normalen Text, 3:1 für großen Text.
+
+### In `labs-theme.css` — Opacity-Werte anheben:
+
+```css
+/* VORHER — zu blasse Werte */
+--labs-text-muted: rgba(255, 255, 255, 0.4);
+--labs-text-secondary: rgba(255, 255, 255, 0.55);
+--labs-border: rgba(255, 255, 255, 0.08);
+
+/* NACHHER — WCAG AA konform */
+--labs-text-muted:     rgba(255, 255, 255, 0.55);  /* war 0.4 */
+--labs-text-secondary: rgba(255, 255, 255, 0.72);  /* war 0.55 */
+--labs-text-primary:   rgba(255, 255, 255, 0.96);  /* war 0.9 */
+--labs-border:         rgba(255, 255, 255, 0.14);  /* war 0.08 */
+```
+
+### Zusätzlich — minimale Schriftgröße erhöhen:
+
+```css
+/* In labs-theme.css */
+/* VORHER */
+.ty-caption { font-size: 11px; }
+.ty-label   { font-size: 10px; }
+
+/* NACHHER — lesbarer auf kleinen Screens */
+.ty-caption { font-size: 12px; }
+.ty-label   { font-size: 11px; letter-spacing: 0.11em; }
+```
+
+### Icon-Strich stärker:
+
+```css
+/* Alle Nav-Icons: strokeWidth von 1 auf 1.5 erhöhen im inaktiven Zustand */
+/* Aktiver Zustand: 2.0 */
+/* Kein Icon darf dünner als 1.5px sein */
+```
+
+---
+
+## TEIL 5 — Routen bereinigen
+
+### In `App.tsx`:
+
+```tsx
+// Alte Explore/Discover Tabs im Bottom-Nav zeigen auf /labs/entdecken
+// Direkte URLs bleiben erreichbar (kein Redirect für Deep Links)
+
+// NEU: Tab-Klick auf "Entdecken" → /labs/entdecken
+// Direktaufruf /labs/explore → funktioniert weiter
+// Direktaufruf /labs/discover → funktioniert weiter
+// Kein breaking change für bestehende Deep Links
+```
+
+---
+
+## Reihenfolge der Umsetzung
+
+1. **Zuerst**: Bug-Fix Solo-Dram (TEIL 1) — kein Nutzer darf beim ersten Klick scheitern
+2. **Dann**: Kontrast-Fix (TEIL 4) — sofortiger sichtbarer Unterschied für alle
+3. **Dann**: Nav-Struktur (TEIL 2) — 5 → 4 Tabs
+4. **Dann**: Entdecken-Hub (TEIL 3) — neue Seite als Eingangstür
+5. **Zuletzt**: Routen (TEIL 5) — alles verknüpfen
+
+---
+
+## Was NICHT geändert wird
+
+- Keine Backend-Änderungen
+- Keine Datenbankänderungen
+- Keine bestehenden Seiten-Inhalte (nur die Nav und die neue Hub-Seite)
+- Alle Deep Links bleiben funktionsfähig
+- Routing-Logik von `SmartRedirectToLabs` bleibt unberührt
+- i18n-Keys bleiben erhalten — nur neue Keys werden ergänzt
+
+---
+
+## Das Designprinzip dahinter (für Code-Reviews)
+
+Navigation soll verschwinden, nicht auffallen.
+Ein Nutzer der über die Navigation nachdenkt hat schon verloren.
+Vier Tabs, klare Labels, kein Hintergrund-Chip, keine Balken.
+Nur Farbe und Fontgewicht zeigen den aktiven Zustand.
+Das ist Apple. Das reicht.
