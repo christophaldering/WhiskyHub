@@ -1,0 +1,347 @@
+# CaskSense — Master UX & Design Prompt
+
+# Alle Stufen in einem Durchgang
+
+-----
+
+## KONTEXT
+
+CaskSense ist eine Whisky Tasting Plattform mit zwei Kernzielgruppen:
+
+- **Solo-Tester**: Dokumentieren einzelne Drams, bauen ein persönliches Geschmacksprofil auf
+- **Host**: Organisiert Gruppen-Blind-Tastings mit Reveal-Zeremonie
+
+Das Produkt läuft unter `/labs/*` (dark warm theme, Playfair Display, Gold-Akzente).
+Die alte Version unter `/m2` und `/landing-old` bleibt unverändert erhalten.
+
+-----
+
+## STUFE 1 FIX — Onboarding Links reparieren
+
+Der Onboarding Screen existiert bereits unter `/labs/onboarding`. Folgende Fixes:
+
+**Fix 1: Route-Reihenfolge**
+In `client/src/App.tsx` oder `LabsLayout.tsx` — `/labs/tastings/solo` muss VOR `/labs/tastings/:id` registriert sein:
+
+```tsx
+<Route path="/labs/tastings/solo" component={LabsSoloTasting} />
+<Route path="/labs/tastings/:id" component={LabsTastingDetail} />
+```
+
+**Fix 2: Onboarding innerhalb Labs-Shell**
+`/labs/onboarding` muss im gleichen Route-Block wie alle anderen `/labs/*` Routen liegen. Bottom Nav + Topbar auf dieser Route ausblenden:
+
+```tsx
+const isOnboarding = useLocation()[0] === '/labs/onboarding';
+{!isOnboarding && <LabsBottomNav />}
+{!isOnboarding && <LabsTopBar />}
+```
+
+**Fix 3: Host-Link**
+“Host a tasting” Karte → Link ändern von `/m2` zu `/labs/dashboard`
+
+-----
+
+## STUFE 2 — Solo Formular radikal vereinfachen
+
+### Ziel
+
+Von aktuell ~15 Felder + 70 Tags auf einen 3-Schritt-Flow der unter 60 Sekunden dauert.
+
+### Neuer Flow in `LabsSoloTasting.tsx`
+
+**Schritt 1: Capture (Vollbild)**
+Beim Tap auf “Log new dram” erscheint ein Capture-Screen (existiert bereits als Konzept im Code):
+
+- Großer runder Button in der Mitte: Kamera-Icon, gold gradient, 80px
+- Darunter drei kleinere Pills: “Gallery”, “Barcode”, “Type manually”
+- Ganz unten klein: “Skip identification →”
+- Background: var(–dark), kein weiterer Content
+- Nach Foto → KI identifiziert Flasche (bestehender GPT-4o Vision Endpoint) → weiter zu Schritt 2
+
+**Schritt 2: Quick Rate**
+Nur das Wesentliche, eine einzige Seite ohne Scrollen:
+
+```
+[Whisky Name — editierbar, vorausgefüllt durch KI]
+[Destillerie · Region · Jahr — eine Zeile, grau, editierbar per Tap]
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+OVERALL
+[  70  ][  75  ][  80  ][  85  ][  90  ][  95  ]
+  große tappable Score-Chips, 6 Stück, gold bei Auswahl
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+TOP 3 AROMEN  (optional)
+[Vanille] [Torf] [Sherry] [Honig] [Pfeffer] [Zitrus]
+[Rauch]   [Eiche] [Apfel] [Meer]  [+ Mehr]
+→ Nur die 10 häufigsten Tags, Rest hinter "+ Mehr" ausklappbar
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+[Notiz hinzufügen...] — einzeiliges Textfeld, optional
+
+[  Speichern  ]
+```
+
+Score-Chips Design:
+
+- 6 Werte: 70 / 75 / 80 / 85 / 90 / 95
+- Jeder Chip: 48px breit, 44px hoch, border-radius 12px
+- Inaktiv: rgba(255,255,255,0.04), border rgba(255,255,255,0.08)
+- Aktiv: background linear-gradient(135deg, #E8B84B, #C9972B), color var(–dark)
+- Transition: all 0.2s cubic-bezier(0.16,1,0.3,1)
+
+**Schritt 3: Sofort-Feedback nach Speichern**
+Kein Toast. Stattdessen eine kurze Karte die 2 Sekunden eingeblendet wird:
+
+```
+🥃  Gespeichert
+"[Whisky Name]" · Score 85
+Du bewertest Sherry-Fässer 8 Punkte über dem Schnitt.
+```
+
+Dann automatisch zurück zur Liste.
+
+Die letzte Zeile kommt aus dem bestehenden Flavor Profile / Analytics Endpoint — falls noch keine Daten vorhanden: weglassen.
+
+**Detailliertes Formular bleibt erhalten**
+Ein kleines “Details” Link unterhalb des Quick-Rate Screens öffnet das vollständige bestehende Formular für Power-User. Nichts wird gelöscht.
+
+-----
+
+## STUFE 3 — Host Wizard vereinfachen
+
+### Ziel
+
+Von 4-Schritt-Wizard auf einen einzigen Start-Screen. Erstes Tasting in unter 2 Minuten.
+
+### Neuer “Quick Start” Screen in `LabsHostDashboard.tsx`
+
+Oben auf dem Host Dashboard, vor der Tasting-Liste, eine prominente Quick-Start Karte:
+
+```
+┌─────────────────────────────────────────┐
+│  Neues Tasting starten                   │
+│                                          │
+│  [Name des Abends          ]  ← Input   │
+│                                          │
+│  Wie viele Whiskies?                     │
+│  [ 3 ]  [ 4 ]  [ 5 ]  [ 6 ]  [ 8+]     │
+│         ← tappable Chips                │
+│                                          │
+│  [ ] Blind Tasting                       │
+│      ← großer Toggle, default: ON       │
+│                                          │
+│  [ Tasting erstellen & Code generieren ]│
+└─────────────────────────────────────────┘
+```
+
+Nach Tap auf “Erstellen”:
+
+- Tasting wird sofort in DB angelegt (bestehender POST /api/tastings Endpoint)
+- Weiterleitung zu `/labs/host/:id` mit dem neuen Tasting
+- Dort erscheint prominent der Join-Code + QR
+
+Der bestehende 4-Schritt-Wizard bleibt erhalten und ist per “Erweiterte Optionen →” Link zugänglich.
+
+### Lobby-Screen verbessern
+
+Wenn Gäste joinen und ihre Namen erscheinen — jeder neue Name animiert sich ein:
+
+- fade-in + scale(0.9 → 1.0)
+- duration: 0.4s, cubic-bezier(0.16,1,0.3,1)
+- Kleiner gold Glow-Pulse um den Avatar für 1 Sekunde
+
+Das kommuniziert: “Jemand ist gerade dabei” — macht den Moment lebendig.
+
+-----
+
+## STUFE 4 — Reveal als Vollbild-Moment
+
+### Ziel
+
+Der emotionale Höhepunkt des Produkts bekommt seinen eigenen Screen.
+
+### Neue Komponente `LabsRevealMoment.tsx`
+
+Wird aufgerufen wenn Host den Reveal auslöst. Vollbild, kein Nav, kein Header.
+
+**Phase 1: Countdown (2 Sekunden)**
+
+```
+Schwarzer Screen
+Großes goldenes "3... 2... 1..."
+Playfair Display, 80px, fade in/out
+Subtiler Drum-Roll via Web Audio API (optional, kann deaktiviert werden)
+```
+
+**Phase 2: Score-Reveal**
+
+```
+[Whisky Name — groß, Playfair Italic]
+[Destillerie · Region]
+
+Scores erscheinen nacheinander mit 0.3s Delay:
+┌──────┐  ┌──────┐  ┌──────┐
+│  87  │  │  72  │  │  91  │
+│ Anna │  │ Tom  │  │ Max  │
+└──────┘  └──────┘  └──────┘
+
+Darunter nach 1 Sekunde:
+━━━━━━━━━━━━━━━━━━━━
+Ø 83 · Spanne: 72–91
+"Most divisive dram of the evening"
+falls Spanne > 15 Punkte
+```
+
+Score-Karten Animation:
+
+- Starten als leere Kreise (border gold, kein Inhalt)
+- Zahl zählt von 0 auf den echten Wert hoch (0.8s, ease-out)
+- Bei höchstem Score: gold glow, kleines ✦ Symbol
+
+**Phase 3: Bottle Reveal**
+Falls Blind-Tasting: Flaschenbild erscheint danach (falls vorhanden), slide-in von unten.
+
+**WebSocket statt Polling für diesen Moment:**
+Für den Reveal-Event einen einfachen Server-Sent Event (SSE) implementieren:
+
+```
+GET /api/tastings/:id/events  → SSE stream
+Event: reveal_triggered → Client zeigt sofort RevealMoment Screen
+```
+
+Das ersetzt das 5-Sekunden Polling nur für diesen kritischen Moment. Alles andere kann weiter pollen.
+
+-----
+
+## STUFE 5 — Sprache bereinigen
+
+### Begriffe ersetzen (in allen i18n Keys EN + DE)
+
+|Alt                |Neu EN           |Neu DE             |
+|-------------------|-----------------|-------------------|
+|“Standard Naked”   |“Guest”          |“Gast”             |
+|“Ultra Naked”      |“Anonymous Guest”|“Anonymer Gast”    |
+|“Guided Mode”      |“Hosted Tasting” |“Geführtes Tasting”|
+|“Context Level”    |“Visibility”     |“Sichtbarkeit”     |
+|“Reveal Step”      |“Reveal”         |“Aufdecken”        |
+|“Draft” (status)   |“Setting up”     |“In Vorbereitung”  |
+|“Archived” (status)|“Completed”      |“Abgeschlossen”    |
+
+Suche nach diesen Strings in `client/src/lib/i18n.ts` und allen `.tsx` Files unter `client/src/labs/`.
+
+-----
+
+## STUFE 6 — Design-Konsistenz
+
+### Ziel
+
+Alle generischen shadcn/ui Komponenten in den Labs-Pages durch gestylte Varianten ersetzen.
+
+### Konkrete Änderungen
+
+**Dropdowns / Select:**
+Jedes `<Select>` in Labs-Pages erhält:
+
+```css
+background: rgba(255,255,255,0.035);
+border: 1px solid rgba(201,151,43,0.18);
+border-radius: 12px;
+color: var(--cream);
+font-family: 'DM Sans';
+```
+
+Dropdown-Arrow: Custom SVG in gold, kein Browser-Default.
+
+**Alert / Error States:**
+Alle `<Alert>` Komponenten in Labs:
+
+```css
+background: rgba(224,90,90,0.08);
+border: 1px solid rgba(224,90,90,0.2);
+border-radius: 16px;
+color: #F0E6D3;
+```
+
+**Empty States (alle Labs-Pages):**
+Jede Seite die eine leere Liste zeigen kann bekommt denselben Stil wie der Solo Empty State:
+
+- Glencairn SVG Icon (gold stroke, 60px)
+- Playfair Italic Titel
+- DM Sans Subtitle, muted
+- Primary CTA Button
+
+Betrifft: LabsTastings, LabsExplore, LabsCircle, LabsTasteAnalytics, LabsHistory.
+
+**Buttons:**
+Alle generischen `<Button variant="outline">` in Labs ersetzen durch:
+
+```css
+background: transparent;
+border: 1px solid rgba(201,151,43,0.25);
+border-radius: 100px;
+color: var(--cream);
+font-family: 'DM Sans';
+transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+:hover { border-color: rgba(201,151,43,0.5); background: rgba(201,151,43,0.06); }
+```
+
+**Loading States:**
+Alle Skeleton-Loader in Labs:
+
+```css
+background: linear-gradient(90deg, 
+  rgba(255,255,255,0.03) 0%, 
+  rgba(201,151,43,0.06) 50%, 
+  rgba(255,255,255,0.03) 100%);
+background-size: 200% 100%;
+animation: shimmer 1.8s ease-in-out infinite;
+border-radius: 12px;
+```
+
+-----
+
+## STUFE 7 — Landing Page (separater Punkt)
+
+Die Landing Page `client/src/pages/landing-new.tsx` wird nach den obigen Änderungen separat angegangen. Nicht in diesem Durchgang anfassen.
+
+-----
+
+## WAS NICHT VERÄNDERT WIRD
+
+- Alle Routen unter `/m2/*`
+- `/landing-old`
+- `server/` — kein Backend-Umbau außer dem SSE Endpoint in Stufe 4
+- `shared/schema.ts` — keine Schema-Änderungen
+- Bestehende API Endpoints
+- Authentifizierungs-Logik
+- PDF-Generierung
+- Voice Memo Funktionalität
+
+-----
+
+## PRIORISIERUNG falls nicht alles in einem Durchgang machbar
+
+1. Stufe 1 Fix (Onboarding Links) — blocking, muss zuerst
+1. Stufe 4 Reveal Vollbild — höchster emotionaler Impact
+1. Stufe 2 Solo Formular — höchste Retention-Wirkung
+1. Stufe 3 Host Quick Start — zweitwichtigster Akquisitions-Moment
+1. Stufe 5 Sprache — schnell, hohe Wirkung
+1. Stufe 6 Design-Konsistenz — zeitaufwändig, aber polished
+
+-----
+
+## TECHNISCHE REFERENZEN IM PROJEKT
+
+- Labs Theme: `client/src/labs/labs-theme.css`
+- i18n: `client/src/lib/i18n.ts` (EN ab Zeile ~11, DE ab Zeile ~5492)
+- Labs Layout: `client/src/labs/LabsLayout.tsx`
+- Host Dashboard: `client/src/labs/pages/LabsHostDashboard.tsx`
+- Solo Tasting: `client/src/labs/pages/LabsSoloTasting.tsx` (oder M2TastingsSolo.tsx)
+- Live Tasting: `client/src/labs/pages/LabsLive.tsx`
+- Flavor Tags: `client/src/labs/data/flavor-data.ts`
+- Score Ring SVG Pattern: siehe bestehende LabsResults.tsx oder LabsTasteProfile.tsx

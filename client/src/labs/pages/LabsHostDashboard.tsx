@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useAppStore } from "@/lib/store";
-import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
+import { hostDashboardApi, inviteApi, pidHeaders, tastingApi, whiskyApi } from "@/lib/api";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -468,6 +468,174 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
   );
 }
 
+const WHISKY_COUNTS = [3, 4, 5, 6, 8];
+
+function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: string) => void }) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState("");
+  const [count, setCount] = useState(4);
+  const [blind, setBlind] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (!title.trim()) return;
+    setCreating(true);
+    try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const result = await tastingApi.create({
+        title: title.trim(),
+        date: new Date().toISOString().split("T")[0],
+        location: "",
+        description: "",
+        hostId: pid,
+        code,
+        blindMode: blind,
+        ratingScale: 100,
+        guidedMode: false,
+        guestMode: "standard",
+        status: "draft",
+      });
+      if (result?.id) {
+        for (let i = 0; i < count; i++) {
+          try {
+            await whiskyApi.create({
+              tastingId: result.id,
+              name: `Dram ${String.fromCharCode(65 + i)}`,
+              sortOrder: i,
+            });
+          } catch {}
+        }
+        onCreated(result.id);
+      }
+    } catch {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div
+      className="labs-card labs-fade-in"
+      style={{
+        padding: "20px 20px 22px",
+        marginBottom: 20,
+        border: "1px solid rgba(201,151,43,0.2)",
+        background: "rgba(201,151,43,0.04)",
+      }}
+      data-testid="card-quick-start"
+    >
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 16 }}>
+        {t("hostQuickStart.title", "Start a new tasting")}
+      </div>
+
+      <input
+        type="text"
+        placeholder={t("hostQuickStart.namePlaceholder", "Name of the evening")}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="labs-input"
+        style={{
+          width: "100%",
+          padding: "12px 16px",
+          marginBottom: 16,
+          fontSize: 14,
+          borderRadius: 12,
+          background: "rgba(255,255,255,0.035)",
+          border: "1px solid rgba(201,151,43,0.18)",
+          color: "var(--labs-text)",
+          outline: "none",
+        }}
+        data-testid="input-quick-title"
+      />
+
+      <div style={{ fontSize: 13, color: "var(--labs-text-secondary)", marginBottom: 8 }}>
+        {t("hostQuickStart.howMany", "How many whiskies?")}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {WHISKY_COUNTS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setCount(n)}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              borderRadius: 12,
+              border: count === n ? "1.5px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.08)",
+              background: count === n ? "linear-gradient(135deg, #E8B84B, #C9972B)" : "rgba(255,255,255,0.04)",
+              color: count === n ? "#1a1714" : "var(--labs-text-secondary)",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
+            }}
+            data-testid={`chip-whisky-count-${n}`}
+          >
+            {n === 8 ? "8+" : n}
+          </button>
+        ))}
+      </div>
+
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "0 2px" }}
+      >
+        <span style={{ fontSize: 14, color: "var(--labs-text)" }}>
+          {t("hostQuickStart.blind", "Blind Tasting")}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={blind}
+          onClick={() => setBlind(!blind)}
+          style={{
+            width: 48,
+            height: 28,
+            borderRadius: 14,
+            border: "none",
+            padding: 2,
+            cursor: "pointer",
+            background: blind ? "var(--labs-accent)" : "rgba(255,255,255,0.12)",
+            transition: "background 0.2s",
+            position: "relative",
+          }}
+          data-testid="toggle-blind"
+        >
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              background: "#fff",
+              transition: "transform 0.2s cubic-bezier(0.16,1,0.3,1)",
+              transform: blind ? "translateX(20px)" : "translateX(0)",
+            }}
+          />
+        </button>
+      </div>
+
+      <button
+        onClick={handleCreate}
+        disabled={!title.trim() || creating}
+        className="labs-btn-primary"
+        style={{
+          width: "100%",
+          padding: "14px 20px",
+          fontSize: 15,
+          borderRadius: 50,
+          opacity: !title.trim() || creating ? 0.5 : 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+        }}
+        data-testid="button-quick-create"
+      >
+        {creating ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Plus className="w-4 h-4" />}
+        {t("hostQuickStart.create", "Create tasting & generate code")}
+      </button>
+    </div>
+  );
+}
+
 export default function LabsHostDashboard() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
@@ -544,6 +712,8 @@ export default function LabsHostDashboard() {
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 20px" }}>
         {t("m2.hostDash.subtitle", "Your command center for tasting management")}
       </p>
+
+      <QuickStartCard pid={pid} onCreated={(id) => navigate(`/labs/host/${id}`)} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
         {[

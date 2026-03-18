@@ -11,7 +11,7 @@ type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live" | "past";
 
 const STATUS_CONFIG: Record<string, { label: string; cssClass: string }> = {
-  draft: { label: "Draft", cssClass: "labs-badge-info" },
+  draft: { label: "Setting up", cssClass: "labs-badge-info" },
   open: { label: "Live", cssClass: "labs-badge-success" },
   closed: { label: "Closed", cssClass: "labs-badge-accent" },
   reveal: { label: "Reveal", cssClass: "labs-badge-accent" },

@@ -141,7 +141,7 @@ export default function LabsSolo() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
-  const [soloView, setSoloView] = useState<"hub" | "capture" | "editor">("hub");
+  const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "editor">("hub");
   const [captureSource, setCaptureSource] = useState<"hub" | "editor">("hub");
   const [hubDrafts, setHubDrafts] = useState<any[]>([]);
   const [hubCompleted, setHubCompleted] = useState<any[]>([]);
@@ -230,7 +230,7 @@ export default function LabsSolo() {
   }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice, photoUrl, showManual, detailedScores, detailTouched, overrideActive, detailChips, detailTexts, soloView]);
 
   useEffect(() => {
-    if ((soloView === "editor" || soloView === "capture") && draftStatus !== "finalized") saveLocalDraft();
+    if ((soloView === "editor" || soloView === "quickRate" || soloView === "capture") && draftStatus !== "finalized") saveLocalDraft();
   }, [saveLocalDraft, soloView, draftStatus]);
 
   useEffect(() => {
@@ -788,16 +788,16 @@ export default function LabsSolo() {
         if (first.price) setUnknownPrice(String(first.price));
         setShowManual(true);
         setSheetView("none");
-        if (soloView === "capture") setSoloView("editor");
+        if (soloView === "capture") setSoloView("quickRate");
       } else {
         setError(t("m2.solo.noWhiskiesInFile", "No whiskies found in the uploaded file."));
         setSheetView("none");
-        if (soloView === "capture") setSoloView("editor");
+        if (soloView === "capture") setSoloView("quickRate");
       }
     } catch (err: any) {
       setError(err.message || t("m2.solo.importFailed", "File import failed"));
       setSheetView("none");
-      if (soloView === "capture") setSoloView("editor");
+      if (soloView === "capture") setSoloView("quickRate");
     }
   };
 
@@ -915,7 +915,7 @@ export default function LabsSolo() {
     setUnknownPrice(item.pricePaid != null ? String(item.pricePaid) : "");
     setSelectedCandidate(null);
     setSheetView("none");
-    setSoloView("editor");
+    setSoloView("quickRate");
     setShowManual(true);
     setAcceptedBanner(true);
     setTimeout(() => setAcceptedBanner(false), 3500);
@@ -1169,6 +1169,49 @@ export default function LabsSolo() {
         setOfflineCount(getOfflineQueue().length);
       }
       setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuickSave = async () => {
+    if (!whiskyName.trim() || score === 0) return;
+    if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+    if (!unlocked || !pid) { persistLocal(); setSaved(true); setSoloView("hub"); fetchHubDrafts(); return; }
+    setSaving(true);
+    setError("");
+    try {
+      const body = buildDraftBody();
+      body.status = "final";
+      if (draftEntryId) {
+        const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Quick save failed");
+      } else {
+        const res = await fetch(`/api/journal/${pid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Quick save failed");
+        const created = await res.json();
+        setDraftEntryId(created.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["journal"] });
+      setSaved(true);
+      handleReset(true);
+    } catch {
+      persistLocal();
+      if (pid) {
+        const body = buildDraftBody();
+        body.status = "final";
+        addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
+        setOfflineCount(getOfflineQueue().length);
+      }
+      setError(t("soloQuick.saveOffline", "Saved offline — will sync when back online"));
     } finally {
       setSaving(false);
     }
@@ -1448,7 +1491,7 @@ export default function LabsSolo() {
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <button
-              onClick={() => { setSoloView("editor"); setShowManual(true); }}
+              onClick={() => { setSoloView("quickRate"); setShowManual(true); }}
               className="labs-btn-ghost"
               style={{ display: "flex", alignItems: "center", gap: 6 }}
               data-testid="button-capture-skip"
@@ -1482,19 +1525,19 @@ export default function LabsSolo() {
             </div>
             {candidates.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                {candidates.map((c, i) => renderCandidateButton(c, i, "", () => { handleSelectCandidate(c); setSoloView("editor"); }))}
+                {candidates.map((c, i) => renderCandidateButton(c, i, "", () => { handleSelectCandidate(c); setSoloView("quickRate"); }))}
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {candidates.length === 0 && (
-                <button onClick={() => { handleCreateUnknown(); setSoloView("editor"); }} data-testid="button-capture-add-manually" className="labs-btn-primary" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
+                <button onClick={() => { handleCreateUnknown(); setSoloView("quickRate"); }} data-testid="button-capture-add-manually" className="labs-btn-primary" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
               )}
               <button onClick={() => { setOnlineSearched(false); setOnlineCandidates([]); setOnlineError(""); setSheetView("onlineSearch"); }} data-testid="button-capture-search-online" className="labs-btn-secondary" style={{ width: "100%", color: "var(--labs-info)", borderColor: "var(--labs-info-muted)" }}>
                 {t("m2.solo.searchOnline", "Search online (Beta)")}
               </button>
               <button onClick={() => { setSheetView("none"); setCandidates([]); setPhotoUrl(""); setLastResult(null); }} data-testid="button-capture-retake" className="labs-btn-secondary" style={{ width: "100%" }}>{t("m2.solo.tryAgain", "Try again")}</button>
               {candidates.length > 0 && (
-                <button onClick={() => { handleCreateUnknown(); setSoloView("editor"); }} data-testid="button-capture-manual-alt" className="labs-btn-ghost" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
+                <button onClick={() => { handleCreateUnknown(); setSoloView("quickRate"); }} data-testid="button-capture-manual-alt" className="labs-btn-ghost" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
               )}
             </div>
           </div>
@@ -1641,6 +1684,158 @@ export default function LabsSolo() {
             </button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (soloView === "quickRate") {
+    const QUICK_SCORES = [50, 60, 70, 75, 80, 85, 90, 95];
+    const QUICK_TAGS = ["Fruity", "Smoky", "Sherried", "Floral", "Spicy", "Vanilla", "Honey", "Citrus", "Peaty", "Woody", "Creamy", "Nutty"];
+    const displayName = whiskyName || distillery || t("soloQuick.untitled", "Untitled dram");
+    const toggleTag = (tag: string) => {
+      setDetailChips((prev) => {
+        const cur = prev.nose || [];
+        return { ...prev, nose: cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag] };
+      });
+    };
+    const selectedTags = detailChips.nose || [];
+
+    return (
+      <div className="labs-fade-in" style={{ padding: "16px", minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-quick-rate">
+        <button
+          onClick={() => { handleReset(true); }}
+          className="labs-btn-ghost"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 16, justifyContent: "flex-start" }}
+          data-testid="button-quick-back"
+        >
+          <ChevronLeft style={{ width: 16, height: 16 }} />
+          {t("m2.common.back", "Back")}
+        </button>
+
+        {error && (
+          <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(200,169,126,0.12)", border: "1px solid rgba(200,169,126,0.25)", color: "var(--labs-accent)", fontSize: 13, marginBottom: 12 }} data-testid="text-quick-error">
+            {error}
+          </div>
+        )}
+
+        {photoUrl && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <img src={photoUrl} alt={displayName} style={{ width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "1px solid var(--labs-border)" }} data-testid="img-quick-photo" />
+          </div>
+        )}
+
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }} data-testid="text-quick-name">
+          {displayName}
+        </h2>
+        {distillery && whiskyName && distillery !== whiskyName && (
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: "0 0 4px" }}>{distillery}</p>
+        )}
+        {(unknownAge || unknownAbv) && (
+          <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", textAlign: "center", margin: "0 0 20px" }}>
+            {[unknownAge && `${unknownAge} yo`, unknownAbv && `${unknownAbv}%`].filter(Boolean).join(" · ")}
+          </p>
+        )}
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 10 }}>
+            {t("soloQuick.score", "Your score")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+            {QUICK_SCORES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScore(s)}
+                style={{
+                  width: 56, height: 56, borderRadius: 16,
+                  border: score === s ? "2px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.08)",
+                  background: score === s ? "linear-gradient(135deg, #E8B84B, #C9972B)" : "rgba(255,255,255,0.04)",
+                  color: score === s ? "#1a1714" : "var(--labs-text-secondary)",
+                  fontSize: 18, fontWeight: 700, cursor: "pointer",
+                  transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+                data-testid={`chip-quick-score-${s}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 10 }}>
+            {t("soloQuick.flavors", "Flavour tags")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {QUICK_TAGS.map((tag) => {
+              const active = selectedTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  style={{
+                    padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    border: active ? "1.5px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.1)",
+                    background: active ? "var(--labs-accent-muted)" : "rgba(255,255,255,0.04)",
+                    color: active ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+                    transition: "all 0.15s ease",
+                  }}
+                  data-testid={`chip-quick-tag-${tag.toLowerCase()}`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 10 }}>
+            {t("soloQuick.notes", "Quick note")}
+          </div>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t("soloQuick.notesPlaceholder", "Anything you want to remember...")}
+            rows={3}
+            style={{
+              width: "100%", padding: "12px 16px", fontSize: 14, borderRadius: 12,
+              background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.1)",
+              color: "var(--labs-text)", outline: "none", resize: "vertical", boxSizing: "border-box",
+              fontFamily: "inherit",
+            }}
+            data-testid="input-quick-notes"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px) + 60px)" }}>
+          <button
+            onClick={() => { if (score > 0) handleQuickSave(); }}
+            disabled={score === 0 || saving}
+            className="labs-btn-primary"
+            style={{
+              width: "100%", padding: "16px 20px", fontSize: 15, fontWeight: 600, borderRadius: 50,
+              opacity: score === 0 || saving ? 0.45 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+            data-testid="button-quick-save"
+          >
+            {saving ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Check className="w-4 h-4" />}
+            {t("soloQuick.save", "Save & Done")}
+          </button>
+
+          <button
+            onClick={() => setSoloView("editor")}
+            className="labs-btn-ghost"
+            style={{ width: "100%", padding: "12px 20px", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+            data-testid="button-quick-details"
+          >
+            <ClipboardList className="w-4 h-4" />
+            {t("soloQuick.details", "Full details & dimensions")}
+          </button>
+        </div>
       </div>
     );
   }

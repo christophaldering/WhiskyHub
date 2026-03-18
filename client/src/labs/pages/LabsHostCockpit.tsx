@@ -927,7 +927,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   background: status === "open" ? "var(--labs-success-muted)" : status === "reveal" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
                   color: status === "open" ? "var(--labs-success)" : status === "reveal" ? "var(--labs-accent)" : "var(--labs-text-muted)",
                 }}>
-                  {isDraft ? "Draft" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : "Archived"}
+                  {isDraft ? "Setting up" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : "Completed"}
                 </span>
               </div>
 

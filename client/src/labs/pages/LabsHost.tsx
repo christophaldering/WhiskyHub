@@ -270,7 +270,7 @@ function isFieldRevealed(rv: ReturnType<typeof getRevealState> | null, fieldOrGr
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
+  draft: { label: "Setting up", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
   open: { label: "Live", color: "var(--labs-success)", bg: "var(--labs-success-muted)" },
   closed: { label: "Closed", color: "var(--labs-accent)", bg: "var(--labs-accent-muted)" },
   reveal: { label: "Reveal", color: "var(--labs-info)", bg: "var(--labs-info-muted)" },
@@ -4588,7 +4588,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           className="w-8 h-8 border-2 rounded-full animate-spin mb-4"
           style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }}
         />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading...</p>
       </div>
     );
   }

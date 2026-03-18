@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import { useAppStore } from "@/lib/store";
 import { signOut, updateSessionPhotoUrl } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
@@ -161,7 +162,7 @@ export default function LabsTasteSettings() {
   }
 
   if (profileLoading || participantLoading) {
-    return <div className="text-center py-16"><p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading...</p></div>;
+    return <div style={{ padding: 16 }}><SkeletonList count={3} /></div>;
   }
 
   const inputStyle: React.CSSProperties = { width: "100%", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 10, color: "var(--labs-text)", padding: "12px 16px", fontSize: 14, outline: "none", boxSizing: "border-box" };

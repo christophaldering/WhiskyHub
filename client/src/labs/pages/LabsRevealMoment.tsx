@@ -1,0 +1,194 @@
+import { useEffect, useState, useCallback } from "react";
+import { X } from "lucide-react";
+
+interface RevealMomentProps {
+  whiskyName: string;
+  distillery?: string;
+  age?: string;
+  region?: string;
+  imageUrl?: string;
+  stepLabel?: string;
+  onDismiss: () => void;
+}
+
+export default function LabsRevealMoment({
+  whiskyName,
+  distillery,
+  age,
+  region,
+  imageUrl,
+  stepLabel,
+  onDismiss,
+}: RevealMomentProps) {
+  const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase("show"), 50);
+    const t2 = setTimeout(() => {
+      setPhase("exit");
+      setTimeout(onDismiss, 500);
+    }, 4500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [onDismiss]);
+
+  const dismiss = useCallback(() => {
+    setPhase("exit");
+    setTimeout(onDismiss, 500);
+  }, [onDismiss]);
+
+  const opacity = phase === "show" ? 1 : 0;
+  const scale = phase === "show" ? 1 : phase === "enter" ? 0.92 : 1.04;
+
+  return (
+    <div
+      onClick={dismiss}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(10,8,6,0.92)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        opacity,
+        transition: "opacity 0.5s cubic-bezier(0.16,1,0.3,1)",
+        cursor: "pointer",
+        padding: 32,
+      }}
+      data-testid="reveal-moment-overlay"
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); dismiss(); }}
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 20,
+          background: "rgba(255,255,255,0.08)",
+          border: "none",
+          borderRadius: "50%",
+          width: 40,
+          height: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "rgba(255,255,255,0.6)",
+        }}
+        data-testid="button-reveal-dismiss"
+      >
+        <X size={20} />
+      </button>
+
+      {stepLabel && (
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: 2,
+            color: "var(--labs-accent, #c8a97e)",
+            marginBottom: 24,
+            opacity,
+            transform: `scale(${scale}) translateY(${phase === "show" ? 0 : -10}px)`,
+            transition: "all 0.7s cubic-bezier(0.16,1,0.3,1)",
+          }}
+          data-testid="text-reveal-step"
+        >
+          {stepLabel}
+        </div>
+      )}
+
+      {imageUrl && (
+        <div
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: 20,
+            overflow: "hidden",
+            marginBottom: 28,
+            border: "2px solid rgba(200,169,126,0.3)",
+            boxShadow: "0 0 60px rgba(200,169,126,0.2)",
+            opacity,
+            transform: `scale(${scale})`,
+            transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s",
+          }}
+          data-testid="img-reveal-whisky"
+        >
+          <img
+            src={imageUrl}
+            alt={whiskyName}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+      )}
+
+      <h1
+        style={{
+          fontSize: 32,
+          fontWeight: 700,
+          color: "#fff",
+          textAlign: "center",
+          margin: "0 0 8px",
+          fontFamily: "'Playfair Display', serif",
+          lineHeight: 1.2,
+          opacity,
+          transform: `scale(${scale}) translateY(${phase === "show" ? 0 : 15}px)`,
+          transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s",
+        }}
+        data-testid="text-reveal-name"
+      >
+        {whiskyName}
+      </h1>
+
+      {distillery && (
+        <p
+          style={{
+            fontSize: 16,
+            color: "rgba(255,255,255,0.65)",
+            textAlign: "center",
+            margin: "0 0 6px",
+            opacity,
+            transform: `translateY(${phase === "show" ? 0 : 10}px)`,
+            transition: "all 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s",
+          }}
+          data-testid="text-reveal-distillery"
+        >
+          {distillery}
+        </p>
+      )}
+
+      {(age || region) && (
+        <p
+          style={{
+            fontSize: 14,
+            color: "rgba(255,255,255,0.45)",
+            textAlign: "center",
+            margin: 0,
+            opacity,
+            transform: `translateY(${phase === "show" ? 0 : 10}px)`,
+            transition: "all 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s",
+          }}
+          data-testid="text-reveal-details"
+        >
+          {[age, region].filter(Boolean).join(" · ")}
+        </p>
+      )}
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 40,
+          fontSize: 12,
+          color: "rgba(255,255,255,0.3)",
+          opacity,
+          transition: "opacity 0.5s ease 1s",
+        }}
+      >
+        Tap anywhere to continue
+      </div>
+    </div>
+  );
+}

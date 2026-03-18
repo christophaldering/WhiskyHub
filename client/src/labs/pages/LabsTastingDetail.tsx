@@ -36,7 +36,7 @@ interface LabsTastingDetailProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: "Draft", className: "labs-badge-info" },
+  draft: { label: "Setting up", className: "labs-badge-info" },
   open: { label: "Live", className: "labs-badge-success" },
   closed: { label: "Closed", className: "labs-badge-accent" },
   reveal: { label: "Reveal", className: "labs-badge-accent" },

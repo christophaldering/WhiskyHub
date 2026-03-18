@@ -12,6 +12,7 @@ import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
+import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import type { Tasting } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -229,6 +230,31 @@ function GuidedStepView({
   const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guidedCalibrationOpen, setGuidedCalibrationOpen] = useState(false);
+  const [revealMoment, setRevealMoment] = useState<{
+    whiskyName: string; distillery?: string; age?: string; region?: string; imageUrl?: string; stepLabel?: string;
+  } | null>(null);
+  const prevRevealRef = useRef<string>("");
+
+  useEffect(() => {
+    const key = `${tasting.guidedWhiskyIndex ?? 0}-${tasting.guidedRevealStep ?? 0}`;
+    if (prevRevealRef.current && prevRevealRef.current !== key && tasting.blindMode) {
+      const step = tasting.guidedRevealStep ?? 0;
+      if (step > 0 && activeWhisky) {
+        const dramLabel = isNameRevealed
+          ? (activeWhisky.name || `Dram ${(tasting.guidedWhiskyIndex ?? 0) + 1}`)
+          : `Dram ${String.fromCharCode(65 + (tasting.guidedWhiskyIndex ?? 0))}`;
+        setRevealMoment({
+          whiskyName: dramLabel,
+          distillery: isNameRevealed ? activeWhisky.distillery : undefined,
+          age: revealedFields.has("age") && activeWhisky.age ? `${activeWhisky.age} years` : undefined,
+          region: revealedFields.has("region") ? activeWhisky.region : undefined,
+          imageUrl: (revealedFields.has("image") || isFullyRevealed) ? activeWhisky.imageUrl : undefined,
+          stepLabel: isFullyRevealed ? "Fully Revealed" : `Step ${step}`,
+        });
+      }
+    }
+    prevRevealRef.current = key;
+  }, [tasting.guidedWhiskyIndex, tasting.guidedRevealStep, tasting.blindMode, isNameRevealed, isFullyRevealed, activeWhisky, revealedFields]);
 
   const { data: guidedAllRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
@@ -494,6 +520,12 @@ function GuidedStepView({
 
   return (
     <div className="labs-fade-in">
+      {revealMoment && (
+        <LabsRevealMoment
+          {...revealMoment}
+          onDismiss={() => setRevealMoment(null)}
+        />
+      )}
       <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
         <div className="flex items-center justify-between mb-3">
           <button
@@ -1116,7 +1148,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
             }}
             data-testid="labs-live-status"
           >
-            {tasting.status === "open" ? "● Live" : tasting.status === "draft" ? "Draft" : tasting.status}
+            {tasting.status === "open" ? "● Live" : tasting.status === "draft" ? "Setting up" : tasting.status === "archived" ? "Completed" : tasting.status}
           </span>
           {totalWhiskies > 0 && (
             <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
