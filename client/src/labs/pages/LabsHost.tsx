@@ -828,14 +828,14 @@ function PrintMaterialsSection({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+        className="labs-btn-secondary w-full relative flex items-center justify-center gap-2"
         data-testid="toggle-print-materials"
       >
         <Printer className="w-4 h-4" />
         Print & Materials
         <ChevronDown
-          className="w-4 h-4"
-          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease", marginLeft: "auto" }}
+          className="w-4 h-4 absolute right-3"
+          style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease" }}
         />
       </button>
 
