@@ -21,7 +21,6 @@ import {
   Mail,
   Trophy,
   Trash2,
-  Gauge,
   ChevronDown,
   Pencil,
   X,
@@ -46,102 +45,6 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   reveal: { label: "Reveal", className: "labs-badge-accent" },
   archived: { label: "Completed", className: "labs-badge-info" },
 };
-
-const REVEAL_PRESETS: Record<string, { label: string; desc: string }> = {
-  classic: { label: "Classic", desc: "Name then details" },
-  "photo-first": { label: "Photo First", desc: "Photo then name" },
-  "details-first": { label: "Details", desc: "Details then name" },
-  "one-by-one": { label: "One by One", desc: "Reveal individually" },
-};
-
-const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
-  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
-  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
-  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
-  "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
-};
-
-function detectPresetKey(order: string[][] | null): string {
-  if (!order) return "classic";
-  const json = JSON.stringify(order);
-  for (const [key, preset] of Object.entries(REVEAL_PRESETS_MAP)) {
-    if (JSON.stringify(preset) === json) return key;
-  }
-  return "custom";
-}
-
-function DetailToggle({ checked, onChange, icon, label, description, testId, disabled }: {
-  checked: boolean; onChange: (v: boolean) => void;
-  icon: React.ReactNode; label: string; description: string; testId: string; disabled?: boolean;
-}) {
-  return (
-    <div
-      className="flex items-center justify-between py-3"
-      style={{ opacity: disabled ? 0.6 : 1, cursor: disabled ? "default" : "pointer" }}
-      onClick={() => !disabled && onChange(!checked)}
-      data-testid={testId}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: checked ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
-        >
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{label}</p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{description}</p>
-        </div>
-      </div>
-      <div
-        className="w-11 h-6 rounded-full transition-all flex items-center px-0.5"
-        style={{
-          background: checked ? "var(--labs-accent)" : "var(--labs-border)",
-          justifyContent: checked ? "flex-end" : "flex-start",
-        }}
-      >
-        <div className="w-5 h-5 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
-      </div>
-    </div>
-  );
-}
-
-function DetailSegmentedSelect({ value, options, onChange, disabled }: {
-  value: string | number;
-  options: { value: string | number; label: string; desc?: string; disabled?: boolean }[];
-  onChange: (v: string | number) => void;
-  disabled?: boolean;
-}) {
-  const cols = options.length <= 4 ? options.length : options.length <= 6 ? 3 : 4;
-  return (
-    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: disabled ? 0.5 : 1 }}>
-      {options.map((opt) => {
-        const active = value === opt.value;
-        const isDisabled = disabled || !!opt.disabled;
-        return (
-          <button
-            key={String(opt.value)}
-            type="button"
-            onClick={() => !isDisabled && onChange(opt.value)}
-            className="rounded-lg transition-all text-center"
-            style={{
-              padding: "8px 4px",
-              background: isDisabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-              border: `1.5px solid ${isDisabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
-              cursor: isDisabled ? "not-allowed" : "pointer",
-              opacity: isDisabled ? 0.4 : 1,
-            }}
-            disabled={isDisabled}
-            data-testid={`labs-detail-opt-${opt.value}`}
-          >
-            <div className="font-bold" style={{ fontSize: 14, color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
-            {opt.desc && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 1 }}>{opt.desc}</div>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
   whisky: Record<string, unknown>;
@@ -220,9 +123,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [duplicating, setDuplicating] = useState(false);
   const [inviteResults, setInviteResults] = useState<Array<{ email: string; status: string; link?: string }> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [showWhiskies, setShowWhiskies] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
   const [showAddWhisky, setShowAddWhisky] = useState(false);
@@ -330,47 +231,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     sendInviteMutation.mutate({ emailList, note: inviteNote.trim() || undefined });
   };
 
-  const patchDetails = async (body: Record<string, unknown>) => {
-    const pid = currentParticipant?.id;
-    if (!pid) return;
-    const res = await fetch(`/api/tastings/${tastingId}/details`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hostId: pid, ...body }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Save failed" }));
-      setSaveStatus(err.message || "Save failed");
-      setTimeout(() => setSaveStatus(null), 3000);
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-    setSaveStatus("Saved");
-    setTimeout(() => setSaveStatus(null), 2000);
-  };
-
-  const handleToggle = (field: string, currentValue: boolean) => {
-    patchDetails({ [field]: !currentValue });
-  };
-
-  const handleChangeScale = (scale: string | number) => {
-    patchDetails({ ratingScale: scale });
-  };
-
-  const handleChangeRevealOrder = (key: string | number) => {
-    const k = String(key);
-    const patch: Record<string, unknown> = {};
-    if (k === "classic") {
-      patch.revealOrder = null;
-    } else if (REVEAL_PRESETS_MAP[k]) {
-      patch.revealOrder = JSON.stringify(REVEAL_PRESETS_MAP[k]);
-      if (k === "one-by-one" && ((tasting?.sessionUiMode as string) || "flow") === "flow") {
-        patch.sessionUiMode = "focus";
-      }
-    }
-    patchDetails(patch);
-  };
-
   const handleDuplicate = async () => {
     setDuplicating(true);
     const pid = currentParticipant?.id;
@@ -432,14 +292,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
   const whiskyCount = whiskies?.length ?? 0;
   const participantCount = participants?.length ?? 0;
-
-  let currentRevealKey = "classic";
-  if (tasting.blindMode && tasting.revealOrder) {
-    try {
-      const parsed = JSON.parse(tasting.revealOrder as string);
-      currentRevealKey = detectPresetKey(parsed);
-    } catch { currentRevealKey = "classic"; }
-  }
 
   return (
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
@@ -813,133 +665,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {isHost && (
-        <div className="mb-6 labs-stagger-3">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="w-full flex items-center justify-between mb-3"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
-            data-testid="labs-detail-toggle-settings"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em", margin: 0 }}>
-              Settings
-            </p>
-            <ChevronDown
-              className="w-4 h-4 transition-transform"
-              style={{
-                color: "var(--labs-text-muted)",
-                transform: showSettings ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
-
-          {saveStatus && (
-            <div className="flex items-center gap-2 mb-2" style={{ fontSize: 12, color: saveStatus === "Saved" ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
-              <Check className="w-3 h-3" />
-              {saveStatus}
-            </div>
-          )}
-
-          {showSettings && (
-            <div className="labs-card p-4 space-y-1" data-testid="labs-detail-settings-section">
-              <div>
-                <label className="text-xs font-medium flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  <Gauge className="w-3 h-3" />
-                  Rating Scale
-                  {!isDraft && <span className="text-[10px] ml-1" style={{ color: "var(--labs-text-muted)" }}>(locked)</span>}
-                </label>
-                {isDraft ? (
-                  <DetailSegmentedSelect
-                    value={(tasting.ratingScale as number) ?? 100}
-                    options={[
-                      { value: 5, label: "5", desc: "Simple" },
-                      { value: 10, label: "10", desc: "Classic" },
-                      { value: 20, label: "20", desc: "Detailed" },
-                      { value: 100, label: "100", desc: "Pro" },
-                    ]}
-                    onChange={handleChangeScale}
-                  />
-                ) : (
-                  <div className="text-sm p-2 rounded-lg" style={{ background: "var(--labs-surface)", color: "var(--labs-text)" }}>
-                    {(tasting.ratingScale as number) ?? 100}-point scale
-                  </div>
-                )}
-              </div>
-
-              <div className="labs-divider" style={{ margin: "12px 0" }} />
-
-              <DetailToggle
-                checked={!!tasting.blindMode}
-                onChange={() => handleToggle("blindMode", !!tasting.blindMode)}
-                icon={<EyeOff className="w-4 h-4" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label="Blind Tasting"
-                description="Hide whisky names until reveal"
-                testId="labs-detail-toggle-blind"
-              />
-
-              {tasting.blindMode && (
-                <>
-                  <div className="labs-divider" style={{ margin: "4px 0" }} />
-                  <div className="py-2">
-                    <label className="text-xs font-medium flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                      <Eye className="w-3 h-3" />
-                      Reveal Order
-                    </label>
-                    <DetailSegmentedSelect
-                      value={currentRevealKey}
-                      options={Object.entries(REVEAL_PRESETS).map(([key, { label, desc }]) => ({
-                        value: key,
-                        label,
-                        desc,
-                      }))}
-                      onChange={handleChangeRevealOrder}
-                    />
-                    {currentRevealKey === "custom" && (
-                      <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)" }}>
-                        Custom reveal order active. Edit in Presenter View for full control.
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              <div className="labs-divider" style={{ margin: "4px 0" }} />
-
-              <DetailToggle
-                checked={!!tasting.showRanking}
-                onChange={() => handleToggle("showRanking", !!tasting.showRanking)}
-                icon={<BarChart3 className="w-4 h-4" style={{ color: tasting.showRanking ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label="Show Ranking"
-                description="Guests see how whiskies rank"
-                testId="labs-detail-toggle-ranking"
-              />
-
-              <div className="labs-divider" style={{ margin: "4px 0" }} />
-
-              <DetailToggle
-                checked={!!tasting.showGroupAvg}
-                onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)}
-                icon={<Users className="w-4 h-4" style={{ color: tasting.showGroupAvg ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label="Show Group Scores"
-                description="Guests see average scores"
-                testId="labs-detail-toggle-avg"
-              />
-
-              <div className="labs-divider" style={{ margin: "4px 0" }} />
-
-              <DetailToggle
-                checked={tasting.showReveal !== false}
-                onChange={() => handleToggle("showReveal", tasting.showReveal !== false)}
-                icon={<Eye className="w-4 h-4" style={{ color: tasting.showReveal !== false ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label="Show Results After Tasting"
-                description="Guests access results when done"
-                testId="labs-detail-toggle-reveal"
-              />
-            </div>
-          )}
         </div>
       )}
 

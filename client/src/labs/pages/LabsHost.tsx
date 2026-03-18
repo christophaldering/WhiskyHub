@@ -1409,20 +1409,6 @@ function MobileCompanion({
         </div>
       </div>
 
-      {currentParticipant && (
-        <div className="mb-4">
-          <LabsSettingsPanel
-            tasting={tasting}
-            tastingId={tastingId}
-            pid={currentParticipant.id as string}
-            queryClient={queryClient}
-            navigate={navigate}
-            whiskies={whiskies}
-            participants={participants}
-          />
-        </div>
-      )}
-
       {isDraft && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -2032,7 +2018,7 @@ function MobileCompanion({
             data-testid="mobile-switch-manage"
           >
             <Settings className="w-4 h-4" />
-            Tasting verwalten
+            Manage Session
           </button>
         )}
       </div>
@@ -3395,75 +3381,24 @@ function GuidedTastingEngine({
   );
 }
 
-function LabsSettingsPanel({
+function TastingSetupSection({
   tasting,
   tastingId,
   pid,
   queryClient,
-  navigate,
-  whiskies,
-  participants,
 }: {
   tasting: Record<string, unknown>;
   tastingId: string;
   pid: string;
   queryClient: ReturnType<typeof useQueryClient>;
-  navigate: (path: string) => void;
-  whiskies?: Array<Record<string, unknown>>;
-  participants?: Array<Record<string, unknown>>;
 }) {
-  const [open, setOpen] = useState(false);
   const [ratingPrompt, setRatingPrompt] = useState((tasting.ratingPrompt as string) || "");
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [videoLinkLocal, setVideoLinkLocal] = useState((tasting.videoLink as string) || "");
   const [savingVideo, setSavingVideo] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [duplicating, setDuplicating] = useState(false);
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [forceCustomReveal, setForceCustomReveal] = useState(false);
-  const [showTransferHost, setShowTransferHost] = useState(false);
-  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
-  const [transferring, setTransferring] = useState(false);
-  const [showSessionTools, setShowSessionTools] = useState(false);
-
-  const { data: settingsParticipants } = useQuery({
-    queryKey: ["participants", tastingId],
-    queryFn: async () => {
-      const res = await fetch(`/api/tastings/${tastingId}/participants`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: showTransferHost,
-  });
-
-  const transferableGuests = (settingsParticipants || []).filter(
-    (tp: { participant: { id: string } }) => tp.participant.id !== pid
-  );
-
-  const handleTransferHost = async () => {
-    if (!transferTargetId) return;
-    setTransferring(true);
-    try {
-      const res = await fetch(`/api/tastings/${tastingId}/transfer-host`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, newHostId: transferTargetId }),
-      });
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-        navigate("/labs/tastings");
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setSaveStatus(err.message || "Transfer failed");
-        setTimeout(() => setSaveStatus(null), 3000);
-      }
-    } catch {
-      setSaveStatus("Transfer failed");
-      setTimeout(() => setSaveStatus(null), 3000);
-    }
-    setTransferring(false);
-  };
 
   const isDraft = tasting.status === "draft";
 
@@ -3546,65 +3481,16 @@ function LabsSettingsPanel({
     }
   };
 
-  const handleDuplicate = async () => {
-    setDuplicating(true);
-    try {
-      const newTasting = await tastingApi.duplicate(tastingId, pid);
-      if (newTasting?.id) {
-        navigate(`/labs/tastings/${newTasting.id}`);
-      }
-    } catch {}
-    setDuplicating(false);
-  };
-
-  const handleDelete = async () => {
-    try {
-      await tastingApi.updateStatus(tastingId, "deleted", undefined, pid);
-      navigate("/labs/tastings");
-    } catch (e: any) {
-      console.error("Delete failed:", e);
-    }
-  };
-
   return (
-    <div className="labs-card overflow-hidden" data-testid="labs-settings-panel">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between"
-        style={{
-          padding: "14px 16px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--labs-text)",
-          fontSize: 14,
-          fontWeight: 600,
-        }}
-        data-testid="labs-toggle-settings"
-      >
-        <span className="flex items-center gap-2">
-          <Settings className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
-          Settings & Actions
-        </span>
-        <ChevronDown
-          className="w-4 h-4 transition-transform"
-          style={{
-            color: "var(--labs-text-muted)",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-          }}
-        />
-      </button>
-
+    <div data-testid="labs-tasting-setup-section">
       {saveStatus && (
-        <div className="px-4 pb-2 flex items-center gap-2" style={{ fontSize: 12, color: "var(--labs-success)" }}>
+        <div className="flex items-center gap-2 mb-3" style={{ fontSize: 12, color: saveStatus === "Saved" ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
           <Check className="w-3 h-3" />
           {saveStatus}
         </div>
       )}
 
-      {open && (
-        <div style={{ padding: "0 16px 16px" }} className="space-y-4">
+      <div className="labs-card p-4 space-y-4">
           <div>
             <p className="labs-section-label">Session</p>
           </div>
@@ -3911,194 +3797,7 @@ function LabsSettingsPanel({
             )}
           </div>
 
-          {whiskies && whiskies.length > 0 && participants && (
-            <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
-              <p className="labs-section-label">Tools</p>
-
-              <div
-                style={{
-                  background: "var(--labs-surface)",
-                  border: "1px solid var(--labs-border)",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                }}
-              >
-                <PrintMaterialsSection
-                  tasting={tasting}
-                  whiskies={whiskies}
-                  participants={participants}
-                  currentParticipant={{ id: pid, name: "Host" }}
-                  navigate={navigate}
-                  tastingId={tastingId}
-                />
-
-                <div style={{ height: 1, background: "var(--labs-border)" }} />
-
-                {/* Session Management accordion */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => { setShowSessionTools(!showSessionTools); if (showSessionTools) { setShowTransferHost(false); setTransferTargetId(null); } }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      padding: "14px 16px",
-                      fontFamily: "inherit",
-                    }}
-                    data-testid="toggle-session-tools"
-                  >
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Settings className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                      <span className="text-sm font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.02em" }}>Session</span>
-                    </span>
-                    <ChevronDown
-                      className="w-4 h-4"
-                      style={{
-                        color: "var(--labs-text-muted)",
-                        transform: showSessionTools ? "rotate(180deg)" : "none",
-                        transition: "transform 0.25s ease",
-                      }}
-                    />
-                  </button>
-
-                  {showSessionTools && (
-                    <div style={{ padding: "0 16px 16px", animation: "toolsSlideDown 0.2s ease" }} className="space-y-2">
-                      <button
-                        className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-                        onClick={handleDuplicate}
-                        disabled={duplicating}
-                        data-testid="labs-settings-duplicate"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        {duplicating ? "Duplicating..." : "Duplicate Tasting"}
-                      </button>
-
-                      <button
-                        className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
-                        style={{
-                          background: "none",
-                          color: "var(--labs-text-muted)",
-                          border: "1px solid var(--labs-border)",
-                        }}
-                        onClick={() => { setShowTransferHost(!showTransferHost); setTransferTargetId(null); }}
-                        data-testid="labs-settings-transfer-host"
-                      >
-                        <ArrowRightLeft className="w-4 h-4" />
-                        Host übertragen
-                      </button>
-
-                      {showTransferHost && (
-                        <div
-                          className="p-3 rounded-lg space-y-2"
-                          style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
-                          data-testid="labs-transfer-host-panel"
-                        >
-                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                            Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
-                          </p>
-                          {transferableGuests.length === 0 ? (
-                            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                              Keine anderen Teilnehmer vorhanden.
-                            </p>
-                          ) : (
-                            <div className="space-y-1">
-                              {transferableGuests.map((tp: { participant: { id: string; name: string } }) => (
-                                <label
-                                  key={tp.participant.id}
-                                  className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
-                                  style={{
-                                    background: transferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
-                                    border: transferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
-                                  }}
-                                  data-testid={`labs-transfer-target-${tp.participant.id}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="transferTarget"
-                                    checked={transferTargetId === tp.participant.id}
-                                    onChange={() => setTransferTargetId(tp.participant.id)}
-                                    style={{ accentColor: "var(--labs-accent)" }}
-                                  />
-                                  <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                                    {stripGuestSuffix(tp.participant.name || "Anonymous")}
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                          {transferTargetId && (
-                            <div className="flex gap-2 pt-1">
-                              <button
-                                className="labs-btn-primary text-sm flex-1"
-                                onClick={handleTransferHost}
-                                disabled={transferring}
-                                data-testid="labs-transfer-host-confirm"
-                              >
-                                {transferring ? "Übertrage..." : "Host übertragen"}
-                              </button>
-                              <button
-                                className="labs-btn-ghost text-sm"
-                                onClick={() => { setShowTransferHost(false); setTransferTargetId(null); }}
-                                data-testid="labs-transfer-host-cancel"
-                              >
-                                Abbrechen
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Delete — isolated, visually separated */}
-              <div style={{ marginTop: 16 }}>
-                {!confirmDelete ? (
-                  <button
-                    className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
-                    style={{
-                      background: "none",
-                      color: "var(--labs-danger, #e74c3c)",
-                      border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 30%, transparent)",
-                      opacity: 0.8,
-                    }}
-                    onClick={() => setConfirmDelete(true)}
-                    data-testid="labs-settings-delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Tasting
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
-                      style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
-                      onClick={handleDelete}
-                      data-testid="labs-settings-confirm-delete"
-                    >
-                      Yes, Delete
-                    </button>
-                    <button
-                      className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
-                      style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
-                      onClick={() => setConfirmDelete(false)}
-                      data-testid="labs-settings-cancel-delete"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -4900,7 +4599,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       )}
 
       {tasting.code && (
-        <div className="labs-card p-4 mb-5">
+        <div className="mb-5">
+          <h2 className="labs-section-label">Invite & Share</h2>
+        <div className="labs-card p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
@@ -5157,6 +4858,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </div>
             </div>
           )}
+        </div>
+        </div>
+      )}
+
+      {currentParticipant && (
+        <div className="mb-6">
+          <h2 className="labs-section-label">Tasting Setup</h2>
+          <TastingSetupSection
+            tasting={tasting}
+            tastingId={tastingId}
+            pid={currentParticipant.id as string}
+            queryClient={queryClient}
+          />
         </div>
       )}
 
@@ -5849,30 +5563,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       )}
 
       {currentParticipant && whiskyCount > 0 && (
-        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--labs-border, rgba(255,255,255,0.08))" }}>
-          <PrintMaterialsSection
-            tasting={tasting}
-            whiskies={whiskies || []}
-            participants={participants || []}
-            currentParticipant={currentParticipant}
-          />
-        </div>
-      )}
-
-      {currentParticipant && (
-        <div className="mt-6 mb-6">
-          <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
-            data-testid="desktop-paper-scan"
-          >
-            <ScanLine className="w-4 h-4" />
-            Paper Sheet Scanner
-          </button>
-        </div>
-      )}
-
-      {currentParticipant && whiskyCount > 0 && (
         <div className="mt-6 mb-6">
           <h2 className="labs-section-label">Host Rating</h2>
           <HostRatingPanel
@@ -5924,8 +5614,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      
-
       {(tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed") && (whiskies?.length || 0) > 0 && (
         <div className="mb-4">
           <button
@@ -5939,7 +5627,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-6">
         <button
           className="labs-btn-secondary flex items-center gap-2 flex-1"
           onClick={() => navigate(`/labs/results/${tastingId}`)}
@@ -5959,140 +5647,171 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       </div>
 
       {currentParticipant && (
-        <div className="mt-3">
-          <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-            onClick={async () => {
-              setTopDuplicating(true);
-              try {
-                const pid = currentParticipant.id;
-                const newTasting = await tastingApi.duplicate(tastingId, pid);
-                if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
-              } catch {}
-              setTopDuplicating(false);
-            }}
-            disabled={topDuplicating}
-            data-testid="labs-host-duplicate"
-          >
-            <Copy className="w-4 h-4" />
-            {topDuplicating ? "Kopiere..." : "Tasting kopieren"}
-          </button>
+        <div className="mb-6">
+          <h2 className="labs-section-label">Tools</h2>
+          <div className="labs-card p-4 space-y-3">
+            {whiskyCount > 0 && (
+              <PrintMaterialsSection
+                tasting={tasting}
+                whiskies={whiskies || []}
+                participants={participants || []}
+                currentParticipant={currentParticipant}
+                navigate={navigate}
+                tastingId={tastingId}
+              />
+            )}
 
-          <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2 mt-2"
-            onClick={() => { setShowDesktopTransfer(!showDesktopTransfer); setDesktopTransferTargetId(null); }}
-            data-testid="labs-host-transfer-host"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            Host übertragen
-          </button>
-
-          {showDesktopTransfer && (
-            <div
-              className="labs-card p-4 mt-2 space-y-2"
-              data-testid="labs-desktop-transfer-panel"
-            >
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                Wähle einen Teilnehmer, der das Tasting als neuer Host übernehmen soll. Du verlierst danach die Host-Rechte.
-              </p>
-              {desktopTransferGuests.length === 0 ? (
-                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                  Keine anderen Teilnehmer vorhanden.
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  {desktopTransferGuests.map((tp: { participant: { id: string; name: string } }) => (
-                    <label
-                      key={tp.participant.id}
-                      className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
-                      style={{
-                        background: desktopTransferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
-                        border: desktopTransferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
-                      }}
-                      data-testid={`labs-desktop-transfer-target-${tp.participant.id}`}
-                    >
-                      <input
-                        type="radio"
-                        name="desktopTransferTarget"
-                        checked={desktopTransferTargetId === tp.participant.id}
-                        onChange={() => setDesktopTransferTargetId(tp.participant.id)}
-                        style={{ accentColor: "var(--labs-accent)" }}
-                      />
-                      <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                        {stripGuestSuffix(tp.participant.name || "Anonymous")}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              {desktopTransferError && (
-                <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-desktop-transfer-error">
-                  {desktopTransferError}
-                </p>
-              )}
-              {desktopTransferTargetId && (
-                <div className="flex gap-2 pt-1">
-                  <button
-                    className="labs-btn-primary text-sm flex-1"
-                    onClick={handleDesktopTransferHost}
-                    disabled={desktopTransferring}
-                    data-testid="labs-desktop-transfer-confirm"
-                  >
-                    {desktopTransferring ? "Übertrage..." : "Host übertragen"}
-                  </button>
-                  <button
-                    className="labs-btn-ghost text-sm"
-                    onClick={() => { setShowDesktopTransfer(false); setDesktopTransferTargetId(null); setDesktopTransferError(null); }}
-                    data-testid="labs-desktop-transfer-cancel"
-                  >
-                    Abbrechen
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!desktopConfirmDelete ? (
             <button
-              className="w-full flex items-center justify-center gap-2 text-sm py-2.5 mt-3 rounded-lg cursor-pointer"
-              style={{
-                background: "none",
-                color: "var(--labs-danger, #e74c3c)",
-                border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 40%, transparent)",
-              }}
-              onClick={() => setDesktopConfirmDelete(true)}
-              data-testid="labs-desktop-delete"
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={() => navigate(`/labs/tastings/${tastingId}/scan`)}
+              data-testid="desktop-paper-scan"
             >
-              <Trash2 className="w-4 h-4" />
-              Tasting löschen
+              <ScanLine className="w-4 h-4" />
+              Paper Sheet Scanner
             </button>
-          ) : (
-            <div className="flex gap-2 mt-3">
+
+            <button
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={async () => {
+                setTopDuplicating(true);
+                try {
+                  const pid = currentParticipant.id;
+                  const newTasting = await tastingApi.duplicate(tastingId, pid);
+                  if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
+                } catch {}
+                setTopDuplicating(false);
+              }}
+              disabled={topDuplicating}
+              data-testid="labs-host-duplicate"
+            >
+              <Copy className="w-4 h-4" />
+              {topDuplicating ? "Duplicating..." : "Duplicate Tasting"}
+            </button>
+
+            <button
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={() => { setShowDesktopTransfer(!showDesktopTransfer); setDesktopTransferTargetId(null); }}
+              data-testid="labs-host-transfer-host"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              Transfer Host
+            </button>
+
+            {showDesktopTransfer && (
+              <div
+                className="p-3 rounded-lg space-y-2"
+                style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
+                data-testid="labs-desktop-transfer-panel"
+              >
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  Select a participant to take over as the new host. You will lose host privileges.
+                </p>
+                {desktopTransferGuests.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                    No other participants available.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {desktopTransferGuests.map((tp: { participant: { id: string; name: string } }) => (
+                      <label
+                        key={tp.participant.id}
+                        className="flex items-center gap-2 p-2 rounded-md cursor-pointer"
+                        style={{
+                          background: desktopTransferTargetId === tp.participant.id ? "var(--labs-surface-elevated)" : "transparent",
+                          border: desktopTransferTargetId === tp.participant.id ? "1px solid var(--labs-accent)" : "1px solid transparent",
+                        }}
+                        data-testid={`labs-desktop-transfer-target-${tp.participant.id}`}
+                      >
+                        <input
+                          type="radio"
+                          name="desktopTransferTarget"
+                          checked={desktopTransferTargetId === tp.participant.id}
+                          onChange={() => setDesktopTransferTargetId(tp.participant.id)}
+                          style={{ accentColor: "var(--labs-accent)" }}
+                        />
+                        <span className="text-sm" style={{ color: "var(--labs-text)" }}>
+                          {stripGuestSuffix(tp.participant.name || "Anonymous")}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {desktopTransferError && (
+                  <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-desktop-transfer-error">
+                    {desktopTransferError}
+                  </p>
+                )}
+                {desktopTransferTargetId && (
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      className="labs-btn-primary text-sm flex-1"
+                      onClick={handleDesktopTransferHost}
+                      disabled={desktopTransferring}
+                      data-testid="labs-desktop-transfer-confirm"
+                    >
+                      {desktopTransferring ? "Transferring..." : "Transfer Host"}
+                    </button>
+                    <button
+                      className="labs-btn-ghost text-sm"
+                      onClick={() => { setShowDesktopTransfer(false); setDesktopTransferTargetId(null); setDesktopTransferError(null); }}
+                      data-testid="labs-desktop-transfer-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {currentParticipant && (
+        <div className="mb-6">
+          <h2 className="labs-section-label" style={{ color: "var(--labs-danger, #e74c3c)" }}>Danger Zone</h2>
+          <div className="labs-card p-4" style={{ border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 25%, transparent)" }}>
+            {!desktopConfirmDelete ? (
               <button
-                className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
-                style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
-                onClick={async () => {
-                  try {
-                    await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant.id);
-                    navigate("/labs/tastings");
-                  } catch (e: any) {
-                    console.error("Delete failed:", e);
-                  }
+                className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
+                style={{
+                  background: "none",
+                  color: "var(--labs-danger, #e74c3c)",
+                  border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 40%, transparent)",
                 }}
-                data-testid="labs-desktop-confirm-delete"
+                onClick={() => setDesktopConfirmDelete(true)}
+                data-testid="labs-desktop-delete"
               >
-                Ja, löschen
+                <Trash2 className="w-4 h-4" />
+                Delete Tasting
               </button>
-              <button
-                className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
-                style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "none" }}
-                onClick={() => setDesktopConfirmDelete(false)}
-                data-testid="labs-desktop-cancel-delete"
-              >
-                Abbrechen
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
+                  style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
+                  onClick={async () => {
+                    try {
+                      await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant.id);
+                      navigate("/labs/tastings");
+                    } catch (e: any) {
+                      console.error("Delete failed:", e);
+                    }
+                  }}
+                  data-testid="labs-desktop-confirm-delete"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
+                  style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "none" }}
+                  onClick={() => setDesktopConfirmDelete(false)}
+                  data-testid="labs-desktop-cancel-delete"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
