@@ -427,7 +427,7 @@ function TwoWaysSection() {
       icon: <Wine style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.solo.title"),
       desc: t("landing.twoways.solo.text"),
-      href: "/labs/tastings/solo",
+      href: "/labs/solo",
       testId: "card-solo",
     },
     {

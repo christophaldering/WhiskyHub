@@ -724,13 +724,13 @@ function GuidedStepView({
                         if (!tasting.blindMode) return false;
                         const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
                         const guidedStep = tasting.guidedRevealStep ?? 0;
-                        if (idx < guidedIdx) return false;
                         if (idx > guidedIdx) return true;
                         const revealedForIdx = new Set<string>();
-                        for (let s = 0; s < guidedStep && s < stepGroups.length; s++) {
+                        const stepsForIdx = idx < guidedIdx ? stepGroups.length : guidedStep;
+                        for (let s = 0; s < stepsForIdx && s < stepGroups.length; s++) {
                           for (const f of stepGroups[s]) revealedForIdx.add(f);
                         }
-                        return !revealedForIdx.has("name") && guidedStep < stepGroups.length;
+                        return !revealedForIdx.has("name");
                       })();
                       const label = idxNameHidden
                         ? `Dram ${String.fromCharCode(65 + idx)}`
@@ -1491,7 +1491,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                           const overall = rating?.overall;
                           const isActive = idx === currentIndex;
                           const idxRevealed = getFreeRevealedFields(idx);
-                          const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name") && !(freeRevealIdx > idx) && !(freeRevealStp >= freeStepGroups.length && freeRevealIdx >= idx);
+                          const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name");
                           const label = idxNameHidden
                             ? `Dram ${String.fromCharCode(65 + idx)}`
                             : (w.name || `Dram ${idx + 1}`);

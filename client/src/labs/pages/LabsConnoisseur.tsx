@@ -201,8 +201,8 @@ export default function LabsConnoisseur() {
     return (
       <div className="labs-empty" style={{ minHeight: "60vh" }}>
         <Sparkles className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Connoisseur Report</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to generate your personal whisky profile</p>
+        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Palate Letter</p>
+        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to receive your personal whisky letter</p>
       </div>
     );
   }
@@ -219,11 +219,11 @@ export default function LabsConnoisseur() {
         <div className="flex items-center gap-3 mb-1">
           <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-connoisseur-title">
-            Connoisseur Report
+            Palate Letter
           </h1>
         </div>
         <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-          Your personal whisky profile, analyzed by AI
+          A personal letter about your whisky journey
         </p>
       </div>
 
@@ -284,10 +284,10 @@ export default function LabsConnoisseur() {
         data-testid="button-generate-report"
       >
         <Sparkles className="w-4 h-4" />
-        {generateMutation.isPending ? "Analyzing your whisky journey..." : "Generate Report"}
+        {generateMutation.isPending ? "Writing your letter..." : latestReport ? "Write a new letter" : "Write my Palate Letter"}
       </button>
 
-      {generateMutation.isPending && <SkeletonLoader message="Analyzing your whisky journey..." />}
+      {generateMutation.isPending && <SkeletonLoader message="Writing your personal letter..." />}
 
       {generateMutation.isError && (
         <div className="labs-card mb-4" style={{ borderColor: "var(--labs-danger)", padding: 16 }} data-testid="text-connoisseur-error">
@@ -302,38 +302,72 @@ export default function LabsConnoisseur() {
 
       {!generateMutation.isPending && latestReport && (
         <>
-          <div className="labs-card mb-4 labs-fade-in" style={{ borderColor: "var(--labs-accent)", padding: 16 }} data-testid="card-connoisseur-summary">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="labs-section-label mb-1" style={{ marginBottom: 4 }}>Summary</p>
-                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }} data-testid="text-report-timestamp">
-                  Generated on {new Date(latestReport.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-                </p>
-              </div>
+          <div className="labs-fade-in" style={{ marginBottom: 24 }} data-testid="card-palate-letter">
+            <div
+              style={{
+                padding: "28px 24px 28px 28px",
+                borderLeft: "3px solid var(--labs-accent)",
+                background: "color-mix(in srgb, var(--labs-accent) 3%, transparent)",
+                borderRadius: "0 16px 16px 0",
+              }}
+            >
+              <p
+                className="labs-serif"
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.8,
+                  color: "var(--labs-text)",
+                  fontWeight: 300,
+                  fontStyle: "italic",
+                  margin: 0,
+                  whiteSpace: "pre-line",
+                }}
+                data-testid="text-palate-letter-content"
+              >
+                {latestReport.reportContent}
+              </p>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, padding: "0 4px" }}>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }} data-testid="text-report-timestamp">
+                {new Date(latestReport.generatedAt).toLocaleDateString(latestReport.language === "de" ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+              </p>
               <button onClick={copySummary} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: copied ? "var(--labs-success)" : "var(--labs-text-muted)" }} data-testid="button-copy-summary">
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
-            <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="text-connoisseur-summary">{latestReport.summary}</p>
+
+            {latestReport.summary && (
+              <p
+                className="text-xs"
+                style={{
+                  color: "var(--labs-accent)",
+                  fontStyle: "italic",
+                  marginTop: 12,
+                  padding: "0 4px",
+                  lineHeight: 1.5,
+                }}
+                data-testid="text-connoisseur-summary"
+              >
+                "{latestReport.summary}"
+              </p>
+            )}
           </div>
 
-          <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-connoisseur-report">
-            <MarkdownRenderer content={latestReport.reportContent} />
+          <div className="flex gap-3 mb-6 labs-fade-in">
+            <button onClick={downloadPdf} className="labs-btn-secondary flex-1" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px" }} data-testid="button-download-pdf">
+              <Download className="w-4 h-4" /> PDF
+            </button>
+            <button
+              onClick={() => setConfirmDeleteId(latestReport.id)}
+              className="labs-btn-ghost"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--labs-text-muted)", padding: "12px 16px", border: "1px solid var(--labs-border)", borderRadius: 10 }}
+              data-testid="button-delete-latest-report"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
-
-          <button onClick={downloadPdf} className="labs-btn-secondary w-full mb-4 labs-fade-in" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-download-pdf">
-            <Download className="w-4 h-4" /> Download PDF
-          </button>
-
-          <button
-            onClick={() => setConfirmDeleteId(latestReport.id)}
-            className="labs-btn-ghost w-full mb-6 labs-fade-in"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--labs-text-muted)" }}
-            data-testid="button-delete-latest-report"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Delete Report
-          </button>
 
           {latestReport.dataSnapshot && previousReports.length > 0 && previousReports[0].dataSnapshot && (
             <SnapshotComparison
@@ -348,7 +382,7 @@ export default function LabsConnoisseur() {
         <div className="labs-card p-8 text-center labs-fade-in" data-testid="connoisseur-empty-state">
           <Sparkles className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
           <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-            Generate your first report to discover your whisky personality.
+            Your first letter awaits. A personal reflection on your palate.
           </p>
         </div>
       )}
@@ -363,7 +397,7 @@ export default function LabsConnoisseur() {
           >
             <FileText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
             <span className="labs-section-label" style={{ flex: 1, textAlign: "left", marginBottom: 0 }}>
-              Previous Reports ({previousReports.length})
+              Previous Letters ({previousReports.length})
             </span>
             <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transition: "transform 0.25s", transform: historyOpen ? "rotate(180deg)" : "none" }} />
           </button>
@@ -399,7 +433,7 @@ export default function LabsConnoisseur() {
                         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, border: "1px solid var(--labs-border)", borderRadius: 8, padding: "8px 12px" }}
                         data-testid={`button-delete-report-${report.id}`}
                       >
-                        <Trash2 className="w-3 h-3" /> Delete Report
+                        <Trash2 className="w-3 h-3" /> Delete Letter
                       </button>
                     </div>
                   )}
@@ -418,9 +452,9 @@ export default function LabsConnoisseur() {
         >
           <div className="labs-card" style={{ padding: "24px 20px", maxWidth: 340, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
             <Trash2 className="w-7 h-7 mx-auto mb-3" style={{ color: "var(--labs-danger)" }} />
-            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Report?</h3>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Letter?</h3>
             <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-              This action cannot be undone. The report and its data snapshot will be permanently removed.
+              This letter will be permanently removed.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteId(null)} className="labs-btn-secondary flex-1" data-testid="button-cancel-delete">Cancel</button>

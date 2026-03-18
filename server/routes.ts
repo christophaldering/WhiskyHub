@@ -4532,31 +4532,22 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         messages: [
           {
             role: "system",
-            content: `You are a master blender and whisky educator assessing a fellow whisky enthusiast's profile. Write a professional, respectful, and insightful Connoisseur Report.
+            content: `You are a master blender writing a personal letter to a fellow whisky enthusiast. This is their "Palate Letter" — a warm, intimate reflection on their whisky journey.
 
 Return a JSON object with exactly two fields:
-- "report": A Markdown-formatted report (800-1200 words) with these sections:
-  ## Overview
-  ## Palate Profile
-  ## Strengths & Preferences
-  ## Evolution & Growth
-  ## Collection Character
-  ## Community Standing
-  ## Recommendations
-  
-  Use specific data points, scores, and names from the provided data. Be precise and analytical yet warm. Avoid generic platitudes — reference actual whiskies, regions, and scores.
+- "report": A personal letter (150-200 words), written as flowing prose — NO headings, NO bullet points, NO markdown formatting. Write it as you would write a handwritten letter to a friend who loves whisky. Address them by first name. Reference specific whiskies, scores, and regions from their data. Mention what makes their palate unique — their preferences, their strongest dimension (nose/taste/finish), their regional tendencies. End with a genuine recommendation or reflection. The tone should be warm, knowledgeable, and personal — like a letter from a mentor, not a report from an algorithm.
 
-- "summary": A 2-3 sentence shareable summary that captures the essence of this person's whisky personality. This should be quotable and compelling.
+- "summary": A single sentence (max 20 words) that captures the essence of their whisky personality. Poetic and memorable.
 
-ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender addressing a respected colleague.`
+ALWAYS respond in ${langLabel}. Write as if you know this person through their tasting notes.`
           },
           {
             role: "user",
-            content: `Generate a Connoisseur Report for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
+            content: `Write a Palate Letter for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
           }
         ],
-        max_tokens: 3000,
-        temperature: 0.7,
+        max_tokens: 1000,
+        temperature: 0.8,
         response_format: { type: "json_object" },
       });
 

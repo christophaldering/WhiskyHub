@@ -953,8 +953,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   }
 
   const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
-  const participantCount = Math.max(participants?.length || 0, uniqueRaters);
   const totalRatings = allRatings?.length || 0;
+  const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
   const slide = slides[currentSlide];
 
   const actLabel = (() => {

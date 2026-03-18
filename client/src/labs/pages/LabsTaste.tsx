@@ -269,7 +269,7 @@ export default function LabsTaste() {
           <NavItem icon={Utensils} label="Pairings" description="Lineup-based pairing suggestions" href="/labs/taste/pairings" testId="labs-taste-link-pairings" />
           <NavItem icon={Brain} label="Benchmark" description="AI text extraction & library" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" />
           <NavItem icon={Library} label="Collection Analysis" description="Deep stats on your bottles" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" />
-          <NavItem icon={Award} label="Connoisseur Report" description="Personal AI whisky profile" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" />
+          <NavItem icon={Award} label="Palate Letter" description="A personal letter about your whisky journey" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" />
           <NavItem icon={Compass} label="AI Curation" description="Curated whisky discovery" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" />
         </div>
       </div>

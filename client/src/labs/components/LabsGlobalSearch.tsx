@@ -65,7 +65,7 @@ const PAGES_REGISTRY: PageEntry[] = [
   { label: "Pairings", labelDe: "Paarungen", route: "/labs/taste/pairings", section: "Taste", sectionDe: "Geschmack", icon: Heart, keywords: ["food", "essen"] },
   { label: "Benchmark", labelDe: "Benchmark", route: "/labs/taste/benchmark", section: "Taste", sectionDe: "Geschmack", icon: Beaker, keywords: ["ai", "metadata", "library"] },
   { label: "Collection Analysis", labelDe: "Sammlungsanalyse", route: "/labs/taste/collection-analysis", section: "Taste", sectionDe: "Geschmack", icon: BarChart3, keywords: ["cellar", "bottles", "flaschen"] },
-  { label: "Connoisseur Report", labelDe: "Kenner-Report", route: "/labs/taste/connoisseur", section: "Taste", sectionDe: "Geschmack", icon: FileText, keywords: ["pdf", "identity", "report"] },
+  { label: "Palate Letter", labelDe: "Palate Letter", route: "/labs/taste/connoisseur", section: "Taste", sectionDe: "Geschmack", icon: FileText, keywords: ["pdf", "identity", "report", "letter", "connoisseur"] },
   { label: "AI Curation", labelDe: "AI Kuration", route: "/labs/taste/ai-curation", section: "Taste", sectionDe: "Geschmack", icon: Sparkles, keywords: ["lineup", "flight", "builder"] },
   { label: "My Drams", labelDe: "Meine Drams", route: "/labs/taste/drams", section: "Taste", sectionDe: "Geschmack", icon: Wine, keywords: ["journal", "notes", "notizen"] },
   { label: "My Collection", labelDe: "Meine Sammlung", route: "/labs/taste/collection", section: "Taste", sectionDe: "Geschmack", icon: Layers, keywords: ["bottles", "cellar", "flaschen"] },
