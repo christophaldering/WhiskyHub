@@ -455,7 +455,6 @@ export async function registerRoutes(
     });
     res.write(`event: connected\ndata: {"tastingId":"${tastingId}"}\n\n`);
     addConnection(tastingId, res);
-    req.on("close", () => {});
   });
 
   // ===== SHARED EXPORT HELPERS =====
@@ -3776,6 +3775,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const allComplete = idx >= totalWhiskies - 1 && step >= maxSteps;
       console.log(`[LABS] Guided advance: whisky=${idx}/${totalWhiskies} step=${step}/${maxSteps} complete=${allComplete} tasting=${req.params.id}`);
       broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "guided-advance", guidedWhiskyIndex: idx, guidedRevealStep: step, allComplete } });
+      if (step === 0) {
+        broadcastToTasting(req.params.id, { type: "dram_advanced", data: { guidedWhiskyIndex: idx } });
+      }
       res.json({ ...updated, allComplete });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3798,6 +3800,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       });
       console.log(`[LABS] Guided goto: whisky=${whiskyIndex} step=${revealStep ?? 0} tasting=${req.params.id}`);
       broadcastToTasting(req.params.id, { type: "reveal_triggered", data: { source: "guided-goto", guidedWhiskyIndex: whiskyIndex, guidedRevealStep: revealStep ?? 0 } });
+      broadcastToTasting(req.params.id, { type: "dram_advanced", data: { guidedWhiskyIndex: whiskyIndex } });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

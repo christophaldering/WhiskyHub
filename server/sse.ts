@@ -4,6 +4,7 @@ export type SSEEventType =
   | "reveal_triggered"
   | "status_changed"
   | "presentation_changed"
+  | "dram_advanced"
   | "heartbeat";
 
 export interface SSEEvent {
@@ -42,13 +43,15 @@ export function addConnection(tastingId: string, res: Response): void {
   connections.get(tastingId)!.add(res);
   ensureHeartbeat();
 
-  res.on("close", () => {
-    const clients = connections.get(tastingId);
-    if (clients) {
-      clients.delete(res);
-      if (clients.size === 0) connections.delete(tastingId);
-    }
-  });
+  res.on("close", () => removeConnection(tastingId, res));
+}
+
+export function removeConnection(tastingId: string, res: Response): void {
+  const clients = connections.get(tastingId);
+  if (clients) {
+    clients.delete(res);
+    if (clients.size === 0) connections.delete(tastingId);
+  }
 }
 
 export function broadcastToTasting(tastingId: string, event: SSEEvent): void {

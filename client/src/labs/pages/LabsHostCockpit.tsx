@@ -109,6 +109,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     return false;
   });
 
+  const [revealConfirmed, setRevealConfirmed] = useState(false);
+  const revealConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
   const [hostTexts, setHostTexts] = useState<Record<string, Record<DimKey, string>>>({});
@@ -181,7 +184,16 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   useTastingEvents({
     tastingId,
     enabled: !!tastingId,
+    onReveal: useCallback(() => {
+      setRevealConfirmed(true);
+      if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current);
+      revealConfirmTimerRef.current = setTimeout(() => setRevealConfirmed(false), 1200);
+    }, []),
   });
+
+  useEffect(() => {
+    return () => { if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current); };
+  }, []);
 
   const parseSavedNotes = useCallback((rawNotes: string) => {
     const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
@@ -970,12 +982,15 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     onClick={() => guidedAdvanceMut.mutate()}
                     disabled={guidedAdvanceMut.isPending || allDramsDone}
                     className="cockpit-action-btn cockpit-action-primary"
+                    style={revealConfirmed ? { boxShadow: "0 0 12px var(--labs-accent)", transition: "box-shadow 300ms ease" } : undefined}
                     data-testid="cockpit-next-dram"
                   >
                     {guidedAdvanceMut.isPending
                       ? <Loader2 style={{ width: 15, height: 15, animation: "spin 1s linear infinite" }} />
-                      : <SkipForward style={{ width: 15, height: 15 }} />}
-                    {guidedBtnLabel}
+                      : revealConfirmed
+                        ? <CheckCircle2 style={{ width: 15, height: 15, color: "var(--labs-success)" }} />
+                        : <SkipForward style={{ width: 15, height: 15 }} />}
+                    {revealConfirmed ? "Sent!" : guidedBtnLabel}
                   </button>
                   );
                 })()}
@@ -986,10 +1001,15 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       onClick={() => revealNextMut.mutate()}
                       disabled={revealNextMut.isPending}
                       className="cockpit-action-btn cockpit-action-secondary"
+                      style={revealConfirmed ? { boxShadow: "0 0 12px var(--labs-accent)", transition: "box-shadow 300ms ease" } : undefined}
                       data-testid="cockpit-reveal-next"
                     >
-                      {revealNextMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Eye style={{ width: 14, height: 14 }} />}
-                      {rv?.nextLabel || "Reveal Next"}
+                      {revealNextMut.isPending
+                        ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                        : revealConfirmed
+                          ? <CheckCircle2 style={{ width: 14, height: 14, color: "var(--labs-success)" }} />
+                          : <Eye style={{ width: 14, height: 14 }} />}
+                      {revealConfirmed ? "Sent!" : (rv?.nextLabel || "Reveal Next")}
                     </button>
                   ) : (
                     <div style={{ textAlign: "center", fontSize: 12, color: "var(--labs-success)", fontWeight: 600, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
