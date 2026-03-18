@@ -485,13 +485,13 @@ export default function LabsExplore() {
               </svg>
               <h2 className="labs-empty-title">
                 {searchText || selectedRegion
-                  ? t("explore.noMatchingWhiskies", "No matching whiskies")
-                  : t("explore.noWhiskiesYet", "No whiskies yet")}
+                  ? t("explore.noMatchingWhiskies", "Keine Ergebnisse")
+                  : t("explore.noWhiskiesYet", "Noch keine Whiskies")}
               </h2>
               <p className="labs-empty-sub">
                 {searchText || selectedRegion
-                  ? t("explore.adjustFilters", "Adjust your search or filters.")
-                  : t("explore.whiskiesWillAppear", "Whiskies appear here once added to a session.")}
+                  ? t("explore.adjustFilters", "Passe deine Suche oder Filter an.")
+                  : t("explore.whiskiesWillAppear", "Whiskies erscheinen hier, sobald sie einer Session hinzugefügt werden.")}
               </p>
             </div>
           )}
@@ -587,10 +587,10 @@ export default function LabsExplore() {
                 <rect x="12" y="20" width="10" height="2" rx="1" fill="currentColor" opacity="0.1"/>
               </svg>
               <h2 className="labs-empty-title">
-                {searchText ? "No matching bottles" : "No bottles in your collection"}
+                {searchText ? "Keine Ergebnisse" : "Noch keine Flaschen"}
               </h2>
               <p className="labs-empty-sub">
-                {searchText ? "Try a different search." : "Add bottles from tastings or import your collection."}
+                {searchText ? "Passe deine Suche an." : "Füge Flaschen aus Tastings hinzu oder importiere deine Sammlung."}
               </p>
             </div>
           )}
@@ -662,10 +662,10 @@ export default function LabsExplore() {
                   fill="currentColor" opacity="0.12"/>
               </svg>
               <h2 className="labs-empty-title">
-                {searchText ? t("myTastePage.noMatchingWishlist", "No matching whiskies") : t("myTastePage.emptyWishlist", "Your wishlist is empty")}
+                {searchText ? t("myTastePage.noMatchingWishlist", "Keine Ergebnisse") : t("myTastePage.emptyWishlist", "Deine Wunschliste ist noch leer")}
               </h2>
               <p className="labs-empty-sub">
-                {searchText ? t("myTastePage.tryDifferentSearch", "Try a different search.") : t("myTastePage.wishlistHint", "Add whiskies you'd like to try.")}
+                {searchText ? t("myTastePage.tryDifferentSearch", "Passe deine Suche an.") : t("myTastePage.wishlistHint", "Füge Whiskies hinzu, die du probieren möchtest.")}
               </p>
             </div>
           )}
@@ -761,10 +761,10 @@ export default function LabsExplore() {
                 <rect x="13" y="23" width="12" height="1.5" rx="0.75" fill="currentColor" opacity="0.08"/>
               </svg>
               <h2 className="labs-empty-title">
-                {searchText ? "No matching drams" : "No drams logged yet"}
+                {searchText ? "Keine Ergebnisse" : "Noch keine Drams"}
               </h2>
               <p className="labs-empty-sub">
-                {searchText ? "Try a different search." : "Your tastings and journal entries will appear here."}
+                {searchText ? "Passe deine Suche an." : "Deine Tastings und Journal-Einträge erscheinen hier."}
               </p>
             </div>
           )}

@@ -34,7 +34,8 @@ function GuidedLobby({ tasting, participantCount }: { tasting: any; participantC
       </h1>
       <div className="labs-lobby-divider" />
       <p className="labs-lobby-meta" data-testid="guided-lobby-waiting">
-        {tasting.whiskies?.length ?? '?'} Drams · {participantCount} {participantCount === 1 ? 'taster' : 'tasters'}
+        {tasting.whiskies?.length ?? '?'} Drams · {participantCount} {participantCount === 1 ? 'Taster' : 'Taster'}
+        {tasting.location ? ` · ${tasting.location}` : ''}
       </p>
       <p className="labs-lobby-hint" data-testid="guided-lobby-count">Warte ruhig. Der Host beginnt.</p>
     </div>

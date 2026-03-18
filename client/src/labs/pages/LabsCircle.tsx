@@ -927,7 +927,7 @@ export default function LabsCircle() {
         : [];
 
     if (items.length === 0) {
-      return <EmptyState icon={Activity} title="Noch keine Aktivität" description="Füge Freunde hinzu, um ihre Tastings und Bewertungen zu sehen." />;
+      return <EmptyState icon={Activity} title="Dein Kreis ist noch still" description="Füge Freunde hinzu, um ihre Tastings und Bewertungen hier zu sehen." />;
     }
 
     return (
