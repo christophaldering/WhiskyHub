@@ -321,20 +321,26 @@ function HeroSection() {
       </FadeUp>
 
       <FadeUp delay={0.45}>
-        <p
+        <div
           style={{
             fontFamily: font.body,
             fontSize: "clamp(14px, 1.5vw, 17px)",
-            color: v.mutedLight,
-            lineHeight: 1.65,
+            lineHeight: 1.5,
+            fontWeight: 300,
             maxWidth: 440,
             margin: "0 auto 44px",
             position: "relative",
             zIndex: 2,
+            textAlign: "center",
           }}
         >
-          {t("landing.hero.body")}
-        </p>
+          <p style={{ color: v.mutedLight, margin: "0 0 2px" }}>
+            {t("landing.hero.body1")}
+          </p>
+          <p style={{ color: "rgba(201,151,43,0.85)", margin: 0 }}>
+            {t("landing.hero.body2")}
+          </p>
+        </div>
       </FadeUp>
 
       <FadeUp delay={0.6}>
@@ -693,6 +699,106 @@ function RevealMomentSection() {
   );
 }
 
+function SelfKnowledgeSection() {
+  const { t } = useTranslation();
+
+  return (
+    <section style={{ padding: "120px 48px", textAlign: "center" }} data-testid="section-selfknowledge">
+      <div style={{ maxWidth: 600, margin: "0 auto" }}>
+        <motion.span
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, delay: 0 }}
+          style={{
+            display: "block",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.15em",
+            color: ACCENT,
+            marginBottom: 20,
+            fontFamily: font.body,
+          }}
+        >
+          {t("landing.selfknowledge.eyebrow")}
+        </motion.span>
+
+        <div style={{ marginBottom: 40 }}>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(32px, 5vw, 52px)",
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: v.text,
+              lineHeight: 1.2,
+              margin: 0,
+            }}
+          >
+            {t("landing.selfknowledge.title1")}
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(32px, 5vw, 52px)",
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: v.text,
+              lineHeight: 1.2,
+              margin: 0,
+            }}
+          >
+            {t("landing.selfknowledge.title2")}
+          </motion.p>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{
+            fontFamily: font.body,
+            fontSize: 20,
+            fontWeight: 300,
+            color: v.muted,
+            lineHeight: 1.7,
+            margin: "0 0 24px",
+          }}
+        >
+          {t("landing.selfknowledge.sub")}
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.55 }}
+          style={{
+            fontFamily: font.body,
+            fontSize: 17,
+            fontWeight: 300,
+            color: v.muted,
+            lineHeight: 1.8,
+            maxWidth: 480,
+            margin: "0 auto",
+          }}
+        >
+          {t("landing.selfknowledge.body")}
+        </motion.p>
+      </div>
+    </section>
+  );
+}
+
 function BenchmarkSection() {
   const { t } = useTranslation();
 
@@ -875,6 +981,21 @@ function BenchmarkSection() {
                     <span style={{ width: 12, height: 3, borderRadius: 2, background: `${ACCENT}25`, display: "inline-block" }} /> {t("landing.benchmark.palate.communityLabel")}
                   </span>
                 </div>
+                <p
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: 15,
+                    fontStyle: "italic",
+                    fontWeight: 300,
+                    color: "rgba(240,230,211,0.5)",
+                    lineHeight: 1.6,
+                    marginTop: 24,
+                    marginBottom: 0,
+                  }}
+                  data-testid="text-benchmark-connoisseur"
+                >
+                  {t("landing.benchmark.connoisseur")}
+                </p>
               </div>
             </div>
           </FadeUp>
@@ -1143,6 +1264,7 @@ export default function LandingNew() {
       <HeroSection />
       <TwoWaysSection />
       <RevealMomentSection />
+      <SelfKnowledgeSection />
       <BenchmarkSection />
       <SocialProofSection />
       <CTASection />

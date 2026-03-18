@@ -314,6 +314,13 @@ const resources = {
           button: "Log your first dram",
         },
       },
+      hostQuickStart: {
+        title: "Start a new tasting",
+        namePlaceholder: "Name of the evening",
+        howMany: "How many whiskies?",
+        blind: "Blind Tasting",
+        create: "Create tasting & generate code",
+      },
       landing: {
         nav: {
           explore: "Explore",
@@ -333,6 +340,8 @@ const resources = {
           eyebrow: "WHISKY TASTING PLATFORM",
           subline: "Where tasting becomes reflection.",
           body: "What the community knows about every whisky. What your ratings reveal about you.",
+          body1: "What the community knows about every whisky.",
+          body2: "What your ratings reveal about you.",
           startTasting: "Start Tasting",
         },
         twoways: {
@@ -371,6 +380,14 @@ const resources = {
           spice: "Spice",
           body: "Body",
           ratings: "ratings",
+          connoisseur: "After ten drams, CaskSense writes you a personal tasting profile — not what you said you like, but what your behaviour shows.",
+        },
+        selfknowledge: {
+          eyebrow: "SELF-KNOWLEDGE",
+          title1: "You think you know",
+          title2: "what you like.",
+          sub: "Your ratings know more.",
+          body: "CaskSense finds the patterns in your tasting behaviour that you haven't named yet — the preferences that show up in your scores before you've put them into words.",
         },
         proof: {
           whiskies: "Whiskies",
@@ -1103,7 +1120,7 @@ const resources = {
           permanentDeleteMessage: "This will permanently remove this tasting and all its data (ratings, discussions, reflections, invites, lineup). This action is irreversible.",
           permanentDeleteTypeName: "Type the tasting name to confirm:",
           permanentDeleteConfirm: "Delete Forever",
-          revealConfirmTitle: "Start Reveal Phase?",
+          revealConfirmTitle: "Start Reveal?",
           revealConfirmMessage: "Once revealed, participants can no longer submit or edit their ratings. This action cannot be undone.",
           revealConfirmAction: "Start Reveal",
           editDetails: "Edit Tasting",
@@ -1537,7 +1554,7 @@ const resources = {
         item: {
           tastingSessions: "Tastings",
           blindTasting: "Blind Tasting",
-          revealPhase: "Reveal Phase",
+          revealPhase: "Reveal",
           discussion: "Live Discussion",
           noteGenerator: "Note Generator",
           qrInvites: "QR Code Invites",
@@ -6438,6 +6455,13 @@ const resources = {
           button: "Erstes Dram erfassen",
         },
       },
+      hostQuickStart: {
+        title: "Neues Tasting starten",
+        namePlaceholder: "Name des Abends",
+        howMany: "Wie viele Whiskys?",
+        blind: "Blind Tasting",
+        create: "Tasting erstellen & Code generieren",
+      },
       landing: {
         nav: {
           explore: "Entdecken",
@@ -6457,6 +6481,8 @@ const resources = {
           eyebrow: "WHISKY TASTING PLATTFORM",
           subline: "Wo Verkosten zur Reflexion wird.",
           body: "Was die Community über jeden Whisky weiß. Was deine Bewertungen über dich verraten.",
+          body1: "Was die Community über jeden Whisky weiß.",
+          body2: "Was deine Bewertungen über dich verraten.",
           startTasting: "Tasting starten",
         },
         quickJoin: {
@@ -6505,6 +6531,14 @@ const resources = {
           spice: "Würze",
           body: "Körper",
           ratings: "Bewertungen",
+          connoisseur: "Nach zehn Drams schreibt dir CaskSense ein persönliches Verkostungsprofil — nicht was du zu mögen glaubst, sondern was dein Verhalten zeigt.",
+        },
+        selfknowledge: {
+          eyebrow: "SELBSTERKENNTNIS",
+          title1: "Du glaubst zu wissen,",
+          title2: "was dir schmeckt.",
+          sub: "Deine Bewertungen wissen mehr.",
+          body: "CaskSense findet die Muster in deinem Verkostungsverhalten, die du noch nicht benannt hast — Präferenzen, die in deinen Scores sichtbar werden, bevor du sie in Worte gefasst hast.",
         },
         proof: {
           whiskies: "Whiskies",
@@ -7199,11 +7233,11 @@ const resources = {
       session: {
         viewResults: "Ergebnisse anzeigen",
         status: {
-          draft: "Entwurf",
+          draft: "In Vorbereitung",
           open: "Offen zur Bewertung",
           closed: "Bewertung geschlossen",
-          reveal: "Enth\u00fcllungsphase",
-          archived: "Archiviert"
+          reveal: "Aufdecken",
+          archived: "Abgeschlossen"
         },
         presence: {
           online: "online",
@@ -7211,7 +7245,7 @@ const resources = {
         actions: {
           start: "Tasting \u00f6ffnen",
           close: "Bewertung schlie\u00dfen",
-          reveal: "Enth\u00fcllung starten",
+          reveal: "Aufdecken starten",
           nextAct: "N\u00e4chster Akt",
           archive: "Tasting archivieren",
           deleteSession: "Tasting l\u00f6schen",
@@ -8859,10 +8893,10 @@ const resources = {
         host: "Host",
         allTastings: "Alle Tastings",
         noTastingsFound: "Keine Tastings gefunden",
-        status_draft: "Entwurf",
+        status_draft: "In Vorbereitung",
         status_open: "Offen",
         status_closed: "Abgeschlossen",
-        status_archived: "Archiviert",
+        status_archived: "Abgeschlossen",
       },
       tasteTwins: {
         title: "Geschmackszwillinge",

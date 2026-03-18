@@ -1,0 +1,493 @@
+# Replit Agent Prompt — Landing Page + Connoisseur “Palate Letter”
+
+# Zwei Änderungen. Ein Dokument.
+
+-----
+
+# TEIL 1: LANDING PAGE
+
+## Datei
+
+`client/src/pages/landing-new.tsx`
+Die alte Version bleibt unverändert unter `/landing-old`.
+
+-----
+
+## ÄNDERUNG 1: Body-Text im Hero
+
+Suche den bestehenden Body-Text unterhalb von *“Where tasting becomes reflection.”*
+
+Ersetze ihn durch:
+
+```
+EN:
+"What the community knows about every whisky.
+What your ratings reveal about you."
+
+DE:
+"Was die Community über jeden Whisky weiß.
+Was deine Bewertungen über dich verraten."
+```
+
+Zwei separate Zeilen, kein Komma, kein Punkt am Ende der ersten Zeile.
+Zweite Zeile optional leicht gold gefärbt: color rgba(201,151,43,0.85)
+Font-weight: 300, line-height: 1.5
+
+-----
+
+## ÄNDERUNG 2: Neue Sektion “Revealed Preference”
+
+### Position
+
+Nach der Reveal-Moment Sektion, vor der Benchmark/Social-Proof Sektion.
+
+### Design
+
+Vollbreite, zentriert, maximale Ruhe. Kein Card-Wrapper, kein Border, kein Background.
+Padding: 120px 48px.
+Max-width des Textblocks: 600px, margin: 0 auto.
+
+### Inhalt
+
+```
+EN:
+
+[Eyebrow — klein, gold, uppercase, letter-spacing]
+SELF-KNOWLEDGE
+
+[Haupttext — Playfair Display Italic, clamp(32px, 5vw, 52px), cream]
+You think you know
+what you like.
+
+[Pause — 40px margin]
+
+[Subtext — DM Sans, 20px, font-weight 300, muted, line-height 1.7]
+Your ratings know more.
+
+[Pause — 24px margin]
+
+[Bodytext — DM Sans, 17px, font-weight 300, muted, line-height 1.8, max-width 480px]
+CaskSense finds the patterns in your tasting 
+behaviour that you haven't named yet — 
+the preferences that show up in your scores 
+before you've put them into words.
+
+
+DE:
+
+[Eyebrow]
+SELBSTERKENNTNIS
+
+[Haupttext]
+Du glaubst zu wissen,
+was dir schmeckt.
+
+[Subtext]
+Deine Bewertungen wissen mehr.
+
+[Bodytext]
+CaskSense findet die Muster in deinem 
+Verkostungsverhalten, die du noch nicht 
+benannt hast — Präferenzen, die in deinen 
+Scores sichtbar werden, bevor du sie 
+in Worte gefasst hast.
+```
+
+### Animation
+
+Framer Motion, analog zum bestehenden Stil der Landing Page:
+
+- Eyebrow: fade-in, delay 0s
+- Haupttext Zeile 1: fade-in + translateY(20px), delay 0.15s
+- Haupttext Zeile 2: fade-in + translateY(20px), delay 0.25s
+- Subtext: fade-in, delay 0.4s
+- Bodytext: fade-in, delay 0.55s
+
+Alle mit viewport: { once: true }, threshold 0.2.
+
+-----
+
+## ÄNDERUNG 3: Connoisseur Erwähnung in der Benchmark-Sektion
+
+### Position
+
+In der bestehenden Benchmark / “Was die Daten zurückgeben” Sektion —
+am Ende des rechten Blocks (“Was deine Ratings über dich verraten”).
+
+### Neuer Satz darunter, abgesetzt durch 24px margin-top:
+
+```
+EN:
+"After ten drams, CaskSense writes you a personal 
+tasting profile — not what you said you like, 
+but what your behaviour shows."
+
+DE:
+"Nach zehn Drams schreibt dir CaskSense ein 
+persönliches Verkostungsprofil — nicht was du 
+zu mögen glaubst, sondern was dein Verhalten zeigt."
+```
+
+Font: DM Sans, 15px, font-style: italic, color: rgba(240,230,211,0.5)
+Kein Button, kein Link. Nur dieser Satz.
+
+-----
+
+## I18N — Landing Page
+
+Neue Keys in `client/src/lib/i18n.ts`:
+
+EN:
+
+```
+landing.hero.body1: "What the community knows about every whisky."
+landing.hero.body2: "What your ratings reveal about you."
+landing.selfknowledge.eyebrow: "SELF-KNOWLEDGE"
+landing.selfknowledge.title1: "You think you know"
+landing.selfknowledge.title2: "what you like."
+landing.selfknowledge.sub: "Your ratings know more."
+landing.selfknowledge.body: "CaskSense finds the patterns in your tasting behaviour that you haven't named yet — the preferences that show up in your scores before you've put them into words."
+landing.benchmark.connoisseur: "After ten drams, CaskSense writes you a personal tasting profile — not what you said you like, but what your behaviour shows."
+```
+
+DE:
+
+```
+landing.hero.body1: "Was die Community über jeden Whisky weiß."
+landing.hero.body2: "Was deine Bewertungen über dich verraten."
+landing.selfknowledge.eyebrow: "SELBSTERKENNTNIS"
+landing.selfknowledge.title1: "Du glaubst zu wissen,"
+landing.selfknowledge.title2: "was dir schmeckt."
+landing.selfknowledge.sub: "Deine Bewertungen wissen mehr."
+landing.selfknowledge.body: "CaskSense findet die Muster in deinem Verkostungsverhalten, die du noch nicht benannt hast — Präferenzen, die in deinen Scores sichtbar werden, bevor du sie in Worte gefasst hast."
+landing.benchmark.connoisseur: "Nach zehn Drams schreibt dir CaskSense ein persönliches Verkostungsprofil — nicht was du zu mögen glaubst, sondern was dein Verhalten zeigt."
+```
+
+-----
+
+-----
+
+# TEIL 2: CONNOISSEUR “PALATE LETTER”
+
+## Philosophie
+
+Der Connoisseur Report ist kein Feature das man aufruft.
+Er ist ein Moment der den Nutzer findet.
+
+Methodischer Anspruch: revealed preference statt Selbstbeschreibung.
+Drei Ebenen: deskriptiv → interpretativ (vorsichtig) → reflexiv (offene Frage).
+Ton: warm, präzise, epistemisch bescheiden. Kein Persönlichkeitsprofil.
+Sprache: immer in der vom Nutzer gewählten Sprache (participant.language oder i18n.language).
+
+-----
+
+## AKT 1: STILLE BEOBACHTUNG
+
+### Entfernen
+
+In allen Labs-Pages: Entferne Hinweise die den Nutzer auf den Report hinweisen
+bevor er bereit ist. Konkret:
+
+- “X / 10 Drams bis zu deinem Connoisseur Report” Texte
+- Fortschrittsbalken in Richtung Connoisseur Report
+- Badges oder Counter die auf den Report hinweisen
+
+Der bestehende locked-state Progress in `LabsTasteAnalytics.tsx` bleibt —
+der betrifft Analytics generell, nicht den Connoisseur Report.
+
+-----
+
+## AKT 2: DER ANKUNFTS-SCREEN
+
+### Neue Komponente: `LabsPaletteLetterArrival.tsx`
+
+### Trigger-Logik
+
+In `LabsLayout.tsx`, beim Mount:
+
+```typescript
+const checkForPaletteLetterTrigger = async () => {
+  const alreadySeen = localStorage.getItem('casksense_letter_seen');
+  if (alreadySeen) return;
+  
+  // Ratings-Count aus bestehendem API laden
+  // z.B. GET /api/participants/:id/stats oder flavor profile endpoint
+  const ratingsCount = await fetchRatingsCount(participantId);
+  
+  if (ratingsCount >= 10) {
+    // Flag noch nicht setzen — erst nach dem der Nutzer den Screen gesehen hat
+    setShowPaletteLetter(true);
+  }
+};
+```
+
+Nach dem Nutzer auf “Read your profile” oder “später” tippt:
+
+```typescript
+localStorage.setItem('casksense_letter_seen', 'true');
+```
+
+Bei jedem weiteren Tasting-Abschluss wird der Report still neu generiert
+(bestehender POST Endpoint), aber kein neuer Ankunfts-Screen.
+
+### Design des Ankunfts-Screens
+
+Vollbild-Overlay. Z-Index über allem. Kein Nav, kein Header, kein Bottom Nav.
+Background: var(–dark), opacity startet bei 0, fade-in über 1.2s.
+
+```
+[Vertikale Zentrierung, text-align: center]
+
+[Gold Sparkle Icon — Lucide Sparkles, 24px, #E8B84B]
+[margin-bottom: 32px]
+[animation: langsames Pulsieren, 3s cycle]
+
+[Haupttext — Playfair Display Italic]
+[font-size: clamp(28px, 6vw, 40px)]
+[color: var(--cream)]
+[line-height: 1.3]
+
+EN: "A note on your palate,"
+    "[Vorname des Nutzers]."
+
+DE: "Eine Notiz über"
+    "deinen Gaumen, [Vorname]."
+
+[margin-bottom: 48px]
+
+[Primärer Button]
+EN: "Read your profile →"
+DE: "Dein Profil lesen →"
+→ gold gradient, border-radius 100px, padding 16px 36px
+→ navigiert zu /labs/taste/connoisseur
+→ setzt localStorage Flag
+
+[Sekundärer Link — kein Button]
+[margin-top: 16px]
+[font-size: 14px, color: var(--muted)]
+EN: "Later"
+DE: "Später"
+→ schließt den Screen, setzt localStorage Flag
+```
+
+Animation Staggering:
+
+- Icon: fade-in, delay 0.3s
+- Zeile 1: fade-in + translateY(16px), delay 0.6s
+- Zeile 2 (Name): fade-in + translateY(16px), delay 0.8s
+- Button: fade-in, delay 1.1s
+- “Later”: fade-in, delay 1.3s
+
+Alle cubic-bezier(0.16,1,0.3,1), duration 0.8s.
+
+-----
+
+## AKT 3: DER REPORT SELBST
+
+### GPT-4o Prompt überarbeiten
+
+Endpoint: `POST /api/participants/:id/connoisseur-report`
+Datei: `server/routes.ts` oder dediziertes connoisseur-routes File.
+
+### Datenbasis erweitern
+
+Zusätzlich zu den bestehenden Daten (ratings, journal, collection, flavor indices)
+folgende Signale berechnen und in den Prompt einspeisen:
+
+```typescript
+const analyticsData = {
+  // Bestehend:
+  ratings: allRatings,
+  journalEntries: journalEntries,
+  flavorProfile: flavorProfileData,
+  
+  // NEU — vor dem API Call berechnen:
+  
+  // 1. Abweichung vom Community-Schnitt pro Dimension
+  dimensionDeviations: {
+    nose: userAvgNose - communityAvgNose,
+    palate: userAvgPalate - communityAvgPalate,
+    finish: userAvgFinish - communityAvgFinish,
+    balance: userAvgBalance - communityAvgBalance,
+  },
+  
+  // 2. Systematische Stil-Präferenzen (revealed, nicht deklariert)
+  styleDeviations: {
+    // Differenz user avg vs community avg, gruppiert nach:
+    byRegion: groupedDeviationsByRegion,    // Islay, Speyside etc.
+    byCask: groupedDeviationsByCask,        // Sherry, Bourbon etc.
+    byPeatLevel: groupedDeviationsByPeat,   // smoky vs non-smoky
+    byAge: groupedDeviationsByAge,          // young vs aged
+  },
+  
+  // 3. Blind vs. Open Tasting Vergleich
+  blindVsOpen: {
+    avgScoreBlind: avgScoreInBlindTastings,
+    avgScoreOpen: avgScoreInOpenTastings,
+    delta: avgScoreBlind - avgScoreOpen,
+    // positiv = strenger wenn blind, negativ = großzügiger wenn blind
+  },
+  
+  // 4. Konsistenz-Metrik
+  consistency: {
+    scoreStdDev: standardDeviationOfAllScores,
+    label: stdDev < 8 ? 'consistent' : stdDev < 15 ? 'moderate' : 'exploratory'
+  },
+  
+  // 5. Entwicklung über Zeit
+  evolution: {
+    firstQuarterAvg: avgScoreFirstQuarter,
+    lastQuarterAvg: avgScoreLastQuarter,
+    trend: lastQuarterAvg > firstQuarterAvg + 3 ? 'rising' : 
+           lastQuarterAvg < firstQuarterAvg - 3 ? 'dropping' : 'stable'
+  },
+  
+  // 6. Nase-First oder Finish-First Taster
+  dominantDimension: dimensionWithHighestAvgRelativeToOverall,
+}
+```
+
+### Neuer GPT-4o System Prompt
+
+```
+You are writing a personal tasting profile for a whisky enthusiast.
+
+TONE: Warm, precise, epistemically humble. You are a skilled observer, 
+not a diagnostician. You describe patterns in behaviour, not personality.
+You write like a thoughtful sommelier who has been quietly watching 
+someone taste for months.
+
+LANGUAGE: Write in {{language}}. 
+If German: use "du" (informal), warm but not casual.
+If English: second person "you", elegant but not stiff.
+
+STRUCTURE — three parts, flowing prose, no headers, no bullet points:
+
+PART 1 — WHAT THE DATA SHOWS (60-80 words)
+Describe 2-3 concrete, specific patterns from the analytics data.
+Use precise numbers where they add insight. Be descriptive, not evaluative.
+Example: "Your nose scores are consistently your most generous dimension — 
+averaging 7 points above your own overall scores. Your finish scores, 
+by contrast, are your most exacting."
+
+PART 2 — WHAT THIS MIGHT MEAN (60-80 words)  
+One or two careful interpretations. Use hedged language:
+"This could suggest...", "One reading of this...", "It's possible that..."
+Never state personality conclusions. Stay close to the behaviour.
+Example: "This could suggest that first impressions matter most to you —
+that you decide quickly and refine slowly."
+
+PART 3 — ONE OPEN QUESTION (20-30 words)
+End with a single genuine question that invites reflection.
+Not rhetorical. Something the data raises but cannot answer.
+Example: "Have you noticed that your scores in blind tastings 
+run 8 points lower than when you know the bottle?"
+
+TOTAL LENGTH: 150-200 words maximum. Less is more.
+DO NOT: list features, use bullet points, mention the app by name,
+make personality diagnoses, use superlatives.
+```
+
+### Darstellung des Reports in `LabsConnoisseur.tsx`
+
+**Block 1 — Der Brief** *(neu, oben)*
+
+```css
+.palate-letter {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.85;
+  color: rgba(240,230,211,0.88);
+  max-width: 560px;
+  margin: 0 auto 48px;
+  text-align: left;
+  border-left: 2px solid rgba(201,151,43,0.3);
+  padding-left: 24px;
+}
+```
+
+Trennlinie zwischen Brief und Visualisierungen:
+
+```
+[1px horizontal line, rgba(255,255,255,0.06), margin: 40px 0]
+[Kleiner Text zentriert: EN "Your tasting data" / DE "Deine Verkostungsdaten"]
+[font-size: 11px, uppercase, letter-spacing 0.1em, color: var(--muted)]
+```
+
+**Block 2 — Bestehende Visualisierungen** *(unverändert darunter)*
+Radar-Chart, Dimensionen-Breakdown, Community-Vergleich — alles bestehend.
+
+**Block 3 — Timestamp auf Taste-Hauptseite** *(neu)*
+
+In `LabsTaste.tsx`, unter dem Connoisseur Report Link/Karte:
+
+```
+EN: "Updated after your last tasting"
+DE: "Aktualisiert nach deiner letzten Verkostung"
+font-size: 12px, color: var(--muted), font-weight: 300
+```
+
+-----
+
+## SPRACH-LOGIK FÜR DEN API CALL
+
+```typescript
+// In der Report-Generierung:
+const userLanguage = participant.language || i18n.language || 'en';
+const languageInstruction = userLanguage.startsWith('de') ? 'German' : 'English';
+
+// In den GPT Prompt einspeisen:
+systemPrompt.replace('{{language}}', languageInstruction);
+```
+
+-----
+
+## I18N — Connoisseur / Palate Letter
+
+Neue Keys in `client/src/lib/i18n.ts`:
+
+EN:
+
+```
+paletteLetter.arrival.line1: "A note on your palate,"
+paletteLetter.arrival.line2: "{{name}}."
+paletteLetter.arrival.cta: "Read your profile"
+paletteLetter.arrival.later: "Later"
+connoisseur.dataDivider: "Your tasting data"
+connoisseur.updatedAfter: "Updated after your last tasting"
+```
+
+DE:
+
+```
+paletteLetter.arrival.line1: "Eine Notiz über"
+paletteLetter.arrival.line2: "deinen Gaumen, {{name}}."
+paletteLetter.arrival.cta: "Dein Profil lesen"
+paletteLetter.arrival.later: "Später"
+connoisseur.dataDivider: "Deine Verkostungsdaten"
+connoisseur.updatedAfter: "Aktualisiert nach deiner letzten Verkostung"
+```
+
+-----
+
+## WAS NICHT VERÄNDERT WIRD
+
+- Bestehende Report-Generierungs-Logik außer dem GPT Prompt
+- Bestehende Visualisierungen in LabsConnoisseur.tsx
+- Alle anderen Labs-Pages
+- Backend-Routen außer dem erweiterten Analytics-Input
+- Schema — keine DB-Änderungen
+
+-----
+
+## PRIORISIERUNG
+
+1. GPT Prompt überarbeiten — höchste inhaltliche Wirkung
+1. Ankunfts-Screen bauen
+1. Trigger-Logik in LabsLayout
+1. Brief-Darstellung in LabsConnoisseur
+1. Landing Page Änderungen
+1. Timestamp auf Taste-Seite
+1. I18n Keys
+1. Alte Fortschritts-Hinweise entfernen
