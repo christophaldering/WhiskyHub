@@ -8,7 +8,6 @@ import {
   Calendar,
   MapPin,
   Users,
-  Clock,
   Play,
   BarChart3,
   Eye,
@@ -21,7 +20,12 @@ import {
   Download,
   Mail,
   Trophy,
-  Settings,
+  Trash2,
+  Gauge,
+  ChevronDown,
+  Pencil,
+  X,
+  Plus,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
@@ -43,6 +47,163 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   archived: { label: "Completed", className: "labs-badge-info" },
 };
 
+const REVEAL_PRESETS: Record<string, { label: string; desc: string }> = {
+  classic: { label: "Classic", desc: "Name then details" },
+  "photo-first": { label: "Photo First", desc: "Photo then name" },
+  "details-first": { label: "Details", desc: "Details then name" },
+  "one-by-one": { label: "One by One", desc: "Reveal individually" },
+};
+
+const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
+  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+  "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+};
+
+function detectPresetKey(order: string[][] | null): string {
+  if (!order) return "classic";
+  const json = JSON.stringify(order);
+  for (const [key, preset] of Object.entries(REVEAL_PRESETS_MAP)) {
+    if (JSON.stringify(preset) === json) return key;
+  }
+  return "custom";
+}
+
+function DetailToggle({ checked, onChange, icon, label, description, testId, disabled }: {
+  checked: boolean; onChange: (v: boolean) => void;
+  icon: React.ReactNode; label: string; description: string; testId: string; disabled?: boolean;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between py-3"
+      style={{ opacity: disabled ? 0.6 : 1, cursor: disabled ? "default" : "pointer" }}
+      onClick={() => !disabled && onChange(!checked)}
+      data-testid={testId}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: checked ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{label}</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{description}</p>
+        </div>
+      </div>
+      <div
+        className="w-11 h-6 rounded-full transition-all flex items-center px-0.5"
+        style={{
+          background: checked ? "var(--labs-accent)" : "var(--labs-border)",
+          justifyContent: checked ? "flex-end" : "flex-start",
+        }}
+      >
+        <div className="w-5 h-5 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+      </div>
+    </div>
+  );
+}
+
+function DetailSegmentedSelect({ value, options, onChange, disabled }: {
+  value: string | number;
+  options: { value: string | number; label: string; desc?: string; disabled?: boolean }[];
+  onChange: (v: string | number) => void;
+  disabled?: boolean;
+}) {
+  const cols = options.length <= 4 ? options.length : options.length <= 6 ? 3 : 4;
+  return (
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: disabled ? 0.5 : 1 }}>
+      {options.map((opt) => {
+        const active = value === opt.value;
+        const isDisabled = disabled || !!opt.disabled;
+        return (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => !isDisabled && onChange(opt.value)}
+            className="rounded-lg transition-all text-center"
+            style={{
+              padding: "8px 4px",
+              background: isDisabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+              border: `1.5px solid ${isDisabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+              cursor: isDisabled ? "not-allowed" : "pointer",
+              opacity: isDisabled ? 0.4 : 1,
+            }}
+            disabled={isDisabled}
+            data-testid={`labs-detail-opt-${opt.value}`}
+          >
+            <div className="font-bold" style={{ fontSize: 14, color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+            {opt.desc && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 1 }}>{opt.desc}</div>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
+  whisky: Record<string, unknown>;
+  onSave: (data: Record<string, unknown>) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState((whisky.name as string) || "");
+  const [distillery, setDistillery] = useState((whisky.distillery as string) || "");
+  const [age, setAge] = useState((whisky.age as string) || "");
+  const [abv, setAbv] = useState(whisky.abv != null ? String(whisky.abv) : "");
+
+  return (
+    <div className="labs-card p-3 space-y-2" data-testid={`labs-detail-whisky-edit-${whisky.id}`}>
+      <input
+        className="labs-input w-full text-sm"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+        data-testid={`input-whisky-name-${whisky.id}`}
+      />
+      <div className="grid grid-cols-3 gap-2">
+        <input
+          className="labs-input text-sm"
+          value={distillery}
+          onChange={(e) => setDistillery(e.target.value)}
+          placeholder="Distillery"
+          data-testid={`input-whisky-distillery-${whisky.id}`}
+        />
+        <input
+          className="labs-input text-sm"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+          placeholder="Age"
+          data-testid={`input-whisky-age-${whisky.id}`}
+        />
+        <input
+          className="labs-input text-sm"
+          value={abv}
+          onChange={(e) => setAbv(e.target.value)}
+          placeholder="ABV %"
+          data-testid={`input-whisky-abv-${whisky.id}`}
+        />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <button className="labs-btn-ghost text-xs" onClick={onCancel} data-testid={`button-whisky-cancel-${whisky.id}`}>Cancel</button>
+        <button
+          className="labs-btn-primary text-xs px-3"
+          onClick={() => onSave({
+            name: name.trim() || undefined,
+            distillery: distillery.trim() || null,
+            age: age.trim() || null,
+            abv: abv.trim() ? parseFloat(abv) : null,
+          })}
+          data-testid={`button-whisky-save-${whisky.id}`}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
@@ -57,7 +218,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteNote, setInviteNote] = useState("");
   const [duplicating, setDuplicating] = useState(false);
-  const [inviteResults, setInviteResults] = useState<any[] | null>(null);
+  const [inviteResults, setInviteResults] = useState<Array<{ email: string; status: string; link?: string }> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [showWhiskies, setShowWhiskies] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
+  const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
+  const [showAddWhisky, setShowAddWhisky] = useState(false);
+  const [newWhiskyName, setNewWhiskyName] = useState("");
 
   const { data: tasting, isLoading, isError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -81,8 +250,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const sendInviteMutation = useMutation({
     mutationFn: ({ emailList, note }: { emailList: string[]; note?: string }) =>
       inviteApi.sendInvites(tastingId, emailList, note),
-    onSuccess: (data: any) => {
-      const mapped = (data.invites || []).map((inv: any) => ({
+    onSuccess: (data: { invites?: Array<{ email: string; emailSent: boolean; link?: string }> }) => {
+      const mapped = (data.invites || []).map((inv) => ({
         email: inv.email,
         status: inv.emailSent ? "sent" : "link-only",
         link: inv.link,
@@ -91,6 +260,31 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       setInviteEmails("");
       setInviteNote("");
       queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
+    },
+  });
+
+  const deleteWhiskyMutation = useMutation({
+    mutationFn: (id: string) => whiskyApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setDeletingWhiskyId(null);
+    },
+  });
+
+  const updateWhiskyMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => whiskyApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setEditingWhiskyId(null);
+    },
+  });
+
+  const addWhiskyMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => whiskyApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setNewWhiskyName("");
+      setShowAddWhisky(false);
     },
   });
 
@@ -136,6 +330,64 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     sendInviteMutation.mutate({ emailList, note: inviteNote.trim() || undefined });
   };
 
+  const patchDetails = async (body: Record<string, unknown>) => {
+    const pid = currentParticipant?.id;
+    if (!pid) return;
+    const res = await fetch(`/api/tastings/${tastingId}/details`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: pid, ...body }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Save failed" }));
+      setSaveStatus(err.message || "Save failed");
+      setTimeout(() => setSaveStatus(null), 3000);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    setSaveStatus("Saved");
+    setTimeout(() => setSaveStatus(null), 2000);
+  };
+
+  const handleToggle = (field: string, currentValue: boolean) => {
+    patchDetails({ [field]: !currentValue });
+  };
+
+  const handleChangeScale = (scale: string | number) => {
+    patchDetails({ ratingScale: scale });
+  };
+
+  const handleChangeRevealOrder = (key: string | number) => {
+    const k = String(key);
+    const patch: Record<string, unknown> = {};
+    if (k === "classic") {
+      patch.revealOrder = null;
+    } else if (REVEAL_PRESETS_MAP[k]) {
+      patch.revealOrder = JSON.stringify(REVEAL_PRESETS_MAP[k]);
+      if (k === "one-by-one" && ((tasting?.sessionUiMode as string) || "flow") === "flow") {
+        patch.sessionUiMode = "focus";
+      }
+    }
+    patchDetails(patch);
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    const pid = currentParticipant?.id;
+    if (!pid) { setDuplicating(false); return; }
+    try {
+      const newTasting = await tastingApi.duplicate(tastingId, pid);
+      if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant?.id);
+    navigate("/labs/tastings");
+  };
+
   const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
   const isLive = tasting?.status === "open";
   const isCompleted = tasting?.status === "archived" || tasting?.status === "closed";
@@ -178,6 +430,17 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     );
   }
 
+  const whiskyCount = whiskies?.length ?? 0;
+  const participantCount = participants?.length ?? 0;
+
+  let currentRevealKey = "classic";
+  if (tasting.blindMode && tasting.revealOrder) {
+    try {
+      const parsed = JSON.parse(tasting.revealOrder as string);
+      currentRevealKey = detectPresetKey(parsed);
+    } catch { currentRevealKey = "classic"; }
+  }
+
   return (
     <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
       <button
@@ -190,7 +453,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         Tastings
       </button>
 
-      <div className="mb-6">
+      <div className="mb-5">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h1
             className="labs-h2"
@@ -199,22 +462,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           >
             {tasting.title}
           </h1>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isHost && (
-              <button
-                onClick={() => navigate(`/labs/host/${tastingId}`)}
-                className="labs-btn-ghost"
-                style={{ padding: 6, color: "var(--labs-accent)" }}
-                title="Tasting bearbeiten"
-                data-testid="labs-detail-edit-btn"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-            )}
-            <span className={`labs-badge ${status.className}`} data-testid="labs-detail-status">
-              {status.label}
-            </span>
-          </div>
+          <span className={`labs-badge ${status.className} flex-shrink-0`} data-testid="labs-detail-status">
+            {status.label}
+          </span>
         </div>
 
         {tasting.description && (
@@ -240,287 +490,61 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               {tasting.location}
             </span>
           )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mb-6 labs-stagger-1">
-        <div className="labs-card p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>Whiskies</span>
-          </div>
-          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-whisky-count">
-            {whiskies?.length ?? 0}
-          </p>
-        </div>
-        <div className="labs-card p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>Participants</span>
-          </div>
-          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-participant-count">
-            {participants?.length ?? 0}
-          </p>
-        </div>
-      </div>
-
-      <div className="labs-card p-4 mb-6 labs-stagger-2">
-        <div className="labs-section-label">Details</div>
-        <div className="space-y-3">
           {tasting.hostName && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Host</span>
-              <span className="text-sm font-medium flex items-center gap-1.5" data-testid="labs-detail-host">
-                <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                {stripGuestSuffix(tasting.hostName)}
-              </span>
-            </div>
-          )}
-          <div className="labs-divider" />
-          <div className="flex items-center justify-between">
-            <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Blind Mode</span>
-            <span className="text-sm font-medium flex items-center gap-1.5" data-testid="labs-detail-blind">
-              {tasting.blindMode ? (
-                <><EyeOff className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> Active</>
-              ) : (
-                <><Eye className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /> Off</>
-              )}
+            <span className="flex items-center gap-1.5" data-testid="labs-detail-host">
+              <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+              {stripGuestSuffix(tasting.hostName)}
             </span>
-          </div>
-          {tasting.ratingScale && (
-            <>
-              <div className="labs-divider" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Rating Scale</span>
-                <span className="text-sm font-medium" data-testid="labs-detail-scale">0 – {tasting.ratingScale}</span>
-              </div>
-            </>
-          )}
-          {isHost && (
-            <>
-              <div className="labs-divider" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Your Role</span>
-                <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: "var(--labs-accent)" }}>
-                  <Crown className="w-3.5 h-3.5" /> Host
-                </span>
-              </div>
-            </>
           )}
         </div>
       </div>
 
-      {participants && participants.length > 0 && (
-        <div className="labs-card p-4 mb-6 labs-stagger-3">
-          <div className="labs-section-label">Participants</div>
-          <div className="space-y-2">
-            {participants.map((p: any) => (
-              <div key={p.id} className="flex items-center gap-3" data-testid={`labs-detail-participant-${p.id}`}>
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                >
-                  {stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium">{stripGuestSuffix((p.name || "Anonymous") as string)}</span>
-                {p.id === tasting.hostId && (
-                  <Crown className="w-3 h-3 ml-auto" style={{ color: "var(--labs-accent)" }} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
-
-      {tasting.code && (
-        <div className="labs-card p-4 mb-6 labs-stagger-4" data-testid="labs-detail-code-section">
-          <div className="labs-section-label">Join Code & QR</div>
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span
-              className="text-2xl font-bold tracking-widest"
-              style={{ fontFamily: "monospace", color: "var(--labs-accent)" }}
-              data-testid="labs-detail-join-code"
-            >
-              {tasting.code}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              className="labs-btn-ghost"
-              style={{ padding: "4px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}
-              data-testid="button-labs-copy-code"
-            >
-              {codeCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
-              {codeCopied ? "Copied" : "Copy"}
-            </button>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setShowQr(!showQr)}
-              className="labs-btn-ghost"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
-              data-testid="button-labs-toggle-qr"
-            >
-              <QrCode className="w-4 h-4" />
-              {showQr ? "Hide QR" : "Show QR Code"}
-            </button>
-            <button
-              onClick={handleCopyLink}
-              className="labs-btn-ghost"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
-              data-testid="button-labs-copy-join-link"
-            >
-              {linkCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
-              {linkCopied ? "Copied" : "Copy Link"}
-            </button>
-          </div>
-          {showQr && qrDataUrl && (
-            <div className="flex flex-col items-center gap-3 mt-4">
-              <div style={{ background: "var(--labs-surface)", padding: 12, borderRadius: 12 }}>
-                <img src={qrDataUrl} alt="QR Code" style={{ width: 180, height: 180 }} data-testid="img-labs-qr-code" />
-              </div>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Scan to join this tasting</p>
-              <button
-                onClick={downloadQr}
-                className="labs-btn-ghost"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
-                data-testid="button-labs-download-qr"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Download QR
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isHost && (
-        <div className="labs-card p-4 mb-6 labs-stagger-4" data-testid="labs-detail-invite-section">
-          <button
-            onClick={() => { setShowInvite(!showInvite); setInviteResults(null); }}
-            className="w-full flex items-center justify-between"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
-            data-testid="button-labs-toggle-invite"
-          >
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Email Invitations</span>
-            </div>
-            <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{showInvite ? "\u25B2" : "\u25BC"}</span>
-          </button>
-          {showInvite && (
-            <div className="mt-4 space-y-3">
-              {!inviteResults ? (
-                <>
-                  {currentParticipant?.id && (
-                    <FriendsQuickSelect
-                      participantId={currentParticipant.id}
-                      tastingId={tastingId}
-                      selectedEmails={inviteEmails.split("\n").map(e => e.trim()).filter(Boolean)}
-                      onToggle={(email, selected) => {
-                        const current = inviteEmails.split("\n").map(e => e.trim()).filter(Boolean);
-                        if (selected) {
-                          if (!current.some(e => e.toLowerCase() === email.toLowerCase())) {
-                            setInviteEmails([...current, email].join("\n"));
-                          }
-                        } else {
-                          setInviteEmails(current.filter(e => e.toLowerCase() !== email.toLowerCase()).join("\n"));
-                        }
-                      }}
-                    />
-                  )}
-                  <div>
-                    <label className="labs-section-label" style={{ marginBottom: 6, display: "block" }}>Email addresses (one per line)</label>
-                    <textarea
-                      className="labs-input"
-                      rows={3}
-                      value={inviteEmails}
-                      onChange={(e) => setInviteEmails(e.target.value)}
-                      placeholder={"friend@example.com\nanother@example.com"}
-                      data-testid="textarea-labs-invite-emails"
-                    />
-                  </div>
-                  <div>
-                    <label className="labs-section-label" style={{ marginBottom: 6, display: "block" }}>Personal note (optional)</label>
-                    <textarea
-                      className="labs-input"
-                      rows={2}
-                      value={inviteNote}
-                      onChange={(e) => setInviteNote(e.target.value)}
-                      placeholder="Join me for a whisky tasting!"
-                      data-testid="textarea-labs-invite-note"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSendInvites}
-                    disabled={sendInviteMutation.isPending || inviteEmails.trim().length === 0}
-                    className="labs-btn-primary w-full flex items-center justify-center gap-2"
-                    style={{ opacity: inviteEmails.trim().length === 0 ? 0.5 : 1 }}
-                    data-testid="button-labs-send-invites"
-                  >
-                    <Mail className="w-4 h-4" />
-                    {sendInviteMutation.isPending ? "Sending..." : "Send Invitations"}
-                  </button>
-                </>
-              ) : (
-                <div data-testid="labs-invite-results">
-                  <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-accent)" }}>Invitations sent</p>
-                  {inviteResults.map((r: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: i < inviteResults.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
-                      <span className="text-sm truncate" style={{ color: "var(--labs-text-secondary)" }}>{r.email}</span>
-                      <span
-                        className="labs-badge text-[11px]"
-                        style={{
-                          background: r.status === "sent" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
-                          color: r.status === "sent" ? "var(--labs-success)" : "var(--labs-accent)",
-                        }}
-                      >
-                        {r.status}
-                      </span>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setInviteResults(null)}
-                    className="labs-btn-ghost mt-3"
-                    style={{ fontSize: 12 }}
-                    data-testid="button-labs-invite-new"
-                  >
-                    Send more
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-3 labs-stagger-5">
+      <div className="mb-6 labs-stagger-1 space-y-2">
         {isHost && isDraft && (
-          <button
-            className="labs-btn-primary w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/labs/host/${tastingId}`)}
-            data-testid="labs-detail-manage"
-          >
-            <Settings className="w-4 h-4" />
-            Tasting konfigurieren
-          </button>
+          <>
+            <button
+              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+              onClick={() => navigate(`/labs/live/${tastingId}`)}
+              data-testid="labs-detail-start-tasting"
+            >
+              <Play className="w-5 h-5" />
+              Tasting starten
+            </button>
+            <button
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={() => navigate(`/labs/host/${tastingId}`)}
+              data-testid="labs-detail-manage"
+            >
+              Presenter View
+            </button>
+          </>
         )}
 
         {(isLive || isReveal) && (
-          <button
-            className="labs-btn-primary w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/labs/live/${tastingId}`)}
-            data-testid="labs-detail-join-live"
-          >
-            <Play className="w-4 h-4" />
-            {isLive ? "Enter Live Session" : "View Reveal"}
-          </button>
+          <>
+            <button
+              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+              onClick={() => navigate(`/labs/live/${tastingId}`)}
+              data-testid="labs-detail-join-live"
+            >
+              <Play className="w-5 h-5" />
+              {isLive ? "Enter Live Session" : "View Reveal"}
+            </button>
+            {isHost && (
+              <button
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                data-testid="labs-detail-manage"
+              >
+                Manage Session
+              </button>
+            )}
+          </>
         )}
 
         {isDraft && !isHost && (
           <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+            className="labs-btn-secondary w-full flex items-center justify-center gap-2 py-3"
             onClick={() => navigate(`/labs/live/${tastingId}`)}
             data-testid="labs-detail-join-live"
           >
@@ -532,11 +556,11 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         {isCompleted && (
           <>
             <button
-              className="labs-btn-primary w-full flex items-center justify-center gap-2"
+              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
               onClick={() => navigate(`/labs/results/${tastingId}`)}
               data-testid="labs-detail-view-results"
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-5 h-5" />
               View Results
             </button>
             <button
@@ -547,41 +571,621 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               <Trophy className="w-4 h-4" />
               Tasting Recap
             </button>
+            {isHost && (
+              <button
+                className="labs-btn-ghost w-full flex items-center justify-center gap-2 text-xs"
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                style={{ color: "var(--labs-text-muted)" }}
+                data-testid="labs-detail-manage"
+              >
+                Manage Session
+              </button>
+            )}
           </>
         )}
+      </div>
 
-        {isHost && !isDraft && (
+      <div className="grid grid-cols-3 gap-3 mb-6 labs-stagger-1">
+        <div className="labs-card p-3 text-center">
+          <Wine className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-whisky-count">
+            {whiskyCount}
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Whiskies</p>
+        </div>
+        <div className="labs-card p-3 text-center">
+          <Users className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-participant-count">
+            {participantCount}
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Participants</p>
+        </div>
+        <div className="labs-card p-3 text-center">
+          <BarChart3 className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-rating-count">
+            {participants?.reduce((sum: number, p: { ratingCount?: number }) => sum + (p.ratingCount || 0), 0) ?? 0}
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Ratings</p>
+        </div>
+      </div>
+
+      {tasting.code && (
+        <div className="mb-6 labs-stagger-2">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em" }}>
+            Invite & Share
+          </p>
+          <div className="labs-card overflow-hidden" data-testid="labs-detail-invite-share-section">
+            <div className="p-4">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <span
+                  className="text-2xl font-bold tracking-widest"
+                  style={{ fontFamily: "monospace", color: "var(--labs-accent)" }}
+                  data-testid="labs-detail-join-code"
+                >
+                  {tasting.code}
+                </span>
+                <button
+                  onClick={handleCopyCode}
+                  className="labs-btn-ghost"
+                  style={{ padding: "4px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}
+                  data-testid="button-labs-copy-code"
+                >
+                  {codeCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
+                  {codeCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <button
+                  onClick={() => setShowQr(!showQr)}
+                  className="labs-btn-ghost"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  data-testid="button-labs-toggle-qr"
+                >
+                  <QrCode className="w-4 h-4" />
+                  {showQr ? "Hide QR" : "Show QR Code"}
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="labs-btn-ghost"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  data-testid="button-labs-copy-join-link"
+                >
+                  {linkCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
+                  {linkCopied ? "Copied" : "Copy Link"}
+                </button>
+              </div>
+              {showQr && qrDataUrl && (
+                <div className="flex flex-col items-center gap-3 mt-4">
+                  <div style={{ background: "var(--labs-surface)", padding: 12, borderRadius: 12 }}>
+                    <img src={qrDataUrl} alt="QR Code" style={{ width: 180, height: 180 }} data-testid="img-labs-qr-code" />
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Scan to join this tasting</p>
+                  <button
+                    onClick={downloadQr}
+                    className="labs-btn-ghost"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                    data-testid="button-labs-download-qr"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download QR
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isHost && (
+              <>
+                <div style={{ height: 1, background: "var(--labs-border)" }} />
+                <div className="p-4">
+                  <button
+                    onClick={() => { setShowInvite(!showInvite); setInviteResults(null); }}
+                    className="w-full flex items-center justify-between"
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+                    data-testid="button-labs-toggle-invite"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Email Invitations</span>
+                    </div>
+                    <ChevronDown
+                      className="w-4 h-4 transition-transform"
+                      style={{
+                        color: "var(--labs-text-muted)",
+                        transform: showInvite ? "rotate(180deg)" : "rotate(0deg)",
+                      }}
+                    />
+                  </button>
+                  {showInvite && (
+                    <div className="mt-4 space-y-3">
+                      {!inviteResults ? (
+                        <>
+                          {currentParticipant?.id && (
+                            <FriendsQuickSelect
+                              participantId={currentParticipant.id}
+                              tastingId={tastingId}
+                              selectedEmails={inviteEmails.split("\n").map(e => e.trim()).filter(Boolean)}
+                              onToggle={(email, selected) => {
+                                const current = inviteEmails.split("\n").map(e => e.trim()).filter(Boolean);
+                                if (selected) {
+                                  if (!current.some(e => e.toLowerCase() === email.toLowerCase())) {
+                                    setInviteEmails([...current, email].join("\n"));
+                                  }
+                                } else {
+                                  setInviteEmails(current.filter(e => e.toLowerCase() !== email.toLowerCase()).join("\n"));
+                                }
+                              }}
+                            />
+                          )}
+                          <div>
+                            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--labs-text-muted)" }}>Email addresses (one per line)</label>
+                            <textarea
+                              className="labs-input"
+                              rows={3}
+                              value={inviteEmails}
+                              onChange={(e) => setInviteEmails(e.target.value)}
+                              placeholder={"friend@example.com\nanother@example.com"}
+                              data-testid="textarea-labs-invite-emails"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--labs-text-muted)" }}>Personal note (optional)</label>
+                            <textarea
+                              className="labs-input"
+                              rows={2}
+                              value={inviteNote}
+                              onChange={(e) => setInviteNote(e.target.value)}
+                              placeholder="Join me for a whisky tasting!"
+                              data-testid="textarea-labs-invite-note"
+                            />
+                          </div>
+                          <button
+                            onClick={handleSendInvites}
+                            disabled={sendInviteMutation.isPending || inviteEmails.trim().length === 0}
+                            className="labs-btn-primary w-full flex items-center justify-center gap-2"
+                            style={{ opacity: inviteEmails.trim().length === 0 ? 0.5 : 1 }}
+                            data-testid="button-labs-send-invites"
+                          >
+                            <Mail className="w-4 h-4" />
+                            {sendInviteMutation.isPending ? "Sending..." : "Send Invitations"}
+                          </button>
+                        </>
+                      ) : (
+                        <div data-testid="labs-invite-results">
+                          <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-accent)" }}>Invitations sent</p>
+                          {inviteResults.map((r, i) => (
+                            <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: i < inviteResults.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
+                              <span className="text-sm truncate" style={{ color: "var(--labs-text-secondary)" }}>{r.email}</span>
+                              <span
+                                className="labs-badge text-[11px]"
+                                style={{
+                                  background: r.status === "sent" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                                  color: r.status === "sent" ? "var(--labs-success)" : "var(--labs-accent)",
+                                }}
+                              >
+                                {r.status}
+                              </span>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setInviteResults(null)}
+                            className="labs-btn-ghost mt-3"
+                            style={{ fontSize: 12 }}
+                            data-testid="button-labs-invite-new"
+                          >
+                            Send more
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isHost && (
+        <div className="mb-6 labs-stagger-3">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em" }}>
+            Details
+          </p>
+          <div className="labs-card p-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Blind Mode</span>
+                <span className="text-sm font-medium flex items-center gap-1.5" data-testid="labs-detail-blind">
+                  {tasting.blindMode ? (
+                    <><EyeOff className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> Active</>
+                  ) : (
+                    <><Eye className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /> Off</>
+                  )}
+                </span>
+              </div>
+              {tasting.ratingScale && (
+                <>
+                  <div className="labs-divider" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Rating Scale</span>
+                    <span className="text-sm font-medium" data-testid="labs-detail-scale">0 – {tasting.ratingScale}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isHost && (
+        <div className="mb-6 labs-stagger-3">
           <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/labs/host/${tastingId}`)}
-            data-testid="labs-detail-manage"
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full flex items-center justify-between mb-3"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+            data-testid="labs-detail-toggle-settings"
           >
-            <Settings className="w-4 h-4" />
-            Manage Session
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em", margin: 0 }}>
+              Settings
+            </p>
+            <ChevronDown
+              className="w-4 h-4 transition-transform"
+              style={{
+                color: "var(--labs-text-muted)",
+                transform: showSettings ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
           </button>
+
+          {saveStatus && (
+            <div className="flex items-center gap-2 mb-2" style={{ fontSize: 12, color: saveStatus === "Saved" ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
+              <Check className="w-3 h-3" />
+              {saveStatus}
+            </div>
+          )}
+
+          {showSettings && (
+            <div className="labs-card p-4 space-y-1" data-testid="labs-detail-settings-section">
+              <div>
+                <label className="text-xs font-medium flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  <Gauge className="w-3 h-3" />
+                  Rating Scale
+                  {!isDraft && <span className="text-[10px] ml-1" style={{ color: "var(--labs-text-muted)" }}>(locked)</span>}
+                </label>
+                {isDraft ? (
+                  <DetailSegmentedSelect
+                    value={(tasting.ratingScale as number) ?? 100}
+                    options={[
+                      { value: 5, label: "5", desc: "Simple" },
+                      { value: 10, label: "10", desc: "Classic" },
+                      { value: 20, label: "20", desc: "Detailed" },
+                      { value: 100, label: "100", desc: "Pro" },
+                    ]}
+                    onChange={handleChangeScale}
+                  />
+                ) : (
+                  <div className="text-sm p-2 rounded-lg" style={{ background: "var(--labs-surface)", color: "var(--labs-text)" }}>
+                    {(tasting.ratingScale as number) ?? 100}-point scale
+                  </div>
+                )}
+              </div>
+
+              <div className="labs-divider" style={{ margin: "12px 0" }} />
+
+              <DetailToggle
+                checked={!!tasting.blindMode}
+                onChange={() => handleToggle("blindMode", !!tasting.blindMode)}
+                icon={<EyeOff className="w-4 h-4" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label="Blind Tasting"
+                description="Hide whisky names until reveal"
+                testId="labs-detail-toggle-blind"
+              />
+
+              {tasting.blindMode && (
+                <>
+                  <div className="labs-divider" style={{ margin: "4px 0" }} />
+                  <div className="py-2">
+                    <label className="text-xs font-medium flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                      <Eye className="w-3 h-3" />
+                      Reveal Order
+                    </label>
+                    <DetailSegmentedSelect
+                      value={currentRevealKey}
+                      options={Object.entries(REVEAL_PRESETS).map(([key, { label, desc }]) => ({
+                        value: key,
+                        label,
+                        desc,
+                      }))}
+                      onChange={handleChangeRevealOrder}
+                    />
+                    {currentRevealKey === "custom" && (
+                      <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)" }}>
+                        Custom reveal order active. Edit in Presenter View for full control.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <div className="labs-divider" style={{ margin: "4px 0" }} />
+
+              <DetailToggle
+                checked={!!tasting.showRanking}
+                onChange={() => handleToggle("showRanking", !!tasting.showRanking)}
+                icon={<BarChart3 className="w-4 h-4" style={{ color: tasting.showRanking ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label="Show Ranking"
+                description="Guests see how whiskies rank"
+                testId="labs-detail-toggle-ranking"
+              />
+
+              <div className="labs-divider" style={{ margin: "4px 0" }} />
+
+              <DetailToggle
+                checked={!!tasting.showGroupAvg}
+                onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)}
+                icon={<Users className="w-4 h-4" style={{ color: tasting.showGroupAvg ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label="Show Group Scores"
+                description="Guests see average scores"
+                testId="labs-detail-toggle-avg"
+              />
+
+              <div className="labs-divider" style={{ margin: "4px 0" }} />
+
+              <DetailToggle
+                checked={tasting.showReveal !== false}
+                onChange={() => handleToggle("showReveal", tasting.showReveal !== false)}
+                icon={<Eye className="w-4 h-4" style={{ color: tasting.showReveal !== false ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label="Show Results After Tasting"
+                description="Guests access results when done"
+                testId="labs-detail-toggle-reveal"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mb-6 labs-stagger-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em", margin: 0 }}>
+            Whiskies ({whiskyCount})
+          </p>
+          <div className="flex items-center gap-2">
+            {isHost && isDraft && (
+              <button
+                onClick={() => setShowAddWhisky(!showAddWhisky)}
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                data-testid="labs-detail-add-whisky-toggle"
+              >
+                {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                {showAddWhisky ? "Close" : "Add"}
+              </button>
+            )}
+            <button
+              onClick={() => setShowWhiskies(!showWhiskies)}
+              className="labs-btn-ghost"
+              style={{ padding: 4 }}
+              data-testid="labs-detail-toggle-whiskies"
+            >
+              <ChevronDown
+                className="w-4 h-4 transition-transform"
+                style={{
+                  color: "var(--labs-text-muted)",
+                  transform: showWhiskies ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {isHost && isDraft && showAddWhisky && (
+          <div className="labs-card p-3 mb-3 flex gap-2" data-testid="labs-detail-add-whisky-form">
+            <input
+              className="labs-input flex-1 text-sm"
+              value={newWhiskyName}
+              onChange={(e) => setNewWhiskyName(e.target.value)}
+              placeholder="Whisky name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newWhiskyName.trim()) {
+                  addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
+                }
+              }}
+              data-testid="input-add-whisky-name"
+            />
+            <button
+              className="labs-btn-primary text-xs px-3"
+              disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
+              onClick={() => {
+                if (newWhiskyName.trim()) {
+                  addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
+                }
+              }}
+              data-testid="button-add-whisky"
+            >
+              {addWhiskyMutation.isPending ? "..." : "Add"}
+            </button>
+          </div>
         )}
 
-        {isHost && (
-          <button
-            className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-            onClick={async () => {
-              setDuplicating(true);
-              try {
-                const pid = currentParticipant?.id;
-                if (!pid) return;
-                const newTasting = await tastingApi.duplicate(tastingId, pid);
-                if (newTasting?.id) navigate(`/labs/tastings/${newTasting.id}`);
-              } catch {}
-              setDuplicating(false);
-            }}
-            disabled={duplicating}
-            data-testid="labs-detail-duplicate"
-          >
-            <Copy className="w-4 h-4" />
-            {duplicating ? "Kopiere..." : "Tasting kopieren"}
-          </button>
+        {showWhiskies && (
+          <>
+            {whiskyCount === 0 ? (
+              <div className="labs-card p-6 text-center" data-testid="labs-detail-whiskies-empty">
+                <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>No whiskies added yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2" data-testid="labs-detail-whiskies-list">
+                {(whiskies || []).map((w: Record<string, unknown>, idx: number) => {
+                  if (editingWhiskyId === w.id) {
+                    return (
+                      <InlineWhiskyEdit
+                        key={w.id as string}
+                        whisky={w}
+                        onSave={(data) => updateWhiskyMutation.mutate({ id: w.id as string, data })}
+                        onCancel={() => setEditingWhiskyId(null)}
+                      />
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={w.id as string}
+                      className="labs-card px-4 py-3 flex items-center gap-3"
+                      data-testid={`labs-detail-whisky-${w.id}`}
+                    >
+                      <span
+                        className="text-xs font-bold flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                          {tasting.blindMode && !isHost ? `Dram #${idx + 1}` : ((w.name as string) || `Dram #${idx + 1}`)}
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                          {w.distillery && <span>{w.distillery as string}</span>}
+                          {w.age && <span>{w.age as string}y</span>}
+                          {w.abv && <span>{w.abv as number}%</span>}
+                          {w.region && <span>{w.region as string}</span>}
+                        </div>
+                      </div>
+                      {(w.imageUrl as string) && (
+                        <img
+                          src={w.imageUrl as string}
+                          alt=""
+                          className="w-8 h-8 rounded-md object-cover flex-shrink-0"
+                          data-testid={`img-whisky-${w.id}`}
+                        />
+                      )}
+                      {isHost && isDraft && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            className="labs-btn-ghost p-1"
+                            onClick={() => setEditingWhiskyId(w.id as string)}
+                            data-testid={`button-edit-whisky-${w.id}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                          </button>
+                          {deletingWhiskyId === w.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                className="labs-btn-ghost p-1"
+                                onClick={() => deleteWhiskyMutation.mutate(w.id as string)}
+                                data-testid={`button-confirm-delete-whisky-${w.id}`}
+                              >
+                                <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-danger, #e74c3c)" }} />
+                              </button>
+                              <button
+                                className="labs-btn-ghost p-1"
+                                onClick={() => setDeletingWhiskyId(null)}
+                                data-testid={`button-cancel-delete-whisky-${w.id}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="labs-btn-ghost p-1"
+                              onClick={() => setDeletingWhiskyId(w.id as string)}
+                              data-testid={`button-delete-whisky-${w.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {participants && participants.length > 0 && (
+        <div className="mb-6 labs-stagger-5">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em" }}>
+            Participants
+          </p>
+          <div className="labs-card p-4">
+            <div className="space-y-2">
+              {participants.map((p: { id: string; name?: string }) => (
+                <div key={p.id} className="flex items-center gap-3" data-testid={`labs-detail-participant-${p.id}`}>
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                  >
+                    {stripGuestSuffix((p.name || "?")).charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium">{stripGuestSuffix(p.name || "Anonymous")}</span>
+                  {p.id === tasting.hostId && (
+                    <Crown className="w-3 h-3 ml-auto" style={{ color: "var(--labs-accent)" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
+
+      {isHost && (
+        <div className="mt-8 mb-4 labs-stagger-5">
+          <div className="labs-divider mb-6" />
+          <div className="space-y-3">
+            <button
+              className="labs-btn-ghost w-full flex items-center justify-center gap-2 text-sm"
+              onClick={handleDuplicate}
+              disabled={duplicating}
+              style={{ color: "var(--labs-text-secondary)" }}
+              data-testid="labs-detail-duplicate"
+            >
+              <Copy className="w-4 h-4" />
+              {duplicating ? "Duplicating..." : "Duplicate Tasting"}
+            </button>
+
+            {!confirmDelete ? (
+              <button
+                className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg"
+                style={{
+                  background: "none",
+                  color: "var(--labs-danger, #e74c3c)",
+                  border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 25%, transparent)",
+                  cursor: "pointer",
+                  opacity: 0.7,
+                  fontFamily: "inherit",
+                }}
+                onClick={() => setConfirmDelete(true)}
+                data-testid="labs-detail-delete"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Tasting
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 py-2.5 text-sm font-semibold rounded-lg"
+                  style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={handleDelete}
+                  data-testid="labs-detail-confirm-delete"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  className="flex-1 py-2.5 text-sm rounded-lg"
+                  style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={() => setConfirmDelete(false)}
+                  data-testid="labs-detail-cancel-delete"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
