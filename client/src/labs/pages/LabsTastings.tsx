@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -46,6 +46,8 @@ export default function LabsTastings() {
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const isAdmin = currentParticipant?.role === "admin";
 
@@ -55,6 +57,25 @@ export default function LabsTastings() {
     enabled: !!currentParticipant,
   });
 
+  const handleAcceptInvite = async (tasting: any) => {
+    if (!currentParticipant?.id || !tasting.inviteToken) return;
+    setAcceptingInvite(tasting.id);
+    try {
+      const res = await fetch(`/api/invites/${tasting.inviteToken}/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: currentParticipant.id }),
+      });
+      if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["tastings"] });
+        navigate(`/labs/tastings/${tasting.id}`);
+      }
+    } catch {
+    } finally {
+      setAcceptingInvite(null);
+    }
+  };
+
   const filtered = useMemo(() => {
     if (!tastings) return [];
     let list = [...tastings].filter((t: any) => !t.isTestData);
@@ -62,7 +83,7 @@ export default function LabsTastings() {
     if (filterTab === "hosting") {
       list = list.filter((t: any) => t.hostId === currentParticipant?.id);
     } else if (filterTab === "joined") {
-      list = list.filter((t: any) => t.hostId !== currentParticipant?.id);
+      list = list.filter((t: any) => t.hostId !== currentParticipant?.id || t.invitePending);
     }
 
     if (timeFilter === "live") {
@@ -84,6 +105,8 @@ export default function LabsTastings() {
     }
 
     list.sort((a: any, b: any) => {
+      if (a.invitePending && !b.invitePending) return -1;
+      if (!a.invitePending && b.invitePending) return 1;
       const statusOrder: Record<string, number> = { open: 0, draft: 1, reveal: 2, closed: 3, archived: 4 };
       const orderA = statusOrder[a.status] ?? 5;
       const orderB = statusOrder[b.status] ?? 5;
@@ -309,118 +332,159 @@ export default function LabsTastings() {
             const isHost = tasting.hostId === currentParticipant?.id;
             const isLive = tasting.status === "open";
             const formattedDate = formatTastingDate(tasting.date);
+            const isInvited = tasting.invitePending === true;
+            const isAccepting = acceptingInvite === tasting.id;
 
-            return (
-              <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
+            const cardContent = (
+              <div
+                className="labs-list-row"
+                style={{ alignItems: "flex-start", gap: 12, padding: "14px 12px" }}
+                data-testid={`labs-tasting-card-${tasting.id}`}
+              >
                 <div
-                  className="labs-list-row"
-                  style={{ alignItems: "flex-start", gap: 12, padding: "14px 12px" }}
-                  data-testid={`labs-tasting-card-${tasting.id}`}
+                  style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0, marginTop: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: isInvited
+                      ? "var(--labs-warning-muted, #fef3c7)"
+                      : isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                  }}
                 >
-                  <div
-                    style={{
-                      width: 40, height: 40, borderRadius: 12, flexShrink: 0, marginTop: 2,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
-                    }}
-                  >
+                  {isInvited ? (
+                    <Mail
+                      style={{ width: 18, height: 18, color: "var(--labs-warning, #d97706)" }}
+                    />
+                  ) : (
                     <Wine
                       style={{ width: 18, height: 18, color: isLive ? "var(--labs-success)" : "var(--labs-accent)" }}
                     />
-                  </div>
+                  )}
+                </div>
 
-                  <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                      <span
-                        style={{
-                          fontSize: 15, fontWeight: 600,
-                          color: "var(--labs-text)",
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                          flex: 1, minWidth: 0,
-                        }}
-                        data-testid={`labs-tasting-title-${tasting.id}`}
-                      >
-                        {tasting.title}
-                      </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                        {isHost && (
-                          <span
-                            style={{
-                              fontSize: 11, fontWeight: 600,
-                              padding: "2px 6px", borderRadius: 5,
-                              background: "var(--labs-accent-muted)",
-                              color: "var(--labs-accent)",
-                            }}
-                            data-testid={`labs-tasting-host-badge-${tasting.id}`}
-                          >
-                            Host
-                          </span>
-                        )}
-                        <span
-                          className={`labs-badge ${status.cssClass}`}
-                          style={{ fontSize: 11, padding: "2px 6px" }}
-                          data-testid={`labs-tasting-status-${tasting.id}`}
-                        >
-                          {isLive && (
-                            <span
-                              className="animate-pulse"
-                              style={{
-                                width: 5, height: 5, borderRadius: "50%",
-                                background: "currentColor", display: "inline-block",
-                              }}
-                            />
-                          )}
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-
-                    {tasting.hostName && (isAdmin || !isHost) && (
-                      <div
-                        style={{
-                          display: "flex", alignItems: "center", gap: 3,
-                          fontSize: 11, color: "var(--labs-text-secondary)",
-                          marginBottom: 1,
-                        }}
-                        data-testid={`labs-tasting-hostname-${tasting.id}`}
-                      >
-                        <Crown style={{ width: 11, height: 11, opacity: 0.75, flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {stripGuestSuffix(tasting.hostName)}
-                        </span>
-                      </div>
-                    )}
-                    <div
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                    <span
                       style={{
-                        display: "flex", alignItems: "center", gap: 8,
-                        fontSize: 12, color: "var(--labs-text-muted)",
-                        overflow: "hidden", whiteSpace: "nowrap",
+                        fontSize: 15, fontWeight: 600,
+                        color: "var(--labs-text)",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        flex: 1, minWidth: 0,
                       }}
+                      data-testid={`labs-tasting-title-${tasting.id}`}
                     >
-                      {formattedDate && (
-                        <span style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-                          <Calendar style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
-                          {formattedDate}
-                        </span>
-                      )}
-                      {tasting.location && (
+                      {tasting.title}
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                      {isInvited && (
                         <span
                           style={{
-                            display: "flex", alignItems: "center", gap: 3,
-                            overflow: "hidden", textOverflow: "ellipsis",
+                            fontSize: 11, fontWeight: 600,
+                            padding: "2px 6px", borderRadius: 5,
+                            background: "var(--labs-warning-muted, #fef3c7)",
+                            color: "var(--labs-warning, #d97706)",
                           }}
+                          data-testid={`labs-tasting-invite-badge-${tasting.id}`}
                         >
-                          <MapPin style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{tasting.location}</span>
+                          Eingeladen
                         </span>
                       )}
+                      {isHost && !isInvited && (
+                        <span
+                          style={{
+                            fontSize: 11, fontWeight: 600,
+                            padding: "2px 6px", borderRadius: 5,
+                            background: "var(--labs-accent-muted)",
+                            color: "var(--labs-accent)",
+                          }}
+                          data-testid={`labs-tasting-host-badge-${tasting.id}`}
+                        >
+                          Host
+                        </span>
+                      )}
+                      <span
+                        className={`labs-badge ${status.cssClass}`}
+                        style={{ fontSize: 11, padding: "2px 6px" }}
+                        data-testid={`labs-tasting-status-${tasting.id}`}
+                      >
+                        {isLive && (
+                          <span
+                            className="animate-pulse"
+                            style={{
+                              width: 5, height: 5, borderRadius: "50%",
+                              background: "currentColor", display: "inline-block",
+                            }}
+                          />
+                        )}
+                        {status.label}
+                      </span>
                     </div>
                   </div>
 
-                  <ChevronRight
-                    style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0, marginTop: 4 }}
-                  />
+                  {tasting.hostName && (isAdmin || !isHost) && (
+                    <div
+                      style={{
+                        display: "flex", alignItems: "center", gap: 3,
+                        fontSize: 11, color: "var(--labs-text-secondary)",
+                        marginBottom: 1,
+                      }}
+                      data-testid={`labs-tasting-hostname-${tasting.id}`}
+                    >
+                      <Crown style={{ width: 11, height: 11, opacity: 0.75, flexShrink: 0 }} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {stripGuestSuffix(tasting.hostName)}
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      fontSize: 12, color: "var(--labs-text-muted)",
+                      overflow: "hidden", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formattedDate && (
+                      <span style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                        <Calendar style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
+                        {formattedDate}
+                      </span>
+                    )}
+                    {tasting.location && (
+                      <span
+                        style={{
+                          display: "flex", alignItems: "center", gap: 3,
+                          overflow: "hidden", textOverflow: "ellipsis",
+                        }}
+                      >
+                        <MapPin style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{tasting.location}</span>
+                      </span>
+                    )}
+                  </div>
+
                 </div>
+
+                <ChevronRight
+                  style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0, marginTop: 4 }}
+                />
+              </div>
+            );
+
+            if (isInvited) {
+              return (
+                <div
+                  key={tasting.id}
+                  onClick={() => !isAccepting && handleAcceptInvite(tasting)}
+                  style={{ cursor: isAccepting ? "wait" : "pointer" }}
+                  data-testid={`labs-tasting-accept-invite-${tasting.id}`}
+                >
+                  {cardContent}
+                </div>
+              );
+            }
+
+            return (
+              <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
+                {cardContent}
               </Link>
             );
           })}

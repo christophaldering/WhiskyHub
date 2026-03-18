@@ -1298,6 +1298,26 @@ export async function registerRoutes(
     if (!includeTest) {
       tastings = tastings.filter((t: any) => !t.isTestData);
     }
+
+    const invitedTastingMap: Record<string, { invitePending: boolean; inviteToken: string }> = {};
+    if (participant.email && participant.role !== "admin") {
+      const pendingInvites = await storage.getInvitesByEmail(participant.email);
+      const existingIds = new Set(tastings.map((t: any) => t.id));
+      for (const invite of pendingInvites) {
+        if (!invitedTastingMap[invite.tastingId]) {
+          if (existingIds.has(invite.tastingId)) {
+            invitedTastingMap[invite.tastingId] = { invitePending: true, inviteToken: invite.token };
+          } else {
+            const invitedTasting = await storage.getTasting(invite.tastingId);
+            if (invitedTasting && invitedTasting.status !== "deleted") {
+              tastings.push(invitedTasting);
+              invitedTastingMap[invite.tastingId] = { invitePending: true, inviteToken: invite.token };
+            }
+          }
+        }
+      }
+    }
+
     const hostIds = [...new Set(tastings.map((t: any) => t.hostId).filter(Boolean))];
     const hostMap: Record<string, string> = {};
     await Promise.all(
@@ -1309,6 +1329,7 @@ export async function registerRoutes(
     const enriched = tastings.map((t: any) => ({
       ...t,
       hostName: hostMap[t.hostId] || null,
+      ...(invitedTastingMap[t.id] || {}),
     }));
     return res.json(enriched);
   });
