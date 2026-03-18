@@ -428,7 +428,7 @@ function TwoWaysSection() {
       icon: <Users style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.together.title"),
       desc: t("landing.twoways.together.text"),
-      href: "/m2",
+      href: "/labs/onboarding",
       testId: "card-together",
     },
   ];
