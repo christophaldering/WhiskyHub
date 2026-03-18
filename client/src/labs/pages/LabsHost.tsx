@@ -634,10 +634,8 @@ function PrintMaterialsSection({
   const [expanded, setExpanded] = useState(false);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
   const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(tasting.coverImageUrl as string || null);
   const [generating, setGenerating] = useState<string | null>(null);
-  const [aiCoverLoading, setAiCoverLoading] = useState(false);
+  const coverImageUrl = (tasting.coverImageUrl as string) || null;
 
   const parsedShared = (() => {
     try {
@@ -694,17 +692,16 @@ function PrintMaterialsSection({
       }));
       const hostName = resolveHostName();
 
-      let finalCover = coverImage;
-      if (!finalCover && coverPreview) {
+      let finalCover: string | null = null;
+      if (coverImageUrl) {
         try {
-          const imgRes = await fetch(coverPreview);
+          const imgRes = await fetch(coverImageUrl);
           const blob = await imgRes.blob();
           finalCover = await new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
-          setCoverImage(finalCover);
         } catch {}
       }
 
@@ -713,7 +710,7 @@ function PrintMaterialsSection({
         whiskies: whiskies as unknown as import("@shared/schema").Whisky[],
         participants: pList,
         hostName,
-        coverImageBase64: finalCover || null,
+        coverImageBase64: finalCover,
         orientation,
         blindMode,
         language: "de",
@@ -797,50 +794,6 @@ function PrintMaterialsSection({
     }
   };
 
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      setCoverImage(base64);
-      setCoverPreview(base64);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAiCover = async () => {
-    setAiCoverLoading(true);
-    try {
-      const pid = (currentParticipant as Record<string, unknown>)?.id as string | undefined;
-      const res = await fetch(`/api/tastings/${tasting.id}/menu-cover`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
-        body: JSON.stringify({}),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.imageUrl) {
-          setCoverPreview(data.imageUrl);
-          try {
-            const imgRes = await fetch(data.imageUrl);
-            const blob = await imgRes.blob();
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            setCoverImage(base64);
-          } catch {}
-        }
-      }
-    } catch (e) {
-      console.error("AI cover generation failed:", e);
-    } finally {
-      setAiCoverLoading(false);
-    }
-  };
-
   return (
     <div>
       <button
@@ -874,21 +827,21 @@ function PrintMaterialsSection({
           <div className="labs-card p-4">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
 
-            <div className="flex gap-4 mb-3">
+            <div className="flex gap-3 mb-3">
               <div className="flex-1">
                 <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Orientation</p>
                 <div className="flex gap-1">
                   <button
-                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${orientation === "portrait" ? "ring-1" : ""}`}
-                    style={orientation === "portrait" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "portrait" ? "ring-1" : ""}`}
+                    style={orientation === "portrait" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 36 } : { minHeight: 36 }}
                     onClick={() => setOrientation("portrait")}
                     data-testid="print-orientation-portrait"
                   >
                     Portrait
                   </button>
                   <button
-                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${orientation === "landscape" ? "ring-1" : ""}`}
-                    style={orientation === "landscape" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "landscape" ? "ring-1" : ""}`}
+                    style={orientation === "landscape" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 36 } : { minHeight: 36 }}
                     onClick={() => setOrientation("landscape")}
                     data-testid="print-orientation-landscape"
                   >
@@ -900,16 +853,16 @@ function PrintMaterialsSection({
                 <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Content Mode</p>
                 <div className="flex gap-1">
                   <button
-                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${!blindMode ? "ring-1" : ""}`}
-                    style={!blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${!blindMode ? "ring-1" : ""}`}
+                    style={!blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 36 } : { minHeight: 36 }}
                     onClick={() => setBlindMode(false)}
                     data-testid="print-mode-open"
                   >
                     Open
                   </button>
                   <button
-                    className={`labs-btn-ghost text-xs px-3 py-1.5 rounded-lg ${blindMode ? "ring-1" : ""}`}
-                    style={blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)" } : {}}
+                    className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${blindMode ? "ring-1" : ""}`}
+                    style={blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 36 } : { minHeight: 36 }}
                     onClick={() => setBlindMode(true)}
                     data-testid="print-mode-blind"
                   >
@@ -919,43 +872,21 @@ function PrintMaterialsSection({
               </div>
             </div>
 
-            <div className="mb-3">
-              <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Cover Image</p>
-              <div className="flex gap-2 items-center">
-                <label
-                  className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
-                  data-testid="print-upload-cover"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} data-testid="input-print-cover-file" />
-                </label>
-                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint-cover">{t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}</span>
-                <button
-                  className="labs-btn-ghost text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
-                  onClick={handleAiCover}
-                  disabled={aiCoverLoading}
-                  data-testid="print-ai-cover"
-                >
-                  {aiCoverLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  {aiCoverLoading ? "Generating..." : "AI Cover"}
-                </button>
-                {coverPreview && (
-                  <button
-                    className="labs-btn-ghost text-xs px-2 py-1"
-                    onClick={() => { setCoverImage(null); setCoverPreview(null); }}
-                    data-testid="print-remove-cover"
-                  >
-                    <X className="w-3 h-3" style={{ color: "var(--labs-danger)" }} />
-                  </button>
-                )}
+            {coverImageUrl ? (
+              <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }} data-testid="print-cover-status">
+                <Image className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                  Your tasting cover image will be included on the menu card.
+                </span>
               </div>
-              {coverPreview && (
-                <div className="mt-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)", maxHeight: 120 }}>
-                  <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" style={{ maxHeight: 120 }} data-testid="print-cover-preview" />
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }} data-testid="print-cover-hint">
+                <Image className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  Add a cover image above to include it on your menu card.
+                </span>
+              </div>
+            )}
 
             <button
               className="labs-btn-primary text-sm flex items-center gap-2 w-full justify-center"
