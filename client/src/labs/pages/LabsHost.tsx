@@ -924,66 +924,90 @@ function PrintMaterialsSection({
           </div>
 
           <div className="labs-card p-4">
-            <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Participant Score Sheets</p>
-            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-              Personalized sheets with QR codes for each participant
-            </p>
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Bewertungsbögen</p>
 
-            {participants.length > 0 && (
-              <div className="mb-3 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
-                {participants.map((p: Record<string, unknown>, idx: number) => {
-                  const pName = stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
-                  return (
-                    <div
-                      key={(p.participantId || p.id) as string}
-                      className="flex items-center gap-2 px-3 py-2"
-                      style={{
-                        background: idx % 2 === 0 ? "var(--labs-surface-elevated)" : "transparent",
-                        borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border-subtle)" : "none",
-                      }}
-                      data-testid={`print-participant-${idx}`}
-                    >
+            <div className="mb-3 rounded-lg p-3" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }}>
+              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text)" }}>Personalisierte Sheets</p>
+              <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                Individuelle Bögen mit QR-Codes für jeden Teilnehmer
+              </p>
+
+              {participants.length > 0 && (
+                <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
+                  {participants.map((p: Record<string, unknown>, idx: number) => {
+                    const pName = stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
+                    return (
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                        key={(p.participantId || p.id) as string}
+                        className="flex items-center gap-2 px-3 py-2"
+                        style={{
+                          background: idx % 2 === 0 ? "var(--labs-surface)" : "transparent",
+                          borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border-subtle)" : "none",
+                        }}
+                        data-testid={`print-participant-${idx}`}
                       >
-                        {pName.charAt(0).toUpperCase()}
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                        >
+                          {pName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs truncate" style={{ color: "var(--labs-text)" }}>{pName}</span>
                       </div>
-                      <span className="text-xs truncate" style={{ color: "var(--labs-text)" }}>{pName}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
 
-            <div className="flex flex-wrap gap-2 min-w-0">
+              {participants.length === 0 && (
+                <p className="text-[11px] italic mb-2" style={{ color: "var(--labs-text-muted)" }} data-testid="print-no-participants-hint">
+                  Noch keine Teilnehmer — lade Gäste ein, um personalisierte Sheets zu erstellen
+                </p>
+              )}
+
               <button
-                className="labs-btn-primary text-sm flex items-center gap-2 flex-1 justify-center min-w-0"
+                className="labs-btn-primary text-sm flex items-center gap-2 w-full justify-center"
                 onClick={handleGenerateBatchSheets}
                 disabled={generating === "sheets" || participants.length === 0}
                 data-testid="print-generate-sheets"
               >
-                {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /> : <Users className="w-4 h-4 flex-shrink-0" />}
-                <span className="truncate">{generating === "sheets" ? "Generating..." : `All Sheets (${participants.length})`}</span>
+                {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /> : <Download className="w-4 h-4 flex-shrink-0" />}
+                <span className="truncate">{generating === "sheets" ? "Wird erstellt..." : `Alle Sheets herunterladen (${participants.length})`}</span>
               </button>
-              <button
-                className="labs-btn-secondary text-sm flex items-center gap-2 justify-center flex-shrink-0"
-                onClick={handleGenerateMasterSheet}
-                disabled={generating === "master"}
-                data-testid="print-generate-master-sheet"
-              >
-                {generating === "master" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                Master
-              </button>
-              <button
-                className="labs-btn-ghost text-sm flex items-center gap-2 justify-center flex-shrink-0"
-                onClick={handleGenerateBlankSheet}
-                disabled={generating === "blank"}
-                data-testid="print-generate-blank-sheet"
-              >
-                {generating === "blank" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                Blank
-              </button>
+            </div>
+
+            <div className="rounded-lg p-3" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }}>
+              <p className="text-xs font-medium mb-2" style={{ color: "var(--labs-text)" }}>Generische Sheets</p>
+              <div className="flex flex-wrap gap-2 min-w-0">
+                <div className="flex-1 min-w-[120px]">
+                  <button
+                    className="labs-btn-secondary text-sm flex items-center gap-2 justify-center w-full"
+                    onClick={handleGenerateMasterSheet}
+                    disabled={generating === "master"}
+                    data-testid="print-generate-master-sheet"
+                  >
+                    {generating === "master" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    Master Sheet
+                  </button>
+                  <p className="text-[10px] mt-1 text-center" style={{ color: "var(--labs-text-muted)" }}>
+                    Generisches Sheet ohne Namen — für den Host oder spontane Gäste
+                  </p>
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <button
+                    className="labs-btn-ghost text-sm flex items-center gap-2 justify-center w-full"
+                    onClick={handleGenerateBlankSheet}
+                    disabled={generating === "blank"}
+                    data-testid="print-generate-blank-sheet"
+                  >
+                    {generating === "blank" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    Blanko Sheet
+                  </button>
+                  <p className="text-[10px] mt-1 text-center" style={{ color: "var(--labs-text-muted)" }}>
+                    Leere Vorlage ohne Whisky-Daten
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
