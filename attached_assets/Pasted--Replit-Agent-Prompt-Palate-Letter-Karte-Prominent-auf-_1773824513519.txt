@@ -1,0 +1,324 @@
+# Replit Agent Prompt — Palate Letter Karte
+
+# Prominent auf der Taste-Hauptseite
+
+-----
+
+## ZIEL
+
+Der Connoisseur Report wird von einem Menüpunkt zu einem
+eigenständigen, charaktervollen Element auf der Taste-Seite.
+Er erscheint zwischen den Palate-Balken und der
+“Profile & Analysis” Liste — als Brücke zwischen
+rohen Zahlen und persönlicher Bedeutung.
+
+-----
+
+## DATEI
+
+`client/src/labs/pages/LabsTaste.tsx`
+
+-----
+
+## POSITION IM LAYOUT
+
+```
+[Stats Grid — Stability / Exploration / Smoke / Tastings]
+[Your Palate — Nose / Taste / Finish Balken]
+
+━━━ NEU: PALATE LETTER KARTE ━━━          ← HIER
+
+[Profile & Analysis Liste]
+[Recent Tastings]
+```
+
+-----
+
+## ZUSTAND A — REPORT EXISTIERT
+
+Wenn `GET /api/participants/:id/connoisseur-reports` mindestens
+einen Eintrag zurückgibt.
+
+### Karte Design
+
+```css
+.palate-letter-card {
+  background: linear-gradient(135deg,
+    rgba(201,151,43,0.10) 0%,
+    rgba(232,184,75,0.05) 100%);
+  border: 1px solid rgba(201,151,43,0.28);
+  border-radius: 20px;
+  padding: 24px;
+  margin: 20px 16px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+
+.palate-letter-card:hover {
+  border-color: rgba(201,151,43,0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15),
+              0 0 40px rgba(201,151,43,0.06);
+}
+```
+
+Inneres Glow-Element (::before):
+
+```css
+.palate-letter-card::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle,
+    rgba(201,151,43,0.12), transparent 70%);
+  pointer-events: none;
+}
+```
+
+### Inhalt der Karte
+
+```
+[Zeile 1: Icon + Label]
+✦  YOUR PALATE LETTER
+   [Sparkles Icon aus lucide-react, 14px, #E8B84B]
+   [Text: 11px, font-weight 600, letter-spacing 0.1em,
+    uppercase, color: #E8B84B]
+   [Rechts: Timestamp — "Updated 2 days ago" / "Vor 2 Tagen"]
+   [Timestamp: 11px, color: var(--muted), font-weight 300]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[Zeile 2: Teaser-Text]
+Erste 120 Zeichen des report.summary Feldes
+(oder des Markdown-Reports, ersten Satz extrahieren).
+
+Styling:
+font-family: 'Playfair Display', Georgia, serif;
+font-style: italic;
+font-size: 16px;
+line-height: 1.65;
+color: rgba(240,230,211,0.85);
+margin: 14px 0 18px;
+
+Beispiel:
+"You are, in the truest sense, a nose-first
+taster — your first impressions are your
+most generous..."
+
+Nach 120 Zeichen: "..." — kein weiterer Text.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[Zeile 3: CTA]
+EN: "Read your full profile →"
+DE: "Vollständiges Profil lesen →"
+
+font-size: 13px;
+font-weight: 500;
+color: #E8B84B;
+display: inline-flex;
+align-items: center;
+gap: 6px;
+```
+
+Arrow Icon (ChevronRight aus lucide-react, 14px):
+Transition: transform 0.2s auf hover der Karte → translateX(4px)
+
+### Navigation
+
+Tap auf Karte → `/labs/taste/connoisseur`
+
+### Teaser-Text Logik
+
+```typescript
+// Ersten Satz aus dem Markdown-Report extrahieren:
+const extractTeaser = (reportMarkdown: string): string => {
+  // Markdown-Syntax entfernen
+  const plain = reportMarkdown
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/\n/g, ' ')
+    .trim();
+  
+  // Ersten Satz oder max 120 Zeichen
+  const firstSentence = plain.split(/[.!?]/)[0];
+  if (firstSentence.length <= 120) return firstSentence + '.';
+  return plain.substring(0, 120) + '...';
+};
+```
+
+### Timestamp Logik
+
+```typescript
+const formatRelativeTime = (date: string, language: string): string => {
+  const diff = Date.now() - new Date(date).getTime();
+  const days = Math.floor(diff / 86400000);
+  
+  if (language.startsWith('de')) {
+    if (days === 0) return 'Heute aktualisiert';
+    if (days === 1) return 'Vor gestern aktualisiert';
+    return `Vor ${days} Tagen aktualisiert`;
+  } else {
+    if (days === 0) return 'Updated today';
+    if (days === 1) return 'Updated yesterday';
+    return `Updated ${days} days ago`;
+  }
+};
+```
+
+-----
+
+## ZUSTAND B — KEIN REPORT VORHANDEN (< 10 Drams)
+
+Wenn kein Report existiert: Karte trotzdem anzeigen —
+aber als stille Einladung, nicht als gesperrtes Feature.
+
+### Design
+
+Identisch — aber leicht gedämpft:
+
+```css
+opacity: 0.7;
+border-color: rgba(201,151,43,0.14);
+background: rgba(255,255,255,0.025);
+cursor: default;
+```
+
+Kein Hover-Effekt, kein Tap-Ziel.
+
+### Inhalt
+
+```
+[Icon + Label — identisch]
+✦  YOUR PALATE LETTER
+
+[Teaser-Text — anders]
+EN:
+"After ten drams, CaskSense will write
+you a personal tasting profile —
+the patterns in your behaviour
+you haven't named yet."
+
+DE:
+"Nach zehn Drams schreibt dir CaskSense
+ein persönliches Verkostungsprofil —
+die Muster in deinem Verhalten
+die du noch nicht benannt hast."
+
+font-family: 'Playfair Display', Georgia, serif;
+font-style: italic;
+font-size: 16px;
+color: rgba(240,230,211,0.5);
+
+[Kein CTA Button]
+
+[Stattdessen unten rechts: kleiner Fortschritt]
+EN: "{{count}} of 10 drams"
+DE: "{{count}} von 10 Drams"
+font-size: 12px, color: var(--muted)
+```
+
+**Kein Fortschrittsbalken.** Nur die Zahl. Ruhig, kein Druck.
+
+-----
+
+## ZUSTAND C — REPORT WIRD GERADE GENERIERT
+
+Während der API-Call läuft:
+
+```
+[Karte mit pulse animation]
+[Sparkles Icon dreht sich langsam — 4s rotation]
+
+EN: "Writing your palate profile..."
+DE: "Dein Profil wird geschrieben..."
+
+font-family: 'Playfair Display', italic;
+font-size: 16px;
+color: rgba(240,230,211,0.5);
+```
+
+-----
+
+## ENTFERNEN AUS DER PROFILE & ANALYSIS LISTE
+
+In der bestehenden “Profile & Analysis” NavRow-Liste:
+Den Eintrag “Connoisseur Report” / “CaskSense Profile” entfernen
+oder — falls andere Features darunter verlinkt sind — beibehalten
+aber visuell als sekundär behandeln (kleinere Schrift, kein Icon).
+
+Der Report hat jetzt seine eigene prominente Karte —
+er darf nicht doppelt erscheinen.
+
+-----
+
+## ANIMATION
+
+Karte beim Mount:
+
+```css
+animation: fadeInUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+```
+
+-----
+
+## I18N
+
+Neue Keys in `client/src/lib/i18n.ts`:
+
+EN:
+
+```
+paletteLetter.card.eyebrow: "YOUR PALATE LETTER"
+paletteLetter.card.cta: "Read your full profile"
+paletteLetter.card.locked: "After ten drams, CaskSense will write you a personal tasting profile — the patterns in your behaviour you haven't named yet."
+paletteLetter.card.count: "{{count}} of 10 drams"
+paletteLetter.card.generating: "Writing your palate profile..."
+paletteLetter.card.updatedToday: "Updated today"
+paletteLetter.card.updatedYesterday: "Updated yesterday"
+paletteLetter.card.updatedDays: "Updated {{days}} days ago"
+```
+
+DE:
+
+```
+paletteLetter.card.eyebrow: "DEIN PALATE LETTER"
+paletteLetter.card.cta: "Vollständiges Profil lesen"
+paletteLetter.card.locked: "Nach zehn Drams schreibt dir CaskSense ein persönliches Verkostungsprofil — die Muster in deinem Verhalten die du noch nicht benannt hast."
+paletteLetter.card.count: "{{count}} von 10 Drams"
+paletteLetter.card.generating: "Dein Profil wird geschrieben..."
+paletteLetter.card.updatedToday: "Heute aktualisiert"
+paletteLetter.card.updatedYesterday: "Gestern aktualisiert"
+paletteLetter.card.updatedDays: "Vor {{days}} Tagen aktualisiert"
+```
+
+-----
+
+## WAS NICHT VERÄNDERT WIRD
+
+- `LabsConnoisseur.tsx` — der Report selbst, unverändert
+- Bestehende API Endpoints
+- Alle anderen Taste-Sub-Pages
+- Navigation / Bottom Nav
+
+-----
+
+## VORGEHEN
+
+1. Teaser-Extraktion Funktion schreiben
+1. Timestamp Funktion schreiben
+1. Karte mit allen drei Zuständen bauen (A/B/C)
+1. In LabsTaste.tsx an richtiger Position einsetzen
+1. Doppel-Eintrag in Profile & Analysis bereinigen
+1. I18n Keys anlegen
+1. Testen: Zustand B (< 10 Drams) → Zustand A (Report vorhanden)
+   → Teaser korrekt, Timestamp korrekt, Navigation korrekt
