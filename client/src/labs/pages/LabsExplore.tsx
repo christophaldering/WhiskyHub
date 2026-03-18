@@ -479,9 +479,9 @@ export default function LabsExplore() {
           {sortedWhiskies.length === 0 && (
             <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-empty">
               <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-                <path d="M14 12h12l-1 16H15L14 12z" fill="currentColor" opacity="0.15"/>
-                <path d="M12 10h16" stroke="currentColor" strokeWidth="0.8" opacity="0.3"/>
-                <rect x="17" y="28" width="6" height="3" rx="1" fill="currentColor" opacity="0.15"/>
+                <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
+                <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="0.4" opacity="0.12"/>
+                <circle cx="20" cy="20" r="2" fill="currentColor" opacity="0.2"/>
               </svg>
               <h2 className="labs-empty-title">
                 {searchText || selectedRegion
@@ -553,23 +553,9 @@ export default function LabsExplore() {
                 <div ref={sentinelRef} style={{ height: 1 }} />
               )}
               {displayLimit < sortedWhiskies.length && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    padding: "20px 0 8px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      border: "2.5px solid var(--labs-border)",
-                      borderTopColor: "var(--labs-accent)",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 0 8px" }}>
+                  <div className="labs-skeleton" style={{ height: 44, width: "100%", borderRadius: "var(--labs-radius-sm)" }} />
+                  <div className="labs-skeleton" style={{ height: 44, width: "100%", borderRadius: "var(--labs-radius-sm)" }} />
                 </div>
               )}
             </>

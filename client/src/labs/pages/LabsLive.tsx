@@ -30,7 +30,8 @@ function GuidedLobby({ tasting, participantCount }: { tasting: any; participantC
       <p className="labs-lobby-eyebrow" data-testid="guided-lobby-title">{tasting.title}</p>
       <div className="labs-pulse-dot" />
       <h1 className="labs-lobby-title">
-        Tasting beginnt gleich
+        {tasting.isBlind ? 'Blind Tasting' : 'Tasting'}<br />
+        <em>beginnt gleich</em>
       </h1>
       <div className="labs-lobby-divider" />
       <p className="labs-lobby-meta" data-testid="guided-lobby-waiting">
