@@ -4483,7 +4483,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   }
 
   return (
-    <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
+    <div className="px-5 py-6 max-w-3xl mx-auto labs-fade-in">
       <div className="flex items-center gap-2 -ml-2 mb-4">
         <button
           onClick={showBackToCompanion ? () => setForceDesktopView(false) : goBack}
