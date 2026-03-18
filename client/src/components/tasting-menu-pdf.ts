@@ -284,7 +284,7 @@ export async function generateTastingMenu(
   const isLandscape = orientation === "landscape";
   const pageW = isLandscape ? 297 : 210;
   const pageH = isLandscape ? 210 : 297;
-  const marginX = 18;
+  const marginX = 15;
   const contentW = pageW - marginX * 2;
 
   const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
@@ -296,6 +296,9 @@ export async function generateTastingMenu(
   const moodText = language === "de" ? theme.moodTextDe : theme.moodText;
 
   const addFooter = (pageNum: number, totalPages: number) => {
+    doc.setDrawColor(...secondary);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageH - 12, pageW - marginX, pageH - 12);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...secondary);
@@ -325,13 +328,13 @@ export async function generateTastingMenu(
     doc.setDrawColor(...primary);
     doc.setLineWidth(0.5);
     doc.rect(12, 12, pageW - 24, pageH - 24);
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.3);
     doc.rect(14, 14, pageW - 28, pageH - 28);
 
     const ornY = isLandscape ? 30 : 40;
     const ornW = 50;
     doc.setDrawColor(...secondary);
-    doc.setLineWidth(0.15);
+    doc.setLineWidth(0.3);
     doc.line(pageW / 2 - ornW, ornY, pageW / 2 + ornW, ornY);
     doc.setFillColor(...secondary);
     doc.circle(pageW / 2, ornY, 1.5, "F");
@@ -358,7 +361,7 @@ export async function generateTastingMenu(
   coverY += isLandscape ? 16 : 24;
 
   doc.setDrawColor(...(hasCover ? ([255, 255, 255] as RGB) : secondary));
-  doc.setLineWidth(0.2);
+  doc.setLineWidth(0.3);
   doc.line(pageW / 2 - 40, coverY, pageW / 2 + 40, coverY);
   coverY += isLandscape ? 14 : 20;
 
@@ -400,7 +403,7 @@ export async function generateTastingMenu(
   coverY += isLandscape ? 10 : 14;
 
   doc.setDrawColor(...(hasCover ? ([255, 255, 255] as RGB) : secondary));
-  doc.setLineWidth(0.2);
+  doc.setLineWidth(0.3);
   doc.line(pageW / 2 - 40, coverY, pageW / 2 + 40, coverY);
   coverY += 10;
 
@@ -473,7 +476,7 @@ export async function generateTastingMenu(
   y += 14;
 
   doc.setDrawColor(...secondary);
-  doc.setLineWidth(0.15);
+  doc.setLineWidth(0.3);
   doc.line(marginX, y, pageW - marginX, y);
   y += 10;
 
@@ -536,8 +539,8 @@ export async function generateTastingMenu(
     }
   }
   const hasWhiskyImages = whiskyImages.size > 0 && !blindMode;
-  const thumbW = 10;
-  const thumbH = 13;
+  const thumbW = 11;
+  const thumbH = 14;
 
   const whiskyPages = Math.ceil(whiskies.length / whiskiesPerPage);
   const colCount = 2;
@@ -565,8 +568,13 @@ export async function generateTastingMenu(
     }
 
     const pageItems = whiskies.slice(page * whiskiesPerPage, (page + 1) * whiskiesPerPage);
-    const availableH = pageH - wy - 15;
-    const rowH = availableH / perCol;
+    const itemsOnPage = pageItems.length;
+    const leftOnPage = Math.min(itemsOnPage, perCol);
+    const rightOnPage = Math.max(0, itemsOnPage - perCol);
+    const maxInCol = Math.max(leftOnPage, rightOnPage);
+    const availableH = pageH - wy - 16;
+    const rowH = availableH / maxInCol;
+    const cardH = Math.min(rowH - 2, hasWhiskyImages ? Math.max(thumbH + 3, 18) : 18);
 
     pageItems.forEach((w, i) => {
       const idx = page * whiskiesPerPage + i;
@@ -576,13 +584,17 @@ export async function generateTastingMenu(
       const cardY = wy + row * rowH;
       const textOffsetX = hasWhiskyImages ? thumbW + 4 : 0;
 
-      doc.setFillColor(240, 243, 248);
-      doc.roundedRect(colX, cardY, colW, hasWhiskyImages ? Math.max(7, thumbH + 1) : 7, 1, 1, "F");
+      doc.setFillColor(242, 244, 250);
+      doc.roundedRect(colX, cardY, colW, cardH, 2, 2, "F");
+
+      doc.setDrawColor(220, 225, 235);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(colX, cardY, colW, cardH, 2, 2, "S");
 
       const imgData = whiskyImages.get(idx);
       if (imgData && !blindMode) {
         try {
-          doc.addImage(imgData, "JPEG", colX + 1, cardY + 0.5, thumbW, thumbH, undefined, "FAST");
+          doc.addImage(imgData, "JPEG", colX + 1.5, cardY + 1.5, thumbW, thumbH, undefined, "FAST");
         } catch {}
       }
 
@@ -590,26 +602,37 @@ export async function generateTastingMenu(
       doc.setFontSize(10);
       doc.setTextColor(...primary);
 
-      const maxNameLen = isLandscape ? 28 : 22;
+      const maxNameW = colW - textOffsetX - 14;
 
       if (blindMode) {
-        doc.text(`#${idx + 1}`, colX + 2, cardY + 5);
+        doc.setFillColor(...primary);
+        doc.roundedRect(colX + 3, cardY + 2.5, 8, 6, 1, 1, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${idx + 1}`, colX + 7, cardY + 6.5, { align: "center" });
         doc.setFont("helvetica", "italic");
         doc.setFontSize(9);
         doc.setTextColor(...secondary);
-        doc.text(l("mysteryWhisky", language), colX + 12, cardY + 5);
+        doc.text(l("mysteryWhisky", language), colX + 14, cardY + 6.5);
       } else {
-        doc.text(`${idx + 1}.`, colX + 2 + textOffsetX, cardY + 5);
-        const numW = doc.getTextWidth(`${idx + 1}. `);
+        doc.setFillColor(...primary);
+        doc.roundedRect(colX + 2 + textOffsetX, cardY + 2, 7, 5.5, 1, 1, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${idx + 1}`, colX + 5.5 + textOffsetX, cardY + 5.8, { align: "center" });
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(30, 41, 59);
-        const dispName = w.name.length > maxNameLen ? w.name.slice(0, maxNameLen - 2) + "\u2026" : w.name;
-        doc.text(dispName, colX + 2 + textOffsetX + numW, cardY + 5);
+        const nameStartX = colX + 11 + textOffsetX;
+        const dispName = doc.splitTextToSize(w.name, maxNameW)[0];
+        doc.text(dispName, nameStartX, cardY + 6);
       }
 
       if (!blindMode) {
-        let detailY = cardY + 11;
+        let detailY = cardY + 11.5;
         const details: string[] = [];
         if (w.distillery && w.distillery !== w.name) details.push(w.distillery);
         if (w.age) {
@@ -622,7 +645,7 @@ export async function generateTastingMenu(
 
         if (details.length > 0) {
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(7);
+          doc.setFontSize(7.5);
           doc.setTextColor(...secondary);
           const detailStr = details.join(" · ");
           const maxW = colW - 4 - textOffsetX;

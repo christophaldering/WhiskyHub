@@ -72,39 +72,36 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
 
 function drawHeader(doc: jsPDF, tasting: Tasting, lang: string, isBlind: boolean) {
   const pageW = 210;
-  const marginX = 15;
+  const marginX = 14;
 
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 32, "F");
+  doc.rect(0, 0, pageW, 20, "F");
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
-  const titleLines = doc.splitTextToSize(tasting.title, pageW - marginX * 2 - 60);
-  doc.text(titleLines, marginX, 14);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(200, 210, 220);
-  const dateStr = formatDate(tasting.date, lang);
-  const locationStr = tasting.location && tasting.location !== "—" ? ` · ${tasting.location}` : "";
-  doc.text(`${dateStr}${locationStr}`, marginX, titleLines.length > 1 ? 24 : 22);
+  const titleLines = doc.splitTextToSize(tasting.title, pageW - marginX * 2 - 50);
+  doc.text(titleLines, marginX, 9);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  doc.setTextColor(180, 190, 200);
-  const codeLabel = lang === "de" ? "Code" : "Code";
-  doc.text(`${codeLabel}: ${tasting.code}`, marginX, 28);
+  doc.setTextColor(200, 210, 220);
+  const dateStr = formatDate(tasting.date, lang);
+  const locationStr = tasting.location && tasting.location !== "—" ? ` · ${tasting.location}` : "";
+  doc.text(`${dateStr}${locationStr}`, marginX, titleLines.length > 1 ? 18 : 15);
 
-  doc.text("CaskSense", pageW - marginX, 28, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(180, 190, 200);
+  doc.text("CaskSense", pageW - marginX, 15, { align: "right" });
 
   if (isBlind) {
     doc.setFillColor(...AMBER);
-    doc.roundedRect(pageW - marginX - 30, 8, 30, 10, 2, 2, "F");
+    doc.roundedRect(pageW - marginX - 24, 4, 24, 7, 1.5, 1.5, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setTextColor(255, 255, 255);
-    doc.text("BLIND", pageW - marginX - 15, 14.5, { align: "center" });
+    doc.text("BLIND", pageW - marginX - 12, 9, { align: "center" });
   }
 }
 
@@ -112,15 +109,15 @@ function drawFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   const pageW = 210;
   const pageH = 297;
 
-  doc.setDrawColor(...LINE_GRAY);
+  doc.setDrawColor(210, 218, 230);
   doc.setLineWidth(0.3);
-  doc.line(15, pageH - 12, pageW - 15, pageH - 12);
+  doc.line(14, pageH - 10, pageW - 14, pageH - 10);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...MUTED);
-  doc.text("CaskSense", 15, pageH - 7);
-  doc.text(`${pageNum} / ${totalPages}`, pageW - 15, pageH - 7, { align: "right" });
+  doc.text("CaskSense", 14, pageH - 6);
+  doc.text(`${pageNum} / ${totalPages}`, pageW - 14, pageH - 6, { align: "right" });
 }
 
 function tp(key: string, lang: string, opts?: Record<string, any>): string {
@@ -419,7 +416,20 @@ function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, ci
     doc.setTextColor(...MUTED);
     doc.text("__ / " + maxScore, x + 2, y + (circleR >= 2.5 ? 1 : 0.5));
     doc.setDrawColor(...LINE_GRAY);
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.3);
+    const fieldW = doc.getTextWidth("__ / " + maxScore) + 6;
+    doc.line(x, y + 2, x + fieldW, y + 2);
+    return;
+  }
+
+  const minRequiredW = maxScore * (2.5 * 2) + (maxScore - 1) * 0.5;
+  if (minRequiredW > availableW) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text("__ / " + maxScore, x + 2, y + 1);
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setLineWidth(0.3);
     const fieldW = doc.getTextWidth("__ / " + maxScore) + 6;
     doc.line(x, y + 2, x + fieldW, y + 2);
     return;
@@ -427,16 +437,16 @@ function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, ci
 
   const effectiveR = Math.min(circleR, (availableW - (maxScore - 1) * circleGap) / (2 * maxScore));
   const effectiveGap = Math.min(circleGap, (availableW - maxScore * effectiveR * 2) / Math.max(1, maxScore - 1));
-  const finalR = Math.max(1.2, effectiveR);
-  const finalGap = Math.max(0.3, effectiveGap);
+  const finalR = Math.max(2.5, effectiveR);
+  const finalGap = Math.max(0.5, effectiveGap);
 
   for (let s = 1; s <= maxScore; s++) {
     const cx = x + (s - 1) * (finalR * 2 + finalGap) + finalR;
-    doc.setDrawColor(...MUTED);
-    doc.setLineWidth(0.25);
+    doc.setDrawColor(...SLATE);
+    doc.setLineWidth(0.35);
     doc.circle(cx, y, finalR);
     doc.setFont("helvetica", "normal");
-    const fontSize = finalR >= 3 ? 6 : finalR >= 2.2 ? 5 : finalR >= 1.6 ? 4 : 3.5;
+    const fontSize = finalR >= 3 ? 6.5 : finalR >= 2.2 ? 5.5 : finalR >= 1.6 ? 4.5 : 3.5;
     doc.setFontSize(fontSize);
     doc.setTextColor(...MUTED);
     doc.text(`${s}`, cx, y + (fontSize * 0.12), { align: "center" });
@@ -455,11 +465,11 @@ async function drawScoringPage(
 ) {
   const pageW = orientation === "portrait" ? 210 : 297;
   const pageH = orientation === "portrait" ? 297 : 210;
-  const marginX = 12;
+  const marginX = 14;
   const contentW = pageW - marginX * 2;
-  const footerH = 12;
-  const headerH = 28;
-  const gutterW = 5;
+  const footerH = 10;
+  const headerH = 20;
+  const gutterW = 6;
   const colW = (contentW - gutterW) / 2;
   const maxPerColumn = 6;
   const maxPerPage = maxPerColumn * 2;
@@ -493,33 +503,33 @@ async function drawScoringPage(
     doc.rect(0, 0, pageW, headerH, "F");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(255, 255, 255);
     const sheetTitle = isBlind
       ? tp("printableSheets.pdfBlindTitle", lang)
       : tp("printableSheets.pdfScoringSheet", lang);
-    doc.text(sheetTitle, marginX, 12);
+    doc.text(sheetTitle, marginX, 9);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(200, 210, 220);
-    doc.text(tasting.title, marginX, 19);
+    doc.text(tasting.title, marginX, 15);
 
     if (isBlind) {
       doc.setFillColor(...AMBER);
-      doc.roundedRect(pageW - marginX - 24, 6, 24, 8, 1.5, 1.5, "F");
+      doc.roundedRect(pageW - marginX - 22, 4, 22, 7, 1.5, 1.5, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6);
       doc.setTextColor(255, 255, 255);
-      doc.text("BLIND", pageW - marginX - 12, 11.5, { align: "center" });
+      doc.text("BLIND", pageW - marginX - 11, 9, { align: "center" });
     }
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(200, 210, 220);
-    doc.text("CaskSense", pageW - marginX, 19, { align: "right" });
+    doc.text("CaskSense", pageW - marginX, 15, { align: "right" });
 
-    let participantY = headerH + 4;
+    let participantY = headerH + 3;
 
     if (participant) {
       doc.setFont("helvetica", "bold");
@@ -534,10 +544,10 @@ async function drawScoringPage(
         try {
           const scanUrl = `${window.location.origin}/m2/tastings/${tasting.id}/scan?participant=${participant.id}`;
           const qrDataUrl = await generateQRDataUrl(scanUrl);
-          doc.addImage(qrDataUrl, "PNG", pageW - marginX - 12, participantY - 1, 12, 12, undefined, "FAST");
+          doc.addImage(qrDataUrl, "PNG", pageW - marginX - 10, participantY - 1, 10, 10, undefined, "FAST");
         } catch {}
       }
-      participantY += 8;
+      participantY += 7;
     } else {
       const nameLabel = tp("printableSheets.pdfParticipant", lang);
       doc.setFont("helvetica", "bold");
@@ -548,7 +558,7 @@ async function drawScoringPage(
       doc.setDrawColor(...LINE_GRAY);
       doc.setLineWidth(0.3);
       doc.line(nameFieldX, participantY + 4, pageW - marginX, participantY + 4);
-      participantY += 8;
+      participantY += 7;
     }
 
     const columnTopY = participantY;
@@ -565,19 +575,19 @@ async function drawScoringPage(
     const whiskySlotH = availableH / whiskiesPerCol;
 
     const coreRows = 5;
-    const titleRowH = Math.max(4, Math.min(7, whiskySlotH * 0.15));
-    const separatorH = 2;
+    const titleRowH = Math.max(5, Math.min(8, whiskySlotH * 0.18));
+    const separatorH = 2.5;
     const baseContentH = whiskySlotH - titleRowH - separatorH;
 
     const hasNotes = baseContentH > coreRows * 4.5 + 5;
     const hasGuessFields = isBlind && baseContentH > coreRows * 4.5 + 9;
     const extraRows = (hasNotes ? 1 : 0) + (hasGuessFields ? 1 : 0);
     const totalRows = coreRows + extraRows;
-    const criteriaSpacing = Math.max(3.2, Math.min(5.5, baseContentH / totalRows));
-    const circleR = Math.max(1.5, Math.min(3.0, criteriaSpacing * 0.5));
-    const circleGap = Math.max(0.6, Math.min(1.5, circleR * 0.5));
-    const titleFontSize = Math.max(6, Math.min(9, whiskySlotH * 0.25));
-    const criteriaFontSize = Math.max(4.5, Math.min(6.5, criteriaSpacing * 0.95));
+    const criteriaSpacing = Math.max(3.5, Math.min(6.0, baseContentH / totalRows));
+    const circleR = Math.max(2.5, Math.min(3.2, criteriaSpacing * 0.55));
+    const circleGap = Math.max(0.8, Math.min(1.8, circleR * 0.55));
+    const titleFontSize = Math.max(9, Math.min(10, whiskySlotH * 0.25));
+    const criteriaFontSize = Math.max(7, Math.min(8, criteriaSpacing * 1.1));
 
     for (let wLocalIdx = 0; wLocalIdx < numOnPage; wLocalIdx++) {
       const w = pageWhiskies[wLocalIdx];
@@ -588,48 +598,72 @@ async function drawScoringPage(
       const colX = marginX + colIdx * (colW + gutterW);
       let y = columnTopY + rowInCol * whiskySlotH;
 
-      doc.setFillColor(240, 243, 248);
-      doc.roundedRect(colX, y - 1, colW, titleFontSize * 0.6 + 2, 1, 1, "F");
+      doc.setFillColor(235, 240, 248);
+      doc.roundedRect(colX, y - 0.5, colW, titleRowH, 1.5, 1.5, "F");
+
+      doc.setDrawColor(200, 210, 228);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(colX, y - 0.5, colW, titleRowH, 1.5, 1.5, "S");
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(titleFontSize);
       doc.setTextColor(...NAVY);
 
-      const thumbSize = titleFontSize * 0.6 + 1;
+      const thumbSize = titleRowH - 2;
       let thumbOffset = 0;
       if (!isBlind && whiskyImageCache?.has(globalIdx)) {
         try {
-          doc.addImage(whiskyImageCache.get(globalIdx)!, "JPEG", colX + 1, y - 0.5, thumbSize, thumbSize, undefined, "FAST");
+          doc.addImage(whiskyImageCache.get(globalIdx)!, "JPEG", colX + 1.5, y, thumbSize, thumbSize, undefined, "FAST");
           thumbOffset = thumbSize + 2;
         } catch {}
       }
 
+      const titleTextY = y + titleRowH * 0.55;
+
       if (isBlind) {
-        doc.text(`${labels.sample} #${globalIdx + 1}`, colX + 2, y + titleFontSize * 0.35);
+        doc.setFillColor(...NAVY);
+        doc.roundedRect(colX + 2, y + 1, 6, titleRowH - 2, 1, 1, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(titleFontSize - 1);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${globalIdx + 1}`, colX + 5, titleTextY, { align: "center" });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(titleFontSize);
+        doc.setTextColor(...NAVY);
+        doc.text(`${labels.sample} #${globalIdx + 1}`, colX + 10, titleTextY);
       } else {
-        const numStr = `${globalIdx + 1}`;
-        doc.text(numStr, colX + 2 + thumbOffset, y + titleFontSize * 0.35);
-        const numW = doc.getTextWidth(numStr + " ");
-        const maxNameW = colW * 0.45 - thumbOffset;
+        doc.setFillColor(...NAVY);
+        doc.roundedRect(colX + 2 + thumbOffset, y + 1, 6, titleRowH - 2, 1, 1, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(titleFontSize - 1);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${globalIdx + 1}`, colX + 5 + thumbOffset, titleTextY, { align: "center" });
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(titleFontSize);
+        doc.setTextColor(...NAVY);
+        const nameStartX = colX + 10 + thumbOffset;
+        const maxNameW = colW * 0.50 - thumbOffset;
         const nameText = doc.splitTextToSize(w.name, maxNameW)[0];
-        doc.text(nameText, colX + 2 + thumbOffset + numW + 2, y + titleFontSize * 0.35);
+        doc.text(nameText, nameStartX, titleTextY);
 
         const meta = getWhiskyMeta(w);
         if (meta) {
-          const afterName = colX + 2 + thumbOffset + numW + 2 + doc.getTextWidth(nameText + "  ");
+          const afterName = nameStartX + doc.getTextWidth(nameText + "  ");
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(criteriaFontSize);
+          doc.setFontSize(Math.max(7, criteriaFontSize - 0.5));
           doc.setTextColor(...MUTED);
-          const availW = colX + colW - afterName - 4;
-          if (availW > 15) {
+          const availW = colX + colW - afterName - 3;
+          if (availW > 12) {
             const metaText = doc.splitTextToSize(meta, availW)[0];
-            doc.text(metaText, afterName, y + titleFontSize * 0.35);
+            doc.text(metaText, afterName, titleTextY);
           }
         }
       }
 
-      y += titleFontSize * 0.6 + 3;
+      y += titleRowH + 2;
 
-      const labelColW2 = Math.max(12, Math.min(18, criteriaFontSize * 2.8));
+      const labelColW2 = Math.max(14, Math.min(19, criteriaFontSize * 2.8));
       const circlesX = colX + 2 + labelColW2;
       const circlesAvailW = colW - labelColW2 - 6;
 
@@ -645,7 +679,7 @@ async function drawScoringPage(
       }
 
       if (hasGuessFields) {
-        const guessFontSize = criteriaFontSize - 0.5;
+        const guessFontSize = Math.max(7, criteriaFontSize - 0.5);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(guessFontSize);
         doc.setTextColor(...SLATE);
@@ -659,7 +693,7 @@ async function drawScoringPage(
           doc.text(g.label + ":", g.x, y);
           const gLW = doc.getTextWidth(g.label + ": ");
           doc.setDrawColor(...LINE_GRAY);
-          doc.setLineWidth(0.2);
+          doc.setLineWidth(0.3);
           doc.line(g.x + gLW, y + 0.5, g.x + thirdW - 4, y + 0.5);
         }
         y += criteriaSpacing;
@@ -672,37 +706,37 @@ async function drawScoringPage(
         doc.text(labels.notes + ":", colX + 2, y);
         const notesLW = doc.getTextWidth(labels.notes + ": ");
         doc.setDrawColor(...LINE_GRAY);
-        doc.setLineWidth(0.2);
+        doc.setLineWidth(0.3);
         doc.line(colX + 2 + notesLW, y + 0.5, colX + colW - 2, y + 0.5);
         y += criteriaSpacing;
       }
 
       const isLastInCol = (colIdx === 0 && rowInCol === leftCount - 1) || (colIdx === 1 && rowInCol === rightCount - 1);
       if (!isLastInCol) {
-        y += 1;
-        doc.setDrawColor(...LINE_GRAY);
-        doc.setLineWidth(0.15);
-        doc.line(colX + 8, y - 1, colX + colW - 8, y - 1);
+        const sepY = columnTopY + (rowInCol + 1) * whiskySlotH - separatorH / 2;
+        doc.setDrawColor(210, 218, 230);
+        doc.setLineWidth(0.3);
+        doc.line(colX + 4, sepY, colX + colW - 4, sepY);
       }
     }
 
     if (leftCount > 0 && rightCount > 0) {
-      doc.setDrawColor(...LINE_GRAY);
-      doc.setLineWidth(0.2);
+      doc.setDrawColor(200, 210, 228);
+      doc.setLineWidth(0.3);
       const gutterX = marginX + colW + gutterW / 2;
       doc.line(gutterX, columnTopY, gutterX, pageH - footerH - 2);
     }
 
     const currentPageNum = 1 + pageIdx + 1;
-    doc.setDrawColor(...LINE_GRAY);
+    doc.setDrawColor(210, 218, 230);
     doc.setLineWidth(0.3);
     doc.line(marginX, pageH - footerH, pageW - marginX, pageH - footerH);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(...MUTED);
-    doc.text("CaskSense", marginX, pageH - footerH + 5);
-    doc.text(`${currentPageNum} / ${totalPages}`, pageW / 2, pageH - footerH + 5, { align: "center" });
-    doc.text("casksense.com", pageW - marginX, pageH - footerH + 5, { align: "right" });
+    doc.text("CaskSense", marginX, pageH - footerH + 4);
+    doc.text(`${currentPageNum} / ${totalPages}`, pageW / 2, pageH - footerH + 4, { align: "center" });
+    doc.text("casksense.com", pageW - marginX, pageH - footerH + 4, { align: "right" });
   }
 }
 
@@ -1239,7 +1273,7 @@ export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 1
     doc.setLineWidth(0.5);
     const circleR = Math.min(cellW, cellH) * 0.18;
     doc.circle(cx + cellW / 2, cy + cellH * 0.38, circleR);
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.3);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
