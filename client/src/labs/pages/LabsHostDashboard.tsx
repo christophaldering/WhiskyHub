@@ -612,6 +612,25 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
         </button>
       </div>
 
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 8,
+          padding: "12px 16px",
+          background: "rgba(201,151,43,0.06)",
+          border: "1px solid rgba(201,151,43,0.15)",
+          borderRadius: 12,
+          marginBottom: 16,
+        }}
+        data-testid="quick-start-ai-hint"
+      >
+        <Sparkles style={{ width: 14, height: 14, color: "#E8B84B", flexShrink: 0, marginTop: 1 }} />
+        <span style={{ fontSize: 13, fontWeight: 300, color: "rgba(240,230,211,0.6)", lineHeight: 1.4 }}>
+          {t("labs.aiImport.hint", "Add your lineup after creating — a photo is all you need.")}
+        </span>
+      </div>
+
       <button
         onClick={handleCreate}
         disabled={!title.trim() || creating}

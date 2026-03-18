@@ -1,0 +1,238 @@
+# Replit Agent Prompt — AI Import als primäres Feature
+
+-----
+
+## DESIGNPRINZIP
+
+Ein Apple Designer würde niemals zwei gleichwertige Optionen nebeneinander stellen.
+Er würde entscheiden: Was ist der beste Weg? → Das wird primär.
+Was ist der Fallback? → Das wird sekundär, aber würdevoll.
+
+AI Import ist der beste Weg. Manuell ist der Fallback.
+
+-----
+
+## ÄNDERUNG 1: WHISKY LINEUP SCREEN
+
+### Aktueller Zustand (schlecht)
+
+- “AI Import” kleiner Link mit Icon
+- “WB # | 🌐 | Whisky name | Add” — gleich prominent daneben
+- Kein visueller Unterschied, kein klarer primärer Weg
+
+### Neuer Zustand
+
+Ersetze den aktuellen Bereich in der Whisky-Lineup Sektion (in `LabsHostDashboard.tsx` oder dem entsprechenden Tasting-Detail Component) durch folgende Struktur:
+
+```
+┌─────────────────────────────────────────┐
+│  ✦  Lineup mit KI erstellen             │
+│                                          │
+│  Foto, Excel, PDF oder einfach          │
+│  beschreiben — KI füllt alles aus.      │
+│                                          │
+│  [ Lineup importieren          →  ]     │
+└─────────────────────────────────────────┘
+
+oder manuell hinzufügen:
+[ WB # ]  [ Whisky name        ] [ + ]
+```
+
+**AI Import Karte Design:**
+
+```css
+background: linear-gradient(135deg, 
+  rgba(201,151,43,0.10) 0%, 
+  rgba(232,184,75,0.06) 100%);
+border: 1px solid rgba(201,151,43,0.30);
+border-radius: 20px;
+padding: 20px 24px;
+position: relative;
+overflow: hidden;
+```
+
+Inneres Glow-Element (::before):
+
+```css
+content: '';
+position: absolute;
+top: -40px; right: -40px;
+width: 120px; height: 120px;
+background: radial-gradient(circle, rgba(201,151,43,0.15), transparent 70%);
+pointer-events: none;
+```
+
+**✦ Icon:** Kleines viereckiges Sternchen in Gold, 16px, vor dem Titel.
+Oder: Sparkles-Icon aus Lucide React (`import { Sparkles } from 'lucide-react'`), color: #E8B84B, size 18.
+
+**Titel:**
+
+- EN: “Build lineup with AI”
+- DE: “Lineup mit KI erstellen”
+- Font: DM Sans, 16px, font-weight 500, color: var(–cream)
+
+**Subtitle:**
+
+- EN: “Photo, Excel, PDF or just describe it — AI fills in the details.”
+- DE: “Foto, Excel, PDF oder einfach beschreiben — KI füllt alles aus.”
+- Font: DM Sans, 13px, font-weight 300, color: rgba(240,230,211,0.55)
+- margin-top: 4px
+
+**Button “Lineup importieren →”:**
+
+```css
+display: inline-flex;
+align-items: center;
+gap: 8px;
+margin-top: 16px;
+background: linear-gradient(135deg, #E8B84B, #C9972B);
+color: #0A0806;
+border: none;
+border-radius: 100px;
+padding: 12px 24px;
+font-size: 14px;
+font-weight: 600;
+font-family: 'DM Sans';
+cursor: pointer;
+transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+box-shadow: 0 4px 20px rgba(201,151,43,0.25);
+```
+
+Hover:
+
+```css
+transform: translateY(-1px);
+box-shadow: 0 8px 32px rgba(201,151,43,0.4);
+```
+
+**Trennlinie danach:**
+
+```
+<div style="
+  display: flex; align-items: center; gap: 12px; 
+  margin: 20px 0 16px;
+">
+  <div style="flex:1; height:1px; background:rgba(255,255,255,0.06)"></div>
+  <span style="font-size:12px; color:rgba(240,230,211,0.3); font-weight:300">
+    EN: "or add manually" / DE: "oder manuell"
+  </span>
+  <div style="flex:1; height:1px; background:rgba(255,255,255,0.06)"></div>
+</div>
+```
+
+**Manuelles Formular darunter** (bestehend, unverändert aber visuell reduziert):
+
+- Kleinere Schrift, gedämpftere Farben
+- Input-Fields: border rgba(255,255,255,0.07) statt gold
+- Add-Button: outline style statt filled
+
+-----
+
+## ÄNDERUNG 2: QUICK-START KARTE (Tasting erstellen)
+
+### Wo
+
+In `LabsHostDashboard.tsx` — die Quick-Start Karte aus dem Master-Prompt (Stufe 3), direkt nach dem “Anzahl Whiskies” Feld.
+
+### Neues Element: AI Lineup Hint
+
+Unmittelbar unter dem Toggle “Blind Tasting”, vor dem “Erstellen” Button, eine kleine inline Hinweiszeile:
+
+```
+┌─────────────────────────────────────────┐
+│  [Name des Abends          ]            │
+│                                          │
+│  Wie viele Whiskies?                    │
+│  [ 3 ] [ 4 ] [ 5 ] [ 6 ] [ 8+ ]        │
+│                                          │
+│  [●] Blind Tasting                      │
+│                                          │
+│  ✦ Lineup nach dem Start mit KI         │  ← NEU
+│    importieren — Foto genügt.           │  ← NEU
+│                                          │
+│  [ Tasting erstellen & Code generieren ]│
+└─────────────────────────────────────────┘
+```
+
+**Design des Hinweises:**
+
+```css
+display: flex;
+align-items: flex-start;
+gap: 8px;
+padding: 12px 16px;
+background: rgba(201,151,43,0.06);
+border: 1px solid rgba(201,151,43,0.15);
+border-radius: 12px;
+margin-bottom: 16px;
+```
+
+Sparkles Icon: 14px, #E8B84B
+Text EN: “Add your lineup after creating — a photo is all you need.”
+Text DE: “Lineup nach dem Erstellen per Foto importieren.”
+Font: 13px, font-weight 300, color: rgba(240,230,211,0.6)
+
+-----
+
+## ÄNDERUNG 3: EMPTY LINEUP STATE
+
+Wenn WHISKIES (0) — also noch keine Whiskies im Lineup — zeige statt der leeren Liste + kleinem AI-Link:
+
+Vollbreite Karte, zentriert:
+
+```
+        ✦
+  No whiskies yet.
+  
+  [ Import with AI ]     [ Add manually ]
+  ←── primary ───        ←── ghost ────
+```
+
+**“Import with AI” Button:** gold gradient, primary
+**“Add manually” Button:** transparent, border ghost, kleiner
+
+-----
+
+## I18N
+
+Neue Keys anlegen in `client/src/lib/i18n.ts`:
+
+EN:
+
+```
+aiImport.card.title: "Build lineup with AI"
+aiImport.card.subtitle: "Photo, Excel, PDF or just describe it — AI fills in the details."
+aiImport.card.button: "Import lineup"
+aiImport.hint: "Add your lineup after creating — a photo is all you need."
+aiImport.emptyState.title: "No whiskies yet."
+aiImport.orManually: "or add manually"
+```
+
+DE:
+
+```
+aiImport.card.title: "Lineup mit KI erstellen"
+aiImport.card.subtitle: "Foto, Excel, PDF oder einfach beschreiben — KI füllt alles aus."
+aiImport.card.button: "Lineup importieren"
+aiImport.hint: "Lineup nach dem Erstellen per Foto importieren."
+aiImport.emptyState.title: "Noch keine Whiskies."
+aiImport.orManually: "oder manuell"
+```
+
+-----
+
+## WAS NICHT VERÄNDERT WIRD
+
+- Die bestehende AI Import Logik und der Endpoint `POST /api/tastings/ai-import` — unverändert
+- Das bestehende Upload-Dialog (drag/drop, camera, preview) — unverändert
+- Alle anderen Screens und Komponenten
+
+-----
+
+## VORGEHEN
+
+1. Whisky Lineup Screen: AI Import Karte bauen, manuelles Formular als sekundär stylen
+1. Quick-Start Karte: AI Hint ergänzen
+1. Empty Lineup State: zwei-Button Lösung
+1. I18n Keys anlegen
+1. Testen: Lineup Screen öffnen → AI Import ist sofort das Erste was ins Auge fällt

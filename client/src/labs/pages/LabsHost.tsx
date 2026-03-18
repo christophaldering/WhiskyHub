@@ -1448,46 +1448,131 @@ function MobileCompanion({
           </div>
 
           {!mobileAiImport && !mobileShowAdd && whiskyCount === 0 && (
-            <button
-              onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
-              className="w-full mb-3 p-4 rounded-2xl flex items-center gap-4 transition-all"
-              style={{
-                background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 12%, transparent), color-mix(in srgb, var(--labs-accent) 6%, transparent))",
-                border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              data-testid="mobile-ai-import-hero"
-            >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--labs-accent-muted)" }}
-              >
-                <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
-                  AI Import
-                </p>
-                <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                  Snap a menu, paste a list — AI fills in everything
+            <div className="mb-3" data-testid="mobile-empty-lineup">
+              <div style={{ textAlign: "center", padding: "20px 0 12px" }}>
+                <Sparkles style={{ width: 24, height: 24, color: "#E8B84B", margin: "0 auto 8px" }} />
+                <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", margin: 0 }}>
+                  {t("labs.aiImport.emptyTitle", "No whiskies yet.")}
                 </p>
               </div>
-              <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
-            </button>
+              <div style={{ display: "flex", gap: 10, padding: "0 4px" }}>
+                <button
+                  onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
+                  style={{
+                    flex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "12px 20px",
+                    background: "linear-gradient(135deg, #E8B84B, #C9972B)",
+                    color: "#0A0806",
+                    border: "none",
+                    borderRadius: 100,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
+                    boxShadow: "0 4px 20px rgba(201,151,43,0.25)",
+                  }}
+                  data-testid="mobile-ai-import-hero"
+                >
+                  <Sparkles style={{ width: 15, height: 15 }} />
+                  {t("labs.aiImport.cardButton", "Import lineup")}
+                </button>
+                <button
+                  onClick={() => { setMobileShowAdd(true); setMobileAiImport(false); }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    padding: "12px 16px",
+                    background: "transparent",
+                    color: "var(--labs-text-secondary)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    borderRadius: 100,
+                    fontSize: 13,
+                    fontWeight: 400,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  data-testid="mobile-manual-add-btn"
+                >
+                  <Plus style={{ width: 14, height: 14 }} />
+                  {t("labs.aiImport.orManually", "or add manually")}
+                </button>
+              </div>
+            </div>
           )}
 
-          {!mobileAiImport && (whiskyCount > 0 || mobileShowAdd) && (
-            <div className="flex items-center mb-2">
+          {!mobileAiImport && whiskyCount > 0 && !mobileShowAdd && (
+            <div
+              onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                padding: "20px 24px",
+                marginBottom: 12,
+                borderRadius: 20,
+                background: "linear-gradient(135deg, rgba(201,151,43,0.10) 0%, rgba(232,184,75,0.06) 100%)",
+                border: "1px solid rgba(201,151,43,0.30)",
+                cursor: "pointer",
+                transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
+              }}
+              data-testid="mobile-ai-import-card"
+            >
+              <div style={{
+                position: "absolute",
+                top: -40,
+                right: -40,
+                width: 120,
+                height: 120,
+                background: "radial-gradient(circle, rgba(201,151,43,0.15), transparent 70%)",
+                pointerEvents: "none",
+              }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, position: "relative" }}>
+                <Sparkles style={{ width: 18, height: 18, color: "#E8B84B" }} />
+                <span style={{ fontSize: 16, fontWeight: 500, color: "var(--labs-text)" }}>
+                  {t("labs.aiImport.cardTitle", "Build lineup with AI")}
+                </span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 300, color: "rgba(240,230,211,0.55)", margin: "4px 0 0", position: "relative" }}>
+                {t("labs.aiImport.cardSubtitle", "Photo, Excel, PDF or just describe it — AI fills in the details.")}
+              </p>
               <button
-                className="labs-btn-ghost flex items-center gap-1.5 text-xs"
-                onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
-                style={{ color: "var(--labs-accent)" }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 16,
+                  background: "linear-gradient(135deg, #E8B84B, #C9972B)",
+                  color: "#0A0806",
+                  border: "none",
+                  borderRadius: 100,
+                  padding: "12px 24px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
+                  boxShadow: "0 4px 20px rgba(201,151,43,0.25)",
+                  position: "relative",
+                }}
                 data-testid="mobile-ai-import-toggle"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Import
+                {t("labs.aiImport.cardButton", "Import lineup")}
+                <ChevronRight style={{ width: 16, height: 16 }} />
               </button>
+            </div>
+          )}
+
+          {!mobileAiImport && whiskyCount > 0 && !mobileShowAdd && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 12px" }}>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+              <span style={{ fontSize: 12, color: "rgba(240,230,211,0.3)", fontWeight: 300 }}>
+                {t("labs.aiImport.orManually", "or add manually")}
+              </span>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
             </div>
           )}
 
@@ -1647,7 +1732,7 @@ function MobileCompanion({
           )}
 
           {mobileShowAdd && (
-            <div className="labs-card p-3 mb-3 space-y-2">
+            <div className="labs-card p-3 mb-3 space-y-2" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
               <div className="flex gap-1.5 items-center">
                 <input
                   className="labs-input"
@@ -1655,7 +1740,7 @@ function MobileCompanion({
                   value={mobileWbId}
                   onChange={e => { setMobileWbId(e.target.value.replace(/[^0-9]/g, "")); setMobileWbResult(""); }}
                   onKeyDown={e => { if (e.key === "Enter" && mobileWbId.trim()) handleMobileWbLookup(); }}
-                  style={{ width: 64, fontSize: 12, textAlign: "center" }}
+                  style={{ width: 64, fontSize: 12, textAlign: "center", border: "1px solid rgba(255,255,255,0.07)" }}
                   data-testid="mobile-wb-lookup-input"
                 />
                 <button
@@ -1674,13 +1759,15 @@ function MobileCompanion({
                   onChange={e => setMobileWhiskyName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleMobileAdd()}
                   data-testid="mobile-whisky-name-input"
+                  style={{ border: "1px solid rgba(255,255,255,0.07)" }}
                   autoFocus
                 />
                 <button
-                  className="labs-btn-primary px-3"
+                  className="labs-btn-ghost px-3"
                   onClick={handleMobileAdd}
                   disabled={!mobileWhiskyName.trim() || addWhiskyMut.isPending}
                   data-testid="mobile-whisky-add-btn"
+                  style={{ border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8 }}
                 >
                   {addWhiskyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
                 </button>
