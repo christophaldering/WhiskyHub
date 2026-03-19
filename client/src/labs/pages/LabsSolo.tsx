@@ -277,8 +277,16 @@ export default function LabsSolo() {
       if (d.detailTexts) setDetailTexts(d.detailTexts);
       if (d.soloView === "editor") setSoloView("editor");
       if (d.soloView === "ratingFlow") {
-        if (d.ratingFlowStep != null) setRatingFlowStep(d.ratingFlowStep);
-        setInterruptedFlowDraft(d);
+        const ds = d.detailedScores || { nose: 0, taste: 0, finish: 0 };
+        const hasIncomplete = ds.nose === 0 || ds.taste === 0 || ds.finish === 0;
+        const computedStep = ds.finish > 0 ? 3 : ds.taste > 0 ? 2 : ds.nose > 0 ? 1 : 0;
+        const resumeStep = d.ratingFlowStep != null ? d.ratingFlowStep : computedStep;
+        setRatingFlowStep(resumeStep);
+        if (hasIncomplete || resumeStep < 3) {
+          setInterruptedFlowDraft({ ...d, computedStep: resumeStep });
+        } else {
+          setInterruptedFlowDraft(d);
+        }
       }
     } catch {}
   }, [draftEntryId, hubLoading, hubDrafts.length]);
@@ -1760,7 +1768,7 @@ export default function LabsSolo() {
     };
     const handleFlowSave = async () => {
       const hasDimScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
-      if (!hasDimScore) return;
+      if (!hasDimScore) throw new Error("No scores");
       const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
       if (score !== effectiveScore) setScore(effectiveScore);
       const normalizedNose = ratingScale.normalize(detailedScores.nose);
@@ -2170,7 +2178,7 @@ export default function LabsSolo() {
         {interruptedFlowDraft && (
           <ResumeRatingBanner
             whiskyName={interruptedFlowDraft.whiskyName || interruptedFlowDraft.distillery || ""}
-            step={ratingFlowStep}
+            step={interruptedFlowDraft.computedStep ?? ratingFlowStep}
             onResume={() => {
               setSoloView("ratingFlow");
               setInterruptedFlowDraft(null);
