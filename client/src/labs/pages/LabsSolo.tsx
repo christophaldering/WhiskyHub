@@ -12,6 +12,8 @@ import {
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
+import RatingFlow from "@/labs/components/RatingFlow";
+import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
@@ -143,7 +145,10 @@ export default function LabsSolo() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
-  const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "editor">("hub");
+  const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "ratingFlow" | "editor">("hub");
+  const [ratingFlowStep, setRatingFlowStep] = useState(0);
+  const RATING_FLOW_DRAFT_KEY = "cs_solo_ratingflow_draft";
+  const [interruptedFlowDraft, setInterruptedFlowDraft] = useState<any>(null);
   const [captureSource, setCaptureSource] = useState<"hub" | "editor">("hub");
   const [hubDrafts, setHubDrafts] = useState<any[]>([]);
   const [hubCompleted, setHubCompleted] = useState<any[]>([]);
@@ -227,7 +232,7 @@ export default function LabsSolo() {
           unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice,
           photoUrl, showManual, detailedScores, detailTouched, overrideActive,
           detailChips, detailTexts,
-          soloView, ts: Date.now(),
+          soloView, ratingFlowStep, ts: Date.now(),
         };
         if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 0 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
         localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
@@ -236,7 +241,7 @@ export default function LabsSolo() {
   }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownRegion, unknownCountry, unknownPeatLevel, unknownVintage, unknownBottler, unknownWbId, unknownPrice, photoUrl, showManual, detailedScores, detailTouched, overrideActive, detailChips, detailTexts, soloView]);
 
   useEffect(() => {
-    if ((soloView === "editor" || soloView === "quickRate" || soloView === "capture") && draftStatus !== "finalized") saveLocalDraft();
+    if ((soloView === "editor" || soloView === "quickRate" || soloView === "ratingFlow" || soloView === "capture") && draftStatus !== "finalized") saveLocalDraft();
   }, [saveLocalDraft, soloView, draftStatus]);
 
   useEffect(() => {
@@ -272,6 +277,10 @@ export default function LabsSolo() {
       if (d.detailChips) setDetailChips(d.detailChips);
       if (d.detailTexts) setDetailTexts(d.detailTexts);
       if (d.soloView === "editor") setSoloView("editor");
+      if (d.soloView === "ratingFlow") {
+        if (d.ratingFlowStep != null) setRatingFlowStep(d.ratingFlowStep);
+        setInterruptedFlowDraft(d);
+      }
     } catch {}
   }, [draftEntryId, hubLoading, hubDrafts.length]);
 
@@ -808,16 +817,16 @@ export default function LabsSolo() {
         if (first.price) setUnknownPrice(String(first.price));
         setShowManual(true);
         setSheetView("none");
-        if (soloView === "capture") setSoloView("quickRate");
+        if (soloView === "capture") { setRatingFlowStep(0); setSoloView("ratingFlow"); }
       } else {
         setError(t("m2.solo.noWhiskiesInFile", "No whiskies found in the uploaded file."));
         setSheetView("none");
-        if (soloView === "capture") setSoloView("quickRate");
+        if (soloView === "capture") { setRatingFlowStep(0); setSoloView("ratingFlow"); }
       }
     } catch (err: any) {
       setError(err.message || t("m2.solo.importFailed", "File import failed"));
       setSheetView("none");
-      if (soloView === "capture") setSoloView("quickRate");
+      if (soloView === "capture") { setRatingFlowStep(0); setSoloView("ratingFlow"); }
     }
   };
 
@@ -940,7 +949,8 @@ export default function LabsSolo() {
     setUnknownPrice(item.pricePaid != null ? String(item.pricePaid) : "");
     setSelectedCandidate(null);
     setSheetView("none");
-    setSoloView("quickRate");
+    setRatingFlowStep(0);
+    setSoloView("ratingFlow");
     setShowManual(true);
     setAcceptedBanner(true);
     setTimeout(() => setAcceptedBanner(false), 3500);
@@ -1539,7 +1549,7 @@ export default function LabsSolo() {
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <button
-              onClick={() => { setSoloView("quickRate"); setShowManual(true); }}
+              onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); setShowManual(true); }}
               className="labs-btn-ghost"
               style={{ display: "flex", alignItems: "center", gap: 6 }}
               data-testid="button-capture-skip"
@@ -1573,19 +1583,19 @@ export default function LabsSolo() {
             </div>
             {candidates.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                {candidates.map((c, i) => renderCandidateButton(c, i, "", () => { handleSelectCandidate(c); setSoloView("quickRate"); }))}
+                {candidates.map((c, i) => renderCandidateButton(c, i, "", () => { handleSelectCandidate(c); setRatingFlowStep(0); setSoloView("ratingFlow"); }))}
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {candidates.length === 0 && (
-                <button onClick={() => { handleCreateUnknown(); setSoloView("quickRate"); }} data-testid="button-capture-add-manually" className="labs-btn-primary" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
+                <button onClick={() => { handleCreateUnknown(); setRatingFlowStep(0); setSoloView("ratingFlow"); }} data-testid="button-capture-add-manually" className="labs-btn-primary" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
               )}
               <button onClick={() => { setOnlineSearched(false); setOnlineCandidates([]); setOnlineError(""); setSheetView("onlineSearch"); }} data-testid="button-capture-search-online" className="labs-btn-secondary" style={{ width: "100%", color: "var(--labs-info)", borderColor: "var(--labs-info-muted)" }}>
                 {t("m2.solo.searchOnline", "Search online (Beta)")}
               </button>
               <button onClick={() => { setSheetView("none"); setCandidates([]); setPhotoUrl(""); setLastResult(null); }} data-testid="button-capture-retake" className="labs-btn-secondary" style={{ width: "100%" }}>{t("m2.solo.tryAgain", "Try again")}</button>
               {candidates.length > 0 && (
-                <button onClick={() => { handleCreateUnknown(); setSoloView("quickRate"); }} data-testid="button-capture-manual-alt" className="labs-btn-ghost" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
+                <button onClick={() => { handleCreateUnknown(); setRatingFlowStep(0); setSoloView("ratingFlow"); }} data-testid="button-capture-manual-alt" className="labs-btn-ghost" style={{ width: "100%" }}>{t("m2.solo.addManually", "Add manually")}</button>
               )}
             </div>
           </div>
@@ -1732,6 +1742,135 @@ export default function LabsSolo() {
             </button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (soloView === "ratingFlow") {
+    const displayName = whiskyName || distillery || t("soloQuick.untitled", "Untitled dram");
+    const selectedChips = detailChips.nose || [];
+    const handleFlowChipToggle = (chip: string) => {
+      setDetailChips((prev) => {
+        const cur = prev.nose || [];
+        return { ...prev, nose: cur.includes(chip) ? cur.filter((t) => t !== chip) : [...cur, chip] };
+      });
+    };
+    const handleFlowSave = async () => {
+      const hasDimScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
+      if (!hasDimScore) return;
+      const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
+      if (score !== effectiveScore) setScore(effectiveScore);
+      if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+      if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
+      setSaving(true);
+      setError("");
+      try {
+        const body = buildDraftBody();
+        body.status = "final";
+        body.personalScore = effectiveScore;
+        if (draftEntryId) {
+          const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "x-participant-id": pid },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error("Save failed");
+        } else {
+          const res = await fetch(`/api/journal/${pid}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-participant-id": pid },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error("Save failed");
+          const created = await res.json();
+          setDraftEntryId(created.id);
+        }
+        queryClient.invalidateQueries({ queryKey: ["journal"] });
+        setSaved(true);
+        try { localStorage.removeItem(RATING_FLOW_DRAFT_KEY); } catch {}
+      } catch {
+        persistLocal();
+        if (pid) {
+          const body = buildDraftBody();
+          body.status = "final";
+          body.personalScore = effectiveScore;
+          addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
+          setOfflineCount(getOfflineQueue().length);
+        }
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    return (
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-rating-flow">
+        <button
+          onClick={() => { handleReset(true); }}
+          className="labs-btn-ghost"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 8, justifyContent: "flex-start" }}
+          data-testid="button-ratingflow-back"
+        >
+          <ChevronLeft style={{ width: 16, height: 16 }} />
+          {t("m2.common.back", "Back")}
+        </button>
+
+        {error && (
+          <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(200,169,126,0.12)", border: "1px solid rgba(200,169,126,0.25)", color: "var(--labs-accent)", fontSize: 13, marginBottom: 12 }} data-testid="text-ratingflow-error">
+            {error}
+          </div>
+        )}
+
+        {photoUrl && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+            <img src={photoUrl} alt={displayName} style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", border: "1px solid var(--labs-border)" }} data-testid="img-ratingflow-photo" />
+          </div>
+        )}
+
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }} data-testid="text-ratingflow-name">
+          {displayName}
+        </h2>
+        {distillery && whiskyName && distillery !== whiskyName && (
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: "0 0 4px" }}>{distillery}</p>
+        )}
+        {(unknownAge || unknownAbv) && (
+          <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", textAlign: "center", margin: "0 0 12px" }}>
+            {[unknownAge && `${unknownAge} yo`, unknownAbv && `${unknownAbv}%`].filter(Boolean).join(" · ")}
+          </p>
+        )}
+
+        <div style={{ flex: 1 }}>
+          <RatingFlow
+            scale={ratingScale}
+            scores={detailedScores}
+            onScoreChange={handleDetailScoreChange}
+            overall={score}
+            onOverallChange={handleScoreChange}
+            overrideActive={overrideActive}
+            onOverrideToggle={() => setOverrideActive(true)}
+            onResetOverride={resetOverride}
+            chips={selectedChips}
+            onChipToggle={handleFlowChipToggle}
+            notes={notes}
+            onNotesChange={setNotes}
+            onSave={handleFlowSave}
+            whiskyName={displayName}
+            initialStep={ratingFlowStep}
+            onStepChange={(s) => setRatingFlowStep(s)}
+            onAfterSaveCorrect={() => {
+              setRatingFlowStep(3);
+              setSoloView("ratingFlow");
+            }}
+            onAfterSaveNewDram={() => {
+              handleReset();
+              setError("");
+              setCaptureSource("hub");
+              setSoloView("capture");
+            }}
+            onAfterSaveOverview={() => {
+              handleReset(true);
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -2013,6 +2152,22 @@ export default function LabsSolo() {
           <Plus style={{ width: 20, height: 20 }} />
           {t("m2.solo.newDram", "Log new dram")}
         </button>
+
+        {interruptedFlowDraft && (
+          <ResumeRatingBanner
+            whiskyName={interruptedFlowDraft.whiskyName || interruptedFlowDraft.distillery || ""}
+            step={ratingFlowStep}
+            onResume={() => {
+              setSoloView("ratingFlow");
+              setInterruptedFlowDraft(null);
+            }}
+            onDiscard={() => {
+              handleReset();
+              setInterruptedFlowDraft(null);
+              try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
+            }}
+          />
+        )}
 
         {hubLoading ? (
           <div style={{ padding: "8px 0" }}>
