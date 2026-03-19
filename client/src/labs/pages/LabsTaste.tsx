@@ -1,18 +1,29 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
   Wine, Calendar, ChevronRight, BookOpen,
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
-  Download, Brain, Utensils, Library, Info,
+  Download, Brain, Utensils, Library, Info, Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
 import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi, pidHeaders } from "@/lib/api";
+import type { JournalEntry, Tasting } from "@shared/schema";
 
 const ANALYTICS_THRESHOLD = 10;
+
+interface LoggedDram {
+  id: string;
+  name: string;
+  distillery: string | null;
+  score: number | null;
+  date: string | null;
+  source: "solo" | "tasting";
+  count?: number;
+}
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -359,6 +370,56 @@ export default function LabsTaste() {
     enabled: !!currentParticipant && tastingIds.length > 0,
   });
 
+  const loggedDrams = useMemo((): LoggedDram[] => {
+    if (!currentParticipant) return [];
+    const items: LoggedDram[] = [];
+    const journalEntries = (journal || []) as JournalEntry[];
+    const tastingList = (tastings || []) as Tasting[];
+
+    for (const entry of journalEntries) {
+      if (entry.status === "draft") continue;
+      items.push({
+        id: `j-${entry.id}`,
+        name: entry.whiskyName || entry.title || "—",
+        distillery: entry.distillery || null,
+        score: entry.personalScore ?? null,
+        date: entry.createdAt ? String(entry.createdAt) : null,
+        source: "solo",
+      });
+    }
+
+    if (allRatingsMap) {
+      const tastingMap = new Map<string, Tasting>();
+      for (const t of tastingList) {
+        tastingMap.set(t.id, t);
+      }
+      for (const [tid, ratings] of Object.entries(allRatingsMap)) {
+        const myTastingRatings = ratings.filter((r) => r.participantId === currentParticipant.id);
+        if (myTastingRatings.length === 0) continue;
+        const tasting = tastingMap.get(tid);
+        if (!tasting) continue;
+        const avgScore = myTastingRatings.reduce((sum, r) => sum + (r.overall || 0), 0) / myTastingRatings.length;
+        items.push({
+          id: `t-${tid}`,
+          name: tasting.title || "Tasting",
+          distillery: null,
+          score: Math.round(avgScore * 10) / 10,
+          date: tasting.date || null,
+          source: "tasting",
+          count: myTastingRatings.length,
+        });
+      }
+    }
+
+    items.sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      return db - da;
+    });
+
+    return items;
+  }, [journal, tastings, allRatingsMap, currentParticipant]);
+
   if (!currentParticipant) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
@@ -449,6 +510,83 @@ export default function LabsTaste() {
               {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}
             </button>
           </div>
+
+          {loggedDrams.length > 0 && (
+            <div className="labs-card labs-fade-in labs-stagger-2" style={{ padding: "16px", marginBottom: "1rem" }} data-testid="card-logged-drams">
+              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Deine Drams
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.6 }}>
+                  {loggedDrams.length} {loggedDrams.length === 1 ? "Eintrag" : "Einträge"}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                {loggedDrams.slice(0, 5).map((dram, idx) => (
+                  <div
+                    key={dram.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+                      borderTop: idx === 0 ? "none" : "1px solid var(--labs-border)",
+                    }}
+                    data-testid={`row-logged-dram-${idx}`}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      background: dram.source === "tasting" ? "color-mix(in srgb, var(--labs-accent) 10%, transparent)" : "var(--labs-accent-muted)",
+                    }}>
+                      {dram.source === "tasting"
+                        ? <Wine className="w-3 h-3" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
+                        : <BookOpen className="w-3 h-3" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {dram.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
+                        {dram.distillery && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 120 }}>{dram.distillery}</span>}
+                        {dram.source === "tasting" && dram.count && (
+                          <span style={{ whiteSpace: "nowrap" }}>{dram.count} {dram.count === 1 ? "Whisky" : "Whiskys"}</span>
+                        )}
+                        {dram.date && (
+                          <>
+                            {(dram.distillery || (dram.source === "tasting" && dram.count)) && <span style={{ opacity: 0.4 }}>·</span>}
+                            <span style={{ whiteSpace: "nowrap" }}>{new Date(dram.date).toLocaleDateString("de-DE", { day: "2-digit", month: "short" })}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {dram.score != null && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                        <Star className="w-3 h-3" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{Number(dram.score) % 1 === 0 ? Number(dram.score).toFixed(0) : Number(dram.score).toFixed(1)}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {loggedDrams.length > 5 && (
+                <Link href="/labs/taste/drams" style={{ textDecoration: "none" }}>
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                      marginTop: 8, padding: "8px 0", fontSize: 12, fontWeight: 500,
+                      color: "var(--labs-accent)", cursor: "pointer",
+                      borderTop: "1px solid var(--labs-border)",
+                    }}
+                    data-testid="link-show-all-drams"
+                  >
+                    Alle anzeigen
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </Link>
+              )}
+            </div>
+          )}
 
           <PalateLetterCard
             reports={connoisseurReports}
