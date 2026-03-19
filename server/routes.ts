@@ -2890,6 +2890,15 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         return res.status(403).json({ message: "Evaluation is locked" });
       }
 
+      if ((tasting as any).lockedDrams) {
+        try {
+          const locked: string[] = JSON.parse((tasting as any).lockedDrams);
+          if (Array.isArray(locked) && locked.includes(data.whiskyId)) {
+            return res.status(403).json({ message: "This dram is locked — ratings cannot be changed" });
+          }
+        } catch {}
+      }
+
       const maxScale = tasting.ratingScale || 100;
       const normalizeDim = (v: number | null | undefined): number | null => {
         if (v == null) return null;

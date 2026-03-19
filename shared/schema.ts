@@ -68,6 +68,7 @@ export const tastings = pgTable("tastings", {
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
   aiNarrative: text("ai_narrative"), // AI-generated narrative session summary (Markdown)
   guestMode: text("guest_mode").default("standard"), // "standard" | "ultra" — guest participation flavor
+  lockedDrams: text("locked_drams"), // JSON array of whisky IDs whose ratings are locked
   sessionUiMode: text("session_ui_mode"), // null | flow | focus | journal — host-enforced UI mode
   showRanking: boolean("show_ranking").default(true),
   showGroupAvg: boolean("show_group_avg").default(true),

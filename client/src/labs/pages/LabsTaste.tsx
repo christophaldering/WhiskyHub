@@ -527,11 +527,11 @@ export default function LabsTaste() {
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
                   <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Deine Drams
+                    {t("m2.taste.yourDrams", "Your Drams")}
                   </span>
                 </div>
-                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.6 }}>
-                  {loggedDrams.length} {loggedDrams.length === 1 ? "Eintrag" : "Einträge"}
+                <span style={{ fontSize: 11, color: analyticsLocked ? "var(--labs-accent)" : "var(--labs-text-muted)", opacity: analyticsLocked ? 0.8 : 0.6, fontWeight: analyticsLocked ? 600 : 400 }}>
+                  {whiskyCount} / {ANALYTICS_THRESHOLD} {t("m2.taste.countedLabel", "counted")}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>

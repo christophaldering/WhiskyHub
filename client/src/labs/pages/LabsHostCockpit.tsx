@@ -21,7 +21,7 @@ function blindLabel(idx: number): string {
 
 const REVEAL_DEFAULT_ORDER: string[][] = [
   ["name"],
-  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
   ["image"],
 ];
 
@@ -42,8 +42,10 @@ function getRevealState(tasting: any, whiskyCount: number) {
     name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
     region: "Region", country: "Country", category: "Category",
     caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
-    bottler: "Bottler", vintage: "Vintage", hostNotes: "Notes",
-    hostSummary: "Summary", price: "Price",
+    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled",
+    bottledYear: "Bottled", hostNotes: "Notes",
+    hostSummary: "Summary", price: "Price", ppm: "PPM",
+    wbId: "WB-ID", wbScore: "WB Score",
   };
   const stepLabels = stepGroups.map((group: string[]) => {
     const labels = group.map(f => FIELD_LABELS[f] || f);
@@ -328,6 +330,18 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const gv = isBlind && rv ? getGuestVisibility(tasting, rv.stepGroups, isGuided) : null;
   const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
   const activeWhisky = whiskies[guestDramIdx] || null;
+
+  const lockedDrams: string[] = (() => {
+    try { return JSON.parse(tasting.lockedDrams || "[]"); } catch { return []; }
+  })();
+  const isDramLocked = (whiskyId: string) => lockedDrams.includes(whiskyId);
+  const toggleDramLock = async (whiskyId: string) => {
+    const next = isDramLocked(whiskyId)
+      ? lockedDrams.filter((id: string) => id !== whiskyId)
+      : [...lockedDrams, whiskyId];
+    await tastingApi.updateDetails(tastingId, pid, { lockedDrams: JSON.stringify(next) });
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+  };
   const currentRatingWhisky = whiskies[hostRatingIdx] || null;
 
   const totalParticipants = participants.length;
@@ -904,18 +918,32 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       <EyeOff style={{ width: 10, height: 10 }} />
                       REVEAL PROGRESS — DRAM {blindLabel(guestDramIdx)}
                     </div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       {rv.stepGroups.map((group: string[], sIdx: number) => {
                         const state = gv.stepStates[sIdx] || "hidden";
                         const isRevealed = state === "revealed";
                         const isCurrent = state === "next";
                         const fieldLabels = group.map(f => REVEAL_FIELD_LABELS[f] || f).join(", ");
+                        const fieldValueMap: Record<string, string> = {
+                          name: activeWhisky?.name || "", distillery: activeWhisky?.distillery || "",
+                          age: activeWhisky?.age ? `${activeWhisky.age}y` : "", abv: activeWhisky?.abv ? `${activeWhisky.abv}%` : "",
+                          region: activeWhisky?.region || "", country: activeWhisky?.country || "",
+                          category: activeWhisky?.category || "", caskInfluence: activeWhisky?.caskInfluence || "",
+                          bottler: activeWhisky?.bottler || "", peatLevel: activeWhisky?.peatLevel || "",
+                          distilledYear: activeWhisky?.distilledYear || "", bottledYear: activeWhisky?.bottledYear || "",
+                          ppm: activeWhisky?.ppm ? String(activeWhisky.ppm) : "", price: activeWhisky?.price || "",
+                          wbId: activeWhisky?.whiskybaseId || "", wbScore: activeWhisky?.wbScore ? String(activeWhisky.wbScore) : "",
+                          hostNotes: activeWhisky?.hostNotes ? "✓" : "", hostSummary: activeWhisky?.hostSummary ? "✓" : "",
+                          image: activeWhisky?.imageUrl ? "✓" : "",
+                        };
+                        const revealedValues = isRevealed && activeWhisky
+                          ? group.map(f => fieldValueMap[f]).filter(Boolean).join(" · ")
+                          : "";
                         return (
                           <div key={sIdx} style={{
                             display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 8,
                             background: isRevealed ? "color-mix(in srgb, var(--labs-success) 8%, transparent)" : isCurrent ? "color-mix(in srgb, var(--labs-accent) 8%, transparent)" : "transparent",
                             border: isCurrent ? "1px solid var(--labs-accent)" : "1px solid transparent",
-                            flex: "1 1 auto", minWidth: 0,
                           }} data-testid={`cockpit-reveal-step-${sIdx}`}>
                             <div style={{
                               width: 20, height: 20, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
@@ -928,6 +956,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               <div style={{ fontSize: 11, fontWeight: 600, color: isRevealed ? "var(--labs-success)" : isCurrent ? "var(--labs-accent)" : "var(--labs-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {fieldLabels}
                               </div>
+                              {isRevealed && revealedValues && (
+                                <div style={{ fontSize: 10, color: "var(--labs-text-secondary)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {revealedValues}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -1007,6 +1040,23 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{avgScore}</span>
                             )}
                             <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}>{ratedCount}/{totalParticipants} rated</span>
+                            {isLive && (
+                              <button
+                                onClick={e => { e.stopPropagation(); toggleDramLock(w.id); }}
+                                style={{
+                                  background: isDramLocked(w.id) ? "var(--labs-success-muted)" : "transparent",
+                                  border: isDramLocked(w.id) ? "1px solid var(--labs-success)" : "1px solid var(--labs-border)",
+                                  borderRadius: 6, padding: "2px 8px", cursor: "pointer",
+                                  display: "flex", alignItems: "center", gap: 3,
+                                  color: isDramLocked(w.id) ? "var(--labs-success)" : "var(--labs-text-muted)",
+                                  fontSize: 10, fontWeight: 600, marginTop: 2,
+                                }}
+                                data-testid={`cockpit-lock-${w.id}`}
+                              >
+                                <Lock style={{ width: 9, height: 9 }} />
+                                {isDramLocked(w.id) ? "Locked" : "Lock"}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );

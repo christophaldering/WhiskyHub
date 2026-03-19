@@ -66,7 +66,10 @@ function _parseStandardRows(rows: any[]): any[] {
       if (name.length < 2) return false;
       if (/^\d+$/.test(name)) return false;
       if (/^[-–—_.,;:\/\\#+*=]+$/.test(name)) return false;
-      if (/^(total|sum|average|avg|count|blank|empty|n\/a|nan|null|undefined|header|example|template|muster|test)$/i.test(name)) return false;
+      if (/^(total|sum|summe|average|avg|durchschnitt|count|anzahl|blank|empty|leer|n\/a|na|nan|null|undefined|header|kopfzeile|example|beispiel|template|vorlage|muster|test|row|zeile|nr|no|pos|position|#|whisky\s*\d*|sample\s*\d*|probe\s*\d*|dram\s*\d*)$/i.test(name)) return false;
+      if (/^[\d\s.,]+$/.test(name)) return false;
+      const fieldCount = Object.keys(w).length;
+      if (fieldCount <= 1 && name.length < 3) return false;
       w.name = name;
       return true;
     });
@@ -220,7 +223,7 @@ interface LabsHostProps {
 
 const REVEAL_DEFAULT_ORDER: string[][] = [
   ["name"],
-  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
   ["image"],
 ];
 
@@ -266,8 +269,10 @@ function getRevealState(tasting: any, whiskyCount: number) {
     name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
     region: "Region", country: "Country", category: "Category",
     caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
-    bottler: "Bottler", vintage: "Vintage", hostNotes: "Notes",
-    hostSummary: "Summary", price: "Price",
+    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled",
+    bottledYear: "Bottled", hostNotes: "Notes",
+    hostSummary: "Summary", price: "Price", ppm: "PPM",
+    wbId: "WB-ID", wbScore: "WB Score",
   };
   const stepLabels = stepGroups.map((group: string[]) => {
     const labels = group.map(f => FIELD_LABELS[f] || f);
@@ -1170,6 +1175,18 @@ function MobileCompanion({
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileDragOver, setMobileDragOver] = useState(false);
   const [confirmEndSession, setConfirmEndSession] = useState(false);
+
+  const lockedDrams: string[] = (() => {
+    try { return JSON.parse((tasting as any).lockedDrams || "[]"); } catch { return []; }
+  })();
+  const isDramLocked = (whiskyId: string) => lockedDrams.includes(whiskyId);
+  const toggleDramLock = async (whiskyId: string) => {
+    const next = isDramLocked(whiskyId)
+      ? lockedDrams.filter(id => id !== whiskyId)
+      : [...lockedDrams, whiskyId];
+    await tastingApi.updateDetails(tastingId, pid, { lockedDrams: JSON.stringify(next) });
+    queryClient.invalidateQueries({ queryKey: [`/api/tastings/${tastingId}`] });
+  };
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
   const [mobileEditName, setMobileEditName] = useState("");
 
@@ -2023,6 +2040,20 @@ function MobileCompanion({
           );
         })()}
 
+        {isLive && tasting.guidedMode && activeWhisky && (
+          <button
+            className={`labs-btn-secondary flex items-center justify-center gap-2 w-full`}
+            onClick={() => toggleDramLock((activeWhisky as any).id)}
+            data-testid="mobile-lock-dram"
+            style={isDramLocked((activeWhisky as any).id) ? { borderColor: "var(--labs-success)", color: "var(--labs-success)" } : {}}
+          >
+            {isDramLocked((activeWhisky as any).id)
+              ? <><Lock className="w-4 h-4" /> {t("m2.host.lockedBadge", "Locked")} — {t("m2.host.unlockDram", "Tap to Unlock")}</>
+              : <><Lock className="w-4 h-4" /> {t("m2.host.lockDram", "Lock Current Dram")}</>
+            }
+          </button>
+        )}
+
         {isLive && !confirmEndSession && (
           <button
             className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
@@ -2132,7 +2163,12 @@ function MobileCompanion({
                           : (isHidden ? "Hidden" : "Partially revealed")}
                       </p>
                     </div>
-                    {isActive && (
+                    {isDramLocked(w.id) && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`badge-locked-${w.id}`}>
+                        <Lock className="w-2.5 h-2.5 inline mr-0.5" style={{ verticalAlign: "-1px" }} />{t("m2.host.lockedBadge", "Locked")}
+                      </span>
+                    )}
+                    {isActive && !isDramLocked(w.id) && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
                         Active
                       </span>
@@ -2215,9 +2251,9 @@ const REVEAL_FIELD_LABELS: Record<string, string> = {
 };
 
 const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
-  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
-  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
-  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler"], ["distilledYear", "bottledYear"], ["hostNotes", "hostSummary"], ["image"]],
   "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
 };
 
@@ -2383,9 +2419,10 @@ function CustomRevealEditor({ steps, onChange }: {
                   onClick={(e) => { e.stopPropagation(); removeField(sIdx, fIdx); }}
                   className="reveal-remove-btn"
                   style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    padding: "2px", color: "var(--labs-danger, #e55)", fontSize: 11, lineHeight: 1,
+                    background: "color-mix(in srgb, var(--labs-danger, #e55) 12%, transparent)", border: "none", cursor: "pointer",
+                    padding: "2px 3px", color: "var(--labs-danger, #e55)", fontSize: 11, lineHeight: 1,
                     borderRadius: 4, marginLeft: 2,
+                    transition: "background 0.15s, transform 0.1s",
                   }}
                   title="Remove from reveal order"
                   data-testid={`reveal-remove-${field}`}
@@ -4027,6 +4064,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     },
   });
 
+  const lockedDrams: string[] = (() => {
+    try { return JSON.parse((tasting as any)?.lockedDrams || "[]"); } catch { return []; }
+  })();
+  const isDramLocked = (whiskyId: string) => lockedDrams.includes(whiskyId);
+  const toggleDramLock = async (whiskyId: string) => {
+    const next = isDramLocked(whiskyId)
+      ? lockedDrams.filter(id => id !== whiskyId)
+      : [...lockedDrams, whiskyId];
+    await tastingApi.updateDetails(tastingId, currentParticipant?.id || "", { lockedDrams: JSON.stringify(next) });
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+  };
+
   const desktopTransferGuests = (participants || []).filter(
     (tp: { participant: { id: string } }) => tp.participant.id !== currentParticipant?.id
   );
@@ -5117,29 +5166,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 </div>
               )}
 
-              {Array.isArray(existingInvites) && existingInvites.length > 0 && (
-                <div className="pt-3 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
-                  <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                    Previously Invited ({existingInvites.length})
-                  </span>
-                  <div className="space-y-1">
-                    {existingInvites.map((inv: any, idx: number) => (
-                      <div
-                        key={inv.email || idx}
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
-                        style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
-                        data-testid={`invite-sent-${inv.email || idx}`}
-                      >
-                        <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
-                        <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
-                          {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
-                          {inv.status === "accepted" ? "Joined" : "Sent"}
-                        </span>
-                      </div>
-                    ))}
+            </div>
+          )}
+
+          {Array.isArray(existingInvites) && existingInvites.length > 0 && (
+            <div className="pt-3 mt-2 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
+              <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+                Previously Invited ({existingInvites.length})
+              </span>
+              <div className="space-y-1">
+                {existingInvites.map((inv: any, idx: number) => (
+                  <div
+                    key={inv.email || idx}
+                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
+                    style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
+                    data-testid={`invite-sent-${inv.email || idx}`}
+                  >
+                    <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
+                    <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
+                      {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                      {inv.status === "accepted" ? "Joined" : "Sent"}
+                    </span>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -5847,7 +5897,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {rvActive && (
+                    {isDramLocked(w.id) && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`desktop-badge-locked-${w.id}`}>
+                        <Lock className="w-2.5 h-2.5 inline mr-0.5" style={{ verticalAlign: "-1px" }} />{t("m2.host.lockedBadge", "Locked")}
+                      </span>
+                    )}
+                    {rvActive && !isDramLocked(w.id) && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}>
                         Active
                       </span>
@@ -5859,6 +5914,16 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
                         {avgScore}
                       </span>
+                    )}
+                    {tasting.status !== "draft" && (
+                      <button
+                        className="labs-btn-ghost p-1"
+                        onClick={() => toggleDramLock(w.id)}
+                        data-testid={`desktop-lock-toggle-${w.id}`}
+                        title={isDramLocked(w.id) ? t("m2.host.unlockDram", "Tap to Unlock") : t("m2.host.lockDram", "Lock Current Dram")}
+                      >
+                        <Lock className="w-3.5 h-3.5" style={{ color: isDramLocked(w.id) ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
+                      </button>
                     )}
                     {tasting.status === "draft" && (
                       <>
