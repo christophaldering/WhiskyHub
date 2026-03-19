@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
   Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
+  ChevronDown, Layers,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
@@ -24,6 +26,31 @@ const REVEAL_DEFAULT_ORDER: string[][] = [
   ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
   ["image"],
 ];
+
+type RevealPresetKey = "classic" | "nameFirst" | "photoFirst" | "custom";
+
+const REVEAL_PRESETS: Record<RevealPresetKey, { labelKey: string; fallbackLabel: string; order: string[][] }> = {
+  classic: {
+    labelKey: "cockpit.presetClassic",
+    fallbackLabel: "Classic",
+    order: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  },
+  nameFirst: {
+    labelKey: "cockpit.presetNameFirst",
+    fallbackLabel: "Name First",
+    order: [["name", "distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  },
+  photoFirst: {
+    labelKey: "cockpit.presetPhotoFirst",
+    fallbackLabel: "Photo First",
+    order: [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  },
+  custom: {
+    labelKey: "cockpit.presetCustom",
+    fallbackLabel: "Custom",
+    order: [["name"], ["distillery"], ["age", "abv"], ["region", "country", "category"], ["caskInfluence", "peatLevel", "ppm"], ["bottler", "price"], ["image"]],
+  },
+};
 
 function getRevealState(tasting: any, whiskyCount: number) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
@@ -110,7 +137,7 @@ function getDefaultTab(status: string): CockpitTab {
   switch (status) {
     case "closed":
     case "archived":
-      return "lineup";
+      return "guests";
     case "draft":
     case "open":
     case "reveal":
@@ -159,8 +186,12 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     return false;
   });
 
+  const { t } = useTranslation();
   const [revealConfirmed, setRevealConfirmed] = useState(false);
   const revealConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [revealFlash, setRevealFlash] = useState(false);
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const [confirmAdvance, setConfirmAdvance] = useState(false);
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -201,6 +232,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     enabled: !!tastingId,
     refetchInterval: POLL_NORMAL,
   });
+
+  function pName(p: any) { return stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"); }
+  function pId(p: any) { return p.participantId || p.id; }
 
   const updateStatusMut = useMutation({
     mutationFn: (s: string) => tastingApi.updateStatus(tastingId, s, undefined, pid),
@@ -248,6 +282,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       setRevealConfirmed(true);
       if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current);
       revealConfirmTimerRef.current = setTimeout(() => setRevealConfirmed(false), 1200);
+      setRevealFlash(true);
+      setTimeout(() => setRevealFlash(false), 180);
+    }, []),
+    onDramAdvanced: useCallback(() => {
+      setConfirmAdvance(false);
     }, []),
   });
 
@@ -387,6 +426,56 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
   const activeWhisky = whiskies[guestDramIdx] || null;
 
+  const activePreset: RevealPresetKey = useMemo(() => {
+    if (!tasting.revealOrder) return "classic";
+    try {
+      const parsed = JSON.parse(tasting.revealOrder);
+      for (const [key, preset] of Object.entries(REVEAL_PRESETS)) {
+        if (JSON.stringify(preset.order) === JSON.stringify(parsed)) return key as RevealPresetKey;
+      }
+      return "custom";
+    } catch { return "classic"; }
+  }, [tasting.revealOrder]);
+
+  const incompleteParticipants = useMemo(() => {
+    if (!isGuided || guidedIdx < 0 || !whiskies[guidedIdx]) return [];
+    const currentWhiskyId = whiskies[guidedIdx].id;
+    const ratedPids = new Set(
+      ratings.filter((r: any) => r.whiskyId === currentWhiskyId).map((r: any) => r.participantId)
+    );
+    return participants
+      .filter((p: any) => !ratedPids.has(pId(p)))
+      .map((p: any) => pName(p));
+  }, [isGuided, guidedIdx, whiskies, ratings, participants]);
+
+  const nextDramName = useMemo(() => {
+    if (!isGuided || guidedIdx < 0) return null;
+    const nextIdx = guidedIdx + 1;
+    if (nextIdx >= whiskies.length) return null;
+    const w = whiskies[nextIdx];
+    return isBlind ? `Dram ${blindLabel(nextIdx)}` : (w.name || `Dram ${nextIdx + 1}`);
+  }, [isGuided, guidedIdx, whiskies, isBlind]);
+
+  const groupStats = useMemo(() => {
+    if (!activeWhisky) return null;
+    const whiskyRatings = ratings.filter((r: any) => r.whiskyId === activeWhisky.id);
+    if (whiskyRatings.length === 0) return null;
+    const dims = ["nose", "taste", "finish", "overall"] as const;
+    const result: Record<string, { avg: number; min: number; max: number; count: number }> = {};
+    for (const d of dims) {
+      const vals = whiskyRatings.map((r: any) => r[d]).filter((v: any) => v != null) as number[];
+      if (vals.length === 0) { result[d] = { avg: 0, min: 0, max: 0, count: 0 }; continue; }
+      const sum = vals.reduce((a, b) => a + b, 0);
+      result[d] = {
+        avg: Math.round(sum / vals.length),
+        min: Math.min(...vals),
+        max: Math.max(...vals),
+        count: vals.length,
+      };
+    }
+    return result;
+  }, [activeWhisky, ratings]);
+
   const lockedDrams: string[] = (() => {
     try { return JSON.parse(tasting.lockedDrams || "[]"); } catch { return []; }
   })();
@@ -465,8 +554,22 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     });
   };
 
-  const pName = (p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous");
-  const pId = (p: any) => p.participantId || p.id;
+  const handlePresetChange = async (key: RevealPresetKey) => {
+    const newOrder = JSON.stringify(REVEAL_PRESETS[key].order);
+    await tastingApi.updateDetails(tastingId, pid, { revealOrder: newOrder });
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    setShowPresetPicker(false);
+  };
+
+  const handleAdvanceWithConfirm = () => {
+    const isMovingToNextDram = guidedIdx >= 0 && (!isBlind || !rv || guidedRevealStep >= (rv?.maxSteps ?? 0));
+    if (!confirmAdvance && incompleteParticipants.length > 0 && isMovingToNextDram) {
+      setConfirmAdvance(true);
+      return;
+    }
+    setConfirmAdvance(false);
+    guidedAdvanceMut.mutate();
+  };
 
   const getSource = (participantId: string): "digital" | "paper" | "pending" => {
     const pRatings = ratings.filter((r: any) => r.participantId === participantId);
@@ -764,7 +867,93 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes cockpitFlash {
+          0% { opacity: 0.65; }
+          100% { opacity: 0; }
+        }
+        .cockpit-reveal-flash {
+          position: fixed;
+          inset: 0;
+          background: #fff;
+          z-index: 9999;
+          pointer-events: none;
+          animation: cockpitFlash 180ms ease-out forwards;
+        }
+        .cockpit-stage-pill {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          border-radius: 8px;
+          font-size: 10px;
+          font-weight: 600;
+          border: 1px solid transparent;
+          transition: all 150ms;
+        }
+        .cockpit-stage-pill[data-state="done"] {
+          background: color-mix(in srgb, var(--labs-success) 10%, transparent);
+          color: var(--labs-success);
+          border-color: color-mix(in srgb, var(--labs-success) 25%, transparent);
+        }
+        .cockpit-stage-pill[data-state="active"] {
+          background: color-mix(in srgb, var(--labs-accent) 12%, transparent);
+          color: var(--labs-accent);
+          border-color: var(--labs-accent);
+        }
+        .cockpit-stage-pill[data-state="pending"] {
+          background: transparent;
+          color: var(--labs-text-muted);
+          border-color: var(--labs-border);
+        }
+        .cockpit-preset-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          margin-top: 4px;
+          background: var(--labs-surface-elevated);
+          border: 1px solid var(--labs-border);
+          border-radius: 10px;
+          padding: 4px;
+          min-width: 160px;
+          z-index: 30;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .cockpit-preset-option {
+          width: 100%;
+          padding: 8px 12px;
+          border: none;
+          background: transparent;
+          border-radius: 7px;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--labs-text);
+          cursor: pointer;
+          text-align: left;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: background 100ms;
+        }
+        .cockpit-preset-option:hover {
+          background: var(--labs-surface);
+        }
+        .cockpit-preset-option[data-active="true"] {
+          color: var(--labs-accent);
+          font-weight: 700;
+        }
+        .cockpit-confirm-inline {
+          padding: 10px 14px;
+          border-radius: 10px;
+          background: color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface));
+          border: 1px solid var(--labs-accent);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
       `}</style>
+
+      {revealFlash && <div className="cockpit-reveal-flash" data-testid="cockpit-reveal-flash" />}
 
       <div className="cockpit-inner">
         {/* ─── HEADER ─── */}
@@ -827,10 +1016,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
         {isMobile && (() => {
           const tabs: { key: CockpitTab; label: string }[] = [
-            { key: "live", label: "Live" },
-            { key: "lineup", label: "Lineup" },
-            { key: "guests", label: "Guests" },
-            { key: "rating", label: "My Rating" },
+            { key: "live", label: t("cockpit.tabOverview", "Overview") },
+            { key: "rating", label: t("cockpit.tabMyRating", "My Rating") },
+            { key: "guests", label: t("cockpit.tabGroup", "Group") },
           ];
           const activeIdx = tabs.findIndex(t => t.key === activeTab);
           const pct = 100 / tabs.length;
@@ -866,13 +1054,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               {activeTab === "live" && (<>
                 {renderGuestView()}
                 {renderControls(true)}
+                {renderLineup()}
+                {renderParticipants()}
               </>)}
 
-              {activeTab === "lineup" && renderLineup()}
-
-              {activeTab === "guests" && renderParticipants()}
-
               {activeTab === "rating" && renderMyRating()}
+
+              {activeTab === "guests" && renderGroupStats()}
 
             </div>
           </>
@@ -921,9 +1109,44 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             <div style={{ width: 24, height: 24, borderRadius: 7, background: "var(--labs-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Smartphone style={{ width: 13, height: 13, color: "var(--labs-bg)" }} />
             </div>
-            Guest View
+            {t("cockpit.guestView", "Guest View")}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isBlind && (
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setShowPresetPicker(v => !v)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "3px 8px", borderRadius: 6,
+                    border: "1px solid var(--labs-border)",
+                    background: "transparent", color: "var(--labs-accent)",
+                    fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  }}
+                  data-testid="cockpit-preset-trigger"
+                >
+                  <Layers style={{ width: 10, height: 10 }} />
+                  {t(REVEAL_PRESETS[activePreset].labelKey, REVEAL_PRESETS[activePreset].fallbackLabel)}
+                  <ChevronDown style={{ width: 9, height: 9 }} />
+                </button>
+                {showPresetPicker && (
+                  <div className="cockpit-preset-dropdown" data-testid="cockpit-preset-dropdown">
+                    {(Object.keys(REVEAL_PRESETS) as RevealPresetKey[]).map(key => (
+                      <button
+                        key={key}
+                        className="cockpit-preset-option"
+                        data-active={key === activePreset}
+                        onClick={() => handlePresetChange(key)}
+                        data-testid={`cockpit-preset-${key}`}
+                      >
+                        {key === activePreset && <CheckCircle2 style={{ width: 11, height: 11 }} />}
+                        {t(REVEAL_PRESETS[key].labelKey, REVEAL_PRESETS[key].fallbackLabel)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {isBlind && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10 }}><EyeOff style={{ width: 10, height: 10 }} /> Blind</span>}
             {isGuided && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10 }}><SkipForward style={{ width: 10, height: 10 }} /> Guided</span>}
           </div>
@@ -1098,11 +1321,60 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
         {isBlind && rv && gv && isLive && (
           <div style={{ padding: "0 20px 16px" }}>
+            <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--labs-text-muted)", marginBottom: 4 }}>
+                <Eye style={{ width: 10, height: 10 }} />
+                {t("cockpit.hostSees", "Host sees")}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {activeWhisky?.name || "—"} {activeWhisky?.distillery ? `· ${activeWhisky.distillery}` : ""}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--labs-text-muted)", marginTop: 8, marginBottom: 4 }}>
+                <EyeOff style={{ width: 10, height: 10 }} />
+                {t("cockpit.paxSees", "Guests see")}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)" }}>
+                {gv.currentStep === 0
+                  ? `Dram ${blindLabel(guestDramIdx)}`
+                  : (() => {
+                      const parts: string[] = [];
+                      for (let s = 0; s < gv.currentStep && s < rv.stepGroups.length; s++) {
+                        for (const f of rv.stepGroups[s]) {
+                          const val: Record<string, string> = {
+                            name: activeWhisky?.name || "", distillery: activeWhisky?.distillery || "",
+                            age: activeWhisky?.age ? `${activeWhisky.age}y` : "", abv: activeWhisky?.abv ? `${activeWhisky.abv}%` : "",
+                            region: activeWhisky?.region || "", image: activeWhisky?.imageUrl ? "📷" : "",
+                          };
+                          if (val[f]) parts.push(val[f]);
+                        }
+                      }
+                      return parts.slice(0, 4).join(" · ") + (parts.length > 4 ? " …" : "") || `Dram ${blindLabel(guestDramIdx)}`;
+                    })()
+                }
+              </div>
+            </div>
+
             <div style={{ padding: "12px 14px", borderRadius: 12, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.05em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                 <EyeOff style={{ width: 10, height: 10 }} />
-                REVEAL PROGRESS — DRAM {blindLabel(guestDramIdx)}
+                {t("cockpit.revealProgress", "REVEAL STAGES")} — Dram {blindLabel(guestDramIdx)}
               </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }} data-testid="cockpit-stage-pills">
+                {rv.stepGroups.map((group: string[], sIdx: number) => {
+                  const state = gv.stepStates[sIdx] || "hidden";
+                  const pillState = state === "revealed" ? "done" : state === "next" ? "active" : "pending";
+                  const label = group.map(f => REVEAL_FIELD_LABELS[f] || f);
+                  const shortLabel = label.length <= 2 ? label.join(" & ") : label[0] + ` +${label.length - 1}`;
+                  return (
+                    <span key={sIdx} className="cockpit-stage-pill" data-state={pillState} data-testid={`stage-pill-${sIdx}`}>
+                      {pillState === "done" ? <CheckCircle2 style={{ width: 10, height: 10 }} /> : pillState === "active" ? <Eye style={{ width: 10, height: 10 }} /> : <LockKeyhole style={{ width: 10, height: 10 }} />}
+                      {shortLabel}
+                    </span>
+                  );
+                })}
+              </div>
+
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {rv.stepGroups.map((group: string[], sIdx: number) => {
                   const state = gv.stepStates[sIdx] || "hidden";
@@ -1158,6 +1430,104 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     );
   }
 
+  function renderGroupStats() {
+    return (
+      <div className="cockpit-card" data-testid="cockpit-group-stats">
+        <div className="cockpit-card-header">
+          <div className="cockpit-card-title">
+            <BarChart3 style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
+            {t("cockpit.groupTitle", "Group Ratings")}
+          </div>
+          {activeWhisky && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)" }}>
+              {isBlind ? `Dram ${blindLabel(guestDramIdx)}` : (activeWhisky.name || `Dram ${guestDramIdx + 1}`)}
+            </span>
+          )}
+        </div>
+        <div className="cockpit-card-body">
+          {!groupStats ? (
+            <div style={{ padding: 20, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
+              {t("cockpit.noRatingsYet", "No ratings yet for this dram.")}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {(["nose", "taste", "finish", "overall"] as const).map(dim => {
+                const s = groupStats[dim];
+                if (!s || s.count === 0) return null;
+                const pct = Math.max(0, Math.min(100, (s.avg / ratingScale) * 100));
+                const spread = s.max - s.min;
+                const consensus = spread <= ratingScale * 0.15 ? "high" : spread <= ratingScale * 0.3 ? "medium" : "low";
+                return (
+                  <div key={dim} data-testid={`group-stat-${dim}`}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", textTransform: "capitalize" }}>
+                        {t(`cockpit.dim${dim.charAt(0).toUpperCase() + dim.slice(1)}`, dim.charAt(0).toUpperCase() + dim.slice(1))}
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
+                          {s.avg}
+                        </span>
+                        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>/ {ratingScale}</span>
+                      </div>
+                    </div>
+                    <div className="cockpit-progress-bar" style={{ height: 5 }}>
+                      <div className="cockpit-progress-fill" style={{ width: `${pct}%`, background: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 10, color: "var(--labs-text-muted)" }}>
+                      <span>{t("cockpit.range", "Range")}: {s.min}–{s.max}</span>
+                      <span style={{
+                        color: consensus === "high" ? "var(--labs-success)" : consensus === "medium" ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                        fontWeight: 600,
+                      }}>
+                        {consensus === "high" ? t("cockpit.consensusHigh", "High consensus") : consensus === "medium" ? t("cockpit.consensusMed", "Medium") : t("cockpit.consensusLow", "Low consensus")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textAlign: "right", marginTop: 4 }}>
+                {t("cockpit.basedOn", "Based on {{count}} ratings", { count: groupStats.overall?.count || 0 })}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: 16, borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+              <Users style={{ width: 11, height: 11 }} />
+              {t("cockpit.participantStatus", "Participant Status")}
+            </div>
+            {participants.length === 0 ? (
+              <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>No participants yet.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {participants.map((p: any) => {
+                  const participantId = pId(p);
+                  const whiskyRatings = activeWhisky
+                    ? ratings.filter((r: any) => r.whiskyId === activeWhisky.id && r.participantId === participantId)
+                    : [];
+                  const hasRated = whiskyRatings.length > 0;
+                  const score = hasRated ? whiskyRatings[0]?.overall : null;
+                  return (
+                    <div key={participantId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", borderRadius: 8 }}>
+                      <div style={{
+                        width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+                        background: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)",
+                      }} />
+                      <span style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>{pName(p)}</span>
+                      <span style={{ fontSize: 11, color: hasRated ? "var(--labs-accent)" : "var(--labs-text-muted)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                        {hasRated && score != null ? `${score}/${ratingScale}` : "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderControls(inline: boolean) {
     const controlButtons = (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1175,34 +1545,84 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
         {isLive && isGuided && (() => {
           const allDramsDone = guidedIdx >= whiskies.length - 1 && (!isBlind || guidedRevealStep >= (rv?.maxSteps ?? 0));
-          let guidedBtnLabel = "Next Dram";
+          let guidedBtnLabel = t("cockpit.nextDram", "Next Dram");
           if (guidedIdx < 0) {
-            guidedBtnLabel = "Start First Dram";
+            guidedBtnLabel = t("cockpit.revealStart", "Start First Dram");
           } else if (allDramsDone) {
-            guidedBtnLabel = "All Drams Done";
+            guidedBtnLabel = t("cockpit.revealDone", "All Drams Done");
           } else if (isBlind && rv) {
             if (guidedRevealStep < rv.maxSteps) {
               const lbl = rv.stepLabels[guidedRevealStep];
-              guidedBtnLabel = lbl ? `Reveal ${lbl}` : "Reveal Next";
+              guidedBtnLabel = lbl ? t("cockpit.revealNext", "Next: {{stage}}", { stage: lbl }) : t("cockpit.revealNextGeneric", "Reveal Next");
             } else {
-              guidedBtnLabel = "Next Dram";
+              guidedBtnLabel = t("cockpit.nextDram", "Next Dram");
             }
           }
+
+          const isAdvancingDram = guidedIdx >= 0 && (!isBlind || !rv || guidedRevealStep >= (rv?.maxSteps ?? 0));
+
           return (
-          <button
-            onClick={() => guidedAdvanceMut.mutate()}
-            disabled={guidedAdvanceMut.isPending || allDramsDone}
-            className="cockpit-action-btn cockpit-action-primary"
-            style={revealConfirmed ? { boxShadow: "0 0 12px var(--labs-accent)", transition: "box-shadow 300ms ease" } : undefined}
-            data-testid="cockpit-next-dram"
-          >
-            {guidedAdvanceMut.isPending
-              ? <Loader2 style={{ width: 15, height: 15, animation: "spin 1s linear infinite" }} />
-              : revealConfirmed
-                ? <CheckCircle2 style={{ width: 15, height: 15, color: "var(--labs-success)" }} />
-                : <SkipForward style={{ width: 15, height: 15 }} />}
-            {revealConfirmed ? "Sent!" : guidedBtnLabel}
-          </button>
+            <>
+              {confirmAdvance && isAdvancingDram && (
+                <div className="cockpit-confirm-inline" data-testid="cockpit-advance-confirm">
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>
+                    {nextDramName
+                      ? t("cockpit.confirmNext", "Advance to {{name}}?", { name: nextDramName })
+                      : t("cockpit.confirmFinish", "Finish all drams?")}
+                  </div>
+                  {incompleteParticipants.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: "var(--labs-accent)" }}>
+                      <AlertTriangle style={{ width: 12, height: 12, flexShrink: 0, marginTop: 1 }} />
+                      <span>
+                        {t("cockpit.incomplete", "{{count}} participant(s) haven't rated yet: {{names}}", {
+                          count: incompleteParticipants.length,
+                          names: incompleteParticipants.slice(0, 3).join(", ") + (incompleteParticipants.length > 3 ? ` +${incompleteParticipants.length - 3}` : ""),
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={() => setConfirmAdvance(false)}
+                      className="cockpit-action-btn cockpit-action-secondary"
+                      style={{ flex: 1, padding: "8px 12px" }}
+                      data-testid="cockpit-advance-cancel"
+                    >
+                      {t("common.cancel", "Cancel")}
+                    </button>
+                    <button
+                      onClick={() => { setConfirmAdvance(false); guidedAdvanceMut.mutate(); }}
+                      className="cockpit-action-btn cockpit-action-primary"
+                      style={{ flex: 1, padding: "8px 12px" }}
+                      disabled={guidedAdvanceMut.isPending}
+                      data-testid="cockpit-advance-proceed"
+                    >
+                      {guidedAdvanceMut.isPending
+                        ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} />
+                        : <SkipForward style={{ width: 13, height: 13 }} />}
+                      {t("cockpit.proceed", "Proceed")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!confirmAdvance && (
+                <button
+                  onClick={handleAdvanceWithConfirm}
+                  disabled={guidedAdvanceMut.isPending || allDramsDone}
+                  className="cockpit-action-btn cockpit-action-primary"
+                  style={revealConfirmed ? { boxShadow: "0 0 12px var(--labs-accent)", transition: "box-shadow 300ms ease" } : undefined}
+                  data-testid="cockpit-next-dram"
+                >
+                  {guidedAdvanceMut.isPending
+                    ? <Loader2 style={{ width: 15, height: 15, animation: "spin 1s linear infinite" }} />
+                    : revealConfirmed
+                      ? <CheckCircle2 style={{ width: 15, height: 15, color: "var(--labs-success)" }} />
+                      : <SkipForward style={{ width: 15, height: 15 }} />}
+                  {revealConfirmed ? t("cockpit.sent", "Sent!") : guidedBtnLabel}
+                </button>
+              )}
+            </>
           );
         })()}
 
