@@ -138,6 +138,7 @@ function GuidedStepView({
   const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
   const [flowSaved, setFlowSaved] = useState(false);
   const [flowChips, setFlowChips] = useState<string[]>([]);
+  const [flowInitialStep, setFlowInitialStep] = useState(0);
   const [dramTransitionKey, setDramTransitionKey] = useState(0);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevWhiskyIndexRef = useRef(whiskyIndex);
@@ -162,6 +163,7 @@ function GuidedStepView({
       } else {
         setLocalIndex(whiskyIndex);
         setFlowSaved(false);
+        setFlowInitialStep(0);
         setDramTransitionKey(k => k + 1);
       }
     }
@@ -525,8 +527,15 @@ function GuidedStepView({
         activeIndex={localIndex}
         onChipTap={(idx) => {
           if (idx <= hostMaxIndex) {
+            const rating = guidedMyRatings.find((r: any) => r.whiskyId === allWhiskies[idx]?.id);
             setLocalIndex(idx);
+            if (rating) {
+              setFlowInitialStep(3);
+            } else {
+              setFlowInitialStep(0);
+            }
             setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
           }
         }}
         scaleMax={maxScore}
@@ -544,12 +553,14 @@ function GuidedStepView({
             setInterruptBanner(null);
             setLocalIndex(interruptBanner.toIndex);
             setFlowSaved(false);
+            setFlowInitialStep(0);
             setDramTransitionKey(k => k + 1);
           }}
           onSkip={() => {
             setInterruptBanner(null);
             setLocalIndex(interruptBanner.toIndex);
             setFlowSaved(false);
+            setFlowInitialStep(0);
             setDramTransitionKey(k => k + 1);
           }}
         />
@@ -575,8 +586,9 @@ function GuidedStepView({
             onSave={handleFlowSave}
             whiskyName={displayName}
             isBlind={isBlindStep}
-            initialStep={0}
-            onAfterSaveCorrect={() => setFlowSaved(false)}
+            disabled={tasting?.status !== "open"}
+            initialStep={flowInitialStep}
+            onAfterSaveCorrect={() => { setFlowSaved(false); setFlowInitialStep(0); }}
             waitingMessage={flowSaved && viewingHostDram ? t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Waiting for host for Dram ${nextDramIdx + 1}` }) : null}
             externalSavedOverlay={flowSaved && viewingHostDram}
             onExternalSavedDismiss={() => setFlowSaved(false)}
