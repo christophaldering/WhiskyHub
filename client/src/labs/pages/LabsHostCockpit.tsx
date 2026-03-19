@@ -1083,12 +1083,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   )
                 )}
 
-                {status === "closed" && (
-                  <button onClick={() => updateStatusMut.mutate("reveal")} className="cockpit-action-btn cockpit-action-primary" data-testid="cockpit-start-reveal">
-                    <Eye style={{ width: 15, height: 15 }} />
-                    Begin Unveiling
-                  </button>
-                )}
               </div>
             </div>
 

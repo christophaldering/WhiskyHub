@@ -1413,12 +1413,44 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Only the host or an admin can perform this action" });
       }
     }
-    const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
-    if (!updated) return res.status(404).json({ message: "Not found" });
-    console.log(`[LABS] Session status: ${tasting.status} → ${status} | tasting=${req.params.id} "${tasting.title}"`);
-    broadcastToTasting(req.params.id, { type: "status_changed", data: { status, previousStatus: tasting.status } });
+    let finalStatus = status;
 
-    if (status === "reveal") {
+    if (status === "closed") {
+      const whiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const totalExpressions = whiskies.length;
+
+      if (totalExpressions > 0) {
+        let maxSteps = 3;
+        try { if (tasting.revealOrder) maxSteps = JSON.parse(tasting.revealOrder).length; } catch {}
+
+        const revealIndex = totalExpressions - 1;
+        const revealStep = maxSteps;
+        const guidedWhiskyIndex = totalExpressions - 1;
+        const guidedRevealStep = maxSteps;
+
+        await storage.updateTastingBlindMode(req.params.id, {
+          revealIndex,
+          revealStep,
+          guidedWhiskyIndex,
+          guidedRevealStep,
+        });
+
+        console.log(`[LABS] Auto-reveal: idx=${revealIndex} step=${revealStep} guided=${guidedWhiskyIndex}/${guidedRevealStep} tasting=${req.params.id}`);
+        broadcastToTasting(req.params.id, {
+          type: "reveal_triggered",
+          data: { source: "auto-reveal", revealIndex, revealStep, guidedWhiskyIndex, guidedRevealStep, allRevealed: true },
+        });
+      }
+
+      finalStatus = "reveal";
+    }
+
+    const updated = await storage.updateTastingStatus(req.params.id, finalStatus, currentAct);
+    if (!updated) return res.status(404).json({ message: "Not found" });
+    console.log(`[LABS] Session status: ${tasting.status} → ${finalStatus} | tasting=${req.params.id} "${tasting.title}"`);
+    broadcastToTasting(req.params.id, { type: "status_changed", data: { status: finalStatus, previousStatus: tasting.status } });
+
+    if (finalStatus === "reveal") {
       try {
         const tps = await storage.getTastingParticipants(req.params.id);
         for (const tp of tps) {
