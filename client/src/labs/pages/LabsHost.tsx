@@ -3857,6 +3857,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [personalNote, setPersonalNote] = useState("");
   const [sendingInvites, setSendingInvites] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [lastAddedEmail, setLastAddedEmail] = useState<string | null>(null);
   const [topDuplicating, setTopDuplicating] = useState(false);
   const [showDesktopTransfer, setShowDesktopTransfer] = useState(false);
   const [desktopConfirmDelete, setDesktopConfirmDelete] = useState(false);
@@ -3889,6 +3892,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     queryFn: () => ratingApi.getForTasting(tastingId),
     enabled: !!tastingId,
     refetchInterval: 5000,
+  });
+
+  const { data: existingInvites } = useQuery({
+    queryKey: ["invites", tastingId],
+    queryFn: () => inviteApi.getForTasting(tastingId),
+    enabled: !!tastingId,
   });
 
   const statusMutation = useMutation({
@@ -4402,10 +4411,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const addEmail = () => {
     const email = emailInput.trim().toLowerCase();
-    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !emailList.includes(email)) {
-      setEmailList([...emailList, email]);
-      setEmailInput("");
+    if (!email) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Invalid email address");
+      setTimeout(() => setEmailError(null), 3000);
+      return;
     }
+    if (emailList.includes(email)) {
+      setEmailError("Already in the list");
+      setTimeout(() => setEmailError(null), 3000);
+      return;
+    }
+    const alreadyInvited = Array.isArray(existingInvites) && existingInvites.some((inv: { email?: string }) => inv.email?.toLowerCase() === email);
+    if (alreadyInvited) {
+      setEmailError("Already invited");
+      setTimeout(() => setEmailError(null), 3000);
+      return;
+    }
+    setEmailError(null);
+    setLastAddedEmail(email);
+    setTimeout(() => setLastAddedEmail(null), 1500);
+    setEmailList([...emailList, email]);
+    setEmailInput("");
   };
 
   const removeEmail = (email: string) => {
@@ -4414,6 +4441,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const handleSendInvites = async () => {
     if (emailList.length === 0) return;
+    const recipientCount = emailList.length;
     setSendingInvites(true);
     try {
       await inviteApi.sendInvites(tastingId, emailList, personalNote.trim() || undefined);
@@ -4421,9 +4449,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setEmailList([]);
       setPersonalNote("");
       queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
-      setTimeout(() => setInviteSent(false), 3000);
+      setInviteFeedback({ type: "success", message: `Invitations sent to ${recipientCount} recipient${recipientCount !== 1 ? "s" : ""}` });
+      setTimeout(() => { setInviteSent(false); setInviteFeedback(null); }, 5000);
     } catch (err) {
       console.error("Failed to send invites:", err);
+      setInviteSent(false);
+      setInviteFeedback({ type: "error", message: "Failed to send invitations. Please try again." });
+      setTimeout(() => setInviteFeedback(null), 5000);
     } finally {
       setSendingInvites(false);
     }
@@ -4831,13 +4863,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input
                   type="email"
                   value={emailInput}
-                  onChange={e => setEmailInput(e.target.value)}
+                  onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
                   placeholder="Enter email address"
                   className="labs-input flex-1"
                   style={{
                     background: "var(--labs-surface)",
-                    border: "1px solid var(--labs-border)",
+                    border: `1px solid ${emailError ? "#ef4444" : "var(--labs-border)"}`,
                     borderRadius: 8,
                     padding: "8px 12px",
                     color: "var(--labs-text)",
@@ -4856,13 +4888,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 </button>
               </div>
 
+              {emailError && (
+                <p
+                  className="text-xs"
+                  style={{ color: "#ef4444", margin: "-4px 0 0 0" }}
+                  data-testid="text-email-error"
+                >
+                  {emailError}
+                </p>
+              )}
+
               {emailList.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {emailList.map(email => (
                     <span
                       key={email}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
-                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      style={{
+                        background: "var(--labs-accent-muted)",
+                        color: "var(--labs-accent)",
+                        transition: "box-shadow 0.3s, transform 0.3s",
+                        ...(lastAddedEmail === email ? { boxShadow: "0 0 0 2px var(--labs-accent)", transform: "scale(1.05)" } : {}),
+                      }}
                       data-testid={`badge-labs-invite-${email}`}
                     >
                       {email}
@@ -4919,6 +4966,25 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   {sendingInvites ? "Sending..." : inviteSent ? "Sent!" : "Send Invites"}
                 </button>
               </div>
+
+              {inviteFeedback && (
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                  style={{
+                    background: inviteFeedback.type === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                    color: inviteFeedback.type === "success" ? "#22c55e" : "#ef4444",
+                    border: `1px solid ${inviteFeedback.type === "success" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
+                  }}
+                  data-testid="text-invite-feedback"
+                >
+                  {inviteFeedback.type === "success" ? (
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <X className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  {inviteFeedback.message}
+                </div>
+              )}
             </div>
           )}
         </div>
