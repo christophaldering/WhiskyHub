@@ -192,6 +192,7 @@ function GuidedStepView({
   const [guidedCalibrationOpen, setGuidedCalibrationOpen] = useState(false);
   const [revealMoment, setRevealMoment] = useState<{
     whiskyName: string; distillery?: string; age?: string; region?: string; imageUrl?: string; stepLabel?: string;
+    caskInfluence?: string; abv?: string; category?: string; bottler?: string; vintage?: string; peatLevel?: string; country?: string; ppm?: string; price?: string;
   } | null>(null);
   const prevRevealRef = useRef<string>("");
 
@@ -210,6 +211,15 @@ function GuidedStepView({
           region: revealedFields.has("region") ? activeWhisky.region : undefined,
           imageUrl: (revealedFields.has("image") || isFullyRevealed) ? activeWhisky.imageUrl : undefined,
           stepLabel: isFullyRevealed ? "Fully Revealed" : `Step ${step}`,
+          caskInfluence: revealedFields.has("caskInfluence") ? activeWhisky.caskInfluence : undefined,
+          abv: revealedFields.has("abv") && activeWhisky.abv ? `${activeWhisky.abv}%` : undefined,
+          category: revealedFields.has("category") ? activeWhisky.category : undefined,
+          bottler: revealedFields.has("bottler") ? activeWhisky.bottler : undefined,
+          vintage: revealedFields.has("vintage") && activeWhisky.vintage ? `${activeWhisky.vintage}` : undefined,
+          peatLevel: revealedFields.has("peatLevel") ? activeWhisky.peatLevel : undefined,
+          country: revealedFields.has("country") ? activeWhisky.country : undefined,
+          ppm: revealedFields.has("ppm") && activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : undefined,
+          price: revealedFields.has("price") && activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : undefined,
         });
       }
     }

@@ -758,6 +758,24 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, padding: "2px 10px", borderRadius: 6, background: "color-mix(in srgb, var(--labs-text-muted) 10%, transparent)", fontSize: 11, color: "var(--labs-text-muted)" }}>
                             <EyeOff style={{ width: 10, height: 10 }} /> Name hidden
                           </div>
+                          {(() => {
+                            const detailFields: Array<[string, string | null | undefined]> = [
+                              ["distillery", activeWhisky.distillery], ["age", activeWhisky.age ? `${activeWhisky.age}y` : null],
+                              ["abv", activeWhisky.abv ? `${activeWhisky.abv}%` : null], ["region", activeWhisky.region],
+                              ["country", activeWhisky.country], ["category", activeWhisky.category],
+                              ["caskInfluence", activeWhisky.caskInfluence], ["bottler", activeWhisky.bottler],
+                              ["vintage", activeWhisky.vintage ? `${activeWhisky.vintage}` : null], ["peatLevel", activeWhisky.peatLevel],
+                              ["ppm", activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : null],
+                              ["price", activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : null],
+                            ];
+                            const revealed = detailFields.filter(([f, v]) => v && gv.isFieldRevealed(f)).map(([, v]) => v);
+                            if (revealed.length === 0) return null;
+                            return (
+                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 6 }}>
+                                {revealed.join(" · ")}
+                              </div>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <div>

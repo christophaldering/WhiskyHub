@@ -8,6 +8,15 @@ interface RevealMomentProps {
   region?: string;
   imageUrl?: string;
   stepLabel?: string;
+  caskInfluence?: string;
+  abv?: string;
+  category?: string;
+  bottler?: string;
+  vintage?: string;
+  peatLevel?: string;
+  country?: string;
+  ppm?: string;
+  price?: string;
   onDismiss: () => void;
 }
 
@@ -18,6 +27,15 @@ export default function LabsRevealMoment({
   region,
   imageUrl,
   stepLabel,
+  caskInfluence,
+  abv,
+  category,
+  bottler,
+  vintage,
+  peatLevel,
+  country,
+  ppm,
+  price,
   onDismiss,
 }: RevealMomentProps) {
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
@@ -38,6 +56,8 @@ export default function LabsRevealMoment({
 
   const opacity = phase === "show" ? 1 : 0;
   const scale = phase === "show" ? 1 : phase === "enter" ? 0.92 : 1.04;
+
+  const detailParts = [age, region, country, abv, category, caskInfluence, bottler, vintage, peatLevel, ppm, price].filter(Boolean);
 
   return (
     <div
@@ -160,7 +180,7 @@ export default function LabsRevealMoment({
         </p>
       )}
 
-      {(age || region) && (
+      {detailParts.length > 0 && (
         <p
           style={{
             fontSize: 14,
@@ -173,7 +193,7 @@ export default function LabsRevealMoment({
           }}
           data-testid="text-reveal-details"
         >
-          {[age, region].filter(Boolean).join(" · ")}
+          {detailParts.join(" · ")}
         </p>
       )}
 
