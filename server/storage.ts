@@ -502,6 +502,7 @@ export class DatabaseStorage implements IStorage {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
+    if ((data as any).time !== undefined) updateData.time = (data as any).time;
     if (data.location !== undefined) updateData.location = data.location;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.blindMode !== undefined) updateData.blindMode = data.blindMode;
