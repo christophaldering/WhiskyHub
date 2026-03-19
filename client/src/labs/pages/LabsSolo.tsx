@@ -740,12 +740,17 @@ export default function LabsSolo() {
           bestResult = data;
         }
       }
-      setCandidates(bestResult.candidates || []);
+      const cands = bestResult.candidates || [];
+      setCandidates(cands);
       setPhotoUrl(bestResult.photoUrl || "");
       setIsMenuMode(bestResult.debug?.detectedMode === "menu");
       setLastResult(bestResult);
       setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
-      setSheetView("candidates");
+      if (cands.length === 1 && cands[0].confidence >= 0.78) {
+        handleSelectCandidate(cands[0]);
+      } else {
+        setSheetView("candidates");
+      }
     } catch (err: any) {
       console.error('[Solo Capture] Identification failed:', err);
       const msg = err?.isRateLimit
@@ -834,12 +839,17 @@ export default function LabsSolo() {
         throw new Error(err.message || t("m2.solo.searchFailed", "Search failed."));
       }
       const data: IdentifyResult = await res.json();
-      setCandidates(data.candidates || []);
+      const cands2 = data.candidates || [];
+      setCandidates(cands2);
       setPhotoUrl("");
       setIsMenuMode(data.debug?.detectedMode === "menu");
       setLastResult(data);
       setOnlineQuery(data.debug?.ocrText || query);
-      setSheetView("candidates");
+      if (cands2.length === 1 && cands2[0].confidence >= 0.78) {
+        handleSelectCandidate(cands2[0]);
+      } else {
+        setSheetView("candidates");
+      }
     } catch (err: any) {
       setError(err?.message || t("m2.solo.searchFailed", "Search failed."));
       setSheetView("none");
@@ -2454,7 +2464,7 @@ export default function LabsSolo() {
                   {unknownAbv && <span style={{ color: "var(--labs-text-secondary)" }}>{unknownAbv}%</span>}
                 </div>
               )}
-              {selectedCandidate && (
+              {selectedCandidate && selectedCandidate.confidence < 0.78 && (
                 <span className="labs-badge" style={{ marginTop: 4, display: "inline-block", background: `color-mix(in srgb, ${confidenceLabel(selectedCandidate.confidence).color} 20%, transparent)`, color: confidenceLabel(selectedCandidate.confidence).color }} data-testid="badge-confidence">
                   {confidenceLabel(selectedCandidate.confidence, t).text} {t("m2.solo.match", "match")}
                 </span>
