@@ -694,15 +694,15 @@ function PrintMaterialsSection({
     const found = participants.find((p: Record<string, unknown>) =>
       (p.participantId || p.id) === tasting.hostId
     );
-    return ((found?.name as string) || (currentParticipant as Record<string, unknown>)?.name as string) || "Host";
+    return (((found?.participant as Record<string, unknown>)?.name as string) || (found?.name as string) || (currentParticipant as Record<string, unknown>)?.name as string) || "Host";
   };
 
   const handleGenerateMenu = async () => {
     setGenerating("menu");
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
-        name: stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
-        photoUrl: (p.photoUrl || (p.participant as Record<string, unknown>)?.photoUrl || null) as string | null,
+        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string),
+        photoUrl: ((p.participant as Record<string, unknown>)?.photoUrl || p.photoUrl || null) as string | null,
       }));
       const hostName = resolveHostName();
 
@@ -741,7 +741,7 @@ function PrintMaterialsSection({
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
         id: (p.participantId || p.id) as string,
-        name: stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string),
+        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string),
       }));
       if (pList.length === 0) return;
       const type = blindMode ? "blind" : "tasting";
@@ -947,7 +947,7 @@ function PrintMaterialsSection({
               {participants.length > 0 && (
                 <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
                   {participants.map((p: Record<string, unknown>, idx: number) => {
-                    const pName = stripGuestSuffix((p.name || (p.participant as Record<string, unknown>)?.name || "Unknown") as string);
+                    const pName = stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string);
                     return (
                       <div
                         key={(p.participantId || p.id) as string}
@@ -5962,7 +5962,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           style={{ accentColor: "var(--labs-accent)" }}
                         />
                         <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                          {stripGuestSuffix(tp.participant.name || "Anonymous")}
+                          {stripGuestSuffix(tp.participant?.name || "Anonymous")}
                         </span>
                       </label>
                     ))}
