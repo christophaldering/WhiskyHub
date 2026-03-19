@@ -8,7 +8,7 @@ export interface DramChip {
   index: number;
   name: string;
   score?: number | null;
-  status: "done" | "active" | "locked";
+  status: "done" | "active" | "idle" | "locked";
 }
 
 interface DramCarouselProps {
@@ -56,8 +56,9 @@ export default function DramCarousel({
       {chips.map((chip) => {
         const isDone = chip.status === "done";
         const isActive = chip.status === "active";
+        const isIdle = chip.status === "idle";
         const isLocked = chip.status === "locked";
-        const isUnrated = !isDone && !isLocked && chip.score == null;
+        const isUnrated = (isActive || isIdle) && chip.score == null;
         const displayName = isBlind
           ? t("m2.taste.rating.sampleX", { n: chip.index + 1, defaultValue: `Sample ${chip.index + 1}` })
           : chip.name;
@@ -80,7 +81,9 @@ export default function DramCarousel({
                 ? `2px solid ${GOLD}`
                 : isDone
                   ? "1px solid rgba(200,134,26,0.3)"
-                  : "1px solid var(--labs-border)",
+                  : isIdle
+                    ? "1px solid var(--labs-border)"
+                    : "1px solid var(--labs-border)",
               background: isActive
                 ? `rgba(200,134,26,0.12)`
                 : isDone
@@ -91,7 +94,7 @@ export default function DramCarousel({
               fontFamily: "inherit",
               fontSize: 12,
               fontWeight: 600,
-              color: isActive ? GOLD : isDone ? "var(--labs-text-muted)" : "var(--labs-text)",
+              color: isActive ? GOLD : isDone ? "var(--labs-text-muted)" : isIdle ? "var(--labs-text)" : "var(--labs-text-muted)",
               whiteSpace: "nowrap",
               flexShrink: 0,
               position: "relative",
@@ -134,7 +137,7 @@ export default function DramCarousel({
               </span>
             )}
 
-            {isUnrated && isActive && (
+            {isUnrated && (
               <AlertCircle
                 style={{
                   width: 12,

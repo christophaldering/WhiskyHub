@@ -18,6 +18,7 @@ import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlow from "@/labs/components/RatingFlow";
 import DramCarousel from "@/labs/components/DramCarousel";
+import { ResumeOrSkipBanner } from "@/labs/components/ResumeRatingBanner";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import type { Tasting } from "@shared/schema";
 
@@ -137,6 +138,7 @@ function GuidedStepView({
   const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
   const [flowSaved, setFlowSaved] = useState(false);
   const [flowChips, setFlowChips] = useState<string[]>([]);
+  const [dramTransitionKey, setDramTransitionKey] = useState(0);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevWhiskyIndexRef = useRef(whiskyIndex);
 
@@ -160,6 +162,7 @@ function GuidedStepView({
       } else {
         setLocalIndex(whiskyIndex);
         setFlowSaved(false);
+        setDramTransitionKey(k => k + 1);
       }
     }
   }, [whiskyIndex]);
@@ -431,11 +434,11 @@ function GuidedStepView({
     const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
     const isDone = rating != null;
     const isLocked = idx > hostMaxIndex;
-    let status: "done" | "active" | "locked";
+    let status: "done" | "active" | "idle" | "locked";
     if (isLocked) status = "locked";
     else if (idx === localIndex) status = "active";
     else if (isDone) status = "done";
-    else status = "done";
+    else status = "idle";
     return {
       index: idx,
       name: getDramName(idx),
@@ -531,84 +534,29 @@ function GuidedStepView({
       />
 
       {interruptBanner && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 14px",
-            borderRadius: 12,
-            background: "rgba(200,134,26,0.08)",
-            border: "1px solid rgba(200,134,26,0.2)",
-            marginTop: 8,
-            marginBottom: 8,
-            animation: "labsFadeIn 200ms ease both",
+        <ResumeOrSkipBanner
+          onSave={() => {
+            let combined = notes;
+            if (flowChips.length > 0) {
+              combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
+            }
+            doSave(dimScores, overall, combined);
+            setInterruptBanner(null);
+            setLocalIndex(interruptBanner.toIndex);
+            setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
           }}
-          data-testid="interrupt-banner"
-        >
-          <AlertTriangle style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-              {t("m2.taste.rating.interruptTitle", "Incomplete rating")}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-              {t("m2.taste.rating.interruptHint", "Host advanced to next dram")}
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              let combined = notes;
-              if (flowChips.length > 0) {
-                combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
-              }
-              doSave(dimScores, overall, combined);
-              setInterruptBanner(null);
-              setLocalIndex(interruptBanner.toIndex);
-              setFlowSaved(false);
-            }}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 9999,
-              border: "none",
-              background: "#c8861a",
-              color: "#1a1714",
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: "inherit",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-            data-testid="interrupt-save"
-          >
-            {t("m2.taste.rating.interruptSave", "Save now")}
-          </button>
-          <button
-            onClick={() => {
-              setInterruptBanner(null);
-              setLocalIndex(interruptBanner.toIndex);
-              setFlowSaved(false);
-            }}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 9999,
-              border: "1px solid var(--labs-border)",
-              background: "transparent",
-              color: "var(--labs-text-muted)",
-              fontSize: 12,
-              fontWeight: 500,
-              fontFamily: "inherit",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-            data-testid="interrupt-skip"
-          >
-            {t("m2.taste.rating.interruptSkip", "Skip")}
-          </button>
-        </div>
+          onSkip={() => {
+            setInterruptBanner(null);
+            setLocalIndex(interruptBanner.toIndex);
+            setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
+          }}
+        />
       )}
 
       {canRate && !revealMoment ? (
-        <div style={{ animation: localIndex !== prevWhiskyIndexRef.current && !interruptBanner ? "labsPopIn 300ms ease both" : undefined }}>
+        <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
           <RatingFlow
             scale={liveScale}
             scores={dimScores}
@@ -629,7 +577,9 @@ function GuidedStepView({
             isBlind={isBlindStep}
             initialStep={0}
             onAfterSaveCorrect={() => setFlowSaved(false)}
-            waitingMessage={flowSaved ? t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Waiting for host for Dram ${nextDramIdx + 1}` }) : null}
+            waitingMessage={flowSaved && viewingHostDram ? t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Waiting for host for Dram ${nextDramIdx + 1}` }) : null}
+            externalSavedOverlay={flowSaved && viewingHostDram}
+            onExternalSavedDismiss={() => setFlowSaved(false)}
           />
 
           {saveError && (
