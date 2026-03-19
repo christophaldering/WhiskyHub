@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -47,6 +47,7 @@ export default function LabsTastings() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const isAdmin = currentParticipant?.role === "admin";
@@ -463,9 +464,47 @@ export default function LabsTastings() {
 
                 </div>
 
-                <ChevronRight
-                  style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0, marginTop: 4 }}
-                />
+                <div className="flex items-center gap-1 flex-shrink-0" style={{ marginTop: 2 }}>
+                  {tasting.code && !isInvited && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const link = `${window.location.origin}/labs/join?code=${tasting.code}`;
+                        navigator.clipboard.writeText(link).then(() => {
+                          setCopiedShareId(tasting.id);
+                          setTimeout(() => setCopiedShareId(null), 2000);
+                        });
+                      }}
+                      className="labs-btn-ghost p-1.5"
+                      style={{ borderRadius: 8 }}
+                      data-testid={`labs-tasting-share-${tasting.id}`}
+                    >
+                      {copiedShareId === tasting.id ? (
+                        <Check style={{ width: 14, height: 14, color: "var(--labs-success)" }} />
+                      ) : (
+                        <Share2 style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
+                      )}
+                    </button>
+                  )}
+                  {isHost && !isInvited && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate(`/labs/host/${tasting.id}`);
+                      }}
+                      className="labs-btn-ghost p-1.5"
+                      style={{ borderRadius: 8 }}
+                      data-testid={`labs-tasting-settings-${tasting.id}`}
+                    >
+                      <Settings style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
+                    </button>
+                  )}
+                  <ChevronRight
+                    style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75 }}
+                  />
+                </div>
               </div>
             );
 

@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -1082,7 +1082,20 @@ export default function LabsLive({ params }: LabsLiveProps) {
             <ChevronLeft className="w-4 h-4" />
             Tasting
           </button>
-          {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+          <div className="flex items-center gap-2">
+            {currentParticipant?.id === tasting.hostId && (
+              <button
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                className="labs-btn-ghost flex items-center gap-1.5"
+                style={{ color: "var(--labs-accent)", fontSize: 12 }}
+                data-testid="labs-live-cockpit-btn-guided"
+              >
+                <Settings className="w-4 h-4" />
+                Cockpit
+              </button>
+            )}
+            {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+          </div>
         </div>
 
         {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
@@ -1123,7 +1136,20 @@ export default function LabsLive({ params }: LabsLiveProps) {
           <ChevronLeft className="w-4 h-4" />
           Tasting
         </button>
-        {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+        <div className="flex items-center gap-2">
+          {currentParticipant?.id === tasting.hostId && (
+            <button
+              onClick={() => navigate(`/labs/host/${tastingId}`)}
+              className="labs-btn-ghost flex items-center gap-1.5"
+              style={{ color: "var(--labs-accent)", fontSize: 12 }}
+              data-testid="labs-live-cockpit-btn"
+            >
+              <Settings className="w-4 h-4" />
+              Cockpit
+            </button>
+          )}
+          {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+        </div>
       </div>
 
       {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}

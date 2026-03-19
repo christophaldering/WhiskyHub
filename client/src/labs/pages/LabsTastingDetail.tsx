@@ -25,6 +25,11 @@ import {
   Pencil,
   X,
   Plus,
+  Settings,
+  Compass,
+  Globe,
+  Sliders,
+  Gauge,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
@@ -126,6 +131,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
   const [showAddWhisky, setShowAddWhisky] = useState(false);
   const [newWhiskyName, setNewWhiskyName] = useState("");
+  const [showSessionSettings, setShowSessionSettings] = useState(false);
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDate, setMetaDate] = useState("");
+  const [metaLocation, setMetaLocation] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [settingsSaveStatus, setSettingsSaveStatus] = useState<string | null>(null);
 
   const { data: tasting, isLoading, isError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -230,6 +242,45 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   };
 
 
+  const patchTastingDetails = async (body: Record<string, unknown>) => {
+    if (!currentParticipant) return;
+    const res = await fetch(`/api/tastings/${tastingId}/details`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: currentParticipant.id, ...body }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setSettingsSaveStatus(err.message || "Save failed");
+      setTimeout(() => setSettingsSaveStatus(null), 3000);
+      throw new Error(err.message || "Save failed");
+    }
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    setSettingsSaveStatus("Saved");
+    setTimeout(() => setSettingsSaveStatus(null), 2000);
+  };
+
+  const startEditingMeta = () => {
+    if (!tasting) return;
+    setMetaTitle(tasting.title || "");
+    setMetaDate(tasting.date || "");
+    setMetaLocation(tasting.location || "");
+    setMetaDescription(tasting.description || "");
+    setEditingMeta(true);
+  };
+
+  const saveMetaEdit = async () => {
+    try {
+      await patchTastingDetails({
+        title: metaTitle.trim() || tasting?.title,
+        date: metaDate || tasting?.date,
+        location: metaLocation.trim(),
+        description: metaDescription.trim(),
+      });
+      setEditingMeta(false);
+    } catch {}
+  };
+
   const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
   const isLive = tasting?.status === "open";
   const isCompleted = tasting?.status === "archived" || tasting?.status === "closed";
@@ -288,49 +339,107 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       </button>
 
       <div className="mb-5">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h1
-            className="labs-h2"
-            style={{ color: "var(--labs-text)", flex: 1, minWidth: 0 }}
-            data-testid="labs-detail-title"
-          >
-            {tasting.title}
-          </h1>
-          <span className={`labs-badge ${status.className} flex-shrink-0`} data-testid="labs-detail-status">
-            {status.label}
-          </span>
-        </div>
+        {editingMeta && isHost ? (
+          <div className="space-y-3" data-testid="labs-detail-meta-edit">
+            <div className="flex items-center justify-between gap-2">
+              <input
+                className="labs-input flex-1 text-lg font-bold"
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                placeholder="Tasting title"
+                data-testid="input-meta-title"
+              />
+              <span className={`labs-badge ${status.className} flex-shrink-0`} data-testid="labs-detail-status">
+                {status.label}
+              </span>
+            </div>
+            <textarea
+              className="labs-input w-full text-sm"
+              rows={2}
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              placeholder="Description (optional)"
+              data-testid="input-meta-description"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="labs-input text-sm"
+                type="date"
+                value={metaDate}
+                onChange={(e) => setMetaDate(e.target.value)}
+                data-testid="input-meta-date"
+              />
+              <input
+                className="labs-input text-sm"
+                value={metaLocation}
+                onChange={(e) => setMetaLocation(e.target.value)}
+                placeholder="Location"
+                data-testid="input-meta-location"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button className="labs-btn-ghost text-xs" onClick={() => setEditingMeta(false)} data-testid="button-meta-cancel">Cancel</button>
+              <button className="labs-btn-primary text-xs px-4" onClick={saveMetaEdit} data-testid="button-meta-save">Save</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h1
+                className="labs-h2"
+                style={{ color: "var(--labs-text)", flex: 1, minWidth: 0 }}
+                data-testid="labs-detail-title"
+              >
+                {tasting.title}
+              </h1>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {isHost && (
+                  <button
+                    className="labs-btn-ghost p-1.5"
+                    onClick={startEditingMeta}
+                    data-testid="button-edit-meta"
+                  >
+                    <Pencil className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                  </button>
+                )}
+                <span className={`labs-badge ${status.className}`} data-testid="labs-detail-status">
+                  {status.label}
+                </span>
+              </div>
+            </div>
 
-        {tasting.description && (
-          <p
-            className="text-sm mb-3 leading-relaxed"
-            style={{ color: "var(--labs-text-secondary)" }}
-            data-testid="labs-detail-description"
-          >
-            {tasting.description}
-          </p>
+            {tasting.description && (
+              <p
+                className="text-sm mb-3 leading-relaxed"
+                style={{ color: "var(--labs-text-secondary)" }}
+                data-testid="labs-detail-description"
+              >
+                {tasting.description}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>
+              {tasting.date && (
+                <span className="flex items-center gap-1.5" data-testid="labs-detail-date">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {tasting.date}
+                </span>
+              )}
+              {tasting.location && (
+                <span className="flex items-center gap-1.5" data-testid="labs-detail-location">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {tasting.location}
+                </span>
+              )}
+              {tasting.hostName && (
+                <span className="flex items-center gap-1.5" data-testid="labs-detail-host">
+                  <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                  {stripGuestSuffix(tasting.hostName)}
+                </span>
+              )}
+            </div>
+          </>
         )}
-
-        <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>
-          {tasting.date && (
-            <span className="flex items-center gap-1.5" data-testid="labs-detail-date">
-              <Calendar className="w-3.5 h-3.5" />
-              {tasting.date}
-            </span>
-          )}
-          {tasting.location && (
-            <span className="flex items-center gap-1.5" data-testid="labs-detail-location">
-              <MapPin className="w-3.5 h-3.5" />
-              {tasting.location}
-            </span>
-          )}
-          {tasting.hostName && (
-            <span className="flex items-center gap-1.5" data-testid="labs-detail-host">
-              <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-              {stripGuestSuffix(tasting.hostName)}
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="mb-6 labs-stagger-1 space-y-2">
@@ -418,6 +527,215 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </>
         )}
       </div>
+
+      {isHost && isDraft && (
+        <div className="mb-6 labs-stagger-2" data-testid="labs-detail-session-settings">
+          <button
+            onClick={() => setShowSessionSettings(!showSessionSettings)}
+            className="w-full flex items-center justify-between labs-card p-4 cursor-pointer"
+            style={{ background: "none", border: "1.5px solid var(--labs-border)", fontFamily: "inherit" }}
+            data-testid="button-toggle-session-settings"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: "var(--labs-accent-muted)" }}
+              >
+                <Settings className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Session Settings</p>
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Configure before starting</p>
+              </div>
+            </div>
+            <ChevronDown
+              className="w-4 h-4 transition-transform"
+              style={{
+                color: "var(--labs-text-muted)",
+                transform: showSessionSettings ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
+          </button>
+
+          {showSessionSettings && (
+            <div className="mt-3 space-y-3" data-testid="labs-detail-session-settings-content">
+              {settingsSaveStatus && (
+                <div className="flex items-center gap-2" style={{ fontSize: 12, color: settingsSaveStatus === "Saved" ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
+                  <Check className="w-3 h-3" />
+                  {settingsSaveStatus}
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-semibold flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  <Gauge className="w-3 h-3" />
+                  Rating Scale
+                </label>
+                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                  {[
+                    { value: 5, label: "5", desc: "Simple" },
+                    { value: 10, label: "10", desc: "Classic" },
+                    { value: 20, label: "20", desc: "Detailed" },
+                    { value: 100, label: "100", desc: "Pro" },
+                  ].map((opt) => {
+                    const active = (tasting.ratingScale ?? 100) === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => patchTastingDetails({ ratingScale: opt.value })}
+                        className="rounded-lg transition-all text-center"
+                        style={{
+                          padding: "10px 4px",
+                          background: active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                          border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          cursor: "pointer",
+                        }}
+                        data-testid={`labs-detail-scale-${opt.value}`}
+                      >
+                        <div className="font-bold" style={{ fontSize: 16, color: active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div
+                className="labs-card p-4 flex items-center justify-between cursor-pointer"
+                onClick={() => patchTastingDetails({ blindMode: !tasting.blindMode })}
+                data-testid="labs-detail-toggle-blind"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: tasting.blindMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+                  >
+                    <EyeOff className="w-5 h-5" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Blind Tasting</p>
+                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Hide whisky names until reveal</p>
+                  </div>
+                </div>
+                <div
+                  className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
+                  style={{
+                    background: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-border)",
+                    justifyContent: tasting.blindMode ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div className="w-6 h-6 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                </div>
+              </div>
+
+              <div
+                className="labs-card p-4 flex items-center justify-between cursor-pointer"
+                onClick={() => {
+                  const newGuided = !tasting.guidedMode;
+                  const patch: Record<string, unknown> = { guidedMode: newGuided };
+                  if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                    patch.sessionUiMode = "focus";
+                  }
+                  patchTastingDetails(patch);
+                }}
+                data-testid="labs-detail-toggle-guided"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: tasting.guidedMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+                  >
+                    <Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Host Controls the Pace</p>
+                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Guide all guests through each dram</p>
+                  </div>
+                </div>
+                <div
+                  className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
+                  style={{
+                    background: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-border)",
+                    justifyContent: tasting.guidedMode ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div className="w-6 h-6 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  <Sliders className="w-3 h-3" />
+                  Tasting Experience
+                </label>
+                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                  {[
+                    { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
+                    { value: "focus", label: "One at a Time", desc: "Focus mode" },
+                    { value: "journal", label: "Journal", desc: "Guided notes" },
+                  ].map((opt) => {
+                    const active = ((tasting.sessionUiMode as string) || "flow") === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => !opt.disabled && patchTastingDetails({ sessionUiMode: opt.value || null })}
+                        className="rounded-lg transition-all text-center"
+                        style={{
+                          padding: "10px 4px",
+                          background: opt.disabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                          border: `1.5px solid ${opt.disabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          cursor: opt.disabled ? "not-allowed" : "pointer",
+                          opacity: opt.disabled ? 0.4 : 1,
+                        }}
+                        disabled={!!opt.disabled}
+                        data-testid={`labs-detail-experience-${opt.value}`}
+                      >
+                        <div className="font-bold" style={{ fontSize: 14, color: opt.disabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  <Globe className="w-3 h-3" />
+                  How Guests Join
+                </label>
+                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+                  {[
+                    { value: "standard", label: "Account", desc: "Saved ratings" },
+                    { value: "ultra", label: "Instant", desc: "No sign-in" },
+                  ].map((opt) => {
+                    const active = ((tasting.guestMode as string) || "standard") === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => patchTastingDetails({ guestMode: opt.value })}
+                        className="rounded-lg transition-all text-center"
+                        style={{
+                          padding: "10px 4px",
+                          background: active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                          border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          cursor: "pointer",
+                        }}
+                        data-testid={`labs-detail-guest-${opt.value}`}
+                      >
+                        <div className="font-bold" style={{ fontSize: 14, color: active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-3 mb-6 labs-stagger-1">
         <div className="labs-card p-3 text-center">
