@@ -971,12 +971,16 @@ export default function LabsRatingPanel({
       <div data-testid="labs-rating-panel">
         {showToggle && renderDetailedToggle()}
 
-        <div style={{
-          overflow: "hidden",
-          maxHeight: (!showToggle || showDetailed) ? 2000 : 0,
-          opacity: (!showToggle || showDetailed) ? 1 : 0,
-          transition: "max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease",
-        }}>
+        <div
+          aria-hidden={showToggle && !showDetailed}
+          style={{
+            overflow: "hidden",
+            maxHeight: (!showToggle || showDetailed) ? 2000 : 0,
+            opacity: (!showToggle || showDetailed) ? 1 : 0,
+            transition: "max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease",
+            pointerEvents: (showToggle && !showDetailed) ? "none" : "auto",
+          }}
+        >
           <div style={{ paddingTop: 8, marginTop: 4 }}>
             {renderWizardProgressDots()}
 
