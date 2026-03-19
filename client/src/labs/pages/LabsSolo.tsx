@@ -1187,8 +1187,9 @@ export default function LabsSolo() {
   };
 
   const handleQuickSave = async () => {
-    const hasScore = score > 0 || detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
-    if (!whiskyName.trim() || !hasScore) return;
+    const hasDimScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
+    const hasAnyScore = hasDimScore || score > 0;
+    if (!whiskyName.trim() || !hasAnyScore) return;
     const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
     if (score !== effectiveScore) setScore(effectiveScore);
     if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
