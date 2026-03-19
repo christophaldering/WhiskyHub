@@ -779,7 +779,8 @@ export default function LabsSolo() {
             "The bottle could not be identified. You can enter the whisky manually.");
       setError(msg);
       setSheetView("none");
-      setSoloView("editor");
+      setRatingFlowStep(0);
+      setSoloView("ratingFlow");
       setShowManual(true);
     } finally {
       setScanning(false);
@@ -1540,8 +1541,8 @@ export default function LabsSolo() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
             {[
               { onClick: () => uploadInputRef.current?.click(), icon: <Upload style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureGallery", "Gallery"), testId: "button-capture-gallery" },
-              { onClick: () => { setSoloView("editor"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }, icon: <Barcode style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureBarcode", "Barcode"), testId: "button-capture-barcode" },
-              { onClick: () => { setSoloView("editor"); setSheetView("describe"); setDescribeQuery(""); }, icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureDescribe", "Describe"), testId: "button-capture-describe" },
+              { onClick: () => { setRatingFlowStep(0); setSoloView("ratingFlow"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }, icon: <Barcode style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureBarcode", "Barcode"), testId: "button-capture-barcode" },
+              { onClick: () => { setRatingFlowStep(0); setSoloView("ratingFlow"); setSheetView("describe"); setDescribeQuery(""); }, icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureDescribe", "Describe"), testId: "button-capture-describe" },
               { onClick: () => fileInputRef.current?.click(), icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureImport", "Import"), testId: "button-capture-file" },
               ...(pid ? [{ onClick: () => openCollectionPicker(), icon: <Library style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureCollection", "Collection"), testId: "button-capture-collection" }] : []),
             ].map((item) => (
@@ -2138,7 +2139,7 @@ export default function LabsSolo() {
           </button>
 
           <button
-            onClick={() => setSoloView("editor")}
+            onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); }}
             className="labs-btn-ghost"
             style={{ width: "100%", padding: "12px 20px", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             data-testid="button-quick-details"
