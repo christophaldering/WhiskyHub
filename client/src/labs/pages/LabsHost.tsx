@@ -3567,6 +3567,7 @@ function TastingSetupSection({
   pid: string;
   queryClient: ReturnType<typeof useQueryClient>;
 }) {
+  const { t } = useTranslation();
   const [ratingPrompt, setRatingPrompt] = useState((tasting.ratingPrompt as string) || "");
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [videoLinkLocal, setVideoLinkLocal] = useState((tasting.videoLink as string) || "");
