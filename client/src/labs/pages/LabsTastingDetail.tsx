@@ -33,11 +33,11 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
+import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
-import type { Tasting } from "@shared/schema";
+import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
 
 interface LabsTastingDetailProps {
@@ -159,6 +159,20 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     queryKey: ["tasting-participants", tastingId],
     queryFn: () => tastingApi.getParticipants(tastingId),
     enabled: !!tastingId,
+  });
+
+  const isHost = tasting && currentParticipant && tasting.hostId === currentParticipant.id;
+
+  const { data: allInvites = [] } = useQuery<Array<{ id: string; email: string; status: string; createdAt: string }>>({
+    queryKey: ["invites", tastingId],
+    queryFn: () => inviteApi.getForTasting(tastingId),
+    enabled: !!tastingId && !!isHost,
+  });
+
+  const { data: friends = [] } = useQuery<WhiskyFriend[]>({
+    queryKey: ["friends", currentParticipant?.id],
+    queryFn: () => friendsApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id && !!isHost,
   });
 
   const sendInviteMutation = useMutation({
@@ -306,7 +320,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     }
   };
 
-  const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
   const isLive = tasting?.status === "open";
   const isCompleted = tasting?.status === "archived" || tasting?.status === "closed";
   const isReveal = tasting?.status === "reveal";
@@ -901,6 +914,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                     />
                   </button>
                   {showInvite && (
+                    <>
                     <div className="mt-4 space-y-3">
                       {!inviteResults ? (
                         <>
@@ -982,6 +996,83 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                         </div>
                       )}
                     </div>
+                    {allInvites.length > 0 && (
+                      <div style={{ marginTop: 16 }} data-testid="labs-invited-persons-list">
+                        <div style={{ height: 1, background: "var(--labs-border)", marginBottom: 12 }} />
+                        <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.05em" }}>
+                          Invited ({allInvites.length})
+                        </p>
+                        <div
+                          style={{
+                            maxHeight: 200,
+                            overflowY: "auto",
+                            borderRadius: 8,
+                            border: "1px solid var(--labs-border-subtle)",
+                          }}
+                        >
+                          {allInvites.map((invite) => {
+                            const matchedFriend = friends.find(
+                              (f) => f.email && f.email.toLowerCase() === invite.email.toLowerCase() && f.status === "accepted"
+                            );
+                            return (
+                              <div
+                                key={invite.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  padding: "8px 12px",
+                                  borderBottom: "1px solid var(--labs-border-subtle)",
+                                }}
+                                data-testid={`invited-person-${invite.id}`}
+                              >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  {matchedFriend && (
+                                    <p
+                                      className="text-sm font-medium"
+                                      style={{
+                                        color: "var(--labs-text)",
+                                        margin: 0,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                      data-testid={`text-invite-name-${invite.id}`}
+                                    >
+                                      {matchedFriend.firstName} {matchedFriend.lastName}
+                                    </p>
+                                  )}
+                                  <p
+                                    className="text-xs"
+                                    style={{
+                                      color: matchedFriend ? "var(--labs-text-muted)" : "var(--labs-text)",
+                                      margin: 0,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    data-testid={`text-invite-email-${invite.id}`}
+                                  >
+                                    {invite.email}
+                                  </p>
+                                </div>
+                                <span
+                                  className="labs-badge text-[11px] flex-shrink-0 ml-2"
+                                  style={{
+                                    background: invite.status === "joined" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                                    color: invite.status === "joined" ? "var(--labs-success)" : "var(--labs-accent)",
+                                  }}
+                                  data-testid={`badge-invite-status-${invite.id}`}
+                                >
+                                  {invite.status}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    </>
                   )}
                 </div>
               </>
