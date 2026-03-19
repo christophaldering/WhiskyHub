@@ -130,6 +130,7 @@ export interface IStorage {
   getAllRatings(): Promise<Rating[]>;
   getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined>;
   upsertRating(data: InsertRating): Promise<Rating>;
+  deleteRatingsByTasting(tastingId: string): Promise<void>;
 
   // Profiles
   getProfile(participantId: string): Promise<Profile | undefined>;
@@ -489,8 +490,23 @@ export class DatabaseStorage implements IStorage {
     if (status === "closed" && !existing?.closedAt) updateData.closedAt = now;
     if (status === "reveal" && !existing?.revealedAt) updateData.revealedAt = now;
     if (status === "archived" && !existing?.archivedAt) updateData.archivedAt = now;
+    if (status === "open" && existing && ["closed", "reveal", "archived"].includes(existing.status)) {
+      updateData.revealStep = 0;
+      updateData.revealIndex = 0;
+      updateData.guidedWhiskyIndex = -1;
+      updateData.guidedRevealStep = 0;
+      updateData.currentAct = "act1";
+      updateData.ratingPrompt = null;
+      updateData.closedAt = null;
+      updateData.revealedAt = null;
+      updateData.archivedAt = null;
+    }
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;
+  }
+
+  async deleteRatingsByTasting(tastingId: string): Promise<void> {
+    await db.delete(ratings).where(eq(ratings.tastingId, tastingId));
   }
 
   async updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined> {

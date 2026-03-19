@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
-  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders,
+  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
@@ -101,6 +101,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const pid = currentParticipant?.id || "";
 
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear">(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
     if (typeof window !== "undefined") {
@@ -157,6 +158,16 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
+    },
+  });
+
+  const restartMut = useMutation({
+    mutationFn: (clearRatings: boolean) => tastingApi.updateStatus(tastingId, "open", undefined, pid, clearRatings),
+    onSuccess: () => {
+      setRestartDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     },
   });
 
@@ -1102,6 +1113,59 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   )
                 )}
 
+                {["closed", "reveal", "archived"].includes(status) && !restartDialog && (
+                  <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">
+                    <RotateCcw style={{ width: 14, height: 14 }} />
+                    Restart Session
+                  </button>
+                )}
+
+                {restartDialog === "choose" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
+                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontWeight: 600 }}>Restart Options</div>
+                    <button
+                      onClick={() => restartMut.mutate(false)}
+                      disabled={restartMut.isPending}
+                      className="cockpit-action-btn cockpit-action-primary"
+                      data-testid="cockpit-restart-continue"
+                    >
+                      {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Play style={{ width: 14, height: 14 }} />}
+                      Continue (keep ratings)
+                    </button>
+                    <button
+                      onClick={() => setRestartDialog("confirmClear")}
+                      className="cockpit-action-btn cockpit-action-danger"
+                      data-testid="cockpit-restart-full"
+                    >
+                      <AlertTriangle style={{ width: 14, height: 14 }} />
+                      Full restart (delete ratings)
+                    </button>
+                    <button onClick={() => setRestartDialog(false)} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-cancel">
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {restartDialog === "confirmClear" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
+                    <div style={{ fontSize: 12, color: "var(--labs-danger, #e53e3e)", textAlign: "center", fontWeight: 600 }}>
+                      <AlertTriangle style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+                      Are you sure? All ratings will be permanently deleted.
+                    </div>
+                    <button
+                      onClick={() => restartMut.mutate(true)}
+                      disabled={restartMut.isPending}
+                      className="cockpit-action-btn cockpit-action-danger"
+                      data-testid="cockpit-restart-confirm-clear"
+                    >
+                      {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <AlertTriangle style={{ width: 14, height: 14 }} />}
+                      Yes, delete all ratings & restart
+                    </button>
+                    <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-back">
+                      Back
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

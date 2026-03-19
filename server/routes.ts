@@ -1384,7 +1384,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/tastings/:id/status", async (req, res) => {
-    const { status, currentAct, hostId } = req.body;
+    const { status, currentAct, hostId, clearRatings } = req.body;
     const validStatuses = ["draft", "open", "closed", "reveal", "archived", "deleted"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -1397,8 +1397,8 @@ export async function registerRoutes(
       draft: ["open", "deleted"],
       open: ["closed", "draft", "deleted"],
       closed: ["reveal", "open", "deleted"],
-      reveal: ["archived", "closed", "deleted"],
-      archived: ["deleted"],
+      reveal: ["archived", "closed", "open", "deleted"],
+      archived: ["open", "deleted"],
       deleted: [],
     };
     const allowed = allowedTransitions[tasting.status] || [];
@@ -1406,13 +1406,21 @@ export async function registerRoutes(
       return res.status(400).json({ message: `Cannot transition from '${tasting.status}' to '${status}'` });
     }
 
-    if (status === "deleted" || status === "archived") {
+    const isRestart = status === "open" && ["closed", "reveal", "archived"].includes(tasting.status);
+
+    if (status === "deleted" || status === "archived" || isRestart) {
       if (!hostId) return res.status(400).json({ message: "hostId required for this action" });
       const requester = await storage.getParticipant(hostId);
       if (tasting.hostId !== hostId && (!requester || requester.role !== "admin")) {
         return res.status(403).json({ message: "Only the host or an admin can perform this action" });
       }
     }
+
+    if (isRestart && clearRatings) {
+      await storage.deleteRatingsByTasting(req.params.id);
+      console.log(`[LABS] Cleared all ratings for tasting=${req.params.id} "${tasting.title}"`);
+    }
+
     let finalStatus = status;
 
     if (status === "closed") {

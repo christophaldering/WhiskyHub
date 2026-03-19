@@ -60,8 +60,8 @@ export const tastingApi = {
   get: (id: string) => fetchJSON(`/tastings/${id}`),
   getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
   create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
-  updateStatus: (id: string, status: string, currentAct?: string, hostId?: string) =>
-    fetchJSON(`/tastings/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, currentAct, hostId }) }),
+  updateStatus: (id: string, status: string, currentAct?: string, hostId?: string, clearRatings?: boolean) =>
+    fetchJSON(`/tastings/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, currentAct, hostId, clearRatings }) }),
   updateReflection: (id: string, reflection: string) =>
     fetchJSON(`/tastings/${id}/reflection`, { method: "PATCH", body: JSON.stringify({ reflection }) }),
   hardDelete: (id: string, participantId: string) =>
