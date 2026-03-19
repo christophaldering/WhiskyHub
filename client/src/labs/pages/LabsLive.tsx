@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -10,11 +11,14 @@ import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components
 import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
-import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
+import RatingFlow from "@/labs/components/RatingFlow";
+import DramCarousel from "@/labs/components/DramCarousel";
+import ScaleBadge from "@/labs/components/ScaleBadge";
 import type { Tasting } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -108,29 +112,6 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
   );
 }
 
-function GuidedProgressDots({ total, currentIndex }: { total: number; currentIndex: number }) {
-  return (
-    <div className="flex items-center justify-center gap-2 py-4 labs-fade-in" data-testid="guided-progress-dots">
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className="rounded-full transition-all"
-          style={{
-            width: i === currentIndex ? 20 : 8,
-            height: 8,
-            background: i < currentIndex
-              ? "var(--labs-success)"
-              : i === currentIndex
-                ? "var(--labs-accent)"
-                : "var(--labs-border)",
-            borderRadius: 4,
-          }}
-          data-testid={`guided-dot-${i}`}
-        />
-      ))}
-    </div>
-  );
-}
 
 function GuidedStepView({
   tasting,
@@ -149,16 +130,40 @@ function GuidedStepView({
   tastingId: string;
   allWhiskies: any[];
 }) {
+  const { t } = useTranslation();
   const [localIndex, setLocalIndex] = useState(whiskyIndex);
   const pendingIndexRef = useRef<number | null>(null);
   const revealMomentActiveRef = useRef(false);
+  const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
+  const [flowSaved, setFlowSaved] = useState(false);
+  const [flowChips, setFlowChips] = useState<string[]>([]);
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevWhiskyIndexRef = useRef(whiskyIndex);
+
   useEffect(() => {
-    if (revealMomentActiveRef.current) {
-      pendingIndexRef.current = whiskyIndex;
-    } else {
-      setLocalIndex(whiskyIndex);
+    if (whiskyIndex !== prevWhiskyIndexRef.current) {
+      const prevIdx = prevWhiskyIndexRef.current;
+      prevWhiskyIndexRef.current = whiskyIndex;
+
+      if (revealMomentActiveRef.current) {
+        pendingIndexRef.current = whiskyIndex;
+        return;
+      }
+
+      const myRatingForCurrent = guidedMyRatings.find(
+        (r: any) => r.whiskyId === allWhiskies[prevIdx]?.id
+      );
+      const currentHasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
+
+      if (!myRatingForCurrent && currentHasScores && localIndex === prevIdx) {
+        setInterruptBanner({ fromIndex: prevIdx, toIndex: whiskyIndex });
+      } else {
+        setLocalIndex(whiskyIndex);
+        setFlowSaved(false);
+      }
     }
   }, [whiskyIndex]);
+
   const hostMaxIndex = whiskyIndex;
   const activeWhisky = allWhiskies[localIndex] ?? whisky;
   const viewingHostDram = localIndex === whiskyIndex;
@@ -190,18 +195,13 @@ function GuidedStepView({
   const isNameRevealed = revealedFields.has("name") || isFullyRevealed;
   const isBlindStep = tasting.blindMode && !isNameRevealed;
   const mid = Math.round(maxScore / 2);
-  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
-  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
 
   const [dimScores, setDimScores] = useState<Record<DimKey, number>>({ nose: mid, taste: mid, finish: mid });
   const [overall, setOverall] = useState(mid);
   const [overrideActive, setOverrideActive] = useState(false);
-  const [chips, setChips] = useState<Record<DimKey, string[]>>({ ...emptyChips });
-  const [dimTexts, setDimTexts] = useState<Record<DimKey, string>>({ ...emptyTexts });
   const [notes, setNotes] = useState("");
-  const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [guidedCalibrationOpen, setGuidedCalibrationOpen] = useState(false);
   const [revealMoment, setRevealMoment] = useState<{
     whiskyName: string; distillery?: string; age?: string; region?: string; imageUrl?: string; stepLabel?: string;
     caskInfluence?: string; abv?: string; category?: string; bottler?: string; vintage?: string; peatLevel?: string; country?: string; ppm?: string; price?: string;
@@ -256,85 +256,35 @@ function GuidedStepView({
     enabled: !!currentParticipant && !!activeWhisky,
   });
 
-  const parseSavedNotes = useCallback((rawNotes: string) => {
-    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
-    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
-    let cleanNotes = rawNotes;
-    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
-      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*([\\s\\S]*?)\\s*\\[\\/${d.toUpperCase()}\\]`);
-      const m = rawNotes.match(re);
-      if (m) {
-        cleanNotes = cleanNotes.replace(m[0], "");
-        const content = m[1].trim();
-        const parts = content.split(" — ");
-        if (parts.length >= 2) {
-          parsedChips[d] = parts[0].split(",").map(s => s.trim()).filter(Boolean);
-          parsedTexts[d] = parts.slice(1).join(" — ");
-        } else if (parts.length === 1) {
-          const maybeChips = parts[0].split(",").map(s => s.trim()).filter(Boolean);
-          if (maybeChips.every(c => c.length < 20)) parsedChips[d] = maybeChips;
-          else parsedTexts[d] = parts[0];
-        }
-      }
-    }
-    const flavorMarker = /\[(Nose|Taste|Finish)\]\s*([^\n]*)/gi;
-    let fm: RegExpExecArray | null;
-    while ((fm = flavorMarker.exec(cleanNotes)) !== null) {
-      const dim = fm[1].toLowerCase() as DimKey;
-      if (parsedChips[dim].length === 0) {
-        parsedChips[dim] = fm[2].split(",").map(s => s.trim()).filter(Boolean);
-      }
-    }
-    cleanNotes = cleanNotes.replace(/\[(Nose|Taste|Finish)\]\s*[^\n]*/gi, "");
-    cleanNotes = cleanNotes.replace(/\[SCORES\][\s\S]*?\[\/SCORES\]/, "");
-    cleanNotes = cleanNotes.replace(/\n{2,}/g, "\n").trim();
-    return { chips: parsedChips, texts: parsedTexts, cleanNotes };
-  }, []);
-
-  const buildScoresBlock = useCallback(() => {
-    const hasDimData = (["nose", "taste", "finish"] as DimKey[]).some(
-      (d) => chips[d].length > 0 || dimTexts[d].trim()
-    );
-    if (!hasDimData) return "";
-    const parts: string[] = [];
-    for (const d of ["nose", "taste", "finish"] as DimKey[]) {
-      const chipStr = chips[d].length > 0 ? chips[d].join(", ") : "";
-      const textStr = dimTexts[d].trim();
-      if (chipStr || textStr) {
-        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
-      }
-    }
-    return parts.length > 0 ? "\n" + parts.join("\n") : "";
-  }, [chips, dimTexts]);
-
   useEffect(() => {
     if (myRating) {
-      const parsed = parseSavedNotes(myRating.notes || "");
       const n = myRating.nose ?? mid;
       const ta = myRating.taste ?? mid;
       const f = myRating.finish ?? mid;
       const o = myRating.overall ?? mid;
       setDimScores({ nose: n, taste: ta, finish: f });
       setOverall(o);
-      setChips(parsed.chips);
-      setDimTexts(parsed.texts);
-      setNotes(parsed.cleanNotes);
+      const rawNotes = myRating.notes || "";
+      const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
+      if (flavourMatch) {
+        setFlowChips(flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean));
+        setNotes(rawNotes.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim());
+      } else {
+        setFlowChips([]);
+        setNotes(rawNotes);
+      }
       const auto = Math.round((n + ta + f) / 3);
       setOverrideActive(o !== auto);
+      setFlowSaved(true);
     } else {
       setDimScores({ nose: mid, taste: mid, finish: mid });
       setOverall(mid);
-      setChips({ ...emptyChips });
-      setDimTexts({ ...emptyTexts });
       setNotes("");
+      setFlowChips([]);
       setOverrideActive(false);
+      setFlowSaved(false);
     }
   }, [myRating, activeWhisky?.id, mid]);
-
-  useEffect(() => {
-    setGuidedMemo(null);
-    setOverrideActive(false);
-  }, [activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -343,6 +293,7 @@ function GuidedStepView({
     onSuccess: () => {
       setSaveError(null);
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, activeWhisky?.id] });
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     },
     onError: (err: any) => {
       const msg = err?.message || "Save failed";
@@ -359,43 +310,52 @@ function GuidedStepView({
   }, [activeWhisky?.id]);
 
   useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+    };
   }, []);
 
-  const debouncedSave = useCallback(
-    (freshScores: Record<DimKey, number>, freshOverall: number, freshNotes: string) => {
+  const doSave = useCallback(
+    (scores: Record<DimKey, number>, ov: number, n: string) => {
       if (!currentParticipant || !activeWhisky || !tasting) return;
-      if (tasting.status !== "open" && tasting.status !== "draft") return;
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        const s = tastingStatusRef.current;
-        if (s !== "open" && s !== "draft") return;
-        const scoresBlock = buildScoresBlock();
-        const combinedNotes = (freshNotes + scoresBlock).trim();
-        rateMutation.mutate({
-          tastingId,
-          whiskyId: activeWhisky.id,
-          participantId: currentParticipant.id,
-          ...freshScores,
-          overall: freshOverall,
-          notes: combinedNotes,
-        });
-      }, 800);
+      const s = tastingStatusRef.current;
+      if (s !== "open" && s !== "draft") return;
+      rateMutation.mutate({
+        tastingId,
+        whiskyId: activeWhisky.id,
+        participantId: currentParticipant.id,
+        ...scores,
+        overall: ov,
+        notes: n,
+      });
     },
-    [currentParticipant, activeWhisky, tasting, tastingId, buildScoresBlock]
+    [currentParticipant, activeWhisky, tasting, tastingId, rateMutation]
   );
 
-  const chipSaveRef = useRef(0);
+  const debouncedSave = useCallback(
+    (scores: Record<DimKey, number>, ov: number, n: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => doSave(scores, ov, n), 800);
+    },
+    [doSave]
+  );
+
   useEffect(() => {
-    if (!activeWhisky) return;
-    chipSaveRef.current++;
-    const gen = chipSaveRef.current;
-    const timer = setTimeout(() => {
-      if (gen !== chipSaveRef.current) return;
-      debouncedSave(dimScores, overall, notes);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [chips, dimTexts]);
+    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+    if (!currentParticipant || !activeWhisky) return;
+    autoSaveRef.current = setInterval(() => {
+      const hasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
+      if (hasScores) {
+        let combined = notes;
+        if (flowChips.length > 0) {
+          combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
+        }
+        doSave(dimScores, overall, combined);
+      }
+    }, 30000);
+    return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
+  }, [currentParticipant?.id, activeWhisky?.id, dimScores, overall, notes, flowChips, mid, doSave]);
 
   const computeAutoOverall = (s: Record<DimKey, number>) =>
     Math.round((s.nose + s.taste + s.finish) / 3);
@@ -425,81 +385,71 @@ function GuidedStepView({
     debouncedSave(dimScores, auto, notes);
   };
 
-  const handleChipToggle = (dim: DimKey, chip: string) => {
-    setChips(prev => {
-      const current = prev[dim];
-      const next = current.includes(chip) ? current.filter(c => c !== chip) : [...current, chip];
-      return { ...prev, [dim]: next };
+  const buildFlowNotes = useCallback(() => {
+    let combined = notes;
+    if (flowChips.length > 0) {
+      combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
+    }
+    return combined;
+  }, [notes, flowChips]);
+
+  const handleFlowSave = useCallback(async () => {
+    if (!currentParticipant || !activeWhisky) throw new Error("No participant/whisky");
+    const hasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
+    if (!hasScores) throw new Error("No scores");
+    const eff = overall > 0 ? overall : Math.max(1, computeAutoOverall(dimScores));
+    const combinedNotes = buildFlowNotes();
+    await rateMutation.mutateAsync({
+      tastingId,
+      whiskyId: activeWhisky.id,
+      participantId: currentParticipant.id,
+      ...dimScores,
+      overall: eff,
+      notes: combinedNotes,
     });
-  };
+    setFlowSaved(true);
+  }, [currentParticipant, activeWhisky, dimScores, overall, notes, mid, buildFlowNotes, tastingId, rateMutation]);
 
-  const handleTextChange = (dim: DimKey, text: string) => {
-    setDimTexts(prev => ({ ...prev, [dim]: text }));
-  };
+  const getDramName = useCallback((idx: number) => {
+    const w = allWhiskies[idx];
+    if (!w) return `Dram ${idx + 1}`;
+    if (tasting.blindMode) {
+      const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
+      const guidedStep = tasting.guidedRevealStep ?? 0;
+      if (idx > guidedIdx) return t("m2.taste.rating.sampleX", { n: idx + 1, defaultValue: `Sample ${idx + 1}` });
+      const revealed = new Set<string>();
+      const stepsForIdx = idx < guidedIdx ? stepGroups.length : guidedStep;
+      for (let s = 0; s < stepsForIdx && s < stepGroups.length; s++) {
+        for (const f of stepGroups[s]) revealed.add(f);
+      }
+      if (!revealed.has("name")) return t("m2.taste.rating.sampleX", { n: idx + 1, defaultValue: `Sample ${idx + 1}` });
+    }
+    return w.name || `Dram ${idx + 1}`;
+  }, [allWhiskies, tasting.blindMode, tasting.guidedWhiskyIndex, tasting.guidedRevealStep, stepGroups, t]);
 
-  const updateNotes = (value: string) => {
-    setNotes(value);
-    debouncedSave(dimScores, overall, value);
-  };
+  const dramChips: import("@/labs/components/DramCarousel").DramChip[] = allWhiskies.map((w: any, idx: number) => {
+    const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
+    const isDone = rating != null;
+    const isLocked = idx > hostMaxIndex;
+    let status: "done" | "active" | "locked";
+    if (isLocked) status = "locked";
+    else if (idx === localIndex) status = "active";
+    else if (isDone) status = "done";
+    else status = "done";
+    return {
+      index: idx,
+      name: getDramName(idx),
+      score: isDone ? rating.overall : null,
+      status,
+    };
+  });
 
-  const REVEAL_FIELD_LABELS: Record<string, string> = {
-    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-    region: "Region", country: "Country", category: "Category",
-    caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
-    vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
-    ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
-  };
-
-  let displayName: string;
-  let displaySub: string;
-  let stepBadgeLabel: string;
-  let stepBadgeClass: string;
-
-  if (revealStep === 0) {
-    stepBadgeLabel = "Rating Open";
-    stepBadgeClass = "labs-badge-success";
-    displayName = isBlindStep ? `Dram ${String.fromCharCode(65 + localIndex)}` : (activeWhisky?.name || "Unknown");
-    displaySub = isBlindStep ? "Blind tasting" : "";
-  } else if (isFullyRevealed) {
-    stepBadgeLabel = "Fully Revealed";
-    stepBadgeClass = "labs-badge-accent";
-    displayName = activeWhisky?.name || "Unknown";
-    const detailParts: string[] = [];
-    if (activeWhisky?.distillery) detailParts.push(activeWhisky.distillery);
-    if (activeWhisky?.age) detailParts.push(`${activeWhisky.age}y`);
-    if (activeWhisky?.region) detailParts.push(activeWhisky.region);
-    if (activeWhisky?.abv) detailParts.push(`${activeWhisky.abv}%`);
-    displaySub = detailParts.join(" · ");
-  } else {
-    const currentStepFields = stepGroups[revealStep - 1] || [];
-    const fieldLabels = currentStepFields
-      .map((f: string) => REVEAL_FIELD_LABELS[f] || f)
-      .slice(0, 3);
-    stepBadgeLabel = fieldLabels.length > 0
-      ? `${fieldLabels.join(", ")} Revealed`
-      : "Step Revealed";
-    stepBadgeClass = "labs-badge-info";
-
-    displayName = revealedFields.has("name")
-      ? (activeWhisky?.name || "Unknown")
-      : (isBlindStep ? `Dram ${String.fromCharCode(65 + localIndex)}` : (activeWhisky?.name || "Unknown"));
-
-    const detailParts: string[] = [];
-    if (revealedFields.has("distillery") && activeWhisky?.distillery) detailParts.push(activeWhisky.distillery);
-    if (revealedFields.has("age") && activeWhisky?.age) detailParts.push(`${activeWhisky.age}y`);
-    if (revealedFields.has("region") && activeWhisky?.region) detailParts.push(activeWhisky.region);
-    if (revealedFields.has("country") && activeWhisky?.country) detailParts.push(activeWhisky.country);
-    if (revealedFields.has("abv") && activeWhisky?.abv) detailParts.push(`${activeWhisky.abv}%`);
-    if (revealedFields.has("category") && activeWhisky?.category) detailParts.push(activeWhisky.category);
-    if (revealedFields.has("caskInfluence") && activeWhisky?.caskInfluence) detailParts.push(activeWhisky.caskInfluence);
-    if (revealedFields.has("bottler") && activeWhisky?.bottler) detailParts.push(activeWhisky.bottler);
-    if (revealedFields.has("vintage") && activeWhisky?.vintage) detailParts.push(`${activeWhisky.vintage}`);
-    if (revealedFields.has("peatLevel") && activeWhisky?.peatLevel) detailParts.push(activeWhisky.peatLevel);
-    if (revealedFields.has("price") && activeWhisky?.price) detailParts.push(Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €");
-    displaySub = detailParts.join(" · ");
-  }
+  const displayName = isBlindStep
+    ? t("m2.taste.rating.sampleX", { n: localIndex + 1, defaultValue: `Sample ${localIndex + 1}` })
+    : (activeWhisky?.name || "Unknown");
 
   const canRate = currentParticipant && tasting?.status === "open";
+  const nextDramIdx = whiskyIndex + 1;
 
   return (
     <div className="labs-fade-in">
@@ -512,153 +462,175 @@ function GuidedStepView({
             if (pendingIndexRef.current !== null) {
               setLocalIndex(pendingIndexRef.current);
               pendingIndexRef.current = null;
+              setFlowSaved(false);
             }
           }}
         />
       )}
-      <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
-        <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={() => setLocalIndex(Math.max(0, localIndex - 1))}
-            disabled={localIndex === 0}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              background: "var(--labs-surface)",
-              color: localIndex === 0 ? "var(--labs-border)" : "var(--labs-text)",
-              opacity: localIndex === 0 ? 0.3 : 1,
-              border: "none",
-              cursor: localIndex === 0 ? "default" : "pointer",
-            }}
-            data-testid="guided-prev"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
 
-          <div className="text-center">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 0",
+          marginBottom: 8,
+        }}
+        data-testid="guided-context-bar"
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--labs-text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+            data-testid="guided-step-counter"
+          >
+            {t("m2.taste.rating.dramXofN", { x: localIndex + 1, n: totalWhiskies, defaultValue: `Dram ${localIndex + 1} of ${totalWhiskies}` })}
+          </span>
+          <ScaleBadge max={maxScore} size="sm" />
+          {tasting.blindMode && (
             <span
-              className="text-[11px] font-bold tracking-widest uppercase"
-              style={{ color: "var(--labs-text-muted)" }}
-              data-testid="guided-step-counter"
+              className="labs-badge labs-badge-accent"
+              style={{ fontSize: 10, padding: "2px 8px" }}
+              data-testid="guided-blind-badge"
             >
-              Dram {localIndex + 1} of {totalWhiskies}
+              <EyeOff style={{ width: 10, height: 10, marginRight: 3, display: "inline" }} />
+              Blind
             </span>
-            <div className="mt-0.5">
-              <span className={`labs-badge ${stepBadgeClass}`} data-testid="guided-step-badge">
-                {viewingHostDram ? stepBadgeLabel : "Review"}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setLocalIndex(Math.min(hostMaxIndex, localIndex + 1))}
-            disabled={localIndex >= hostMaxIndex}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              background: "var(--labs-surface)",
-              color: localIndex >= hostMaxIndex ? "var(--labs-border)" : "var(--labs-text)",
-              opacity: localIndex >= hostMaxIndex ? 0.3 : 1,
-              border: "none",
-              cursor: localIndex >= hostMaxIndex ? "default" : "pointer",
-            }}
-            data-testid="guided-next"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="text-center py-3">
-          <h2
-            className="labs-h3"
-            style={{ color: "var(--labs-text)" }}
-            data-testid="guided-whisky-name"
-          >
-            {displayName}
-          </h2>
-          {displaySub && (
-            <p className="text-xs mt-1" style={{ color: "var(--labs-text-muted)" }}>
-              {displaySub}
-            </p>
           )}
         </div>
-
-        {activeWhisky?.imageUrl && (revealedFields.has("image") || isFullyRevealed) && (
-          <div className="mt-3 rounded-xl overflow-hidden" style={{ maxHeight: 200 }}>
-            <img
-              src={activeWhisky.imageUrl}
-              alt={displayName}
-              className="w-full h-full object-cover"
-              style={{ maxHeight: 200 }}
-              data-testid="guided-whisky-image"
-            />
-          </div>
-        )}
-
-        {viewingHostDram && isFullyRevealed && (
-          <div
-            className="flex items-center gap-2 mt-4 py-2 px-3 rounded-lg"
-            style={{ background: "var(--labs-accent-muted)" }}
-            data-testid="guided-closing-indicator"
-          >
-            <Clock className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--labs-accent)" }}>
-              Rating period closing — finish your scores
-            </span>
-          </div>
-        )}
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--labs-text-muted)",
+            maxWidth: 140,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {tasting.title}
+        </span>
       </div>
 
-      {canRate && !revealMoment ? (
-        <>
-          <div className="labs-fade-in labs-stagger-2">
-            <LabsRatingPanel
-              scores={dimScores}
-              onScoreChange={handleScoreChange}
-              chips={chips}
-              onChipToggle={handleChipToggle}
-              texts={dimTexts}
-              onTextChange={handleTextChange}
-              overall={overall}
-              onOverallChange={handleOverallChange}
-              overallAuto={computeAutoOverall(dimScores)}
-              overrideActive={overrideActive}
-              onResetOverride={resetOverride}
-              scale={maxScore}
-              wizard={true}
-            />
-          </div>
+      <DramCarousel
+        chips={dramChips}
+        activeIndex={localIndex}
+        onChipTap={(idx) => {
+          if (idx <= hostMaxIndex) {
+            setLocalIndex(idx);
+            setFlowSaved(false);
+          }
+        }}
+        scaleMax={maxScore}
+        isBlind={isBlindStep}
+      />
 
-          <div className="labs-card p-5 mb-4 mt-4 labs-fade-in labs-stagger-3">
-            <label
-              className="text-xs font-medium mb-2 block"
-              style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
-            >
-              Tasting notes
-            </label>
-            <textarea
-              className="labs-input"
-              rows={3}
-              placeholder="Your general impressions…"
-              value={notes}
-              onChange={(e) => updateNotes(e.target.value)}
-              style={{ resize: "vertical" }}
-              data-testid="guided-notes"
-            />
-            {VOICE_MEMOS_ENABLED && (
-            <div className="mt-3">
-              <LabsVoiceMemoRecorder
-                participantId={currentParticipant?.id || ""}
-                memo={guidedMemo}
-                onMemoChange={(memoData) => {
-                  setGuidedMemo(memoData);
-                  if (memoData?.transcript) {
-                    const updated = notes ? `${notes}\n${memoData.transcript}` : memoData.transcript;
-                    updateNotes(updated);
-                  }
-                }}
-              />
+      {interruptBanner && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "rgba(200,134,26,0.08)",
+            border: "1px solid rgba(200,134,26,0.2)",
+            marginTop: 8,
+            marginBottom: 8,
+            animation: "labsFadeIn 200ms ease both",
+          }}
+          data-testid="interrupt-banner"
+        >
+          <AlertTriangle style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("m2.taste.rating.interruptTitle", "Incomplete rating")}
             </div>
-            )}
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+              {t("m2.taste.rating.interruptHint", "Host advanced to next dram")}
+            </div>
           </div>
+          <button
+            onClick={() => {
+              let combined = notes;
+              if (flowChips.length > 0) {
+                combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
+              }
+              doSave(dimScores, overall, combined);
+              setInterruptBanner(null);
+              setLocalIndex(interruptBanner.toIndex);
+              setFlowSaved(false);
+            }}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 9999,
+              border: "none",
+              background: "#c8861a",
+              color: "#1a1714",
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+            data-testid="interrupt-save"
+          >
+            {t("m2.taste.rating.interruptSave", "Save now")}
+          </button>
+          <button
+            onClick={() => {
+              setInterruptBanner(null);
+              setLocalIndex(interruptBanner.toIndex);
+              setFlowSaved(false);
+            }}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 9999,
+              border: "1px solid var(--labs-border)",
+              background: "transparent",
+              color: "var(--labs-text-muted)",
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: "inherit",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+            data-testid="interrupt-skip"
+          >
+            {t("m2.taste.rating.interruptSkip", "Skip")}
+          </button>
+        </div>
+      )}
+
+      {canRate && !revealMoment ? (
+        <div style={{ animation: localIndex !== prevWhiskyIndexRef.current && !interruptBanner ? "labsPopIn 300ms ease both" : undefined }}>
+          <RatingFlow
+            scale={liveScale}
+            scores={dimScores}
+            onScoreChange={handleScoreChange}
+            overall={overall}
+            onOverallChange={handleOverallChange}
+            overrideActive={overrideActive}
+            onOverrideToggle={() => setOverrideActive(!overrideActive)}
+            onResetOverride={resetOverride}
+            chips={flowChips}
+            onChipToggle={(chip) => {
+              setFlowChips(prev => prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]);
+            }}
+            notes={notes}
+            onNotesChange={(val) => setNotes(val)}
+            onSave={handleFlowSave}
+            whiskyName={displayName}
+            isBlind={isBlindStep}
+            initialStep={0}
+            onAfterSaveCorrect={() => setFlowSaved(false)}
+            waitingMessage={flowSaved ? t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Waiting for host for Dram ${nextDramIdx + 1}` }) : null}
+          />
 
           {saveError && (
             <div
@@ -670,130 +642,20 @@ function GuidedStepView({
               {saveError}
             </div>
           )}
-          {!saveError && rateMutation.isSuccess && (
-            <div
-              className="flex items-center gap-1.5 mb-3 text-xs"
-              style={{ color: "var(--labs-success)" }}
-              data-testid="guided-saved"
-            >
-              <Check className="w-3 h-3" />
-              Saved
-            </div>
-          )}
-
-          {allWhiskies.length > 1 && guidedMyRatings.length > 0 && (
-            <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="guided-calibration-overview">
-              <button
-                type="button"
-                onClick={() => setGuidedCalibrationOpen(!guidedCalibrationOpen)}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                }}
-                data-testid="button-toggle-guided-calibration"
-              >
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                  <span className="text-xs font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                    My Scores Overview
-                  </span>
-                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                    ({guidedMyRatings.length}/{allWhiskies.length} rated)
-                  </span>
-                </div>
-                <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transform: guidedCalibrationOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-              </button>
-              {guidedCalibrationOpen && (
-                <div style={{ padding: "0 16px 16px" }}>
-                  <div className="space-y-2">
-                    {allWhiskies.map((w: any, idx: number) => {
-                      const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
-                      const overall = rating?.overall;
-                      const isCurrent = idx === localIndex;
-                      const idxNameHidden = (() => {
-                        if (!tasting.blindMode) return false;
-                        const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
-                        const guidedStep = tasting.guidedRevealStep ?? 0;
-                        if (idx > guidedIdx) return true;
-                        const revealedForIdx = new Set<string>();
-                        const stepsForIdx = idx < guidedIdx ? stepGroups.length : guidedStep;
-                        for (let s = 0; s < stepsForIdx && s < stepGroups.length; s++) {
-                          for (const f of stepGroups[s]) revealedForIdx.add(f);
-                        }
-                        return !revealedForIdx.has("name");
-                      })();
-                      const label = idxNameHidden
-                        ? `Dram ${String.fromCharCode(65 + idx)}`
-                        : (w.name || `Dram ${idx + 1}`);
-                      const isNavigable = idx <= hostMaxIndex;
-                      return (
-                        <div
-                          key={w.id}
-                          onClick={() => { if (isNavigable) setLocalIndex(idx); }}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 10,
-                            padding: "8px 10px", borderRadius: 8,
-                            background: isCurrent ? "var(--labs-accent-muted)" : "transparent",
-                            border: isCurrent ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))",
-                            cursor: isNavigable ? "pointer" : "default",
-                            opacity: isNavigable ? 1 : 0.5,
-                          }}
-                          data-testid={`guided-calibration-row-${idx}`}
-                        >
-                          <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
-                            {idx + 1}
-                          </span>
-                          <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isCurrent ? "var(--labs-accent)" : "var(--labs-text)" }}>
-                            {label}
-                          </span>
-                          <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
-                            {overall != null && (
-                              <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isCurrent ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
-                            )}
-                          </div>
-                          <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isCurrent ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
-                            {overall != null ? overall : "—"}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {guidedMyRatings.length >= 2 && (() => {
-                    const overalls = guidedMyRatings.map((r: any) => r.overall).filter((v: any) => v != null);
-                    if (overalls.length < 2) return null;
-                    const avg = Math.round(overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length * 10) / 10;
-                    const min = Math.min(...overalls);
-                    const max = Math.max(...overalls);
-                    return (
-                      <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="guided-calibration-stats">
-                        <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                          <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{avg}</strong></span>
-                          <span>Range: <strong style={{ color: "var(--labs-text)" }}>{min}–{max}</strong></span>
-                          <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{Math.round((max - min) * 10) / 10}</strong></span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          )}
-        </>
+        </div>
       ) : (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
             <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
-              Sign in to rate whiskies
+              {t("m2.taste.rating.signInToRate", "Sign in to rate whiskies")}
             </p>
           ) : (
             <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-              Ratings are currently closed
+              {t("m2.taste.rating.ratingsClosed", "Ratings are currently closed")}
             </p>
           )}
         </div>
       )}
-
-      <GuidedProgressDots total={totalWhiskies} currentIndex={localIndex} />
     </div>
   );
 }

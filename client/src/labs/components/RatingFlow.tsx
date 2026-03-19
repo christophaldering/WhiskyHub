@@ -33,6 +33,9 @@ interface RatingFlowProps {
   onAfterSaveCorrect?: () => void;
   onAfterSaveNewDram?: () => void;
   onAfterSaveOverview?: () => void;
+  waitingMessage?: string | null;
+  externalSavedOverlay?: boolean;
+  onExternalSavedDismiss?: () => void;
 }
 
 const DIMS: DimKey[] = ["nose", "taste", "finish"];
@@ -62,6 +65,9 @@ export default function RatingFlow({
   onAfterSaveCorrect,
   onAfterSaveNewDram,
   onAfterSaveOverview,
+  waitingMessage,
+  externalSavedOverlay,
+  onExternalSavedDismiss,
 }: RatingFlowProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState(initialStep);
@@ -70,6 +76,16 @@ export default function RatingFlow({
   const [showSavedOverlay, setShowSavedOverlay] = useState(false);
   const [savedScore, setSavedScore] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  const prevInitialStepRef = useRef(initialStep);
+  useEffect(() => {
+    if (initialStep !== prevInitialStepRef.current) {
+      prevInitialStepRef.current = initialStep;
+      setStep(initialStep);
+      setReturnToSummary(false);
+      setSaving(false);
+      setShowSavedOverlay(false);
+    }
+  }, [initialStep]);
 
   const calculatedAvg = useMemo(
     () => Math.round((scores.nose + scores.taste + scores.finish) / 3),
@@ -469,10 +485,51 @@ export default function RatingFlow({
     </div>
   );
 
-  if (showSavedOverlay) {
+  useEffect(() => {
+    if (externalSavedOverlay) {
+      setShowSavedOverlay(false);
+    }
+  }, [externalSavedOverlay]);
+
+  if (showSavedOverlay || externalSavedOverlay) {
     return (
       <div data-testid="rating-flow" style={{ maxWidth: 480, margin: "0 auto" }}>
         {renderSavedOverlay()}
+        {waitingMessage && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "16px 24px",
+              animation: "labsFadeIn 400ms ease both",
+            }}
+            data-testid="rating-flow-waiting"
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 20px",
+                borderRadius: 12,
+                background: "rgba(200,134,26,0.08)",
+                border: "1px solid rgba(200,134,26,0.15)",
+                fontSize: 13,
+                color: "var(--labs-text-muted)",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  background: GOLD,
+                  animation: "pulse 2s infinite",
+                }}
+              />
+              {waitingMessage}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
