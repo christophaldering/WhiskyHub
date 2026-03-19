@@ -2209,6 +2209,12 @@ function CustomRevealEditor({ steps, onChange }: {
     onChange(next.filter(s => s.length > 0));
   };
 
+  const removeField = (stepIdx: number, fieldIdx: number) => {
+    const next = steps.map(s => [...s]);
+    next[stepIdx].splice(fieldIdx, 1);
+    onChange(next.filter(s => s.length > 0));
+  };
+
   const mergeStepUp = (stepIdx: number) => {
     if (stepIdx === 0) return;
     const next = steps.map(s => [...s]);
@@ -2323,6 +2329,18 @@ function CustomRevealEditor({ steps, onChange }: {
                     <X style={{ width: 10, height: 10 }} />
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removeField(sIdx, fIdx); }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: 0, color: "var(--labs-danger, #e55)", fontSize: 11, lineHeight: 1,
+                  }}
+                  title="Remove from reveal order"
+                  data-testid={`reveal-remove-${field}`}
+                >
+                  <Trash2 style={{ width: 10, height: 10 }} />
+                </button>
               </div>
             ))}
           </div>
