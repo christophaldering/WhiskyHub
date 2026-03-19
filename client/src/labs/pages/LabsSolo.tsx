@@ -1188,8 +1188,7 @@ export default function LabsSolo() {
 
   const handleQuickSave = async () => {
     const hasDimScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
-    const hasAnyScore = hasDimScore || score > 0;
-    if (!whiskyName.trim() || !hasAnyScore) return;
+    if (!whiskyName.trim() || !hasDimScore) return;
     const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
     if (score !== effectiveScore) setScore(effectiveScore);
     if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
@@ -1735,7 +1734,7 @@ export default function LabsSolo() {
     };
     const selectedTags = detailChips.nose || [];
     const currentOverall = overrideActive ? score : (detailTouched ? calcOverall(detailedScores) : score);
-    const hasAnyScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0 || score > 0;
+    const hasAnySlider = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
 
     const dimSliders: { key: DimKey; label: string; color: string }[] = [
       { key: "nose", label: t("soloQuick.nose", "Nose"), color: "var(--labs-dim-nose)" },
@@ -1950,12 +1949,12 @@ export default function LabsSolo() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px) + 60px)" }}>
           <button
-            onClick={() => { if (hasAnyScore) handleQuickSave(); }}
-            disabled={!hasAnyScore || saving}
+            onClick={() => { if (hasAnySlider) handleQuickSave(); }}
+            disabled={!hasAnySlider || saving}
             className="labs-btn-primary"
             style={{
               width: "100%", padding: "16px 20px", fontSize: 15, fontWeight: 600, borderRadius: 50,
-              opacity: !hasAnyScore || saving ? 0.45 : 1,
+              opacity: !hasAnySlider || saving ? 0.45 : 1,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
             data-testid="button-quick-save"
