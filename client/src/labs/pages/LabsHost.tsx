@@ -2062,18 +2062,18 @@ function MobileCompanion({
             data-testid="mobile-end-tasting"
           >
             <Square className="w-4 h-4" />
-            {t("m2.tasting.endSession")}
+            {t("m2.host.endSession")}
           </button>
         )}
         {isLive && confirmEndSession && (
           <div className="labs-card p-4 space-y-3">
-            <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.tasting.endSessionConfirmTitle")}</p>
-            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.tasting.endSessionConfirmDesc")}</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.host.endSessionConfirmTitle")}</p>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.host.endSessionConfirmDesc")}</p>
             <div className="flex gap-2">
-              <button className="labs-btn-ghost flex-1" onClick={() => setConfirmEndSession(false)}>{t("m2.tasting.cancel")}</button>
+              <button className="labs-btn-ghost flex-1" onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
               <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
                 <Square className="w-4 h-4" />
-                {t("m2.tasting.endSessionConfirm")}
+                {t("m2.host.endSessionConfirm")}
               </button>
             </div>
           </div>
@@ -2842,8 +2842,8 @@ function CreateTastingForm() {
                 <LabsSegmentedSelect
                   value={guestMode}
                   options={[
-                    { value: "standard", label: t("m2.tasting.guestStandard"), desc: t("m2.tasting.guestStandardDesc") },
-                    { value: "ultra", label: t("m2.tasting.guestUltra"), desc: t("m2.tasting.guestUltraDesc") },
+                    { value: "standard", label: t("m2.host.guestStandard"), desc: t("m2.host.guestStandardDesc") },
+                    { value: "ultra", label: t("m2.host.guestUltra"), desc: t("m2.host.guestUltraDesc") },
                   ]}
                   onChange={setGuestMode}
                 />
@@ -5263,14 +5263,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <button
                   className="labs-btn-secondary flex items-center gap-2"
                   onClick={() => {
-                    if (!window.confirm(t("m2.tasting.endSessionConfirmDesc"))) return;
+                    if (!window.confirm(t("m2.host.endSessionConfirmDesc"))) return;
                     statusMutation.mutate({ status: "closed" });
                   }}
                   disabled={statusMutation.isPending}
                   data-testid="labs-host-close"
                 >
                   <Square className="w-4 h-4" />
-                  {t("m2.tasting.endSession")}
+                  {t("m2.host.endSession")}
                 </button>
               )}
               {tasting.status === "closed" && (
