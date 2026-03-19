@@ -63,6 +63,7 @@ export interface LabsRatingPanelProps {
   compact?: boolean;
   wizard?: boolean;
   onActiveTabChange?: (dim: DimKey) => void;
+  onDetailedToggle?: (open: boolean) => void;
 }
 
 export default function LabsRatingPanel({
@@ -84,6 +85,7 @@ export default function LabsRatingPanel({
   compact = false,
   wizard = false,
   onActiveTabChange,
+  onDetailedToggle,
 }: LabsRatingPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -903,7 +905,11 @@ export default function LabsRatingPanel({
   const renderDetailedToggle = () => (
     <button
       type="button"
-      onClick={() => setShowDetailed(!showDetailed)}
+      onClick={() => {
+        const next = !showDetailed;
+        setShowDetailed(next);
+        onDetailedToggle?.(next);
+      }}
       data-testid="button-toggle-detailed"
       style={{
         width: "100%",
@@ -969,8 +975,6 @@ export default function LabsRatingPanel({
   if (wizard) {
     return (
       <div data-testid="labs-rating-panel">
-        {showToggle && renderDetailedToggle()}
-
         <div
           aria-hidden={showToggle && !showDetailed}
           style={{
@@ -1005,6 +1009,8 @@ export default function LabsRatingPanel({
             {renderWizardNavigation()}
           </div>
         </div>
+
+        {showToggle && renderDetailedToggle()}
 
         <FlavourStudioSheet
           open={studioOpen}

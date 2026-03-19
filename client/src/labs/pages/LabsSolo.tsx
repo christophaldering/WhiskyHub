@@ -190,6 +190,7 @@ export default function LabsSolo() {
   const [tastingToolsOpen, setTastingToolsOpen] = useState(false);
   const [tastingToolsView, setTastingToolsView] = useState<StudioView>("guide");
   const [activeDimension, setActiveDimension] = useState<DimKey>("nose");
+  const [detailedOpen, setDetailedOpen] = useState(false);
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
@@ -2718,52 +2719,113 @@ export default function LabsSolo() {
           defaultOpen={false}
           wizard={true}
           onActiveTabChange={setActiveDimension}
+          onDetailedToggle={setDetailedOpen}
         />
       </div>
 
-      <div style={{ marginBottom: 24 }} data-testid="section-tasting-tools">
-        <div className="labs-section-label">{t("m2.solo.tastingToolsLabel", "Tasting Tools")}</div>
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
-        }}>
-          {([
-            { view: "journey" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolJourney", "Flavour Journey"), desc: t("m2.solo.toolJourneyDesc", "Guided 3-phase tasting"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
-            { view: "wheel" as StudioView, icon: <Layers style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolWheel", "Flavour Wheel"), desc: t("m2.solo.toolWheelDesc", "Explore the aroma map"), gradient: "linear-gradient(135deg, #6a9f5b, #4a7a3e)" },
-            { view: "compass" as StudioView, icon: <Compass style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolCompass", "Compass"), desc: t("m2.solo.toolCompassDesc", "Navigate flavour profiles"), gradient: "linear-gradient(135deg, #5b7da9, #3e5a7a)" },
-            { view: "radar" as StudioView, icon: <Target style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolRadar", "Radar"), desc: t("m2.solo.toolRadarDesc", "Visualise your tasting"), gradient: "linear-gradient(135deg, #9b6aaf, #7a4a8e)" },
-          ]).map((tool) => (
-            <button
-              key={tool.view}
-              type="button"
-              onClick={() => {
-                setTastingToolsView(tool.view);
-                setTastingToolsOpen(true);
-              }}
-              data-testid={`button-tasting-tool-${tool.view}`}
+      <div
+        aria-hidden={!detailedOpen}
+        style={{
+          overflow: "hidden",
+          maxHeight: detailedOpen ? 2000 : 0,
+          opacity: detailedOpen ? 1 : 0,
+          transition: "max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease",
+          pointerEvents: detailedOpen ? "auto" : "none",
+        }}
+      >
+        <div style={{ marginBottom: 24 }} data-testid="section-tasting-tools">
+          <div className="labs-section-label">{t("m2.solo.tastingToolsLabel", "Tasting Tools")}</div>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
+          }}>
+            {([
+              { view: "journey" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolJourney", "Flavour Journey"), desc: t("m2.solo.toolJourneyDesc", "Guided 3-phase tasting"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
+              { view: "wheel" as StudioView, icon: <Layers style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolWheel", "Flavour Wheel"), desc: t("m2.solo.toolWheelDesc", "Explore the aroma map"), gradient: "linear-gradient(135deg, #6a9f5b, #4a7a3e)" },
+              { view: "compass" as StudioView, icon: <Compass style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolCompass", "Compass"), desc: t("m2.solo.toolCompassDesc", "Navigate flavour profiles"), gradient: "linear-gradient(135deg, #5b7da9, #3e5a7a)" },
+              { view: "radar" as StudioView, icon: <Target style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolRadar", "Radar"), desc: t("m2.solo.toolRadarDesc", "Visualise your tasting"), gradient: "linear-gradient(135deg, #9b6aaf, #7a4a8e)" },
+            ]).map((tool) => (
+              <button
+                key={tool.view}
+                type="button"
+                onClick={() => {
+                  setTastingToolsView(tool.view);
+                  setTastingToolsOpen(true);
+                }}
+                data-testid={`button-tasting-tool-${tool.view}`}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
+                  background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
+                  borderRadius: 14, padding: "14px 14px 12px", cursor: "pointer",
+                  textAlign: "left", fontFamily: "inherit",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <span style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 36, height: 36, borderRadius: 10,
+                  background: tool.gradient, color: "#fff",
+                  flexShrink: 0,
+                }}>
+                  {tool.icon}
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                  {tool.label}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                  {tool.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {VOICE_MEMOS_ENABLED && unlocked && pid && (
+          <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
+            <div className="labs-section-label">{t("m2.solo.voiceMemoLabel", "Voice Memo")}</div>
+            <LabsVoiceMemoRecorder
+              memo={soloVoiceMemo}
+              onMemoChange={setSoloVoiceMemo}
+              participantId={pid!}
+            />
+          </div>
+        )}
+
+        <div style={{ marginBottom: 24 }} data-testid="section-notes">
+          <div className="labs-section-label">{t("m2.solo.optionalNotesLabel", "Optional text notes")}</div>
+          <div style={{ position: "relative" }}>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="labs-input"
               style={{
-                display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
-                background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
-                borderRadius: 14, padding: "14px 14px 12px", cursor: "pointer",
-                textAlign: "left", fontFamily: "inherit",
-                transition: "all 0.2s ease",
+                resize: "vertical", minHeight: 80,
+                paddingRight: hasSpeechAPI ? 44 : 14,
+                borderColor: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : undefined,
               }}
-            >
-              <span style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: 36, height: 36, borderRadius: 10,
-                background: tool.gradient, color: "#fff",
-                flexShrink: 0,
-              }}>
-                {tool.icon}
-              </span>
-              <span style={{ fontWeight: 700, fontSize: 13, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                {tool.label}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                {tool.desc}
-              </span>
-            </button>
-          ))}
+              data-testid="labs-solo-notes"
+              placeholder={t("m2.solo.notesPlaceholder", "What stands out?")}
+            />
+            {hasSpeechAPI && (
+              <button
+                type="button"
+                onClick={() => toggleVoice("notes")}
+                data-testid="button-voice-notes"
+                style={{
+                  position: "absolute", right: 8, top: 8,
+                  background: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : "transparent",
+                  border: "none", borderRadius: 999, cursor: "pointer",
+                  width: 28, height: 28, padding: 0,
+                  color: (voiceListening && voiceTarget === "notes") ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 200ms ease",
+                }}
+                title={t("m2.solo.dictateHint", "Dictate")}
+              >
+                <Mic style={{ width: 15, height: 15 }} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2778,55 +2840,6 @@ export default function LabsSolo() {
         }}
         initialView={tastingToolsView}
       />
-
-      {VOICE_MEMOS_ENABLED && unlocked && pid && (
-        <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
-          <div className="labs-section-label">{t("m2.solo.voiceMemoLabel", "Voice Memo")}</div>
-          <LabsVoiceMemoRecorder
-            memo={soloVoiceMemo}
-            onMemoChange={setSoloVoiceMemo}
-            participantId={pid!}
-          />
-        </div>
-      )}
-
-      <div style={{ marginBottom: 24 }} data-testid="section-notes">
-        <div className="labs-section-label">{t("m2.solo.optionalNotesLabel", "Optional text notes")}</div>
-        <div style={{ position: "relative" }}>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="labs-input"
-            style={{
-              resize: "vertical", minHeight: 80,
-              paddingRight: hasSpeechAPI ? 44 : 14,
-              borderColor: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : undefined,
-            }}
-            data-testid="labs-solo-notes"
-            placeholder={t("m2.solo.notesPlaceholder", "What stands out?")}
-          />
-          {hasSpeechAPI && (
-            <button
-              type="button"
-              onClick={() => toggleVoice("notes")}
-              data-testid="button-voice-notes"
-              style={{
-                position: "absolute", right: 8, top: 8,
-                background: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : "transparent",
-                border: "none", borderRadius: 999, cursor: "pointer",
-                width: 28, height: 28, padding: 0,
-                color: (voiceListening && voiceTarget === "notes") ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "all 200ms ease",
-              }}
-              title={t("m2.solo.dictateHint", "Dictate")}
-            >
-              <Mic style={{ width: 15, height: 15 }} />
-            </button>
-          )}
-        </div>
-      </div>
 
       {!unlocked && !showUnlockPanel && (
         <button onClick={() => setShowUnlockPanel(true)} className="labs-btn-secondary" style={{ width: "100%", marginBottom: 12, color: "var(--labs-accent)", borderColor: "var(--labs-accent)", fontSize: 13 }} data-testid="button-unlock-prompt">

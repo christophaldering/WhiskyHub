@@ -3636,7 +3636,7 @@ function TastingSetupSection({
 
       <div className="labs-card p-4 space-y-4">
           <div>
-            <p className="labs-section-label">Session</p>
+            <p className="labs-section-label">{t("m2.host.sessionSettingsLabel", "Tasting Settings")}</p>
           </div>
 
           <div>
@@ -5191,7 +5191,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       {!tasting.guidedMode && (
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <h2 className="labs-section-label">Session Controls</h2>
+          <h2 className="labs-section-label">{t("m2.host.sessionControlsLabel", "Live Session")}</h2>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>{t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}</p>
           <div className="labs-card p-4">
             <div className="flex flex-wrap gap-2">
               {tasting.status === "draft" && (
@@ -5202,7 +5203,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   data-testid="labs-host-start"
                 >
                   <Play className="w-4 h-4" />
-                  Start Session
+                  {t("m2.host.startTasting", "Start Tasting")}
                 </button>
               )}
               {tasting.status === "open" && (

@@ -344,6 +344,10 @@
   box-shadow: 0 0 0 3px var(--labs-accent-muted);
 }
 
+.labs-theme {
+  color-scheme: dark;
+}
+
 .labs-input:-webkit-autofill,
 .labs-input:-webkit-autofill:hover,
 .labs-input:-webkit-autofill:active,
@@ -358,8 +362,10 @@
 .labs-theme select:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset !important;
   -webkit-text-fill-color: var(--labs-text) !important;
+  background-color: var(--labs-surface) !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: var(--labs-text);
+  border-color: var(--labs-border) !important;
 }
 
 .labs-input:-webkit-autofill:focus,
@@ -368,9 +374,15 @@
 .labs-theme select:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset, 0 0 0 3px var(--labs-accent-muted) !important;
   -webkit-text-fill-color: var(--labs-text) !important;
-  border-color: var(--labs-accent);
+  border-color: var(--labs-accent) !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: var(--labs-text);
+}
+
+.labs-theme input,
+.labs-theme textarea,
+.labs-theme select {
+  color-scheme: dark;
 }
 
 .labs-badge {
