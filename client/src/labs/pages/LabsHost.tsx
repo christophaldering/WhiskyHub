@@ -18,6 +18,7 @@ import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
 import LabsRatingPanel, { type DimKey as LabsDimKey } from "@/labs/components/LabsRatingPanel";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -347,7 +348,8 @@ function HostRatingPanel({
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const scaleMax = ratingScale || 100;
+  const hostScale = useRatingScale(ratingScale);
+  const scaleMax = hostScale.max;
   const scaleDefault = Math.round(scaleMax / 2);
   const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
   const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
@@ -5976,7 +5978,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             whiskies={whiskies}
             tastingId={tastingId}
             participantId={currentParticipant.id}
-            ratingScale={tasting.ratingScale || 100}
+            ratingScale={tasting.ratingScale ?? 100}
           />
         </div>
       )}

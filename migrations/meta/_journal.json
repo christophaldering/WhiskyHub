@@ -43,6 +43,13 @@
       "when": 1773738729629,
       "tag": "0005_happy_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773957703876,
+      "tag": "0006_tricky_bill_hollister",
+      "breakpoints": true
     }
   ]
 }

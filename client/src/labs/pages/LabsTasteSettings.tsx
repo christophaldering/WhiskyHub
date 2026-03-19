@@ -83,7 +83,7 @@ export default function LabsTasteSettings() {
   }, [profile]);
 
   useEffect(() => {
-    if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); setPreferredRatingScale((participant as any).preferredRatingScale ?? null); }
+    if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); setPreferredRatingScale(participant.preferredRatingScale ?? null); }
   }, [participant]);
 
   const saveMutation = useMutation({
@@ -102,7 +102,7 @@ export default function LabsTasteSettings() {
       if (displayName.trim() && displayName !== participant?.name) participantUpdates.name = displayName.trim();
       if (email !== (participant?.email || "")) participantUpdates.email = email;
       if (newsletterOptIn !== (participant?.newsletterOptIn || false)) participantUpdates.newsletterOptIn = newsletterOptIn;
-      if (preferredRatingScale !== ((participant as any)?.preferredRatingScale ?? null)) participantUpdates.preferredRatingScale = preferredRatingScale;
+      if (preferredRatingScale !== (participant?.preferredRatingScale ?? null)) participantUpdates.preferredRatingScale = preferredRatingScale;
       if (newPin) {
         if (newPin.length < 4) throw new Error("PIN must be at least 4 characters");
         if (newPin !== confirmPin) throw new Error("PINs don't match");

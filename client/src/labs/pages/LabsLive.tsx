@@ -11,6 +11,7 @@ import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
@@ -165,7 +166,8 @@ function GuidedStepView({
   const revealStep = viewingHostDram
     ? (tasting.guidedRevealStep ?? 0)
     : (localIndex < whiskyIndex ? 999 : 0);
-  const maxScore = tasting.ratingScale || 100;
+  const liveScale = useRatingScale(tasting.ratingScale);
+  const maxScore = liveScale.max;
 
   const REVEAL_DEFAULT_ORDER: string[][] = [
     ["name"],
@@ -854,7 +856,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
     enabled: !!currentParticipant && !!currentWhisky && !tasting?.guidedMode,
   });
 
-  const maxScore = tasting?.ratingScale || 100;
+  const mainScale = useRatingScale(tasting?.ratingScale);
+  const maxScore = mainScale.max;
   const mid2 = Math.round(maxScore / 2);
 
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
@@ -109,6 +110,7 @@ export default function LabsSolo() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
+  const ratingScale = useRatingScale();
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -2724,7 +2726,7 @@ export default function LabsSolo() {
           overallAuto={calcOverall(detailedScores)}
           overrideActive={overrideActive}
           onResetOverride={resetOverride}
-          scale={100}
+          scale={ratingScale.max}
           showToggle={true}
           defaultOpen={false}
           wizard={true}
