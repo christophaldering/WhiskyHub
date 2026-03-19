@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 interface RevealMomentProps {
@@ -59,7 +60,7 @@ export default function LabsRevealMoment({
 
   const detailParts = [age, region, country, abv, category, caskInfluence, bottler, vintage, peatLevel, ppm, price].filter(Boolean);
 
-  return (
+  return createPortal(
     <div
       onClick={dismiss}
       style={{
@@ -76,7 +77,9 @@ export default function LabsRevealMoment({
         opacity,
         transition: "opacity 0.5s cubic-bezier(0.16,1,0.3,1)",
         cursor: "pointer",
-        padding: 32,
+        padding: "24px",
+        boxSizing: "border-box",
+        overflow: "auto",
       }}
       data-testid="reveal-moment-overlay"
     >
@@ -96,6 +99,8 @@ export default function LabsRevealMoment({
           justifyContent: "center",
           cursor: "pointer",
           color: "rgba(255,255,255,0.6)",
+          zIndex: 1,
+          flexShrink: 0,
         }}
         data-testid="button-reveal-dismiss"
       >
@@ -105,15 +110,16 @@ export default function LabsRevealMoment({
       {stepLabel && (
         <div
           style={{
-            fontSize: 13,
+            fontSize: "clamp(11px, 2.5vw, 13px)",
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: 2,
             color: "var(--labs-accent, #c8a97e)",
-            marginBottom: 24,
+            marginBottom: "clamp(12px, 3vh, 24px)",
             opacity,
             transform: `scale(${scale}) translateY(${phase === "show" ? 0 : -10}px)`,
             transition: "all 0.7s cubic-bezier(0.16,1,0.3,1)",
+            flexShrink: 0,
           }}
           data-testid="text-reveal-step"
         >
@@ -124,16 +130,17 @@ export default function LabsRevealMoment({
       {imageUrl && (
         <div
           style={{
-            width: 140,
-            height: 140,
+            width: "clamp(80px, 20vw, 140px)",
+            height: "clamp(80px, 20vw, 140px)",
             borderRadius: 20,
             overflow: "hidden",
-            marginBottom: 28,
+            marginBottom: "clamp(16px, 3vh, 28px)",
             border: "2px solid rgba(200,169,126,0.3)",
             boxShadow: "0 0 60px rgba(200,169,126,0.2)",
             opacity,
             transform: `scale(${scale})`,
             transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s",
+            flexShrink: 0,
           }}
           data-testid="img-reveal-whisky"
         >
@@ -147,7 +154,7 @@ export default function LabsRevealMoment({
 
       <h1
         style={{
-          fontSize: 32,
+          fontSize: "clamp(22px, 5vw, 32px)",
           fontWeight: 700,
           color: "#fff",
           textAlign: "center",
@@ -157,6 +164,9 @@ export default function LabsRevealMoment({
           opacity,
           transform: `scale(${scale}) translateY(${phase === "show" ? 0 : 15}px)`,
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s",
+          flexShrink: 0,
+          maxWidth: "100%",
+          wordBreak: "break-word",
         }}
         data-testid="text-reveal-name"
       >
@@ -166,13 +176,14 @@ export default function LabsRevealMoment({
       {distillery && (
         <p
           style={{
-            fontSize: 16,
+            fontSize: "clamp(13px, 2.5vw, 16px)",
             color: "rgba(255,255,255,0.65)",
             textAlign: "center",
             margin: "0 0 6px",
             opacity,
             transform: `translateY(${phase === "show" ? 0 : 10}px)`,
             transition: "all 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s",
+            flexShrink: 0,
           }}
           data-testid="text-reveal-distillery"
         >
@@ -183,13 +194,14 @@ export default function LabsRevealMoment({
       {detailParts.length > 0 && (
         <p
           style={{
-            fontSize: 14,
+            fontSize: "clamp(12px, 2vw, 14px)",
             color: "rgba(255,255,255,0.45)",
             textAlign: "center",
             margin: 0,
             opacity,
             transform: `translateY(${phase === "show" ? 0 : 10}px)`,
             transition: "all 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s",
+            flexShrink: 0,
           }}
           data-testid="text-reveal-details"
         >
@@ -200,7 +212,7 @@ export default function LabsRevealMoment({
       <div
         style={{
           position: "absolute",
-          bottom: 40,
+          bottom: "clamp(20px, 4vh, 40px)",
           fontSize: 12,
           color: "rgba(255,255,255,0.3)",
           opacity,
@@ -209,6 +221,7 @@ export default function LabsRevealMoment({
       >
         Tap anywhere to continue
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
