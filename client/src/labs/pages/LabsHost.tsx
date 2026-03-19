@@ -4878,48 +4878,50 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="mb-5">
           <h2 className="labs-section-label">Invite & Share</h2>
         <div className="labs-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
-              <p
-                className="text-2xl font-bold tracking-widest"
-                style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
-                data-testid="labs-host-code"
-              >
-                {tasting.code}
-              </p>
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
+                <p
+                  className="text-2xl font-bold tracking-widest"
+                  style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
+                  data-testid="labs-host-code"
+                >
+                  {tasting.code}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-wrap">
               <button
-                className="labs-btn-ghost flex items-center gap-1.5"
+                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
                 onClick={copyCode}
                 data-testid="labs-host-copy-code"
               >
-                {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {codeCopied ? "Copied" : "Copy"}
               </button>
               <button
-                className="labs-btn-ghost flex items-center gap-1.5"
+                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
                 onClick={() => setShowQr(!showQr)}
                 data-testid="labs-host-toggle-qr"
               >
-                <QrCode className="w-4 h-4" />
-                {showQr ? "Hide QR" : "QR"}
+                <QrCode className="w-3.5 h-3.5" />
+                QR
               </button>
               <button
-                className="labs-btn-ghost flex items-center gap-1.5"
+                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
                 onClick={() => setShowEmailInvite(!showEmailInvite)}
                 data-testid="labs-host-toggle-email"
               >
-                <Mail className="w-4 h-4" />
+                <Mail className="w-3.5 h-3.5" />
                 Invite
               </button>
               <button
-                className="labs-btn-ghost flex items-center gap-1.5"
+                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
                 onClick={() => setShowSocial(!showSocial)}
                 data-testid="labs-host-toggle-social"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-3.5 h-3.5" />
                 Share
               </button>
             </div>
