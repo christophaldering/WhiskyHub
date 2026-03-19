@@ -1131,7 +1131,8 @@ function MobileCompanion({
   const [mobileWbId, setMobileWbId] = useState("");
   const [mobileWbLoading, setMobileWbLoading] = useState(false);
   const [mobileWbResult, setMobileWbResult] = useState("");
-  const [mobileShowAdd, setMobileShowAdd] = useState(isDraft && whiskyCount === 0);
+  const [mobileShowAdd, setMobileShowAdd] = useState(false);
+  const [mobileShowAddPopover, setMobileShowAddPopover] = useState(false);
   const [mobileAiImport, setMobileAiImport] = useState(false);
   const [mobileAiFiles, setMobileAiFiles] = useState<File[]>([]);
   const [mobileAiText, setMobileAiText] = useState("");
@@ -1440,20 +1441,92 @@ function MobileCompanion({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs"
-              onClick={() => { setMobileShowAdd(!mobileShowAdd); setMobileAiImport(false); }}
-              data-testid="mobile-add-whisky-toggle"
-            >
-              {mobileShowAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {mobileShowAdd ? "Close" : "Add"}
-            </button>
+            <div style={{ position: "relative" }}>
+              {(mobileShowAdd || mobileAiImport) ? (
+                <button
+                  className="labs-btn-ghost flex items-center gap-1 text-xs"
+                  onClick={() => { setMobileShowAdd(false); setMobileAiImport(false); setMobileShowAddPopover(false); }}
+                  data-testid="mobile-add-whisky-toggle"
+                >
+                  <X className="w-3 h-3" />
+                  Close
+                </button>
+              ) : (
+                <button
+                  className="labs-btn-ghost flex items-center gap-1 text-xs"
+                  onClick={() => setMobileShowAddPopover(!mobileShowAddPopover)}
+                  data-testid="mobile-add-whisky-toggle"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add
+                </button>
+              )}
+              {mobileShowAddPopover && !mobileShowAdd && !mobileAiImport && (<>
+                <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setMobileShowAddPopover(false)} />
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    marginTop: 4,
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    minWidth: 200,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                    zIndex: 20,
+                  }}
+                >
+                  <button
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "14px 16px",
+                      fontSize: 14,
+                      color: "var(--labs-text)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); setMobileShowAddPopover(false); }}
+                    data-testid="mobile-ai-import-toggle"
+                  >
+                    <Sparkles style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
+                    AI Import
+                  </button>
+                  <div style={{ height: 1, background: "var(--labs-border)", margin: "0 12px" }} />
+                  <button
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "14px 16px",
+                      fontSize: 14,
+                      color: "var(--labs-text)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onClick={() => { setMobileShowAdd(true); setMobileAiImport(false); setMobileShowAddPopover(false); }}
+                    data-testid="mobile-manual-add-btn"
+                  >
+                    <Plus style={{ width: 16, height: 16, color: "var(--labs-text-secondary)" }} />
+                    {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
+                  </button>
+                </div>
+              </>)}
+            </div>
           </div>
 
-          {!mobileAiImport && !mobileShowAdd && whiskyCount === 0 && (
+          {!mobileAiImport && !mobileShowAdd && !mobileShowAddPopover && whiskyCount === 0 && (
             <div className="mb-3" data-testid="mobile-empty-lineup">
               <div style={{ textAlign: "center", padding: "20px 0 12px" }}>
-                <Sparkles style={{ width: 24, height: 24, color: "#E8B84B", margin: "0 auto 8px" }} />
                 <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", margin: 0 }}>
                   {t("labs.aiImport.emptyTitle", "No whiskies yet.")}
                 </p>
@@ -1468,20 +1541,18 @@ function MobileCompanion({
                     justifyContent: "center",
                     gap: 8,
                     padding: "12px 20px",
-                    background: "linear-gradient(135deg, #E8B84B, #C9972B)",
-                    color: "#0A0806",
+                    background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, #000))",
+                    color: "var(--labs-bg)",
                     border: "none",
                     borderRadius: 100,
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
-                    transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
-                    boxShadow: "0 4px 20px rgba(201,151,43,0.25)",
                   }}
                   data-testid="mobile-ai-import-hero"
                 >
                   <Sparkles style={{ width: 15, height: 15 }} />
-                  {t("labs.aiImport.cardButton", "Import lineup")}
+                  AI Import
                 </button>
                 <button
                   onClick={() => { setMobileShowAdd(true); setMobileAiImport(false); }}
@@ -1493,89 +1564,18 @@ function MobileCompanion({
                     padding: "12px 16px",
                     background: "transparent",
                     color: "var(--labs-text-secondary)",
-                    border: "1px solid rgba(255,255,255,0.10)",
+                    border: "1px solid var(--labs-border)",
                     borderRadius: 100,
                     fontSize: 13,
                     fontWeight: 400,
                     cursor: "pointer",
-                    transition: "all 0.2s",
                   }}
                   data-testid="mobile-manual-add-btn"
                 >
                   <Plus style={{ width: 14, height: 14 }} />
-                  {t("labs.aiImport.orManually", "or add manually")}
+                  {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
                 </button>
               </div>
-            </div>
-          )}
-
-          {!mobileAiImport && whiskyCount > 0 && !mobileShowAdd && (
-            <div
-              onClick={() => { setMobileAiImport(true); setMobileShowAdd(false); }}
-              style={{
-                position: "relative",
-                overflow: "hidden",
-                padding: "20px 24px",
-                marginBottom: 12,
-                borderRadius: 20,
-                background: "linear-gradient(135deg, rgba(201,151,43,0.10) 0%, rgba(232,184,75,0.06) 100%)",
-                border: "1px solid rgba(201,151,43,0.30)",
-                cursor: "pointer",
-                transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
-              }}
-              data-testid="mobile-ai-import-card"
-            >
-              <div style={{
-                position: "absolute",
-                top: -40,
-                right: -40,
-                width: 120,
-                height: 120,
-                background: "radial-gradient(circle, rgba(201,151,43,0.15), transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, position: "relative" }}>
-                <Sparkles style={{ width: 18, height: 18, color: "#E8B84B" }} />
-                <span style={{ fontSize: 16, fontWeight: 500, color: "var(--labs-text)" }}>
-                  {t("labs.aiImport.cardTitle", "Build lineup with AI")}
-                </span>
-              </div>
-              <p style={{ fontSize: 13, fontWeight: 300, color: "rgba(240,230,211,0.55)", margin: "4px 0 0", position: "relative" }}>
-                {t("labs.aiImport.cardSubtitle", "Photo, Excel, PDF or just describe it — AI fills in the details.")}
-              </p>
-              <button
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 16,
-                  background: "linear-gradient(135deg, #E8B84B, #C9972B)",
-                  color: "#0A0806",
-                  border: "none",
-                  borderRadius: 100,
-                  padding: "12px 24px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
-                  boxShadow: "0 4px 20px rgba(201,151,43,0.25)",
-                  position: "relative",
-                }}
-                data-testid="mobile-ai-import-toggle"
-              >
-                {t("labs.aiImport.cardButton", "Import lineup")}
-                <ChevronRight style={{ width: 16, height: 16 }} />
-              </button>
-            </div>
-          )}
-
-          {!mobileAiImport && whiskyCount > 0 && !mobileShowAdd && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 12px" }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-              <span style={{ fontSize: 12, color: "rgba(240,230,211,0.3)", fontWeight: 300 }}>
-                {t("labs.aiImport.orManually", "or add manually")}
-              </span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
             </div>
           )}
 
@@ -1835,20 +1835,6 @@ function MobileCompanion({
             </div>
           )}
 
-          {whiskyCount === 0 && !mobileShowAdd && !mobileAiImport && (
-            <div className="labs-card p-4 text-center mb-3">
-              <Wine className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
-              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>No whiskies yet</p>
-              <button
-                className="labs-btn-primary text-sm flex items-center gap-1.5 mx-auto"
-                onClick={() => setMobileShowAdd(true)}
-                data-testid="mobile-add-first-whisky"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add Your First Whisky
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -3938,6 +3924,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showAddWhisky, setShowAddWhisky] = useState(false);
+  const [showAddPopover, setShowAddPopover] = useState(false);
   const [showExtendedFields, setShowExtendedFields] = useState(false);
   const [extFields, setExtFields] = useState<Record<string, string>>({});
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
@@ -5114,56 +5101,101 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="flex items-center justify-between mb-3">
           <h2 className="labs-section-label mb-0">Whiskies ({whiskyCount})</h2>
           {tasting.status === "draft" && (
-            <div className="flex items-center gap-1">
-              <button
-                className="labs-btn-ghost flex items-center gap-1.5 text-xs"
-                onClick={() => { setShowAiImport(!showAiImport); if (!showAiImport) setShowAddWhisky(false); }}
-                style={{ color: "var(--labs-accent)" }}
-                data-testid="labs-host-ai-import-toggle"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Import
-              </button>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={() => { setShowAddWhisky(!showAddWhisky); if (!showAddWhisky) setShowAiImport(false); }}
-                data-testid="labs-host-add-whisky-toggle"
-              >
-                {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                {showAddWhisky ? "Cancel" : "Add"}
-              </button>
+            <div className="relative">
+              {(showAddWhisky || showAiImport) ? (
+                <button
+                  className="labs-btn-ghost flex items-center gap-1 text-xs"
+                  onClick={() => { setShowAddWhisky(false); setShowAiImport(false); setShowAddPopover(false); }}
+                  data-testid="labs-host-add-whisky-toggle"
+                >
+                  <X className="w-3 h-3" />
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  className="labs-btn-ghost flex items-center gap-1 text-xs"
+                  onClick={() => setShowAddPopover(!showAddPopover)}
+                  data-testid="labs-host-add-whisky-toggle"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add
+                </button>
+              )}
+              {showAddPopover && !showAddWhisky && !showAiImport && (<>
+                <div className="fixed inset-0 z-10" onClick={() => setShowAddPopover(false)} />
+                <div
+                  className="absolute right-0 top-full mt-1 rounded-xl overflow-hidden shadow-lg z-20"
+                  style={{
+                    background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    minWidth: 200,
+                  }}
+                >
+                  <button
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-colors"
+                    style={{ color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--labs-accent-muted)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    onClick={() => { setShowAiImport(true); setShowAddWhisky(false); setShowAddPopover(false); }}
+                    data-testid="labs-host-ai-import-toggle"
+                  >
+                    <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    AI Import
+                  </button>
+                  <div style={{ height: 1, background: "var(--labs-border)" }} />
+                  <button
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-colors"
+                    style={{ color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--labs-accent-muted)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    onClick={() => { setShowAddWhisky(true); setShowAiImport(false); setShowAddPopover(false); }}
+                    data-testid="desktop-manual-add-option"
+                  >
+                    <Plus className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} />
+                    {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
+                  </button>
+                </div>
+              </>)}
             </div>
           )}
         </div>
 
-        {tasting.status === "draft" && whiskyCount === 0 && !showAiImport && !showAddWhisky && (
-          <button
-            onClick={() => { setShowAiImport(true); setShowAddWhisky(false); }}
-            className="w-full mb-3 p-4 rounded-2xl flex items-center gap-4 transition-all"
-            style={{
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 12%, transparent), color-mix(in srgb, var(--labs-accent) 6%, transparent))",
-              border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)",
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-            data-testid="desktop-ai-import-hero"
-          >
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "var(--labs-accent-muted)" }}
-            >
-              <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
+        {tasting.status === "draft" && whiskyCount === 0 && !showAiImport && !showAddWhisky && !showAddPopover && (
+          <div className="mb-3 text-center py-6" data-testid="desktop-empty-lineup">
+            <p className="text-sm mb-4" style={{ color: "var(--labs-text-secondary)" }}>
+              {t("labs.aiImport.emptyTitle", "No whiskies yet.")}
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
+                style={{
+                  background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, #000))",
+                  color: "var(--labs-bg)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={() => { setShowAiImport(true); setShowAddWhisky(false); }}
+                data-testid="desktop-ai-import-hero"
+              >
+                <Sparkles className="w-4 h-4" />
                 AI Import
-              </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                Snap a menu photo or paste text — AI extracts all whiskies with details
-              </p>
+              </button>
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm transition-all"
+                style={{
+                  background: "transparent",
+                  color: "var(--labs-text-secondary)",
+                  border: "1px solid var(--labs-border)",
+                  cursor: "pointer",
+                }}
+                onClick={() => { setShowAddWhisky(true); setShowAiImport(false); }}
+                data-testid="desktop-manual-add-btn"
+              >
+                <Plus className="w-4 h-4" />
+                {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
+              </button>
             </div>
-            <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
-          </button>
+          </div>
         )}
 
         {showAiImport && tasting.status === "draft" && (
