@@ -4368,15 +4368,24 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const handleGenerateNarrative = async () => {
     setNarrativeLoading(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
       const res = await fetch(`/api/tastings/${tastingId}/ai-narrative`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ hostId: currentParticipant?.id }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.message || errData?.error || `Request failed (${res.status})`);
+      }
       const data = await res.json();
       if (data?.narrative) setAiNarrative(data.narrative);
-    } catch {}
-    setNarrativeLoading(false);
+    } catch (e: any) {
+      toast({ title: t("labs.narrative.failed", "Failed to generate narrative"), description: e.message, variant: "destructive" });
+    } finally {
+      setNarrativeLoading(false);
+    }
   };
 
   const joinUrl = tasting ? `${window.location.origin}/labs/join?code=${tasting?.code}` : "";
