@@ -2887,17 +2887,25 @@ function ParticipantStatusSection({
   ratings,
   whiskies,
   whiskyCount,
+  tasting,
 }: {
   participants: any[];
   ratings: any[];
   whiskies: any[];
   whiskyCount: number;
+  tasting?: any;
 }) {
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
 
-  const grouped = (participants || []).reduce(
+  const sortedParticipants = [...(participants || [])].sort((a: any, b: any) => {
+    const aIsHost = a.participantId === tasting?.hostId ? -1 : 0;
+    const bIsHost = b.participantId === tasting?.hostId ? -1 : 0;
+    return aIsHost - bIsHost;
+  });
+
+  const grouped = sortedParticipants.reduce(
     (acc: { done: any[]; progress: any[]; none: any[] }, p: any) => {
-      const count = (ratings || []).filter((r: any) => r.participantId === p.id).length;
+      const count = (ratings || []).filter((r: any) => r.participantId === p.participantId).length;
       if (whiskyCount > 0 && count >= whiskyCount) acc.done.push({ ...p, ratedCount: count });
       else if (count > 0) acc.progress.push({ ...p, ratedCount: count });
       else acc.none.push({ ...p, ratedCount: 0 });
@@ -2967,9 +2975,14 @@ function ParticipantStatusSection({
                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                         style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                       >
-                        {stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
+                        {stripGuestSuffix((p.participant?.name || p.name || "?") as string).charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-sm font-medium truncate flex-1 min-w-0">{stripGuestSuffix((p.name || "Anonymous") as string)}</p>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}</p>
+                        {tasting?.hostId && p.participantId === tasting.hostId && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>(Host)</span>
+                        )}
+                      </div>
                       <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
                         {p.ratedCount}/{whiskyCount}
                       </span>
@@ -3034,7 +3047,7 @@ function ParticipantStatusSection({
                       style={{ borderTop: `1px solid var(--labs-border-subtle)` }}
                     >
                       {(participants || []).map((p: any) => {
-                        const hasRated = ratedIds.has(p.id);
+                        const hasRated = ratedIds.has(p.participantId);
                         return (
                           <div
                             key={p.id}
@@ -3050,7 +3063,7 @@ function ParticipantStatusSection({
                               className="text-xs truncate"
                               style={{ color: hasRated ? "var(--labs-text-secondary)" : "var(--labs-text-muted)" }}
                             >
-                              {stripGuestSuffix((p.name || "Anonymous") as string)}
+                              {stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}
                             </span>
                           </div>
                         );
@@ -3368,8 +3381,14 @@ function GuidedTastingEngine({
         <div className="labs-card p-4" data-testid="guided-participant-grid">
           <p className="labs-section-label">Participant Status — Dram {String.fromCharCode(65 + guidedIndex)}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {participantList.map((p: any) => {
-              const hasRated = ratedParticipantIds.has(p.id);
+            {[...participantList].sort((a: any, b: any) => {
+              const aIsHost = a.participantId === tasting?.hostId ? -1 : 0;
+              const bIsHost = b.participantId === tasting?.hostId ? -1 : 0;
+              return aIsHost - bIsHost;
+            }).map((p: any, idx: number) => {
+              const hasRated = ratedParticipantIds.has(p.participantId);
+              const isHost = p.participantId === tasting?.hostId;
+              const displayName = stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string);
               return (
                 <div
                   key={p.id}
@@ -3388,12 +3407,17 @@ function GuidedTastingEngine({
                       color: hasRated ? "var(--labs-bg)" : "var(--labs-text-muted)",
                     }}
                   >
-                    {hasRated ? <Check className="w-3.5 h-3.5" /> : stripGuestSuffix((p.name || "?") as string).charAt(0).toUpperCase()}
+                    {hasRated ? <Check className="w-3.5 h-3.5" /> : displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                      {stripGuestSuffix((p.name || "Anonymous") as string)}
-                    </p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                        {displayName}
+                      </p>
+                      {isHost && (
+                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>(Host)</span>
+                      )}
+                    </div>
                     <p className="text-[11px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
                       {hasRated ? "SUBMITTED" : "NOT STARTED"}
                     </p>
@@ -5733,6 +5757,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ratings={ratings}
           whiskies={whiskies}
           whiskyCount={whiskyCount}
+          tasting={tasting}
         />
       )}
 
