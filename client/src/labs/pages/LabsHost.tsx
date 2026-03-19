@@ -2026,8 +2026,9 @@ function MobileCompanion({
 
         {onSwitchToManage && (
           <button
-            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            className="labs-btn-ghost flex items-center justify-center gap-2 w-full text-sm"
             onClick={onSwitchToManage}
+            style={{ color: "var(--labs-text-secondary)", padding: "10px 16px" }}
             data-testid="mobile-switch-manage"
           >
             <Sliders className="w-4 h-4" />
