@@ -1901,46 +1901,49 @@ export default function LabsSolo() {
                 <div className="labs-section-label">{t("m2.solo.openDrafts", "Open drafts")}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {hubDrafts.map((draft: any) => (
-                    <div key={draft.id} className="labs-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }} data-testid={`card-draft-${draft.id}`}>
-                      {draft.imageUrl ? (
-                        <img src={draft.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "1px solid var(--labs-border)", flexShrink: 0 }} />
-                      ) : (
-                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <Wine style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {draft.whiskyName || "\u2014"}
-                        </div>
-                        {draft.distillery && (
-                          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.distillery}</div>
-                        )}
-                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
-                          <Clock style={{ width: 10, height: 10 }} />
-                          {draft.updatedAt || draft.createdAt ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
-                          {draft.personalScore != null && (
-                            <span style={{ marginLeft: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{draft.personalScore}/100</span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                        <button onClick={() => loadDraftIntoForm(draft)} className="labs-btn-primary" style={{ padding: "7px 14px", fontSize: 13 }} data-testid={`button-continue-draft-${draft.id}`}>
-                          {t("m2.solo.continueDraft", "Continue")}
-                        </button>
-                        {deleteConfirmId === draft.id ? (
-                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            <button onClick={() => handleDeleteDraft(draft.id)} style={{ background: "var(--labs-danger)", color: "var(--labs-bg)", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid={`button-confirm-delete-${draft.id}`}>
-                              {t("m2.solo.deleteDraft", "Delete draft")}
-                            </button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="labs-btn-secondary" style={{ padding: "7px 10px", fontSize: 12 }} data-testid={`button-cancel-delete-${draft.id}`}>
-                              {t("m2.solo.cancel", "Cancel")}
-                            </button>
-                          </div>
+                    <div key={draft.id} className="labs-card" style={{ padding: "14px 16px" }} data-testid={`card-draft-${draft.id}`}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        {draft.imageUrl ? (
+                          <img src={draft.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "1px solid var(--labs-border)", flexShrink: 0 }} />
                         ) : (
-                          <button onClick={() => setDeleteConfirmId(draft.id)} className="labs-btn-secondary" style={{ padding: "7px 8px" }} data-testid={`button-delete-draft-${draft.id}`}>
+                          <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Wine style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {draft.whiskyName || "\u2014"}
+                          </div>
+                          {draft.distillery && (
+                            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.distillery}</div>
+                          )}
+                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                            <Clock style={{ width: 10, height: 10 }} />
+                            {draft.updatedAt || draft.createdAt ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                            {draft.personalScore != null && (
+                              <span style={{ marginLeft: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{draft.personalScore}/100</span>
+                            )}
+                          </div>
+                        </div>
+                        {deleteConfirmId !== draft.id && (
+                          <button onClick={() => setDeleteConfirmId(draft.id)} className="labs-btn-secondary" style={{ padding: "7px 8px", flexShrink: 0 }} data-testid={`button-delete-draft-${draft.id}`}>
                             <Trash2 style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
                           </button>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                        <button onClick={() => loadDraftIntoForm(draft)} className="labs-btn-primary" style={{ flex: 1, padding: "9px 14px", fontSize: 13 }} data-testid={`button-continue-draft-${draft.id}`}>
+                          {t("m2.solo.continueDraft", "Continue")}
+                        </button>
+                        {deleteConfirmId === draft.id && (
+                          <>
+                            <button onClick={() => handleDeleteDraft(draft.id)} style={{ flex: 1, background: "var(--labs-danger, #c0392b)", color: "#fff", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "9px 10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid={`button-confirm-delete-${draft.id}`}>
+                              {t("m2.solo.deleteDraft", "Delete draft")}
+                            </button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="labs-btn-secondary" style={{ padding: "9px 14px", fontSize: 13 }} data-testid={`button-cancel-delete-${draft.id}`}>
+                              {t("m2.solo.cancel", "Cancel")}
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
