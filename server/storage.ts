@@ -594,7 +594,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant> {
-    const [result] = await db.insert(tastingParticipants).values(data).returning();
+    const [result] = await db.insert(tastingParticipants).values(data).onConflictDoNothing({ target: [tastingParticipants.tastingId, tastingParticipants.participantId] }).returning();
+    if (!result) {
+      const [existing] = await db
+        .select()
+        .from(tastingParticipants)
+        .where(and(eq(tastingParticipants.tastingId, data.tastingId), eq(tastingParticipants.participantId, data.participantId)));
+      return existing;
+    }
     return result;
   }
 

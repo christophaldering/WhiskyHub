@@ -1624,7 +1624,13 @@ export async function registerRoutes(
     if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     const list = await storage.getTastingParticipants(req.params.id);
     const filtered = list.filter((tp: any) => !tp.participant?.email?.endsWith("@casksense.local"));
-    res.json(filtered);
+    const seen = new Set<string>();
+    const deduplicated = filtered.filter((tp: any) => {
+      if (seen.has(tp.participantId)) return false;
+      seen.add(tp.participantId);
+      return true;
+    });
+    res.json(deduplicated);
   });
 
   app.post("/api/tastings/:id/heartbeat", async (req, res) => {
