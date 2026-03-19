@@ -1,0 +1,654 @@
+# CASKSENSE – PFLICHTIMPLEMENTIERUNG: BEWERTUNGSFLOW-REDESIGN
+## Replit Hard Prompt · Version 1.0 · 19. März 2026
+
+---
+
+> **KRITISCH**: Dieser Prompt beschreibt eine vollständige, verpflichtende Neuimplementierung des Bewertungsflusses für Solo-Drams und geführte Tastings. JEDER der unten beschriebenen Punkte MUSS implementiert, getestet und verifiziert werden. Am Ende JEDER Implementierungsphase führe eine vollständige Prüfung durch. Nichts ist optional. Nichts darf übersprungen werden.
+
+---
+
+## TEIL 1: ARCHITEKTUR-ÜBERSICHT
+
+### Betroffene Dateien (primär)
+- `client/src/labs/pages/LabsTastingsSolo.tsx` – Solo-Flow komplett neu
+- `client/src/labs/pages/LabsLive.tsx` – Tasting-Teilnehmer-Flow neu
+- `client/src/labs/components/LabsHostCockpit.tsx` – Host-Cockpit erweitern
+- `client/src/labs/pages/LabsConnoisseur.tsx` – Connoisseur Report neu
+- `client/src/labs/components/` – Neue Komponenten (siehe unten)
+- `server/routes.ts` – Keine neuen Endpoints nötig, vorhandene nutzen
+- `client/src/lib/i18n.ts` – Alle neuen Strings in DE + EN
+
+### Neue Komponenten (müssen erstellt werden)
+- `client/src/labs/components/RatingDial.tsx` – Wiederverwendbarer Dial-Input
+- `client/src/labs/components/RatingFlow.tsx` – Sequenzieller Nose→Taste→Finish→Summary-Flow
+- `client/src/labs/components/OverallCircle.tsx` – Animierter Gesamtscore-Kreis
+- `client/src/labs/components/FlavourPicker.tsx` – Kategorisierte Aromen-Chips
+- `client/src/labs/components/DramCarousel.tsx` – Horizontales Dram-Karussell
+- `client/src/labs/components/ResumeRatingBanner.tsx` – Unterbrechungs-Banner
+
+---
+
+## TEIL 2: SKALEN-SYSTEM (FUNDAMENTALE GRUNDLAGE)
+
+**Diese Logik MUSS zuerst implementiert werden, da alles andere darauf aufbaut.**
+
+### 2.1 Skalen-Hierarchie (unveränderlich)
+```
+Host-definierte Skala > Nutzer-Profilpräferenz > Default (100)
+```
+
+### 2.2 Unterstützte Skalen
+| Skala | Max | Schrittweite Fein | Schrittweite Grob | Dial-Schritte |
+|-------|-----|-------------------|-------------------|---------------|
+| 100   | 100 | 1                 | 5                 | fließend      |
+| 20    | 20  | 1                 | 2                 | 20 Positionen |
+| 10    | 10  | 1                 | 1                 | 10 Positionen |
+| 5     | 5   | 1                 | 1                 | 5 Positionen  |
+
+### 2.3 Nutzer-Profilpräferenz
+- In `client/src/labs/pages/LabsProfile.tsx` (oder äquivalent): Dropdown/Segmented Control zur Auswahl der bevorzugten Skala
+- Gespeichert via `PATCH /api/participants/:id` auf `preferredRatingScale`
+- Feld `preferredRatingScale` muss in `participants`-Tabelle vorhanden sein (Migration prüfen!)
+
+### 2.4 Skalen-Hook
+Erstelle `client/src/labs/hooks/useRatingScale.ts`:
+```typescript
+// Gibt die aktive Skala zurück:
+// - tastingScale (wenn in aktivem Tasting) überschreibt alles
+// - sonst participantScale (aus Profil)
+// - sonst default: 100
+export function useRatingScale(tastingId?: string): {
+  max: number;
+  step: number;
+  bigStep: number;
+  label: string;
+  normalize: (val: number) => number; // immer auf 0-100 für DB
+  denormalize: (normalized: number) => number; // zurück zur Anzeige
+}
+```
+
+### 2.5 Normalisierung
+- **Alle Scores werden in der DB IMMER als 0-100 gespeichert** (bestehende Logik beibehalten)
+- Anzeige und Eingabe erfolgen in der nativen Skala
+- Konvertierung passiert im Hook, nicht in der UI
+
+---
+
+## TEIL 3: RATING DIAL KOMPONENTE
+
+### 3.1 `RatingDial.tsx` – Spezifikation
+
+```typescript
+interface RatingDialProps {
+  value: number;           // nativer Skalenwert (z.B. 0-100 oder 0-10)
+  onChange: (v: number) => void;
+  scale: RatingScale;      // aus useRatingScale
+  size?: 'sm' | 'md' | 'lg'; // sm=140px, md=190px (default), lg=220px
+  disabled?: boolean;
+}
+```
+
+**Pflichtverhalten:**
+- Canvas-basierter Arc-Dial (270° Bogen, startet unten links)
+- Goldener (#c8861a) ausgefüllter Bogen + goldener Thumb-Punkt
+- Grauer Track als Hintergrund
+- Drag-Interaktion: Maus UND Touch (mit `touch-action: none`)
+- Zahl in der Mitte: native Skala, groß (48px, font-weight 500)
+- Subtext: `/100` bzw. `/20` etc.
+- Bump-Animation bei Wertänderung (scale 1.1, 120ms)
+- Bei diskreten Skalen (≤20): Snap auf nächste gültige Position
+- ±1 und ±BigStep Buttons UNTERHALB des Dials (nicht daneben)
+- Button-Layout: `[−Big] [−1] [Feinabstimmung] [+1] [+Big]` in Pill-Form
+- `cursor: grab`, `user-select: none`
+
+**VERBOTEN:**
+- Kein HTML-Slider (`<input type="range">`) als primäre Eingabe
+- Keine Darstellung auf einer Linie mit dem Dial
+
+---
+
+## TEIL 4: SOLO-BEWERTUNGSFLOW
+
+### 4.1 Entry Point: Nach Whisky-Anlage
+
+In `LabsTastingsSolo.tsx`:
+- Nach erfolgreichem Speichern eines neuen Whiskys (`POST /api/journal`) → **sofortiger, automatischer** Wechsel in den Bewertungsflow (kein Extra-Tap)
+- State: `soloView` erweitern um `'rating'`
+- Übergabe: `{ whiskeyId, whiskyName, whiskyMeta }` an `RatingFlow`
+
+### 4.2 Unterbrechungs-Banner (`ResumeRatingBanner.tsx`)
+
+Wenn Nutzer zurückkommt und eine unvollständige Bewertung existiert:
+- **Kein Modal, kein Popup**
+- Dezentes Banner AM TOP der Whisky-Detailansicht
+- Inhalt: „[WhiskyName] bewerten – du warst bei [Nose/Taste/Finish]"
+- Zwei Aktionen: „Weiter bewerten" (→ RatingFlow ab letztem Step) | „×" (schließen, wegwischbar)
+- Prüfung: Bewertung unvollständig = mind. eine Dimension ist null/undefined
+- Banner verschwindet nach vollständigem Speichern
+
+### 4.3 Sequenzieller Flow (`RatingFlow.tsx`)
+
+**Flow-Schritte:**
+```
+Step 0: Nose
+Step 1: Taste  
+Step 2: Finish
+Step 3: Summary + Flavours + Speichern
+```
+
+**Navigation (PFLICHT):**
+- UNTEN: `[← Zurück]` (links, sekundär) + `[Weiter zu Taste →]` (rechts, gold, primär)
+- Zurück-Button auf Step 0: disabled (nicht versteckt)
+- Dots oben: NUR informativ, NICHT klickbar
+- Auf Summary (Step 3): Recap-Pills für Nose/Taste/Finish sind klickbar → springen zu Step, `btn-next` wechselt zu „Zurück zum Ergebnis ↩"
+- `returnToSummary`-Flag: wenn gesetzt, geht Weiter direkt zur Summary statt zum nächsten Schritt
+
+**Pro Step (Nose/Taste/Finish):**
+- Dimension-Label (UPPERCASE, letter-spacing, muted)
+- Hint-Text (was tun in diesem Schritt)
+- `RatingDial` (Größe md)
+- Adj-Buttons darunter
+
+**Summary (Step 3):**
+- Recap-Row: Nose | Taste | Finish als klickbare Pills (tippen zum Korrigieren)
+- Hint: „Tippen zum Korrigieren" (tiny, muted)
+- `OverallCircle` (animiert einlaufend, 80ms delay nach Render)
+- Überschreiben-Button → Zahlen-Input erscheint inline (kein Modal)
+- Zurücksetzen-Button → setzt auf Mittelwert zurück
+- `FlavourPicker` (kategorisiert, 3 Kategorien sichtbar, Rest aufklappbar)
+- Notizen-Textarea (optional, 2 Zeilen, expandierbar)
+- Bottom-Nav: `[← Zurück]` + `[Speichern ✓]` (gold)
+
+**Nach Speichern:**
+- Keine neue Seite
+- Overlay INNERHALB der Komponente erscheint (nicht fixed/modal)
+- Inhalt: Checkmark-Animation, Bestätigung, dein Score, Optionen
+- Optionen: „Korrigieren" (→ Step 3) | „Neuen Dram anlegen" | „Zur Übersicht"
+
+### 4.4 `OverallCircle.tsx`
+
+```typescript
+interface OverallCircleProps {
+  nose: number | null;
+  taste: number | null;
+  finish: number | null;
+  override?: number | null;
+  scale: RatingScale;
+  animate?: boolean; // default true
+  size?: number;     // px, default 80
+}
+```
+
+- Berechnung: `Math.round((nose + taste + finish) / 3)` wenn kein Override
+- Animation: Bogen läuft von 0 auf Zielwert in ~600ms (requestAnimationFrame)
+- Override: Nutzer tippt „Überschreiben" → Zahl editierbar → Kreis zeigt manuellen Wert
+- „Zurücksetzen" → zurück zum berechneten Mittelwert
+
+---
+
+## TEIL 5: FLAVOUR PICKER
+
+### 5.1 `FlavourPicker.tsx`
+
+**Pflichtverhalten:**
+- Kategorisierte Darstellung (nicht flach)
+- Standard: **3 Kategorien sichtbar**, passend zum Whisky-Typ (wenn bekannt)
+- Aufklapp-Toggle: „Weitere Aromen" / „Weniger" mit Chevron-Animation
+- Ganz unten im aufgeklappten Bereich: Experten-Tools als winzige Pills (Aromerad, Compass, Regionen) – dezent, kaum sichtbar
+- Chip-State: inaktiv (grau) / aktiv (gold)
+- Kategorie-Zähler: zeigt Anzahl aktiver Chips pro Kategorie (z.B. „3 ✓")
+- Chips sind Tags: Auswahl wird in `selectedFlavours: string[]` gespeichert
+
+**Kategorien (diese 6 primär, 3 initial sichtbar):**
+```
+Sichtbar: Fruchtig | Süß & Würzig | Holz & Leder
+Versteckt: Rauch & Torf | Nussig & Malzig | Maritim & Floral
+```
+
+**Kontext-Anpassung (wenn Whisky-Metadaten bekannt):**
+- Islay/Torf/Rauch → „Rauch & Torf" nach oben schieben
+- Sherry-Cask → „Fruchtig" + „Süß & Würzig" priorisieren
+- Maritim/Islands → „Maritim & Floral" nach oben
+- **Im Blind-Modus: KEINE Kontext-Anpassung** (verhindert Metadata-Leaks)
+
+### 5.2 Flavour-Daten-Struktur
+
+Verwende bestehende `client/src/labs/data/flavor-data.ts` – erweitern falls nötig. Kategorie-Reihenfolge muss konfigurierbar sein.
+
+---
+
+## TEIL 6: TASTING-TEILNEHMER-FLOW
+
+### 6.1 Kontext-Bar (oben, immer sichtbar)
+
+```
+[Dram X von N] · [Tasting-Name] · [Skala-Badge] · [Blind-Badge falls blind]
+```
+
+- Skala-Badge: „Skala 1–100" etc. in Gold-Pill
+- Einmalig sichtbar beim ersten Dram, dann persistent
+
+### 6.2 Dram-Karussell (`DramCarousel.tsx`)
+
+- Horizontal scrollbar, `overflow-x: auto`, kein Scrollbar sichtbar
+- Pro Dram: kleiner Card-Chip mit Nummer, Kurzname, Score (wenn bewertet)
+- Status-Klassen: `done` (gold-dim) | `active` (gold) | `locked` (opacity 0.35)
+- Blind-Modus: gesperrte Dramen zeigen „Sample X", keinen echten Namen
+- Badge bei offenen Bewertungen: kleines „!" oben rechts am Chip
+- Tap auf Done-Chip: öffnet Zusammenfassung für diesen Dram (read-only oder editierbar je nach Status)
+
+### 6.3 RatingFlow im Tasting-Kontext
+
+**Identisch zu Solo**, mit diesen Unterschieden:
+- `DramCarousel` oben statt Whisky-Header
+- Kontext-Bar ganz oben
+- Nach Speichern: KEIN „Neuen Dram anlegen" – stattdessen „Warte auf Host für Dram X+1"
+- Gruppen-Score auf der After-Save-Ansicht: **nur sichtbar nach vollständigem Reveal** des aktuellen Drams
+- Vergleich mit eigenen vorherigen Dramen immer sichtbar
+- Auto-Save: alle 30s, auch wenn Flow nicht abgeschlossen (verhindert Datenverlust)
+
+### 6.4 Dram-Wechsel (SSE-getriggert)
+
+Wenn `status_changed` oder Host `guidedWhiskyIndex` ändert:
+1. Wenn aktueller Dram VOLLSTÄNDIG bewertet: sanfte Transition direkt zu neuem Dram
+2. Wenn aktueller Dram UNVOLLSTÄNDIG: `ResumeOrSkipBanner` erscheint
+   - „Jetzt speichern" (speichert was da ist) | „Überspringen"
+   - Banner zeigt was bereits eingetragen ist (z.B. „Nose: 74, Taste: –, Finish: –")
+   - Bisherige Eingaben gehen NICHT verloren
+3. Nach Banner-Entscheidung: Übergang zu neuem Dram mit `popIn`-Animation
+
+---
+
+## TEIL 7: HOST-COCKPIT ERWEITERUNGEN
+
+### 7.1 Reveal-Flow im Cockpit
+
+**Linke Spalte – Reveal-Stepper:**
+
+```
+[Preset-Auswahl: Classic | Name | Foto | Einzeln]
+[Stage-Pills: Pill1 | Pill2 | Pill3] (done/active/pending)
+[▶ Reveal starten / ▶ Weiter: [NextStageName] / Alle Infos gezeigt ✓]
+[Sichtbarkeits-Hint:]
+  Host sieht: [Alles (Whiskyname)]
+  Teilnehmer: [Was aktuell sichtbar ist]
+```
+
+**Preset-Logik:**
+- Classic: Name → Details → Foto
+- Name zuerst: Name → Foto → Details  
+- Foto zuerst: Foto → Name → Details
+- Einzeln: Name → Distillerie → Alter → ABV → Foto
+
+**Reveal-Button:**
+- Löst SSE-Event `reveal_triggered` aus (Backend: vorhandene Logik nutzen)
+- Flash-Effekt: weißes Overlay, opacity 0.65, 180ms (alle verbundenen Clients)
+- Nach letztem Schritt: Gruppen-Scores werden in mittlerer Spalte freigeschaltet
+
+**Rechte Spalte – Live Guest Preview:**
+- Zeigt LIVE was Teilnehmer aktuell sehen (basierend auf revealStep)
+- Aktualisiert sich synchron mit jedem Reveal-Klick (kein Re-Fetch nötig, lokaler State)
+- Blind: graues `?` Placeholder
+- Nach Name-Reveal: Name animiert eingeblendet (`popIn`)
+- Nach Details: Detail-Grid erscheint (`slideUp`)
+- Nach Foto: Emoji/Foto groß (`fadeScale`)
+- Gruppen-Scores: erscheinen erst NACH vollständigem Reveal
+
+### 7.2 Nächster-Dram-Flow
+
+**Bestätigungs-Dialog (KEIN Modal – inline in linker Spalte):**
+```
+Weiter zu Dram [N+1]?
+[Whisky-Name] wird als nächster Dram geöffnet.
+
+⚠ [Name] hat Dram [N] noch nicht bewertet.  ← nur wenn jemand unvollständig
+
+[Abbrechen]  [Ja, weiter zu Dram N+1 →]
+```
+
+**Nach Bestätigung:**
+1. Backend: `PATCH /api/tastings/:id/guided-advance` (vorhandener Endpoint)
+2. SSE-Event an alle Clients
+3. Lineup in linker Spalte: alter Dram → `done`, neuer Dram → `current`
+4. Mittlere Spalte: Fortschrittsanzeige für neuen Dram, Score-Balken leer
+5. Rechte Spalte: Guest-Preview zeigt neuen Dram blind
+
+### 7.3 Mobile Host-Tabs
+
+Auf Mobile (< 768px) – drei Tabs innerhalb der Host-Ansicht:
+- **Übersicht**: Lineup + Teilnehmer-Status (Completion)
+- **Meine Bewertung**: Host-eigener RatingFlow (gleiche Komponente wie Teilnehmer)
+- **Gruppe**: Echtzeit-Durchschnitte + Varianz + Konsens-Indikatoren
+
+---
+
+## TEIL 8: CONNOISSEUR REPORT
+
+### 8.1 Trigger
+
+- Connoisseur Report wird nach jedem abgeschlossenen Tasting angeboten
+- Auf der Results-Seite (`LabsTastingRecap.tsx` oder Results): Button „Connoisseur Report erstellen"
+- Auch solo: nach dem 10. bewerteten Whisky (bestehende Schwelle beibehalten)
+
+### 8.2 Report-Aufbau (`LabsConnoisseur.tsx`)
+
+**Generierungs-Moment:**
+- Kurze Anzeige (ca. 2s): animierter Puls-Dot + Text „KI analysiert deine Verkostung…"
+- „Sofort anzeigen"-Link überspringt Warte-Animation
+- KEIN Blocking-Spinner, KEIN Modal
+
+**Cover-Bereich:**
+- Eyebrow: „Connoisseur Report"
+- Titel: KI-generierter, prägnanter Charaktersatz (kein generisches „Dein Score war X")
+- Subtext: Kontext (Tasting-Name, Anzahl Dramen, Datum, Ø Score)
+- Meta-Pills: Tasting-Name | Anzahl Dramen | Datum | Ø Score
+- DE/EN-Toggle oben rechts (Segmented, Gold bei aktiver Sprache)
+- Sprach-Wechsel aktualisiert alle KI-Texte sofort (kein Re-Fetch, beide Versionen werden beim Generate erstellt)
+
+**Stat-Row (4 Karten):**
+Ø Score | +/- vs. Gruppe | Höchster Score | Niedrigster Score
+
+**Radar-Chart:**
+- Canvas-basiert (kein externe Library-Abhängigkeit)
+- 5 Dimensionen: Nose, Taste, Finish, Balance*, Overall (*falls vorhanden)
+- Zwei Polygone: Du (gold) + Gruppe (grau, transparent)
+- Legende rechts mit Bar-Balken
+
+**4 Tabs:**
+
+| Tab | Inhalt |
+|-----|--------|
+| Bericht | 3 KI-Abschnitte + Zitat-Block + Teilen-Karte + Aktions-Buttons |
+| Whiskys | Ranking mit Score, Δ Gruppe, Aromen-Chips pro Flasche |
+| Aromen | Flavour-Cloud (Chip-Größe = Häufigkeit) für dieses Tasting + Gesamtprofil |
+| Verlauf | Balken-Chart: Ø Score + Δ Gruppe über letzte 5 Tastings |
+
+**Teilen-Karte:**
+- Vorschau-Zitat (KI-generiert, 1-2 Sätze)
+- Aktionen: PDF | Kopieren | Teilen
+- PDF-Export via jsPDF (bestehende Logik nutzen/erweitern)
+
+**Aktionen unten:**
+- „Frühere Berichte" → Liste aller generierten Reports
+- „Empfehlungen" → navigiert zu `LabsRecommendations`
+
+### 8.3 Backend-Anforderungen
+
+- `POST /api/participants/:id/connoisseur-report`: akzeptiert `tastingId` als optionalen Parameter (zusätzlich zu allgemeinem Report)
+- Wenn `tastingId` gesetzt: Report fokussiert auf dieses Tasting + historischen Kontext
+- Beide Sprachen (DE/EN) werden in einem API-Call generiert und gespeichert
+- `dataSnapshot` enthält: alle Ratings des Tastings, Gruppen-Durchschnitte, Aromen, historische Vergleiche
+
+---
+
+## TEIL 9: ADMIN – FLAVOUR-LOGIK-EDITOR
+
+### 9.1 Anforderung
+
+Admin kann die Flavour-Kategorien und Deskriptoren bearbeiten. Zugang: Admin-Panel → Tab „Aromen".
+
+### 9.2 Datenstruktur
+
+```typescript
+interface FlavourCategory {
+  id: string;
+  nameDE: string;
+  nameEN: string;
+  sortOrder: number;
+  subgroups?: FlavourSubgroup[];
+  descriptors?: FlavourDescriptor[]; // wenn keine Subgroups
+}
+
+interface FlavourSubgroup {
+  id: string;
+  nameDE: string;
+  nameEN: string;
+  sortOrder: number;
+  descriptors: FlavourDescriptor[];
+}
+
+interface FlavourDescriptor {
+  id: string;
+  nameDE: string;
+  nameEN: string;
+  sortOrder: number;
+}
+```
+
+### 9.3 Persistenz
+
+- Speicherung in DB: neue Tabelle `flavour_categories` + `flavour_descriptors`
+- Fallback: wenn DB leer → lade aus `flavor-data.ts` (bestehende Hardcode-Daten)
+- API: `GET/POST/PATCH/DELETE /api/admin/flavour-categories`
+- Migration: Seed-Script liest bestehende `flavor-data.ts` und befüllt DB
+
+### 9.4 Admin-UI
+
+In `LabsAdmin.tsx` neuer Tab „Aromen":
+- Liste aller Kategorien (drag-reorder für sortOrder)
+- Pro Kategorie: Subgroups ausklappbar, Deskriptoren editierbar
+- Inline-Edit: Klick auf Namen → Textfeld
+- Aktionen: + Kategorie | + Subgruppe | + Deskriptor | 🗑 Löschen (mit Bestätigung)
+- Validierung: leere Namen verboten, Duplikate warnen
+- Speichern: debounced Auto-Save oder expliziter Save-Button
+
+---
+
+## TEIL 10: I18N – VOLLSTÄNDIGE ÜBERSETZUNGEN
+
+**Alle neuen Strings MÜSSEN in `client/src/lib/i18n.ts` in BEIDEN Sprachen (DE + EN) eingetragen werden.**
+
+Neue Keys (Pflicht):
+
+```typescript
+// Rating Flow
+'rating.nose': { de: 'Nose', en: 'Nose' },
+'rating.taste': { de: 'Taste', en: 'Taste' },
+'rating.finish': { de: 'Finish', en: 'Finish' },
+'rating.overall': { de: 'Gesamt', en: 'Overall' },
+'rating.hint.nose': { de: 'Erste Eindrücke – bevor du trinkst.', en: 'First impressions – before you taste.' },
+'rating.hint.taste': { de: 'Was passiert am Gaumen?', en: 'What happens on the palate?' },
+'rating.hint.finish': { de: 'Wie klingt der Abgang?', en: 'How does the finish develop?' },
+'rating.overall.mean': { de: 'Mittelwert aus Nose, Taste & Finish', en: 'Average of Nose, Taste & Finish' },
+'rating.overall.manual': { de: 'Manuell überschrieben', en: 'Manually overridden' },
+'rating.override': { de: 'Überschreiben', en: 'Override' },
+'rating.reset': { de: 'Zurücksetzen', en: 'Reset' },
+'rating.correct': { de: 'Tippen zum Korrigieren', en: 'Tap to correct' },
+'rating.save': { de: 'Dram speichern', en: 'Save dram' },
+'rating.saved': { de: 'Gespeichert', en: 'Saved' },
+'rating.backToSummary': { de: 'Zurück zum Ergebnis ↩', en: 'Back to summary ↩' },
+'rating.nextTo': { de: 'Weiter zu {dim} →', en: 'Continue to {dim} →' },
+'rating.toResult': { de: 'Zum Ergebnis →', en: 'To result →' },
+'rating.scaleLabel': { de: 'Skala 1–{max}', en: 'Scale 1–{max}' },
+// Flavours
+'flavour.more': { de: 'Weitere Aromen', en: 'More aromas' },
+'flavour.less': { de: 'Weniger', en: 'Less' },
+'flavour.expert': { de: 'Experten-Tools:', en: 'Expert tools:' },
+// Resume Banner
+'resume.title': { de: '{name} bewerten', en: 'Rate {name}' },
+'resume.sub': { de: 'Du warst bei {dim} – weitermachen?', en: 'You were at {dim} – continue?' },
+'resume.continue': { de: 'Weiter bewerten', en: 'Continue rating' },
+// Connoisseur
+'connoisseur.generating': { de: 'KI analysiert deine Verkostung…', en: 'AI is analysing your tasting…' },
+'connoisseur.skip': { de: 'Sofort anzeigen', en: 'Show immediately' },
+// Host Cockpit
+'cockpit.revealStart': { de: '▶ Reveal starten', en: '▶ Start reveal' },
+'cockpit.revealNext': { de: '▶ Weiter: {stage}', en: '▶ Next: {stage}' },
+'cockpit.revealDone': { de: 'Alle Infos gezeigt ✓', en: 'All info revealed ✓' },
+'cockpit.hostSees': { de: 'Host sieht:', en: 'Host sees:' },
+'cockpit.paxSees': { de: 'Teilnehmer:', en: 'Participants:' },
+'cockpit.nextDram': { de: 'Weiter zu Dram {n} →', en: 'Continue to dram {n} →' },
+'cockpit.confirmNext': { de: 'Weiter zu Dram {n}?', en: 'Move to dram {n}?' },
+'cockpit.incomplete': { de: '{name} hat Dram {n} noch nicht bewertet.', en: '{name} has not yet rated dram {n}.' },
+```
+
+---
+
+## TEIL 11: VERIFIKATIONS-CHECKLISTE
+
+**Nach JEDER Implementierungsphase MUSS diese Checkliste durchlaufen werden. Markiere jeden Punkt mit ✓ wenn vollständig.**
+
+### Phase A: Skalen-System
+- [ ] `useRatingScale`-Hook implementiert und exportiert
+- [ ] `preferredRatingScale` in participants-Schema vorhanden (Migration geprüft)
+- [ ] Host-Skala aus tasting.ratingScale gelesen und weitergegeben
+- [ ] Normalisierung auf 0-100 bei Schreiben in DB
+- [ ] Denormalisierung für Anzeige korrekt
+- [ ] Skala-Badge in Tasting-Kontext sichtbar
+- [ ] Dial passt Schritte an Skala an (diskret vs. fließend)
+
+### Phase B: RatingDial-Komponente
+- [ ] Canvas-Render korrekt (270°-Arc, gold, thumb)
+- [ ] Drag per Maus funktioniert
+- [ ] Drag per Touch funktioniert (mobile getestet)
+- [ ] ±1 und ±BigStep Buttons funktionieren
+- [ ] Bump-Animation bei Wertänderung
+- [ ] Diskrete Skalen: Snap-Verhalten korrekt
+- [ ] Disabled-State: keine Interaktion möglich
+- [ ] Alle Skalen (100/20/10/5) getestet
+
+### Phase C: Solo-Flow
+- [ ] Nach Whisky-Anlage: sofort im Rating-Flow (kein Extra-Tap)
+- [ ] Step 0 (Nose) öffnet automatisch
+- [ ] Weiter-Button navigiert Nose→Taste→Finish→Summary
+- [ ] Zurück-Button auf Step 0 ist disabled (nicht versteckt)
+- [ ] Dots oben sind NUR informativ (kein Klick)
+- [ ] Summary: Recap-Pills korrekt klickbar
+- [ ] Summary: returnToSummary-Flag funktioniert
+- [ ] OverallCircle: animiert korrekt ein
+- [ ] Überschreiben: funktioniert, Kreis zeigt manuellen Wert
+- [ ] Zurücksetzen: Mittelwert korrekt berechnet
+- [ ] FlavourPicker: 3 Kategorien sichtbar, Rest aufklappbar
+- [ ] Experten-Tools ganz unten im aufgeklappten Bereich
+- [ ] Notizen-Textarea vorhanden
+- [ ] Speichern: Score korrekt in DB (normalisiert auf 0-100)
+- [ ] After-Save-Overlay erscheint (kein Seitennavigation)
+- [ ] Resume-Banner erscheint bei unvollständiger Bewertung
+- [ ] Resume-Banner schließbar, navigiert korrekt zum richtigen Step
+- [ ] i18n: Alle Strings in DE und EN vorhanden
+- [ ] Dark Mode: alle Elemente lesbar
+
+### Phase D: Tasting-Teilnehmer-Flow
+- [ ] Kontext-Bar oben: Dram X/N, Tasting-Name, Skala-Badge, Blind-Badge
+- [ ] DramCarousel: done/active/locked korrekt
+- [ ] DramCarousel: Blind-Modus zeigt „Sample X" statt Namen
+- [ ] DramCarousel: „!"-Badge bei offenen Bewertungen
+- [ ] RatingFlow identisch zu Solo (gleiche Komponente)
+- [ ] After-Save: kein „Neuen Dram anlegen"
+- [ ] After-Save: Gruppen-Score nur nach Reveal sichtbar
+- [ ] Auto-Save alle 30s
+- [ ] SSE-Event `status_changed`: Dram-Wechsel korrekt
+- [ ] Interrupt-Banner bei unvollständiger Bewertung + Dram-Wechsel
+- [ ] Interrupt-Banner: „Jetzt speichern" + „Überspringen"
+- [ ] Bisherige Eingaben bleiben nach Dram-Wechsel erhalten
+- [ ] Neue Dram-Landing mit popIn-Animation
+
+### Phase E: Host-Cockpit
+- [ ] Preset-Auswahl: Classic/Name/Foto/Einzeln
+- [ ] Stage-Pills: done/active/pending korrekt
+- [ ] Reveal-Button: korrekte Beschriftung (Start/Weiter: X/Fertig)
+- [ ] Reveal löst SSE-Event aus
+- [ ] Flash-Effekt auf allen Clients
+- [ ] Sichtbarkeits-Hint korrekt (Host vs. Teilnehmer)
+- [ ] Rechte Spalte Live-Preview: aktualisiert synchron
+- [ ] Alle 4 Reveal-Animationen korrekt (blind/name/details/foto)
+- [ ] Gruppen-Scores in mittlerer Spalte nach vollem Reveal
+- [ ] Nächster-Dram: Inline-Bestätigung (kein Modal)
+- [ ] Nächster-Dram: Warnung bei unvollständigen Teilnehmern
+- [ ] Lineup: Statuswechsel nach Dram-Advance
+- [ ] Mobile: 3 Tabs (Übersicht/Meine Bewertung/Gruppe)
+- [ ] Mobile: Host-eigener RatingFlow im „Meine Bewertung"-Tab
+
+### Phase F: Connoisseur Report
+- [ ] Trigger nach Tasting: Button auf Results-Seite
+- [ ] Generierungs-Animation (2s, überspringbar)
+- [ ] Cover: Charaktersatz (kein generischer Text)
+- [ ] DE/EN-Toggle: beide Sprachen vorhanden, Wechsel sofort
+- [ ] Stat-Row: 4 Karten korrekt
+- [ ] Radar-Chart: 2 Polygone (Du + Gruppe)
+- [ ] Tab „Bericht": 3 Abschnitte + Zitat + Teilen
+- [ ] Tab „Whiskys": Ranking mit Δ Gruppe
+- [ ] Tab „Aromen": Cloud + Gesamtprofil
+- [ ] Tab „Verlauf": letzte 5 Tastings
+- [ ] PDF-Export funktioniert
+- [ ] Teilen-Aktion funktioniert
+- [ ] History: frühere Reports listbar
+- [ ] Backend: `tastingId` als Parameter akzeptiert
+- [ ] Backend: beide Sprachen in einem Call generiert
+
+### Phase G: Admin Flavour-Editor
+- [ ] DB-Migration: flavour_categories + flavour_descriptors Tabellen
+- [ ] Seed: bestehende flavor-data.ts importiert
+- [ ] API: GET/POST/PATCH/DELETE Endpoints
+- [ ] Admin-Tab „Aromen" sichtbar (nur für Admin)
+- [ ] Kategorien-Liste mit drag-reorder
+- [ ] Inline-Edit für Namen (DE + EN)
+- [ ] Subgruppen ausklappbar
+- [ ] Deskriptoren editierbar
+- [ ] + Kategorie / + Deskriptor funktioniert
+- [ ] Löschen mit Bestätigung
+- [ ] Validierung: leere Namen verhindert
+- [ ] Änderungen im FlavourPicker sofort sichtbar (cache invalidiert)
+
+### FINALE GESAMTPRÜFUNG
+- [ ] Kein TypeScript-Fehler (`npx tsc --noEmit`)
+- [ ] Kein ESLint-Fehler
+- [ ] App startet ohne Fehler
+- [ ] Solo-Flow: kompletter Durchlauf von Anlage bis After-Save
+- [ ] Tasting-Flow: kompletter Durchlauf (Beitritt → Bewertung → Reveal → Ergebnis)
+- [ ] Host-Cockpit: kompletter Reveal-Flow + Dram-Advance
+- [ ] Connoisseur Report: Generierung + alle Tabs + PDF
+- [ ] Admin: Flavour-Editor CRUD
+- [ ] Alle Skalen getestet (100/20/10)
+- [ ] Dark Mode komplett
+- [ ] Mobile (390px) komplett
+- [ ] Desktop (1280px+) komplett
+- [ ] Deutsche UI komplett
+- [ ] Englische UI komplett
+- [ ] Kein Console-Error in Production-Build
+
+---
+
+## TEIL 12: IMPLEMENTIERUNGSREIHENFOLGE (PFLICHT)
+
+Implementiere STRIKT in dieser Reihenfolge. Starte nichts Folgendes, bevor der vorherige Schritt vollständig verifiziert ist:
+
+```
+1. useRatingScale-Hook + Skalen-System
+2. RatingDial-Komponente (isoliert, mit Testpage)
+3. OverallCircle-Komponente
+4. FlavourPicker-Komponente
+5. RatingFlow-Komponente (kombiniert 2+3+4)
+6. ResumeRatingBanner-Komponente
+7. Solo-Flow in LabsTastingsSolo.tsx (integriert RatingFlow)
+8. DramCarousel-Komponente
+9. Tasting-Teilnehmer in LabsLive.tsx (integriert RatingFlow + DramCarousel)
+10. Host-Cockpit Reveal-Flow in LabsHostCockpit.tsx
+11. Host-Cockpit Dram-Advance-Flow
+12. Connoisseur Report in LabsConnoisseur.tsx
+13. Admin Flavour-Editor (DB-Migration zuerst!)
+14. i18n: alle Strings vervollständigen
+15. Finale Verifikation (komplette Checkliste)
+```
+
+---
+
+## TEIL 13: VERBOTENE ABKÜRZUNGEN
+
+**Folgende Abkürzungen sind NICHT erlaubt:**
+
+- ❌ HTML `<input type="range">` als primäre Bewertungseingabe
+- ❌ Modal-Dialoge für Bestätigungen die inline darstellbar sind
+- ❌ Navigation zur nächsten Seite nach dem Speichern (immer Overlay/in-place)
+- ❌ Hardcodierte deutsche Strings (alles durch i18n)
+- ❌ Gruppen-Scores vor vollständigem Reveal anzeigen
+- ❌ Klickbare Navigation-Dots (nur informativ)
+- ❌ Zurück-Button verstecken (disabled, aber sichtbar)
+- ❌ Experten-Tools prominent darstellen (immer versteckt, aufklappbar)
+- ❌ Kontext-Anpassung im Blind-Modus (Metadata-Leak!)
+- ❌ Scores ohne Normalisierung in DB schreiben
+- ❌ Report ohne Charakter-Headline (kein generischer Text)
+
+---
+
+*Ende des Prompts. Implementiere vollständig, verifiziere jeden Punkt, liefere einen fehlerfreien Build.*
