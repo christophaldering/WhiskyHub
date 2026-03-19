@@ -5118,7 +5118,7 @@ const resources = {
         rating: {
           rateDetail: "Rate in detail",
           detailedTasting: "Detailed Tasting Notes",
-          detailedTastingDesc: "Score nose, taste & finish individually",
+          detailedTastingDesc: "Optionally score nose, taste & finish individually",
           optionalLabel: "(Optional)",
           overallLocked: "Rate each dimension to unlock Overall",
           nose: "Nose",
@@ -11242,7 +11242,7 @@ const resources = {
         rating: {
           rateDetail: "Im Detail bewerten",
           detailedTasting: "Detaillierte Verkostungsnotizen",
-          detailedTastingDesc: "Nase, Geschmack & Abgang einzeln bewerten",
+          detailedTastingDesc: "Nase, Geschmack & Abgang optional einzeln bewerten",
           optionalLabel: "(Optional)",
           overallLocked: "Jede Dimension bewerten, um Gesamt freizuschalten",
           nose: "Nase",
