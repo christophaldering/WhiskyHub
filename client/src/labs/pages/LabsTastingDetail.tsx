@@ -30,6 +30,7 @@ import {
   Globe,
   Sliders,
   Gauge,
+  RotateCcw,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
@@ -548,12 +549,12 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             </button>
             {isHost && (
               <button
-                className="labs-btn-ghost w-full flex items-center justify-center gap-2 text-xs"
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
                 onClick={() => navigate(`/labs/host/${tastingId}`)}
-                style={{ color: "var(--labs-text-muted)" }}
                 data-testid="labs-detail-manage"
               >
-                Manage Session
+                <RotateCcw className="w-4 h-4" />
+                Restart Tasting
               </button>
             )}
           </>
