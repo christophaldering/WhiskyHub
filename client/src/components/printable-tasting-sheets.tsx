@@ -584,8 +584,6 @@ async function drawScoringPage(
     }
 
     if (compact) {
-      const circleR = 2.5;
-
       doc.setFontSize(8);
       doc.setTextColor(...GOLD_RGB);
       doc.setFont('helvetica', 'normal');
@@ -595,14 +593,17 @@ async function drawScoringPage(
       doc.setFontSize(8);
       doc.setTextColor(...PRINT_BLACK_RGB);
       doc.setFont('times', 'italic');
-      const nameLines = doc.splitTextToSize(whiskyName, usableWidth * 0.28);
+      const nameLines = doc.splitTextToSize(whiskyName, usableWidth * 0.22);
       doc.text(nameLines, margin + 7, y + 3.5);
 
-      const dimStartX = margin + usableWidth * 0.32;
-      const dimSpacing = usableWidth * 0.17;
+      const dimAreaW = usableWidth * 0.74;
+      const dimStartX = margin + usableWidth * 0.26;
+      const circleR = 2;
+      const dimSpacing = dimAreaW / 4;
+
       DIMS.forEach((dim, di) => {
         const dx = dimStartX + di * dimSpacing;
-        doc.setFontSize(5);
+        doc.setFontSize(4.5);
         doc.setTextColor(...GOLD_RGB);
         doc.setFont('helvetica', 'normal');
         doc.text(dim.substring(0, 3).toUpperCase(), dx, y + 1.5);
@@ -907,7 +908,7 @@ export async function generateBatchPersonalizedPdf(
 
     const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
-    await drawCoverPage(doc, tasting, whiskies, lang, isBlind, participantInfo, coverImageBase64, hostName, orientation, styleTheme);
+    await drawCoverPage(doc, tasting, whiskies, lang, isBlind, undefined, coverImageBase64, hostName, orientation, styleTheme);
 
     await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, undefined, hostName);
 
