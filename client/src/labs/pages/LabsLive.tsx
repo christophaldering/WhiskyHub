@@ -1,14 +1,15 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
-import { InlineFlavorTags } from "@/labs/components/FlavorTagStrip";
+import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
+import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
@@ -775,6 +776,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [revealFlash, setRevealFlash] = useState(false);
 
@@ -951,6 +953,22 @@ export default function LabsLive({ params }: LabsLiveProps) {
     setNotes(value);
     debouncedSave(scores, value);
   };
+
+  const activeChips = useMemo(() => {
+    const tagsByPhase = parseTagsFromNotes(notes);
+    return tagsByPhase[activeDim] || [];
+  }, [notes, activeDim]);
+
+  const handleStudioChipsChange = useCallback((newChips: string[]) => {
+    const updated = replaceTagsInNotes(notes, activeDim as "nose" | "taste" | "finish", newChips);
+    setNotes(updated);
+    debouncedSave(scores, updated);
+  }, [notes, activeDim, scores, debouncedSave]);
+
+  const openStudio = useCallback(() => {
+    setFlavorExpanded(false);
+    setStudioOpen(true);
+  }, []);
 
   const freeRevealIdx = tasting?.revealIndex ?? 0;
   const freeRevealStp = tasting?.revealStep ?? 0;
@@ -1316,6 +1334,32 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       expanded={flavorExpanded}
                       onToggle={() => setFlavorExpanded(!flavorExpanded)}
                     />
+                    <button
+                      type="button"
+                      onClick={openStudio}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8, width: "100%",
+                        background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, var(--labs-surface)))",
+                        border: "1px solid var(--labs-accent)",
+                        borderRadius: 12, cursor: "pointer",
+                        color: "var(--labs-bg)", fontSize: 13, fontFamily: "inherit",
+                        fontWeight: 700, padding: "10px 16px",
+                        transition: "all 0.2s ease",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                        marginTop: 8,
+                      }}
+                      data-testid="button-open-flavour-studio-live"
+                    >
+                      <Sparkles style={{ width: 16, height: 16 }} />
+                      Flavour Studio
+                      {activeChips.length > 0 && (
+                        <span style={{ fontSize: 11, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}
+                          data-testid="studio-live-count-badge"
+                        >
+                          {activeChips.length}
+                        </span>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>
@@ -1537,6 +1581,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   )}
                 </div>
               )}
+
+              <FlavourStudioSheet
+                open={studioOpen}
+                onOpenChange={setStudioOpen}
+                dimension={activeDim as DimKey}
+                existingChips={activeChips}
+                onChipsChange={handleStudioChipsChange}
+              />
             </>
           ) : (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">

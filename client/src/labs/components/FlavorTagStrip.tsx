@@ -19,7 +19,7 @@ interface FlavorTagStripProps {
   inline?: boolean;
 }
 
-function parseTagsFromNotes(notes: string): Record<Phase, string[]> {
+export function parseTagsFromNotes(notes: string): Record<Phase, string[]> {
   const result: Record<Phase, string[]> = { nose: [], taste: [], finish: [] };
   const marker = /\[([A-Za-z]+)\]\s*(.+)/g;
   let m: RegExpExecArray | null;
@@ -38,7 +38,7 @@ function buildTagLine(phase: Phase, tags: string[]): string {
   return `[${phase.charAt(0).toUpperCase() + phase.slice(1)}] ${tags.join(", ")}`;
 }
 
-function replaceTagsInNotes(
+export function replaceTagsInNotes(
   notes: string,
   phase: Phase,
   tags: string[]
