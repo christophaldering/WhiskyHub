@@ -1800,6 +1800,7 @@ export default function LabsSolo() {
         }
         queryClient.invalidateQueries({ queryKey: ["journal"] });
         setSaved(true);
+        setInterruptedFlowDraft(null);
         try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
       } catch {
         persistLocal();
@@ -2171,7 +2172,6 @@ export default function LabsSolo() {
             step={interruptedFlowDraft.computedStep ?? ratingFlowStep}
             onResume={() => {
               setSoloView("ratingFlow");
-              setInterruptedFlowDraft(null);
             }}
             onDiscard={() => {
               handleReset();
