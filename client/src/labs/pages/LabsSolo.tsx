@@ -1772,9 +1772,6 @@ export default function LabsSolo() {
       if (!hasDimScore) throw new Error("No scores");
       const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
       if (score !== effectiveScore) setScore(effectiveScore);
-      const normalizedNose = ratingScale.normalize(detailedScores.nose);
-      const normalizedTaste = ratingScale.normalize(detailedScores.taste);
-      const normalizedFinish = ratingScale.normalize(detailedScores.finish);
       const normalizedScore = ratingScale.normalize(effectiveScore);
       if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
       if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
@@ -1783,11 +1780,7 @@ export default function LabsSolo() {
       try {
         const body = buildDraftBody();
         body.status = "final";
-        body.personalScore = effectiveScore;
-        body.normalizedScore = normalizedScore;
-        body.normalizedNose = normalizedNose;
-        body.normalizedTaste = normalizedTaste;
-        body.normalizedFinish = normalizedFinish;
+        body.personalScore = normalizedScore;
         if (draftEntryId) {
           const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
             method: "PATCH",
@@ -1813,11 +1806,7 @@ export default function LabsSolo() {
         if (pid) {
           const body = buildDraftBody();
           body.status = "final";
-          body.personalScore = effectiveScore;
-          body.normalizedScore = normalizedScore;
-          body.normalizedNose = normalizedNose;
-          body.normalizedTaste = normalizedTaste;
-          body.normalizedFinish = normalizedFinish;
+          body.personalScore = normalizedScore;
           addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
           setOfflineCount(getOfflineQueue().length);
         }
