@@ -2715,7 +2715,7 @@ export default function LabsSolo() {
           onResetOverride={resetOverride}
           scale={100}
           showToggle={true}
-          defaultOpen={true}
+          defaultOpen={false}
           wizard={true}
           onActiveTabChange={setActiveDimension}
         />
@@ -2838,10 +2838,26 @@ export default function LabsSolo() {
         <LabsSignInCard onSignedIn={handleUnlocked} onCancel={() => setShowUnlockPanel(false)} />
       )}
 
-      {autoSaveStatus !== "idle" && unlocked && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: autoSaveStatus === "saved" ? "var(--labs-success)" : "var(--labs-text-secondary)", marginBottom: 6, justifyContent: "center" }} data-testid="text-auto-save-status">
-          {autoSaveStatus === "saving" && <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />}
-          {autoSaveStatus === "saving" ? t("m2.solo.autoSaving", "Saving...") : t("m2.solo.draftSaved", "Draft saved")}
+      {unlocked && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, marginBottom: 8, justifyContent: "center", minHeight: 20 }} data-testid="text-auto-save-status">
+          {autoSaveStatus === "saving" && (
+            <>
+              <Loader2 style={{ width: 13, height: 13, color: "var(--labs-text-secondary)", animation: "spin 1s linear infinite" }} />
+              <span style={{ color: "var(--labs-text-secondary)" }}>{t("m2.solo.autoSaving", "Saving...")}</span>
+            </>
+          )}
+          {autoSaveStatus === "saved" && (
+            <>
+              <Check style={{ width: 13, height: 13, color: "var(--labs-success)" }} />
+              <span style={{ color: "var(--labs-success)" }}>{t("m2.solo.draftSaved", "Draft saved")}</span>
+            </>
+          )}
+          {autoSaveStatus === "idle" && lastSavedTime && (
+            <>
+              <Check style={{ width: 13, height: 13, color: "var(--labs-text-muted)" }} />
+              <span style={{ color: "var(--labs-text-muted)" }}>{formatRelativeTime(lastSavedTime)}</span>
+            </>
+          )}
         </div>
       )}
 
