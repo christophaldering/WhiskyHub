@@ -181,6 +181,9 @@ export default function LabsSolo() {
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [] });
   const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "" });
+  const [tagsExpanded, setTagsExpanded] = useState(true);
+  const [editingOverall, setEditingOverall] = useState(false);
+  const [overallInput, setOverallInput] = useState("");
 
   const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
 
@@ -1184,7 +1187,10 @@ export default function LabsSolo() {
   };
 
   const handleQuickSave = async () => {
-    if (!whiskyName.trim() || score === 0) return;
+    const hasScore = score > 0 || detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
+    if (!whiskyName.trim() || !hasScore) return;
+    const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
+    if (score !== effectiveScore) setScore(effectiveScore);
     if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
     if (!unlocked || !pid) { persistLocal(); setSaved(true); setSoloView("hub"); fetchHubDrafts(); return; }
     setSaving(true);
@@ -1192,6 +1198,7 @@ export default function LabsSolo() {
     try {
       const body = buildDraftBody();
       body.status = "final";
+      body.personalScore = effectiveScore;
       if (draftEntryId) {
         const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
           method: "PATCH",
@@ -1217,6 +1224,7 @@ export default function LabsSolo() {
       if (pid) {
         const body = buildDraftBody();
         body.status = "final";
+        body.personalScore = effectiveScore;
         addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
         setOfflineCount(getOfflineQueue().length);
       }
@@ -1236,6 +1244,7 @@ export default function LabsSolo() {
     setDetailTouched(false); setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [] });
     setDetailTexts({ nose: "", taste: "", finish: "" });
+    setEditingOverall(false); setOverallInput(""); setTagsExpanded(true);
     setSoloVoiceMemo(null); stopVoice(); setWbLookupResult(""); setAutofillResult("");
     setPreviousRatings([]); setPrevRatingsExpanded(false);
     setMatchedWhiskyRegion(""); setMatchedWhiskyCountry("");
@@ -1715,7 +1724,6 @@ export default function LabsSolo() {
   }
 
   if (soloView === "quickRate") {
-    const QUICK_SCORES = [50, 60, 70, 75, 80, 85, 90, 95];
     const QUICK_TAGS = ["Fruity", "Smoky", "Sherried", "Floral", "Spicy", "Vanilla", "Honey", "Citrus", "Peaty", "Woody", "Creamy", "Nutty"];
     const displayName = whiskyName || distillery || t("soloQuick.untitled", "Untitled dram");
     const toggleTag = (tag: string) => {
@@ -1725,6 +1733,20 @@ export default function LabsSolo() {
       });
     };
     const selectedTags = detailChips.nose || [];
+    const currentOverall = overrideActive ? score : (detailTouched ? calcOverall(detailedScores) : score);
+    const hasAnyScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0 || score > 0;
+
+    const dimSliders: { key: DimKey; label: string; color: string }[] = [
+      { key: "nose", label: t("soloQuick.nose", "Nose"), color: "var(--labs-dim-nose)" },
+      { key: "taste", label: t("soloQuick.taste", "Taste"), color: "var(--labs-dim-taste)" },
+      { key: "finish", label: t("soloQuick.finish", "Finish"), color: "var(--labs-dim-finish)" },
+    ];
+
+    const svgSize = 120;
+    const strokeWidth = 6;
+    const radius = (svgSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const scoreProgress = currentOverall > 0 ? (currentOverall / 100) * circumference : 0;
 
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-quick-rate">
@@ -1762,59 +1784,148 @@ export default function LabsSolo() {
           </p>
         )}
 
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 10 }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 16 }}>
             {t("soloQuick.score", "Your score")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-            {QUICK_SCORES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setScore(s)}
-                style={{
-                  width: 56, height: 56, borderRadius: 16,
-                  border: score === s ? "2px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.08)",
-                  background: score === s ? "linear-gradient(135deg, #E8B84B, #C9972B)" : "rgba(255,255,255,0.04)",
-                  color: score === s ? "#1a1714" : "var(--labs-text-secondary)",
-                  fontSize: 18, fontWeight: 700, cursor: "pointer",
-                  transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-                data-testid={`chip-quick-score-${s}`}
-              >
-                {s}
-              </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {dimSliders.map(({ key, label, color }) => (
+              <div key={key} data-testid={`slider-dim-${key}`}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color }}>{label}</span>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: detailedScores[key] > 0 ? "var(--labs-text)" : "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", minWidth: 28, textAlign: "right" }}>
+                    {detailedScores[key] || "—"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={detailedScores[key]}
+                  onChange={(e) => handleDetailScoreChange(key, parseInt(e.target.value))}
+                  className="labs-range-slider"
+                  style={{
+                    background: detailedScores[key] > 0
+                      ? `linear-gradient(to right, ${color} 0%, ${color} ${detailedScores[key]}%, rgba(255,255,255,0.08) ${detailedScores[key]}%, rgba(255,255,255,0.08) 100%)`
+                      : undefined,
+                  }}
+                  data-testid={`input-slider-${key}`}
+                />
+              </div>
             ))}
           </div>
         </div>
 
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 10 }}>
-            {t("soloQuick.flavors", "Flavour tags")}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--labs-text-muted)", marginBottom: 10 }}>
+            {t("soloQuick.overall", "Overall")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {QUICK_TAGS.map((tag) => {
-              const active = selectedTags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  style={{
-                    padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer",
-                    border: active ? "1.5px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.1)",
-                    background: active ? "var(--labs-accent-muted)" : "rgba(255,255,255,0.04)",
-                    color: active ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-                    transition: "all 0.15s ease",
+          <div
+            style={{ position: "relative", width: svgSize, height: svgSize, cursor: "pointer" }}
+            onClick={() => { if (!editingOverall) { setEditingOverall(true); setOverallInput(String(currentOverall || "")); } }}
+            data-testid="circle-overall-score"
+          >
+            <svg width={svgSize} height={svgSize} style={{ transform: "rotate(-90deg)" }}>
+              <circle cx={svgSize / 2} cy={svgSize / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+              <circle
+                cx={svgSize / 2} cy={svgSize / 2} r={radius} fill="none"
+                stroke="var(--labs-accent)" strokeWidth={strokeWidth}
+                strokeDasharray={circumference} strokeDashoffset={circumference - scoreProgress}
+                strokeLinecap="round"
+                style={{ transition: "stroke-dashoffset 0.4s cubic-bezier(0.16,1,0.3,1)" }}
+              />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              {editingOverall ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  autoFocus
+                  value={overallInput}
+                  onChange={(e) => setOverallInput(e.target.value)}
+                  onBlur={() => {
+                    const v = parseInt(overallInput);
+                    if (!isNaN(v) && v >= 0 && v <= 100) { handleScoreChange(v); setOverrideActive(true); }
+                    setEditingOverall(false);
                   }}
-                  data-testid={`chip-quick-tag-${tag.toLowerCase()}`}
-                >
-                  {tag}
-                </button>
-              );
-            })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); }
+                    if (e.key === "Escape") { setEditingOverall(false); }
+                  }}
+                  style={{
+                    width: 52, textAlign: "center", fontSize: 28, fontWeight: 700,
+                    background: "transparent", border: "none", borderBottom: "2px solid var(--labs-accent)",
+                    color: "var(--labs-text)", outline: "none", fontFamily: "inherit", padding: 0,
+                  }}
+                  data-testid="input-overall-score"
+                />
+              ) : (
+                <>
+                  <span style={{ fontSize: 32, fontWeight: 700, color: currentOverall > 0 ? "var(--labs-text)" : "var(--labs-text-muted)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                    {currentOverall || "—"}
+                  </span>
+                  <span style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                    {t("soloQuick.tapToEdit", "Tap to adjust")}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
+          {overrideActive && (
+            <button
+              onClick={() => { resetOverride(); }}
+              style={{ marginTop: 6, fontSize: 11, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}
+              data-testid="button-reset-override"
+            >
+              {t("soloQuick.resetToAvg", "Reset to average")}
+            </button>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <button
+            type="button"
+            onClick={() => setTagsExpanded(!tagsExpanded)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, width: "100%",
+              fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: tagsExpanded ? 10 : 0,
+              background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit",
+            }}
+            data-testid="button-toggle-tags"
+          >
+            {t("soloQuick.flavors", "Flavour tags")}
+            {selectedTags.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-accent)", background: "var(--labs-accent-muted)", borderRadius: 10, padding: "2px 8px" }}>
+                {selectedTags.length}
+              </span>
+            )}
+            <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", marginLeft: "auto", transform: tagsExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
+          {tagsExpanded && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {QUICK_TAGS.map((tag) => {
+                const active = selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    style={{
+                      padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer",
+                      border: active ? "1.5px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.1)",
+                      background: active ? "var(--labs-accent-muted)" : "rgba(255,255,255,0.04)",
+                      color: active ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+                      transition: "all 0.15s ease",
+                    }}
+                    data-testid={`chip-quick-tag-${tag.toLowerCase()}`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: 24 }}>
@@ -1838,12 +1949,12 @@ export default function LabsSolo() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px) + 60px)" }}>
           <button
-            onClick={() => { if (score > 0) handleQuickSave(); }}
-            disabled={score === 0 || saving}
+            onClick={() => { if (hasAnyScore) handleQuickSave(); }}
+            disabled={!hasAnyScore || saving}
             className="labs-btn-primary"
             style={{
               width: "100%", padding: "16px 20px", fontSize: 15, fontWeight: 600, borderRadius: 50,
-              opacity: score === 0 || saving ? 0.45 : 1,
+              opacity: !hasAnyScore || saving ? 0.45 : 1,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
             data-testid="button-quick-save"
