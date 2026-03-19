@@ -453,13 +453,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               <Play className="w-5 h-5" />
               Tasting starten
             </button>
-            <button
-              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-              onClick={() => navigate(`/labs/host/${tastingId}`)}
-              data-testid="labs-detail-manage"
-            >
-              Presenter View
-            </button>
           </>
         )}
 
