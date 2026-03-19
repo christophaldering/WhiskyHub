@@ -475,24 +475,41 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         )}
         {isHost && isDraft && (
           <>
-            <button
-              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-              onClick={handleStartTasting}
-              disabled={isStarting}
-              data-testid="labs-detail-start-tasting"
-            >
-              {isStarting ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Wird gestartet…
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5" />
-                  Tasting starten
-                </>
-              )}
-            </button>
+            <div>
+              <button
+                className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+                onClick={handleStartTasting}
+                disabled={isStarting}
+                data-testid="labs-detail-start-tasting"
+              >
+                {isStarting ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Wird gestartet…
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5" />
+                    Tasting starten
+                  </>
+                )}
+              </button>
+              <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-start-tasting-subtitle">
+                Setzt das Tasting live — Teilnehmer können bewerten
+              </p>
+            </div>
+            <div>
+              <button
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                data-testid="labs-detail-manage"
+              >
+                Tasting verwalten
+              </button>
+              <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-manage-tasting-subtitle">
+                Whiskys, Reihenfolge und Reveal steuern
+              </p>
+            </div>
           </>
         )}
 
