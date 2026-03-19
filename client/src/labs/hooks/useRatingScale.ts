@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
+import type { Participant } from "@shared/schema";
 
 export interface RatingScale {
   max: number;
@@ -47,7 +48,7 @@ export function useRatingScale(tastingScale?: number | null): RatingScale {
   const { currentParticipant } = useAppStore();
   const pid = currentParticipant?.id;
 
-  const { data: participant } = useQuery({
+  const { data: participant } = useQuery<Participant>({
     queryKey: ["participant", pid],
     queryFn: () => participantApi.get(pid!),
     enabled: !!pid,
@@ -59,7 +60,7 @@ export function useRatingScale(tastingScale?: number | null): RatingScale {
       return buildScale(tastingScale);
     }
 
-    const profileScale = (participant as any)?.preferredRatingScale;
+    const profileScale = participant?.preferredRatingScale;
     if (profileScale && VALID_SCALES.includes(profileScale)) {
       return buildScale(profileScale);
     }

@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { downloadBlob } from "@/lib/download";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
+import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
   ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
   Loader2, Eye, EyeOff, Camera, ExternalLink,
@@ -47,6 +49,7 @@ export default function LabsTasteSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [friendNotificationsEnabled, setFriendNotificationsEnabled] = useState(true);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
+  const activeScale = useRatingScale();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
   const [deletePinError, setDeletePinError] = useState("");
@@ -251,12 +254,15 @@ export default function LabsTasteSettings() {
           </div>
 
           <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
-            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("taste.settings.ratingScale", "Rating Scale")}</label>
-            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>{t("taste.settings.ratingScaleHint", "Your default scale for solo tastings. Host-defined scales override this.")}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.settings.ratingScale", "Rating Scale")}</label>
+              <ScaleBadge max={activeScale.max} />
+            </div>
+            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>{t("m2.taste.settings.ratingScaleHint", "Your default scale for solo tastings. Host-defined scales override this.")}</p>
             <div className="flex gap-2" data-testid="select-rating-scale">
               {([null, 5, 10, 20, 100] as const).map(s => {
                 const active = preferredRatingScale === s;
-                const label = s === null ? t("taste.settings.scaleDefault", "Auto") : `1–${s}`;
+                const label = s === null ? t("m2.taste.settings.scaleDefault", "Auto") : `1–${s}`;
                 return (
                   <button key={String(s)} onClick={() => setPreferredRatingScale(s)}
                     style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}

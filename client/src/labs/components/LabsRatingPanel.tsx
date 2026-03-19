@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Mic, Plus, Lock, Sparkles } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
+import { buildScale } from "@/labs/hooks/useRatingScale";
+import ScaleBadge from "./ScaleBadge";
 import FlavourStudioSheet from "./FlavourStudioSheet";
 
 export type DimKey = "nose" | "taste" | "finish";
@@ -88,6 +90,7 @@ export default function LabsRatingPanel({
   onDetailedToggle,
 }: LabsRatingPanelProps) {
   const { t, i18n } = useTranslation();
+  const scaleInfo = useMemo(() => buildScale(scale), [scale]);
 
   const [showDetailed, setShowDetailed] = useState(defaultOpen);
   const [activeTab, setActiveTab] = useState<DimKey>("nose");
@@ -636,10 +639,11 @@ export default function LabsRatingPanel({
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, opacity: overallGated ? 0.35 : 1, transition: "opacity 0.2s" }}>
-        <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)" }}>
+        <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)", display: "inline-flex", alignItems: "center", gap: 6 }}>
           {t("m2.rating.overall", "Overall")}
+          {scale !== 100 && <ScaleBadge max={scaleInfo.max} />}
           {overrideActive && !overallGated && (
-            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 11 }} data-testid="badge-override">
+            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 2, fontSize: 11 }} data-testid="badge-override">
               {t("m2.rating.manual", "Manual")}
             </span>
           )}

@@ -27,7 +27,7 @@ export default function ScaleBadge({ max, size = "sm" }: ScaleBadgeProps) {
         letterSpacing: "0.02em",
       }}
     >
-      {t("taste.rating.scaleLabel", { max, defaultValue: `Scale 1–${max}` })}
+      {t("m2.taste.rating.scaleLabel", { max, defaultValue: `Scale 1–${max}` })}
     </span>
   );
 }
