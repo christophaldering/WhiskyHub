@@ -5210,6 +5210,7 @@ const resources = {
           interruptSkip: "Skip",
           signInToRate: "Sign in to rate whiskies",
           ratingsClosed: "Ratings are currently closed",
+          blind: "Blind",
         },
         error: {
           title: "Something went wrong",
@@ -11388,6 +11389,7 @@ const resources = {
           interruptSkip: "Überspringen",
           signInToRate: "Anmelden, um Whiskys zu bewerten",
           ratingsClosed: "Bewertungen sind derzeit geschlossen",
+          blind: "Blind",
         },
         error: {
           title: "Etwas ist schiefgelaufen",

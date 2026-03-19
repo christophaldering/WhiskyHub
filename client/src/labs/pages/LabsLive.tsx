@@ -504,7 +504,7 @@ function GuidedStepView({
               data-testid="guided-blind-badge"
             >
               <EyeOff style={{ width: 10, height: 10, marginRight: 3, display: "inline" }} />
-              Blind
+              {t("m2.taste.rating.blind", "Blind")}
             </span>
           )}
         </div>
@@ -544,12 +544,23 @@ function GuidedStepView({
 
       {interruptBanner && (
         <ResumeOrSkipBanner
-          onSave={() => {
+          onSave={async () => {
             let combined = notes;
             if (flowChips.length > 0) {
               combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
             }
-            doSave(dimScores, overall, combined);
+            try {
+              if (currentParticipant && activeWhisky) {
+                await rateMutation.mutateAsync({
+                  tastingId,
+                  whiskyId: activeWhisky.id,
+                  participantId: currentParticipant.id,
+                  ...dimScores,
+                  overall,
+                  notes: combined,
+                });
+              }
+            } catch {}
             setInterruptBanner(null);
             setLocalIndex(interruptBanner.toIndex);
             setFlowSaved(false);
