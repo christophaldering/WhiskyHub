@@ -601,66 +601,69 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 </div>
               </div>
 
-              <div
-                className="labs-card p-4 flex items-center justify-between cursor-pointer"
-                onClick={() => patchTastingDetails({ blindMode: !tasting.blindMode })}
-                data-testid="labs-detail-toggle-blind"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: tasting.blindMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
-                  >
-                    <EyeOff className="w-5 h-5" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Blind Tasting</p>
-                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Hide whisky names until reveal</p>
-                  </div>
-                </div>
+              <div className="labs-card overflow-hidden">
                 <div
-                  className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
-                  style={{
-                    background: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-border)",
-                    justifyContent: tasting.blindMode ? "flex-end" : "flex-start",
-                  }}
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer"
+                  onClick={() => patchTastingDetails({ blindMode: !tasting.blindMode })}
+                  style={{ borderBottom: "1px solid var(--labs-border)" }}
+                  data-testid="labs-detail-toggle-blind"
                 >
-                  <div className="w-6 h-6 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: tasting.blindMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+                    >
+                      <EyeOff className="w-4 h-4" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Blind Tasting</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>Hide whisky names until reveal</p>
+                    </div>
+                  </div>
+                  <div
+                    className="w-11 h-6 rounded-full transition-all flex items-center px-0.5 flex-shrink-0"
+                    style={{
+                      background: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-border)",
+                      justifyContent: tasting.blindMode ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div className="w-5 h-5 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                  </div>
                 </div>
-              </div>
 
-              <div
-                className="labs-card p-4 flex items-center justify-between cursor-pointer"
-                onClick={() => {
-                  const newGuided = !tasting.guidedMode;
-                  const patch: Record<string, unknown> = { guidedMode: newGuided };
-                  if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
-                    patch.sessionUiMode = "focus";
-                  }
-                  patchTastingDetails(patch);
-                }}
-                data-testid="labs-detail-toggle-guided"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: tasting.guidedMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
-                  >
-                    <Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Host Controls the Pace</p>
-                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Guide all guests through each dram</p>
-                  </div>
-                </div>
                 <div
-                  className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
-                  style={{
-                    background: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-border)",
-                    justifyContent: tasting.guidedMode ? "flex-end" : "flex-start",
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer"
+                  onClick={() => {
+                    const newGuided = !tasting.guidedMode;
+                    const patch: Record<string, unknown> = { guidedMode: newGuided };
+                    if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                      patch.sessionUiMode = "focus";
+                    }
+                    patchTastingDetails(patch);
                   }}
+                  data-testid="labs-detail-toggle-guided"
                 >
-                  <div className="w-6 h-6 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: tasting.guidedMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+                    >
+                      <Compass className="w-4 h-4" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Host Controls the Pace</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>Guide all guests through each dram</p>
+                    </div>
+                  </div>
+                  <div
+                    className="w-11 h-6 rounded-full transition-all flex items-center px-0.5 flex-shrink-0"
+                    style={{
+                      background: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-border)",
+                      justifyContent: tasting.guidedMode ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div className="w-5 h-5 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+                  </div>
                 </div>
               </div>
 
@@ -768,7 +771,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </p>
           <div className="labs-card overflow-hidden" data-testid="labs-detail-invite-share-section">
             <div className="p-4">
-              <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
                 <span
                   className="text-2xl font-bold tracking-widest"
                   style={{ fontFamily: "monospace", color: "var(--labs-accent)" }}
@@ -779,30 +782,30 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 <button
                   onClick={handleCopyCode}
                   className="labs-btn-ghost"
-                  style={{ padding: "4px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}
+                  style={{ padding: "4px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
                   data-testid="button-labs-copy-code"
                 >
-                  {codeCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
+                  {codeCopied ? <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5 flex-shrink-0" />}
                   {codeCopied ? "Copied" : "Copy"}
                 </button>
               </div>
-              <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
                 <button
                   onClick={() => setShowQr(!showQr)}
                   className="labs-btn-ghost"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, whiteSpace: "nowrap" }}
                   data-testid="button-labs-toggle-qr"
                 >
-                  <QrCode className="w-4 h-4" />
+                  <QrCode className="w-4 h-4 flex-shrink-0" />
                   {showQr ? "Hide QR" : "Show QR Code"}
                 </button>
                 <button
                   onClick={handleCopyLink}
                   className="labs-btn-ghost"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, whiteSpace: "nowrap" }}
                   data-testid="button-labs-copy-join-link"
                 >
-                  {linkCopied ? <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5" />}
+                  {linkCopied ? <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5 flex-shrink-0" />}
                   {linkCopied ? "Copied" : "Copy Link"}
                 </button>
               </div>
@@ -1038,74 +1041,75 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>No whiskies added yet</p>
               </div>
             ) : (
-              <div className="space-y-2" data-testid="labs-detail-whiskies-list">
+              <div className="labs-card overflow-hidden" data-testid="labs-detail-whiskies-list">
                 {(whiskies || []).map((w: Record<string, unknown>, idx: number) => {
                   if (editingWhiskyId === w.id) {
                     return (
-                      <InlineWhiskyEdit
-                        key={w.id as string}
-                        whisky={w}
-                        onSave={(data) => updateWhiskyMutation.mutate({ id: w.id as string, data })}
-                        onCancel={() => setEditingWhiskyId(null)}
-                      />
+                      <div key={w.id as string} style={{ borderBottom: idx < whiskyCount - 1 ? "1px solid var(--labs-border)" : "none" }}>
+                        <InlineWhiskyEdit
+                          whisky={w}
+                          onSave={(data) => updateWhiskyMutation.mutate({ id: w.id as string, data })}
+                          onCancel={() => setEditingWhiskyId(null)}
+                        />
+                      </div>
                     );
                   }
 
                   return (
                     <div
                       key={w.id as string}
-                      className="labs-card px-4 py-3 flex items-center gap-3"
+                      className="px-4 py-2.5 flex items-center gap-3"
+                      style={{ borderBottom: idx < whiskyCount - 1 ? "1px solid var(--labs-border)" : "none" }}
                       data-testid={`labs-detail-whisky-${w.id}`}
                     >
                       <span
-                        className="text-xs font-bold flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+                        className="text-[11px] font-semibold flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                         style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                       >
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)", margin: 0 }}>
                           {tasting.blindMode && !isHost ? `Dram #${idx + 1}` : ((w.name as string) || `Dram #${idx + 1}`)}
                         </p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                          {w.distillery && <span>{w.distillery as string}</span>}
-                          {w.age && <span>{w.age as string}y</span>}
-                          {w.abv && <span>{w.abv as number}%</span>}
-                          {w.region && <span>{w.region as string}</span>}
-                        </div>
+                        {(w.distillery || w.age || w.abv || w.region) && (
+                          <p className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)", margin: 0 }}>
+                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
                       </div>
                       {(w.imageUrl as string) && (
                         <img
                           src={w.imageUrl as string}
                           alt=""
-                          className="w-8 h-8 rounded-md object-cover flex-shrink-0"
+                          className="w-7 h-7 rounded-md object-cover flex-shrink-0"
                           data-testid={`img-whisky-${w.id}`}
                         />
                       )}
                       {isHost && isDraft && (
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
                           <button
                             className="labs-btn-ghost p-1"
                             onClick={() => setEditingWhiskyId(w.id as string)}
                             data-testid={`button-edit-whisky-${w.id}`}
                           >
-                            <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                            <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                           </button>
                           {deletingWhiskyId === w.id ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5">
                               <button
                                 className="labs-btn-ghost p-1"
                                 onClick={() => deleteWhiskyMutation.mutate(w.id as string)}
                                 data-testid={`button-confirm-delete-whisky-${w.id}`}
                               >
-                                <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-danger, #e74c3c)" }} />
+                                <Check className="w-3 h-3" style={{ color: "var(--labs-danger, #e74c3c)" }} />
                               </button>
                               <button
                                 className="labs-btn-ghost p-1"
                                 onClick={() => setDeletingWhiskyId(null)}
                                 data-testid={`button-cancel-delete-whisky-${w.id}`}
                               >
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3 h-3" />
                               </button>
                             </div>
                           ) : (
@@ -1114,7 +1118,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                               onClick={() => setDeletingWhiskyId(w.id as string)}
                               data-testid={`button-delete-whisky-${w.id}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                              <Trash2 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                             </button>
                           )}
                         </div>
@@ -1131,25 +1135,28 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       {participants && participants.length > 0 && (
         <div className="mb-6 labs-stagger-5">
           <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em" }}>
-            Participants
+            Participants ({participants.length})
           </p>
-          <div className="labs-card p-4">
-            <div className="space-y-2">
-              {participants.map((p: { id: string; name?: string }) => (
-                <div key={p.id} className="flex items-center gap-3" data-testid={`labs-detail-participant-${p.id}`}>
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                  >
-                    {stripGuestSuffix((p.name || "?")).charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium">{stripGuestSuffix(p.name || "Anonymous")}</span>
-                  {p.id === tasting.hostId && (
-                    <Crown className="w-3 h-3 ml-auto" style={{ color: "var(--labs-accent)" }} />
-                  )}
+          <div className="labs-card overflow-hidden">
+            {participants.map((p: { id: string; name?: string }, idx: number) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 px-4 py-2.5"
+                style={{ borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border)" : "none" }}
+                data-testid={`labs-detail-participant-${p.id}`}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
+                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                >
+                  {stripGuestSuffix((p.name || "?")).charAt(0).toUpperCase()}
                 </div>
-              ))}
-            </div>
+                <span className="text-sm font-medium flex-1 truncate">{stripGuestSuffix(p.name || "Anonymous")}</span>
+                {p.id === tasting.hostId && (
+                  <Crown className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

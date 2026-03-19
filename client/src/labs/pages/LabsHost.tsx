@@ -2044,8 +2044,8 @@ function MobileCompanion({
             onClick={onSwitchToManage}
             data-testid="mobile-switch-manage"
           >
-            <Settings className="w-4 h-4" />
-            Manage Session
+            <Sliders className="w-4 h-4" />
+            {t("m2.host.allSettings", "Alle Einstellungen")}
           </button>
         )}
       </div>
