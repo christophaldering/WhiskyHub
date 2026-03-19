@@ -37,6 +37,7 @@ export const tastings = pgTable("tastings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   date: text("date").notNull(),
+  time: text("time"),
   location: text("location").notNull(),
   hostId: varchar("host_id").notNull(),
   code: text("code").notNull(),

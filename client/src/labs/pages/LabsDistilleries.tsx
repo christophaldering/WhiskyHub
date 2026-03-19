@@ -52,12 +52,14 @@ export default function LabsDistilleries() {
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("All");
   const [view, setView] = useState<"list" | "map">("list");
+  const [sortBy, setSortBy] = useState<"name" | "founded" | "region">("name");
 
   const filtered = useMemo(() => distilleries.filter((d) => {
     const s = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.region.toLowerCase().includes(search.toLowerCase()) || d.country.toLowerCase().includes(search.toLowerCase());
     const c = country === "All" || d.country === country;
     return s && c;
-  }), [search, country]);
+  }).sort((a, b) => sortBy === "name" ? a.name.localeCompare(b.name) : sortBy === "founded" ? a.founded - b.founded : a.region.localeCompare(b.region)),
+  [search, country, sortBy]);
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
@@ -86,7 +88,14 @@ export default function LabsDistilleries() {
       ) : (
         <>
           <input type="text" placeholder={t("discover.searchDistilleries", "Search distilleries...")} value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-distilleries" />
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0 0" }}>
+            <div style={{ display: "flex", gap: 2 }}>
+              {(["name", "founded", "region"] as const).map((s) => (
+                <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? "var(--labs-surface-elevated)" : "transparent", color: sortBy === s ? "var(--labs-accent)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer" }} data-testid={`labs-sort-${s}`}>{s === "name" ? "A–Z" : s === "founded" ? "Founded" : "Region"}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "8px 0" }}>
             {COUNTRIES.map((c) => (
               <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? "var(--labs-accent)" : "var(--labs-border)"}`, background: country === c ? "var(--labs-accent)" : "transparent", color: country === c ? "var(--labs-bg)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`labs-chip-${c.toLowerCase()}`}>{c}</button>
             ))}

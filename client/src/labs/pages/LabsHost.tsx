@@ -2457,6 +2457,7 @@ function CreateTastingForm() {
   const { currentParticipant } = useAppStore();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [blindMode, setBlindMode] = useState(false);
@@ -2484,6 +2485,7 @@ function CreateTastingForm() {
       const result = await tastingApi.create({
         title: title.trim(),
         date,
+        time: time.trim() || null,
         location: location.trim() || "",
         description: description.trim() || "",
         hostId: currentParticipant.id,
@@ -2558,7 +2560,7 @@ function CreateTastingForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
             <label className="labs-section-label" htmlFor="tasting-date">Date</label>
             <input
@@ -2571,6 +2573,17 @@ function CreateTastingForm() {
             />
           </div>
           <div>
+            <label className="labs-section-label" htmlFor="tasting-time">Time</label>
+            <input
+              id="tasting-time"
+              type="time"
+              className="labs-input"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              data-testid="labs-host-input-time"
+            />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
             <label className="labs-section-label" htmlFor="tasting-location">Location</label>
             <input
               id="tasting-location"
@@ -4298,6 +4311,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     const body: Record<string, unknown> = { hostId: currentParticipant?.id };
     if (editTastingFields.title) body.title = editTastingFields.title;
     if (editTastingFields.date !== undefined) body.date = editTastingFields.date;
+    if (editTastingFields.time !== undefined) body.time = editTastingFields.time || null;
     if (editTastingFields.location !== undefined) body.location = editTastingFields.location;
     if (editTastingFields.description !== undefined) body.description = editTastingFields.description;
     setEditTastingError("");
@@ -4529,6 +4543,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 setEditTastingFields({
                   title: tasting.title || "",
                   date: tasting.date || "",
+                  time: (tasting as any).time || "",
                   location: tasting.location || "",
                   description: tasting.description || "",
                 });
@@ -4592,13 +4607,20 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             onChange={e => setEditTastingFields({ ...editTastingFields, title: e.target.value })}
             data-testid="labs-edit-tasting-title"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <input
               className="labs-input"
               type="date"
               value={editTastingFields.date || ""}
               onChange={e => setEditTastingFields({ ...editTastingFields, date: e.target.value })}
               data-testid="labs-edit-tasting-date"
+            />
+            <input
+              className="labs-input"
+              type="time"
+              value={editTastingFields.time || ""}
+              onChange={e => setEditTastingFields({ ...editTastingFields, time: e.target.value })}
+              data-testid="labs-edit-tasting-time"
             />
             <input
               className="labs-input"

@@ -707,19 +707,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
     enabled: !!tastingId,
   });
 
-  const { data: allRatings } = useQuery({
+  const { data: allRatings, isLoading: loadingRatings } = useQuery({
     queryKey: ["tastingRatings", tastingId],
     queryFn: () => ratingApi.getForTasting(tastingId),
     enabled: !!tastingId,
   });
 
-  const { data: participants } = useQuery({
+  const { data: participants, isLoading: loadingParticipants } = useQuery({
     queryKey: ["tastingParticipants", tastingId],
     queryFn: () => tastingApi.getParticipants(tastingId),
     enabled: !!tastingId,
   });
 
-  const isLoading = loadingTasting || loadingWhiskies;
+  const isLoading = loadingTasting || loadingWhiskies || loadingRatings || loadingParticipants;
   const { t } = useTranslation();
   const qc = useQueryClient();
   const pid = getParticipantId();
@@ -1037,7 +1037,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-                {tasting.date} · {tasting.location}
+                {tasting.date}{(tasting as any).time ? ` · ${(tasting as any).time}` : ""} · {tasting.location}
               </p>
           {tasting.guidedMode && (
             <span
