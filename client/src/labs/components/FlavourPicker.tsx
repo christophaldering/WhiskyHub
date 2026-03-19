@@ -34,8 +34,8 @@ const GOLD = "#c8861a";
 const COMBINED_GROUPS: { id: string; en: string; de: string; color: string; merge: string[] }[] = [
   { id: "fruity", en: "Fruity", de: "Fruchtig", color: "#e07b4c", merge: ["fruity", "floral"] },
   { id: "sweet-spicy", en: "Sweet & Spicy", de: "Süß & Würzig", color: "#d4a853", merge: ["sweet", "spicy"] },
-  { id: "smoky", en: "Smoky", de: "Rauchig", color: "#6b7280", merge: ["smoky", "maritime"] },
   { id: "wood-leather", en: "Wood & Leather", de: "Holz & Leder", color: "#8b6f47", merge: ["woody", "earthy"] },
+  { id: "smoky-maritime", en: "Smoky & Maritime", de: "Rauchig & Maritim", color: "#6b7280", merge: ["smoky", "maritime", "mineral"] },
   { id: "malty-nutty", en: "Malty & Nutty", de: "Malzig & Nussig", color: "#b8934a", merge: ["malty", "nutty"] },
   { id: "herbal-creamy", en: "Herbal & Creamy", de: "Kräuter & Cremig", color: "#6b8e5a", merge: ["herbal", "creamy"] },
 ];
