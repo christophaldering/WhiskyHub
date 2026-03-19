@@ -321,6 +321,23 @@
   box-shadow: 0 0 0 3px var(--labs-accent-muted);
 }
 
+.labs-input:-webkit-autofill,
+.labs-input:-webkit-autofill:hover,
+.labs-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset !important;
+  -webkit-text-fill-color: var(--labs-text) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--labs-text);
+}
+
+.labs-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset, 0 0 0 3px var(--labs-accent-muted) !important;
+  -webkit-text-fill-color: var(--labs-text) !important;
+  border-color: var(--labs-accent);
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--labs-text);
+}
+
 .labs-badge {
   display: inline-flex;
   align-items: center;
