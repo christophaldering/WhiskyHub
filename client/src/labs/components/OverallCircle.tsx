@@ -119,10 +119,10 @@ export default function OverallCircle({
   const startEdit = useCallback(() => {
     if (disabled) return;
     if (!overrideActive) onOverrideToggle();
-    setEditInput(String(value));
+    setEditInput(String(overrideActive ? value : calculatedAvg));
     setEditing(true);
     setTimeout(() => inputRef.current?.select(), 50);
-  }, [disabled, overrideActive, onOverrideToggle, value]);
+  }, [disabled, overrideActive, onOverrideToggle, value, calculatedAvg]);
 
   const commitEdit = useCallback(() => {
     const num = parseInt(editInput, 10);

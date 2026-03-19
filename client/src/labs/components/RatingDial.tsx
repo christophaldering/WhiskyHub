@@ -1,5 +1,4 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 
@@ -70,7 +69,6 @@ export default function RatingDial({
   size = 200,
   color = GOLD,
 }: RatingDialProps) {
-  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
