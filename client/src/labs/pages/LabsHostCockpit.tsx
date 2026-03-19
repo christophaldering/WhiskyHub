@@ -807,16 +807,45 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         </div>
                       )}
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 12 }}>
-                        {["Nose", "Taste", "Finish", "Overall"].map(dim => (
-                          <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 44, textAlign: "right", fontWeight: 500 }}>{dim}</span>
-                            <div style={{ flex: 1, height: 5, borderRadius: 3, background: "var(--labs-surface-elevated)", overflow: "hidden" }}>
-                              <div style={{ width: "50%", height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.6 }} />
+                      {(() => {
+                        const whiskyRatings = activeWhisky
+                          ? ratings.filter((r: any) => r.whiskyId === activeWhisky.id)
+                          : [];
+                        const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
+                        const dims: { label: string; key: string }[] = [
+                          { label: "Nose", key: "nose" },
+                          { label: "Taste", key: "taste" },
+                          { label: "Finish", key: "finish" },
+                          { label: "Overall", key: "overall" },
+                        ];
+                        const avgs = dims.map(d => {
+                          const validRatings = whiskyRatings.filter((r: any) => r[d.key] != null);
+                          if (validRatings.length === 0) return 0;
+                          const sum = validRatings.reduce((acc: number, r: any) => acc + r[d.key], 0);
+                          return Math.round(sum / validRatings.length);
+                        });
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 12 }}>
+                            {dims.map((d, i) => {
+                              const pct = ratedCount > 0 ? Math.max(0, Math.min(100, (avgs[i] / ratingScale) * 100)) : 0;
+                              return (
+                                <div key={d.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 44, textAlign: "right", fontWeight: 500 }}>{d.label}</span>
+                                  <div style={{ flex: 1, height: 5, borderRadius: 3, background: "var(--labs-surface-elevated)", overflow: "hidden" }}>
+                                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.6, transition: "width 0.4s ease" }} />
+                                  </div>
+                                  <span data-testid={`guest-avg-${d.key}`} style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 40, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                                    {ratedCount > 0 ? `${avgs[i]}/${ratingScale}` : "—"}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                            <div data-testid="guest-rated-counter" style={{ fontSize: 10, color: "var(--labs-text-muted)", textAlign: "right", marginTop: 2 }}>
+                              {ratedCount > 0 ? `${ratedCount}/${totalParticipants} rated` : "No ratings yet"}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ) : (
