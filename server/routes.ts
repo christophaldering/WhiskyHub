@@ -413,9 +413,9 @@ export async function registerRoutes(
 
   app.post("/api/client-error", (req: Request, res: Response) => {
     const { message, stack, componentStack, url, userAgent, timestamp } = req.body || {};
-    log(`[CLIENT ERROR] ${message || "unknown"} at ${url || "?"} (${userAgent?.slice(0, 80) || "?"})`, "error");
-    if (stack) log(`  Stack: ${String(stack).slice(0, 500)}`, "error");
-    if (componentStack) log(`  Component: ${String(componentStack).slice(0, 300)}`, "error");
+    console.error(`[CLIENT ERROR] ${message || "unknown"} at ${url || "?"} (${userAgent?.slice(0, 80) || "?"})`);
+    if (stack) console.error(`  Stack: ${String(stack).slice(0, 500)}`);
+    if (componentStack) console.error(`  Component: ${String(componentStack).slice(0, 300)}`);
     res.json({ ok: true });
   });
 

@@ -7,7 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
   Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar, Library, Archive,
-  Sparkles, Compass, Target, Layers,
+  Sparkles, Compass, Target, Layers, ClipboardList,
 } from "lucide-react";
 import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
