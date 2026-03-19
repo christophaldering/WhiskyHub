@@ -32,7 +32,7 @@ import {
   Gauge,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, inviteApi } from "@/lib/api";
+import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
@@ -138,6 +138,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [metaLocation, setMetaLocation] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [settingsSaveStatus, setSettingsSaveStatus] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const { data: tasting, isLoading, isError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -279,6 +281,28 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       });
       setEditingMeta(false);
     } catch {}
+  };
+
+  const handleStartTasting = async () => {
+    if (isStarting || !currentParticipant) return;
+    setIsStarting(true);
+    setStartError(null);
+    try {
+      const pid = currentParticipant.id;
+      await tastingApi.updateStatus(tastingId, "open", undefined, pid);
+      if (whiskies && whiskies.length > 0) {
+        await guidedApi.updateMode(tastingId, pid, { guidedMode: true, guidedWhiskyIndex: 0, guidedRevealStep: 0 });
+      }
+      await tastingApi.join(tastingId, pid);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      navigate(`/labs/host/${tastingId}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Tasting konnte nicht gestartet werden.";
+      setStartError(message);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const isHost = currentParticipant && tasting?.hostId === currentParticipant.id;
@@ -443,15 +467,30 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       </div>
 
       <div className="mb-6 labs-stagger-1 space-y-2">
+        {startError && (
+          <div className="labs-card p-3 border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg" data-testid="labs-detail-start-error">
+            {startError}
+          </div>
+        )}
         {isHost && isDraft && (
           <>
             <button
               className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-              onClick={() => navigate(`/labs/live/${tastingId}`)}
+              onClick={handleStartTasting}
+              disabled={isStarting}
               data-testid="labs-detail-start-tasting"
             >
-              <Play className="w-5 h-5" />
-              Tasting starten
+              {isStarting ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Wird gestartet…
+                </>
+              ) : (
+                <>
+                  <Play className="w-5 h-5" />
+                  Tasting starten
+                </>
+              )}
             </button>
           </>
         )}
