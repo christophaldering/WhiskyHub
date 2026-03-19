@@ -907,47 +907,62 @@ export default function LabsRatingPanel({
       data-testid="button-toggle-detailed"
       style={{
         width: "100%",
-        marginTop: 8,
+        marginTop: 16,
         background: showDetailed
           ? "linear-gradient(135deg, var(--labs-accent-muted), color-mix(in srgb, var(--labs-accent-muted) 60%, var(--labs-surface)))"
-          : "var(--labs-surface)",
-        border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border)"}`,
+          : "transparent",
+        border: `1px solid ${showDetailed ? "var(--labs-accent)" : "var(--labs-border-subtle)"}`,
         borderRadius: 12,
         cursor: "pointer",
         color: "var(--labs-text)",
         fontSize: 14,
         fontFamily: "inherit",
-        padding: "14px 16px",
+        padding: "12px 14px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
+        gap: 10,
         textAlign: "left" as const,
         transition: "all 0.2s ease",
         boxShadow: showDetailed ? "0 0 0 1px var(--labs-accent), 0 2px 8px rgba(0,0,0,0.1)" : "none",
+        opacity: showDetailed ? 1 : 0.75,
       }}
     >
       <span style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 34,
-        height: 34,
-        borderRadius: 10,
-        background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        background: showDetailed ? "var(--labs-accent)" : "color-mix(in srgb, var(--labs-accent) 10%, transparent)",
         flexShrink: 0,
         transition: "all 0.2s",
       }}>
-        <Sparkles style={{ width: 18, height: 18, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
+        <Sparkles style={{ width: 16, height: 16, color: showDetailed ? "var(--labs-bg)" : "var(--labs-accent)" }} />
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ fontWeight: 700, display: "block", fontSize: 14, lineHeight: 1.3 }}>
-          {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>
+            {t("m2.rating.detailedTasting", "Detailed Tasting Notes")}
+          </span>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: "var(--labs-text-muted)",
+            background: "color-mix(in srgb, var(--labs-text-muted) 12%, transparent)",
+            padding: "1px 6px",
+            borderRadius: 4,
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.04em",
+          }}>
+            {t("m2.rating.optionalLabel", "Optional")}
+          </span>
         </span>
         <span style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "block", marginTop: 2, lineHeight: 1.3 }}>
           {t("m2.rating.detailedTastingDesc", "Score nose, taste & finish individually")}
         </span>
       </div>
-      <ChevronDown style={{ width: 18, height: 18, color: "var(--labs-accent)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
+      <ChevronDown style={{ width: 16, height: 16, color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
     </button>
   );
 
@@ -976,9 +991,9 @@ export default function LabsRatingPanel({
               )}
             </div>
 
-            {showToggle && renderDetailedToggle()}
-
             {renderWizardNavigation()}
+
+            {showToggle && renderDetailedToggle()}
           </div>
         )}
 
