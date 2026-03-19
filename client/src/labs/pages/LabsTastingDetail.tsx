@@ -771,9 +771,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </p>
           <div className="labs-card overflow-hidden" data-testid="labs-detail-invite-share-section">
             <div className="p-4">
-              <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-3" style={{ minWidth: 0 }}>
                 <span
-                  className="text-2xl font-bold tracking-widest"
+                  className="text-xl sm:text-2xl font-bold tracking-wider sm:tracking-widest whitespace-nowrap"
                   style={{ fontFamily: "monospace", color: "var(--labs-accent)" }}
                   data-testid="labs-detail-join-code"
                 >
