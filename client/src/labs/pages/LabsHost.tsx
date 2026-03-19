@@ -9,7 +9,7 @@ import {
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, ChevronRight, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
-  MessageCircle, Video, FileText, Settings, Upload, Share2,
+  MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft,
 } from "lucide-react";
@@ -189,6 +189,17 @@ function isExcelFile(file: File): boolean {
   return /\.(xlsx|xls)$/i.test(file.name) ||
     file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     file.type === "application/vnd.ms-excel";
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function FileIcon({ file, className }: { file: File; className?: string }) {
+  if (isExcelFile(file)) return <FileSpreadsheet className={className} />;
+  return <FileText className={className} />;
 }
 
 interface LabsHostProps {
@@ -1635,12 +1646,14 @@ function MobileCompanion({
                   </div>
                 </div>
                 {mobileAiFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-2">
                     {mobileAiFiles.map((f, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
-                        {f.name.length > 15 ? f.name.slice(0, 12) + "..." : f.name}
+                      <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`mobile-ai-file-${i}`}>
+                        <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate max-w-[180px]">{f.name.length > 25 ? f.name.slice(0, 22) + "..." : f.name}</span>
+                        <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
                         <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
-                          <X className="w-3 h-3" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </span>
                     ))}
@@ -5400,12 +5413,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </div>
             </div>
             {aiImportFiles.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {aiImportFiles.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
-                    {f.name}
+                  <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`desktop-ai-file-${i}`}>
+                    <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate max-w-[200px]">{f.name}</span>
+                    <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
                     <button onClick={() => setAiImportFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 ))}
