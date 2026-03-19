@@ -105,18 +105,17 @@ export default function FlavourPicker({
 
   const activeSet = useMemo(() => new Set(activeChips.map((c) => c.toLowerCase())), [activeChips]);
 
-  const groups = useMemo(() => {
+  const { visibleGroups, hiddenGroups } = useMemo(() => {
     const orderedCats =
       isBlind || !flavorProfileId ? FLAVOR_CATEGORIES : getSortedCategories(flavorProfileId);
-    const builtGroups = buildGroups(orderedCats);
+    const allGroups = buildGroups(orderedCats);
+    const visible = allGroups.slice(0, VISIBLE_COUNT);
+    let hidden = allGroups.slice(VISIBLE_COUNT);
     if (!isBlind && flavorProfileId) {
-      return sortGroupsByProfile(builtGroups, getSortedCategories(flavorProfileId));
+      hidden = sortGroupsByProfile(hidden, getSortedCategories(flavorProfileId));
     }
-    return builtGroups;
+    return { visibleGroups: visible, hiddenGroups: hidden };
   }, [isBlind, flavorProfileId]);
-
-  const visibleGroups = groups.slice(0, VISIBLE_COUNT);
-  const hiddenGroups = groups.slice(VISIBLE_COUNT);
 
   const countActive = useCallback(
     (grp: PickerGroup) =>
