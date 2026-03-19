@@ -123,7 +123,9 @@ export const whiskies = pgTable("whiskies", {
   photoRevealed: boolean("photo_revealed").default(false),
   hostNotes: text("host_notes"),
   bottler: text("bottler"), // Independent Bottler or "OA" for official
-  vintage: text("vintage"), // Distillation/bottling vintage year(s)
+  vintage: text("vintage"), // Legacy field — kept for backwards compatibility
+  distilledYear: text("distilled_year"), // Year of distillation
+  bottledYear: text("bottled_year"), // Year of bottling
   price: real("price"), // Bottle price (0.7l)
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
   distilleryUrl: text("distillery_url"), // Distillery homepage URL

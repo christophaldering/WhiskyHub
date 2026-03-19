@@ -498,13 +498,23 @@ export default function LabsTaste() {
                 ? `Noch ${Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} Drams bis zu deinem Profil.`
                 : 'Dein erster Dram ist nur einen Atemzug entfernt.'}
             </p>
-            <div style={{ maxWidth: 180, margin: "0 auto 1.5rem", width: '100%' }}>
+            <div style={{ maxWidth: 220, margin: "0 auto 1.5rem", width: '100%' }}>
               <div style={{ height: 3, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "var(--labs-accent)", borderRadius: 3, transition: "width 0.5s", opacity: 0.6 }} />
               </div>
               <p style={{ fontSize: 10, color: "var(--labs-text-muted)", opacity: 0.5, marginTop: 6, textAlign: "center" }}>
                 {whiskyCount} / {ANALYTICS_THRESHOLD}
               </p>
+              {whiskyCount > 0 && (
+                <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 12, fontSize: 10, color: "var(--labs-text-muted)" }}>
+                  {(statsObj?.totalRatings ?? 0) > 0 && (
+                    <span data-testid="text-count-tasting-ratings">{statsObj?.totalRatings} from tastings</span>
+                  )}
+                  {(statsObj?.totalJournalEntries ?? 0) > 0 && (
+                    <span data-testid="text-count-solo-drams">{statsObj?.totalJournalEntries} solo</span>
+                  )}
+                </div>
+              )}
             </div>
             <button className="labs-empty-action" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
               {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}

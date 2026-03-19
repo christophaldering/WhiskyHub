@@ -38,11 +38,17 @@ function getRevealState(tasting: any, whiskyCount: number) {
   const revealStep = tasting.revealStep ?? 0;
   const allRevealed = whiskyCount > 0 && revealIndex >= whiskyCount - 1 && revealStep >= maxSteps;
 
+  const FIELD_LABELS: Record<string, string> = {
+    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+    region: "Region", country: "Country", category: "Category",
+    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
+    bottler: "Bottler", vintage: "Vintage", hostNotes: "Notes",
+    hostSummary: "Summary", price: "Price",
+  };
   const stepLabels = stepGroups.map((group: string[]) => {
-    if (group.includes("name")) return "Name";
-    if (group.includes("image")) return "Image";
-    if (group.includes("distillery") || group.length > 2) return "Details";
-    return group[0] || "Step";
+    const labels = group.map(f => FIELD_LABELS[f] || f);
+    if (labels.length <= 2) return labels.join(" & ");
+    return labels.slice(0, 2).join(" & ") + " +";
   });
 
   let nextLabel = "Reveal Next";
@@ -86,7 +92,8 @@ const REVEAL_FIELD_LABELS: Record<string, string> = {
   name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
   region: "Region", country: "Country", category: "Category",
   caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
-  vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
+  vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
+  hostNotes: "Notes", hostSummary: "Summary", image: "Image",
   ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
 };
 
@@ -800,7 +807,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                 ["abv", activeWhisky.abv ? `${activeWhisky.abv}%` : null], ["region", activeWhisky.region],
                                 ["country", activeWhisky.country], ["category", activeWhisky.category],
                                 ["caskInfluence", activeWhisky.caskInfluence], ["bottler", activeWhisky.bottler],
-                                ["vintage", activeWhisky.vintage ? `${activeWhisky.vintage}` : null], ["peatLevel", activeWhisky.peatLevel],
+                                ["distilledYear", (activeWhisky as any).distilledYear ? `Dist. ${(activeWhisky as any).distilledYear}` : null],
+                                ["bottledYear", (activeWhisky as any).bottledYear ? `Btl. ${(activeWhisky as any).bottledYear}` : null],
+                                ["vintage", !((activeWhisky as any).distilledYear || (activeWhisky as any).bottledYear) && activeWhisky.vintage ? `${activeWhisky.vintage}` : null],
+                                ["peatLevel", activeWhisky.peatLevel],
                                 ["ppm", activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : null],
                                 ["price", activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : null],
                               ];
@@ -1100,14 +1110,14 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   !confirmEnd ? (
                     <button onClick={handleEndSession} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-end">
                       <Lock style={{ width: 14, height: 14 }} />
-                      Close Ratings
+                      End Session
                     </button>
                   ) : (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => setConfirmEnd(false)} className="cockpit-action-btn cockpit-action-secondary" style={{ flex: 1 }}>Cancel</button>
                       <button onClick={handleEndSession} className="cockpit-action-btn cockpit-action-danger" style={{ flex: 1 }} data-testid="cockpit-confirm-end">
                         <Lock style={{ width: 14, height: 14 }} />
-                        Confirm
+                        End Session
                       </button>
                     </div>
                   )

@@ -277,6 +277,29 @@
   transform: scale(0.97);
 }
 
+.labs-btn-danger {
+  background: #c0392b;
+  color: #fff;
+  border: 1px solid #a93226;
+  border-radius: var(--labs-radius-sm);
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 200ms ease, transform 160ms cubic-bezier(0.2, 0.8, 0.4, 1);
+  font-family: inherit;
+  text-align: center;
+  justify-content: center;
+}
+
+.labs-btn-danger:hover {
+  background: #e74c3c;
+}
+
+.labs-btn-danger:active {
+  transform: scale(0.97);
+}
+
 .labs-btn-ghost {
   background: transparent;
   color: var(--labs-text-secondary);
@@ -323,14 +346,26 @@
 
 .labs-input:-webkit-autofill,
 .labs-input:-webkit-autofill:hover,
-.labs-input:-webkit-autofill:active {
+.labs-input:-webkit-autofill:active,
+.labs-theme input:-webkit-autofill,
+.labs-theme input:-webkit-autofill:hover,
+.labs-theme input:-webkit-autofill:active,
+.labs-theme textarea:-webkit-autofill,
+.labs-theme textarea:-webkit-autofill:hover,
+.labs-theme textarea:-webkit-autofill:active,
+.labs-theme select:-webkit-autofill,
+.labs-theme select:-webkit-autofill:hover,
+.labs-theme select:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset !important;
   -webkit-text-fill-color: var(--labs-text) !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: var(--labs-text);
 }
 
-.labs-input:-webkit-autofill:focus {
+.labs-input:-webkit-autofill:focus,
+.labs-theme input:-webkit-autofill:focus,
+.labs-theme textarea:-webkit-autofill:focus,
+.labs-theme select:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px var(--labs-surface) inset, 0 0 0 3px var(--labs-accent-muted) !important;
   -webkit-text-fill-color: var(--labs-text) !important;
   border-color: var(--labs-accent);

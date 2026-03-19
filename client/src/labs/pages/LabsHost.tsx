@@ -33,6 +33,7 @@ const EXCEL_MAX_ROWS = 500;
 const EXCEL_ALLOWED_FIELDS = new Set([
   "sortOrder", "name", "distillery", "age", "abv", "category", "region",
   "country", "caskInfluence", "peatLevel", "ppm", "bottler", "vintage",
+  "distilledYear", "bottledYear",
   "price", "whiskybaseId", "notes", "hostSummary",
 ]);
 const EXCEL_HEADER_MAP: Record<string, string> = {
@@ -41,7 +42,9 @@ const EXCEL_HEADER_MAP: Record<string, string> = {
   "category": "category", "region": "region", "country": "country",
   "cask type": "caskInfluence", "cask influence": "caskInfluence",
   "peat level": "peatLevel", "ppm": "ppm", "bottler": "bottler",
-  "vintage": "vintage", "price": "price", "whiskybase id": "whiskybaseId",
+  "vintage": "vintage", "distilled": "distilledYear", "distilled year": "distilledYear",
+  "bottled": "bottledYear", "bottled year": "bottledYear",
+  "price": "price", "whiskybase id": "whiskybaseId",
   "notes": "notes", "host summary": "hostSummary",
 };
 
@@ -57,7 +60,16 @@ function _parseStandardRows(rows: any[]): any[] {
       }
       return mapped;
     })
-    .filter((w) => w.name && w.name.length > 0);
+    .filter((w) => {
+      if (!w.name || typeof w.name !== "string") return false;
+      const name = w.name.trim();
+      if (name.length < 2) return false;
+      if (/^\d+$/.test(name)) return false;
+      if (/^[-–—_.,;:\/\\#+*=]+$/.test(name)) return false;
+      if (/^(total|sum|average|avg|count|blank|empty|n\/a|nan|null|undefined|header|example|template|muster|test)$/i.test(name)) return false;
+      w.name = name;
+      return true;
+    });
 }
 
 function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
@@ -250,11 +262,17 @@ function getRevealState(tasting: any, whiskyCount: number) {
   const revealStep = tasting.revealStep ?? 0;
   const allRevealed = whiskyCount > 0 && revealIndex >= whiskyCount - 1 && revealStep >= maxSteps;
 
+  const FIELD_LABELS: Record<string, string> = {
+    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+    region: "Region", country: "Country", category: "Category",
+    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
+    bottler: "Bottler", vintage: "Vintage", hostNotes: "Notes",
+    hostSummary: "Summary", price: "Price",
+  };
   const stepLabels = stepGroups.map((group: string[]) => {
-    if (group.includes("name")) return "Name";
-    if (group.includes("image")) return "Image";
-    if (group.includes("distillery") || group.length > 2) return "Details";
-    return group[0] || "Step";
+    const labels = group.map(f => FIELD_LABELS[f] || f);
+    if (labels.length <= 2) return labels.join(" & ");
+    return labels.slice(0, 2).join(" & ") + " +";
   });
 
   let nextLabel = "Reveal Next";
@@ -1151,6 +1169,7 @@ function MobileCompanion({
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileDragOver, setMobileDragOver] = useState(false);
+  const [confirmEndSession, setConfirmEndSession] = useState(false);
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
   const [mobileEditName, setMobileEditName] = useState("");
 
@@ -1342,6 +1361,8 @@ function MobileCompanion({
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
             vintage: w.vintage || "",
+            distilledYear: w.distilledYear || "",
+            bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
             hostSummary: w.hostSummary || "",
@@ -2002,16 +2023,29 @@ function MobileCompanion({
           );
         })()}
 
-        {isLive && (
+        {isLive && !confirmEndSession && (
           <button
             className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
-            onClick={() => statusMutation.mutate({ status: "closed" })}
+            onClick={() => setConfirmEndSession(true)}
             disabled={statusMutation.isPending}
             data-testid="mobile-end-tasting"
           >
             <Square className="w-4 h-4" />
-            Close Ratings
+            {t("m2.tasting.endSession")}
           </button>
+        )}
+        {isLive && confirmEndSession && (
+          <div className="labs-card p-4 space-y-3">
+            <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.tasting.endSessionConfirmTitle")}</p>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.tasting.endSessionConfirmDesc")}</p>
+            <div className="flex gap-2">
+              <button className="labs-btn-ghost flex-1" onClick={() => setConfirmEndSession(false)}>{t("m2.tasting.cancel")}</button>
+              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
+                <Square className="w-4 h-4" />
+                {t("m2.tasting.endSessionConfirm")}
+              </button>
+            </div>
+          </div>
         )}
 
         {isEnded && (
@@ -2167,6 +2201,7 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
 const REVEAL_ALL_FIELDS = [
   "name", "distillery", "age", "abv", "region", "country",
   "category", "caskInfluence", "peatLevel", "bottler", "vintage",
+  "distilledYear", "bottledYear",
   "hostNotes", "hostSummary", "image",
 ] as const;
 
@@ -2174,7 +2209,8 @@ const REVEAL_FIELD_LABELS: Record<string, string> = {
   name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
   region: "Region", country: "Country", category: "Category",
   caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
-  vintage: "Vintage", hostNotes: "Notes", hostSummary: "Summary", image: "Image",
+  vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
+  hostNotes: "Notes", hostSummary: "Summary", image: "Image",
   ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
 };
 
@@ -2345,14 +2381,16 @@ function CustomRevealEditor({ steps, onChange }: {
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeField(sIdx, fIdx); }}
+                  className="reveal-remove-btn"
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    padding: 0, color: "var(--labs-danger, #e55)", fontSize: 11, lineHeight: 1,
+                    padding: "2px", color: "var(--labs-danger, #e55)", fontSize: 11, lineHeight: 1,
+                    borderRadius: 4, marginLeft: 2,
                   }}
                   title="Remove from reveal order"
                   data-testid={`reveal-remove-${field}`}
                 >
-                  <Trash2 style={{ width: 10, height: 10 }} />
+                  <X style={{ width: 12, height: 12 }} />
                 </button>
               </div>
             ))}
@@ -2767,8 +2805,8 @@ function CreateTastingForm() {
                 <LabsSegmentedSelect
                   value={guestMode}
                   options={[
-                    { value: "standard", label: "With Account", desc: "Ratings are saved" },
-                    { value: "ultra", label: "Instant Join", desc: "No sign-in needed" },
+                    { value: "standard", label: t("m2.tasting.guestStandard"), desc: t("m2.tasting.guestStandardDesc") },
+                    { value: "ultra", label: t("m2.tasting.guestUltra"), desc: t("m2.tasting.guestUltraDesc") },
                   ]}
                   onChange={setGuestMode}
                 />
@@ -3137,7 +3175,27 @@ function GuidedTastingEngine({
   const isLobby = guidedIndex === -1;
   const isCompleted = guidedIndex >= whiskyCount && whiskyCount > 0;
   const activeWhisky = !isLobby && !isCompleted && whiskyList[guidedIndex] ? whiskyList[guidedIndex] : null;
-  const maxRevealStep = 3;
+
+  const GUIDED_FIELD_LABELS: Record<string, string> = {
+    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
+    region: "Region", country: "Country", category: "Category",
+    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
+    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
+    hostNotes: "Notes", hostSummary: "Summary", price: "Price",
+  };
+  let parsedRevealOrder = REVEAL_DEFAULT_ORDER;
+  try {
+    if (tasting.revealOrder) {
+      const parsed = JSON.parse(tasting.revealOrder);
+      if (Array.isArray(parsed) && parsed.length > 0) parsedRevealOrder = parsed;
+    }
+  } catch {}
+  const revealLabels = ["Blind", ...parsedRevealOrder.map((group: string[]) => {
+    const labels = group.map((f: string) => GUIDED_FIELD_LABELS[f] || f);
+    if (labels.length <= 2) return labels.join(" & ");
+    return labels.slice(0, 2).join(" & ") + " +";
+  })];
+  const maxRevealStep = parsedRevealOrder.length;
 
   const [engineError, setEngineError] = useState<string | null>(null);
 
@@ -3206,8 +3264,6 @@ function GuidedTastingEngine({
     stateBg = "var(--labs-accent-muted)";
     stateColor = "var(--labs-accent)";
   }
-
-  const revealLabels = ["Blind", "Name", "Details", "Image"];
 
   return (
     <div className="mb-6 space-y-4" data-testid="guided-engine">
@@ -3305,7 +3361,7 @@ function GuidedTastingEngine({
               data-testid="guided-reveal"
             >
               {advanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-              Reveal Bottle
+              {revealLabels[revealStep + 1] ? `Reveal ${revealLabels[revealStep + 1]}` : "Reveal Next"}
             </button>
           )}
           {!isLobby && !isCompleted && revealStep >= maxRevealStep && guidedIndex < whiskyCount - 1 && (
@@ -4225,6 +4281,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
             vintage: w.vintage || "",
+            distilledYear: w.distilledYear || "",
+            bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
             hostSummary: w.hostSummary || "",
@@ -4277,6 +4335,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
           ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
           ...(data.vintage ? { vintage: String(data.vintage) } : {}),
+          ...(data.distilledYear ? { distilledYear: String(data.distilledYear) } : {}),
+          ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
           whiskybaseId: id,
@@ -4296,6 +4356,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
           ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
           ...(data.vintage ? { vintage: String(data.vintage) } : {}),
+          ...(data.distilledYear ? { distilledYear: String(data.distilledYear) } : {}),
+          ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
           whiskybaseId: id,
@@ -4323,6 +4385,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       region: extFields.region || "",
       bottler: extFields.bottler || "",
       vintage: extFields.vintage || "",
+      distilledYear: extFields.distilledYear || "",
+      bottledYear: extFields.bottledYear || "",
       whiskybaseId: extFields.whiskybaseId || "",
       wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
       price: normalizePrice(extFields.price),
@@ -4362,6 +4426,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       region: w.region || "",
       bottler: w.bottler || "",
       vintage: w.vintage || "",
+      distilledYear: w.distilledYear || "",
+      bottledYear: w.bottledYear || "",
       price: w.price ? String(w.price).replace(".", ",") : "",
       hostSummary: w.hostSummary || "",
       notes: w.notes || "",
@@ -4675,9 +4741,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               className="labs-btn-secondary"
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 13 }}
               data-testid="labs-host-cockpit-toggle"
+              title="Full-screen control panel for guiding your tasting — reveal whiskies, control pace, and manage participants"
             >
               <Gauge className="w-4 h-4" />
-              Desktop Cockpit
+              Host Cockpit
             </button>
           )}
           <span
@@ -5049,6 +5116,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   {inviteFeedback.message}
                 </div>
               )}
+
+              {Array.isArray(existingInvites) && existingInvites.length > 0 && (
+                <div className="pt-3 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
+                  <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+                    Previously Invited ({existingInvites.length})
+                  </span>
+                  <div className="space-y-1">
+                    {existingInvites.map((inv: any, idx: number) => (
+                      <div
+                        key={inv.email || idx}
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
+                        style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
+                        data-testid={`invite-sent-${inv.email || idx}`}
+                      >
+                        <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
+                        <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
+                          {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                          {inv.status === "accepted" ? "Joined" : "Sent"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -5117,12 +5208,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               {tasting.status === "open" && (
                 <button
                   className="labs-btn-secondary flex items-center gap-2"
-                  onClick={() => statusMutation.mutate({ status: "closed" })}
+                  onClick={() => {
+                    if (!window.confirm(t("m2.tasting.endSessionConfirmDesc"))) return;
+                    statusMutation.mutate({ status: "closed" });
+                  }}
                   disabled={statusMutation.isPending}
                   data-testid="labs-host-close"
                 >
                   <Square className="w-4 h-4" />
-                  Close Ratings
+                  {t("m2.tasting.endSession")}
                 </button>
               )}
               {tasting.status === "closed" && (
@@ -5593,7 +5687,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder="Country" value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
                 <input className="labs-input" placeholder="Region" value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
                 <input className="labs-input" placeholder="Bottler" value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
-                <input className="labs-input" placeholder="Vintage" value={extFields.vintage || ""} onChange={e => setExtFields({ ...extFields, vintage: e.target.value })} data-testid="labs-ext-vintage" />
+                <input className="labs-input" placeholder="Distilled" value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
+                <input className="labs-input" placeholder="Bottled" value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
                 <input className="labs-input" placeholder="Price (EUR)" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
                 <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
@@ -5673,6 +5768,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder="Country" value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
                       <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
                       <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
+                      <input className="labs-input" placeholder="Distilled" value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
+                      <input className="labs-input" placeholder="Bottled" value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
                       <input className="labs-input" placeholder="Price (EUR)" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
                       <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
                         <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
