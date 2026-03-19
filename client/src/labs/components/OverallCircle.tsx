@@ -221,7 +221,14 @@ export default function OverallCircle({
       <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
         {!overrideActive ? (
           <button
-            onClick={() => { if (!disabled) { onOverrideToggle(); triggerHaptic("light"); } }}
+            onClick={() => {
+              if (disabled) return;
+              onOverrideToggle();
+              setEditInput(String(calculatedAvg));
+              setEditing(true);
+              setTimeout(() => inputRef.current?.select(), 50);
+              triggerHaptic("light");
+            }}
             disabled={disabled}
             style={{
               padding: "5px 12px",

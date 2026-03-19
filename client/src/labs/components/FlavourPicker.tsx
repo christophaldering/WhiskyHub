@@ -1,14 +1,24 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import {
   FLAVOR_CATEGORIES,
   getSortedCategories,
   type FlavorCategory,
+  type FlavorDescriptor,
   type FlavorProfileId,
 } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
+
+interface PickerGroup {
+  id: string;
+  en: string;
+  de: string;
+  color: string;
+  chips: FlavorDescriptor[];
+  sourceIds: string[];
+}
 
 interface FlavourPickerProps {
   activeChips: string[];
@@ -20,8 +30,66 @@ interface FlavourPickerProps {
 }
 
 const GOLD = "#c8861a";
-const DEFAULT_VISIBLE_COUNT = 3;
-const DEFAULT_CATEGORY_ORDER = ["fruity", "sweet", "woody"];
+
+const COMBINED_GROUPS: { id: string; en: string; de: string; color: string; merge: string[] }[] = [
+  { id: "fruity", en: "Fruity", de: "Fruchtig", color: "#e07b4c", merge: ["fruity", "floral"] },
+  { id: "sweet-spicy", en: "Sweet & Spicy", de: "Süß & Würzig", color: "#d4a853", merge: ["sweet", "spicy"] },
+  { id: "smoky", en: "Smoky", de: "Rauchig", color: "#6b7280", merge: ["smoky", "maritime"] },
+  { id: "wood-leather", en: "Wood & Leather", de: "Holz & Leder", color: "#8b6f47", merge: ["woody", "earthy"] },
+  { id: "malty-nutty", en: "Malty & Nutty", de: "Malzig & Nussig", color: "#b8934a", merge: ["malty", "nutty"] },
+  { id: "herbal-creamy", en: "Herbal & Creamy", de: "Kräuter & Cremig", color: "#6b8e5a", merge: ["herbal", "creamy"] },
+];
+
+function buildGroups(orderedCats: FlavorCategory[]): PickerGroup[] {
+  const catMap = new Map(orderedCats.map((c) => [c.id, c]));
+  const usedIds = new Set<string>();
+  const groups: PickerGroup[] = [];
+
+  for (const grp of COMBINED_GROUPS) {
+    const cats = grp.merge.map((id) => catMap.get(id)).filter(Boolean) as FlavorCategory[];
+    if (cats.length === 0) continue;
+    const chips: FlavorDescriptor[] = [];
+    const sourceIds: string[] = [];
+    for (const cat of cats) {
+      chips.push(...cat.subcategories);
+      sourceIds.push(cat.id);
+      usedIds.add(cat.id);
+    }
+    groups.push({
+      id: grp.id,
+      en: grp.en,
+      de: grp.de,
+      color: grp.color,
+      chips,
+      sourceIds,
+    });
+  }
+
+  for (const cat of orderedCats) {
+    if (usedIds.has(cat.id)) continue;
+    groups.push({
+      id: cat.id,
+      en: cat.en,
+      de: cat.de,
+      color: cat.color,
+      chips: [...cat.subcategories],
+      sourceIds: [cat.id],
+    });
+  }
+
+  return groups;
+}
+
+function sortGroupsByProfile(groups: PickerGroup[], profileCats: FlavorCategory[]): PickerGroup[] {
+  const orderMap = new Map(profileCats.map((c, i) => [c.id, i]));
+  return [...groups].sort((a, b) => {
+    const aMin = Math.min(...a.sourceIds.map((id) => orderMap.get(id) ?? 999));
+    const bMin = Math.min(...b.sourceIds.map((id) => orderMap.get(id) ?? 999));
+    return aMin - bMin;
+  });
+}
+
+const VISIBLE_COUNT = 3;
 
 export default function FlavourPicker({
   activeChips,
@@ -37,26 +105,24 @@ export default function FlavourPicker({
 
   const activeSet = useMemo(() => new Set(activeChips.map((c) => c.toLowerCase())), [activeChips]);
 
-  const sortedCategories = useMemo(() => {
-    if (isBlind || !flavorProfileId) {
-      const defaultFirst = DEFAULT_CATEGORY_ORDER
-        .map((id) => FLAVOR_CATEGORIES.find((c) => c.id === id))
-        .filter(Boolean) as FlavorCategory[];
-      const rest = FLAVOR_CATEGORIES.filter((c) => !DEFAULT_CATEGORY_ORDER.includes(c.id));
-      return [...defaultFirst, ...rest];
+  const groups = useMemo(() => {
+    const orderedCats =
+      isBlind || !flavorProfileId ? FLAVOR_CATEGORIES : getSortedCategories(flavorProfileId);
+    const builtGroups = buildGroups(orderedCats);
+    if (!isBlind && flavorProfileId) {
+      return sortGroupsByProfile(builtGroups, getSortedCategories(flavorProfileId));
     }
-    return getSortedCategories(flavorProfileId);
+    return builtGroups;
   }, [isBlind, flavorProfileId]);
 
-  const visibleCategories = sortedCategories.slice(0, DEFAULT_VISIBLE_COUNT);
-  const hiddenCategories = sortedCategories.slice(DEFAULT_VISIBLE_COUNT);
+  const visibleGroups = groups.slice(0, VISIBLE_COUNT);
+  const hiddenGroups = groups.slice(VISIBLE_COUNT);
 
   const countActive = useCallback(
-    (cat: FlavorCategory) => {
-      return cat.subcategories.filter(
+    (grp: PickerGroup) =>
+      grp.chips.filter(
         (sub) => activeSet.has(sub.en.toLowerCase()) || activeSet.has(sub.de.toLowerCase())
-      ).length;
-    },
+      ).length,
     [activeSet]
   );
 
@@ -74,15 +140,15 @@ export default function FlavourPicker({
     [disabled, onToggle]
   );
 
-  const renderCategory = (cat: FlavorCategory) => {
-    const count = countActive(cat);
-    const catLabel = isDE ? cat.de : cat.en;
+  const renderGroup = (grp: PickerGroup) => {
+    const count = countActive(grp);
+    const label = isDE ? grp.de : grp.en;
 
     return (
       <div
-        key={cat.id}
+        key={grp.id}
         style={{ marginBottom: 12 }}
-        data-testid={`flavour-category-${cat.id}`}
+        data-testid={`flavour-category-${grp.id}`}
       >
         <div
           style={{
@@ -97,7 +163,7 @@ export default function FlavourPicker({
               width: 8,
               height: 8,
               borderRadius: 4,
-              background: cat.color,
+              background: grp.color,
               display: "inline-block",
               flexShrink: 0,
             }}
@@ -111,7 +177,7 @@ export default function FlavourPicker({
               letterSpacing: "0.05em",
             }}
           >
-            {catLabel}
+            {label}
           </span>
           {count > 0 && (
             <span
@@ -125,16 +191,16 @@ export default function FlavourPicker({
                 minWidth: 18,
                 textAlign: "center",
               }}
-              data-testid={`flavour-count-${cat.id}`}
+              data-testid={`flavour-count-${grp.id}`}
             >
               {count}
             </span>
           )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-          {cat.subcategories.map((sub) => {
+          {grp.chips.map((sub) => {
             const active = isChipActive(sub.en, sub.de);
-            const label = isDE ? sub.de : sub.en;
+            const chipLabel = isDE ? sub.de : sub.en;
             return (
               <button
                 key={sub.id}
@@ -146,9 +212,7 @@ export default function FlavourPicker({
                   border: active
                     ? `1.5px solid ${GOLD}`
                     : "1px solid var(--labs-border)",
-                  background: active
-                    ? "rgba(200,134,26,0.12)"
-                    : "transparent",
+                  background: active ? "rgba(200,134,26,0.12)" : "transparent",
                   color: active ? GOLD : "var(--labs-text-secondary)",
                   fontSize: 12,
                   fontWeight: active ? 600 : 400,
@@ -160,7 +224,7 @@ export default function FlavourPicker({
                 }}
                 data-testid={`chip-${sub.id}`}
               >
-                {label}
+                {chipLabel}
               </button>
             );
           })}
@@ -171,9 +235,9 @@ export default function FlavourPicker({
 
   return (
     <div data-testid="flavour-picker" style={{ opacity: disabled ? 0.5 : 1, transition: "opacity 0.2s" }}>
-      {visibleCategories.map(renderCategory)}
+      {visibleGroups.map(renderGroup)}
 
-      {hiddenCategories.length > 0 && (
+      {hiddenGroups.length > 0 && (
         <>
           <button
             onClick={() => { setExpanded((p) => !p); triggerHaptic("light"); }}
@@ -208,64 +272,62 @@ export default function FlavourPicker({
           </button>
 
           {expanded && (
-            <div
-              style={{ animation: "labsFadeIn 200ms ease both" }}
-            >
-              {hiddenCategories.map(renderCategory)}
+            <div style={{ animation: "labsFadeIn 200ms ease both" }}>
+              {hiddenGroups.map(renderGroup)}
 
               {scale.max >= 20 && (
-              <div
-                style={{
-                  borderTop: "1px solid var(--labs-border)",
-                  paddingTop: 10,
-                  marginTop: 4,
-                  display: "flex",
-                  gap: 6,
-                  flexWrap: "wrap",
-                }}
-                data-testid="flavour-expert-tools"
-              >
-                <span
+                <div
                   style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: "var(--labs-text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    width: "100%",
-                    marginBottom: 4,
+                    borderTop: "1px solid var(--labs-border)",
+                    paddingTop: 10,
+                    marginTop: 4,
+                    display: "flex",
+                    gap: 6,
+                    flexWrap: "wrap",
                   }}
+                  data-testid="flavour-expert-tools"
                 >
-                  {t("m2.taste.rating.expertTools", "Expert Tools")}
-                </span>
-                {[
-                  { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-                  { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-                  { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
-                ].map((tool) => (
                   <span
-                    key={tool.id}
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
-                      padding: "4px 10px",
-                      borderRadius: 9999,
-                      border: "1px solid var(--labs-border)",
-                      background: "var(--labs-surface)",
+                      fontSize: 10,
+                      fontWeight: 600,
                       color: "var(--labs-text-muted)",
-                      fontSize: 11,
-                      fontWeight: 500,
-                      cursor: "default",
-                      opacity: 0.6,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      width: "100%",
+                      marginBottom: 4,
                     }}
-                    data-testid={`expert-tool-${tool.id}`}
                   >
-                    <span style={{ fontSize: 11 }}>{tool.icon}</span>
-                    {tool.label}
+                    {t("m2.taste.rating.expertTools", "Expert Tools")}
                   </span>
-                ))}
-              </div>
+                  {[
+                    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+                    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+                    { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
+                  ].map((tool) => (
+                    <span
+                      key={tool.id}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        padding: "4px 10px",
+                        borderRadius: 9999,
+                        border: "1px solid var(--labs-border)",
+                        background: "var(--labs-surface)",
+                        color: "var(--labs-text-muted)",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        cursor: "default",
+                        opacity: 0.6,
+                      }}
+                      data-testid={`expert-tool-${tool.id}`}
+                    >
+                      <span style={{ fontSize: 11 }}>{tool.icon}</span>
+                      {tool.label}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           )}
