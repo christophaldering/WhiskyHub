@@ -23,6 +23,7 @@ export const participants = pgTable("participants", {
   ratingStabilityScore: real("rating_stability_score"),
   explorationIndex: real("exploration_index"),
   makingOfAccess: boolean("making_of_access").default(false),
+  preferredRatingScale: integer("preferred_rating_scale"),
   privacyConsentAt: timestamp("privacy_consent_at"),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),

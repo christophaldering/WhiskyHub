@@ -46,6 +46,7 @@ export default function LabsTasteSettings() {
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [friendNotificationsEnabled, setFriendNotificationsEnabled] = useState(true);
+  const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
   const [deletePinError, setDeletePinError] = useState("");
@@ -79,7 +80,7 @@ export default function LabsTasteSettings() {
   }, [profile]);
 
   useEffect(() => {
-    if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); }
+    if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); setPreferredRatingScale((participant as any).preferredRatingScale ?? null); }
   }, [participant]);
 
   const saveMutation = useMutation({
@@ -98,6 +99,7 @@ export default function LabsTasteSettings() {
       if (displayName.trim() && displayName !== participant?.name) participantUpdates.name = displayName.trim();
       if (email !== (participant?.email || "")) participantUpdates.email = email;
       if (newsletterOptIn !== (participant?.newsletterOptIn || false)) participantUpdates.newsletterOptIn = newsletterOptIn;
+      if (preferredRatingScale !== ((participant as any)?.preferredRatingScale ?? null)) participantUpdates.preferredRatingScale = preferredRatingScale;
       if (newPin) {
         if (newPin.length < 4) throw new Error("PIN must be at least 4 characters");
         if (newPin !== confirmPin) throw new Error("PINs don't match");
@@ -243,6 +245,22 @@ export default function LabsTasteSettings() {
                   <button key={lng} onClick={() => { i18n.changeLanguage(lng); localStorage.setItem("i18nextLng", lng); if (pid) participantApi.setLanguage(pid, lng).catch(() => {}); toast({ title: "Language updated", duration: 1500 }); }}
                     style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer" }}
                     data-testid={`button-labs-language-${lng}`}>{lng === "de" ? "Deutsch" : "English"}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("taste.settings.ratingScale", "Rating Scale")}</label>
+            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>{t("taste.settings.ratingScaleHint", "Your default scale for solo tastings. Host-defined scales override this.")}</p>
+            <div className="flex gap-2" data-testid="select-rating-scale">
+              {([null, 5, 10, 20, 100] as const).map(s => {
+                const active = preferredRatingScale === s;
+                const label = s === null ? t("taste.settings.scaleDefault", "Auto") : `1–${s}`;
+                return (
+                  <button key={String(s)} onClick={() => setPreferredRatingScale(s)}
+                    style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}
+                    data-testid={`button-scale-${s ?? "auto"}`}>{label}</button>
                 );
               })}
             </div>

@@ -5191,6 +5191,7 @@ const resources = {
           studioAxisSweet: "Sweet",
           studioYouLabel: "You",
           customDescriptor: "Custom descriptor...",
+          scaleLabel: "Scale 1–{{max}}",
         },
         error: {
           title: "Something went wrong",
@@ -5902,6 +5903,9 @@ const resources = {
           openaiApiKeyLabel: "OpenAI API Key",
           friendNotifications: "Friend Online Notifications",
           friendNotificationsDesc: "Get notified when friends come online or go offline",
+          ratingScale: "Rating Scale",
+          ratingScaleHint: "Your default scale for solo tastings. Host-defined scales override this.",
+          scaleDefault: "Auto",
         },
         analytics: {
           subtitle: "Your taste evolution & rating consistency",
@@ -11323,6 +11327,7 @@ const resources = {
           studioAxisSweet: "Süß",
           studioYouLabel: "Du",
           customDescriptor: "Eigener Deskriptor...",
+          scaleLabel: "Skala 1–{{max}}",
         },
         error: {
           title: "Etwas ist schiefgelaufen",
@@ -12155,6 +12160,9 @@ const resources = {
           openaiApiKeyLabel: "OpenAI API-Schlüssel",
           friendNotifications: "Freunde-Online-Benachrichtigungen",
           friendNotificationsDesc: "Benachrichtigung wenn Freunde online oder offline gehen",
+          ratingScale: "Bewertungsskala",
+          ratingScaleHint: "Deine Standard-Skala für Solo-Tastings. Host-definierte Skalen überschreiben diese.",
+          scaleDefault: "Auto",
         },
         analytics: {
           subtitle: "Deine Geschmacksentwicklung & Bewertungskonsistenz",

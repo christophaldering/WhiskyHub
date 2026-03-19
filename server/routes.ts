@@ -3299,6 +3299,16 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (req.body.name) updates.name = req.body.name;
       if (req.body.email !== undefined) updates.email = req.body.email;
       if (req.body.newsletterOptIn !== undefined) updates.newsletterOptIn = !!req.body.newsletterOptIn;
+      if (req.body.preferredRatingScale !== undefined) {
+        const s = req.body.preferredRatingScale;
+        if (s === null) {
+          updates.preferredRatingScale = null;
+        } else if ([5, 10, 20, 100].includes(Number(s))) {
+          updates.preferredRatingScale = Number(s);
+        } else {
+          return res.status(400).json({ message: "Invalid rating scale. Must be 5, 10, 20, 100 or null." });
+        }
+      }
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4) {
