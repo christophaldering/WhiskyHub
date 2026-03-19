@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
@@ -730,8 +730,19 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       {(() => {
                         const imageRevealed = !isBlind || (gv && gv.isFieldRevealed("image"));
                         const hasImage = activeWhisky.imageUrl;
-                        if (imageRevealed && hasImage) {
-                          return <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={72} height={90} whiskyId={activeWhisky.id} />;
+                        if (hasImage) {
+                          return (
+                            <div style={{ position: "relative" }}>
+                              <div style={{ opacity: imageRevealed ? 1 : 0.35, filter: imageRevealed ? "none" : "blur(2px) grayscale(0.5)" }}>
+                                <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={72} height={90} whiskyId={activeWhisky.id} />
+                              </div>
+                              {!imageRevealed && (
+                                <div style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.55)", borderRadius: 4, padding: "2px 4px", display: "flex", alignItems: "center", gap: 2 }}>
+                                  <LockKeyhole style={{ width: 10, height: 10, color: "#fff" }} />
+                                </div>
+                              )}
+                            </div>
+                          );
                         }
                         return (
                           <div style={{
@@ -739,49 +750,38 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)",
                             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
                           }}>
-                            {!imageRevealed ? (
-                              <><LockKeyhole style={{ width: 18, height: 18, color: "var(--labs-text-muted)", opacity: 0.6 }} /><span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>HIDDEN</span></>
-                            ) : (
-                              <><ImageOff style={{ width: 18, height: 18, color: "var(--labs-text-muted)", opacity: 0.6 }} /><span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>No image</span></>
-                            )}
+                            <ImageOff style={{ width: 18, height: 18, color: "var(--labs-text-muted)", opacity: 0.6 }} />
+                            <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>No image</span>
                           </div>
                         );
                       })()}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {isBlind && gv && !gv.isFieldRevealed("name") ? (
+                      {(() => {
+                        const nameHidden = isBlind && gv && !gv.isFieldRevealed("name");
+                        return (
                         <div>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--labs-accent)", fontFamily: "var(--labs-font-serif, Georgia, serif)" }}>
-                            Dram {blindLabel(guestDramIdx)}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div style={{
+                              fontSize: 18, fontWeight: 700,
+                              color: nameHidden ? "var(--labs-text-muted)" : "var(--labs-text)",
+                              fontFamily: "var(--labs-font-serif, Georgia, serif)",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                              opacity: nameHidden ? 0.5 : 1,
+                              filter: nameHidden ? "blur(3px)" : "none",
+                            }}>
+                              {activeWhisky.name || "—"}
+                            </div>
+                            {nameHidden && (
+                              <LockKeyhole style={{ width: 13, height: 13, color: "var(--labs-text-muted)", opacity: 0.7, flexShrink: 0 }} />
+                            )}
                           </div>
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, padding: "2px 10px", borderRadius: 6, background: "color-mix(in srgb, var(--labs-text-muted) 10%, transparent)", fontSize: 11, color: "var(--labs-text-muted)" }}>
-                            <EyeOff style={{ width: 10, height: 10 }} /> Name hidden
-                          </div>
-                          {(() => {
-                            const detailFields: Array<[string, string | null | undefined]> = [
-                              ["distillery", activeWhisky.distillery], ["age", activeWhisky.age ? `${activeWhisky.age}y` : null],
-                              ["abv", activeWhisky.abv ? `${activeWhisky.abv}%` : null], ["region", activeWhisky.region],
-                              ["country", activeWhisky.country], ["category", activeWhisky.category],
-                              ["caskInfluence", activeWhisky.caskInfluence], ["bottler", activeWhisky.bottler],
-                              ["vintage", activeWhisky.vintage ? `${activeWhisky.vintage}` : null], ["peatLevel", activeWhisky.peatLevel],
-                              ["ppm", activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : null],
-                              ["price", activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : null],
-                            ];
-                            const revealed = detailFields.filter(([f, v]) => v && gv.isFieldRevealed(f)).map(([, v]) => v);
-                            if (revealed.length === 0) return null;
-                            return (
-                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 6 }}>
-                                {revealed.join(" · ")}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", fontFamily: "var(--labs-font-serif, Georgia, serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {activeWhisky.name || "—"}
-                          </div>
+                          {nameHidden && (
+                            <div style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 600, marginTop: 2 }}>
+                              Guests see: Dram {blindLabel(guestDramIdx)}
+                            </div>
+                          )}
                           <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
                             {(() => {
                               const detailFields: Array<[string, string | null | undefined]> = [
@@ -790,16 +790,35 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                                 ["country", activeWhisky.country], ["category", activeWhisky.category],
                                 ["caskInfluence", activeWhisky.caskInfluence], ["bottler", activeWhisky.bottler],
                                 ["vintage", activeWhisky.vintage ? `${activeWhisky.vintage}` : null], ["peatLevel", activeWhisky.peatLevel],
+                                ["ppm", activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : null],
+                                ["price", activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : null],
                               ];
                               if (isBlind && gv) {
-                                const revealed = detailFields.filter(([f, v]) => v && gv.isFieldRevealed(f)).map(([, v]) => v);
-                                return revealed.length === 0 ? "??? · ??? · ???" : revealed.join(" · ");
+                                const withValues = detailFields.filter(([, v]) => v);
+                                if (withValues.length === 0) return "—";
+                                return withValues.map(([f, v]) => {
+                                  const revealed = gv.isFieldRevealed(f);
+                                  return (
+                                    <span key={f} style={{
+                                      opacity: revealed ? 1 : 0.45,
+                                      filter: revealed ? "none" : "blur(3px)",
+                                      display: "inline",
+                                    }}>
+                                      {v}
+                                    </span>
+                                  );
+                                }).reduce<ReactNode[]>((acc, el, i) => {
+                                  if (i > 0) acc.push(<span key={`sep-${i}`}> · </span>);
+                                  acc.push(el);
+                                  return acc;
+                                }, []);
                               }
                               return detailFields.map(([, v]) => v).filter(Boolean).join(" · ") || "—";
                             })()}
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
 
                       {tasting.ratingPrompt && (
                         <div style={{ padding: "6px 10px", borderRadius: 8, background: "var(--labs-accent-muted)", fontSize: 12, color: "var(--labs-accent)", fontStyle: "italic", marginTop: 10 }}>
