@@ -149,12 +149,22 @@ function GuidedStepView({
   allWhiskies: any[];
 }) {
   const [localIndex, setLocalIndex] = useState(whiskyIndex);
-  useEffect(() => { setLocalIndex(whiskyIndex); }, [whiskyIndex]);
+  const pendingIndexRef = useRef<number | null>(null);
+  const revealMomentActiveRef = useRef(false);
+  useEffect(() => {
+    if (revealMomentActiveRef.current) {
+      pendingIndexRef.current = whiskyIndex;
+    } else {
+      setLocalIndex(whiskyIndex);
+    }
+  }, [whiskyIndex]);
   const hostMaxIndex = whiskyIndex;
   const activeWhisky = allWhiskies[localIndex] ?? whisky;
   const viewingHostDram = localIndex === whiskyIndex;
 
-  const revealStep = viewingHostDram ? (tasting.guidedRevealStep ?? 0) : 999;
+  const revealStep = viewingHostDram
+    ? (tasting.guidedRevealStep ?? 0)
+    : (localIndex < whiskyIndex ? 999 : 0);
   const maxScore = tasting.ratingScale || 100;
 
   const REVEAL_DEFAULT_ORDER: string[][] = [
@@ -204,6 +214,7 @@ function GuidedStepView({
         const dramLabel = isNameRevealed
           ? (activeWhisky.name || `Dram ${(tasting.guidedWhiskyIndex ?? 0) + 1}`)
           : `Dram ${String.fromCharCode(65 + (tasting.guidedWhiskyIndex ?? 0))}`;
+        revealMomentActiveRef.current = true;
         setRevealMoment({
           whiskyName: dramLabel,
           distillery: isNameRevealed ? activeWhisky.distillery : undefined,
@@ -493,7 +504,14 @@ function GuidedStepView({
       {revealMoment && (
         <LabsRevealMoment
           {...revealMoment}
-          onDismiss={() => setRevealMoment(null)}
+          onDismiss={() => {
+            revealMomentActiveRef.current = false;
+            setRevealMoment(null);
+            if (pendingIndexRef.current !== null) {
+              setLocalIndex(pendingIndexRef.current);
+              pendingIndexRef.current = null;
+            }
+          }}
         />
       )}
       <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
@@ -587,7 +605,7 @@ function GuidedStepView({
         )}
       </div>
 
-      {canRate ? (
+      {canRate && !revealMoment ? (
         <>
           <div className="labs-fade-in labs-stagger-2">
             <LabsRatingPanel
