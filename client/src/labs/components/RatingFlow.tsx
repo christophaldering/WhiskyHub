@@ -417,7 +417,12 @@ export default function RatingFlow({
       <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 300 }}>
         {onAfterSaveCorrect && (
           <button
-            onClick={onAfterSaveCorrect}
+            onClick={() => {
+              setShowSavedOverlay(false);
+              setSaving(false);
+              goTo(3);
+              onAfterSaveCorrect();
+            }}
             className="labs-btn-ghost"
             style={{
               width: "100%",

@@ -147,7 +147,6 @@ export default function LabsSolo() {
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
   const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "ratingFlow" | "editor">("hub");
   const [ratingFlowStep, setRatingFlowStep] = useState(0);
-  const RATING_FLOW_DRAFT_KEY = "cs_solo_ratingflow_draft";
   const [interruptedFlowDraft, setInterruptedFlowDraft] = useState<any>(null);
   const [captureSource, setCaptureSource] = useState<"hub" | "editor">("hub");
   const [hubDrafts, setHubDrafts] = useState<any[]>([]);
@@ -759,6 +758,8 @@ export default function LabsSolo() {
       setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
       if (cands.length === 1 && cands[0].confidence >= 0.78) {
         handleSelectCandidate(cands[0]);
+        setRatingFlowStep(0);
+        setSoloView("ratingFlow");
       } else {
         setSheetView("candidates");
       }
@@ -858,6 +859,8 @@ export default function LabsSolo() {
       setOnlineQuery(data.debug?.ocrText || query);
       if (cands2.length === 1 && cands2[0].confidence >= 0.78) {
         handleSelectCandidate(cands2[0]);
+        setRatingFlowStep(0);
+        setSoloView("ratingFlow");
       } else {
         setSheetView("candidates");
       }
@@ -1331,7 +1334,7 @@ export default function LabsSolo() {
     return (
       <button
         key={i}
-        onClick={onClick || (() => handleSelectCandidate(cand))}
+        onClick={onClick || (() => { handleSelectCandidate(cand); setRatingFlowStep(0); setSoloView("ratingFlow"); })}
         data-testid={`button-${prefix}candidate-${i}`}
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -1760,6 +1763,10 @@ export default function LabsSolo() {
       if (!hasDimScore) return;
       const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
       if (score !== effectiveScore) setScore(effectiveScore);
+      const normalizedNose = ratingScale.normalize(detailedScores.nose);
+      const normalizedTaste = ratingScale.normalize(detailedScores.taste);
+      const normalizedFinish = ratingScale.normalize(detailedScores.finish);
+      const normalizedScore = ratingScale.normalize(effectiveScore);
       if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
       if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
       setSaving(true);
@@ -1768,6 +1775,10 @@ export default function LabsSolo() {
         const body = buildDraftBody();
         body.status = "final";
         body.personalScore = effectiveScore;
+        body.normalizedScore = normalizedScore;
+        body.normalizedNose = normalizedNose;
+        body.normalizedTaste = normalizedTaste;
+        body.normalizedFinish = normalizedFinish;
         if (draftEntryId) {
           const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
             method: "PATCH",
@@ -1787,13 +1798,17 @@ export default function LabsSolo() {
         }
         queryClient.invalidateQueries({ queryKey: ["journal"] });
         setSaved(true);
-        try { localStorage.removeItem(RATING_FLOW_DRAFT_KEY); } catch {}
+        try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
       } catch {
         persistLocal();
         if (pid) {
           const body = buildDraftBody();
           body.status = "final";
           body.personalScore = effectiveScore;
+          body.normalizedScore = normalizedScore;
+          body.normalizedNose = normalizedNose;
+          body.normalizedTaste = normalizedTaste;
+          body.normalizedFinish = normalizedFinish;
           addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
           setOfflineCount(getOfflineQueue().length);
         }
@@ -1858,7 +1873,6 @@ export default function LabsSolo() {
             onStepChange={(s) => setRatingFlowStep(s)}
             onAfterSaveCorrect={() => {
               setRatingFlowStep(3);
-              setSoloView("ratingFlow");
             }}
             onAfterSaveNewDram={() => {
               handleReset();
