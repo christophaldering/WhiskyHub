@@ -2559,30 +2559,131 @@ function LabsSegmentedSelect({ value, options, onChange }: {
   );
 }
 
+const DRAFT_STORAGE_KEY = "labs-create-tasting-draft";
+
+interface TastingDraft {
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  description: string;
+  blindMode: boolean;
+  revealOrder: string;
+  customRevealSteps: string[][];
+  ratingScale: number;
+  guidedMode: boolean;
+  guestMode: string;
+  sessionUiMode: string;
+  reflectionEnabled: boolean;
+  reflectionMode: string;
+  reflectionVisibility: string;
+  videoLink: string;
+  advancedOpen: boolean;
+}
+
+function loadDraft(): Partial<TastingDraft> | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
+}
+
 function CreateTastingForm() {
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [time, setTime] = useState("");
-  const [location, setLocation] = useState("");
-  const [description, setDescription] = useState("");
-  const [blindMode, setBlindMode] = useState(false);
-  const [revealOrder, setRevealOrder] = useState("classic");
-  const [customRevealSteps, setCustomRevealSteps] = useState<string[][]>(REVEAL_PRESETS_MAP.classic);
-  const [ratingScale, setRatingScale] = useState(100);
-  const [guidedMode, setGuidedMode] = useState(false);
-  const [guestMode, setGuestMode] = useState("standard");
-  const [sessionUiMode, setSessionUiMode] = useState("flow");
-  const [reflectionEnabled, setReflectionEnabled] = useState(false);
-  const [reflectionMode, setReflectionMode] = useState("standard");
-  const [reflectionVisibility, setReflectionVisibility] = useState("named");
-  const [videoLink, setVideoLink] = useState("");
+
+  const draft = useRef(loadDraft()).current;
+
+  const [title, setTitle] = useState(draft?.title || "");
+  const [date, setDate] = useState(draft?.date || new Date().toISOString().split("T")[0]);
+  const [time, setTime] = useState(draft?.time || "");
+  const [location, setLocation] = useState(draft?.location || "");
+  const [description, setDescription] = useState(draft?.description || "");
+  const [blindMode, setBlindMode] = useState(draft?.blindMode ?? false);
+  const [revealOrder, setRevealOrder] = useState(draft?.revealOrder || "classic");
+  const [customRevealSteps, setCustomRevealSteps] = useState<string[][]>(draft?.customRevealSteps || REVEAL_PRESETS_MAP.classic);
+  const [ratingScale, setRatingScale] = useState(draft?.ratingScale ?? 100);
+  const [guidedMode, setGuidedMode] = useState(draft?.guidedMode ?? false);
+  const [guestMode, setGuestMode] = useState(draft?.guestMode || "standard");
+  const [sessionUiMode, setSessionUiMode] = useState(draft?.sessionUiMode || "flow");
+  const [reflectionEnabled, setReflectionEnabled] = useState(draft?.reflectionEnabled ?? false);
+  const [reflectionMode, setReflectionMode] = useState(draft?.reflectionMode || "standard");
+  const [reflectionVisibility, setReflectionVisibility] = useState(draft?.reflectionVisibility || "named");
+  const [videoLink, setVideoLink] = useState(draft?.videoLink || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(draft?.advancedOpen ?? false);
+  const [draftSaved, setDraftSaved] = useState(!!draft);
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formDirtyRef = useRef(!!draft);
+
+  const defaultFormData: TastingDraft = useRef({
+    title: "", date: new Date().toISOString().split("T")[0], time: "", location: "",
+    description: "", blindMode: false, revealOrder: "classic",
+    customRevealSteps: REVEAL_PRESETS_MAP.classic, ratingScale: 100,
+    guidedMode: false, guestMode: "standard", sessionUiMode: "flow",
+    reflectionEnabled: false, reflectionMode: "standard", reflectionVisibility: "named",
+    videoLink: "", advancedOpen: false,
+  }).current;
+
+  const formData: TastingDraft = {
+    title, date, time, location, description, blindMode, revealOrder,
+    customRevealSteps, ratingScale, guidedMode, guestMode, sessionUiMode,
+    reflectionEnabled, reflectionMode, reflectionVisibility, videoLink, advancedOpen,
+  };
+
+  useEffect(() => {
+    const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultFormData);
+    formDirtyRef.current = isDirty;
+
+    if (!isDirty) {
+      clearDraft();
+      return;
+    }
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+        setDraftSaved(true);
+        if (draftIndicatorRef.current) clearTimeout(draftIndicatorRef.current);
+        draftIndicatorRef.current = setTimeout(() => setDraftSaved(false), 2000);
+      } catch {}
+    }, 800);
+
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [title, date, time, location, description, blindMode, revealOrder,
+      customRevealSteps, ratingScale, guidedMode, guestMode, sessionUiMode,
+      reflectionEnabled, reflectionMode, reflectionVisibility, videoLink, advancedOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (draftIndicatorRef.current) clearTimeout(draftIndicatorRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (formDirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const handleCreate = async () => {
     if (!title.trim()) { setError("Title is required"); return; }
@@ -2612,6 +2713,8 @@ function CreateTastingForm() {
         status: "draft",
       });
       if (result?.id) {
+        clearDraft();
+        formDirtyRef.current = false;
         navigate(`/labs/host/${result.id}`);
       }
     } catch (err: any) {
@@ -2652,9 +2755,21 @@ function CreateTastingForm() {
       >
         Host a Tasting
       </h1>
-      <p className="text-sm mb-8" style={{ color: "var(--labs-text-secondary)" }}>
+      <p className="text-sm mb-2" style={{ color: "var(--labs-text-secondary)" }}>
         Create a new tasting session for your group
       </p>
+      <div
+        className="text-xs mb-6 flex items-center gap-1 transition-opacity duration-300"
+        style={{
+          color: "var(--labs-text-muted)",
+          opacity: draftSaved ? 1 : 0,
+          height: 20,
+        }}
+        data-testid="labs-draft-saved-indicator"
+      >
+        <Check className="w-3 h-3" />
+        Draft saved
+      </div>
 
       <div className="space-y-5">
         <div>
@@ -4148,6 +4263,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [showWishlistImport, setShowWishlistImport] = useState(false);
   const [showEditTasting, setShowEditTasting] = useState(false);
   const [editTastingFields, setEditTastingFields] = useState<Record<string, string>>({});
+  const editTastingInitialRef = useRef<Record<string, string>>({});
+  const [editTastingSaving, setEditTastingSaving] = useState(false);
+  const [editTastingAutoSaved, setEditTastingAutoSaved] = useState(false);
+  const editTastingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editTastingIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showSocial, setShowSocial] = useState(false);
   const [aiNarrative, setAiNarrative] = useState<string | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
@@ -4506,14 +4626,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const [editTastingError, setEditTastingError] = useState("");
 
-  const handleEditTastingSave = async () => {
+  const doEditTastingSave = useCallback(async (fields: Record<string, string>, silent = false) => {
     const body: Record<string, unknown> = { hostId: currentParticipant?.id };
-    if (editTastingFields.title) body.title = editTastingFields.title;
-    if (editTastingFields.date !== undefined) body.date = editTastingFields.date;
-    if (editTastingFields.time !== undefined) body.time = editTastingFields.time || null;
-    if (editTastingFields.location !== undefined) body.location = editTastingFields.location;
-    if (editTastingFields.description !== undefined) body.description = editTastingFields.description;
+    if (fields.title) body.title = fields.title;
+    if (fields.date !== undefined) body.date = fields.date;
+    if (fields.time !== undefined) body.time = fields.time || null;
+    if (fields.location !== undefined) body.location = fields.location;
+    if (fields.description !== undefined) body.description = fields.description;
     setEditTastingError("");
+    if (!silent) setEditTastingSaving(true);
     try {
       const res = await fetch(`/api/tastings/${tastingId}/details`, {
         method: "PATCH",
@@ -4525,11 +4646,47 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         throw new Error(err.message || "Failed to save");
       }
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-      setShowEditTasting(false);
+      if (silent) {
+        setEditTastingAutoSaved(true);
+        if (editTastingIndicatorRef.current) clearTimeout(editTastingIndicatorRef.current);
+        editTastingIndicatorRef.current = setTimeout(() => setEditTastingAutoSaved(false), 2000);
+      }
+      return true;
     } catch (e: any) {
       setEditTastingError(e.message || "Failed to save");
+      return false;
+    } finally {
+      if (!silent) setEditTastingSaving(false);
     }
+  }, [tastingId, currentParticipant?.id, queryClient]);
+
+  const handleEditTastingSave = async () => {
+    const ok = await doEditTastingSave(editTastingFields);
+    if (ok) setShowEditTasting(false);
   };
+
+  useEffect(() => {
+    if (!showEditTasting) return;
+    const hasFields = Object.keys(editTastingFields).length > 0;
+    if (!hasFields) return;
+    if (JSON.stringify(editTastingFields) === JSON.stringify(editTastingInitialRef.current)) return;
+
+    if (editTastingAutoSaveRef.current) clearTimeout(editTastingAutoSaveRef.current);
+    editTastingAutoSaveRef.current = setTimeout(() => {
+      doEditTastingSave(editTastingFields, true);
+    }, 1500);
+
+    return () => {
+      if (editTastingAutoSaveRef.current) clearTimeout(editTastingAutoSaveRef.current);
+    };
+  }, [editTastingFields, showEditTasting, doEditTastingSave]);
+
+  useEffect(() => {
+    return () => {
+      if (editTastingIndicatorRef.current) clearTimeout(editTastingIndicatorRef.current);
+      if (editTastingAutoSaveRef.current) clearTimeout(editTastingAutoSaveRef.current);
+    };
+  }, []);
 
   const handleGenerateNarrative = async () => {
     setNarrativeLoading(true);
@@ -4771,13 +4928,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             <button
               className="labs-btn-ghost p-1"
               onClick={() => {
-                setEditTastingFields({
+                const initial = {
                   title: tasting.title || "",
                   date: tasting.date || "",
                   time: (tasting as any).time || "",
                   location: tasting.location || "",
                   description: tasting.description || "",
-                });
+                };
+                setEditTastingFields(initial);
+                editTastingInitialRef.current = initial;
                 setShowEditTasting(!showEditTasting);
               }}
               data-testid="labs-host-edit-tasting"
@@ -4874,7 +5033,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           {editTastingError && (
             <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-edit-tasting-error">{editTastingError}</p>
           )}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end items-center">
+            <span
+              className="text-xs flex items-center gap-1 transition-opacity duration-300 mr-auto"
+              style={{ color: "var(--labs-text-muted)", opacity: editTastingAutoSaved ? 1 : 0 }}
+              data-testid="labs-edit-tasting-autosaved"
+            >
+              <Check className="w-3 h-3" />
+              Auto-saved
+            </span>
             <button
               className="labs-btn-ghost text-sm"
               onClick={() => setShowEditTasting(false)}
@@ -4883,11 +5050,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               Cancel
             </button>
             <button
-              className="labs-btn-primary text-sm"
+              className="labs-btn-primary text-sm flex items-center gap-1"
               onClick={handleEditTastingSave}
+              disabled={editTastingSaving}
               data-testid="labs-edit-tasting-save"
             >
-              Save Changes
+              {editTastingSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+              {editTastingSaving ? "Saving..." : "Save & Close"}
             </button>
           </div>
         </div>
