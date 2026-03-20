@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, timestamp, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -93,7 +93,9 @@ export const tastingParticipants = pgTable("tasting_participants", {
   tastingId: varchar("tasting_id").notNull(),
   participantId: varchar("participant_id").notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("tasting_participants_tasting_participant_unique").on(table.tastingId, table.participantId),
+]);
 
 export const insertTastingParticipantSchema = createInsertSchema(tastingParticipants).omit({ id: true, joinedAt: true });
 export type InsertTastingParticipant = z.infer<typeof insertTastingParticipantSchema>;
