@@ -179,17 +179,16 @@ export default function LabsExplore() {
     if (historyTastings.length > 0) {
       for (const t of historyTastings) {
         for (const w of (t.whiskies || [])) {
-          if (!w.myRating) continue;
           entries.push({
             id: `rating-${w.id}-${t.id}`,
-            name: w.name,
-            distillery: w.distillery,
-            score: w.myRating.overall,
+            name: w.name || w.whiskyName || "—",
+            distillery: w.distillery || null,
+            score: w.overall ?? w.personalScore ?? (w.myRating ? w.myRating.overall : null),
             occasion: null,
             source: "tasting",
             tastingTitle: t.title,
-            date: t.date,
-            imageUrl: w.imageUrl,
+            date: t.date || t.createdAt,
+            imageUrl: w.imageUrl || null,
           });
         }
       }
