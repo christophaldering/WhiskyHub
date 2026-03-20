@@ -11,26 +11,78 @@ import {
   Award, BarChart3, Wine, Droplets,
 } from "lucide-react";
 
+interface DimensionScores {
+  nose?: number | null;
+  taste?: number | null;
+  finish?: number | null;
+  balance?: number | null;
+  overall?: number | null;
+}
+
+interface WhiskySummary {
+  name: string;
+  distillery?: string;
+  region?: string;
+  scores: DimensionScores;
+  flavors?: string[];
+  vsGroupOverall?: number | null;
+}
+
+interface DataSnapshot {
+  totalRatings?: number;
+  totalTastings?: number;
+  totalJournalEntries?: number;
+  collectionSize?: number;
+  avgScores?: DimensionScores;
+  groupAvgOverall?: number | null;
+  groupAvgScores?: DimensionScores;
+  vsGroupDelta?: number | null;
+  highestWhisky?: { name: string; score?: number | null } | null;
+  lowestWhisky?: { name: string; score?: number | null } | null;
+  whiskySummaries?: WhiskySummary[];
+  regionBreakdown?: { region: string; count: number; avgScore: number }[];
+  topRegion?: string | null;
+  smokeAffinityIndex?: number | null;
+  sweetnessBias?: number | null;
+  ratingStabilityScore?: number | null;
+  explorationIndex?: number | null;
+  tasteTwinsCount?: number;
+  reportEn?: string;
+  reportDe?: string;
+  summaryEn?: string;
+  summaryDe?: string;
+  tastingId?: string;
+}
+
 interface ConnoisseurReport {
   id: string;
   participantId: string;
   generatedAt: string;
   reportContent: string;
   summary: string;
-  dataSnapshot: Record<string, any> | null;
+  dataSnapshot: DataSnapshot | null;
   language: string;
 }
 
-function RadarChart({ userScores, groupScores, size = 220 }: {
-  userScores: { nose: number; taste: number; finish: number };
-  groupScores?: { nose: number; taste: number; finish: number } | null;
+function RadarChart({ userScores, groupScores, size = 240, legendYou, legendCommunity }: {
+  userScores: DimensionScores;
+  groupScores?: DimensionScores | null;
   size?: number;
+  legendYou?: string;
+  legendCommunity?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dims: { key: keyof DimensionScores; label: string }[] = [];
+  if (userScores.nose != null) dims.push({ key: "nose", label: "Nose" });
+  if (userScores.taste != null) dims.push({ key: "taste", label: "Taste" });
+  if (userScores.finish != null) dims.push({ key: "finish", label: "Finish" });
+  if (userScores.balance != null) dims.push({ key: "balance", label: "Balance" });
+  if (userScores.overall != null) dims.push({ key: "overall", label: "Overall" });
+  const dimCount = dims.length || 3;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || dims.length === 0) return;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
@@ -43,9 +95,8 @@ function RadarChart({ userScores, groupScores, size = 220 }: {
 
     const cx = size / 2;
     const cy = size / 2;
-    const radius = size * 0.38;
-    const dims = ["Nose", "Taste", "Finish"];
-    const angles = dims.map((_, i) => (Math.PI * 2 * i) / dims.length - Math.PI / 2);
+    const radius = size * 0.36;
+    const angles = dims.map((_, i) => (Math.PI * 2 * i) / dimCount - Math.PI / 2);
 
     for (let ring = 1; ring <= 4; ring++) {
       const r = (radius * ring) / 4;
@@ -70,7 +121,7 @@ function RadarChart({ userScores, groupScores, size = 220 }: {
       ctx.stroke();
     });
 
-    dims.forEach((label, i) => {
+    dims.forEach((dim, i) => {
       const a = angles[i];
       const labelR = radius + 18;
       const lx = cx + labelR * Math.cos(a);
@@ -79,13 +130,13 @@ function RadarChart({ userScores, groupScores, size = 220 }: {
       ctx.fillStyle = "rgba(203,187,163,0.85)";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(label, lx, ly);
+      ctx.fillText(dim.label, lx, ly);
     });
 
-    const drawPolygon = (scores: number[], color: string, fillColor: string, lw: number) => {
+    const drawPolygon = (scores: (number | null | undefined)[], color: string, fillColor: string, lw: number) => {
       ctx.beginPath();
       scores.forEach((val, i) => {
-        const norm = Math.min(val, 100) / 100;
+        const norm = Math.min(val || 50, 100) / 100;
         const x = cx + radius * norm * Math.cos(angles[i]);
         const y = cy + radius * norm * Math.sin(angles[i]);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
@@ -98,7 +149,7 @@ function RadarChart({ userScores, groupScores, size = 220 }: {
       ctx.stroke();
 
       scores.forEach((val, i) => {
-        const norm = Math.min(val, 100) / 100;
+        const norm = Math.min(val || 50, 100) / 100;
         const x = cx + radius * norm * Math.cos(angles[i]);
         const y = cy + radius * norm * Math.sin(angles[i]);
         ctx.beginPath();
@@ -110,27 +161,27 @@ function RadarChart({ userScores, groupScores, size = 220 }: {
 
     if (groupScores) {
       drawPolygon(
-        [groupScores.nose || 50, groupScores.taste || 50, groupScores.finish || 50],
+        dims.map(d => groupScores[d.key] ?? 50),
         "rgba(122,175,201,0.7)", "rgba(122,175,201,0.08)", 1.5
       );
     }
 
     drawPolygon(
-      [userScores.nose || 50, userScores.taste || 50, userScores.finish || 50],
+      dims.map(d => userScores[d.key] ?? 50),
       "rgba(201,167,108,0.9)", "rgba(201,167,108,0.15)", 2
     );
-  }, [userScores, groupScores, size]);
+  }, [userScores, groupScores, size, dimCount]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
       <canvas ref={canvasRef} data-testid="canvas-radar-chart" />
       <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--labs-text-muted)" }}>
-          <span style={{ width: 10, height: 3, borderRadius: 2, background: "rgba(201,167,108,0.9)" }} /> You
+          <span style={{ width: 10, height: 3, borderRadius: 2, background: "rgba(201,167,108,0.9)" }} /> {legendYou || "You"}
         </span>
         {groupScores && (
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--labs-text-muted)" }}>
-            <span style={{ width: 10, height: 3, borderRadius: 2, background: "rgba(122,175,201,0.7)" }} /> Community
+            <span style={{ width: 10, height: 3, borderRadius: 2, background: "rgba(122,175,201,0.7)" }} /> {legendCommunity || "Community"}
           </span>
         )}
       </div>
@@ -214,33 +265,58 @@ function MarkdownRenderer({ content }: { content: string }) {
   return <div>{elements}</div>;
 }
 
-function SkeletonLoader({ message }: { message: string }) {
+function SkeletonLoader({ message, onSkip, skipLabel }: { message: string; onSkip?: () => void; skipLabel?: string }) {
+  const [showSkip, setShowSkip] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkip(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <div style={{ padding: "32px 0" }} data-testid="connoisseur-generating">
       <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <Sparkles className="w-8 h-8 mx-auto" style={{ color: "var(--labs-accent)", animation: "connoisseur-pulse 2s ease-in-out infinite" }} />
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <Sparkles className="w-8 h-8" style={{ color: "var(--labs-accent)", animation: "connoisseur-pulse 2s ease-in-out infinite" }} />
+          <span style={{
+            position: "absolute", top: -2, right: -6, width: 8, height: 8, borderRadius: "50%",
+            background: "var(--labs-accent)", animation: "connoisseur-dot-pulse 1.5s ease-in-out infinite",
+          }} />
+        </div>
         <p className="text-sm mt-3 font-medium" style={{ color: "var(--labs-accent)" }}>{message}</p>
+        {showSkip && onSkip && (
+          <button
+            onClick={onSkip}
+            className="labs-btn-ghost mt-2"
+            style={{ fontSize: 12, color: "var(--labs-text-muted)", textDecoration: "underline", cursor: "pointer", border: "none", background: "none", fontFamily: "inherit" }}
+            data-testid="button-skip-generating"
+          >
+            {skipLabel || "Show immediately"}
+          </button>
+        )}
       </div>
       {[100, 85, 92, 70, 88, 95, 60].map((w, i) => (
         <div key={i} style={{ height: i === 0 ? 24 : 14, width: `${w}%`, background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", borderRadius: 6, marginBottom: i === 0 ? 16 : 10, animation: "connoisseur-pulse 2s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
       ))}
-      <style>{`@keyframes connoisseur-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }`}</style>
+      <style>{`
+        @keyframes connoisseur-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+        @keyframes connoisseur-dot-pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+      `}</style>
     </div>
   );
 }
 
 type TabKey = "report" | "whiskys" | "aromas" | "history";
 
-function TabBar({ active, onChange, historyCount }: {
+function TabBar({ active, onChange, historyCount, t }: {
   active: TabKey;
   onChange: (t: TabKey) => void;
   historyCount: number;
+  t: (key: string, fallback: string) => string;
 }) {
   const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
-    { key: "report", label: "Report", icon: FileText },
-    { key: "whiskys", label: "Whiskys", icon: Wine },
-    { key: "aromas", label: "Aromas", icon: Droplets },
-    { key: "history", label: `History${historyCount > 0 ? ` (${historyCount})` : ""}`, icon: BarChart3 },
+    { key: "report", label: t("labs.connoisseur.tabReport", "Report"), icon: FileText },
+    { key: "whiskys", label: t("labs.connoisseur.tabWhiskys", "Whiskys"), icon: Wine },
+    { key: "aromas", label: t("labs.connoisseur.tabAromas", "Aromas"), icon: Droplets },
+    { key: "history", label: `${t("labs.connoisseur.tabHistory", "History")}${historyCount > 0 ? ` (${historyCount})` : ""}`, icon: BarChart3 },
   ];
 
   return (
@@ -270,15 +346,15 @@ function TabBar({ active, onChange, historyCount }: {
   );
 }
 
-function WhiskysTab({ snapshot }: { snapshot: Record<string, any> }) {
-  const whiskySummaries: { name: string; distillery?: string; region?: string; scores: { nose: number; taste: number; finish: number; overall: number } }[] = snapshot.whiskySummaries || [];
+function WhiskysTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, fallback: string) => string }) {
+  const whiskySummaries = snapshot.whiskySummaries || [];
   const sorted = [...whiskySummaries].sort((a, b) => (b.scores?.overall || 0) - (a.scores?.overall || 0));
 
   if (sorted.length === 0) {
     return (
       <div style={{ padding: "32px 16px", textAlign: "center" }}>
         <Wine className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--labs-accent)", opacity: 0.5 }} />
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>No whiskies rated yet.</p>
+        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>{t("labs.connoisseur.noWhiskys", "No whiskies rated yet.")}</p>
       </div>
     );
   }
@@ -287,43 +363,94 @@ function WhiskysTab({ snapshot }: { snapshot: Record<string, any> }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }} data-testid="connoisseur-whiskys-tab">
       {sorted.map((w, i) => (
         <div key={i} style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
-          background: "var(--labs-surface)", borderRadius: 12,
+          background: "var(--labs-surface)", borderRadius: 12, padding: "12px 14px",
           borderLeft: i === 0 ? "3px solid var(--labs-accent)" : i === sorted.length - 1 ? "3px solid var(--labs-danger)" : "3px solid transparent",
         }} data-testid={`whisky-row-${i}`}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)", width: 20, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-            {i + 1}
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{w.name}</p>
-            {w.distillery && <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{w.distillery}{w.region ? ` · ${w.region}` : ""}</p>}
-          </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <div style={{ textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)", width: 20, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+              {i + 1}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{w.name}</p>
+              {w.distillery && <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{w.distillery}{w.region ? ` · ${w.region}` : ""}</p>}
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {w.vsGroupOverall != null && (
+                <span style={{
+                  fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 6,
+                  color: w.vsGroupOverall > 0 ? "var(--labs-success)" : w.vsGroupOverall < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)",
+                  background: w.vsGroupOverall > 0 ? "color-mix(in srgb, var(--labs-success) 10%, transparent)" : w.vsGroupOverall < 0 ? "color-mix(in srgb, var(--labs-danger) 10%, transparent)" : "transparent",
+                }}>
+                  {w.vsGroupOverall > 0 ? "+" : ""}{w.vsGroupOverall.toFixed(1)}
+                </span>
+              )}
               <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-display)" }}>
                 {w.scores?.overall != null ? Math.round(w.scores.overall) : "—"}
               </span>
             </div>
           </div>
+          {w.flavors && w.flavors.length > 0 && (
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8, paddingLeft: 32 }}>
+              {w.flavors.slice(0, 5).map((f, fi) => (
+                <span key={fi} style={{
+                  fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                  background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", color: "var(--labs-text-muted)",
+                }}>{f}</span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>
   );
 }
 
-function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
-  const regionBreakdown: { region: string; count: number; avgScore: number }[] = snapshot.regionBreakdown || [];
+function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, fallback: string) => string }) {
+  const regionBreakdown = snapshot.regionBreakdown || [];
   const avgScores = snapshot.avgScores || {};
-  const dims = [
-    { key: "nose", label: "Nose", color: "var(--labs-dim-nose)" },
-    { key: "taste", label: "Taste", color: "var(--labs-dim-taste)" },
-    { key: "finish", label: "Finish", color: "var(--labs-dim-finish)" },
-    { key: "overall", label: "Overall", color: "var(--labs-accent)" },
-  ];
+  const dims: { key: keyof DimensionScores; label: string; color: string }[] = [
+    { key: "nose", label: t("labs.connoisseur.dimNose", "Nose"), color: "var(--labs-dim-nose)" },
+    { key: "taste", label: t("labs.connoisseur.dimTaste", "Taste"), color: "var(--labs-dim-taste)" },
+    { key: "finish", label: t("labs.connoisseur.dimFinish", "Finish"), color: "var(--labs-dim-finish)" },
+    { key: "balance", label: t("labs.connoisseur.dimBalance", "Balance"), color: "var(--labs-dim-balance, var(--labs-info))" },
+    { key: "overall", label: t("labs.connoisseur.dimOverall", "Overall"), color: "var(--labs-accent)" },
+  ].filter(d => avgScores[d.key] != null);
+
+  const allFlavors: Record<string, number> = {};
+  for (const ws of (snapshot.whiskySummaries || [])) {
+    for (const f of (ws.flavors || [])) {
+      allFlavors[f] = (allFlavors[f] || 0) + 1;
+    }
+  }
+  const flavorCloud = Object.entries(allFlavors).sort((a, b) => b[1] - a[1]).slice(0, 20);
 
   return (
     <div data-testid="connoisseur-aromas-tab">
-      <p className="labs-section-label mb-3">Dimension Averages</p>
+      {flavorCloud.length > 0 && (
+        <>
+          <p className="labs-section-label mb-3">{t("labs.connoisseur.flavorCloud", "Flavor Cloud")}</p>
+          <div style={{
+            display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24,
+            padding: "16px 14px", background: "var(--labs-surface)", borderRadius: 14,
+          }} data-testid="flavor-cloud">
+            {flavorCloud.map(([flavor, count]) => {
+              const maxCount = flavorCloud[0][1];
+              const scale = 0.7 + (count / maxCount) * 0.6;
+              return (
+                <span key={flavor} style={{
+                  fontSize: Math.round(11 * scale), fontWeight: count >= maxCount * 0.5 ? 600 : 400,
+                  padding: `${Math.round(3 * scale)}px ${Math.round(10 * scale)}px`,
+                  borderRadius: 12, color: "var(--labs-text)",
+                  background: `color-mix(in srgb, var(--labs-accent) ${Math.round(6 + (count / maxCount) * 14)}%, transparent)`,
+                  border: count >= maxCount * 0.7 ? "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" : "1px solid transparent",
+                }}>{flavor}</span>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <p className="labs-section-label mb-3">{t("labs.connoisseur.dimensionAvg", "Dimension Averages")}</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
         {dims.map(d => {
           const val = avgScores[d.key];
@@ -345,7 +472,7 @@ function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
 
       {regionBreakdown.length > 0 && (
         <>
-          <p className="labs-section-label mb-3">Region Preferences</p>
+          <p className="labs-section-label mb-3">{t("labs.connoisseur.regionPreferences", "Region Preferences")}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {regionBreakdown.slice(0, 6).map((r, i) => (
               <div key={r.region} style={{
@@ -357,7 +484,7 @@ function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
                 </span>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{r.region}</span>
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginLeft: 8 }}>{r.count} rated</span>
+                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginLeft: 8 }}>{r.count} {t("labs.connoisseur.rated", "rated")}</span>
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
                   {r.avgScore?.toFixed(1)}
@@ -370,11 +497,11 @@ function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
 
       {(snapshot.smokeAffinityIndex != null || snapshot.sweetnessBias != null) && (
         <>
-          <p className="labs-section-label mt-5 mb-3">Palate Indices</p>
+          <p className="labs-section-label mt-5 mb-3">{t("labs.connoisseur.palateIndices", "Palate Indices")}</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {snapshot.smokeAffinityIndex != null && (
               <div style={{ background: "var(--labs-surface)", borderRadius: 12, padding: "12px 14px" }}>
-                <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Smoke Affinity</span>
+                <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("labs.connoisseur.smokeAffinity", "Smoke Affinity")}</span>
                 <p style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", marginTop: 4, fontFamily: "var(--font-display)" }}>
                   {(snapshot.smokeAffinityIndex * 100).toFixed(0)}%
                 </p>
@@ -382,7 +509,7 @@ function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
             )}
             {snapshot.sweetnessBias != null && (
               <div style={{ background: "var(--labs-surface)", borderRadius: 12, padding: "12px 14px" }}>
-                <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Sweetness Bias</span>
+                <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("labs.connoisseur.sweetnessBias", "Sweetness Bias")}</span>
                 <p style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", marginTop: 4, fontFamily: "var(--font-display)" }}>
                   {(snapshot.sweetnessBias * 100).toFixed(0)}%
                 </p>
@@ -395,23 +522,94 @@ function AromasTab({ snapshot }: { snapshot: Record<string, any> }) {
   );
 }
 
-function HistoryTab({ reports, onDelete, expandedId, onToggleExpand }: {
+function HistoryBarChart({ reports }: { reports: ConnoisseurReport[] }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const last5 = reports.slice(0, 5).reverse();
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || last5.length === 0) return;
+    const w = 280, h = 120;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const scores = last5.map(r => r.dataSnapshot?.avgScores?.overall ?? 0);
+    const maxScore = Math.max(...scores, 50);
+    const barW = Math.min(36, (w - 20) / last5.length - 8);
+    const gap = (w - last5.length * barW) / (last5.length + 1);
+
+    const avgAll = scores.reduce((s, v) => s + v, 0) / scores.length;
+    const avgY = h - 20 - ((avgAll / maxScore) * (h - 36));
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, avgY);
+    ctx.lineTo(w, avgY);
+    ctx.strokeStyle = "rgba(201,167,108,0.3)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    last5.forEach((r, i) => {
+      const score = r.dataSnapshot?.avgScores?.overall ?? 0;
+      const barH = (score / maxScore) * (h - 36);
+      const x = gap + i * (barW + gap);
+      const y = h - 20 - barH;
+      const grad = ctx.createLinearGradient(x, y, x, h - 20);
+      grad.addColorStop(0, "rgba(201,167,108,0.8)");
+      grad.addColorStop(1, "rgba(201,167,108,0.3)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+      ctx.fill();
+
+      ctx.font = "600 10px 'DM Sans', Inter, sans-serif";
+      ctx.fillStyle = "rgba(203,187,163,0.7)";
+      ctx.textAlign = "center";
+      const date = new Date(r.generatedAt);
+      ctx.fillText(`${date.getMonth() + 1}/${date.getDate()}`, x + barW / 2, h - 6);
+
+      if (score > 0) {
+        ctx.fillStyle = "rgba(201,167,108,0.9)";
+        ctx.fillText(Math.round(score).toString(), x + barW / 2, y - 6);
+      }
+    });
+  }, [last5]);
+
+  if (last5.length === 0) return null;
+  return <canvas ref={canvasRef} data-testid="canvas-history-chart" style={{ display: "block", margin: "0 auto 16px" }} />;
+}
+
+function HistoryTab({ reports, allReports, onDelete, expandedId, onToggleExpand, t }: {
   reports: ConnoisseurReport[];
+  allReports: ConnoisseurReport[];
   onDelete: (id: string) => void;
   expandedId: string | null;
   onToggleExpand: (id: string | null) => void;
+  t: (key: string, fallback: string) => string;
 }) {
   if (reports.length === 0) {
     return (
       <div style={{ padding: "32px 16px", textAlign: "center" }} data-testid="connoisseur-history-empty">
         <FileText className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--labs-accent)", opacity: 0.5 }} />
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>No previous reports yet.</p>
+        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>{t("labs.connoisseur.noHistory", "No previous reports yet.")}</p>
       </div>
     );
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="connoisseur-history-tab">
+      {allReports.length >= 2 && (
+        <div style={{ background: "var(--labs-surface)", borderRadius: 14, padding: "16px 12px", marginBottom: 8 }}>
+          <p className="labs-section-label mb-3" style={{ textAlign: "center" }}>{t("labs.connoisseur.avgTrend", "Avg Score Trend")}</p>
+          <HistoryBarChart reports={allReports} />
+        </div>
+      )}
       {reports.map(report => (
         <div key={report.id} className="labs-card" style={{ overflow: "hidden" }} data-testid={`card-report-${report.id}`}>
           <button
@@ -434,13 +632,20 @@ function HistoryTab({ reports, onDelete, expandedId, onToggleExpand }: {
                 {report.summary}
               </p>
             </div>
-            <span style={{
-              fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
-              background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", color: "var(--labs-accent)",
-              textTransform: "uppercase",
-            }}>
-              {report.language?.toUpperCase() || "EN"}
-            </span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
+                background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", color: "var(--labs-accent)",
+                textTransform: "uppercase",
+              }}>
+                {report.language?.toUpperCase() || "EN"}
+              </span>
+              {report.dataSnapshot?.avgScores?.overall != null && (
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-display)" }}>
+                  {Math.round(report.dataSnapshot.avgScores.overall)}
+                </span>
+              )}
+            </div>
           </button>
           {expandedId === report.id && (
             <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--labs-border)" }}>
@@ -453,7 +658,7 @@ function HistoryTab({ reports, onDelete, expandedId, onToggleExpand }: {
                 style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, border: "1px solid var(--labs-border)", borderRadius: 8, padding: "8px 12px", color: "var(--labs-danger)" }}
                 data-testid={`button-delete-report-${report.id}`}
               >
-                <Trash2 className="w-3 h-3" /> Delete
+                <Trash2 className="w-3 h-3" /> {t("labs.connoisseur.delete", "Delete")}
               </button>
             </div>
           )}
@@ -524,9 +729,29 @@ export default function LabsConnoisseur() {
     onSuccess: () => { setConfirmDeleteId(null); queryClient.invalidateQueries({ queryKey: ["connoisseur-reports", pid] }); },
   });
 
+  const [viewLang, setViewLang] = useState<"de" | "en">(aiLang);
+
   const latestReport = reports.length > 0 ? reports[0] : null;
   const previousReports = reports.slice(1);
-  const snap = latestReport?.dataSnapshot || {};
+  const snap: DataSnapshot = latestReport?.dataSnapshot || {};
+
+  const displayReport = useMemo(() => {
+    if (!latestReport) return null;
+    const s = latestReport.dataSnapshot;
+    if (viewLang === "de" && s?.reportDe) return s.reportDe;
+    if (viewLang === "en" && s?.reportEn) return s.reportEn;
+    return latestReport.reportContent;
+  }, [latestReport, viewLang]);
+
+  const displaySummary = useMemo(() => {
+    if (!latestReport) return null;
+    const s = latestReport.dataSnapshot;
+    if (viewLang === "de" && s?.summaryDe) return s.summaryDe;
+    if (viewLang === "en" && s?.summaryEn) return s.summaryEn;
+    return latestReport.summary;
+  }, [latestReport, viewLang]);
+
+  const hasDualLang = !!(latestReport?.dataSnapshot?.reportEn && latestReport?.dataSnapshot?.reportDe);
 
   const avgScores = useMemo(() => snap.avgScores || {}, [snap]);
   const userAvg = useMemo(() => avgScores.overall != null ? Math.round(avgScores.overall * 10) / 10 : null, [avgScores]);
@@ -629,7 +854,7 @@ export default function LabsConnoisseur() {
                 fontSize: 11, padding: "4px 10px", borderRadius: 20, fontWeight: 500,
                 background: "color-mix(in srgb, var(--labs-info) 10%, transparent)", color: "var(--labs-info)",
               }}>
-                {snap.totalRatings} ratings
+                {snap.totalRatings} {t("labs.connoisseur.ratings", "ratings")}
               </span>
             )}
             <span style={{
@@ -647,28 +872,31 @@ export default function LabsConnoisseur() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: promptOpen ? 12 : 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Globe className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Language</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("labs.connoisseur.language", "Language")}</span>
           </div>
           <div style={{
             display: "flex", borderRadius: 8, overflow: "hidden",
             border: "1px solid var(--labs-border)",
           }}>
-            {(["en", "de"] as const).map(lang => (
-              <button
-                key={lang}
-                onClick={() => setAiLang(lang)}
-                data-testid={`button-lang-${lang}`}
-                style={{
-                  padding: "6px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-                  border: "none",
-                  background: aiLang === lang ? "var(--labs-accent)" : "transparent",
-                  color: aiLang === lang ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                  transition: "all 0.2s",
-                }}
-              >
-                {lang.toUpperCase()}
-              </button>
-            ))}
+            {(["en", "de"] as const).map(lang => {
+              const isActive = hasDualLang ? viewLang === lang : aiLang === lang;
+              return (
+                <button
+                  key={lang}
+                  onClick={() => { if (hasDualLang) setViewLang(lang); setAiLang(lang); }}
+                  data-testid={`button-lang-${lang}`}
+                  style={{
+                    padding: "6px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    border: "none",
+                    background: isActive ? "var(--labs-accent)" : "transparent",
+                    color: isActive ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -692,7 +920,7 @@ export default function LabsConnoisseur() {
           style={{ fontSize: 11, color: "var(--labs-text-muted)", padding: "4px 0", marginTop: promptOpen ? 8 : 8 }}
           data-testid="button-toggle-prompt"
         >
-          {promptOpen ? "Hide focus hint" : "Add focus hint..."}
+          {promptOpen ? t("labs.connoisseur.hideHint", "Hide focus hint") : t("labs.connoisseur.addHint", "Add focus hint...")}
         </button>
       </div>
 
@@ -716,7 +944,13 @@ export default function LabsConnoisseur() {
             : t("labs.connoisseur.generate", "Generate Report")}
       </button>
 
-      {generateMutation.isPending && <SkeletonLoader message={t("labs.connoisseur.generating", "Analyzing your whisky journey...")} />}
+      {generateMutation.isPending && (
+        <SkeletonLoader
+          message={t("labs.connoisseur.generating", "Analyzing your whisky journey...")}
+          onSkip={() => {}}
+          skipLabel={t("labs.connoisseur.showImmediately", "Show immediately")}
+        />
+      )}
 
       {generateMutation.isError && (
         <div className="labs-card mb-4" style={{ borderColor: "var(--labs-danger)", padding: 16 }} data-testid="text-connoisseur-error">
@@ -733,7 +967,7 @@ export default function LabsConnoisseur() {
       {!generateMutation.isPending && latestReport && (
         <>
           {/* AI Headline / Summary */}
-          {latestReport.summary && (
+          {displaySummary && (
             <div className="labs-fade-in" style={{
               padding: "20px 24px", marginBottom: 20, borderRadius: 16,
               background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 6%, var(--labs-bg)), color-mix(in srgb, var(--labs-gold) 4%, var(--labs-bg)))",
@@ -743,7 +977,7 @@ export default function LabsConnoisseur() {
                 fontSize: 16, lineHeight: 1.6, fontWeight: 400, fontStyle: "italic",
                 color: "var(--labs-text)", margin: 0,
               }} data-testid="text-connoisseur-summary">
-                "{latestReport.summary}"
+                "{displaySummary}"
               </p>
             </div>
           )}
@@ -751,24 +985,24 @@ export default function LabsConnoisseur() {
           {/* Stat Cards Row */}
           <div className="labs-fade-in" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }} data-testid="stat-cards-row">
             <StatCard
-              label="Avg Score"
+              label={t("labs.connoisseur.avgScore", "Avg Score")}
               value={userAvg != null ? userAvg.toFixed(1) : "—"}
               icon={BarChart3}
             />
             <StatCard
-              label="vs Group"
+              label={t("labs.connoisseur.vsGroup", "vs Group")}
               value={vsGroup != null ? `${vsGroup > 0 ? "+" : ""}${vsGroup.toFixed(1)}` : "—"}
               icon={TrendingUp}
               trend={vsGroup != null ? (vsGroup > 0 ? "up" : vsGroup < 0 ? "down" : "neutral") : undefined}
             />
             <StatCard
-              label="Highest"
+              label={t("labs.connoisseur.highest", "Highest")}
               value={highest?.score != null ? Math.round(highest.score).toString() : "—"}
               suffix={highest?.name ? highest.name.slice(0, 16) : undefined}
               icon={Award}
             />
             <StatCard
-              label="Lowest"
+              label={t("labs.connoisseur.lowest", "Lowest")}
               value={lowest?.score != null ? Math.round(lowest.score).toString() : "—"}
               suffix={lowest?.name ? lowest.name.slice(0, 16) : undefined}
               icon={Wine}
@@ -779,19 +1013,17 @@ export default function LabsConnoisseur() {
           {avgScores.nose != null && (
             <div className="labs-card labs-fade-in" style={{ padding: "20px 16px", marginBottom: 20, display: "flex", justifyContent: "center" }}>
               <RadarChart
-                userScores={{ nose: avgScores.nose || 50, taste: avgScores.taste || 50, finish: avgScores.finish || 50 }}
-                groupScores={snap.groupAvgScores?.nose != null ? {
-                  nose: snap.groupAvgScores.nose ?? 50,
-                  taste: snap.groupAvgScores.taste ?? 50,
-                  finish: snap.groupAvgScores.finish ?? 50,
-                } : null}
-                size={220}
+                userScores={avgScores}
+                groupScores={snap.groupAvgScores?.nose != null ? snap.groupAvgScores : null}
+                size={240}
+                legendYou={t("labs.connoisseur.legendYou", "You")}
+                legendCommunity={t("labs.connoisseur.legendCommunity", "Community")}
               />
             </div>
           )}
 
           {/* Tab Bar */}
-          <TabBar active={activeTab} onChange={setActiveTab} historyCount={previousReports.length} />
+          <TabBar active={activeTab} onChange={setActiveTab} historyCount={previousReports.length} t={t} />
 
           {/* Tab Content */}
           <div className="labs-fade-in">
@@ -802,19 +1034,21 @@ export default function LabsConnoisseur() {
                   background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
                   border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
                 }} data-testid="card-palate-letter">
-                  <MarkdownRenderer content={latestReport.reportContent} />
+                  <MarkdownRenderer content={displayReport || latestReport.reportContent} />
                 </div>
               </div>
             )}
 
-            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} />}
-            {activeTab === "aromas" && <AromasTab snapshot={snap} />}
+            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} t={t} />}
+            {activeTab === "aromas" && <AromasTab snapshot={snap} t={t} />}
             {activeTab === "history" && (
               <HistoryTab
                 reports={previousReports}
+                allReports={reports}
                 onDelete={id => setConfirmDeleteId(id)}
                 expandedId={expandedReport}
                 onToggleExpand={setExpandedReport}
+                t={t}
               />
             )}
           </div>
@@ -829,7 +1063,7 @@ export default function LabsConnoisseur() {
               {copied ? t("labs.connoisseur.copied", "Copied!") : t("labs.connoisseur.copySummary", "Copy")}
             </button>
             <button onClick={shareReport} className="labs-btn-secondary" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 12px" }} data-testid="button-share-report">
-              <Share2 className="w-4 h-4" /> Share
+              <Share2 className="w-4 h-4" /> {t("labs.connoisseur.share", "Share")}
             </button>
             <button
               onClick={() => setConfirmDeleteId(latestReport.id)}
@@ -865,7 +1099,7 @@ export default function LabsConnoisseur() {
       {/* Reports Error */}
       {reportsError && !isLoading && (
         <div className="labs-card mb-4 labs-fade-in" style={{ borderColor: "var(--labs-danger)", padding: 16 }} data-testid="text-reports-load-error">
-          <p className="text-sm" style={{ color: "var(--labs-danger)" }}>Could not load your reports. Please try again later.</p>
+          <p className="text-sm" style={{ color: "var(--labs-danger)" }}>{t("labs.connoisseur.loadError", "Could not load your reports. Please try again later.")}</p>
         </div>
       )}
 

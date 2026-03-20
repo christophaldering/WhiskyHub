@@ -4589,13 +4589,13 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         return res.status(503).json({ message: "AI not available" });
       }
 
-      const requestedLang = req.body?.language;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
+      const tastingId = typeof req.body?.tastingId === "string" ? req.body.tastingId.trim() : undefined;
+      const requestedLang = req.body?.language;
       const acceptLang = req.headers["accept-language"] || "";
-      const lang = requestedLang === "de" || requestedLang === "en"
+      const primaryLang = requestedLang === "de" || requestedLang === "en"
         ? requestedLang
         : participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
-      const langLabel = lang === "de" ? "German" : "English";
 
       const flavorProfile = await storage.getFlavorProfile(participantId);
       const stats = await storage.getParticipantStats(participantId);
@@ -4639,18 +4639,16 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const lowestWhisky = sortedByScore.length > 1 ? { name: sortedByScore[sortedByScore.length - 1].whisky.name, score: sortedByScore[sortedByScore.length - 1].rating.overall } : null;
 
       let groupAvgOverall: number | null = null;
-      let groupAvgScores: { nose: number | null; taste: number | null; finish: number | null; overall: number | null } = { nose: null, taste: null, finish: null, overall: null };
+      let groupAvgScores: { nose: number | null; taste: number | null; finish: number | null; balance: number | null; overall: number | null } = { nose: null, taste: null, finish: null, balance: null, overall: null };
       try {
         const allRatings = await storage.getAllRatings();
-        const noseVals = allRatings.filter(r => r.nose != null).map(r => r.nose!);
-        const tasteVals = allRatings.filter(r => r.taste != null).map(r => r.taste!);
-        const finishVals = allRatings.filter(r => r.finish != null).map(r => r.finish!);
-        const allOveralls = allRatings.filter(r => r.overall != null).map(r => r.overall!);
-        if (allOveralls.length > 0) groupAvgOverall = Math.round((allOveralls.reduce((s, v) => s + v, 0) / allOveralls.length) * 10) / 10;
-        if (noseVals.length > 0) groupAvgScores.nose = Math.round((noseVals.reduce((s, v) => s + v, 0) / noseVals.length) * 10) / 10;
-        if (tasteVals.length > 0) groupAvgScores.taste = Math.round((tasteVals.reduce((s, v) => s + v, 0) / tasteVals.length) * 10) / 10;
-        if (finishVals.length > 0) groupAvgScores.finish = Math.round((finishVals.reduce((s, v) => s + v, 0) / finishVals.length) * 10) / 10;
-        if (allOveralls.length > 0) groupAvgScores.overall = groupAvgOverall;
+        const avg = (vals: number[]) => vals.length > 0 ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10 : null;
+        groupAvgScores.nose = avg(allRatings.filter(r => r.nose != null).map(r => r.nose!));
+        groupAvgScores.taste = avg(allRatings.filter(r => r.taste != null).map(r => r.taste!));
+        groupAvgScores.finish = avg(allRatings.filter(r => r.finish != null).map(r => r.finish!));
+        groupAvgScores.balance = avg(allRatings.filter(r => r.balance != null).map(r => r.balance!));
+        groupAvgScores.overall = avg(allRatings.filter(r => r.overall != null).map(r => r.overall!));
+        groupAvgOverall = groupAvgScores.overall;
       } catch {}
 
       const userAvgOverall = flavorProfile.avgScores?.overall ?? null;
@@ -4660,7 +4658,9 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         name: rw.whisky.name,
         distillery: rw.whisky.distillery,
         region: rw.whisky.region,
-        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
+        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, balance: rw.rating.balance, overall: rw.rating.overall },
+        flavors: rw.rating.flavors || [],
+        vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
 
       const dataSnapshot = {
@@ -4721,36 +4721,50 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
             role: "system",
             content: `You are a master blender writing a personal letter to a fellow whisky enthusiast. This is their "Palate Letter" — a warm, intimate reflection on their whisky journey.
 
-Return a JSON object with exactly two fields:
-- "report": A personal letter (150-200 words), written as flowing prose — NO headings, NO bullet points, NO markdown formatting. Write it as you would write a handwritten letter to a friend who loves whisky. Address them by first name. Reference specific whiskies, scores, and regions from their data. Mention what makes their palate unique — their preferences, their strongest dimension (nose/taste/finish), their regional tendencies. End with a genuine recommendation or reflection. The tone should be warm, knowledgeable, and personal — like a letter from a mentor, not a report from an algorithm.
+Return a JSON object with exactly these fields:
+- "report_en": A personal letter in English (150-200 words), written as flowing prose — NO headings, NO bullet points, NO markdown formatting. Write it as you would write a handwritten letter to a friend who loves whisky. Address them by first name. Reference specific whiskies, scores, and regions from their data. Mention what makes their palate unique — their preferences, their strongest dimension (nose/taste/finish), their regional tendencies. End with a genuine recommendation or reflection. The tone should be warm, knowledgeable, and personal — like a letter from a mentor, not a report from an algorithm.
+- "report_de": The same letter translated naturally into German. Not a literal translation — it should feel native and warm in German.
+- "summary_en": A single sentence in English (max 20 words) that captures the essence of their whisky personality. Poetic and memorable.
+- "summary_de": The same sentence in German, naturally phrased.
 
-- "summary": A single sentence (max 20 words) that captures the essence of their whisky personality. Poetic and memorable.
-
-ALWAYS respond in ${langLabel}. Write as if you know this person through their tasting notes.`
+Write as if you know this person through their tasting notes.`
           },
           {
             role: "user",
             content: `Write a Palate Letter for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
           }
         ],
-        max_tokens: 1000,
+        max_tokens: 2000,
         temperature: 0.8,
         response_format: { type: "json_object" },
       });
 
       const content = response.choices[0]?.message?.content || "{}";
-      let parsed: { report?: string; summary?: string };
+      let parsed: { report_en?: string; report_de?: string; summary_en?: string; summary_de?: string; report?: string; summary?: string };
       try { parsed = JSON.parse(content); } catch { parsed = { report: content, summary: "" }; }
 
-      const reportContent = parsed.report || content;
-      const summary = parsed.summary || "";
+      const reportEn = parsed.report_en || parsed.report || content;
+      const reportDe = parsed.report_de || reportEn;
+      const summaryEn = parsed.summary_en || parsed.summary || "";
+      const summaryDe = parsed.summary_de || summaryEn;
+      const reportContent = primaryLang === "de" ? reportDe : reportEn;
+      const summary = primaryLang === "de" ? summaryDe : summaryEn;
+
+      const enrichedSnapshot = {
+        ...dataSnapshot,
+        reportEn,
+        reportDe,
+        summaryEn,
+        summaryDe,
+        ...(tastingId ? { tastingId } : {}),
+      };
 
       const report = await storage.createConnoisseurReport({
         participantId,
         reportContent,
         summary,
-        dataSnapshot,
-        language: lang,
+        dataSnapshot: enrichedSnapshot,
+        language: primaryLang,
       });
 
       res.status(201).json(report);
