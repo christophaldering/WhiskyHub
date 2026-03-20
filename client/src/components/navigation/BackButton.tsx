@@ -2,13 +2,15 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { v } from "@/lib/themeVars";
-import { popRoute, getSmartFallback } from "@/lib/navStack";
+import { popRoute, getSmartFallback, markBackNavigation } from "@/lib/navStack";
 
 export default function BackButton({ fallback }: { fallback?: string }) {
   const [location, navigate] = useLocation();
   const { t } = useTranslation();
 
   const goBack = () => {
+    markBackNavigation();
+
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
     if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) {

@@ -12,6 +12,7 @@ import { LoginDialog } from "@/components/login-dialog";
 import LabsErrorBoundary from "./LabsErrorBoundary";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
+import { saveScrollPosition, getScrollPosition, consumeBackNavigation, markBackNavigation } from "@/lib/navStack";
 import "./labs-theme.css";
 
 interface OnlineUserInfo {
@@ -478,11 +479,10 @@ function useVerificationBanner() {
   };
 }
 
-const scrollCache = new Map<string, number>();
-
 export function useLabsBack(fallback: string) {
   const [, navigate] = useLocation();
   return useCallback(() => {
+    markBackNavigation();
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -542,11 +542,25 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
   useEffect(() => {
     if (prevLocationRef.current !== location) {
-      scrollCache.set(prevLocationRef.current, window.scrollY);
+      saveScrollPosition(prevLocationRef.current, window.scrollY);
       prevLocationRef.current = location;
-      const cached = scrollCache.get(location);
-      if (cached !== undefined) {
-        requestAnimationFrame(() => window.scrollTo(0, cached));
+
+      const isBack = consumeBackNavigation();
+      const savedY = isBack ? getScrollPosition(location) : null;
+
+      if (savedY != null && savedY > 0) {
+        let attempts = 0;
+        const maxAttempts = 25;
+        const interval = 20;
+        const tryScroll = () => {
+          if (document.documentElement.scrollHeight >= savedY + window.innerHeight * 0.5 || attempts >= maxAttempts) {
+            window.scrollTo(0, savedY);
+            return;
+          }
+          attempts++;
+          requestAnimationFrame(() => setTimeout(tryScroll, interval));
+        };
+        requestAnimationFrame(tryScroll);
       } else {
         window.scrollTo(0, 0);
       }

@@ -87,3 +87,40 @@ export function consumeBackNavigation(): boolean {
   } catch {}
   return false;
 }
+
+const NAV_IDX_KEY = "cs_nav_idx";
+
+function getNavIdx(): number {
+  try {
+    const val = sessionStorage.getItem(NAV_IDX_KEY);
+    return val ? parseInt(val, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setNavIdx(idx: number) {
+  try {
+    sessionStorage.setItem(NAV_IDX_KEY, String(idx));
+  } catch {}
+}
+
+export function incrementNavIdx() {
+  const next = getNavIdx() + 1;
+  setNavIdx(next);
+  try {
+    const state = window.history.state || {};
+    window.history.replaceState({ ...state, _navIdx: next }, "");
+  } catch {}
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", (e) => {
+    const prevIdx = getNavIdx();
+    const newIdx = e.state?._navIdx ?? 0;
+    setNavIdx(newIdx);
+    if (newIdx < prevIdx) {
+      markBackNavigation();
+    }
+  });
+}

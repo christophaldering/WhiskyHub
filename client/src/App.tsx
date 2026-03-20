@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
-import { pushRoute } from "@/lib/navStack";
+import { pushRoute, incrementNavIdx } from "@/lib/navStack";
 
 window.addEventListener("unhandledrejection", (event) => {
   const msg = String(event.reason?.message || event.reason || "");
@@ -191,7 +191,13 @@ function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
 function RouteTracker() {
   const [location] = useLocation();
   useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+  useEffect(() => {
     pushRoute(location);
+    incrementNavIdx();
   }, [location]);
   return null;
 }
