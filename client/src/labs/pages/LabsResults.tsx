@@ -6,7 +6,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId, pidHeaders } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -1528,7 +1528,15 @@ export default function LabsResults({ params }: LabsResultsProps) {
             border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)",
             cursor: "pointer", fontFamily: "inherit", textAlign: "left",
           }}
-          onClick={() => navigate("/labs/taste/connoisseur")}
+          onClick={async () => {
+            const lang = navigator.language?.startsWith("de") ? "de" : "en";
+            fetch(`/api/participants/${pid}/connoisseur-report`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...pidHeaders() },
+              body: JSON.stringify({ language: lang, tastingId }),
+            }).catch(() => {});
+            navigate(`/labs/taste/connoisseur?tastingId=${tastingId}`);
+          }}
           data-testid="cta-connoisseur-report"
         >
           <div style={{

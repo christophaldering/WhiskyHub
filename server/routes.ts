@@ -4597,6 +4597,24 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         ? requestedLang
         : participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
 
+      let tastingContext: { title: string; whiskyNames: string[]; participantRatings: any[] } | null = null;
+      if (tastingId) {
+        try {
+          const tasting = await storage.getTasting(tastingId);
+          const whiskies = await storage.getWhiskiesForTasting(tastingId);
+          const ratings = await storage.getRatingsForTasting(tastingId);
+          const myRatings = ratings.filter(r => r.participantId === participantId);
+          tastingContext = {
+            title: tasting?.title || "Unknown Tasting",
+            whiskyNames: whiskies.map(w => w.name),
+            participantRatings: myRatings.map(r => ({
+              whiskyName: whiskies.find(w => w.id === r.whiskyId)?.name || "Unknown",
+              nose: r.nose, taste: r.taste, finish: r.finish, overall: r.overall,
+            })),
+          };
+        } catch {}
+      }
+
       const flavorProfile = await storage.getFlavorProfile(participantId);
       const stats = await storage.getParticipantStats(participantId);
       const journalEntries = await storage.getJournalEntries(participantId);
@@ -4731,7 +4749,7 @@ Write as if you know this person through their tasting notes.`
           },
           {
             role: "user",
-            content: `Write a Palate Letter for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
+            content: `Write a Palate Letter for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${tastingContext ? `\n\nThis report was triggered after the tasting "${tastingContext.title}". The participant rated these whiskies in this tasting:\n${JSON.stringify(tastingContext.participantRatings, null, 2)}\n\nPlease reference this specific tasting in the letter.` : ""}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
           }
         ],
         max_tokens: 2000,

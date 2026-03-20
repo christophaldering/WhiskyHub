@@ -578,6 +578,20 @@ function HistoryBarChart({ reports }: { reports: ConnoisseurReport[] }) {
         ctx.fillStyle = "rgba(201,167,108,0.9)";
         ctx.fillText(Math.round(score).toString(), x + barW / 2, y - 6);
       }
+
+      if (i > 0) {
+        const prevScore = scores[i - 1];
+        const delta = score - prevScore;
+        if (delta !== 0) {
+          const prevX = gap + (i - 1) * (barW + gap);
+          const midX = (prevX + barW / 2 + x + barW / 2) / 2;
+          const midY = Math.min(y, h - 20 - ((prevScore / maxScore) * (h - 36))) - 2;
+          ctx.font = "600 9px 'DM Sans', Inter, sans-serif";
+          ctx.fillStyle = delta > 0 ? "rgba(76,175,80,0.8)" : "rgba(239,83,80,0.8)";
+          ctx.textAlign = "center";
+          ctx.fillText(`${delta > 0 ? "+" : ""}${delta.toFixed(1)}`, midX, midY);
+        }
+      }
     });
   }, [last5]);
 
@@ -673,6 +687,9 @@ export default function LabsConnoisseur() {
   const session = useSession();
   const pid = session.pid;
   const queryClient = useQueryClient();
+  const urlTastingId = useMemo(() => {
+    try { return new URLSearchParams(window.location.search).get("tastingId") || undefined; } catch { return undefined; }
+  }, []);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("report");
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
@@ -702,7 +719,7 @@ export default function LabsConnoisseur() {
         res = await fetch(`/api/participants/${pid}/connoisseur-report`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...pidHeaders() },
-          body: JSON.stringify({ language: aiLang, ...(customPrompt.trim() ? { customPrompt: customPrompt.trim() } : {}) }),
+          body: JSON.stringify({ language: aiLang, ...(customPrompt.trim() ? { customPrompt: customPrompt.trim() } : {}), ...(urlTastingId ? { tastingId: urlTastingId } : {}) }),
         });
       } catch {
         throw new Error(t("labs.connoisseur.networkError", "Connection lost. Please check your connection and try again."));
