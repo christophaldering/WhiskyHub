@@ -542,7 +542,7 @@ function ActivityTab() {
               <div className="flex gap-3 mt-2.5 pt-2" style={{ borderTop: "1px solid var(--labs-border)" }}>
                 <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><Wine className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.tastingCount as number} tastings</span>
                 <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BarChart3 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.ratingCount as number} ratings</span>
-                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BookOpen className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.journalCount as number} journal</span>
+                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BookOpen className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.journalCount as number} drams</span>
               </div>
             </div>
           ))}

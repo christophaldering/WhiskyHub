@@ -739,7 +739,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   {[
                     { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
                     { value: "focus", label: "One at a Time", desc: "Focus mode" },
-                    { value: "journal", label: "Journal", desc: "Guided notes" },
+                    { value: "journal", label: "Dram", desc: "Guided notes" },
                   ].map((opt) => {
                     const active = ((tasting.sessionUiMode as string) || "flow") === opt.value;
                     return (

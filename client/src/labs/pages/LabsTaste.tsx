@@ -605,7 +605,7 @@ export default function LabsTaste() {
               {t("myTastePage.sectionMyCollection", "My Collection")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your tasting journal")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your logged drams")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
               <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
               <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
             </div>
@@ -680,7 +680,7 @@ export default function LabsTaste() {
               {t("myTastePage.sectionMyCollection", "My Collection")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your tasting journal")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your logged drams")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
               <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
               <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
             </div>

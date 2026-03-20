@@ -303,8 +303,8 @@ export default function LabsTasteCollection() {
                       {item.estimatedPrice != null && <div><span style={{ color: "var(--labs-text-muted)" }}>Est:</span> {item.estimatedPrice.toFixed(2)} EUR</div>}
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <button onClick={() => toJournalMutation.mutate(item.id)} className="labs-btn-secondary flex items-center gap-1" style={{ padding: "5px 10px", fontSize: 11 }} data-testid={`button-labs-to-journal-${item.id}`}>
-                        <Star className="w-3 h-3" /> To Journal
+                      <button onClick={() => toJournalMutation.mutate(item.id)} className="labs-btn-secondary flex items-center gap-1" style={{ padding: "5px 10px", fontSize: 11 }} data-testid={`button-labs-add-dram-${item.id}`}>
+                        <Star className="w-3 h-3" /> + Dram
                       </button>
                       {editingPriceId === item.id ? (
                         <div className="flex items-center gap-1">

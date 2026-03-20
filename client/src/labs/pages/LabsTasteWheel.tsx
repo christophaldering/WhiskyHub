@@ -102,7 +102,7 @@ export default function LabsTasteWheel() {
         Aroma categories extracted from your tasting notes
       </p>
       <p className="text-xs mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }} data-testid="text-source-count">
-        Sources: {journalEntries?.length || 0} journal entries, {ratingNotes?.length || 0} rating notes
+        Sources: {journalEntries?.length || 0} drams, {ratingNotes?.length || 0} rating notes
       </p>
 
       {isLoading ? (

@@ -750,7 +750,7 @@ export default function LabsExplore() {
                 {searchText ? "Keine Ergebnisse" : "Noch keine Drams"}
               </h2>
               <p className="labs-empty-sub">
-                {searchText ? "Passe deine Suche an." : "Deine Tastings und Journal-Einträge erscheinen hier."}
+                {searchText ? "Passe deine Suche an." : "Deine Tastings und Drams erscheinen hier."}
               </p>
             </div>
           )}

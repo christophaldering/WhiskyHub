@@ -18,7 +18,7 @@ interface ExportCard { type: string; title: string; desc: string; icon: React.El
 
 const EXPORT_CARDS: ExportCard[] = [
   { type: "profile", title: "Profile", desc: "Your profile data and preferences", icon: User, access: "own" },
-  { type: "journal", title: "Journal", desc: "All dram journal entries", icon: NotebookPen, access: "own" },
+  { type: "journal", title: "Drams", desc: "All your logged drams", icon: NotebookPen, access: "own" },
   { type: "wishlist", title: "Wishlist", desc: "Your wishlist entries", icon: Star, access: "own" },
   { type: "collection", title: "Collection", desc: "Whisky collection data", icon: Archive, access: "own" },
   { type: "friends", title: "Friends", desc: "Friends list and connections", icon: Users, access: "own" },

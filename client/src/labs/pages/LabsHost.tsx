@@ -2866,7 +2866,7 @@ function CreateTastingForm() {
                   options={[
                     { value: "flow", label: "Free Tasting", desc: guidedMode ? "Not available with Host Controls" : "Explore all drams freely", disabled: guidedMode },
                     { value: "focus", label: "One at a Time", desc: "Focus on one dram" },
-                    { value: "journal", label: "Tasting Journal", desc: "Step-by-step guided notes" },
+                    { value: "journal", label: "Dram Notes", desc: "Step-by-step guided notes" },
                   ]}
                   onChange={(val: string | number) => {
                     const v = String(val);
@@ -3811,7 +3811,7 @@ function TastingSetupSection({
               options={[
                 { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
                 { value: "focus", label: "One at a Time", desc: "Focus mode" },
-                { value: "journal", label: "Journal", desc: "Guided notes" },
+                { value: "journal", label: "Dram", desc: "Guided notes" },
               ]}
               onChange={handleChangeSessionUi}
             />

@@ -114,7 +114,7 @@ export default function LabsActivity() {
                 </div>
                 {a.type === "journal" ? (
                   <div>
-                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>wrote a journal entry</p>
+                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>logged a dram</p>
                     <p className="text-xs font-medium truncate mt-0.5" style={{ color: "var(--labs-text)" }}>
                       {a.details.title as string}
                     </p>

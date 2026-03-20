@@ -444,8 +444,8 @@ export default function LabsTasteDrams() {
       </button>
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">Drams Journal</h1>
-          <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>Your tasting journal</p>
+          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">My Drams</h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>Your logged drams</p>
         </div>
         <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
           <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
@@ -455,7 +455,7 @@ export default function LabsTasteDrams() {
       {!session.signedIn ? (
         <div className="labs-empty" style={{ minHeight: 200 }}>
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to access your drams journal</p>
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to access your drams</p>
         </div>
       ) : (
         <>
