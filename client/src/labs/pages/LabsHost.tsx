@@ -219,6 +219,37 @@ function FileIcon({ file, className }: { file: File; className?: string }) {
   return <FileText className={className} />;
 }
 
+function isImageFile(file: File): boolean {
+  return file.type.startsWith("image/");
+}
+
+function FileThumbnail({ file, onRemove, testId }: { file: File; onRemove: () => void; testId: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+  if (!url) return null;
+  return (
+    <div className="relative group" data-testid={testId} title={file.name}>
+      <img
+        src={url}
+        alt={file.name}
+        className="rounded-lg object-cover"
+        style={{ width: 48, height: 48, border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }}
+      />
+      <button
+        onClick={onRemove}
+        className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center"
+        style={{ background: "var(--labs-danger)", color: "#fff", border: "none", cursor: "pointer", width: 18, height: 18, padding: 0 }}
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
 interface LabsHostProps {
   params?: { id?: string };
 }
@@ -1140,6 +1171,7 @@ function MobileCompanion({
   const [mobileAiFiles, setMobileAiFiles] = useState<File[]>([]);
   const [mobileAiText, setMobileAiText] = useState("");
   const [mobileAiLoading, setMobileAiLoading] = useState(false);
+  const mobileAiLoadingRef = useRef(false);
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileDragOver, setMobileDragOver] = useState(false);
@@ -1282,6 +1314,7 @@ function MobileCompanion({
   const handleMobileAiImport = async () => {
     if (mobileAiFiles.length === 0 && !mobileAiText.trim()) return;
     setMobileAiLoading(true);
+    mobileAiLoadingRef.current = true;
     setMobileAiError("");
     setMobileAiSummary(null);
     try {
@@ -1320,7 +1353,19 @@ function MobileCompanion({
       setMobileAiError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setMobileAiLoading(false);
+    mobileAiLoadingRef.current = false;
   };
+
+  useEffect(() => {
+    if (mobileAiFiles.length === 0) return;
+    if (mobileAiLoadingRef.current) return;
+    const timer = setTimeout(() => {
+      if (!mobileAiLoadingRef.current) {
+        handleMobileAiImport();
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [mobileAiFiles]);
 
   const handleMobileAiConfirm = async () => {
     let added = 0, dupeAdded = 0, fail = 0;
@@ -1655,14 +1700,23 @@ function MobileCompanion({
                 {mobileAiFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {mobileAiFiles.map((f, i) => (
-                      <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`mobile-ai-file-${i}`}>
-                        <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate max-w-[180px]">{f.name.length > 25 ? f.name.slice(0, 22) + "..." : f.name}</span>
-                        <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
-                        <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
+                      isImageFile(f) ? (
+                        <FileThumbnail
+                          key={i}
+                          file={f}
+                          onRemove={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))}
+                          testId={`mobile-ai-file-${i}`}
+                        />
+                      ) : (
+                        <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`mobile-ai-file-${i}`}>
+                          <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate max-w-[180px]">{f.name.length > 25 ? f.name.slice(0, 22) + "..." : f.name}</span>
+                          <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
+                          <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      )
                     ))}
                   </div>
                 )}
@@ -4227,6 +4281,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportFiles, setAiImportFiles] = useState<File[]>([]);
   const [aiImportText, setAiImportText] = useState("");
   const [aiImportLoading, setAiImportLoading] = useState(false);
+  const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
   const [showCollectionImport, setShowCollectionImport] = useState(false);
@@ -4375,6 +4430,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const handleAiImport = async () => {
     if (aiImportFiles.length === 0 && !aiImportText.trim()) return;
     setAiImportLoading(true);
+    aiImportLoadingRef.current = true;
     setAiImportError("");
     setAiImportSummary(null);
     try {
@@ -4413,7 +4469,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setAiImportError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setAiImportLoading(false);
+    aiImportLoadingRef.current = false;
   };
+
+  useEffect(() => {
+    if (aiImportFiles.length === 0) return;
+    if (aiImportLoadingRef.current) return;
+    const timer = setTimeout(() => {
+      if (!aiImportLoadingRef.current) {
+        handleAiImport();
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [aiImportFiles]);
 
   const handleAiImportConfirm = async () => {
     let added = 0, dupeAdded = 0, failed = 0;
@@ -5759,14 +5827,23 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             {aiImportFiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {aiImportFiles.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`desktop-ai-file-${i}`}>
-                    <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate max-w-[200px]">{f.name}</span>
-                    <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
-                    <button onClick={() => setAiImportFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
+                  isImageFile(f) ? (
+                    <FileThumbnail
+                      key={i}
+                      file={f}
+                      onRemove={() => setAiImportFiles(prev => prev.filter((_, j) => j !== i))}
+                      testId={`desktop-ai-file-${i}`}
+                    />
+                  ) : (
+                    <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)" }} title={f.name} data-testid={`desktop-ai-file-${i}`}>
+                      <FileIcon file={f} className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate max-w-[200px]">{f.name}</span>
+                      <span className="text-xs opacity-70">{formatFileSize(f.size)}</span>
+                      <button onClick={() => setAiImportFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  )
                 ))}
               </div>
             )}
