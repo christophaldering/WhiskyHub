@@ -12,6 +12,7 @@ import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import RatingFlow from "@/labs/components/RatingFlow";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 
 const POLL_FAST = 15000;
@@ -563,7 +564,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const handleAdvanceWithConfirm = () => {
     const isMovingToNextDram = guidedIdx >= 0 && (!isBlind || !rv || guidedRevealStep >= (rv?.maxSteps ?? 0));
-    if (!confirmAdvance && incompleteParticipants.length > 0 && isMovingToNextDram) {
+    if (!confirmAdvance && isMovingToNextDram) {
       setConfirmAdvance(true);
       return;
     }
@@ -867,6 +868,18 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes popIn {
+          0% { opacity: 0; transform: scale(0.8); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideUp {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeScale {
+          0% { opacity: 0; transform: scale(0.92); }
+          100% { opacity: 1; transform: scale(1); }
+        }
         @keyframes cockpitFlash {
           0% { opacity: 0.65; }
           100% { opacity: 0; }
@@ -1170,10 +1183,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               <div style={{ flexShrink: 0 }}>
                 {(() => {
                   const imageRevealed = !isBlind || (gv && gv.isFieldRevealed("image"));
+                  const imageJustRevealed = isBlind && gv && gv.isFieldRevealed("image");
                   const hasImage = activeWhisky.imageUrl;
                   if (hasImage) {
                     return (
-                      <div style={{ position: "relative" }}>
+                      <div style={{ position: "relative", ...(imageJustRevealed ? { animation: "fadeScale 400ms ease-out" } : {}) }}>
                         <div style={{ opacity: imageRevealed ? 1 : 0.35, filter: imageRevealed ? "none" : "blur(2px) grayscale(0.5)" }}>
                           <WhiskyImage imageUrl={activeWhisky.imageUrl} name={activeWhisky.name || "?"} size={72} height={90} whiskyId={activeWhisky.id} />
                         </div>
@@ -1201,6 +1215,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               <div style={{ flex: 1, minWidth: 0 }}>
                 {(() => {
                   const nameHidden = isBlind && gv && !gv.isFieldRevealed("name");
+                  const nameRevealed = isBlind && gv && gv.isFieldRevealed("name");
                   return (
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1211,6 +1226,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         opacity: nameHidden ? 0.5 : 1,
                         filter: nameHidden ? "blur(3px)" : "none",
+                        ...(nameRevealed ? { animation: "popIn 350ms ease-out" } : {}),
                       }}>
                         {activeWhisky.name || "—"}
                       </div>
@@ -1223,7 +1239,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         Guests see: Dram {blindLabel(guestDramIdx)}
                       </div>
                     )}
-                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
+                    <div style={{
+                      fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3,
+                      ...(isBlind && gv && gv.currentStep > 0 ? { animation: "slideUp 300ms ease-out" } : {}),
+                    }}>
                       {(() => {
                         const detailFields: Array<[string, string | null | undefined]> = [
                           ["distillery", activeWhisky.distillery], ["age", activeWhisky.age ? `${activeWhisky.age}y` : null],
@@ -1271,6 +1290,17 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 )}
 
                 {(() => {
+                  const isFullyRevealed = !isBlind || (rv && rv.currentStep >= rv.maxSteps);
+                  if (!isFullyRevealed) {
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }}>
+                        <LockKeyhole style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 500 }}>
+                          {t("cockpit.scoresAfterReveal", "Group scores visible after full reveal")}
+                        </span>
+                      </div>
+                    );
+                  }
                   const whiskyRatings = activeWhisky
                     ? ratings.filter((r: any) => r.whiskyId === activeWhisky.id)
                     : [];
@@ -1978,55 +2008,54 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </div>
 
           {currentRatingWhisky ? (
-            <>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-                  {currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>
-                  {[currentRatingWhisky.distillery, currentRatingWhisky.age ? `${currentRatingWhisky.age}y` : null, currentRatingWhisky.abv ? `${currentRatingWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
-                </div>
-              </div>
-
-              <LabsRatingPanel
-                scores={getScores(currentRatingWhisky.id)}
-                onScoreChange={(dim, val) => handleScoreChange(currentRatingWhisky.id, dim, val)}
-                chips={hostChips[currentRatingWhisky.id] || emptyChips}
-                onChipToggle={(dim, chip) => handleChipToggle(currentRatingWhisky.id, dim, chip)}
-                texts={hostTexts[currentRatingWhisky.id] || emptyTexts}
-                onTextChange={(dim, text) => handleTextChange(currentRatingWhisky.id, dim, text)}
-                overall={getOverall(currentRatingWhisky.id)}
-                onOverallChange={(val) => handleOverallChange(currentRatingWhisky.id, val)}
-                overallAuto={getOverallAuto(currentRatingWhisky.id)}
-                overrideActive={!!hostOverride[currentRatingWhisky.id]}
-                onResetOverride={() => {
-                  const wId = currentRatingWhisky.id;
-                  setHostOverride(prev => ({ ...prev, [wId]: false }));
-                  const auto = getOverallAuto(wId);
-                  setHostOverall(prev => ({ ...prev, [wId]: auto }));
-                  debouncedSave(wId, getScores(wId), auto, hostNotes[wId] || "");
-                }}
-                scale={ratingScale}
-                showToggle={false}
-                defaultOpen={true}
-                compact={!cockpitWizard}
-                wizard={cockpitWizard}
-              />
-
-              <textarea
-                value={hostNotes[currentRatingWhisky.id] || ""}
-                onChange={e => {
-                  const wId = currentRatingWhisky.id;
-                  const newNotes = e.target.value;
-                  setHostNotes(prev => ({ ...prev, [wId]: newNotes }));
-                  debouncedSave(wId, getScores(wId), getOverall(wId), newNotes);
-                }}
-                placeholder="Your tasting notes..."
-                className="labs-input"
-                style={{ resize: "vertical", minHeight: 56, marginTop: 12, fontSize: 13 }}
-                data-testid="cockpit-host-notes"
-              />
-            </>
+            <RatingFlow
+              scale={ratingScale}
+              scores={getScores(currentRatingWhisky.id)}
+              onScoreChange={(dim, val) => handleScoreChange(currentRatingWhisky.id, dim, val)}
+              overall={getOverall(currentRatingWhisky.id)}
+              onOverallChange={(val) => handleOverallChange(currentRatingWhisky.id, val)}
+              overrideActive={!!hostOverride[currentRatingWhisky.id]}
+              onOverrideToggle={() => {
+                const wId = currentRatingWhisky.id;
+                setHostOverride(prev => ({ ...prev, [wId]: !prev[wId] }));
+              }}
+              onResetOverride={() => {
+                const wId = currentRatingWhisky.id;
+                setHostOverride(prev => ({ ...prev, [wId]: false }));
+                const auto = getOverallAuto(wId);
+                setHostOverall(prev => ({ ...prev, [wId]: auto }));
+                debouncedSave(wId, getScores(wId), auto, hostNotes[wId] || "");
+              }}
+              chips={(() => {
+                const ch = hostChips[currentRatingWhisky.id] || emptyChips;
+                return [...ch.nose, ...ch.taste, ...ch.finish];
+              })()}
+              onChipToggle={(chip) => {
+                const wId = currentRatingWhisky.id;
+                const current = hostChips[wId] || emptyChips;
+                const dims: DimKey[] = ["nose", "taste", "finish"];
+                for (const d of dims) {
+                  if (current[d].includes(chip)) {
+                    handleChipToggle(wId, d, chip);
+                    return;
+                  }
+                }
+                handleChipToggle(wId, "nose", chip);
+              }}
+              notes={hostNotes[currentRatingWhisky.id] || ""}
+              onNotesChange={(text) => {
+                const wId = currentRatingWhisky.id;
+                setHostNotes(prev => ({ ...prev, [wId]: text }));
+                debouncedSave(wId, getScores(wId), getOverall(wId), text);
+              }}
+              onSave={async () => {
+                const wId = currentRatingWhisky.id;
+                debouncedSave(wId, getScores(wId), getOverall(wId), hostNotes[wId] || "");
+              }}
+              whiskyName={isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`}
+              flavorProfileId={(currentRatingWhisky as any).flavorProfileId ?? null}
+              isBlind={isBlind}
+            />
           ) : (
             <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
               No whiskies to rate yet.

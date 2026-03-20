@@ -674,7 +674,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
     onReveal: useCallback(() => {
       setRevealFlash(true);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-      flashTimerRef.current = setTimeout(() => setRevealFlash(false), 600);
+      flashTimerRef.current = setTimeout(() => setRevealFlash(false), 180);
       try { navigator.vibrate?.(80); } catch {}
     }, []),
   });

@@ -435,6 +435,7 @@ const resources = {
         presetPhotoFirst: "Photo First",
         presetCustom: "Custom",
         participantStatus: "Participant Status",
+        scoresAfterReveal: "Group scores visible after full reveal",
       },
       palateLetter: {
         card: {
@@ -6677,6 +6678,7 @@ const resources = {
         presetPhotoFirst: "Foto zuerst",
         presetCustom: "Individuell",
         participantStatus: "Teilnehmer-Status",
+        scoresAfterReveal: "Gruppenergebnisse erst nach vollständigem Reveal sichtbar",
       },
       palateLetter: {
         card: {

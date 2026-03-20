@@ -997,7 +997,7 @@
 }
 
 @keyframes labsRevealFlash {
-  0% { opacity: 0.6; }
+  0% { opacity: 0.65; }
   100% { opacity: 0; }
 }
 
@@ -1006,8 +1006,8 @@
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  background: radial-gradient(ellipse at center, var(--labs-accent) 0%, transparent 70%);
-  animation: labsRevealFlash 600ms ease-out forwards;
+  background: #fff;
+  animation: labsRevealFlash 180ms ease-out forwards;
 }
 
 .labs-gap-sm { gap: 8px; }
