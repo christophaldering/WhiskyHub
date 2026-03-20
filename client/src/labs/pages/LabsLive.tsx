@@ -937,7 +937,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
     const participantCount = Array.isArray(participants) ? participants.length : 0;
 
     return (
-      <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in">
+      <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in" style={{ position: "relative" }}>
+        {revealFlash && (
+          <div className="labs-reveal-flash" data-testid="reveal-flash-overlay-guided" />
+        )}
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={goBack}

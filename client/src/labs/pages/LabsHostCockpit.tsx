@@ -1312,7 +1312,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 )}
 
                 {(() => {
-                  const isFullyRevealed = !isBlind || (rv && rv.revealStep >= rv.maxSteps);
+                  const optimisticRevealStep = localRevealStep ?? (rv?.revealStep ?? 0);
+                  const isFullyRevealed = !isBlind || (rv && optimisticRevealStep >= rv.maxSteps);
                   if (!isFullyRevealed) {
                     return (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }}>
