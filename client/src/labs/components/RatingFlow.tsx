@@ -85,6 +85,7 @@ export default function RatingFlow({
       setReturnToSummary(false);
       setSaving(false);
       setShowSavedOverlay(false);
+      setFlavorsExpanded(false);
     }
   }, [initialStep]);
 
