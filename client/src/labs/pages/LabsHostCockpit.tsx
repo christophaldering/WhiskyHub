@@ -1264,11 +1264,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         color: nameHidden ? "var(--labs-text-muted)" : "var(--labs-text)",
                         fontFamily: "var(--labs-font-serif, Georgia, serif)",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        opacity: nameHidden ? 0.5 : 1,
-                        filter: nameHidden ? "blur(3px)" : "none",
                         ...(nameRevealed ? { animation: "popIn 350ms ease-out" } : {}),
                       }}>
-                        {activeWhisky.name || "—"}
+                        {nameHidden ? `Dram ${blindLabel(guestDramIdx)}` : (activeWhisky.name || "—")}
                       </div>
                       {nameHidden && (
                         <LockKeyhole style={{ width: 13, height: 13, color: "var(--labs-text-muted)", opacity: 0.7, flexShrink: 0 }} />
@@ -1303,11 +1301,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             const revealed = gv.isFieldRevealed(f);
                             return (
                               <span key={f} style={{
-                                opacity: revealed ? 1 : 0.45,
-                                filter: revealed ? "none" : "blur(3px)",
+                                opacity: revealed ? 1 : 0.5,
                                 display: "inline",
                               }}>
-                                {v}
+                                {revealed ? v : "●●●"}
                               </span>
                             );
                           }).reduce<ReactNode[]>((acc, el, i) => {
@@ -1626,7 +1623,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               const lbl = rv.stepLabels[guidedRevealStep];
               guidedBtnLabel = lbl ? t("cockpit.revealNext", "Next: {{stage}}", { stage: lbl }) : t("cockpit.revealNextGeneric", "Reveal Next");
             } else {
-              guidedBtnLabel = t("cockpit.nextDram", "Next Dram");
+              guidedBtnLabel = t("cockpit.allRevealed", "All info revealed — Next Dram");
             }
           }
 

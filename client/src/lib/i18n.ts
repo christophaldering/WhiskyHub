@@ -436,6 +436,7 @@ const resources = {
         presetCustom: "Custom",
         participantStatus: "Participant Status",
         scoresAfterReveal: "Group scores visible after full reveal",
+        allRevealed: "All info revealed — Next Dram",
       },
       palateLetter: {
         card: {
@@ -6679,6 +6680,7 @@ const resources = {
         presetCustom: "Individuell",
         participantStatus: "Teilnehmer-Status",
         scoresAfterReveal: "Gruppenergebnisse erst nach vollständigem Reveal sichtbar",
+        allRevealed: "Alles aufgedeckt — Nächster Dram",
       },
       palateLetter: {
         card: {
