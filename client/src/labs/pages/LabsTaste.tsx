@@ -6,6 +6,7 @@ import {
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
   Download, Brain, Utensils, Library, Info, Star,
+  Archive, Heart,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -428,8 +429,8 @@ export default function LabsTaste() {
           <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
           <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
         </svg>
-        <h2 className="labs-empty-title">Your Taste Profile</h2>
-        <p className="labs-empty-sub">Sign in to discover your personal tasting patterns.</p>
+        <h2 className="labs-empty-title">{t("myTastePage.title", "My World")}</h2>
+        <p className="labs-empty-sub">{t("myTastePage.signInDesc", "Sign in to discover your personal tasting patterns.")}</p>
         <button className="labs-empty-action" onClick={() => navigate("/labs")} data-testid="labs-taste-goto-home">Go to Home</button>
       </div>
     );
@@ -472,10 +473,10 @@ export default function LabsTaste() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
-        My Taste
+        {t("myTastePage.title", "My World")}
       </h1>
       <p className="text-sm mb-4 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
-        Your personal whisky world
+        {t("myTastePage.subtitle", "Your personal whisky world")}
       </p>
       {!analyticsLocked && flavorProfile?.hasMultipleScales && (
         <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="taste-normalized-hint">
@@ -598,6 +599,18 @@ export default function LabsTaste() {
             </div>
           )}
 
+          <div className="mt-6 labs-fade-in labs-stagger-2">
+            <p className="labs-section-label flex items-center gap-2">
+              <Archive className="w-3.5 h-3.5" />
+              {t("myTastePage.sectionMyCollection", "My Collection")}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your tasting journal")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
+              <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
+            </div>
+          </div>
+
           <PalateLetterCard
             reports={connoisseurReports}
             whiskyCount={whiskyCount}
@@ -661,6 +674,18 @@ export default function LabsTaste() {
             </div>
           )}
 
+          <div className="mt-6 labs-fade-in labs-stagger-2">
+            <p className="labs-section-label flex items-center gap-2">
+              <Archive className="w-3.5 h-3.5" />
+              {t("myTastePage.sectionMyCollection", "My Collection")}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your tasting journal")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
+              <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
+            </div>
+          </div>
+
           <PalateLetterCard
             reports={connoisseurReports}
             whiskyCount={whiskyCount}
@@ -671,7 +696,7 @@ export default function LabsTaste() {
         </>
       )}
 
-      <div className="labs-fade-in labs-stagger-3">
+      <div className="mt-8 labs-fade-in labs-stagger-3">
         <p className="labs-section-label flex items-center gap-2">
           <Activity className="w-3.5 h-3.5" />
           Profile & Analysis
