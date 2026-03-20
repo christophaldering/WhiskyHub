@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface ScoreRingProps {
-  score: number;
+  score: number | null | undefined;
   maxScore?: number;
   size?: number;
   strokeWidth?: number;
@@ -9,6 +9,7 @@ interface ScoreRingProps {
   label?: string;
   showValue?: boolean;
   className?: string;
+  formatValue?: (value: number) => string;
 }
 
 export default function LabsScoreRing({
@@ -20,6 +21,7 @@ export default function LabsScoreRing({
   label,
   showValue = true,
   className = "",
+  formatValue,
 }: ScoreRingProps) {
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -27,13 +29,16 @@ export default function LabsScoreRing({
   const currentAnimatedRef = useRef(0);
   const animFrameRef = useRef<number>(0);
 
+  const isEmpty = score == null;
+  const safeScore = score ?? 0;
+
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.min(score / maxScore, 1);
+  const pct = isEmpty ? 0 : Math.min(safeScore / maxScore, 1);
   const offset = circumference * (1 - pct);
 
-  const ringColor = color || (pct >= 0.75 ? "var(--labs-success)" : pct >= 0.5 ? "var(--labs-accent)" : "var(--labs-danger)");
-  const roundedScore = Math.round(score * 10) / 10;
+  const ringColor = isEmpty ? "var(--labs-border)" : (color || (pct >= 0.75 ? "var(--labs-success)" : pct >= 0.5 ? "var(--labs-accent)" : "var(--labs-danger)"));
+  const roundedScore = Math.round(safeScore * 100) / 100;
 
   useEffect(() => {
     const el = ref.current;
@@ -63,7 +68,7 @@ export default function LabsScoreRing({
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = fromValue + (toValue - fromValue) * eased;
-      const rounded = Math.round(current * 10) / 10;
+      const rounded = Math.round(current * 100) / 100;
       currentAnimatedRef.current = current;
       setDisplayValue(rounded);
       if (progress < 1) {
@@ -112,13 +117,13 @@ export default function LabsScoreRing({
         {showValue && (
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ color: "var(--labs-text)" }}
+            style={{ color: isEmpty ? "var(--labs-text-muted)" : "var(--labs-text)" }}
           >
             <span
               className="labs-serif font-semibold"
               style={{ fontSize: size * 0.28, lineHeight: 1 }}
             >
-              {visible ? displayValue : 0}
+              {isEmpty ? "—" : (visible ? (formatValue ? formatValue(displayValue) : displayValue) : (formatValue ? formatValue(0) : 0))}
             </span>
           </div>
         )}

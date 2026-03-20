@@ -14,6 +14,7 @@ import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
 import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi, pidHeaders } from "@/lib/api";
 import type { JournalEntry, Tasting } from "@shared/schema";
+import LabsScoreRing from "@/labs/components/LabsScoreRing";
 
 const ANALYTICS_THRESHOLD = 10;
 
@@ -618,19 +619,32 @@ export default function LabsTaste() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 labs-fade-in labs-stagger-1">
             {[
-              { label: "Stability", value: stability, id: "stability", desc: t("labs.statStabilityDesc", "Rating consistency") },
-              { label: "Exploration", value: exploration, id: "exploration", desc: t("labs.statExplorationDesc", "Variety of regions & styles") },
-              { label: "Smoke", value: smoke, id: "smoke", desc: t("labs.statSmokeDesc", "Peat & smoke affinity") },
-              { label: "Tastings", value: totalTastings, id: "tastings", desc: t("labs.statTastingsDesc", "Sessions joined") },
+              { label: "Stability", value: stability, id: "stability", desc: t("labs.statStabilityDesc", "Rating consistency"), maxScore: 10, formatValue: (v: number) => v.toFixed(1) },
+              { label: "Exploration", value: exploration, id: "exploration", desc: t("labs.statExplorationDesc", "Variety of regions & styles"), maxScore: 10, formatValue: (v: number) => v.toFixed(1) },
+              { label: "Smoke", value: smoke, id: "smoke", desc: t("labs.statSmokeDesc", "Peat & smoke affinity"), maxScore: 1, formatValue: (v: number) => `${Math.round(v * 100)}%` },
             ].map(s => (
-              <div key={s.id} className="labs-card p-4 text-center" data-testid={`labs-taste-stat-${s.id}`}>
-                <p className="text-xl font-bold" style={{ color: "var(--labs-accent)" }}>
-                  {s.value != null ? (typeof s.value === "number" ? (Number.isInteger(s.value) ? s.value : s.value.toFixed(1)) : s.value) : "—"}
-                </p>
-                <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{s.desc}</p>
+              <div key={s.id} className="labs-card p-4 flex flex-col items-center justify-center" data-testid={`labs-taste-stat-${s.id}`}>
+                <LabsScoreRing
+                  score={s.value}
+                  maxScore={s.maxScore}
+                  size={72}
+                  strokeWidth={5}
+                  showValue
+                  formatValue={s.formatValue}
+                />
+                <p className="text-[11px] mt-2 font-medium" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
+                <p className="text-[10px] mt-0.5 text-center" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{s.desc}</p>
               </div>
             ))}
+            <div className="labs-card p-4 flex flex-col items-center justify-center" data-testid="labs-taste-stat-tastings">
+              <div className="flex items-center justify-center" style={{ width: 72, height: 72 }}>
+                <span className="labs-serif font-semibold" style={{ fontSize: 28, color: "var(--labs-accent)", lineHeight: 1 }}>
+                  {totalTastings ?? "—"}
+                </span>
+              </div>
+              <p className="text-[11px] mt-2 font-medium" style={{ color: "var(--labs-text-muted)" }}>Tastings</p>
+              <p className="text-[10px] mt-0.5 text-center" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{t("labs.statTastingsDesc", "Sessions joined")}</p>
+            </div>
           </div>
 
           {insight && (
