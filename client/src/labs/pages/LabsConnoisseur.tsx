@@ -703,6 +703,8 @@ export default function LabsConnoisseur() {
   }, []);
   const urlTastingId = urlParams.tastingId;
   const [externalGenPending, setExternalGenPending] = useState(urlParams.generating);
+  const externalGenStartTime = useRef(Date.now());
+  const externalGenPollCount = useRef(0);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("report");
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
@@ -713,8 +715,6 @@ export default function LabsConnoisseur() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [skipAnimation, setSkipAnimation] = useState(false);
 
-  const initialReportCount = useRef<number | null>(null);
-
   const { data: reports = [], isLoading, isError: reportsError } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
     queryFn: async () => {
@@ -722,9 +722,14 @@ export default function LabsConnoisseur() {
       const res = await fetch(`/api/participants/${pid}/connoisseur-reports`, { headers: pidHeaders() });
       if (!res.ok) throw new Error("Failed to load reports");
       const data = await res.json();
-      if (initialReportCount.current === null) initialReportCount.current = data.length;
-      if (externalGenPending && data.length > initialReportCount.current) {
-        setExternalGenPending(false);
+      if (externalGenPending) {
+        externalGenPollCount.current += 1;
+        const hasRecentReport = data.length > 0 && new Date(data[0].generatedAt).getTime() > externalGenStartTime.current - 30000;
+        const timedOut = Date.now() - externalGenStartTime.current > 45000;
+        const enoughPolls = externalGenPollCount.current >= 10;
+        if (hasRecentReport || timedOut || enoughPolls) {
+          setExternalGenPending(false);
+        }
       }
       return data;
     },
