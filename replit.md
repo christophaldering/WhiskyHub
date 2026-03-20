@@ -134,6 +134,9 @@ On production startup, `seedProductionData()` automatically seeds missing data l
 ### Data Quality & Admin Tools
 Includes historical reconciliation tools (`GET /api/admin/historical/reconciliation`) for auditing imported data and optimized DB indexes (`idx_historical_tastings_tasting_number`, `idx_historical_entries_tasting_id`).
 
+### Admin Flavour Editor
+Admin "Aromas" tab in LabsAdmin.tsx for managing flavour categories and descriptors. DB tables: `flavour_categories` (id, en, de, color, sortOrder) and `flavour_descriptors` (id, categoryId, en, de, keywords[], sortOrder). Public API: `GET /api/flavour-categories` (returns categories with nested descriptors). Admin CRUD: `POST/PATCH/DELETE /api/admin/flavour-categories` and `/api/admin/flavour-descriptors`. Seed endpoint: `POST /api/admin/flavour-seed` populates from hardcoded `FLAVOR_CATEGORIES` in `flavor-data.ts`. FlavourPicker fetches from API with 5-min stale time; falls back to hardcoded data when API returns empty or fails. Profile-based category ordering uses API categories as the source, with profile sort order applied on top.
+
 ## External Dependencies
 
 -   **PostgreSQL**: Primary database.

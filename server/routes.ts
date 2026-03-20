@@ -7936,6 +7936,148 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // --- Flavour Categories & Descriptors (public read, admin write) ---
+  app.get("/api/flavour-categories", async (_req: Request, res: Response) => {
+    try {
+      const categories = await storage.getFlavourCategories();
+      const descriptors = await storage.getFlavourDescriptors();
+      const grouped = categories.map(cat => ({
+        ...cat,
+        descriptors: descriptors.filter(d => d.categoryId === cat.id),
+      }));
+      res.json(grouped);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/flavour-categories", async (req: Request, res: Response) => {
+    try {
+      const { participantId, ...data } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      if (!data.id || !data.en || !data.de) return res.status(400).json({ message: "id, en, de are required" });
+      const sanitized = { id: String(data.id), en: String(data.en), de: String(data.de), color: String(data.color || "#888888"), sortOrder: Number(data.sortOrder) || 0 };
+      const result = await storage.createFlavourCategory(sanitized);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/flavour-categories/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, ...updates } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sanitized: Record<string, any> = {};
+      if (updates.en !== undefined) sanitized.en = String(updates.en);
+      if (updates.de !== undefined) sanitized.de = String(updates.de);
+      if (updates.color !== undefined) sanitized.color = String(updates.color);
+      if (updates.sortOrder !== undefined) sanitized.sortOrder = Number(updates.sortOrder);
+      const result = await storage.updateFlavourCategory(req.params.id, sanitized);
+      if (!result) return res.status(404).json({ message: "Category not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/flavour-categories/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      await storage.deleteFlavourCategory(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/flavour-descriptors", async (req: Request, res: Response) => {
+    try {
+      const { participantId, ...data } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      if (!data.id || !data.categoryId || !data.en || !data.de) return res.status(400).json({ message: "id, categoryId, en, de are required" });
+      const sanitized = { id: String(data.id), categoryId: String(data.categoryId), en: String(data.en), de: String(data.de), keywords: Array.isArray(data.keywords) ? data.keywords.map(String) : [], sortOrder: Number(data.sortOrder) || 0 };
+      const result = await storage.createFlavourDescriptor(sanitized);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/flavour-descriptors/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, ...updates } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sanitized: Record<string, any> = {};
+      if (updates.en !== undefined) sanitized.en = String(updates.en);
+      if (updates.de !== undefined) sanitized.de = String(updates.de);
+      if (updates.categoryId !== undefined) sanitized.categoryId = String(updates.categoryId);
+      if (updates.keywords !== undefined) sanitized.keywords = Array.isArray(updates.keywords) ? updates.keywords.map(String) : [];
+      if (updates.sortOrder !== undefined) sanitized.sortOrder = Number(updates.sortOrder);
+      const result = await storage.updateFlavourDescriptor(req.params.id, sanitized);
+      if (!result) return res.status(404).json({ message: "Descriptor not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/flavour-descriptors/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      await storage.deleteFlavourDescriptor(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/flavour-seed", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const existing = await storage.getFlavourCategories();
+      if (existing.length > 0) return res.status(400).json({ message: "Categories already exist. Delete all first to re-seed." });
+
+      const { FLAVOR_CATEGORIES } = await import("../client/src/labs/data/flavor-data");
+      for (let ci = 0; ci < FLAVOR_CATEGORIES.length; ci++) {
+        const cat = FLAVOR_CATEGORIES[ci];
+        await storage.createFlavourCategory({ id: cat.id, en: cat.en, de: cat.de, color: cat.color, sortOrder: ci });
+        for (let di = 0; di < cat.subcategories.length; di++) {
+          const desc = cat.subcategories[di];
+          await storage.createFlavourDescriptor({
+            id: `${cat.id}-${desc.id}`,
+            categoryId: cat.id,
+            en: desc.en,
+            de: desc.de,
+            keywords: desc.keywords,
+            sortOrder: di,
+          });
+        }
+      }
+      res.json({ success: true, seeded: FLAVOR_CATEGORIES.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== ADMIN =====
 
   // --- AI Settings (Kill Switch) ---

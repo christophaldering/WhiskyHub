@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import {
   FLAVOR_CATEGORIES,
@@ -89,6 +90,35 @@ function sortGroupsByProfile(groups: PickerGroup[], profileCats: FlavorCategory[
   });
 }
 
+function useFlavorCategoriesFromAPI(): FlavorCategory[] {
+  const { data } = useQuery<Array<{ id: string; en: string; de: string; color: string; sortOrder: number; descriptors: Array<{ id: string; en: string; de: string; keywords: string[]; sortOrder: number }> }>>({
+    queryKey: ["/api/flavour-categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/flavour-categories");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  return useMemo(() => {
+    if (!data || data.length === 0) return FLAVOR_CATEGORIES;
+    return data.map(cat => ({
+      id: cat.id,
+      en: cat.en,
+      de: cat.de,
+      color: cat.color,
+      subcategories: cat.descriptors.map(d => ({
+        id: d.id,
+        en: d.en,
+        de: d.de,
+        keywords: d.keywords,
+      })),
+    }));
+  }, [data]);
+}
+
 const VISIBLE_COUNT = 3;
 
 export default function FlavourPicker({
@@ -102,12 +132,30 @@ export default function FlavourPicker({
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
   const [expanded, setExpanded] = useState(false);
+  const apiCategories = useFlavorCategoriesFromAPI();
 
   const activeSet = useMemo(() => new Set(activeChips.map((c) => c.toLowerCase())), [activeChips]);
 
   const { visibleGroups, hiddenGroups } = useMemo(() => {
-    const orderedCats =
-      isBlind || !flavorProfileId ? FLAVOR_CATEGORIES : getSortedCategories(flavorProfileId);
+    const baseCats = apiCategories;
+    let orderedCats: FlavorCategory[];
+    if (isBlind || !flavorProfileId) {
+      orderedCats = baseCats;
+    } else {
+      const profileOrder = getSortedCategories(flavorProfileId);
+      const profileIdOrder = profileOrder.map(c => c.id);
+      const catMap = new Map(baseCats.map(c => [c.id, c]));
+      const ordered: FlavorCategory[] = [];
+      const seen = new Set<string>();
+      for (const pid of profileIdOrder) {
+        const cat = catMap.get(pid);
+        if (cat) { ordered.push(cat); seen.add(pid); }
+      }
+      for (const cat of baseCats) {
+        if (!seen.has(cat.id)) ordered.push(cat);
+      }
+      orderedCats = ordered;
+    }
     const allGroups = buildGroups(orderedCats);
     const visible = allGroups.slice(0, VISIBLE_COUNT);
     let hidden = allGroups.slice(VISIBLE_COUNT);
@@ -115,7 +163,7 @@ export default function FlavourPicker({
       hidden = sortGroupsByProfile(hidden, getSortedCategories(flavorProfileId));
     }
     return { visibleGroups: visible, hiddenGroups: hidden };
-  }, [isBlind, flavorProfileId]);
+  }, [isBlind, flavorProfileId, apiCategories]);
 
   const countActive = useCallback(
     (grp: PickerGroup) =>

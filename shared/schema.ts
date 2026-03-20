@@ -744,6 +744,33 @@ export const insertWhiskyGallerySchema = createInsertSchema(whiskyGallery).omit(
 export type InsertWhiskyGallery = z.infer<typeof insertWhiskyGallerySchema>;
 export type WhiskyGalleryPhoto = typeof whiskyGallery.$inferSelect;
 
+// --- Flavour Categories (admin-editable aroma categories) ---
+export const flavourCategories = pgTable("flavour_categories", {
+  id: varchar("id").primaryKey(),
+  en: text("en").notNull(),
+  de: text("de").notNull(),
+  color: text("color").notNull().default("#888888"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertFlavourCategorySchema = createInsertSchema(flavourCategories);
+export type InsertFlavourCategory = z.infer<typeof insertFlavourCategorySchema>;
+export type FlavourCategory = typeof flavourCategories.$inferSelect;
+
+// --- Flavour Descriptors (admin-editable aroma chips within categories) ---
+export const flavourDescriptors = pgTable("flavour_descriptors", {
+  id: varchar("id").primaryKey(),
+  categoryId: varchar("category_id").notNull(),
+  en: text("en").notNull(),
+  de: text("de").notNull(),
+  keywords: text("keywords").array().notNull().default(sql`'{}'::text[]`),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertFlavourDescriptorSchema = createInsertSchema(flavourDescriptors);
+export type InsertFlavourDescriptor = z.infer<typeof insertFlavourDescriptorSchema>;
+export type FlavourDescriptor = typeof flavourDescriptors.$inferSelect;
+
 // --- User Activity Sessions (admin tracking) ---
 export const userActivitySessions = pgTable("user_activity_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

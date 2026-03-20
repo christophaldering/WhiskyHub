@@ -49,6 +49,10 @@ import {
   type InsertWhiskyGallery, type WhiskyGalleryPhoto,
   userActivitySessions,
   type UserActivitySession,
+  flavourCategories,
+  flavourDescriptors,
+  type InsertFlavourCategory, type FlavourCategory,
+  type InsertFlavourDescriptor, type FlavourDescriptor,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -381,6 +385,16 @@ export interface IStorage {
   getWhiskyGallery(whiskyId: string): Promise<WhiskyGalleryPhoto[]>;
   addWhiskyGalleryPhoto(data: InsertWhiskyGallery): Promise<WhiskyGalleryPhoto>;
   getWhiskyGalleryCount(whiskyId: string): Promise<number>;
+
+  // Flavour Categories & Descriptors
+  getFlavourCategories(): Promise<FlavourCategory[]>;
+  createFlavourCategory(data: InsertFlavourCategory): Promise<FlavourCategory>;
+  updateFlavourCategory(id: string, data: Partial<Omit<InsertFlavourCategory, "id">>): Promise<FlavourCategory | undefined>;
+  deleteFlavourCategory(id: string): Promise<void>;
+  getFlavourDescriptors(categoryId?: string): Promise<FlavourDescriptor[]>;
+  createFlavourDescriptor(data: InsertFlavourDescriptor): Promise<FlavourDescriptor>;
+  updateFlavourDescriptor(id: string, data: Partial<Omit<InsertFlavourDescriptor, "id">>): Promise<FlavourDescriptor | undefined>;
+  deleteFlavourDescriptor(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2368,6 +2382,47 @@ export class DatabaseStorage implements IStorage {
       byHour: byHour as { hour: number; sessions: number }[],
       topUsers: topUsers as { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: Date | null }[],
     };
+  }
+
+  // --- Flavour Categories & Descriptors ---
+  async getFlavourCategories(): Promise<FlavourCategory[]> {
+    return db.select().from(flavourCategories).orderBy(asc(flavourCategories.sortOrder));
+  }
+
+  async createFlavourCategory(data: InsertFlavourCategory): Promise<FlavourCategory> {
+    const [result] = await db.insert(flavourCategories).values(data).returning();
+    return result;
+  }
+
+  async updateFlavourCategory(id: string, data: Partial<Omit<InsertFlavourCategory, "id">>): Promise<FlavourCategory | undefined> {
+    const [result] = await db.update(flavourCategories).set(data).where(eq(flavourCategories.id, id)).returning();
+    return result;
+  }
+
+  async deleteFlavourCategory(id: string): Promise<void> {
+    await db.delete(flavourDescriptors).where(eq(flavourDescriptors.categoryId, id));
+    await db.delete(flavourCategories).where(eq(flavourCategories.id, id));
+  }
+
+  async getFlavourDescriptors(categoryId?: string): Promise<FlavourDescriptor[]> {
+    if (categoryId) {
+      return db.select().from(flavourDescriptors).where(eq(flavourDescriptors.categoryId, categoryId)).orderBy(asc(flavourDescriptors.sortOrder));
+    }
+    return db.select().from(flavourDescriptors).orderBy(asc(flavourDescriptors.sortOrder));
+  }
+
+  async createFlavourDescriptor(data: InsertFlavourDescriptor): Promise<FlavourDescriptor> {
+    const [result] = await db.insert(flavourDescriptors).values(data).returning();
+    return result;
+  }
+
+  async updateFlavourDescriptor(id: string, data: Partial<Omit<InsertFlavourDescriptor, "id">>): Promise<FlavourDescriptor | undefined> {
+    const [result] = await db.update(flavourDescriptors).set(data).where(eq(flavourDescriptors.id, id)).returning();
+    return result;
+  }
+
+  async deleteFlavourDescriptor(id: string): Promise<void> {
+    await db.delete(flavourDescriptors).where(eq(flavourDescriptors.id, id));
   }
 }
 
