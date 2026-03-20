@@ -8,6 +8,7 @@ import {
   ChevronLeft, Library, Wine, MapPin, Clock, Layers, DollarSign,
   Star, Droplets, Calendar, Package, ChevronDown, ChevronUp,
 } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 const distilleryRegionMap = new Map<string, string>();
 for (const d of distilleries) {
@@ -120,11 +121,10 @@ export default function LabsCollectionAnalysis() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Library className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Collection Analysis</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to analyze your collection</p>
-      </div>
+      <AuthGateMessage
+        icon={<Library className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to analyze your collection"
+      />
     );
   }
 

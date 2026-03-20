@@ -5,6 +5,7 @@ import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
 import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 interface RatingNote {
   id: string;
@@ -330,9 +331,11 @@ export default function LabsTasteAnalytics() {
       )}
 
       {!session.signedIn || !pid ? (
-        <div className="labs-card p-6 text-center labs-fade-in">
-          <p style={{ color: "var(--labs-text-secondary)", fontSize: 13 }}>Sign in to access your taste analytics</p>
-        </div>
+        <AuthGateMessage
+          message="Sign in to access your taste analytics"
+          className="labs-card p-6 text-center labs-fade-in"
+          compact
+        />
       ) : isLoading ? (
         <div className="labs-card p-8 text-center"><div className="labs-spinner mx-auto" /></div>
       ) : !isUnlocked ? (

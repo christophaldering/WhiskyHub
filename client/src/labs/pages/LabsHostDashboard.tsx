@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { hostDashboardApi, inviteApi, pidHeaders, tastingApi, whiskyApi } from "@/lib/api";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
@@ -670,11 +671,10 @@ export default function LabsHostDashboard() {
 
   if (!pid) {
     return (
-      <div className="labs-fade-in" style={{ padding: "60px 20px", textAlign: "center" }}>
-        <GlassWater style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 16px", display: "block" }} />
-        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>Sign in to access your dashboard</p>
-        <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Your host command center awaits</p>
-      </div>
+      <AuthGateMessage
+        icon={<GlassWater style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />}
+        message="Sign in to access your dashboard"
+      />
     );
   }
 

@@ -5,6 +5,7 @@ import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Ma
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live" | "past";
@@ -130,20 +131,10 @@ export default function LabsTastings() {
 
   if (!currentParticipant) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-          <path d="M10 14 Q9 20 9 26 L9 34 Q9 37 12 37 L28 37 Q31 37 31 34 L31 26 Q31 20 30 14 Z"
-            fill="currentColor" opacity="0.15"/>
-          <rect x="14" y="8" width="12" height="8" rx="2" fill="currentColor" opacity="0.1"/>
-        </svg>
-        <h2 className="labs-empty-title">Your Tastings</h2>
-        <p className="labs-empty-sub">Sign in to see your sessions and join new ones.</p>
-        <Link href="/labs/home">
-          <button className="labs-empty-action" data-testid="labs-tastings-goto-home">
-            Home
-          </button>
-        </Link>
-      </div>
+      <AuthGateMessage
+        icon={<Wine className="w-12 h-12" style={{ color: "var(--labs-text-muted)" }} />}
+        message="Sign in to see your sessions and join new ones."
+      />
     );
   }
 

@@ -7,6 +7,7 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import {
   ChevronLeft, Sparkles, MapPin, Flame, Package, ChevronDown, BrainCircuit,
 } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 interface Suggestion {
   name: string;
@@ -83,11 +84,10 @@ export default function LabsAICuration() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Sparkles className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>AI Curation</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to use AI-powered curation</p>
-      </div>
+      <AuthGateMessage
+        icon={<Sparkles className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to use AI-powered curation"
+      />
     );
   }
 

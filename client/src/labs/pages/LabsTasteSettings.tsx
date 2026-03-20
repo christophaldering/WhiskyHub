@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { signOut, updateSessionPhotoUrl } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
@@ -158,10 +159,12 @@ export default function LabsTasteSettings() {
           <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Settings</h1>
         </div>
-        <div className="labs-empty" style={{ minHeight: 200 }}>
-          <Settings className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to access settings</p>
-        </div>
+        <AuthGateMessage
+          icon={<Settings className="w-10 h-10" style={{ color: "var(--labs-text-muted)" }} />}
+          message="Sign in to access settings"
+          className="labs-empty"
+          compact
+        />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useSession } from "@/lib/session";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation, Link } from "wouter";
 import type { JournalEntry } from "@shared/schema";
@@ -453,10 +454,12 @@ export default function LabsTasteDrams() {
       </div>
 
       {!session.signedIn ? (
-        <div className="labs-empty" style={{ minHeight: 200 }}>
-          <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to access your drams</p>
-        </div>
+        <AuthGateMessage
+          icon={<Wine className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
+          message="Sign in to access your drams"
+          className="labs-empty"
+          compact
+        />
       ) : (
         <>
           <div className="labs-card p-4 mb-4" data-testid="labs-drams-overview">

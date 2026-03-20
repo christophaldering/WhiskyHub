@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Radar,
   RadarChart,
@@ -150,11 +151,10 @@ export default function LabsTasteProfile() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Activity className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>CaskSense Profile</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to see your flavor fingerprint</p>
-      </div>
+      <AuthGateMessage
+        icon={<Activity className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to see your flavor fingerprint"
+      />
     );
   }
 

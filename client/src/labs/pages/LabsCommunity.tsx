@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { communityApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { Users, ChevronLeft } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 type Tab = "twins" | "rankings" | "leaderboard";
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
@@ -97,7 +98,7 @@ export default function LabsCommunity() {
       {!loading && tab === "twins" && (
         <div data-testid="labs-community-twins">
           {!pid ? (
-            <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>Sign in to see your Taste Twins.</p>
+            <AuthGateMessage message="Sign in to see your Taste Twins." className="text-center py-10" compact />
           ) : twins.length === 0 ? (
             <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>No taste twins found yet.</p>
           ) : (

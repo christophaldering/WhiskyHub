@@ -30,6 +30,10 @@ export const LANDING_VERSION = 3;
 interface AppState extends AmbientState {
   currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; photoUrl?: string } | null;
   setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; photoUrl?: string } | null) => void;
+  authDialogOpen: boolean;
+  authDialogTab: 'signin' | 'register';
+  openAuthDialog: (tab?: 'signin' | 'register') => void;
+  closeAuthDialog: () => void;
   lastSeenLandingVersion: number;
   setLastSeenLandingVersion: (version: number) => void;
   storageConsentDismissed: boolean;
@@ -64,6 +68,10 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       currentParticipant: null,
       setParticipant: (participant) => set({ currentParticipant: participant }),
+      authDialogOpen: false,
+      authDialogTab: 'signin' as 'signin' | 'register',
+      openAuthDialog: (tab) => set({ authDialogOpen: true, authDialogTab: tab || 'signin' }),
+      closeAuthDialog: () => set({ authDialogOpen: false }),
       lastSeenLandingVersion: 0,
       setLastSeenLandingVersion: (version) => set({ lastSeenLandingVersion: version }),
       storageConsentDismissed: false,
@@ -97,7 +105,7 @@ export const useAppStore = create<AppState>()(
       name: 'casksense-app',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => {
-        const { wishlistTransfer, ...rest } = state;
+        const { wishlistTransfer, authDialogOpen, authDialogTab, ...rest } = state;
         return rest;
       },
       onRehydrateStorage: () => (state) => {

@@ -8,6 +8,7 @@ import { getSession, tryAutoResume } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/ProfileMenu";
+import { LoginDialog } from "@/components/login-dialog";
 import LabsErrorBoundary from "./LabsErrorBoundary";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
@@ -512,6 +513,16 @@ function isPublicLabsRoute(path: string): boolean {
   );
 }
 
+function LabsAuthDialog() {
+  const { authDialogOpen, closeAuthDialog } = useAppStore();
+  return (
+    <LoginDialog
+      open={authDialogOpen}
+      onClose={closeAuthDialog}
+    />
+  );
+}
+
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
@@ -910,6 +921,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       <M2ProfileMenu open={profileOpen} onClose={() => setProfileOpen(false)} />
       <LabsGlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <LabsAuthDialog />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Wine, Calendar, ChevronRight, BookOpen,
   BarChart3, Target, Compass,
@@ -423,16 +424,10 @@ export default function LabsTaste() {
 
   if (!currentParticipant) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
-          <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
-          <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
-        </svg>
-        <h2 className="labs-empty-title">{t("myTastePage.title", "My World")}</h2>
-        <p className="labs-empty-sub">{t("myTastePage.signInDesc", "Sign in to discover your personal tasting patterns.")}</p>
-        <button className="labs-empty-action" onClick={() => navigate("/labs")} data-testid="labs-taste-goto-home">Go to Home</button>
-      </div>
+      <AuthGateMessage
+        icon={<Compass className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message={t("myTastePage.signInDesc", "Sign in to discover your personal tasting patterns.")}
+      />
     );
   }
 

@@ -10,6 +10,7 @@ import {
   ChevronLeft, GitCompareArrows, Search, Download, ChevronDown,
   Wine, ArrowUpDown, Filter, X, Info,
 } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useTranslation } from "react-i18next";
 
 const CHART_COLORS = ["#d4a256", "#6aa8d4", "#d97c5a"];
@@ -197,11 +198,10 @@ export default function LabsTasteCompare() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <GitCompareArrows className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Compare</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to compare your scores with the community</p>
-      </div>
+      <AuthGateMessage
+        icon={<GitCompareArrows className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to compare your scores with the community"
+      />
     );
   }
 

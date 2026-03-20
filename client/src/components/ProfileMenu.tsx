@@ -920,85 +920,119 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     </div>
   );
 
+  const [signedOutTab, setSignedOutTab] = useState<"signin" | "register">("signin");
+
   const renderSignedOutView = () => (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => { setEmail(e.target.value); setError(""); }}
-          placeholder={t("m2.profile.emailPlaceholder", "Email")}
-          autoComplete="email"
-          style={inputStyle(!!error)}
-          data-testid="m2-profile-email"
-        />
-        <input
-          type="password"
-          value={pin}
-          onChange={(e) => { setPin(e.target.value); setError(""); }}
-          placeholder={t("m2.profile.passwordPlaceholder", "Password")}
-          autoComplete="current-password"
-          onKeyDown={(e) => { if (e.key === "Enter" && email.trim() && pin.trim() && !loading) handleSignIn(); }}
-          style={inputStyle(!!error)}
-          data-testid="m2-profile-password"
-        />
-        {error && (
-          <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-profile-error">
-            {error}
-          </div>
-        )}
+      <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${tv.border}`, marginBottom: 14 }}>
         <button
-          onClick={handleSignIn}
-          disabled={loading || !email.trim() || !pin.trim()}
-          style={primaryBtnStyle(!email.trim() || !pin.trim())}
-          data-testid="m2-profile-signin"
-        >
-          {loading ? t("m2.profile.signingIn", "Signing in...") : t("m2.profile.signIn", "Sign In")}
-        </button>
-
-        <button
-          onClick={() => { setView("forgot-pin"); setError(""); }}
+          onClick={() => { setSignedOutTab("signin"); setError(""); }}
           style={{
-            background: "none",
+            flex: 1,
+            padding: "10px 0",
             border: "none",
-            color: tv.accent,
             cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 500,
-            padding: "4px 0",
-            textAlign: "right",
+            fontSize: 14,
+            fontWeight: 600,
             fontFamily: "system-ui, sans-serif",
+            background: signedOutTab === "signin" ? tv.accent : "transparent",
+            color: signedOutTab === "signin" ? tv.accentInk : tv.textSecondary,
+            transition: "all 0.2s",
           }}
-          data-testid="m2-profile-forgot-pin"
+          data-testid="m2-profile-tab-signin"
         >
-          {t("m2.profile.forgotPassword", "Forgot Password?")}
+          <KeyRound style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 6 }} />
+          {t("m2.profile.signIn", "Sign In")}
+        </button>
+        <button
+          onClick={() => { setSignedOutTab("register"); setError(""); }}
+          style={{
+            flex: 1,
+            padding: "10px 0",
+            border: "none",
+            borderLeft: `1px solid ${tv.border}`,
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 600,
+            fontFamily: "system-ui, sans-serif",
+            background: signedOutTab === "register" ? tv.accent : "transparent",
+            color: signedOutTab === "register" ? tv.accentInk : tv.textSecondary,
+            transition: "all 0.2s",
+          }}
+          data-testid="m2-profile-tab-register"
+        >
+          <UserPlus style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 6 }} />
+          {t("m2.profile.createAccount", "Register")}
         </button>
       </div>
 
+      {signedOutTab === "signin" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(""); }}
+            placeholder={t("m2.profile.emailPlaceholder", "Email")}
+            autoComplete="email"
+            style={inputStyle(!!error)}
+            data-testid="m2-profile-email"
+          />
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => { setPin(e.target.value); setError(""); }}
+            placeholder={t("m2.profile.passwordPlaceholder", "Password")}
+            autoComplete="current-password"
+            onKeyDown={(e) => { if (e.key === "Enter" && email.trim() && pin.trim() && !loading) handleSignIn(); }}
+            style={inputStyle(!!error)}
+            data-testid="m2-profile-password"
+          />
+          {error && (
+            <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-profile-error">
+              {error}
+            </div>
+          )}
+          <button
+            onClick={handleSignIn}
+            disabled={loading || !email.trim() || !pin.trim()}
+            style={primaryBtnStyle(!email.trim() || !pin.trim())}
+            data-testid="m2-profile-signin"
+          >
+            {loading ? t("m2.profile.signingIn", "Signing in...") : t("m2.profile.signIn", "Sign In")}
+          </button>
+
+          <button
+            onClick={() => { setView("forgot-pin"); setError(""); }}
+            style={{
+              background: "none",
+              border: "none",
+              color: tv.accent,
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 500,
+              padding: "4px 0",
+              textAlign: "right",
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-profile-forgot-pin"
+          >
+            {t("m2.profile.forgotPassword", "Forgot Password?")}
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button
+            onClick={() => { setView("register"); setError(""); }}
+            style={primaryBtnStyle(false)}
+            data-testid="m2-profile-register"
+          >
+            <UserPlus style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 6 }} />
+            {t("m2.profile.createAccount", "Register")}
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <button
-          onClick={() => { setView("register"); setError(""); }}
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: "14px 16px",
-            background: tv.elevated,
-            border: `1px solid ${tv.border}`,
-            borderRadius: 12,
-            cursor: "pointer",
-            color: tv.text,
-            fontSize: 14,
-            fontWeight: 500,
-            fontFamily: "system-ui, sans-serif",
-          }}
-          data-testid="m2-profile-register"
-        >
-          <UserPlus style={{ width: 16, height: 16, color: tv.accent }} />
-          {t("m2.profile.createAccount", "Register")}
-        </button>
         <button
           onClick={() => { setView("guest"); setError(""); }}
           style={{
@@ -1012,14 +1046,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             border: `1px solid ${tv.border}`,
             borderRadius: 12,
             cursor: "pointer",
-            color: tv.text,
-            fontSize: 14,
+            color: tv.textSecondary,
+            fontSize: 13,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
           }}
           data-testid="m2-profile-guest-mode"
         >
-          <Shield style={{ width: 16, height: 16, color: tv.accent }} />
+          <Shield style={{ width: 16, height: 16, color: tv.muted }} />
           {t("m2.profile.guestMode", "Guest")}
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
@@ -192,23 +193,10 @@ export default function LabsCircle() {
 
   if (!pid) {
     return (
-      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
-        <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-          <circle cx="15" cy="16" r="5" fill="currentColor" opacity="0.12"/>
-          <circle cx="25" cy="16" r="5" fill="currentColor" opacity="0.12"/>
-          <path d="M8 30 Q8 24 15 24 Q20 24 20 28" fill="currentColor" opacity="0.08"/>
-          <path d="M32 30 Q32 24 25 24 Q20 24 20 28" fill="currentColor" opacity="0.08"/>
-        </svg>
-        <h2 className="labs-empty-title">Your Circle</h2>
-        <p className="labs-empty-sub">Sign in to see your friends, rankings and tastings.</p>
-        <button
-          className="labs-empty-action"
-          onClick={() => navigate("/labs")}
-          data-testid="labs-circle-signin"
-        >
-          Go to Home
-        </button>
-      </div>
+      <AuthGateMessage
+        icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to see your friends, rankings and tastings."
+      />
     );
   }
 

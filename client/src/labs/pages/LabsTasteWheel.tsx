@@ -6,6 +6,7 @@ import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 const FLAVOR_WHEEL_DATA = FLAVOR_CATEGORIES;
 
@@ -79,11 +80,10 @@ export default function LabsTasteWheel() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <CircleDot className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Flavor Wheel</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to explore your flavor categories</p>
-      </div>
+      <AuthGateMessage
+        icon={<CircleDot className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to explore your flavor categories"
+      />
     );
   }
 

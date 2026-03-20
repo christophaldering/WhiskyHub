@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { adminApi, feedbackApi } from "@/lib/api";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { apiRequest } from "@/lib/queryClient";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useAIStatus } from "@/hooks/use-ai-status";
@@ -109,15 +110,16 @@ export default function LabsAdmin() {
   });
 
   if (!pid || session.role !== "admin") {
-    return (
+    return !pid ? (
+      <AuthGateMessage
+        icon={<Shield className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Please sign in to access admin features."
+      />
+    ) : (
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in text-center" data-testid="labs-admin-access-denied">
         <Shield className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>
-          {!pid ? "Admin Access Required" : "Access Denied"}
-        </p>
-        <p className="text-sm mt-2" style={{ color: "var(--labs-text-muted)" }}>
-          {!pid ? "Please sign in to access admin features." : "You don't have admin privileges."}
-        </p>
+        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Access Denied</p>
+        <p className="text-sm mt-2" style={{ color: "var(--labs-text-muted)" }}>You don't have admin privileges.</p>
       </div>
     );
   }

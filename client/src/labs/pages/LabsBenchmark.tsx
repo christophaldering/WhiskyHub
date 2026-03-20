@@ -9,6 +9,7 @@ import {
   AlertCircle, ChevronDown, ChevronUp, Search, Database, User, Clock,
   BookOpen, Heart, GlassWater, BarChart3, Newspaper, MoreHorizontal,
 } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 interface ExtractedEntry {
   whiskyName: string;
@@ -219,11 +220,10 @@ export default function LabsBenchmark() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Brain className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Benchmark</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to use the benchmark tool</p>
-      </div>
+      <AuthGateMessage
+        icon={<Brain className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to use the benchmark tool"
+      />
     );
   }
 

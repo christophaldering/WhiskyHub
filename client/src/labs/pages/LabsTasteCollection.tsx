@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { Link , useLocation } from "wouter";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check, ArrowUpDown,
@@ -129,10 +130,12 @@ export default function LabsTasteCollection() {
           <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Collection</h1>
         </div>
-        <div className="labs-empty" style={{ minHeight: 200 }}>
-          <Archive className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to access your collection</p>
-        </div>
+        <AuthGateMessage
+          icon={<Archive className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
+          message="Sign in to access your collection"
+          className="labs-empty"
+          compact
+        />
       </div>
     );
   }

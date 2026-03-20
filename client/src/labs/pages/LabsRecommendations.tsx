@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   ChevronLeft, Sparkles, Wine, MapPin, Droplets, Flame, Users,
   Info, ChevronDown, ChevronUp, ExternalLink,
@@ -150,11 +151,10 @@ export default function LabsRecommendations() {
 
   if (!session.signedIn || !session.pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Sparkles className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Recommendations</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to get personalized whisky recommendations</p>
-      </div>
+      <AuthGateMessage
+        icon={<Sparkles className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to get personalized whisky recommendations"
+      />
     );
   }
 

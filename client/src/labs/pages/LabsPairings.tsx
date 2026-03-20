@@ -7,6 +7,7 @@ import {
   ChevronLeft, Wine, Sparkles, MapPin, Flame, Package,
   ChevronDown, Utensils,
 } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 interface Suggestion {
   name: string;
@@ -77,11 +78,10 @@ export default function LabsPairings() {
 
   if (!session.signedIn || !pid) {
     return (
-      <div className="labs-empty" style={{ minHeight: "60vh" }}>
-        <Utensils className="w-12 h-12 mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>Pairings</p>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>Sign in to get AI pairing suggestions</p>
-      </div>
+      <AuthGateMessage
+        icon={<Utensils className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        message="Sign in to get AI pairing suggestions"
+      />
     );
   }
 

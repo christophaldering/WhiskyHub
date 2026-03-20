@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { getSession } from "@/lib/session";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Wine, GitCommit, Layers, Calendar, Code2, Languages,
   AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Lock, ChevronLeft,
@@ -179,10 +180,12 @@ export default function LabsMakingOf() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
         <BackBtn />
-        <div className="text-center py-16">
-          <Lock className="w-10 h-10 mx-auto mb-4 opacity-30" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Sign in to view this page.</p>
-        </div>
+        <AuthGateMessage
+          icon={<Lock className="w-10 h-10 opacity-30" style={{ color: "var(--labs-text-muted)" }} />}
+          message="Sign in to view this page."
+          className="text-center py-16"
+          compact
+        />
       </div>
     );
   }

@@ -14,6 +14,7 @@ import {
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
@@ -2599,7 +2600,7 @@ function CreateTastingForm() {
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, openAuthDialog } = useAppStore();
 
   const draft = useRef(loadDraft()).current;
 
@@ -2727,12 +2728,10 @@ function CreateTastingForm() {
 
   if (!currentParticipant) {
     return (
-      <div className="labs-empty labs-fade-in">
-        <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
-          Sign in to host a tasting
-        </p>
-      </div>
+      <AuthGateMessage
+        icon={<Wine className="w-12 h-12" style={{ color: "var(--labs-text-muted)" }} />}
+        message="Sign in to host a tasting"
+      />
     );
   }
 
@@ -3081,8 +3080,13 @@ function CreateTastingForm() {
             style={{
               background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
               color: "var(--labs-accent)",
+              cursor: "pointer",
             }}
             data-testid="labs-host-signin-hint"
+            onClick={() => openAuthDialog("signin")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openAuthDialog("signin"); }}
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             Please sign in to create a tasting

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,19 @@ interface LoginDialogProps {
 
 export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const { t } = useTranslation();
-  const { setParticipant } = useAppStore();
+  const { setParticipant, authDialogTab } = useAppStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      setIsReturning(authDialogTab !== 'register');
+    }
+  }, [open, authDialogTab]);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
 

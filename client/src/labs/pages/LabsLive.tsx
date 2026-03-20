@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
@@ -619,9 +620,10 @@ function GuidedStepView({
       ) : (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
-            <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
-              {t("m2.taste.rating.signInToRate", "Sign in to rate whiskies")}
-            </p>
+            <AuthGateMessage
+              message={t("m2.taste.rating.signInToRate", "Sign in to rate whiskies")}
+              compact
+            />
           ) : (
             <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
               {t("m2.taste.rating.ratingsClosed", "Ratings are currently closed")}
@@ -1488,9 +1490,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
           ) : (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
               {!currentParticipant ? (
-                <p className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>
-                  Sign in to rate whiskies
-                </p>
+                <AuthGateMessage message="Sign in to rate whiskies" />
               ) : tasting.status === "draft" ? (
                 <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
                   This session has not started yet

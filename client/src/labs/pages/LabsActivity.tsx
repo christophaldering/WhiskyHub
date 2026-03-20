@@ -4,6 +4,7 @@ import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { stripGuestSuffix } from "@/lib/utils";
 import { FileText, Wine, Star, Activity, ChevronLeft } from "lucide-react";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -61,12 +62,12 @@ export default function LabsActivity() {
       </p>
 
       {!pid && (
-        <div className="labs-empty" style={{ minHeight: "30vh" }}>
-          <Activity className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-activity-signin">
-            Sign in to see your friends' activity.
-          </p>
-        </div>
+        <AuthGateMessage
+          icon={<Activity className="w-10 h-10" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />}
+          message="Sign in to see your friends' activity."
+          className="labs-empty"
+          compact
+        />
       )}
 
       {pid && isLoading && (

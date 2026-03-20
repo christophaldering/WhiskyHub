@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { getParticipantId } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -139,11 +140,11 @@ function LabsHistoryList() {
       <div style={{ textAlign: "center", padding: "48px 20px" }}>
         <div className="labs-card" style={{ padding: "40px 20px", maxWidth: 420, margin: "0 auto" }}>
           {!session.signedIn ? (
-            <>
-              <LogIn style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
-              <p style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>Sign in to access the archive</p>
-              <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Sign in to see if you have access to this community's tasting archive.</p>
-            </>
+            <AuthGateMessage
+              icon={<LogIn style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} strokeWidth={1.2} />}
+              message="Sign in to see if you have access to this community's tasting archive."
+              compact
+            />
           ) : (
             <>
               <Lock style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
