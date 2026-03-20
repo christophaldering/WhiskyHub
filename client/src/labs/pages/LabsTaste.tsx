@@ -447,8 +447,8 @@ export default function LabsTaste() {
 
   const totalTastings = tastings?.length || 0;
   const totalRatings = myRatings.length;
-  const statsObj = stats as { totalRatings?: number; totalJournalEntries?: number } | null;
-  const whiskyCount = (statsObj?.totalRatings ?? 0) + (statsObj?.totalJournalEntries ?? 0);
+  const statsObj = stats as { totalRatings?: number; totalTastingWhiskies?: number; totalJournalEntries?: number } | null;
+  const whiskyCount = (statsObj?.totalTastingWhiskies ?? 0) + (statsObj?.totalJournalEntries ?? 0);
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
 
   const participantObj = participant as { ratingStabilityScore?: number; explorationIndex?: number; smokeAffinityIndex?: number } | null;
@@ -508,8 +508,8 @@ export default function LabsTaste() {
               </p>
               {whiskyCount > 0 && (
                 <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 12, fontSize: 10, color: "var(--labs-text-muted)" }}>
-                  {(statsObj?.totalRatings ?? 0) > 0 && (
-                    <span data-testid="text-count-tasting-ratings">{statsObj?.totalRatings} from tastings</span>
+                  {(statsObj?.totalTastingWhiskies ?? 0) > 0 && (
+                    <span data-testid="text-count-tasting-ratings">{statsObj?.totalTastingWhiskies} from tastings</span>
                   )}
                   {(statsObj?.totalJournalEntries ?? 0) > 0 && (
                     <span data-testid="text-count-solo-drams">{statsObj?.totalJournalEntries} solo</span>

@@ -22,6 +22,7 @@ interface JournalEntry {
 
 interface ParticipantStats {
   totalRatings?: number;
+  totalTastingWhiskies?: number;
   totalJournalEntries?: number;
 }
 
@@ -302,7 +303,7 @@ export default function LabsTasteAnalytics() {
   });
 
   const typedStats = stats as ParticipantStats | undefined;
-  const totalRatings = (typedStats?.totalRatings ?? 0) + (typedStats?.totalJournalEntries ?? 0);
+  const totalRatings = (typedStats?.totalTastingWhiskies ?? 0) + (typedStats?.totalJournalEntries ?? 0);
   const isUnlocked = totalRatings >= THRESHOLD;
   const justUnlocked = isUnlocked && totalRatings < THRESHOLD + 3;
   const pct = Math.min((totalRatings / THRESHOLD) * 100, 100);

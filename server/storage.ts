@@ -188,6 +188,7 @@ export interface IStorage {
   getParticipantStats(participantId: string): Promise<{
     totalRatings: number;
     totalTastings: number;
+    totalTastingWhiskies: number;
     totalJournalEntries: number;
     ratedRegions: Record<string, number>;
     ratedCaskTypes: Record<string, number>;
@@ -940,6 +941,7 @@ export class DatabaseStorage implements IStorage {
   async getParticipantStats(participantId: string): Promise<{
     totalRatings: number;
     totalTastings: number;
+    totalTastingWhiskies: number;
     totalJournalEntries: number;
     ratedRegions: Record<string, number>;
     ratedCaskTypes: Record<string, number>;
@@ -957,7 +959,18 @@ export class DatabaseStorage implements IStorage {
     const participations = await db.select().from(tastingParticipants).where(eq(tastingParticipants.participantId, participantId));
     const totalTastings = participations.length;
 
-    const journalCount = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(eq(journalEntries.participantId, participantId));
+    const tastingsForParticipant = await this.getTastingsForParticipant(participantId);
+    const whiskyArrays = await Promise.all(
+      tastingsForParticipant.map(tasting => this.getWhiskiesForTasting(tasting.id))
+    );
+    const totalTastingWhiskies = whiskyArrays.reduce((sum, arr) => sum + arr.length, 0);
+
+    const journalCount = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(
+      and(
+        eq(journalEntries.participantId, participantId),
+        ne(journalEntries.status, 'draft')
+      )
+    );
 
     const ratedRegions: Record<string, number> = {};
     const ratedCaskTypes: Record<string, number> = {};
@@ -977,6 +990,7 @@ export class DatabaseStorage implements IStorage {
     return {
       totalRatings: allRatings.length,
       totalTastings,
+      totalTastingWhiskies,
       totalJournalEntries: journalCount[0]?.count || 0,
       ratedRegions,
       ratedCaskTypes,
