@@ -156,11 +156,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const tabInitRef = useRef(false);
   const userSelectedTabRef = useRef(false);
   const lastStatusRef = useRef<string | null>(null);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 900);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 899px)");
+    const mq = window.matchMedia("(max-width: 767px)");
     setIsMobile(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener("change", handler);
@@ -193,6 +193,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const [revealFlash, setRevealFlash] = useState(false);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
+  const [localRevealStep, setLocalRevealStep] = useState<number | null>(null);
+  const [localGuidedIdx, setLocalGuidedIdx] = useState<number | null>(null);
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -279,21 +281,34 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   useTastingEvents({
     tastingId,
     enabled: !!tastingId,
-    onReveal: useCallback(() => {
+    onReveal: useCallback((data: Record<string, unknown>) => {
       setRevealConfirmed(true);
       if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current);
       revealConfirmTimerRef.current = setTimeout(() => setRevealConfirmed(false), 1200);
       setRevealFlash(true);
       setTimeout(() => setRevealFlash(false), 180);
+      if (typeof data.guidedRevealStep === "number") setLocalRevealStep(data.guidedRevealStep);
+      if (typeof data.guidedWhiskyIndex === "number") setLocalGuidedIdx(data.guidedWhiskyIndex);
     }, []),
-    onDramAdvanced: useCallback(() => {
+    onDramAdvanced: useCallback((data: Record<string, unknown>) => {
       setConfirmAdvance(false);
+      if (typeof data.guidedWhiskyIndex === "number") {
+        setLocalGuidedIdx(data.guidedWhiskyIndex);
+        setLocalRevealStep(0);
+      }
     }, []),
   });
 
   useEffect(() => {
     return () => { if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current); };
   }, []);
+
+  useEffect(() => {
+    if (tasting) {
+      setLocalRevealStep(null);
+      setLocalGuidedIdx(null);
+    }
+  }, [tasting?.guidedRevealStep, tasting?.guidedWhiskyIndex]);
 
   const parseSavedNotes = useCallback((rawNotes: string) => {
     const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
@@ -423,7 +438,14 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const isDraft = status === "draft";
 
   const rv = isBlind ? getRevealState(tasting, whiskies.length) : null;
-  const gv = isBlind && rv ? getGuestVisibility(tasting, rv.stepGroups, isGuided) : null;
+  const optimisticTasting = useMemo(() => {
+    if (!tasting) return tasting;
+    const t = { ...tasting };
+    if (localRevealStep != null) t.guidedRevealStep = localRevealStep;
+    if (localGuidedIdx != null) t.guidedWhiskyIndex = localGuidedIdx;
+    return t;
+  }, [tasting, localRevealStep, localGuidedIdx]);
+  const gv = isBlind && rv ? getGuestVisibility(optimisticTasting, rv.stepGroups, isGuided) : null;
   const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
   const activeWhisky = whiskies[guestDramIdx] || null;
 
@@ -650,7 +672,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             gap: 16px;
           }
         }
-        @media (max-width: 899px) {
+        @media (max-width: 767px) {
           .cockpit-grid {
             grid-template-columns: 1fr;
           }
@@ -1094,13 +1116,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
             <div className="cockpit-grid">
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {renderGuestView()}
-                {renderLineup()}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {renderControls(false)}
+                {renderLineup()}
                 {renderParticipants()}
                 {renderMyRating()}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {renderGuestView()}
               </div>
             </div>
           </>
@@ -1290,7 +1312,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 )}
 
                 {(() => {
-                  const isFullyRevealed = !isBlind || (rv && rv.currentStep >= rv.maxSteps);
+                  const isFullyRevealed = !isBlind || (rv && rv.revealStep >= rv.maxSteps);
                   if (!isFullyRevealed) {
                     return (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }}>

@@ -3841,7 +3841,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
-  app.post("/api/tastings/:id/guided-advance", async (req, res) => {
+  app.patch("/api/tastings/:id/guided-advance", async (req, res) => {
     try {
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });

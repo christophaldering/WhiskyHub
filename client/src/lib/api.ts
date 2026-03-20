@@ -246,7 +246,7 @@ export const guidedApi = {
     }),
   advance: (tastingId: string, hostId: string) =>
     fetchJSON(`/tastings/${tastingId}/guided-advance`, {
-      method: "POST",
+      method: "PATCH",
       body: JSON.stringify({ hostId }),
     }),
   goTo: (tastingId: string, hostId: string, whiskyIndex: number, revealStep?: number) =>
