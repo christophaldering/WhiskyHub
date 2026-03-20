@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronLeft, ChevronDown } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import RatingDial from "./RatingDial";
 import OverallCircle from "./OverallCircle";
 import FlavourPicker from "./FlavourPicker";
@@ -54,61 +54,77 @@ function FlavourAccordion({ chips, onChipToggle, scale, flavorProfileId, isBlind
   const [open, setOpen] = useState(false);
   const count = chips.length;
 
+  const handleToggle = () => {
+    setOpen(p => !p);
+    triggerHaptic("light");
+  };
+
   return (
-    <div data-testid="flavour-accordion">
+    <div
+      data-testid="flavour-accordion"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        borderRadius: 12,
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
       <button
-        onClick={() => setOpen(p => !p)}
+        onClick={handleToggle}
         disabled={disabled}
+        className="flavour-accordion-btn"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           width: "100%",
-          padding: "10px 0",
+          padding: "14px 16px",
           background: "none",
           border: "none",
           cursor: disabled ? "default" : "pointer",
           fontFamily: "inherit",
+          WebkitTapHighlightColor: "transparent",
+          transition: "transform 120ms cubic-bezier(0.25, 0.1, 0.25, 1)",
         }}
         data-testid="flavour-accordion-toggle"
       >
         <span style={{
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          color: "var(--labs-text-muted)",
+          fontSize: 14,
+          fontWeight: 500,
+          color: "var(--labs-text)",
+          letterSpacing: "0.01em",
         }}>
           {t("m2.taste.rating.addFlavors", "Add flavors")}
         </span>
         {count > 0 && (
           <span style={{
-            fontSize: 10,
-            fontWeight: 600,
-            minWidth: 18,
-            height: 18,
-            borderRadius: 9,
+            fontSize: 11,
+            fontWeight: 700,
+            minWidth: 20,
+            height: 20,
+            borderRadius: 10,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             background: GOLD,
             color: "#1a1a1a",
-            padding: "0 5px",
+            padding: "0 6px",
           }} data-testid="flavour-accordion-count">
             {count}
           </span>
         )}
-        <ChevronDown style={{
-          width: 14,
-          height: 14,
+        <ChevronRight style={{
+          width: 16,
+          height: 16,
           marginLeft: "auto",
           color: "var(--labs-text-muted)",
-          transition: "transform 200ms",
-          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          transition: "transform 250ms cubic-bezier(0.25, 0.1, 0.25, 1)",
+          transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          flexShrink: 0,
         }} />
       </button>
       {open && (
-        <div style={{ animation: "labsFadeIn 200ms ease both", paddingBottom: 4 }}>
+        <div style={{ padding: "0 16px 14px", animation: "labsFadeIn 200ms ease both" }}>
           <FlavourPicker
             activeChips={chips}
             onToggle={onChipToggle}
@@ -311,6 +327,15 @@ export default function RatingFlow({
         label={dimLabels[dim]}
         disabled={disabled}
         size={200}
+      />
+
+      <FlavourAccordion
+        chips={chips}
+        onChipToggle={onChipToggle}
+        scale={scale}
+        flavorProfileId={flavorProfileId}
+        isBlind={isBlind}
+        disabled={disabled}
       />
     </div>
   );

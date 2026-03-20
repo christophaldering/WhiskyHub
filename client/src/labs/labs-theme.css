@@ -1120,3 +1120,7 @@
 .labs-shell.labs-light .labs-range-slider::-moz-range-track {
   background: rgba(0, 0, 0, 0.08);
 }
+
+.flavour-accordion-btn:active {
+  transform: scale(0.98);
+}
