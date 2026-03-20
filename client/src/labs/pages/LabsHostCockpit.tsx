@@ -1616,7 +1616,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           const allDramsDone = guidedIdx >= whiskies.length - 1 && (!isBlind || guidedRevealStep >= (rv?.maxSteps ?? 0));
           let guidedBtnLabel = t("cockpit.nextDram", "Next Dram");
           if (guidedIdx < 0) {
-            guidedBtnLabel = t("cockpit.revealStart", "Start First Dram");
+            guidedBtnLabel = t("cockpit.revealStart", "Start Reveal");
           } else if (allDramsDone) {
             guidedBtnLabel = t("cockpit.revealDone", "All Drams Done");
           } else if (isBlind && rv) {
@@ -1624,7 +1624,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               const lbl = rv.stepLabels[guidedRevealStep];
               guidedBtnLabel = lbl ? t("cockpit.revealNext", "Next: {{stage}}", { stage: lbl }) : t("cockpit.revealNextGeneric", "Reveal Next");
             } else {
-              guidedBtnLabel = t("cockpit.allRevealed", "All info revealed — Next Dram");
+              guidedBtnLabel = t("cockpit.allRevealed", "All info revealed");
             }
           }
 
