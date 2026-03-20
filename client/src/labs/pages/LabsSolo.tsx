@@ -7,17 +7,13 @@ import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
   Camera, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ChevronLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar, Library, Archive,
-  Sparkles, Compass, Target, Layers, ClipboardList,
+  ClipboardList,
 } from "lucide-react";
-import LabsRatingPanel from "@/labs/components/LabsRatingPanel";
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import RatingFlow from "@/labs/components/RatingFlow";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
-import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
-import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
-import type { StudioView } from "@/labs/components/FlavourStudioSheet";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -221,10 +217,6 @@ export default function LabsSolo() {
 
   const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
 
-  const [tastingToolsOpen, setTastingToolsOpen] = useState(false);
-  const [tastingToolsView, setTastingToolsView] = useState<StudioView>("guide");
-  const [activeDimension, setActiveDimension] = useState<DimKey>("nose");
-  const [detailedOpen, setDetailedOpen] = useState(false);
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
@@ -361,6 +353,7 @@ export default function LabsSolo() {
       setDetailChips({ nose: [], taste: [], finish: [] });
       setDetailTexts({ nose: "", taste: "", finish: "" });
       setSoloVoiceMemo(null);
+      setRatingFlowStep(0);
       setCandidates([]);
       setSelectedCandidate(null);
       setIsMenuMode(false);
@@ -378,8 +371,18 @@ export default function LabsSolo() {
 
         const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES\]/);
         if (scoresMatch) {
-          setDetailedScores({ nose: parseInt(scoresMatch[1]), taste: parseInt(scoresMatch[2]), finish: parseInt(scoresMatch[3]) });
+          const restoredNose = parseInt(scoresMatch[1]);
+          const restoredTaste = parseInt(scoresMatch[2]);
+          const restoredFinish = parseInt(scoresMatch[3]);
+          setDetailedScores({ nose: restoredNose, taste: restoredTaste, finish: restoredFinish });
           setDetailTouched(true);
+          const noseScored = restoredNose !== scaleMid;
+          const tasteScored = restoredTaste !== scaleMid;
+          const finishScored = restoredFinish !== scaleMid;
+          if (noseScored && tasteScored && finishScored) setRatingFlowStep(3);
+          else if (noseScored && tasteScored) setRatingFlowStep(2);
+          else if (noseScored) setRatingFlowStep(1);
+          else setRatingFlowStep(0);
         }
 
         const dims: DimKey[] = ["nose", "taste", "finish"];
@@ -1196,58 +1199,6 @@ export default function LabsSolo() {
       existing.push(entry);
       localStorage.setItem("m2_solo_logs", JSON.stringify(existing));
     } catch {}
-  };
-
-  const dimsScoredForFinalize = detailTouched || (detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0);
-
-  const handleFinalize = async () => {
-    if (!whiskyName.trim()) return;
-    if (!dimsScoredForFinalize) {
-      setError(t("m2.rating.overallLocked", "Rate each dimension to unlock Overall"));
-      return;
-    }
-    if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
-    if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
-    setSaving(true);
-    setError("");
-    try {
-      const body = buildDraftBody();
-      body.status = "final";
-      if (draftEntryId) {
-        const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "x-participant-id": pid },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) throw new Error("Finalize failed");
-      } else {
-        const res = await fetch(`/api/journal/${pid}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-participant-id": pid },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) throw new Error("Save failed");
-        const created = await res.json();
-        setDraftEntryId(created.id);
-      }
-      queryClient.invalidateQueries({ queryKey: ["journal"] });
-      setFinalizedAt(new Date().toLocaleString());
-      setDraftStatus("finalized");
-      setSaved(true);
-      if (pid) checkConnoisseurAutoTrigger(pid);
-      try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
-    } catch {
-      persistLocal();
-      if (pid) {
-        const body = buildDraftBody();
-        body.status = "final";
-        addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
-        setOfflineCount(getOfflineQueue().length);
-      }
-      setSaved(true);
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleQuickSave = async () => {
@@ -2910,147 +2861,6 @@ export default function LabsSolo() {
         </div>
       )}
 
-      <div ref={ratingSectionRef} style={{ marginBottom: 24 }} data-testid="section-score">
-        <div className="labs-section-label">{t("m2.solo.scoreLabel", "Score")}</div>
-        <LabsRatingPanel
-          scores={detailedScores}
-          onScoreChange={handleDetailScoreChange}
-          chips={detailChips}
-          onChipToggle={handleToggleChip}
-          texts={detailTexts}
-          onTextChange={handleDetailTextChange}
-          overall={score}
-          onOverallChange={handleScoreChange}
-          overallAuto={calcOverall(detailedScores)}
-          overrideActive={overrideActive}
-          onResetOverride={resetOverride}
-          scale={ratingScale.max}
-          showToggle={true}
-          defaultOpen={false}
-          wizard={true}
-          onActiveTabChange={setActiveDimension}
-          onDetailedToggle={setDetailedOpen}
-        />
-      </div>
-
-      <div
-        aria-hidden={!detailedOpen}
-        style={{
-          overflow: "hidden",
-          maxHeight: detailedOpen ? 2000 : 0,
-          opacity: detailedOpen ? 1 : 0,
-          transition: "max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease",
-          pointerEvents: detailedOpen ? "auto" : "none",
-        }}
-      >
-        <div style={{ marginBottom: 24 }} data-testid="section-tasting-tools">
-          <div className="labs-section-label">{t("m2.solo.tastingToolsLabel", "Tasting Tools")}</div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
-          }}>
-            {([
-              { view: "journey" as StudioView, icon: <Sparkles style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolJourney", "Flavour Journey"), desc: t("m2.solo.toolJourneyDesc", "Guided 3-phase tasting"), gradient: "linear-gradient(135deg, #e8a849, #d4793a)" },
-              { view: "wheel" as StudioView, icon: <Layers style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolWheel", "Flavour Wheel"), desc: t("m2.solo.toolWheelDesc", "Explore the aroma map"), gradient: "linear-gradient(135deg, #6a9f5b, #4a7a3e)" },
-              { view: "compass" as StudioView, icon: <Compass style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolCompass", "Compass"), desc: t("m2.solo.toolCompassDesc", "Navigate flavour profiles"), gradient: "linear-gradient(135deg, #5b7da9, #3e5a7a)" },
-              { view: "radar" as StudioView, icon: <Target style={{ width: 20, height: 20 }} />, label: t("m2.solo.toolRadar", "Radar"), desc: t("m2.solo.toolRadarDesc", "Visualise your tasting"), gradient: "linear-gradient(135deg, #9b6aaf, #7a4a8e)" },
-            ]).map((tool) => (
-              <button
-                key={tool.view}
-                type="button"
-                onClick={() => {
-                  setTastingToolsView(tool.view);
-                  setTastingToolsOpen(true);
-                }}
-                data-testid={`button-tasting-tool-${tool.view}`}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
-                  background: "var(--labs-surface)", border: "1px solid var(--labs-border-subtle)",
-                  borderRadius: 14, padding: "14px 14px 12px", cursor: "pointer",
-                  textAlign: "left", fontFamily: "inherit",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <span style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 36, height: 36, borderRadius: 10,
-                  background: tool.gradient, color: "#fff",
-                  flexShrink: 0,
-                }}>
-                  {tool.icon}
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 13, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                  {tool.label}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                  {tool.desc}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {VOICE_MEMOS_ENABLED && unlocked && pid && (
-          <div style={{ marginBottom: 24 }} data-testid="section-labs-voice-memo">
-            <div className="labs-section-label">{t("m2.solo.voiceMemoLabel", "Voice Memo")}</div>
-            <LabsVoiceMemoRecorder
-              memo={soloVoiceMemo}
-              onMemoChange={setSoloVoiceMemo}
-              participantId={pid!}
-            />
-          </div>
-        )}
-
-        <div style={{ marginBottom: 24 }} data-testid="section-notes">
-          <div className="labs-section-label">{t("m2.solo.optionalNotesLabel", "Optional text notes")}</div>
-          <div style={{ position: "relative" }}>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="labs-input"
-              style={{
-                resize: "vertical", minHeight: 80,
-                paddingRight: hasSpeechAPI ? 44 : 14,
-                borderColor: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : undefined,
-              }}
-              data-testid="labs-solo-notes"
-              placeholder={t("m2.solo.notesPlaceholder", "What stands out?")}
-            />
-            {hasSpeechAPI && (
-              <button
-                type="button"
-                onClick={() => toggleVoice("notes")}
-                data-testid="button-voice-notes"
-                style={{
-                  position: "absolute", right: 8, top: 8,
-                  background: (voiceListening && voiceTarget === "notes") ? "var(--labs-danger)" : "transparent",
-                  border: "none", borderRadius: 999, cursor: "pointer",
-                  width: 28, height: 28, padding: 0,
-                  color: (voiceListening && voiceTarget === "notes") ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all 200ms ease",
-                }}
-                title={t("m2.solo.dictateHint", "Dictate")}
-              >
-                <Mic style={{ width: 15, height: 15 }} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <FlavourStudioSheet
-        open={tastingToolsOpen}
-        onOpenChange={setTastingToolsOpen}
-        dimension={activeDimension}
-        existingChips={detailChips[activeDimension]}
-        onChipsChange={(chips) => {
-          const dim = activeDimension;
-          setDetailChips((prev) => ({ ...prev, [dim]: chips }));
-        }}
-        initialView={tastingToolsView}
-      />
-
       {!unlocked && !showUnlockPanel && (
         <button onClick={() => setShowUnlockPanel(true)} className="labs-btn-secondary" style={{ width: "100%", marginBottom: 12, color: "var(--labs-accent)", borderColor: "var(--labs-accent)", fontSize: 13 }} data-testid="button-unlock-prompt">
           {t("m2.solo.signInToSave", "Sign in to save to your account")}
@@ -3085,13 +2895,23 @@ export default function LabsSolo() {
       )}
 
       <button
-        onClick={handleFinalize}
-        disabled={saving || !whiskyName.trim() || !dimsScoredForFinalize}
+        onClick={() => {
+          const noseScored = detailedScores.nose !== scaleMid;
+          const tasteScored = detailedScores.taste !== scaleMid;
+          const finishScored = detailedScores.finish !== scaleMid;
+          let step = 0;
+          if (noseScored && tasteScored && finishScored) step = 3;
+          else if (noseScored && tasteScored) step = 2;
+          else if (noseScored) step = 1;
+          setRatingFlowStep(step);
+          setSoloView("ratingFlow");
+        }}
+        disabled={!whiskyName.trim()}
         className="labs-btn-primary"
-        style={{ width: "100%", padding: 16, fontSize: 16, opacity: (!whiskyName.trim() || !dimsScoredForFinalize) ? 0.5 : 1 }}
-        data-testid="button-finalize"
+        style={{ width: "100%", padding: 16, fontSize: 16, opacity: !whiskyName.trim() ? 0.5 : 1 }}
+        data-testid="button-confirm-rate"
       >
-        {saving ? t("m2.solo.saving", "Saving...") : t("m2.solo.finalize", "Complete tasting")}
+        {t("m2.solo.confirmAndRate", "Confirm & Rate")}
       </button>
 
       {sheetBackdrop}
