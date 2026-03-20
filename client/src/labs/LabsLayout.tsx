@@ -490,6 +490,28 @@ export function useLabsBack(fallback: string) {
   }, [fallback, navigate]);
 }
 
+const PUBLIC_PATH_PREFIXES = [
+  "/labs/onboarding",
+  "/labs/join",
+  "/labs/entdecken",
+  "/labs/about",
+  "/labs/impressum",
+  "/labs/privacy",
+  "/labs/home",
+  "/labs/making-of",
+  "/labs/explore",
+  "/labs/discover",
+  "/labs/donate",
+  "/labs/solo",
+];
+
+function isPublicLabsRoute(path: string): boolean {
+  if (path === "/labs" || path === "/labs/") return true;
+  return PUBLIC_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(prefix + "/"),
+  );
+}
+
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
@@ -504,6 +526,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const { theme } = useLabsTheme();
   const vb = useVerificationBanner();
   const prevLocationRef = useRef(location);
+  const [autoResumeChecked, setAutoResumeChecked] = useState(() => getSession().signedIn);
 
   useEffect(() => {
     if (prevLocationRef.current !== location) {
@@ -519,23 +542,40 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   }, [location]);
 
   useEffect(() => {
-    if (!localStorage.getItem("casksense_onboarded") && location !== "/labs/onboarding") {
-      window.location.replace("/labs/onboarding");
-    }
-  }, [location]);
-
-  useEffect(() => {
     const session = getSession();
-    if (session.signedIn) return;
+    if (session.signedIn) {
+      setAutoResumeChecked(true);
+      return;
+    }
     tryAutoResume().then((resumed) => {
       if (!resumed && currentParticipant) {
         setParticipant(null);
       }
+      setAutoResumeChecked(true);
     });
   }, []);
 
   const isLabsHome = location === "/labs" || location === "/labs/";
   const isOnboarding = location === "/labs/onboarding";
+
+  const needsAuthRedirect =
+    autoResumeChecked &&
+    !getSession().signedIn &&
+    !isPublicLabsRoute(location);
+
+  useEffect(() => {
+    if (needsAuthRedirect) {
+      window.location.replace("/labs/home");
+      return;
+    }
+    if (
+      !localStorage.getItem("casksense_onboarded") &&
+      location !== "/labs/onboarding" &&
+      !isPublicLabsRoute(location)
+    ) {
+      window.location.replace("/labs/onboarding");
+    }
+  }, [location, needsAuthRedirect]);
 
   const handleButtonHaptic = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
@@ -549,6 +589,12 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`}>
         {children}
       </div>
+    );
+  }
+
+  if (!isPublicLabsRoute(location) && (!autoResumeChecked || needsAuthRedirect)) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} />
     );
   }
 
