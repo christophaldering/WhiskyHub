@@ -259,11 +259,29 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const revealNextMut = useMutation({
     mutationFn: () => blindModeApi.revealNext(tastingId, pid),
+    onMutate: () => {
+      setLocalRevealStep(prev => (prev ?? 0) + 1);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
   });
 
   const guidedAdvanceMut = useMutation({
     mutationFn: () => guidedApi.advance(tastingId, pid),
+    onMutate: () => {
+      const currentStep = localRevealStep ?? (tasting?.guidedRevealStep ?? 0);
+      const currentIdx = localGuidedIdx ?? (tasting?.guidedWhiskyIndex ?? -1);
+      let maxSteps = 3;
+      try { if (tasting?.revealOrder) maxSteps = JSON.parse(tasting.revealOrder).length; } catch {}
+      if (currentIdx === -1) {
+        setLocalGuidedIdx(0);
+        setLocalRevealStep(0);
+      } else if (tasting?.blindMode && currentStep < maxSteps) {
+        setLocalRevealStep(currentStep + 1);
+      } else {
+        setLocalGuidedIdx(currentIdx + 1);
+        setLocalRevealStep(0);
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
   });
 
@@ -425,19 +443,17 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     }
   }, [tasting?.status]);
 
-  if (!tasting) return null;
-
-  const status = tasting.status;
-  const isBlind = tasting.blindMode;
-  const isGuided = tasting.guidedMode;
-  const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
-  const guidedRevealStep = tasting.guidedRevealStep ?? 0;
-  const ratingScale = tasting.ratingScale ?? 100;
+  const status = tasting?.status ?? "draft";
+  const isBlind = tasting?.blindMode ?? false;
+  const isGuided = tasting?.guidedMode ?? false;
+  const guidedIdx = tasting?.guidedWhiskyIndex ?? -1;
+  const guidedRevealStep = tasting?.guidedRevealStep ?? 0;
+  const ratingScale = tasting?.ratingScale ?? 100;
   const scaleDefault = Math.round(ratingScale / 2);
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
 
-  const rv = isBlind ? getRevealState(tasting, whiskies.length) : null;
+  const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length) : null;
   const optimisticTasting = useMemo(() => {
     if (!tasting) return tasting;
     const t = { ...tasting };
@@ -445,12 +461,12 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     if (localGuidedIdx != null) t.guidedWhiskyIndex = localGuidedIdx;
     return t;
   }, [tasting, localRevealStep, localGuidedIdx]);
-  const gv = isBlind && rv ? getGuestVisibility(optimisticTasting, rv.stepGroups, isGuided) : null;
+  const gv = isBlind && rv && optimisticTasting ? getGuestVisibility(optimisticTasting, rv.stepGroups, isGuided) : null;
   const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
   const activeWhisky = whiskies[guestDramIdx] || null;
 
   const activePreset: RevealPresetKey = useMemo(() => {
-    if (!tasting.revealOrder) return "classic";
+    if (!tasting?.revealOrder) return "classic";
     try {
       const parsed = JSON.parse(tasting.revealOrder);
       for (const [key, preset] of Object.entries(REVEAL_PRESETS)) {
@@ -458,7 +474,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       }
       return "custom";
     } catch { return "classic"; }
-  }, [tasting.revealOrder]);
+  }, [tasting?.revealOrder]);
 
   const incompleteParticipants = useMemo(() => {
     if (!isGuided || guidedIdx < 0 || !whiskies[guidedIdx]) return [];
@@ -498,6 +514,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     }
     return result;
   }, [activeWhisky, ratings]);
+
+  if (!tasting) return null;
 
   const lockedDrams: string[] = (() => {
     try { return JSON.parse(tasting.lockedDrams || "[]"); } catch { return []; }
