@@ -357,7 +357,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               />
               <label htmlFor="consentGateCheckbox" className="text-sm text-muted-foreground leading-snug cursor-pointer">
                 {t('login.privacyConsentLabel')}{" "}
-                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>{" "}
+                {t('login.andThe')}{" "}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.termsConsentLink')}</a>
               </label>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -670,7 +672,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                   className="text-xs leading-snug cursor-pointer text-muted-foreground"
                 >
                   {t('login.privacyConsentLabel')}{" "}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.privacyConsentLink')}</a>{" "}
+                  {t('login.andThe')}{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{t('login.termsConsentLink')}</a>
                 </label>
               </div>
             </div>

@@ -145,6 +145,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
             {uploading ? t("session.photos.uploading", "Uploading...") : t("session.photos.upload", "Upload Photo")}
           </Button>
           <span className="text-[10px] text-muted-foreground/60">{t("common.uploadHint")}</span>
+          <span className="text-[10px] text-muted-foreground/60" data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</span>
         </div>
       )}
 

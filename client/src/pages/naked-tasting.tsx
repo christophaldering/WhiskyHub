@@ -1223,7 +1223,9 @@ export default function NakedTasting() {
                     />
                     <label htmlFor="nakedPrivacy" className="text-[10px] text-muted-foreground/60 leading-snug cursor-pointer">
                       {t('login.privacyConsentLabel')}{" "}
-                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.privacyConsentLink')}</a>{" "}
+                      {t('login.andThe')}{" "}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{t('login.termsConsentLink')}</a>
                     </label>
                   </div>
                   {joinError && <p className="text-xs text-destructive text-center">{joinError}</p>}

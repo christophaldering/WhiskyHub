@@ -550,6 +550,7 @@ function Footer() {
           <Link href="/discover/about" data-testid="link-v2-footer-about" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>About</Link>
           <Link href="/privacy" data-testid="link-v2-footer-privacy" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Privacy</Link>
           <Link href="/impressum" data-testid="link-v2-footer-impressum" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Impressum</Link>
+          <Link href="/terms" data-testid="link-v2-footer-terms" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Terms</Link>
         </div>
         <p style={{ fontFamily: font.body, fontSize: 12, color: v.mutedLight, fontStyle: "italic", margin: 0 }}>
           Made in Germany. Built with love for whisky and data.

@@ -20,6 +20,7 @@ const resources = {
         signInToAccess: "Sign in to get started",
         unsavedChangesWarning: "You have unsaved changes. Are you sure you want to leave this page?",
         uploadHint: "JPG, PNG, WebP or GIF · max. 2 MB",
+        uploadRightsHint: "Only upload images you own or have permission to use.",
         uploadTooLarge: "File is too large. Maximum size: 2 MB.",
         uploadInvalidType: "Format not supported. Please use JPG, PNG, WebP, or GIF.",
       },
@@ -723,6 +724,7 @@ const resources = {
         footerTagline: "CaskSense — Where tasting becomes reflection.",
         footerHobby: "A private hobby project — no commercial interests, no tracking, no ads.",
         footerFeatures: "The Full Picture",
+        footerTerms: "Terms of Use",
         footerPrivacy: "Privacy",
       },
       hostShortcuts: {
@@ -946,6 +948,8 @@ const resources = {
         invalidEmail: "Please enter a valid email address",
         privacyConsentLabel: "I agree to the processing of my data as described in the",
         privacyConsentLink: "Privacy Policy",
+        andThe: "and the",
+        termsConsentLink: "Terms of Use",
         privacyConsentRequired: "You must accept the privacy policy to continue.",
         loginPrivacyNotice: "By signing in, you confirm your continued agreement to the Privacy Policy."
       },
@@ -4426,6 +4430,31 @@ const resources = {
             text: "For all privacy-related questions, requests, or to exercise your rights:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nWe aim to respond to all requests within 30 days.",
           },
         },
+        terms: {
+          title: "Terms of Use",
+          lastUpdated: "Last updated",
+          lastUpdatedDate: "March 2026",
+          scope: {
+            title: "1. Scope",
+            text: "These Terms of Use govern your use of CaskSense, a private, non-commercial hobby project for whisky enthusiasts. By using CaskSense you agree to these terms. If you do not agree, please refrain from using the platform.",
+          },
+          usage: {
+            title: "2. Use of the Platform",
+            text: "CaskSense is provided free of charge for personal, non-commercial use. You may use the platform to log tastings, manage your whisky journal, participate in tasting events, and explore community features.\n\nYou agree to use the platform responsibly and in compliance with applicable laws. Misuse, automated scraping, or any activity that disrupts the service for other users is not permitted.",
+          },
+          content: {
+            title: "3. User Content & Copyright",
+            text: "You may upload images (e.g. bottle photos, tasting photos, profile pictures) and text content to CaskSense. By uploading content you confirm that:\n\n• You own the rights to the content, or have obtained the necessary permissions or licences to use it.\n• The content does not infringe any third-party copyrights, trademarks, or other intellectual property rights.\n• The content does not violate any applicable laws.\n\nYou grant CaskSense a non-exclusive, royalty-free right to display your uploaded content within the platform for the purpose of providing the service.\n\nCaskSense is not liable for user-uploaded content. We reserve the right to remove any content that violates these terms or applicable law without prior notice.",
+          },
+          liability: {
+            title: "4. Disclaimer of Liability",
+            text: "CaskSense is provided \"as is\" without any warranty of any kind. As a non-commercial hobby project, we do not guarantee availability, accuracy, or completeness of the service or its content.\n\nThe operator is not liable for any damages arising from the use of the platform, except in cases of intent or gross negligence. This includes, but is not limited to, loss of data, service interruptions, or inaccuracies in content.",
+          },
+          changes: {
+            title: "5. Changes to These Terms",
+            text: "We may update these Terms of Use at any time. The current version is always available at /terms with the date of last update. Continued use of the platform after changes constitutes acceptance of the updated terms.",
+          },
+        },
         storageConsent: {
           text: "CaskSense uses local storage for your settings. No tracking cookies.",
           learnMore: "Privacy Policy",
@@ -6337,6 +6366,7 @@ const resources = {
         signInToAccess: "Anmelden und loslegen",
         unsavedChangesWarning: "Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?",
         uploadHint: "JPG, PNG, WebP oder GIF · max. 2 MB",
+        uploadRightsHint: "Bitte lade nur Bilder hoch, an denen du die Rechte besitzt.",
         uploadTooLarge: "Datei ist zu groß. Maximale Größe: 2 MB.",
         uploadInvalidType: "Format nicht unterstützt. Bitte JPG, PNG, WebP oder GIF verwenden.",
       },
@@ -7039,6 +7069,7 @@ const resources = {
         footerTagline: "CaskSense — Wo Verkosten zum Nachdenken wird.",
         footerHobby: "Ein privates Projekt aus Leidenschaft — ohne kommerzielle Absicht, ohne Tracking, ohne Werbung.",
         footerFeatures: "Das Gesamtbild",
+        footerTerms: "Nutzungsbedingungen",
         footerPrivacy: "Datenschutz",
       },
       hostShortcuts: {
@@ -7262,6 +7293,8 @@ const resources = {
         invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein",
         privacyConsentLabel: "Ich stimme der Verarbeitung meiner Daten gemäß der",
         privacyConsentLink: "Datenschutzerklärung",
+        andThe: "und den",
+        termsConsentLink: "Nutzungsbedingungen",
         privacyConsentRequired: "Du musst die Datenschutzerklärung akzeptieren, um fortzufahren.",
         loginPrivacyNotice: "Mit der Anmeldung bestätigst du deine fortlaufende Zustimmung zur Datenschutzerklärung."
       },
@@ -10742,6 +10775,31 @@ const resources = {
           contact: {
             title: "17. Kontakt",
             text: "Für alle datenschutzbezogenen Fragen, Anfragen oder zur Ausübung deiner Rechte:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com\n\nWir bemühen uns, alle Anfragen innerhalb von 30 Tagen zu beantworten.",
+          },
+        },
+        terms: {
+          title: "Nutzungsbedingungen",
+          lastUpdated: "Zuletzt aktualisiert",
+          lastUpdatedDate: "März 2026",
+          scope: {
+            title: "1. Geltungsbereich",
+            text: "Diese Nutzungsbedingungen regeln die Nutzung von CaskSense, einem privaten, nicht-kommerziellen Hobbyprojekt für Whisky-Enthusiasten. Mit der Nutzung von CaskSense stimmst du diesen Bedingungen zu. Wenn du nicht einverstanden bist, nutze die Plattform bitte nicht.",
+          },
+          usage: {
+            title: "2. Nutzung der Plattform",
+            text: "CaskSense wird kostenlos für die persönliche, nicht-kommerzielle Nutzung bereitgestellt. Du kannst die Plattform nutzen, um Tastings zu dokumentieren, dein Whisky-Tagebuch zu führen, an Tasting-Events teilzunehmen und Community-Features zu erkunden.\n\nDu erklärst dich bereit, die Plattform verantwortungsvoll und im Einklang mit geltendem Recht zu nutzen. Missbrauch, automatisiertes Scraping oder jede Aktivität, die den Dienst für andere Nutzer stört, ist nicht gestattet.",
+          },
+          content: {
+            title: "3. Nutzer-Inhalte & Urheberrecht",
+            text: "Du kannst Bilder (z.\u00a0B. Flaschenfotos, Tasting-Fotos, Profilbilder) und Textinhalte auf CaskSense hochladen. Mit dem Hochladen bestätigst du, dass:\n\n• Du die Rechte an den Inhalten besitzt oder die erforderlichen Genehmigungen bzw. Lizenzen zur Nutzung eingeholt hast.\n• Die Inhalte keine Urheberrechte, Markenrechte oder sonstigen Schutzrechte Dritter verletzen.\n• Die Inhalte nicht gegen geltendes Recht verstoßen.\n\nDu räumst CaskSense ein nicht-exklusives, unentgeltliches Recht ein, deine hochgeladenen Inhalte innerhalb der Plattform zum Zweck der Diensterbringung anzuzeigen.\n\nCaskSense haftet nicht für nutzergenerierte Inhalte. Wir behalten uns das Recht vor, Inhalte, die gegen diese Bedingungen oder geltendes Recht verstoßen, ohne vorherige Ankündigung zu entfernen.",
+          },
+          liability: {
+            title: "4. Haftungsausschluss",
+            text: "CaskSense wird \u201Ewie besehen\u201C ohne jegliche Gew\u00e4hrleistung bereitgestellt. Als nicht-kommerzielles Hobbyprojekt garantieren wir keine Verf\u00fcgbarkeit, Richtigkeit oder Vollst\u00e4ndigkeit des Dienstes oder seiner Inhalte.\n\nDer Betreiber haftet nicht f\u00fcr Sch\u00e4den, die aus der Nutzung der Plattform entstehen, au\u00dfer bei Vorsatz oder grober Fahrl\u00e4ssigkeit. Dies umfasst unter anderem Datenverlust, Dienstunterbrechungen oder inhaltliche Ungenauigkeiten.",
+          },
+          changes: {
+            title: "5. Änderungsvorbehalte",
+            text: "Wir können diese Nutzungsbedingungen jederzeit aktualisieren. Die aktuelle Fassung ist stets unter /terms mit dem Datum der letzten Aktualisierung abrufbar. Die fortgesetzte Nutzung der Plattform nach Änderungen gilt als Zustimmung zu den aktualisierten Bedingungen.",
           },
         },
         storageConsent: {

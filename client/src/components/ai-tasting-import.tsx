@@ -329,6 +329,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                   data-testid="input-import-files"
                 />
               </div>
+              <p style={{ fontSize: 11, color: `${c.muted}99`, margin: "8px 0 0" }} data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
 
               {files.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

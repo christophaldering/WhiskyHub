@@ -498,6 +498,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/labs/about",
   "/labs/impressum",
   "/labs/privacy",
+  "/labs/terms",
   "/labs/home",
   "/labs/making-of",
   "/labs/explore",

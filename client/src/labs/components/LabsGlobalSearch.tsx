@@ -86,6 +86,7 @@ const PAGES_REGISTRY: PageEntry[] = [
   { label: "Donate", labelDe: "Spenden", route: "/labs/donate", section: "Info", sectionDe: "Info", icon: Gift, keywords: ["support", "hospice"] },
   { label: "Impressum", labelDe: "Impressum", route: "/labs/impressum", section: "Info", sectionDe: "Info", icon: Shield, keywords: ["legal"] },
   { label: "Privacy", labelDe: "Datenschutz", route: "/labs/privacy", section: "Info", sectionDe: "Info", icon: Lock, keywords: ["data", "daten"] },
+  { label: "Terms of Use", labelDe: "Nutzungsbedingungen", route: "/labs/terms", section: "Info", sectionDe: "Info", icon: FileText, keywords: ["terms", "agb", "conditions", "nutzungsbedingungen", "copyright"] },
   { label: "Paper Scan", labelDe: "Papier-Scan", route: "/labs/paper-scan", section: "Tools", sectionDe: "Tools", icon: Mic, keywords: ["ocr", "import", "handwritten"] },
 ];
 

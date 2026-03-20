@@ -516,6 +516,7 @@ export default function FeatureOverview() {
           <div style={{ display: "flex", gap: 24, justifyContent: "center", marginTop: 12 }}>
             <Link href="/impressum" data-testid="link-footer-impressum" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Impressum</Link>
             <Link href="/privacy" data-testid="link-footer-privacy" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Privacy</Link>
+            <Link href="/terms" data-testid="link-footer-terms" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Terms</Link>
           </div>
         </footer>
       </div>

@@ -1696,6 +1696,7 @@ function MobileCompanion({
                       <input type="file" accept="image/*,.pdf,.csv,.txt,.xlsx" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
                     </label>
                   </div>
+                  <p className="text-[11px] mt-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
                 </div>
                 {mobileAiFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -6204,7 +6205,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       )}
                       {tasting.status === "draft" && (
                         <>
-                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
+                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("common.uploadRightsHint")}>
                             <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                             <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
                           </label>
@@ -6258,7 +6259,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       )}
                       {tasting.status === "draft" && (
                         <>
-                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`mobile-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
+                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`mobile-upload-img-${w.id}`} title={t("common.uploadRightsHint")}>
                             <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                             <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
                           </label>

@@ -1494,7 +1494,7 @@ export default function LabsSolo() {
             {t("m2.solo.captureSubtitle", "Start with a photo — or choose another method.")}
           </p>
           <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center", opacity: 0.75 }} data-testid="text-photo-rights-hint-solo">
-            {t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}
+            {t("common.uploadRightsHint")}
           </p>
 
           <button

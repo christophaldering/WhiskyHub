@@ -334,6 +334,8 @@ export default function LabsPaperScan() {
               </button>
             </div>
 
+            <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.75, margin: "0 0 12px" }} data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
+
             {photos.length > 0 && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                 {photos.map((photo, idx) => {

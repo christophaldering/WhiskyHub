@@ -244,6 +244,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                   </>
                 )}
               </div>
+              <p className="text-[11px] text-muted-foreground/60 mt-2" data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
             </div>
 
             <div className="bg-secondary/30 rounded-lg border border-border/30 overflow-hidden">

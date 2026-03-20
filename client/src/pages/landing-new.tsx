@@ -1237,6 +1237,18 @@ function Footer() {
           >
             {t("premium.footerPrivacy")}
           </Link>
+          <Link
+            href="/terms"
+            data-testid="link-footer-terms"
+            style={{
+              fontFamily: font.body,
+              fontSize: 12,
+              color: v.muted,
+              textDecoration: "none",
+            }}
+          >
+            {t("premium.footerTerms")}
+          </Link>
         </div>
       </div>
     </footer>

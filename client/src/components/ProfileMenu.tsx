@@ -753,7 +753,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         />
         <span style={{ fontSize: 11, color: tv.muted, lineHeight: 1.4 }}>
           {t('login.privacyConsentLabel')}{" "}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>{" "}
+          {t('login.andThe')}{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.termsConsentLink')}</a>
         </span>
       </label>
       <button

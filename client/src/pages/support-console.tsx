@@ -24,6 +24,7 @@ const LINK_GROUPS: LinkGroup[] = [
       { title: "Naked Tasting", url: "/naked/:code" },
       { title: "Impressum", url: "/impressum" },
       { title: "Privacy", url: "/privacy" },
+      { title: "Terms of Use", url: "/terms" },
       { title: "Intro", url: "/intro" },
       { title: "Feature Tour", url: "/feature-tour" },
     ],

@@ -38,6 +38,7 @@ import TastingRoomSimple from "@/pages/tasting-room-simple";
 import TastingResultsPage from "@/pages/tasting-results";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 const GuidedPresentation = lazy(() => import("@/pages/guided-presentation"));
 const LandingV2 = lazy(() => import("@/pages/landing-v2"));
@@ -106,6 +107,7 @@ const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
 const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
 const LabsImpressum = lazy(() => import("@/labs/pages/LabsImpressum"));
 const LabsPrivacy = lazy(() => import("@/labs/pages/LabsPrivacy"));
+const LabsTerms = lazy(() => import("@/labs/pages/LabsTerms"));
 const LabsActivityPage = lazy(() => import("@/labs/pages/LabsActivity"));
 const LabsCommunity = lazy(() => import("@/labs/pages/LabsCommunity"));
 const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
@@ -357,6 +359,7 @@ function Router() {
         <Route path="/admin/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
         <Route path="/intro" component={Intro} />
 
         {/* ── Admin Backoffice ── */}
@@ -510,6 +513,7 @@ function Router() {
               <Route path="/labs/donate" component={LabsDonate} />
               <Route path="/labs/impressum" component={LabsImpressum} />
               <Route path="/labs/privacy" component={LabsPrivacy} />
+              <Route path="/labs/terms" component={LabsTerms} />
               <Route path="/labs/activity" component={LabsActivityPage} />
               <Route path="/labs/community" component={LabsCommunity} />
               <Route path="/labs/making-of" component={LabsMakingOf} />
