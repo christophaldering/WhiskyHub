@@ -11,6 +11,12 @@ import {
 } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
+import { lazy, Suspense } from "react";
+
+type DimKey = "nose" | "taste" | "finish";
+type StudioView = "guide" | "journey" | "wheel" | "compass" | "radar" | "describe";
+
+const FlavourStudioSheet = lazy(() => import("./FlavourStudioSheet"));
 
 interface PickerGroup {
   id: string;
@@ -28,6 +34,7 @@ interface FlavourPickerProps {
   flavorProfileId?: FlavorProfileId | null;
   isBlind?: boolean;
   disabled?: boolean;
+  dimension?: DimKey;
 }
 
 const GOLD = "#c8861a";
@@ -128,11 +135,35 @@ export default function FlavourPicker({
   flavorProfileId,
   isBlind = false,
   disabled = false,
+  dimension,
 }: FlavourPickerProps) {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
   const [expanded, setExpanded] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioInitialView, setStudioInitialView] = useState<StudioView>("wheel");
   const apiCategories = useFlavorCategoriesFromAPI();
+
+  const handleExpertToolClick = useCallback((view: StudioView) => {
+    setStudioInitialView(view);
+    setStudioOpen(true);
+    triggerHaptic("light");
+  }, []);
+
+  const handleStudioChipsChange = useCallback((newChips: string[]) => {
+    const currentSet = new Set(activeChips.map(c => c.toLowerCase()));
+    const newSet = new Set(newChips.map(c => c.toLowerCase()));
+    for (const chip of newChips) {
+      if (!currentSet.has(chip.toLowerCase())) {
+        onToggle(chip);
+      }
+    }
+    for (const chip of activeChips) {
+      if (!newSet.has(chip.toLowerCase())) {
+        onToggle(chip);
+      }
+    }
+  }, [activeChips, onToggle]);
 
   const activeSet = useMemo(() => new Set(activeChips.map((c) => c.toLowerCase())), [activeChips]);
 
@@ -326,18 +357,40 @@ export default function FlavourPicker({
         </>
       )}
 
-      {scale.max >= 20 && <ExpertToolsCollapsible disabled={disabled} />}
+      {scale.max >= 20 && (
+        <ExpertToolsCollapsible
+          disabled={disabled}
+          onToolClick={dimension ? handleExpertToolClick : undefined}
+        />
+      )}
+
+      {dimension && (
+        <Suspense fallback={null}>
+          <FlavourStudioSheet
+            open={studioOpen}
+            onOpenChange={setStudioOpen}
+            dimension={dimension}
+            existingChips={activeChips}
+            onChipsChange={handleStudioChipsChange}
+            disabled={disabled}
+            initialView={studioInitialView}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
 
-function ExpertToolsCollapsible({ disabled }: { disabled?: boolean }) {
+function ExpertToolsCollapsible({ disabled, onToolClick }: {
+  disabled?: boolean;
+  onToolClick?: (view: StudioView) => void;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const tools = [
-    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-    { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
+  const tools: { id: string; view: StudioView | null; label: string; icon: string; comingSoon?: boolean }[] = [
+    { id: "wheel", view: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+    { id: "compass", view: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+    { id: "regions", view: null, label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍", comingSoon: true },
   ];
 
   return (
@@ -382,29 +435,46 @@ function ExpertToolsCollapsible({ disabled }: { disabled?: boolean }) {
           }}
           data-testid="flavour-expert-tools"
         >
-          {tools.map((tool) => (
-            <span
-              key={tool.id}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 3,
-                padding: "4px 10px",
-                borderRadius: 9999,
-                border: "1px solid var(--labs-border)",
-                background: "var(--labs-surface)",
-                color: "var(--labs-text-muted)",
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: "default",
-                opacity: 0.6,
-              }}
-              data-testid={`expert-tool-${tool.id}`}
-            >
-              <span style={{ fontSize: 11 }}>{tool.icon}</span>
-              {tool.label}
-            </span>
-          ))}
+          {tools.map((tool) => {
+            const isClickable = !tool.comingSoon && !!onToolClick && !!tool.view;
+            return (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  if (isClickable && tool.view) {
+                    onToolClick(tool.view);
+                  }
+                }}
+                disabled={disabled || tool.comingSoon || !isClickable}
+                title={tool.comingSoon ? t("m2.taste.rating.comingSoon", "Coming soon") : undefined}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  padding: "4px 10px",
+                  borderRadius: 9999,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text-muted)",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  cursor: isClickable ? "pointer" : "default",
+                  opacity: tool.comingSoon ? 0.4 : (isClickable ? 1 : 0.6),
+                  transition: "all 150ms",
+                }}
+                data-testid={`expert-tool-${tool.id}`}
+              >
+                <span style={{ fontSize: 11 }}>{tool.icon}</span>
+                {tool.label}
+                {tool.comingSoon && (
+                  <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 2 }}>
+                    ({t("m2.taste.rating.comingSoon", "Coming soon")})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

@@ -42,13 +42,14 @@ const DIMS: DimKey[] = ["nose", "taste", "finish"];
 
 const GOLD = "#c8861a";
 
-function FlavourAccordion({ chips, onChipToggle, scale, flavorProfileId, isBlind, disabled }: {
+function FlavourAccordion({ chips, onChipToggle, scale, flavorProfileId, isBlind, disabled, dimension }: {
   chips: string[];
   onChipToggle: (chip: string) => void;
   scale: RatingScale;
   flavorProfileId?: FlavorProfileId | null;
   isBlind?: boolean;
   disabled?: boolean;
+  dimension?: DimKey;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -132,6 +133,7 @@ function FlavourAccordion({ chips, onChipToggle, scale, flavorProfileId, isBlind
             flavorProfileId={flavorProfileId}
             isBlind={isBlind}
             disabled={disabled}
+            dimension={dimension}
           />
         </div>
       )}
@@ -336,6 +338,7 @@ export default function RatingFlow({
         flavorProfileId={flavorProfileId}
         isBlind={isBlind}
         disabled={disabled}
+        dimension={dim}
       />
     </div>
   );
@@ -430,6 +433,7 @@ export default function RatingFlow({
         flavorProfileId={flavorProfileId}
         isBlind={isBlind}
         disabled={disabled}
+        dimension="nose"
       />
 
       <div>
