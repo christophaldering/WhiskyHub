@@ -132,6 +132,7 @@ export default function FlavourPicker({
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
   const [expanded, setExpanded] = useState(false);
+  const [expertExpanded, setExpertExpanded] = useState(false);
   const apiCategories = useFlavorCategoriesFromAPI();
 
   const activeSet = useMemo(() => new Set(activeChips.map((c) => c.toLowerCase())), [activeChips]);
@@ -326,54 +327,90 @@ export default function FlavourPicker({
                 <div
                   style={{
                     borderTop: "1px solid var(--labs-border)",
-                    paddingTop: 10,
                     marginTop: 4,
-                    display: "flex",
-                    gap: 6,
-                    flexWrap: "wrap",
                   }}
                   data-testid="flavour-expert-tools"
                 >
-                  <span
+                  <button
+                    onClick={() => { setExpertExpanded((p) => !p); triggerHaptic("light"); }}
+                    disabled={disabled}
                     style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: "var(--labs-text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       width: "100%",
-                      marginBottom: 4,
+                      padding: "10px 0",
+                      background: "none",
+                      border: "none",
+                      cursor: disabled ? "default" : "pointer",
+                      fontFamily: "inherit",
                     }}
+                    data-testid="expert-tools-toggle"
                   >
-                    {t("m2.taste.rating.expertTools", "Expert Tools")}
-                  </span>
-                  {[
-                    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-                    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-                    { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
-                  ].map((tool) => (
                     <span
-                      key={tool.id}
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 3,
-                        padding: "4px 10px",
-                        borderRadius: 9999,
-                        border: "1px solid var(--labs-border)",
-                        background: "var(--labs-surface)",
+                        fontSize: 10,
+                        fontWeight: 600,
                         color: "var(--labs-text-muted)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                        cursor: "default",
-                        opacity: 0.6,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
                       }}
-                      data-testid={`expert-tool-${tool.id}`}
                     >
-                      <span style={{ fontSize: 11 }}>{tool.icon}</span>
-                      {tool.label}
+                      {t("m2.taste.rating.expertTools", "Expert Tools")}
                     </span>
-                  ))}
+                    <ChevronDown
+                      style={{
+                        width: 14,
+                        height: 14,
+                        color: "var(--labs-text-muted)",
+                        transition: "transform 200ms",
+                        transform: expertExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      }}
+                    />
+                  </button>
+                  {expertExpanded && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap",
+                        paddingBottom: 8,
+                        animation: "labsFadeIn 200ms ease both",
+                      }}
+                    >
+                      {[
+                        { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+                        { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+                        { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
+                      ].map((tool) => (
+                        <button
+                          key={tool.id}
+                          onClick={() => { triggerHaptic("light"); }}
+                          disabled={disabled}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 3,
+                            padding: "6px 12px",
+                            borderRadius: 9999,
+                            border: "1px solid var(--labs-border)",
+                            background: "var(--labs-surface)",
+                            color: "var(--labs-text-secondary)",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            fontFamily: "inherit",
+                            cursor: disabled ? "default" : "pointer",
+                            opacity: disabled ? 0.4 : 1,
+                            transition: "all 150ms",
+                          }}
+                          data-testid={`expert-tool-${tool.id}`}
+                        >
+                          <span style={{ fontSize: 11 }}>{tool.icon}</span>
+                          {tool.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

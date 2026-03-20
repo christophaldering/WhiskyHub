@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, ChevronDown } from "lucide-react";
 import RatingDial from "./RatingDial";
 import OverallCircle from "./OverallCircle";
 import FlavourPicker from "./FlavourPicker";
@@ -75,6 +75,7 @@ export default function RatingFlow({
   const [saving, setSaving] = useState(false);
   const [showSavedOverlay, setShowSavedOverlay] = useState(false);
   const [savedScore, setSavedScore] = useState(0);
+  const [flavorsExpanded, setFlavorsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const prevInitialStepRef = useRef(initialStep);
   useEffect(() => {
@@ -318,26 +319,69 @@ export default function RatingFlow({
       </div>
 
       <div>
-        <div
+        <button
+          onClick={() => { setFlavorsExpanded((p) => !p); triggerHaptic("light"); }}
           style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            color: "var(--labs-text-muted)",
-            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "10px 0",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
+          data-testid="add-flavors-toggle"
         >
-          {t("m2.taste.rating.addFlavors", "Add flavors")}
-        </div>
-        <FlavourPicker
-          activeChips={chips}
-          onToggle={onChipToggle}
-          scale={scale}
-          flavorProfileId={flavorProfileId}
-          isBlind={isBlind}
-          disabled={disabled}
-        />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: "var(--labs-text-muted)",
+            }}
+          >
+            {t("m2.taste.rating.addFlavors", "Add flavors")}
+            {chips.length > 0 && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "#c8861a",
+                  background: "rgba(200,134,26,0.12)",
+                  borderRadius: 9999,
+                  padding: "1px 7px",
+                }}
+              >
+                {chips.length}
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            style={{
+              width: 16,
+              height: 16,
+              color: "var(--labs-text-muted)",
+              transition: "transform 200ms",
+              transform: flavorsExpanded ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+        </button>
+        {flavorsExpanded && (
+          <div style={{ animation: "labsFadeIn 200ms ease both", paddingTop: 4 }}>
+            <FlavourPicker
+              activeChips={chips}
+              onToggle={onChipToggle}
+              scale={scale}
+              flavorProfileId={flavorProfileId}
+              isBlind={isBlind}
+              disabled={disabled}
+            />
+          </div>
+        )}
       </div>
 
       <div>
