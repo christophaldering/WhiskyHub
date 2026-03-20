@@ -18,8 +18,8 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
-import LabsRatingPanel, { type DimKey as LabsDimKey } from "@/labs/components/LabsRatingPanel";
-import { useRatingScale } from "@/labs/hooks/useRatingScale";
+import RatingFlow from "@/labs/components/RatingFlow";
+import { useRatingScale, buildScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -316,7 +316,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 type DimKey = "nose" | "taste" | "finish";
 
-const WIZARD_PREF_KEY = "labs-host-rating-wizard";
 
 function HostRatingPanel({
   whiskies,
@@ -330,15 +329,7 @@ function HostRatingPanel({
   ratingScale: number;
 }) {
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
   const [activeIdx, setActiveIdx] = useState(0);
-  const [wizardMode, setWizardMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(WIZARD_PREF_KEY);
-      return stored === "true";
-    }
-    return false;
-  });
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -354,14 +345,6 @@ function HostRatingPanel({
   const scaleDefault = Math.round(scaleMax / 2);
   const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
   const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
-
-  const useWizard = isMobile || wizardMode;
-
-  const toggleWizardMode = () => {
-    const next = !wizardMode;
-    setWizardMode(next);
-    localStorage.setItem(WIZARD_PREF_KEY, String(next));
-  };
 
   const ratingUpsertMut = useMutation({
     mutationFn: (data: Record<string, unknown>) => ratingApi.upsert(data),
@@ -513,12 +496,6 @@ function HostRatingPanel({
     });
   };
 
-  const handleTextChange = (wId: string, dim: DimKey, text: string) => {
-    setHostTexts(prev => {
-      const current = prev[wId] || emptyTexts;
-      return { ...prev, [wId]: { ...current, [dim]: text } };
-    });
-  };
 
   const currentWhisky = whiskies[activeIdx];
   if (!currentWhisky) {
@@ -543,32 +520,12 @@ function HostRatingPanel({
           <Star className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Host Rating</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={toggleWizardMode}
-              style={{
-                display: "flex", alignItems: "center", gap: 4,
-                padding: "3px 8px", borderRadius: 6,
-                border: "1px solid var(--labs-border)",
-                background: wizardMode ? "var(--labs-accent-muted)" : "transparent",
-                color: wizardMode ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              }}
-              data-testid="host-wizard-toggle"
-            >
-              <Sliders className="w-3 h-3" />
-              {wizardMode ? "Wizard" : "Compact"}
-            </button>
-          )}
-          {saving && (
-            <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Saving...
-            </span>
-          )}
-        </div>
+        {saving && (
+          <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving...
+          </span>
+        )}
       </div>
 
       <div style={{
@@ -610,17 +567,17 @@ function HostRatingPanel({
           </p>
         </div>
 
-        <LabsRatingPanel
+        <RatingFlow
+          scale={buildScale(ratingScale)}
           scores={getScores(currentWhisky.id)}
           onScoreChange={(dim, val) => handleScoreChange(currentWhisky.id, dim, val)}
-          chips={hostChips[currentWhisky.id] || emptyChips}
-          onChipToggle={(dim, chip) => handleChipToggle(currentWhisky.id, dim, chip)}
-          texts={hostTexts[currentWhisky.id] || emptyTexts}
-          onTextChange={(dim, text) => handleTextChange(currentWhisky.id, dim, text)}
           overall={getOverall(currentWhisky.id)}
           onOverallChange={(val) => handleOverallChange(currentWhisky.id, val)}
-          overallAuto={getOverallAuto(currentWhisky.id)}
           overrideActive={!!hostOverride[currentWhisky.id]}
+          onOverrideToggle={() => {
+            const wId = currentWhisky.id;
+            setHostOverride(prev => ({ ...prev, [wId]: !prev[wId] }));
+          }}
           onResetOverride={() => {
             const wId = currentWhisky.id;
             setHostOverride(prev => ({ ...prev, [wId]: false }));
@@ -628,25 +585,34 @@ function HostRatingPanel({
             setHostOverall(prev => ({ ...prev, [wId]: auto }));
             debouncedSave(wId, getScores(wId), auto, hostNotes[wId] || "");
           }}
-          scale={scaleMax}
-          showToggle={false}
-          defaultOpen={true}
-          compact={!useWizard}
-          wizard={useWizard}
-        />
-
-        <textarea
-          value={hostNotes[currentWhisky.id] || ""}
-          onChange={e => {
+          chips={(() => {
+            const ch = hostChips[currentWhisky.id] || emptyChips;
+            return [...ch.nose, ...ch.taste, ...ch.finish];
+          })()}
+          onChipToggle={(chip) => {
             const wId = currentWhisky.id;
-            const newNotes = e.target.value;
-            setHostNotes(prev => ({ ...prev, [wId]: newNotes }));
-            debouncedSave(wId, getScores(wId), getOverall(wId), newNotes);
+            const current = hostChips[wId] || emptyChips;
+            const dims: DimKey[] = ["nose", "taste", "finish"];
+            for (const d of dims) {
+              if (current[d].includes(chip)) {
+                handleChipToggle(wId, d, chip);
+                return;
+              }
+            }
+            handleChipToggle(wId, "nose", chip);
           }}
-          placeholder="Your tasting notes..."
-          className="labs-input"
-          style={{ resize: "vertical", minHeight: 56, marginTop: 12, fontSize: 13 }}
-          data-testid="host-rating-notes"
+          notes={hostNotes[currentWhisky.id] || ""}
+          onNotesChange={(text) => {
+            const wId = currentWhisky.id;
+            setHostNotes(prev => ({ ...prev, [wId]: text }));
+            debouncedSave(wId, getScores(wId), getOverall(wId), text);
+          }}
+          onSave={async () => {
+            const wId = currentWhisky.id;
+            debouncedSave(wId, getScores(wId), getOverall(wId), hostNotes[wId] || "");
+          }}
+          whiskyName={currentWhisky.name || `Whisky ${activeIdx + 1}`}
+          flavorProfileId={(currentWhisky as any).flavorProfileId ?? null}
         />
       </div>
     </div>
