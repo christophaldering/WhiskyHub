@@ -11,7 +11,7 @@ import {
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
-  Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft,
+  Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -5264,7 +5264,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <h2 className="labs-section-label">{t("m2.host.sessionControlsLabel", "Live Session")}</h2>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>{t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}</p>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>
+            {tasting.status === "archived"
+              ? t("m2.host.sessionControlsDescArchived", "This session has been archived.")
+              : t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}
+          </p>
           <div className="labs-card p-4">
             <div className="flex flex-wrap gap-2">
               {tasting.status === "draft" && (
@@ -5322,6 +5326,40 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 >
                   Complete & Archive
                 </button>
+              )}
+              {tasting.status === "archived" && (
+                <div className="flex items-center gap-3 w-full" data-testid="labs-host-archived-info">
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                    <Archive className="w-4 h-4" />
+                    {t("m2.host.archivedMessage", "This session has been archived.")}
+                  </div>
+                  <button
+                    className="labs-btn-primary flex items-center gap-2 ml-auto"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
+                    disabled={statusMutation.isPending}
+                    data-testid="labs-host-reopen-archived"
+                  >
+                    <Play className="w-4 h-4" />
+                    {t("m2.host.reopenSession", "Reopen")}
+                  </button>
+                </div>
+              )}
+              {!["draft", "open", "closed", "reveal", "archived"].includes(tasting.status) && (
+                <div className="flex items-center gap-3 w-full" data-testid="labs-host-unknown-status">
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                    <Info className="w-4 h-4" />
+                    {t("m2.host.unknownStatusMessage", "Current status: {{status}}", { status: tasting.status })}
+                  </div>
+                  <button
+                    className="labs-btn-primary flex items-center gap-2 ml-auto"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
+                    disabled={statusMutation.isPending}
+                    data-testid="labs-host-reopen-unknown"
+                  >
+                    <Play className="w-4 h-4" />
+                    {t("m2.host.reopenSession", "Reopen")}
+                  </button>
+                </div>
               )}
             </div>
           </div>
