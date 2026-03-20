@@ -140,7 +140,6 @@ export default function LabsSolo() {
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
   const ratingScale = useRatingScale();
-  const scaleMid = Math.round(ratingScale.max / 2);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -162,7 +161,7 @@ export default function LabsSolo() {
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
-  const [score, setScore] = useState(scaleMid);
+  const [score, setScore] = useState(0);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -210,7 +209,7 @@ export default function LabsSolo() {
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionStatusFilter, setCollectionStatusFilter] = useState<"all" | "open" | "closed">("all");
 
-  const [detailedScores, setDetailedScores] = useState({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
+  const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [] });
@@ -261,7 +260,7 @@ export default function LabsSolo() {
           detailChips, detailTexts,
           soloView, ratingFlowStep, ts: Date.now(),
         };
-        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === scaleMid && !notes && !detailTouched) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
+        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 0 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
         localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
       } catch {}
     }, 500);
@@ -305,11 +304,9 @@ export default function LabsSolo() {
       if (d.detailTexts) setDetailTexts(d.detailTexts);
       if (d.soloView === "editor") setSoloView("editor");
       if (d.soloView === "ratingFlow") {
-        const ds = d.detailedScores || { nose: scaleMid, taste: scaleMid, finish: scaleMid };
-        const draftMid = Math.round((ratingScale.max || 100) / 2);
-        const isUntouched = (v: number) => v === 0 || v === draftMid;
-        const hasIncomplete = isUntouched(ds.nose) || isUntouched(ds.taste) || isUntouched(ds.finish);
-        const computedStep = !isUntouched(ds.finish) ? 3 : !isUntouched(ds.taste) ? 2 : !isUntouched(ds.nose) ? 1 : 0;
+        const ds = d.detailedScores || { nose: 0, taste: 0, finish: 0 };
+        const hasIncomplete = ds.nose === 0 || ds.taste === 0 || ds.finish === 0;
+        const computedStep = ds.finish > 0 ? 3 : ds.taste > 0 ? 2 : ds.nose > 0 ? 1 : 0;
         const resumeStep = d.ratingFlowStep != null ? d.ratingFlowStep : computedStep;
         setRatingFlowStep(resumeStep);
         if (hasIncomplete || resumeStep < 3) {
@@ -357,7 +354,7 @@ export default function LabsSolo() {
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
       setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
-      setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
+      setDetailedScores({ nose: 0, taste: 0, finish: 0 });
       setDetailTouched(false);
       setOverrideActive(false);
       setDetailChips({ nose: [], taste: [], finish: [] });
@@ -1302,12 +1299,12 @@ export default function LabsSolo() {
   };
 
   const handleReset = (goToHub = false) => {
-    setWhiskyName(""); setDistillery(""); setScore(scaleMid); setNotes(""); setSaved(false);
+    setWhiskyName(""); setDistillery(""); setScore(0); setNotes(""); setSaved(false);
     setError(""); setShowManual(false);
     setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
     setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
     setPhotoUrl(""); setCandidates([]); setSelectedCandidate(null); setIsMenuMode(false);
-    setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
+    setDetailedScores({ nose: 0, taste: 0, finish: 0 });
     setDetailTouched(false); setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [] });
     setDetailTexts({ nose: "", taste: "", finish: "" });
