@@ -16,7 +16,8 @@ window.addEventListener("unhandledrejection", (event) => {
     msg.includes("Loading chunk") ||
     msg.includes("error loading dynamically imported module") ||
     msg.includes("Importing a module script failed") ||
-    msg.includes("Unable to preload CSS")
+    msg.includes("Unable to preload CSS") ||
+    msg.includes("is not a valid JavaScript MIME type")
   ) {
     const key = "cs_chunk_reload";
     const last = sessionStorage.getItem(key);
@@ -144,7 +145,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
       msg.includes("Failed to fetch dynamically imported module") ||
       msg.includes("error loading dynamically imported module") ||
       msg.includes("Importing a module script failed") ||
-      msg.includes("Unable to preload CSS")
+      msg.includes("Unable to preload CSS") ||
+      msg.includes("is not a valid JavaScript MIME type")
     ) {
       const key = "cs_chunk_reload";
       const last = sessionStorage.getItem(key);
