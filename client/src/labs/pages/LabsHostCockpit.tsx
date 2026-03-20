@@ -13,6 +13,7 @@ import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import RatingFlow from "@/labs/components/RatingFlow";
+import { buildScale } from "@/labs/hooks/useRatingScale";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 
 const POLL_FAST = 15000;
@@ -2047,7 +2048,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
           {currentRatingWhisky ? (
             <RatingFlow
-              scale={ratingScale}
+              scale={buildScale(ratingScale)}
               scores={getScores(currentRatingWhisky.id)}
               onScoreChange={(dim, val) => handleScoreChange(currentRatingWhisky.id, dim, val)}
               overall={getOverall(currentRatingWhisky.id)}
