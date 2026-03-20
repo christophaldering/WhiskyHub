@@ -1,0 +1,32 @@
+#188 - FlavourPicker Collapsible & Dial Midpoint Fix
+
+What & Why
+
+Two UX improvements: (1) The "ADD FLAVORS" section in the RatingFlow Summary step takes up too much vertical space — it should be a collapsible accordion, defaulting to collapsed. When expanded, the existing category/toggle/expert-tools structure gets reorganised into nested collapsible sections. (2) The initial RatingDial value is inconsistent — LabsSolo starts at 0 while LabsLive and LabsHostCockpit start at the scale midpoint. All contexts must start at the midpoint consistently.
+
+Done looks like
+
+FlavourPicker collapsible in RatingFlow: The "ADD FLAVORS" label in the Summary step becomes a clickable accordion header with a chevron. Collapsed by default, it shows the count of currently selected chips as a badge.
+Expanded state: When opened, the first 3 flavour category groups are visible (same as before). "More aromas" remains a nested toggle for the remaining categories.
+Expert Tools collapsible: Expert Tools (Wheel, Compass, Regions) get their own nested collapsible section inside the expanded FlavourPicker area, separate from the "More aromas" toggle.
+Consistent midpoint init: RatingDial values in LabsSolo initialise to the scale midpoint (50 for 100-scale, 10 for 20-scale, 5 for 10-scale, 3 for 5-scale) — matching LabsLive and LabsHostCockpit behaviour.
+i18n: Any new or changed UI strings have DE + EN translations.
+Out of scope
+
+Changes to how FlavourPicker behaves outside the RatingFlow Summary step (e.g. standalone usage)
+Any rating logic changes beyond the initial value
+Changes to the FlavourPicker API data fetching or admin editor
+Tasks
+
+Wrap the "ADD FLAVORS" section in RatingFlow's Summary step in a collapsible accordion — collapsed by default, showing active chip count badge in the header, chevron animation on toggle.
+Move Expert Tools out of the "More aromas" expanded area into its own nested collapsible section within the FlavourPicker, so "More aromas" only controls extra category visibility.
+Fix LabsSolo initial score values to use the scale midpoint instead of 0 — change detailedScores and score initialisation to match the pattern already used in LabsLive/LabsHostCockpit.
+Add DE + EN i18n keys for any new collapsible header labels or changed strings.
+Relevant files
+
+client/src/labs/components/RatingFlow.tsx:320-341
+client/src/labs/components/FlavourPicker.tsx:122-378
+client/src/labs/pages/LabsSolo.tsx:164-212
+client/src/labs/pages/LabsLive.tsx:200-210
+client/src/labs/pages/LabsHostCockpit.tsx:450-460
+client/src/lib/i18n.ts
