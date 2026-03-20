@@ -4737,15 +4737,26 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         messages: [
           {
             role: "system",
-            content: `You are a master blender writing a personal letter to a fellow whisky enthusiast. This is their "Palate Letter" — a warm, intimate reflection on their whisky journey.
+            content: `You are a master blender creating a personal Connoisseur Report for a whisky enthusiast. This is a structured, intimate analysis of their whisky journey.
 
 Return a JSON object with exactly these fields:
-- "report_en": A personal letter in English (150-200 words), written as flowing prose — NO headings, NO bullet points, NO markdown formatting. Write it as you would write a handwritten letter to a friend who loves whisky. Address them by first name. Reference specific whiskies, scores, and regions from their data. Mention what makes their palate unique — their preferences, their strongest dimension (nose/taste/finish), their regional tendencies. End with a genuine recommendation or reflection. The tone should be warm, knowledgeable, and personal — like a letter from a mentor, not a report from an algorithm.
-- "report_de": The same letter translated naturally into German. Not a literal translation — it should feel native and warm in German.
-- "summary_en": A single sentence in English (max 20 words) that captures the essence of their whisky personality. Poetic and memorable.
-- "summary_de": The same sentence in German, naturally phrased.
 
-Write as if you know this person through their tasting notes.`
+- "palateProfile_en": Section 1 — Palate Profile (80-120 words, English). A warm, personal analysis of their taste preferences. Reference their strongest scoring dimension (nose/taste/finish), regional tendencies, and what makes their palate unique. Address by first name. Flowing prose, no markdown.
+- "palateProfile_de": Same section in natural German.
+
+- "tastingHighlights_en": Section 2 — Tasting Highlights (80-120 words, English). Discuss their top-rated and lowest-rated whiskies with specific names and scores. Note patterns — do they prefer peated, sherried, or bourbon-cask? Reference cask or region trends from the data. Flowing prose, no markdown.
+- "tastingHighlights_de": Same section in natural German.
+
+- "recommendation_en": Section 3 — Recommendation & Outlook (60-100 words, English). Based on their profile, suggest a whisky style, region, or specific expression they should explore next. End with an encouraging reflection on their journey. Flowing prose, no markdown.
+- "recommendation_de": Same section in natural German.
+
+- "quote_en": A single poetic sentence (max 15 words, English) that captures their whisky personality — suitable for sharing.
+- "quote_de": Same quote in natural German.
+
+- "summary_en": A concise one-sentence summary (max 25 words, English) of their overall whisky profile.
+- "summary_de": Same summary in natural German.
+
+Write as if you know this person through their tasting notes. Tone: warm, knowledgeable, personal — mentor to a fellow enthusiast.`
           },
           {
             role: "user",
@@ -4758,13 +4769,22 @@ Write as if you know this person through their tasting notes.`
       });
 
       const content = response.choices[0]?.message?.content || "{}";
-      let parsed: { report_en?: string; report_de?: string; summary_en?: string; summary_de?: string; report?: string; summary?: string };
-      try { parsed = JSON.parse(content); } catch { parsed = { report: content, summary: "" }; }
+      let parsed: Record<string, string>;
+      try { parsed = JSON.parse(content); } catch { parsed = { palateProfile_en: content }; }
 
-      const reportEn = parsed.report_en || parsed.report || content;
-      const reportDe = parsed.report_de || reportEn;
+      const palateProfileEn = parsed.palateProfile_en || parsed.report_en || parsed.report || content;
+      const palateProfileDe = parsed.palateProfile_de || parsed.report_de || palateProfileEn;
+      const tastingHighlightsEn = parsed.tastingHighlights_en || "";
+      const tastingHighlightsDe = parsed.tastingHighlights_de || "";
+      const recommendationEn = parsed.recommendation_en || "";
+      const recommendationDe = parsed.recommendation_de || "";
+      const quoteEn = parsed.quote_en || "";
+      const quoteDe = parsed.quote_de || "";
       const summaryEn = parsed.summary_en || parsed.summary || "";
       const summaryDe = parsed.summary_de || summaryEn;
+
+      const reportEn = [palateProfileEn, tastingHighlightsEn, recommendationEn].filter(Boolean).join("\n\n");
+      const reportDe = [palateProfileDe, tastingHighlightsDe, recommendationDe].filter(Boolean).join("\n\n");
       const reportContent = primaryLang === "de" ? reportDe : reportEn;
       const summary = primaryLang === "de" ? summaryDe : summaryEn;
 
@@ -4774,6 +4794,14 @@ Write as if you know this person through their tasting notes.`
         reportDe,
         summaryEn,
         summaryDe,
+        palateProfileEn,
+        palateProfileDe,
+        tastingHighlightsEn,
+        tastingHighlightsDe,
+        recommendationEn,
+        recommendationDe,
+        quoteEn,
+        quoteDe,
         ...(tastingId ? { tastingId } : {}),
       };
 

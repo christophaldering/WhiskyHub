@@ -51,6 +51,14 @@ interface DataSnapshot {
   reportDe?: string;
   summaryEn?: string;
   summaryDe?: string;
+  palateProfileEn?: string;
+  palateProfileDe?: string;
+  tastingHighlightsEn?: string;
+  tastingHighlightsDe?: string;
+  recommendationEn?: string;
+  recommendationDe?: string;
+  quoteEn?: string;
+  quoteDe?: string;
   tastingId?: string;
 }
 
@@ -687,9 +695,14 @@ export default function LabsConnoisseur() {
   const session = useSession();
   const pid = session.pid;
   const queryClient = useQueryClient();
-  const urlTastingId = useMemo(() => {
-    try { return new URLSearchParams(window.location.search).get("tastingId") || undefined; } catch { return undefined; }
+  const urlParams = useMemo(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return { tastingId: p.get("tastingId") || undefined, generating: p.get("generating") === "1" };
+    } catch { return { tastingId: undefined, generating: false }; }
   }, []);
+  const urlTastingId = urlParams.tastingId;
+  const [externalGenPending, setExternalGenPending] = useState(urlParams.generating);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("report");
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
@@ -700,16 +713,24 @@ export default function LabsConnoisseur() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [skipAnimation, setSkipAnimation] = useState(false);
 
+  const initialReportCount = useRef<number | null>(null);
+
   const { data: reports = [], isLoading, isError: reportsError } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
     queryFn: async () => {
       if (!pid) return [];
       const res = await fetch(`/api/participants/${pid}/connoisseur-reports`, { headers: pidHeaders() });
       if (!res.ok) throw new Error("Failed to load reports");
-      return res.json();
+      const data = await res.json();
+      if (initialReportCount.current === null) initialReportCount.current = data.length;
+      if (externalGenPending && data.length > initialReportCount.current) {
+        setExternalGenPending(false);
+      }
+      return data;
     },
     enabled: !!pid,
     retry: 2,
+    refetchInterval: externalGenPending ? 3000 : false,
   });
 
   const generateMutation = useMutation({
@@ -754,12 +775,32 @@ export default function LabsConnoisseur() {
   const previousReports = reports.slice(1);
   const snap: DataSnapshot = latestReport?.dataSnapshot || {};
 
+  const displaySections = useMemo(() => {
+    if (!latestReport) return null;
+    const s = latestReport.dataSnapshot;
+    const lang = viewLang;
+    const profile = lang === "de" ? s?.palateProfileDe : s?.palateProfileEn;
+    const highlights = lang === "de" ? s?.tastingHighlightsDe : s?.tastingHighlightsEn;
+    const recommendation = lang === "de" ? s?.recommendationDe : s?.recommendationEn;
+    const quote = lang === "de" ? s?.quoteDe : s?.quoteEn;
+    if (profile || highlights || recommendation) {
+      return { profile: profile || null, highlights: highlights || null, recommendation: recommendation || null, quote: quote || null };
+    }
+    return null;
+  }, [latestReport, viewLang]);
+
   const displayReport = useMemo(() => {
     if (!latestReport) return null;
     const s = latestReport.dataSnapshot;
     if (viewLang === "de" && s?.reportDe) return s.reportDe;
     if (viewLang === "en" && s?.reportEn) return s.reportEn;
     return latestReport.reportContent;
+  }, [latestReport, viewLang]);
+
+  const displayQuote = useMemo(() => {
+    if (!latestReport) return null;
+    const s = latestReport.dataSnapshot;
+    return (viewLang === "de" ? s?.quoteDe : s?.quoteEn) || null;
   }, [latestReport, viewLang]);
 
   const displaySummary = useMemo(() => {
@@ -859,9 +900,18 @@ export default function LabsConnoisseur() {
           </div>
         </div>
 
+        {/* Context Subtitle */}
+        {latestReport && (
+          <p style={{ color: "var(--labs-text-muted)", fontSize: 12, margin: "4px 0 0", lineHeight: 1.4 }}>
+            {snap.totalRatings != null ? `${snap.totalRatings} ${t("labs.connoisseur.ratings", "ratings")}` : ""}
+            {snap.totalRatings != null && snap.whiskySummaries?.length ? ` · ${snap.whiskySummaries.length} ${t("labs.connoisseur.whiskies", "whiskies")}` : ""}
+            {snap.avgScores?.overall != null ? ` · ${t("labs.connoisseur.avg", "Avg")} ${(snap.avgScores.overall).toFixed(1)}` : ""}
+          </p>
+        )}
+
         {/* Meta pills */}
         {latestReport && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
             <span style={{
               fontSize: 11, padding: "4px 10px", borderRadius: 20, fontWeight: 500,
               background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-accent)",
@@ -874,6 +924,14 @@ export default function LabsConnoisseur() {
                 background: "color-mix(in srgb, var(--labs-info) 10%, transparent)", color: "var(--labs-info)",
               }}>
                 {snap.totalRatings} {t("labs.connoisseur.ratings", "ratings")}
+              </span>
+            )}
+            {snap.totalTastings != null && snap.totalTastings > 0 && (
+              <span style={{
+                fontSize: 11, padding: "4px 10px", borderRadius: 20, fontWeight: 500,
+                background: "color-mix(in srgb, var(--labs-info) 10%, transparent)", color: "var(--labs-info)",
+              }}>
+                {snap.totalTastings} {t("labs.connoisseur.tastings", "tastings")}
               </span>
             )}
             <span style={{
@@ -963,14 +1021,14 @@ export default function LabsConnoisseur() {
             : t("labs.connoisseur.generate", "Generate Report")}
       </button>
 
-      {generateMutation.isPending && !skipAnimation && (
+      {(generateMutation.isPending || externalGenPending) && !skipAnimation && (
         <SkeletonLoader
           message={t("labs.connoisseur.generating", "Analyzing your whisky journey...")}
           onSkip={() => { setSkipAnimation(true); }}
           skipLabel={t("labs.connoisseur.showImmediately", "Show immediately")}
         />
       )}
-      {generateMutation.isPending && skipAnimation && (
+      {(generateMutation.isPending || externalGenPending) && skipAnimation && (
         <div style={{ textAlign: "center", padding: "24px 0" }} data-testid="connoisseur-waiting">
           <Sparkles className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{t("labs.connoisseur.waitingResult", "Waiting for result...")}</p>
@@ -989,7 +1047,7 @@ export default function LabsConnoisseur() {
       )}
 
       {/* Report Content */}
-      {!generateMutation.isPending && latestReport && (
+      {!generateMutation.isPending && !externalGenPending && latestReport && (
         <>
           {/* AI Headline / Summary */}
           {displaySummary && (
@@ -1053,14 +1111,69 @@ export default function LabsConnoisseur() {
           {/* Tab Content */}
           <div className="labs-fade-in">
             {activeTab === "report" && (
-              <div data-testid="connoisseur-report-tab">
-                <div style={{
-                  padding: "24px 20px", borderRadius: 16,
-                  background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
-                  border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
-                }} data-testid="card-palate-letter">
-                  <MarkdownRenderer content={displayReport || latestReport.reportContent} />
-                </div>
+              <div data-testid="connoisseur-report-tab" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {displaySections ? (
+                  <>
+                    {displaySections.profile && (
+                      <div style={{
+                        padding: "20px 20px", borderRadius: 16,
+                        background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
+                        border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+                      }} data-testid="section-palate-profile">
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 10 }}>
+                          {t("labs.connoisseur.sectionProfile", "Palate Profile")}
+                        </p>
+                        <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--labs-text)", margin: 0 }}>{displaySections.profile}</p>
+                      </div>
+                    )}
+                    {displaySections.highlights && (
+                      <div style={{
+                        padding: "20px 20px", borderRadius: 16,
+                        background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
+                        border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+                      }} data-testid="section-tasting-highlights">
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 10 }}>
+                          {t("labs.connoisseur.sectionHighlights", "Tasting Highlights")}
+                        </p>
+                        <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--labs-text)", margin: 0 }}>{displaySections.highlights}</p>
+                      </div>
+                    )}
+                    {displaySections.recommendation && (
+                      <div style={{
+                        padding: "20px 20px", borderRadius: 16,
+                        background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
+                        border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+                      }} data-testid="section-recommendation">
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 10 }}>
+                          {t("labs.connoisseur.sectionRecommendation", "Recommendation")}
+                        </p>
+                        <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--labs-text)", margin: 0 }}>{displaySections.recommendation}</p>
+                      </div>
+                    )}
+                    {displaySections.quote && (
+                      <div style={{
+                        padding: "20px 24px", borderRadius: 16, textAlign: "center",
+                        background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 8%, var(--labs-bg)), color-mix(in srgb, var(--labs-gold) 5%, var(--labs-bg)))",
+                        borderLeft: "3px solid var(--labs-accent)",
+                      }} data-testid="section-quote">
+                        <p className="labs-serif" style={{
+                          fontSize: 16, lineHeight: 1.6, fontWeight: 400, fontStyle: "italic",
+                          color: "var(--labs-text)", margin: 0,
+                        }}>
+                          "{displaySections.quote}"
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{
+                    padding: "24px 20px", borderRadius: 16,
+                    background: "color-mix(in srgb, var(--labs-accent) 3%, var(--labs-bg))",
+                    border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+                  }} data-testid="card-palate-letter">
+                    <MarkdownRenderer content={displayReport || latestReport.reportContent} />
+                  </div>
+                )}
               </div>
             )}
 
@@ -1078,8 +1191,24 @@ export default function LabsConnoisseur() {
             )}
           </div>
 
+          {/* Quote Preview for Share */}
+          {displayQuote && (
+            <div className="labs-fade-in" style={{
+              padding: "16px 20px", marginTop: 16, borderRadius: 14, textAlign: "center",
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 6%, var(--labs-bg)), color-mix(in srgb, var(--labs-gold) 4%, var(--labs-bg)))",
+              border: "1px solid color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+            }} data-testid="share-quote-preview">
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-accent)", marginBottom: 8 }}>
+                {t("labs.connoisseur.shareQuote", "Your Whisky Quote")}
+              </p>
+              <p className="labs-serif" style={{ fontSize: 15, fontStyle: "italic", color: "var(--labs-text)", margin: 0, lineHeight: 1.5 }}>
+                "{displayQuote}"
+              </p>
+            </div>
+          )}
+
           {/* Share Card */}
-          <div className="labs-card labs-fade-in" style={{ padding: "16px 20px", marginTop: 24, display: "flex", gap: 8 }} data-testid="share-card">
+          <div className="labs-card labs-fade-in" style={{ padding: "16px 20px", marginTop: 12, display: "flex", gap: 8 }} data-testid="share-card">
             <button onClick={downloadPdf} className="labs-btn-secondary" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 12px" }} data-testid="button-download-pdf">
               <Download className="w-4 h-4" /> PDF
             </button>
@@ -1103,7 +1232,7 @@ export default function LabsConnoisseur() {
       )}
 
       {/* Empty State */}
-      {!generateMutation.isPending && !latestReport && !isLoading && (
+      {!generateMutation.isPending && !externalGenPending && !latestReport && !isLoading && (
         <div className="labs-card p-8 text-center labs-fade-in" data-testid="connoisseur-empty-state">
           <div style={{
             width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",

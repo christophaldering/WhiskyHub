@@ -1535,7 +1535,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
               headers: { "Content-Type": "application/json", ...pidHeaders() },
               body: JSON.stringify({ language: lang, tastingId }),
             }).catch(() => {});
-            navigate(`/labs/taste/connoisseur?tastingId=${tastingId}`);
+            navigate(`/labs/taste/connoisseur?tastingId=${tastingId}&generating=1`);
           }}
           data-testid="cta-connoisseur-report"
         >
