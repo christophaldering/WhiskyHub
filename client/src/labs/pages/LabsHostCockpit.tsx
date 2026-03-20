@@ -1997,6 +1997,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             <Star style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
             My Rating
           </div>
+          {!isDraft && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
               type="button"
@@ -2024,9 +2025,18 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               </span>
             )}
           </div>
+          )}
         </div>
 
         <div className="cockpit-card-body">
+          {isDraft ? (
+            <div style={{ padding: 24, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="rating-draft-placeholder">
+              <Star style={{ width: 24, height: 24, color: "var(--labs-border)", marginBottom: 8 }} />
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Rating not available yet</div>
+              <div>Start the tasting to begin rating.</div>
+            </div>
+          ) : (
+          <>
           <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
             {whiskies.map((_: any, idx: number) => (
               <button
@@ -2099,6 +2109,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
               No whiskies to rate yet.
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
