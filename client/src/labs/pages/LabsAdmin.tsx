@@ -1735,6 +1735,7 @@ interface FlavourCatAPI {
 }
 
 function AromasTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editCat, setEditCat] = useState<string | null>(null);
@@ -1753,8 +1754,8 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/flavour-seed", { participantId: pid });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: "Seeded from defaults" }); },
-    onError: (e: Error) => toast({ title: "Seed failed", description: e.message, variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: t("m2.admin.aromasSeeded", "Seeded from defaults") }); },
+    onError: (e: Error) => toast({ title: t("m2.admin.aromasSeedFailed", "Seed failed"), description: e.message, variant: "destructive" }),
   });
 
   const createCatMutation = useMutation({
@@ -1762,7 +1763,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/flavour-categories", { participantId: pid, ...data, sortOrder: categories.length });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setAddingCat(false); setForm({}); toast({ title: "Category created" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setAddingCat(false); setForm({}); toast({ title: t("m2.admin.aromasCatCreated", "Category created") }); },
   });
 
   const updateCatMutation = useMutation({
@@ -1770,7 +1771,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("PATCH", `/api/admin/flavour-categories/${id}`, { participantId: pid, ...data });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setEditCat(null); setForm({}); toast({ title: "Category updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setEditCat(null); setForm({}); toast({ title: t("m2.admin.aromasCatUpdated", "Category updated") }); },
   });
 
   const deleteCatMutation = useMutation({
@@ -1778,7 +1779,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("DELETE", `/api/admin/flavour-categories/${id}?participantId=${pid}`);
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: "Category deleted" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: t("m2.admin.aromasCatDeleted", "Category deleted") }); },
   });
 
   const createDescMutation = useMutation({
@@ -1786,7 +1787,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/flavour-descriptors", { participantId: pid, ...data });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setAddingDescTo(null); setForm({}); toast({ title: "Descriptor created" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setAddingDescTo(null); setForm({}); toast({ title: t("m2.admin.aromasDescCreated", "Descriptor created") }); },
   });
 
   const updateDescMutation = useMutation({
@@ -1794,7 +1795,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("PATCH", `/api/admin/flavour-descriptors/${id}`, { participantId: pid, ...data });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setEditDesc(null); setForm({}); toast({ title: "Descriptor updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); setEditDesc(null); setForm({}); toast({ title: t("m2.admin.aromasDescUpdated", "Descriptor updated") }); },
   });
 
   const deleteDescMutation = useMutation({
@@ -1802,7 +1803,7 @@ function AromasTab({ pid }: { pid: string }) {
       const res = await apiRequest("DELETE", `/api/admin/flavour-descriptors/${id}?participantId=${pid}`);
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: "Descriptor deleted" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/flavour-categories"] }); toast({ title: t("m2.admin.aromasDescDeleted", "Descriptor deleted") }); },
   });
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
@@ -1812,7 +1813,7 @@ function AromasTab({ pid }: { pid: string }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Flower2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Aroma Categories</span>
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.admin.aromaCategories", "Aroma Categories")}</span>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{categories.length}</span>
         </div>
         <div className="flex gap-2">
@@ -1825,7 +1826,7 @@ function AromasTab({ pid }: { pid: string }) {
               data-testid="labs-admin-aromas-seed"
             >
               {seedMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
-              Seed from defaults
+              {t("m2.admin.aromasSeedDefaults", "Seed from defaults")}
             </button>
           )}
           <button
@@ -1834,7 +1835,7 @@ function AromasTab({ pid }: { pid: string }) {
             style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }}
             data-testid="labs-admin-aromas-add-category"
           >
-            <Plus className="w-3 h-3" /> Add Category
+            <Plus className="w-3 h-3" /> {t("m2.admin.aromasAddCategory", "Add Category")}
           </button>
         </div>
       </div>
@@ -1842,14 +1843,14 @@ function AromasTab({ pid }: { pid: string }) {
       {addingCat && (
         <div className="labs-card p-3 mb-3" data-testid="labs-admin-aromas-new-category-form">
           <div className="grid grid-cols-2 gap-2 mb-2">
-            <input placeholder="ID (slug)" value={form.id || ""} onChange={e => setForm(f => ({ ...f, id: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-id" />
+            <input placeholder={t("m2.admin.aromasIdSlug", "ID (slug)")} value={form.id || ""} onChange={e => setForm(f => ({ ...f, id: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-id" />
             <input type="color" value={form.color || "#888888"} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ ...labsInput, padding: 2, height: 38 }} data-testid="labs-admin-input-cat-color" />
-            <input placeholder="English name" value={form.en || ""} onChange={e => setForm(f => ({ ...f, en: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-en" />
-            <input placeholder="German name" value={form.de || ""} onChange={e => setForm(f => ({ ...f, de: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-de" />
+            <input placeholder={t("m2.admin.aromasEnName", "English name")} value={form.en || ""} onChange={e => setForm(f => ({ ...f, en: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-en" />
+            <input placeholder={t("m2.admin.aromasDeName", "German name")} value={form.de || ""} onChange={e => setForm(f => ({ ...f, de: e.target.value }))} style={labsInput} data-testid="labs-admin-input-cat-de" />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => createCatMutation.mutate(form)} disabled={!form.id || !form.en || !form.de} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer", opacity: !form.id || !form.en || !form.de ? 0.5 : 1 }} data-testid="labs-admin-btn-save-cat">Save</button>
-            <button onClick={() => { setAddingCat(false); setForm({}); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "transparent", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid="labs-admin-btn-cancel-cat">Cancel</button>
+            <button onClick={() => createCatMutation.mutate(form)} disabled={!form.id || !form.en || !form.de} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer", opacity: !form.id || !form.en || !form.de ? 0.5 : 1 }} data-testid="labs-admin-btn-save-cat">{t("m2.admin.aromasSave", "Save")}</button>
+            <button onClick={() => { setAddingCat(false); setForm({}); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "transparent", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid="labs-admin-btn-cancel-cat">{t("m2.admin.aromasCancel", "Cancel")}</button>
           </div>
         </div>
       )}
@@ -1865,8 +1866,8 @@ function AromasTab({ pid }: { pid: string }) {
                   <input type="color" value={form.color || "#888888"} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ ...labsInput, padding: 2, height: 38 }} data-testid="labs-admin-input-edit-cat-color" />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => updateCatMutation.mutate({ id: cat.id, en: form.en || cat.en, de: form.de || cat.de, color: form.color || cat.color })} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-btn-update-cat">Save</button>
-                  <button onClick={() => { setEditCat(null); setForm({}); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "transparent", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid="labs-admin-btn-cancel-edit-cat">Cancel</button>
+                  <button onClick={() => updateCatMutation.mutate({ id: cat.id, en: form.en || cat.en, de: form.de || cat.de, color: form.color || cat.color })} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-btn-update-cat">{t("m2.admin.aromasSave", "Save")}</button>
+                  <button onClick={() => { setEditCat(null); setForm({}); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: "transparent", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)", cursor: "pointer" }} data-testid="labs-admin-btn-cancel-edit-cat">{t("m2.admin.aromasCancel", "Cancel")}</button>
                 </div>
               </div>
             ) : (
@@ -1875,13 +1876,13 @@ function AromasTab({ pid }: { pid: string }) {
                   <span style={{ width: 12, height: 12, borderRadius: 6, background: cat.color, display: "inline-block", flexShrink: 0 }} />
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{cat.en}</span>
                   <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>/ {cat.de}</span>
-                  <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{cat.descriptors.length} descriptors</span>
+                  <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{cat.descriptors.length} {t("m2.admin.aromasDescriptors", "descriptors")}</span>
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => { setEditCat(cat.id); setForm({ en: cat.en, de: cat.de, color: cat.color }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-edit-cat-${cat.id}`}>
                     <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                   </button>
-                  <button onClick={() => { if (confirm(`Delete "${cat.en}" and all its descriptors?`)) deleteCatMutation.mutate(cat.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-cat-${cat.id}`}>
+                  <button onClick={() => { if (confirm(t("m2.admin.aromasConfirmDeleteCat", { name: cat.en, defaultValue: `Delete "${cat.en}" and all its descriptors?` }))) deleteCatMutation.mutate(cat.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-cat-${cat.id}`}>
                     <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
                   </button>
                 </div>
@@ -1895,7 +1896,7 @@ function AromasTab({ pid }: { pid: string }) {
                     <div className="flex gap-1 items-center flex-wrap" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "4px 8px" }}>
                       <input value={form.en || ""} onChange={e => setForm(f => ({ ...f, en: e.target.value }))} placeholder="EN" style={{ ...labsInput, width: 80, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-edit-desc-en" />
                       <input value={form.de || ""} onChange={e => setForm(f => ({ ...f, de: e.target.value }))} placeholder="DE" style={{ ...labsInput, width: 80, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-edit-desc-de" />
-                      <input value={form.keywords || ""} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="Keywords (comma-separated)" style={{ ...labsInput, width: 140, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-edit-desc-keywords" />
+                      <input value={form.keywords || ""} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder={t("m2.admin.aromasKeywords", "Keywords (comma-separated)")} style={{ ...labsInput, width: 140, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-edit-desc-keywords" />
                       <button onClick={() => updateDescMutation.mutate({ id: desc.id, en: form.en, de: form.de, keywords: (form.keywords || "").split(",").map((k: string) => k.trim()).filter(Boolean) })} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-btn-update-desc">
                         <CheckCircle className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
                       </button>
@@ -1912,7 +1913,7 @@ function AromasTab({ pid }: { pid: string }) {
                       <button onClick={() => { setEditDesc(desc.id); setForm({ en: desc.en, de: desc.de, keywords: (desc.keywords || []).join(", ") }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }} data-testid={`labs-admin-edit-desc-${desc.id}`}>
                         <Pencil className="w-2.5 h-2.5" style={{ color: "var(--labs-text-muted)" }} />
                       </button>
-                      <button onClick={() => { if (confirm(`Delete "${desc.en}"?`)) deleteDescMutation.mutate(desc.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }} data-testid={`labs-admin-delete-desc-${desc.id}`}>
+                      <button onClick={() => { if (confirm(t("m2.admin.aromasConfirmDeleteDesc", { name: desc.en, defaultValue: `Delete "${desc.en}"?` }))) deleteDescMutation.mutate(desc.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }} data-testid={`labs-admin-delete-desc-${desc.id}`}>
                         <X className="w-2.5 h-2.5" style={{ color: "var(--labs-danger)" }} />
                       </button>
                     </span>
@@ -1923,10 +1924,10 @@ function AromasTab({ pid }: { pid: string }) {
 
             {addingDescTo === cat.id ? (
               <div className="flex gap-1 items-center flex-wrap" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "4px 8px" }}>
-                <input placeholder="ID (slug)" value={form.descId || ""} onChange={e => setForm(f => ({ ...f, descId: e.target.value }))} style={{ ...labsInput, width: 70, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-id" />
+                <input placeholder={t("m2.admin.aromasIdSlug", "ID (slug)")} value={form.descId || ""} onChange={e => setForm(f => ({ ...f, descId: e.target.value }))} style={{ ...labsInput, width: 70, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-id" />
                 <input placeholder="EN" value={form.descEn || ""} onChange={e => setForm(f => ({ ...f, descEn: e.target.value }))} style={{ ...labsInput, width: 70, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-en" />
                 <input placeholder="DE" value={form.descDe || ""} onChange={e => setForm(f => ({ ...f, descDe: e.target.value }))} style={{ ...labsInput, width: 70, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-de" />
-                <input placeholder="Keywords" value={form.descKw || ""} onChange={e => setForm(f => ({ ...f, descKw: e.target.value }))} style={{ ...labsInput, width: 120, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-keywords" />
+                <input placeholder={t("m2.admin.aromasKeywords", "Keywords (comma-separated)")} value={form.descKw || ""} onChange={e => setForm(f => ({ ...f, descKw: e.target.value }))} style={{ ...labsInput, width: 120, padding: "4px 8px", fontSize: 11 }} data-testid="labs-admin-input-new-desc-keywords" />
                 <button
                   onClick={() => createDescMutation.mutate({ id: `${cat.id}-${form.descId}`, categoryId: cat.id, en: form.descEn, de: form.descDe, keywords: (form.descKw || "").split(",").map((k: string) => k.trim()).filter(Boolean), sortOrder: cat.descriptors.length })}
                   disabled={!form.descId || !form.descEn || !form.descDe}
@@ -1946,7 +1947,7 @@ function AromasTab({ pid }: { pid: string }) {
                 style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 0 }}
                 data-testid={`labs-admin-add-desc-${cat.id}`}
               >
-                <Plus className="w-3 h-3" /> Add descriptor
+                <Plus className="w-3 h-3" /> {t("m2.admin.aromasAddDescriptor", "Add descriptor")}
               </button>
             )}
           </div>
@@ -1956,8 +1957,8 @@ function AromasTab({ pid }: { pid: string }) {
       {categories.length === 0 && !addingCat && (
         <div className="text-center py-12" data-testid="labs-admin-aromas-empty">
           <Flower2 className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text)" }}>No aroma categories yet</p>
-          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Seed from the built-in defaults or create your own.</p>
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text)" }}>{t("m2.admin.aromasNoCategories", "No aroma categories yet")}</p>
+          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("m2.admin.aromasNoDesc", "Seed from the built-in defaults or create your own.")}</p>
         </div>
       )}
     </div>
