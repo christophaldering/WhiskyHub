@@ -6120,7 +6120,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               return (
                 <div
                   key={w.id}
-                  className="labs-card p-4 flex items-center gap-3"
+                  className="labs-card p-4"
                   style={{
                     opacity: rvHidden ? 0.4 : isDragging ? 0.6 : 1,
                     transition: "opacity 300ms, transform 150ms",
@@ -6133,48 +6133,102 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   onDragOver={(e) => { e.preventDefault(); if (dragState.current) dragState.current.overIdx = i; }}
                   onDragEnd={commitDrag}
                 >
-                  {tasting.status === "draft" && (
-                    <div
-                      className="flex-shrink-0 cursor-grab active:cursor-grabbing"
-                      style={{ color: "var(--labs-text-muted)", touchAction: "none" }}
-                      onTouchStart={(e) => handleTouchStart(i, e)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                      data-testid={`labs-host-drag-handle-${w.id}`}
-                    >
-                      <GripVertical className="w-4 h-4" />
+                  <div className="flex items-center gap-3">
+                    {tasting.status === "draft" && (
+                      <div
+                        className="flex-shrink-0 cursor-grab active:cursor-grabbing"
+                        style={{ color: "var(--labs-text-muted)", touchAction: "none" }}
+                        onTouchStart={(e) => handleTouchStart(i, e)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        data-testid={`labs-host-drag-handle-${w.id}`}
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    )}
+                    {w.imageUrl && rvShowDetails ? (
+                      <img
+                        src={w.imageUrl}
+                        alt={w.name}
+                        className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{
+                          background: rvRevealed && rvDesktop ? "var(--labs-success-muted)" : rvActive ? "var(--labs-info-muted)" : "var(--labs-accent-muted)",
+                          color: rvRevealed && rvDesktop ? "var(--labs-success)" : rvActive ? "var(--labs-info)" : "var(--labs-accent)",
+                        }}
+                      >
+                        {rvRevealed && rvDesktop ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {rvShowName ? (w.name || `Whisky ${i + 1}`) : `Dram ${i + 1}`}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                        {rvShowDetails
+                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || "No details")
+                          : (rvHidden ? "Hidden" : rvActive ? "Partially revealed" : "No details")}
+                      </p>
                     </div>
-                  )}
-                  {w.imageUrl && rvShowDetails ? (
-                    <img
-                      src={w.imageUrl}
-                      alt={w.name}
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{
-                        background: rvRevealed && rvDesktop ? "var(--labs-success-muted)" : rvActive ? "var(--labs-info-muted)" : "var(--labs-accent-muted)",
-                        color: rvRevealed && rvDesktop ? "var(--labs-success)" : rvActive ? "var(--labs-info)" : "var(--labs-accent)",
-                      }}
-                    >
-                      {rvRevealed && rvDesktop ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                    <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                      {isDramLocked(w.id) && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`desktop-badge-locked-${w.id}`}>
+                          <Lock className="w-2.5 h-2.5 inline mr-0.5" style={{ verticalAlign: "-1px" }} />{t("m2.host.lockedBadge", "Locked")}
+                        </span>
+                      )}
+                      {rvActive && !isDramLocked(w.id) && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}>
+                          Active
+                        </span>
+                      )}
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {whiskyRatings.length}/{participantCount} rated
+                      </span>
+                      {avgScore !== null && (
+                        <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
+                          {avgScore}
+                        </span>
+                      )}
+                      {tasting.status !== "draft" && (
+                        <button
+                          className="labs-btn-ghost p-1"
+                          onClick={() => toggleDramLock(w.id)}
+                          data-testid={`desktop-lock-toggle-${w.id}`}
+                          title={isDramLocked(w.id) ? t("m2.host.unlockDram", "Tap to Unlock") : t("m2.host.lockDram", "Lock Current Dram")}
+                        >
+                          <Lock className="w-3.5 h-3.5" style={{ color: isDramLocked(w.id) ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
+                        </button>
+                      )}
+                      {tasting.status === "draft" && (
+                        <>
+                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
+                            <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
+                          </label>
+                          <button
+                            className="labs-btn-ghost p-1"
+                            onClick={() => startEditWhisky(w)}
+                            data-testid={`labs-host-edit-whisky-${w.id}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                          </button>
+                          <button
+                            className="labs-btn-ghost p-1"
+                            onClick={() => deleteWhiskyMutation.mutate(w.id)}
+                            data-testid={`labs-host-delete-whisky-${w.id}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {rvShowName ? (w.name || `Whisky ${i + 1}`) : `Dram ${i + 1}`}
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {rvShowDetails
-                        ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || "No details")
-                        : (rvHidden ? "Hidden" : rvActive ? "Partially revealed" : "No details")}
-                    </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex sm:hidden items-center gap-2 mt-2" style={{ flexWrap: "wrap", paddingLeft: tasting.status === "draft" ? 72 : 44 }}>
                     {isDramLocked(w.id) && (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`desktop-badge-locked-${w.id}`}>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`mobile-badge-locked-${w.id}`}>
                         <Lock className="w-2.5 h-2.5 inline mr-0.5" style={{ verticalAlign: "-1px" }} />{t("m2.host.lockedBadge", "Locked")}
                       </span>
                     )}
@@ -6191,38 +6245,40 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         {avgScore}
                       </span>
                     )}
-                    {tasting.status !== "draft" && (
-                      <button
-                        className="labs-btn-ghost p-1"
-                        onClick={() => toggleDramLock(w.id)}
-                        data-testid={`desktop-lock-toggle-${w.id}`}
-                        title={isDramLocked(w.id) ? t("m2.host.unlockDram", "Tap to Unlock") : t("m2.host.lockDram", "Lock Current Dram")}
-                      >
-                        <Lock className="w-3.5 h-3.5" style={{ color: isDramLocked(w.id) ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
-                      </button>
-                    )}
-                    {tasting.status === "draft" && (
-                      <>
-                        <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
-                          <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
-                        </label>
+                    <div className="flex items-center gap-1 ml-auto">
+                      {tasting.status !== "draft" && (
                         <button
                           className="labs-btn-ghost p-1"
-                          onClick={() => startEditWhisky(w)}
-                          data-testid={`labs-host-edit-whisky-${w.id}`}
+                          onClick={() => toggleDramLock(w.id)}
+                          data-testid={`mobile-lock-toggle-${w.id}`}
+                          title={isDramLocked(w.id) ? t("m2.host.unlockDram", "Tap to Unlock") : t("m2.host.lockDram", "Lock Current Dram")}
                         >
-                          <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                          <Lock className="w-3.5 h-3.5" style={{ color: isDramLocked(w.id) ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
                         </button>
-                        <button
-                          className="labs-btn-ghost p-1"
-                          onClick={() => deleteWhiskyMutation.mutate(w.id)}
-                          data-testid={`labs-host-delete-whisky-${w.id}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
-                        </button>
-                      </>
-                    )}
+                      )}
+                      {tasting.status === "draft" && (
+                        <>
+                          <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`mobile-upload-img-${w.id}`} title={t("labs.settings.photoRightsHint", "Please only upload your own photos or license-free images.")}>
+                            <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
+                          </label>
+                          <button
+                            className="labs-btn-ghost p-1"
+                            onClick={() => startEditWhisky(w)}
+                            data-testid={`mobile-edit-whisky-${w.id}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                          </button>
+                          <button
+                            className="labs-btn-ghost p-1"
+                            onClick={() => deleteWhiskyMutation.mutate(w.id)}
+                            data-testid={`mobile-delete-whisky-${w.id}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
