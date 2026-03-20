@@ -1519,6 +1519,37 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       )}
 
+      {pid && sorted.length > 0 && (
+        <button
+          className="labs-card labs-fade-in"
+          style={{
+            width: "100%", padding: "20px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14,
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface)), color-mix(in srgb, var(--labs-gold, var(--labs-accent)) 4%, var(--labs-surface)))",
+            border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+            cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+          }}
+          onClick={() => navigate("/labs/taste/connoisseur")}
+          data-testid="cta-connoisseur-report"
+        >
+          <div style={{
+            width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+            background: "linear-gradient(135deg, var(--labs-accent), var(--labs-gold, var(--labs-accent)))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Sparkles className="w-5 h-5" style={{ color: "#fff" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+              {t("labs.connoisseur.navLabel", "Connoisseur Report")}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
+              {t("labs.connoisseur.navDesc", "AI analysis of your whisky personality")}
+            </p>
+          </div>
+          <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-accent)", transform: "rotate(-90deg)" }} />
+        </button>
+      )}
+
       <div className="flex justify-center gap-3 pb-8">
         <button
           className="labs-btn-secondary"

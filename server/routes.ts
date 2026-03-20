@@ -4634,12 +4634,48 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         ageDistribution[age] = (ageDistribution[age] || 0) + 1;
       }
 
+      const sortedByScore = [...flavorProfile.ratedWhiskies].sort((a, b) => (b.rating.overall || 0) - (a.rating.overall || 0));
+      const highestWhisky = sortedByScore[0] ? { name: sortedByScore[0].whisky.name, score: sortedByScore[0].rating.overall } : null;
+      const lowestWhisky = sortedByScore.length > 1 ? { name: sortedByScore[sortedByScore.length - 1].whisky.name, score: sortedByScore[sortedByScore.length - 1].rating.overall } : null;
+
+      let groupAvgOverall: number | null = null;
+      let groupAvgScores: { nose: number | null; taste: number | null; finish: number | null; overall: number | null } = { nose: null, taste: null, finish: null, overall: null };
+      try {
+        const allRatings = await storage.getAllRatings();
+        const noseVals = allRatings.filter(r => r.nose != null).map(r => r.nose!);
+        const tasteVals = allRatings.filter(r => r.taste != null).map(r => r.taste!);
+        const finishVals = allRatings.filter(r => r.finish != null).map(r => r.finish!);
+        const allOveralls = allRatings.filter(r => r.overall != null).map(r => r.overall!);
+        if (allOveralls.length > 0) groupAvgOverall = Math.round((allOveralls.reduce((s, v) => s + v, 0) / allOveralls.length) * 10) / 10;
+        if (noseVals.length > 0) groupAvgScores.nose = Math.round((noseVals.reduce((s, v) => s + v, 0) / noseVals.length) * 10) / 10;
+        if (tasteVals.length > 0) groupAvgScores.taste = Math.round((tasteVals.reduce((s, v) => s + v, 0) / tasteVals.length) * 10) / 10;
+        if (finishVals.length > 0) groupAvgScores.finish = Math.round((finishVals.reduce((s, v) => s + v, 0) / finishVals.length) * 10) / 10;
+        if (allOveralls.length > 0) groupAvgScores.overall = groupAvgOverall;
+      } catch {}
+
+      const userAvgOverall = flavorProfile.avgScores?.overall ?? null;
+      const vsGroupDelta = userAvgOverall != null && groupAvgOverall != null ? Math.round((userAvgOverall - groupAvgOverall) * 10) / 10 : null;
+
+      const whiskySummaries = flavorProfile.ratedWhiskies.slice(0, 20).map(rw => ({
+        name: rw.whisky.name,
+        distillery: rw.whisky.distillery,
+        region: rw.whisky.region,
+        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
+      }));
+
       const dataSnapshot = {
         totalRatings: stats.totalRatings,
         totalTastings: stats.totalTastings,
         totalJournalEntries: stats.totalJournalEntries,
         collectionSize: collection.length,
         avgScores: flavorProfile.avgScores,
+        groupAvgOverall,
+        groupAvgScores,
+        vsGroupDelta,
+        highestWhisky,
+        lowestWhisky,
+        whiskySummaries,
+        regionBreakdown,
         topRegion: regionBreakdown[0]?.region || null,
         topRegionCount: regionBreakdown[0]?.count || 0,
         smokeAffinityIndex: participant.smokeAffinityIndex,
