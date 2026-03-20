@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, ChevronDown } from "lucide-react";
 import RatingDial from "./RatingDial";
 import OverallCircle from "./OverallCircle";
 import FlavourPicker from "./FlavourPicker";
@@ -41,6 +41,87 @@ interface RatingFlowProps {
 const DIMS: DimKey[] = ["nose", "taste", "finish"];
 
 const GOLD = "#c8861a";
+
+function FlavourAccordion({ chips, onChipToggle, scale, flavorProfileId, isBlind, disabled }: {
+  chips: string[];
+  onChipToggle: (chip: string) => void;
+  scale: RatingScale;
+  flavorProfileId?: FlavorProfileId | null;
+  isBlind?: boolean;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const count = chips.length;
+
+  return (
+    <div data-testid="flavour-accordion">
+      <button
+        onClick={() => setOpen(p => !p)}
+        disabled={disabled}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "10px 0",
+          background: "none",
+          border: "none",
+          cursor: disabled ? "default" : "pointer",
+          fontFamily: "inherit",
+        }}
+        data-testid="flavour-accordion-toggle"
+      >
+        <span style={{
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          color: "var(--labs-text-muted)",
+        }}>
+          {t("m2.taste.rating.addFlavors", "Add flavors")}
+        </span>
+        {count > 0 && (
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: GOLD,
+            color: "#1a1a1a",
+            padding: "0 5px",
+          }} data-testid="flavour-accordion-count">
+            {count}
+          </span>
+        )}
+        <ChevronDown style={{
+          width: 14,
+          height: 14,
+          marginLeft: "auto",
+          color: "var(--labs-text-muted)",
+          transition: "transform 200ms",
+          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+        }} />
+      </button>
+      {open && (
+        <div style={{ animation: "labsFadeIn 200ms ease both", paddingBottom: 4 }}>
+          <FlavourPicker
+            activeChips={chips}
+            onToggle={onChipToggle}
+            scale={scale}
+            flavorProfileId={flavorProfileId}
+            isBlind={isBlind}
+            disabled={disabled}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RatingFlow({
   scale,
@@ -317,28 +398,14 @@ export default function RatingFlow({
         />
       </div>
 
-      <div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            color: "var(--labs-text-muted)",
-            marginBottom: 8,
-          }}
-        >
-          {t("m2.taste.rating.addFlavors", "Add flavors")}
-        </div>
-        <FlavourPicker
-          activeChips={chips}
-          onToggle={onChipToggle}
-          scale={scale}
-          flavorProfileId={flavorProfileId}
-          isBlind={isBlind}
-          disabled={disabled}
-        />
-      </div>
+      <FlavourAccordion
+        chips={chips}
+        onChipToggle={onChipToggle}
+        scale={scale}
+        flavorProfileId={flavorProfileId}
+        isBlind={isBlind}
+        disabled={disabled}
+      />
 
       <div>
         <div

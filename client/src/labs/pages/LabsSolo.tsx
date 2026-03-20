@@ -161,7 +161,8 @@ export default function LabsSolo() {
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
-  const [score, setScore] = useState(0);
+  const scaleMid = Math.round(ratingScale.max / 2);
+  const [score, setScore] = useState(scaleMid);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -209,7 +210,7 @@ export default function LabsSolo() {
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionStatusFilter, setCollectionStatusFilter] = useState<"all" | "open" | "closed">("all");
 
-  const [detailedScores, setDetailedScores] = useState({ nose: 0, taste: 0, finish: 0 });
+  const [detailedScores, setDetailedScores] = useState({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [] });
@@ -260,7 +261,7 @@ export default function LabsSolo() {
           detailChips, detailTexts,
           soloView, ratingFlowStep, ts: Date.now(),
         };
-        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && score === 0 && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
+        if (!whiskyName && !distillery && !unknownAge && !unknownAbv && !unknownCask && !unknownWbId && !unknownRegion && !detailTouched && !notes) { localStorage.removeItem(SOLO_DRAFT_KEY); return; }
         localStorage.setItem(SOLO_DRAFT_KEY, JSON.stringify(draft));
       } catch {}
     }, 500);
@@ -304,9 +305,9 @@ export default function LabsSolo() {
       if (d.detailTexts) setDetailTexts(d.detailTexts);
       if (d.soloView === "editor") setSoloView("editor");
       if (d.soloView === "ratingFlow") {
-        const ds = d.detailedScores || { nose: 0, taste: 0, finish: 0 };
-        const hasIncomplete = ds.nose === 0 || ds.taste === 0 || ds.finish === 0;
-        const computedStep = ds.finish > 0 ? 3 : ds.taste > 0 ? 2 : ds.nose > 0 ? 1 : 0;
+        const ds = d.detailedScores || { nose: scaleMid, taste: scaleMid, finish: scaleMid };
+        const hasIncomplete = !d.detailTouched;
+        const computedStep = d.ratingFlowStep != null ? d.ratingFlowStep : 0;
         const resumeStep = d.ratingFlowStep != null ? d.ratingFlowStep : computedStep;
         setRatingFlowStep(resumeStep);
         if (hasIncomplete || resumeStep < 3) {
@@ -346,7 +347,7 @@ export default function LabsSolo() {
       if (!d) return;
       setWhiskyName(d.whiskyName || "");
       setDistillery(d.distillery || "");
-      setScore(d.personalScore != null ? d.personalScore : 0);
+      setScore(d.personalScore != null ? d.personalScore : scaleMid);
       setNotes("");
       setUnknownAge(d.age ? String(d.age) : "");
       setUnknownAbv(d.abv ? String(d.abv) : "");
@@ -354,7 +355,7 @@ export default function LabsSolo() {
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
       setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
-      setDetailedScores({ nose: 0, taste: 0, finish: 0 });
+      setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
       setDetailTouched(false);
       setOverrideActive(false);
       setDetailChips({ nose: [], taste: [], finish: [] });
@@ -1197,7 +1198,7 @@ export default function LabsSolo() {
     } catch {}
   };
 
-  const dimsScoredForFinalize = detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0;
+  const dimsScoredForFinalize = detailTouched || (detailedScores.nose > 0 && detailedScores.taste > 0 && detailedScores.finish > 0);
 
   const handleFinalize = async () => {
     if (!whiskyName.trim()) return;
@@ -1299,12 +1300,12 @@ export default function LabsSolo() {
   };
 
   const handleReset = (goToHub = false) => {
-    setWhiskyName(""); setDistillery(""); setScore(0); setNotes(""); setSaved(false);
+    setWhiskyName(""); setDistillery(""); setScore(scaleMid); setNotes(""); setSaved(false);
     setError(""); setShowManual(false);
     setUnknownAge(""); setUnknownAbv(""); setUnknownCask(""); setUnknownRegion(""); setUnknownCountry("");
     setUnknownPeatLevel(""); setUnknownVintage(""); setUnknownBottler(""); setUnknownWbId(""); setUnknownPrice("");
     setPhotoUrl(""); setCandidates([]); setSelectedCandidate(null); setIsMenuMode(false);
-    setDetailedScores({ nose: 0, taste: 0, finish: 0 });
+    setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
     setDetailTouched(false); setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [] });
     setDetailTexts({ nose: "", taste: "", finish: "" });

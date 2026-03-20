@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   FLAVOR_CATEGORIES,
   getSortedCategories,
@@ -321,64 +321,91 @@ export default function FlavourPicker({
           {expanded && (
             <div style={{ animation: "labsFadeIn 200ms ease both" }}>
               {hiddenGroups.map(renderGroup)}
-
-              {scale.max >= 20 && (
-                <div
-                  style={{
-                    borderTop: "1px solid var(--labs-border)",
-                    paddingTop: 10,
-                    marginTop: 4,
-                    display: "flex",
-                    gap: 6,
-                    flexWrap: "wrap",
-                  }}
-                  data-testid="flavour-expert-tools"
-                >
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: "var(--labs-text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      width: "100%",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {t("m2.taste.rating.expertTools", "Expert Tools")}
-                  </span>
-                  {[
-                    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-                    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-                    { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
-                  ].map((tool) => (
-                    <span
-                      key={tool.id}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 3,
-                        padding: "4px 10px",
-                        borderRadius: 9999,
-                        border: "1px solid var(--labs-border)",
-                        background: "var(--labs-surface)",
-                        color: "var(--labs-text-muted)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                        cursor: "default",
-                        opacity: 0.6,
-                      }}
-                      data-testid={`expert-tool-${tool.id}`}
-                    >
-                      <span style={{ fontSize: 11 }}>{tool.icon}</span>
-                      {tool.label}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </>
+      )}
+
+      {scale.max >= 20 && <ExpertToolsCollapsible disabled={disabled} />}
+    </div>
+  );
+}
+
+function ExpertToolsCollapsible({ disabled }: { disabled?: boolean }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const tools = [
+    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+    { id: "regions", label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍" },
+  ];
+
+  return (
+    <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 6, paddingTop: 6 }}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        disabled={disabled}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 0",
+          background: "none",
+          border: "none",
+          cursor: disabled ? "default" : "pointer",
+          fontFamily: "inherit",
+          fontSize: 10,
+          fontWeight: 600,
+          color: "var(--labs-text-muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          width: "100%",
+        }}
+        data-testid="expert-tools-toggle"
+      >
+        {t("m2.taste.rating.expertTools", "Expert Tools")}
+        <ChevronRight style={{
+          width: 12,
+          height: 12,
+          transition: "transform 200ms",
+          transform: open ? "rotate(90deg)" : "rotate(0deg)",
+        }} />
+      </button>
+      {open && (
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            flexWrap: "wrap",
+            paddingTop: 6,
+            animation: "labsFadeIn 200ms ease both",
+          }}
+          data-testid="flavour-expert-tools"
+        >
+          {tools.map((tool) => (
+            <span
+              key={tool.id}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "4px 10px",
+                borderRadius: 9999,
+                border: "1px solid var(--labs-border)",
+                background: "var(--labs-surface)",
+                color: "var(--labs-text-muted)",
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: "default",
+                opacity: 0.6,
+              }}
+              data-testid={`expert-tool-${tool.id}`}
+            >
+              <span style={{ fontSize: 11 }}>{tool.icon}</span>
+              {tool.label}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
