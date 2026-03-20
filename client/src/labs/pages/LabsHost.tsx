@@ -2562,6 +2562,7 @@ function LabsSegmentedSelect({ value, options, onChange }: {
 function CreateTastingForm() {
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -2633,7 +2634,8 @@ function CreateTastingForm() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+    <div className="max-w-2xl mx-auto labs-fade-in" style={{ paddingBottom: 0 }}>
+      <div className="px-5 pt-6">
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
@@ -2971,9 +2973,24 @@ function CreateTastingForm() {
             Please sign in to create a tasting
           </div>
         )}
+      </div>
+      </div>
 
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: "12px 20px",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          background: "linear-gradient(to top, var(--labs-bg) 70%, transparent)",
+          zIndex: 10,
+        }}
+      >
         <button
           className="labs-btn-primary w-full flex items-center justify-center gap-2"
+          style={{ maxWidth: "42rem", margin: "0 auto" }}
           onClick={handleCreate}
           disabled={!title.trim() || submitting || !currentParticipant}
           data-testid="labs-host-create-btn"
