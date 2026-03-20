@@ -376,6 +376,45 @@ function sanitizeObject(obj: Record<string, any>, keys: string[]): Record<string
   return result;
 }
 
+function normalizeForMatch(s: string | null | undefined): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+async function findCollectionImageUrl(
+  participantId: string,
+  whiskybaseId: string | null | undefined,
+  whiskyName: string | null | undefined,
+  distillery: string | null | undefined
+): Promise<string | null> {
+  const collection = await storage.getWhiskybaseCollection(participantId);
+  if (!collection.length) return null;
+
+  if (whiskybaseId) {
+    const match = collection.find(c => c.whiskybaseId === whiskybaseId && c.imageUrl);
+    if (match) return match.imageUrl;
+  }
+
+  if (whiskyName) {
+    const normName = normalizeForMatch(whiskyName);
+    const normDist = normalizeForMatch(distillery);
+    const match = collection.find(c => {
+      if (!c.imageUrl) return false;
+      const cName = normalizeForMatch(c.name);
+      const cDist = normalizeForMatch(c.distillery || c.brand);
+      return cName === normName && (!normDist || cDist === normDist);
+    });
+    if (match) return match.imageUrl;
+
+    const nameOnly = collection.find(c => {
+      if (!c.imageUrl) return false;
+      return normalizeForMatch(c.name) === normName;
+    });
+    if (nameOnly) return nameOnly.imageUrl;
+  }
+
+  return null;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -5487,7 +5526,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         wbScore: item.communityRating,
         mood: null,
         occasion: null,
-        imageUrl: null,
+        imageUrl: item.imageUrl || null,
         body: [
           item.bottlingSeries ? `Series: ${item.bottlingSeries}` : null,
           item.vintage ? `Vintage: ${item.vintage}` : null,
@@ -6013,6 +6052,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
           identified.whiskybaseSearch = [identified.whiskyName, identified.distillery].filter(Boolean).join(" ");
         }
 
+        const collectionImage = await findCollectionImageUrl(
+          participantId,
+          identified.whiskybaseId || null,
+          identified.whiskyName,
+          identified.distillery
+        );
+        if (collectionImage) {
+          identified.collectionImageUrl = collectionImage;
+        }
+
         results.push(identified);
       }
 
@@ -6124,6 +6173,19 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     try {
       const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "personalScore", "whiskybaseId", "price", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
+
+      if (!parsed.imageUrl) {
+        const collectionImage = await findCollectionImageUrl(
+          req.params.participantId,
+          parsed.whiskybaseId,
+          parsed.whiskyName,
+          parsed.distillery
+        );
+        if (collectionImage) {
+          parsed.imageUrl = collectionImage;
+        }
+      }
+
       const entry = await storage.createJournalEntry(parsed);
       res.status(201).json(entry);
     } catch (e: any) {
@@ -8922,6 +8984,74 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       }));
 
       res.json(entriesWithNames);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/migrate-journal-images", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const allEntries = await storage.getAllJournalEntries();
+      const entriesWithoutImage = allEntries.filter(e => !e.imageUrl);
+      if (!entriesWithoutImage.length) {
+        return res.json({ updated: 0, message: "No entries without images found" });
+      }
+
+      const participantIds = Array.from(new Set(entriesWithoutImage.map(e => e.participantId)));
+      const collectionsByParticipant = new Map<string, Awaited<ReturnType<typeof storage.getWhiskybaseCollection>>>();
+      for (const pid of participantIds) {
+        collectionsByParticipant.set(pid, await storage.getWhiskybaseCollection(pid));
+      }
+
+      let updated = 0;
+      const details: Array<{ entryId: string; whiskyName: string | null; imageUrl: string }> = [];
+
+      for (const entry of entriesWithoutImage) {
+        const collection = collectionsByParticipant.get(entry.participantId) || [];
+        if (!collection.length) continue;
+
+        let matchedImage: string | null = null;
+
+        if (entry.whiskybaseId) {
+          const match = collection.find(c => c.whiskybaseId === entry.whiskybaseId && c.imageUrl);
+          if (match) matchedImage = match.imageUrl;
+        }
+
+        if (!matchedImage && entry.whiskyName) {
+          const normName = normalizeForMatch(entry.whiskyName);
+          const normDist = normalizeForMatch(entry.distillery);
+          const match = collection.find(c => {
+            if (!c.imageUrl) return false;
+            const cName = normalizeForMatch(c.name);
+            const cDist = normalizeForMatch(c.distillery || c.brand);
+            return cName === normName && (!normDist || cDist === normDist);
+          });
+          if (match) matchedImage = match.imageUrl;
+
+          if (!matchedImage) {
+            const nameOnly = collection.find(c => {
+              if (!c.imageUrl) return false;
+              return normalizeForMatch(c.name) === normName;
+            });
+            if (nameOnly) matchedImage = nameOnly.imageUrl;
+          }
+        }
+
+        if (matchedImage) {
+          await storage.updateJournalEntry(entry.id, entry.participantId, { imageUrl: matchedImage });
+          updated++;
+          details.push({ entryId: entry.id, whiskyName: entry.whiskyName, imageUrl: matchedImage });
+        }
+      }
+
+      res.json({ updated, total: entriesWithoutImage.length, details });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
