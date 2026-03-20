@@ -681,6 +681,7 @@ export default function LabsConnoisseur() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [promptOpen, setPromptOpen] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [skipAnimation, setSkipAnimation] = useState(false);
 
   const { data: reports = [], isLoading, isError: reportsError } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
@@ -715,6 +716,7 @@ export default function LabsConnoisseur() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["connoisseur-reports", pid] });
       setActiveTab("report");
+      setSkipAnimation(false);
     },
   });
 
@@ -944,12 +946,18 @@ export default function LabsConnoisseur() {
             : t("labs.connoisseur.generate", "Generate Report")}
       </button>
 
-      {generateMutation.isPending && (
+      {generateMutation.isPending && !skipAnimation && (
         <SkeletonLoader
           message={t("labs.connoisseur.generating", "Analyzing your whisky journey...")}
-          onSkip={() => {}}
+          onSkip={() => { setSkipAnimation(true); }}
           skipLabel={t("labs.connoisseur.showImmediately", "Show immediately")}
         />
+      )}
+      {generateMutation.isPending && skipAnimation && (
+        <div style={{ textAlign: "center", padding: "24px 0" }} data-testid="connoisseur-waiting">
+          <Sparkles className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{t("labs.connoisseur.waitingResult", "Waiting for result...")}</p>
+        </div>
       )}
 
       {generateMutation.isError && (

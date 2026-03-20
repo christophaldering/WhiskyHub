@@ -23,6 +23,33 @@ import type { WhiskybaseCollectionItem } from "@shared/schema";
 const VOICE_MEMOS_ENABLED = false;
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
 const SOLO_DRAFT_KEY = "cs_solo_draft";
+const CONNOISSEUR_AUTO_PREFIX = "cs_connoisseur_auto:";
+const CONNOISSEUR_THRESHOLD = 10;
+
+async function checkConnoisseurAutoTrigger(pid: string) {
+  try {
+    const key = CONNOISSEUR_AUTO_PREFIX + pid;
+    if (sessionStorage.getItem(key)) return;
+    const reportsRes = await fetch(`/api/participants/${pid}/connoisseur-reports`, { headers: { "x-participant-id": pid } });
+    if (!reportsRes.ok) return;
+    const reports = await reportsRes.json();
+    if (reports.length > 0) { sessionStorage.setItem(key, "1"); return; }
+    const statsRes = await fetch(`/api/participants/${pid}/stats`, { headers: { "x-participant-id": pid } });
+    if (!statsRes.ok) return;
+    const stats = await statsRes.json();
+    if ((stats.totalRatings || 0) >= CONNOISSEUR_THRESHOLD) {
+      const lang = navigator.language?.startsWith("de") ? "de" : "en";
+      fetch(`/api/participants/${pid}/connoisseur-report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ language: lang }),
+      }).then((res) => {
+        if (res.ok) sessionStorage.setItem(key, "1");
+        queryClient.invalidateQueries({ queryKey: ["connoisseur-reports", pid] });
+      }).catch(() => {});
+    }
+  } catch {}
+}
 
 interface OfflineQueueItem {
   pid: string;
@@ -1206,6 +1233,7 @@ export default function LabsSolo() {
       setFinalizedAt(new Date().toLocaleString());
       setDraftStatus("finalized");
       setSaved(true);
+      if (pid) checkConnoisseurAutoTrigger(pid);
       try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
     } catch {
       persistLocal();
@@ -1253,6 +1281,7 @@ export default function LabsSolo() {
       }
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setSaved(true);
+      if (pid) checkConnoisseurAutoTrigger(pid);
       handleReset(true);
     } catch {
       persistLocal();
@@ -1801,6 +1830,7 @@ export default function LabsSolo() {
         queryClient.invalidateQueries({ queryKey: ["journal"] });
         setSaved(true);
         setInterruptedFlowDraft(null);
+        if (pid) checkConnoisseurAutoTrigger(pid);
         try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
       } catch {
         persistLocal();
