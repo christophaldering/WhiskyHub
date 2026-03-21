@@ -601,8 +601,10 @@ export default function LabsSolo() {
     } catch { setPreviousRatings([]); }
   }, [pid]);
 
-  const calcOverall = (scores: typeof detailedScores) =>
-    Math.round((scores.nose + scores.taste + scores.finish) / 3);
+  const calcOverall = (scores: typeof detailedScores) => {
+    const raw = (scores.nose + scores.taste + scores.finish) / 3;
+    return Math.round(raw / ratingScale.step) * ratingScale.step;
+  };
 
   const lookupWhiskybaseId = useCallback(async (wbId: string) => {
     const id = wbId.trim().replace(/^[Ww][Bb]\s*/i, "");

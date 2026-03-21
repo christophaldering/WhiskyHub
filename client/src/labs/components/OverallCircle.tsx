@@ -48,7 +48,10 @@ export default function OverallCircle({
   const [editInput, setEditInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const calculatedAvg = Math.round((noseScore + tasteScore + finishScore) / 3);
+  const calculatedAvg = (() => {
+    const raw = (noseScore + tasteScore + finishScore) / 3;
+    return Math.round(raw / scale.step) * scale.step;
+  })();
   const target = overrideActive ? value : calculatedAvg;
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function OverallCircle({
       const progress = Math.min(elapsed / ANIM_DURATION, 1);
       const eased = easeOutCubic(progress);
       const current = from + (to - from) * eased;
-      setDisplayValue(Math.round(current));
+      setDisplayValue(Math.round(current / scale.step) * scale.step);
       if (progress < 1) {
         animRef.current = requestAnimationFrame(animate);
       } else {
@@ -125,13 +128,14 @@ export default function OverallCircle({
   }, [disabled, overrideActive, onOverrideToggle, value, calculatedAvg]);
 
   const commitEdit = useCallback(() => {
-    const num = parseInt(editInput, 10);
+    const num = parseFloat(editInput);
     if (!isNaN(num) && num >= 0 && num <= scale.max) {
-      onChange(num);
+      const snapped = Math.round(num / scale.step) * scale.step;
+      onChange(snapped);
       triggerHaptic("light");
     }
     setEditing(false);
-  }, [editInput, scale.max, onChange]);
+  }, [editInput, scale.max, scale.step, onChange]);
 
   const handleReset = useCallback(() => {
     onReset();

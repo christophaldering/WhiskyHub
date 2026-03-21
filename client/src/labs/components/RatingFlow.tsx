@@ -187,8 +187,11 @@ export default function RatingFlow({
   }, [initialStep]);
 
   const calculatedAvg = useMemo(
-    () => Math.round((scores.nose + scores.taste + scores.finish) / 3),
-    [scores.nose, scores.taste, scores.finish]
+    () => {
+      const raw = (scores.nose + scores.taste + scores.finish) / 3;
+      return Math.round(raw / scale.step) * scale.step;
+    },
+    [scores.nose, scores.taste, scores.finish, scale.step]
   );
   const effectiveOverall = overrideActive ? overall : calculatedAvg;
 

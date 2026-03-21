@@ -16,7 +16,7 @@ export interface RatingScale {
 const SCALE_CONFIGS: Record<number, { step: number; bigStep: number }> = {
   100: { step: 1, bigStep: 5 },
   20: { step: 1, bigStep: 2 },
-  10: { step: 1, bigStep: 1 },
+  10: { step: 0.5, bigStep: 1 },
   5: { step: 1, bigStep: 1 },
 };
 

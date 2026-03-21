@@ -32,7 +32,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const participantId = currentParticipant?.id || "";
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : scale >= 10 ? 0.5 : 0.1;
 
 
   const { data: existingRating } = useQuery({

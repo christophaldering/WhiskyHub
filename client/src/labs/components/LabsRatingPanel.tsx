@@ -263,6 +263,7 @@ export default function LabsRatingPanel({
           type="range"
           min={0}
           max={scale}
+          step={scaleInfo.step}
           value={scores[key]}
           onChange={(e) => {
             const val = Number(e.target.value);

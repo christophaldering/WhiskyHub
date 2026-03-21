@@ -27,7 +27,7 @@ const DIMENSIONS = [
 ];
 
 function getScaleConfig(scale: number) {
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : scale >= 10 ? 0.5 : 0.1;
   const mid = scale / 2;
   const factor = step < 1 ? (1 / step) : 1;
   return { step, mid, factor };
