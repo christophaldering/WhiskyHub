@@ -2504,6 +2504,10 @@ const resources = {
         timeGreetingEvening: "Good evening",
         noDrams: "No drams yet — start your first tasting!",
       },
+      results: {
+        noRatingsYet: "No ratings yet",
+        waitingForTasters: "Waiting for participants to rate their drams.",
+      },
       home: {
         greeting: "What brings you\nto CaskSense?",
         greetingSub: "Choose your path — you can switch anytime.",
@@ -8919,6 +8923,10 @@ const resources = {
         timeGreetingAfternoon: "Guten Nachmittag",
         timeGreetingEvening: "Guten Abend",
         noDrams: "Noch keine Drams — starte dein erstes Tasting!",
+      },
+      results: {
+        noRatingsYet: "Noch keine Bewertungen",
+        waitingForTasters: "Warte auf Bewertungen der Teilnehmer.",
       },
       home: {
         greeting: "Was bringst du\nzu CaskSense?",

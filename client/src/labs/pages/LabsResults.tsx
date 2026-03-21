@@ -1520,14 +1520,21 @@ export default function LabsResults({ params }: LabsResultsProps) {
         })}
       </div>
 
-      {sorted.length === 0 && (
-        <div className="labs-empty labs-fade-in">
-          <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
-            <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
-          </svg>
-          <h2 className="labs-empty-title">No results yet</h2>
-          <p className="labs-empty-sub">Results appear once participants submit their ratings.</p>
+      {(!allRatings || allRatings.length === 0) && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{
+            fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic',
+            fontSize: '18px', color: 'var(--labs-text-muted)'
+          }}>
+            {t('results.noRatingsYet')}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--labs-text-muted)', opacity: 0.6 }}>
+            {t('results.waitingForTasters')}
+          </div>
         </div>
       )}
 
