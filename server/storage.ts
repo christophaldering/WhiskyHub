@@ -182,6 +182,7 @@ export interface IStorage {
   getCuratedDatabaseEntries(): Promise<JournalEntry[]>;
   getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]>;
   getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
+  getJournalEntryById(id: string): Promise<JournalEntry | undefined>;
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
   updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined>;
   deleteJournalEntry(id: string, participantId: string): Promise<void>;
@@ -286,6 +287,7 @@ export interface IStorage {
   getAllCollectionItems(): Promise<WhiskybaseCollectionItem[]>;
   getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]>;
   getWhiskybaseCollectionItem(id: string, participantId: string): Promise<WhiskybaseCollectionItem | undefined>;
+  getCollectionItemById(id: string): Promise<WhiskybaseCollectionItem | undefined>;
   upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
   patchWhiskybaseCollectionItem(id: string, participantId: string, fields: Partial<{ status: string; personalRating: number | null; notes: string | null }>): Promise<WhiskybaseCollectionItem | null>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
@@ -933,6 +935,13 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getJournalEntryById(id: string): Promise<JournalEntry | undefined> {
+    const [result] = await db.select().from(journalEntries).where(
+      and(eq(journalEntries.id, id), eq(journalEntries.source, "casksense-database"))
+    );
+    return result;
+  }
+
   async createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry> {
     const [result] = await db.insert(journalEntries).values(data).returning();
     return result;
@@ -1323,6 +1332,11 @@ export class DatabaseStorage implements IStorage {
 
   async getWhiskybaseCollectionItem(id: string, participantId: string): Promise<WhiskybaseCollectionItem | undefined> {
     const [result] = await db.select().from(whiskybaseCollection).where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)));
+    return result;
+  }
+
+  async getCollectionItemById(id: string): Promise<WhiskybaseCollectionItem | undefined> {
+    const [result] = await db.select().from(whiskybaseCollection).where(eq(whiskybaseCollection.id, id));
     return result;
   }
 
