@@ -197,7 +197,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
       let hostId = currentParticipant?.id;
       if (!hostId) {
         if (!guestName.trim()) throw new Error("Please enter your name");
-        const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined, undefined, undefined, true);
+        const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined, undefined, undefined, importConsent);
         setParticipant(participant);
         hostId = participant.id;
       }
@@ -235,6 +235,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
     setError(null);
     setGuestName("");
     setGuestPin("");
+    setImportConsent(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {

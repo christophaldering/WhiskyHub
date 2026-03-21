@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
-function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) => void; loading: boolean }) {
+function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string, consent: boolean) => void; loading: boolean }) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -59,7 +59,7 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
               placeholder={t("guestAuth.pinPlaceholder")}
               maxLength={6}
               className="text-center text-lg h-12 font-serif"
-              onKeyDown={(e) => e.key === "Enter" && canSubmit && onJoin(name.trim(), pin)}
+              onKeyDown={(e) => e.key === "Enter" && canSubmit && onJoin(name.trim(), pin, quickPrivacy)}
               data-testid="input-quick-pin"
             />
             <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
@@ -80,7 +80,7 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
           </div>
           <Button
             size="lg"
-            onClick={() => onJoin(name.trim(), pin)}
+            onClick={() => onJoin(name.trim(), pin, quickPrivacy)}
             disabled={!canSubmit || loading}
             className="w-full font-serif text-base gap-2"
             data-testid="button-quick-join"
@@ -355,11 +355,11 @@ export default function QuickTasting() {
     enabled: !!tasting?.id,
   });
 
-  const handleGuestJoin = async (name: string, pin: string) => {
+  const handleGuestJoin = async (name: string, pin: string, consent: boolean = false) => {
     setJoining(true);
     setJoinError("");
     try {
-      const participant = await participantApi.guestJoin(name, pin, true);
+      const participant = await participantApi.guestJoin(name, pin, consent);
       setParticipant({
         id: participant.id,
         name: participant.name,

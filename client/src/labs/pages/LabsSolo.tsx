@@ -3080,7 +3080,7 @@ function LabsSignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, p
       const displayName = result.name || name.trim() || t("m2.solo.guest", "Guest");
       if (name.trim() && pin.trim()) {
         try {
-          const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, true);
+          const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim(), undefined, undefined, labsSoloConsent);
           if (pResult?.id) {
             setSessionPid(pResult.id);
             onSignedIn(displayName, pResult.id);

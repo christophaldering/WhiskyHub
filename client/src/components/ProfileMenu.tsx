@@ -81,6 +81,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [regPinConfirm, setRegPinConfirm] = useState("");
   const [regShowPin, setRegShowPin] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
+  const [regConsent, setRegConsent] = useState(false);
+  const [regVerifyMode, setRegVerifyMode] = useState(false);
+  const [regPendingParticipant, setRegPendingParticipant] = useState<{ id: string; name: string; email?: string } | null>(null);
+  const [regVerifyCode, setRegVerifyCode] = useState("");
+  const [regVerifyError, setRegVerifyError] = useState("");
+  const [regVerifyLoading, setRegVerifyLoading] = useState(false);
+  const [regResendLoading, setRegResendLoading] = useState(false);
+  const [regResendSuccess, setRegResendSuccess] = useState(false);
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotPid, setForgotPid] = useState("");
@@ -110,6 +118,11 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       setView("main");
       setError("");
       setRegSuccess(false);
+      setRegConsent(false);
+      setRegVerifyMode(false);
+      setRegPendingParticipant(null);
+      setRegVerifyCode("");
+      setRegVerifyError("");
       setResetSuccess(false);
       setVerifySuccess(false);
     }
@@ -209,11 +222,51 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       setError(t("m2.register.invalidEmail", "Please enter a valid email"));
       return;
     }
+    if (!regConsent) {
+      setError(t("login.privacyConsentRequired", "Please accept the privacy policy"));
+      return;
+    }
     setError("");
     setLoading(true);
     try {
-      await participantApi.loginOrCreate(regName.trim(), regPin.trim(), regEmail.trim(), undefined, true);
-      setRegSuccess(true);
+      const participant = await participantApi.loginOrCreate(regName.trim(), regPin.trim(), regEmail.trim(), undefined, regConsent);
+      if (!participant.emailVerified) {
+        setRegPendingParticipant({ id: participant.id, name: participant.name, email: participant.email });
+        setRegVerifyMode(true);
+        setRegVerifyCode("");
+        setRegVerifyError("");
+      } else {
+        const result = await signIn({
+          pin: regPin.trim(),
+          email: regEmail.trim(),
+          mode: "log",
+          remember: true,
+        });
+        if (result.ok) {
+          refreshSession();
+          setRegSuccess(true);
+          setTimeout(() => onClose(), 1500);
+        } else {
+          setError(result.error || t("m2.profile.loginFailed", "Login failed"));
+        }
+      }
+    } catch (e: any) {
+      setError(e.message || t("m2.register.failed", "Registration failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegVerify = async () => {
+    if (!regPendingParticipant) return;
+    if (!regVerifyCode.trim()) {
+      setRegVerifyError(t("verify.codeRequired", "Please enter the verification code"));
+      return;
+    }
+    setRegVerifyLoading(true);
+    setRegVerifyError("");
+    try {
+      await participantApi.verify(regPendingParticipant.id, regVerifyCode.trim());
       const result = await signIn({
         pin: regPin.trim(),
         email: regEmail.trim(),
@@ -222,12 +275,32 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       });
       if (result.ok) {
         refreshSession();
+        setRegVerifyMode(false);
+        setRegPendingParticipant(null);
+        setRegSuccess(true);
         setTimeout(() => onClose(), 1500);
+      } else {
+        setRegVerifyError(result.error || t("m2.profile.loginFailed", "Login failed"));
       }
     } catch (e: any) {
-      setError(e.message || t("m2.register.failed", "Registration failed"));
+      setRegVerifyError(e.message || t("verify.invalidCode", "Invalid verification code"));
     } finally {
-      setLoading(false);
+      setRegVerifyLoading(false);
+    }
+  };
+
+  const handleRegResend = async () => {
+    if (!regPendingParticipant) return;
+    setRegResendLoading(true);
+    setRegResendSuccess(false);
+    try {
+      await participantApi.resendVerification(regPendingParticipant.id);
+      setRegResendSuccess(true);
+      setTimeout(() => setRegResendSuccess(false), 3000);
+    } catch (e: any) {
+      setRegVerifyError(e.message || t("verify.resendFailed", "Failed to resend code"));
+    } finally {
+      setRegResendLoading(false);
     }
   };
 
@@ -330,7 +403,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     setError("");
     setLoading(true);
     try {
-      const res = await participantApi.guestJoin(guestName.trim(), guestPin.trim(), true);
+      const res = await participantApi.guestJoin(guestName.trim(), guestPin.trim(), m2GuestConsent);
       if (res?.id) {
         setSessionPid(res.id);
         try {
@@ -867,6 +940,64 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
                 {t("m2.register.success", "Account created successfully!")}
               </div>
             </div>
+          ) : regVerifyMode && regPendingParticipant ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
+              <div style={{ textAlign: "center" }}>
+                <Mail style={{ width: 36, height: 36, color: tv.accent, margin: "0 auto 8px" }} />
+                <div style={{ fontSize: 15, color: tv.text, fontWeight: 600, marginBottom: 4 }}>
+                  {t("verify.title", "Verify your email")}
+                </div>
+                <div style={{ fontSize: 12, color: tv.muted, lineHeight: 1.4 }}>
+                  {t("verify.subtitle", { email: regPendingParticipant.email })}
+                </div>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={regVerifyCode}
+                onChange={(e) => setRegVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder={t("verify.codePlaceholder", "000000")}
+                maxLength={6}
+                autoFocus
+                style={{ ...inputStyle(!!regVerifyError), textAlign: "center", fontSize: 22, letterSpacing: "0.5em", fontFamily: "monospace" }}
+                data-testid="m2-register-verify-code"
+                onKeyDown={(e) => e.key === "Enter" && handleRegVerify()}
+              />
+              <div style={{ fontSize: 11, color: tv.muted }}>{t("verify.codeHint", "Enter the 6-digit code from your email")}</div>
+              {regVerifyError && (
+                <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-register-verify-error">
+                  {regVerifyError}
+                </div>
+              )}
+              <button
+                onClick={handleRegVerify}
+                disabled={regVerifyLoading || regVerifyCode.length < 6}
+                style={primaryBtnStyle(regVerifyCode.length < 6)}
+                data-testid="m2-register-verify-submit"
+              >
+                {regVerifyLoading ? t("verify.verifying", "Verifying...") : t("verify.confirm", "Verify")}
+              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => { setRegVerifyMode(false); setRegPendingParticipant(null); setRegVerifyError(""); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: tv.muted, fontSize: 12, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                  data-testid="m2-register-verify-back"
+                >
+                  <ChevronLeft style={{ width: 14, height: 14 }} />
+                  {t("verify.backToLogin", "Back")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRegResend}
+                  disabled={regResendLoading}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: regResendSuccess ? tv.success : tv.muted, fontSize: 12, fontFamily: "inherit", textDecoration: "underline", opacity: regResendLoading ? 0.5 : 1 }}
+                  data-testid="m2-register-verify-resend"
+                >
+                  {regResendSuccess ? t("verify.resendSuccess", "Code sent!") : regResendLoading ? t("verify.resending", "Sending...") : t("verify.resend", "Resend code")}
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <input
@@ -915,6 +1046,21 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
                 style={inputStyle(!!error)}
                 data-testid="m2-register-confirm-password"
               />
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", margin: "4px 0" }}>
+                <input
+                  type="checkbox"
+                  checked={regConsent}
+                  onChange={(e) => setRegConsent(e.target.checked)}
+                  style={{ marginTop: 3 }}
+                  data-testid="m2-register-consent"
+                />
+                <span style={{ fontSize: 11, color: tv.muted, lineHeight: 1.4 }}>
+                  {String(t('login.privacyConsentLabel'))}{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{String(t('login.privacyConsentLink'))}</a>{" "}
+                  {String(t('login.andThe'))}{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{String(t('login.termsConsentLink'))}</a>
+                </span>
+              </label>
               {error && (
                 <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-register-error">
                   {error}
@@ -922,8 +1068,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               )}
               <button
                 onClick={handleRegister}
-                disabled={loading}
-                style={primaryBtnStyle(!regName.trim() || !regEmail.trim() || !regPin.trim())}
+                disabled={loading || !regConsent}
+                style={primaryBtnStyle(!regName.trim() || !regEmail.trim() || !regPin.trim() || !regConsent)}
                 data-testid="m2-register-submit"
               >
                 {loading ? t("m2.register.creating", "Creating...") : t("m2.register.create", "Create Account")}
