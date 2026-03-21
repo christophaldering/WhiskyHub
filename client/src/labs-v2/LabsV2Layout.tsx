@@ -191,7 +191,7 @@ export default function LabsV2Layout({ children, activeTab, onTabChange, hideTab
                 </button>
               </div>
               <button
-                onClick={onLogoClick}
+                onClick={() => window.location.href = '/labs/taste'}
                 data-testid="v2-profile-btn"
                 style={{
                   width: 34,
