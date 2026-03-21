@@ -409,13 +409,6 @@ export function Music(p: IconProps) {
   </>);
 }
 
-export function Eye(p: IconProps) {
-  return svg(p, "0 0 24 24", <>
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-    <circle cx="12" cy="12" r="3" />
-  </>);
-}
-
 export function Sparkle(p: IconProps) {
   return svg(p, "0 0 24 24", <>
     <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" fill={p.color} stroke="none" />
