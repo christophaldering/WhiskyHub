@@ -227,7 +227,7 @@ export default function LabsTasteCollection() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-collection">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Collection</h1>
         </div>
         <AuthGateMessage
@@ -247,7 +247,7 @@ export default function LabsTasteCollection() {
       <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleSyncFile(f); e.target.value = ""; } }} data-testid="input-labs-sync-file" />
 
       <div className="flex items-center gap-3 mb-1">
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">Collection</h1>
       </div>
       {items.length > 0 && <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{items.length} bottles</p>}

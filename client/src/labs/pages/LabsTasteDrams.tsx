@@ -443,7 +443,7 @@ export default function LabsTasteDrams() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-drams">
       <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
-        <ChevronLeft className="w-4 h-4" /> Taste
+        <ChevronLeft className="w-4 h-4" /> My Whisky
       </button>
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
         <div>

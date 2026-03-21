@@ -313,7 +313,7 @@ export default function LabsTasteAnalytics() {
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-analytics">
       <Link href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-analytics">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> My Whisky
         </button>
       </Link>
 
