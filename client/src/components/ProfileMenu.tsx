@@ -776,7 +776,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           <User style={{ width: 32, height: 32, color: tv.accent }} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 600, color: tv.text }} data-testid="m2-profile-display-name">
-              {session.name || "—"}
+              {typeof session.name === "string" ? session.name : "—"}
             </div>
             {participantEmail && (
               <div style={{ fontSize: 12, color: tv.muted }}>{participantEmail}</div>

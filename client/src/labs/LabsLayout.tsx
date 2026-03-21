@@ -685,7 +685,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             ) : (
               <User className="w-4 h-4" />
             )}
-            {currentParticipant?.name?.split(" ")[0] || "Profile"}
+            {(typeof currentParticipant?.name === "string" ? currentParticipant.name.split(" ")[0] : null) || "Profile"}
           </button>
         </div>
       </header>

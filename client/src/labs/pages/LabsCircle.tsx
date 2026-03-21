@@ -361,8 +361,8 @@ export default function LabsCircle() {
 
     const getNameDisplay = (entry: LeaderboardEntry) => {
       if (entry.isSelf) return { text: "You", color: "var(--labs-accent)", suffix: " \u2605" };
-      if (entry.isFriend) return { text: stripGuestSuffix(entry.name), color: "var(--labs-text)", suffix: "" };
-      return { text: entry.name, color: "var(--labs-text-muted)", suffix: "" };
+      if (entry.isFriend) return { text: stripGuestSuffix(String(entry.name ?? "")), color: "var(--labs-text)", suffix: "" };
+      return { text: String(entry.name ?? ""), color: "var(--labs-text-muted)", suffix: "" };
     };
 
     return (
@@ -602,11 +602,11 @@ export default function LabsCircle() {
                     className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 labs-serif font-semibold"
                     style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                   >
-                    {((req.firstName || req.name || "?") as string)[0]}
+                    {String(req.firstName || req.name || "?")[0]}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                      {req.firstName as string} {req.lastName as string}
+                      {String(req.firstName ?? "")} {String(req.lastName ?? "")}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -693,7 +693,7 @@ export default function LabsCircle() {
               const offlineList = friendList.filter(f => !onlineFriendIds.has(f.id as string));
               const renderFriendCard = (friend: Record<string, unknown>, i: number, isOnline: boolean) => {
                 const fid = friend.id as string;
-                const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(Boolean).join(" ") || (friend.name as string) || "Friend");
+                const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(v => v != null && typeof v !== "object").map(String).join(" ") || String(friend.name ?? "") || "Friend");
                 const onlineInfo = onlineFriendsMap.get(fid);
                 return (
                   <div
@@ -858,7 +858,7 @@ export default function LabsCircle() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                            {s.title as string}
+                            {String(s.title ?? "")}
                           </p>
                           {isHost && (
                             <span
@@ -871,7 +871,7 @@ export default function LabsCircle() {
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                            {s.date as string}
+                            {String(s.date ?? "")}
                           </span>
                           {pCount > 0 && (
                             <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
@@ -943,22 +943,22 @@ export default function LabsCircle() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                  {stripGuestSuffix((item.participantName as string) || "Someone")}
+                  {stripGuestSuffix(String(item.participantName || "Someone"))}
                 </p>
                 <p className="text-xs truncate mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
                   {isJournal ? (
                     whiskyName ? (
                       <>
-                        Logged: {whiskyName}
+                        Logged: {String(whiskyName)}
                         {score != null && (
                           <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
-                            {typeof score === "number" ? Math.round(score * 10) / 10 : score}/100
+                            {typeof score === "number" ? Math.round(score * 10) / 10 : String(score)}/100
                           </span>
                         )}
                       </>
                     ) : "Logged a dram"
                   ) : (
-                    (details.title as string) ? `Joined: ${details.title as string}` : "Participated in a tasting"
+                    details.title ? `Joined: ${String(details.title)}` : "Participated in a tasting"
                   )}
                 </p>
                 {typeof item.timestamp === "string" && (
@@ -1106,10 +1106,10 @@ function FriendDetailSheet({
                   <GlassWater className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                      {(s.title as string) || "Tasting"}
+                      {String(s.title || "Tasting")}
                     </p>
                     <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                      {new Date(s.date as string).toLocaleDateString()}
+                      {(() => { try { return new Date(String(s.date)).toLocaleDateString(); } catch { return String(s.date ?? ""); } })()}
                     </p>
                   </div>
                 </div>
