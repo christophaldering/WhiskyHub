@@ -686,7 +686,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           </span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'visible', flexShrink: 0 }}>
           <LabsNotificationBell />
           <button
             onClick={() => { setSearchOpen(true); triggerHaptic("light"); }}
