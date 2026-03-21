@@ -199,6 +199,37 @@ export interface Translations {
   hostNoParticipants: string;
   entTitle: string;
   entSub: string;
+  entExplore: string;
+  entExploreSub: string;
+  entLexikon: string;
+  entLexikonSub: string;
+  entGuide: string;
+  entGuideSub: string;
+  entDest: string;
+  entDestSub: string;
+  entBottlers: string;
+  entBottlersSub: string;
+  entHistory: string;
+  entHistorySub: string;
+  entSearch: string;
+  entFilterRegion: string;
+  entFilterAll: string;
+  entSortAvg: string;
+  entSortMost: string;
+  entSortAlpha: string;
+  entBottleDetail: string;
+  entBottleRatings: string;
+  entBottleMyRating: string;
+  entBottleHistory: string;
+  entLexSearch: string;
+  entLexCategories: string;
+  entDistSearch: string;
+  entDistCountry: string;
+  entHistSearch: string;
+  entHistRegion: string;
+  entHistSmoky: string;
+  historyGated: string;
+  historyJoin: string;
   mwTitle: string;
   mwSub: string;
   circleTitle: string;
@@ -564,7 +595,38 @@ const de: Translations = {
   hostActiveDram: "Aktiv",
   hostNoParticipants: "Noch keine Teilnehmer",
   entTitle: "Entdecken",
-  entSub: "Whisky-Welt erkunden",
+  entSub: "Whiskies \u00b7 Wissen \u00b7 Welt",
+  entExplore: "Whiskies entdecken",
+  entExploreSub: "Alle bewerteten Whiskies der Community",
+  entLexikon: "Lexikon",
+  entLexikonSub: "Whisky-Begriffe erkl\u00e4rt",
+  entGuide: "Tasting-Guide",
+  entGuideSub: "Schritt f\u00fcr Schritt verkosten",
+  entDest: "Destillerien",
+  entDestSub: "Weltkarte der Brennereien",
+  entBottlers: "Abf\u00fcller",
+  entBottlersSub: "Unabh\u00e4ngige Abf\u00fcller",
+  entHistory: "Historische Tastings",
+  entHistorySub: "Tasting-Archiv der Community",
+  entSearch: "Suche...",
+  entFilterRegion: "Region",
+  entFilterAll: "Alle",
+  entSortAvg: "\u00d8 Score",
+  entSortMost: "Meist bewertet",
+  entSortAlpha: "A\u2013Z",
+  entBottleDetail: "Flasche",
+  entBottleRatings: "Community-Bewertungen",
+  entBottleMyRating: "Meine Bewertung",
+  entBottleHistory: "Tasting-Verlauf",
+  entLexSearch: "Begriff suchen...",
+  entLexCategories: "Kategorien",
+  entDistSearch: "Destillerie suchen...",
+  entDistCountry: "Land",
+  entHistSearch: "Archiv durchsuchen...",
+  entHistRegion: "Region",
+  entHistSmoky: "Rauchig",
+  historyGated: "Nur f\u00fcr Community-Mitglieder",
+  historyJoin: "Community beitreten",
   mwTitle: "Meine Welt",
   mwSub: "Deine pers\u00f6nliche Whisky-Reise",
   circleTitle: "Circle",
@@ -930,7 +992,38 @@ const en: Translations = {
   hostActiveDram: "Active",
   hostNoParticipants: "No participants yet",
   entTitle: "Discover",
-  entSub: "Explore the whisky world",
+  entSub: "Whiskies \u00b7 Knowledge \u00b7 World",
+  entExplore: "Explore whiskies",
+  entExploreSub: "All rated whiskies from the community",
+  entLexikon: "Lexicon",
+  entLexikonSub: "Whisky terms explained",
+  entGuide: "Tasting guide",
+  entGuideSub: "Step-by-step tasting",
+  entDest: "Distilleries",
+  entDestSub: "World map of distilleries",
+  entBottlers: "Bottlers",
+  entBottlersSub: "Independent bottlers",
+  entHistory: "Historical tastings",
+  entHistorySub: "Community tasting archive",
+  entSearch: "Search...",
+  entFilterRegion: "Region",
+  entFilterAll: "All",
+  entSortAvg: "Avg score",
+  entSortMost: "Most rated",
+  entSortAlpha: "A\u2013Z",
+  entBottleDetail: "Bottle",
+  entBottleRatings: "Community ratings",
+  entBottleMyRating: "My rating",
+  entBottleHistory: "Tasting history",
+  entLexSearch: "Search term...",
+  entLexCategories: "Categories",
+  entDistSearch: "Search distillery...",
+  entDistCountry: "Country",
+  entHistSearch: "Search archive...",
+  entHistRegion: "Region",
+  entHistSmoky: "Smoky",
+  historyGated: "Community members only",
+  historyJoin: "Join community",
   mwTitle: "My World",
   mwSub: "Your personal whisky journey",
   circleTitle: "Circle",
