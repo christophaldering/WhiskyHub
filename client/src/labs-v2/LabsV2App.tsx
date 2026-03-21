@@ -5,6 +5,7 @@ import TastingsHub from "./TastingsHub";
 import JoinFlow from "./JoinFlow";
 import PlaceholderTab from "./PlaceholderTab";
 import EntdeckenScreen from "./screens/entdecken/EntdeckenScreen";
+import CircleScreen from "./screens/circle/CircleScreen";
 import { RatingFlow } from "./screens/rating/RatingFlow";
 import SoloFlow from "./screens/solo/SoloFlow";
 import HostWizard from "./screens/host/HostWizard";
@@ -120,7 +121,7 @@ export default function LabsV2App() {
   } else if (activeTab === "world") {
     content = <MeineWeltScreen />;
   } else {
-    content = <PlaceholderTab variant="circle" />;
+    content = <CircleScreen />;
   }
 
   return (

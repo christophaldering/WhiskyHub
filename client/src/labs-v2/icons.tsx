@@ -564,3 +564,35 @@ export function Building(p: IconProps) {
     <path d="M8 14h.01" />
   </>);
 }
+
+export function UserPlus(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+    <circle cx="8.5" cy="7" r="4" />
+    <line x1="20" y1="8" x2="20" y2="14" />
+    <line x1="17" y1="11" x2="23" y2="11" />
+  </>);
+}
+
+export function UserCheck(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+    <circle cx="8.5" cy="7" r="4" />
+    <polyline points="17 11 19 13 23 9" />
+  </>);
+}
+
+export function Clock(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </>);
+}
+
+export function Feed(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M4 11a9 9 0 019 9" />
+    <path d="M4 4a16 16 0 0116 16" />
+    <circle cx="5" cy="19" r="1" fill={p.color} stroke="none" />
+  </>);
+}

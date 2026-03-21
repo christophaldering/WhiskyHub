@@ -395,6 +395,35 @@ export interface Translations {
   mwSaved: string;
   mwMonthlyAvg: string;
   mwNRatings: string;
+  circleFriends: string;
+  circleBoard: string;
+  circleSessions: string;
+  circleFeed: string;
+  circleYourRank: string;
+  circlePercentile: string;
+  circleAnonymous: string;
+  circleFriend: string;
+  circleAddFriend: string;
+  circlePending: string;
+  circleAccept: string;
+  circleDecline: string;
+  circleFeedEmpty: string;
+  circleOnline: string;
+  circleSearchFriend: string;
+  circleLive: string;
+  circleUpcoming: string;
+  circleCompleted: string;
+  circleParticipants: string;
+  circleHost: string;
+  circleNoSessions: string;
+  circleNoFriends: string;
+  circleSendRequest: string;
+  circleAvgScore: string;
+  circleOf: string;
+  circleRated: string;
+  circleDram: string;
+  circleTasting: string;
+  circleSearchPlaceholder: string;
 }
 
 const de: Translations = {
@@ -792,6 +821,35 @@ const de: Translations = {
   mwSaved: "Gespeichert!",
   mwMonthlyAvg: "Monatlicher Durchschnitt",
   mwNRatings: "Bewertungen",
+  circleFriends: "Freunde",
+  circleBoard: "Bestenliste",
+  circleSessions: "Sessions",
+  circleFeed: "Feed",
+  circleYourRank: "Dein Rang",
+  circlePercentile: "Prozentrang",
+  circleAnonymous: "Whisky-Alias",
+  circleFriend: "Freund",
+  circleAddFriend: "Hinzuf\u00fcgen",
+  circlePending: "Ausstehend",
+  circleAccept: "Annehmen",
+  circleDecline: "Ablehnen",
+  circleFeedEmpty: "Noch keine Aktivit\u00e4ten von Freunden.",
+  circleOnline: "Online",
+  circleSearchFriend: "Freund suchen\u2026",
+  circleLive: "Live",
+  circleUpcoming: "Kommend",
+  circleCompleted: "Abgeschlossen",
+  circleParticipants: "Teilnehmer",
+  circleHost: "Host",
+  circleNoSessions: "Keine Sessions vorhanden.",
+  circleNoFriends: "Noch keine Freunde hinzugef\u00fcgt.",
+  circleSendRequest: "Anfrage senden",
+  circleAvgScore: "\u00d8 Score",
+  circleOf: "von",
+  circleRated: "bewertet",
+  circleDram: "Dram erfasst",
+  circleTasting: "Tasting abgeschlossen",
+  circleSearchPlaceholder: "Name eingeben\u2026",
 };
 
 const en: Translations = {
@@ -1189,6 +1247,35 @@ const en: Translations = {
   mwSaved: "Saved!",
   mwMonthlyAvg: "Monthly Average",
   mwNRatings: "Ratings",
+  circleFriends: "Friends",
+  circleBoard: "Leaderboard",
+  circleSessions: "Sessions",
+  circleFeed: "Feed",
+  circleYourRank: "Your rank",
+  circlePercentile: "Percentile",
+  circleAnonymous: "Whisky alias",
+  circleFriend: "Friend",
+  circleAddFriend: "Add",
+  circlePending: "Pending",
+  circleAccept: "Accept",
+  circleDecline: "Decline",
+  circleFeedEmpty: "No activity from friends yet.",
+  circleOnline: "Online",
+  circleSearchFriend: "Search friend\u2026",
+  circleLive: "Live",
+  circleUpcoming: "Upcoming",
+  circleCompleted: "Completed",
+  circleParticipants: "Participants",
+  circleHost: "Host",
+  circleNoSessions: "No sessions available.",
+  circleNoFriends: "No friends added yet.",
+  circleSendRequest: "Send request",
+  circleAvgScore: "\u00d8 Score",
+  circleOf: "of",
+  circleRated: "rated",
+  circleDram: "Dram logged",
+  circleTasting: "Tasting completed",
+  circleSearchPlaceholder: "Enter name\u2026",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };
