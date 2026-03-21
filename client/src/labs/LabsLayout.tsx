@@ -734,14 +734,21 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           </div>
           <button
             onClick={() => setProfileOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
             style={{
-              background: "var(--labs-accent-muted)",
-              color: "var(--labs-accent)",
-              border: "none",
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'var(--labs-surface)',
+              border: '1px solid var(--labs-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
               fontSize: 13,
               fontWeight: 500,
-              cursor: "pointer",
+              color: 'var(--labs-text-secondary)',
+              flexShrink: 0,
             }}
             data-testid="labs-profile-btn"
           >
@@ -749,13 +756,12 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               <img
                 src={currentParticipant.photoUrl}
                 alt=""
-                style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", border: "1.5px solid var(--labs-accent)" }}
+                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                 data-testid="labs-profile-avatar"
               />
             ) : (
-              <User className="w-4 h-4" />
+              (currentParticipant?.name ?? 'G').charAt(0).toUpperCase()
             )}
-            {(typeof currentParticipant?.name === "string" ? currentParticipant.name.split(" ")[0] : null) || "Profile"}
           </button>
         </div>
       </header>
