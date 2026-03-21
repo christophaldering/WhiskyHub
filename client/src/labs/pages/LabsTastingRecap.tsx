@@ -377,11 +377,11 @@ export default function LabsTastingRecap() {
 
       <div className="labs-card" style={{ padding: 20, marginBottom: 16 }} data-testid="card-labs-recap-header">
         <h2 className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 6px" }} data-testid="text-labs-recap-tasting-title">
-          {recap.tasting.title}
+          {String(recap.tasting.title ?? "")}
         </h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 13, color: "var(--labs-text-muted)" }}>
-          {recap.tasting.date && <span data-testid="text-labs-recap-date">{formatDate(recap.tasting.date)}</span>}
-          {recap.tasting.location && <span data-testid="text-labs-recap-location">{recap.tasting.location}</span>}
+          {recap.tasting.date && <span data-testid="text-labs-recap-date">{formatDate(String(recap.tasting.date))}</span>}
+          {recap.tasting.location && <span data-testid="text-labs-recap-location">{String(recap.tasting.location ?? "")}</span>}
           <span data-testid="text-labs-recap-host">{stripGuestSuffix(recap.hostName)}</span>
           <span data-testid="text-labs-recap-participants" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Users style={{ width: 14, height: 14 }} />
@@ -436,16 +436,16 @@ export default function LabsTastingRecap() {
                 <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={40} whiskyId={w.id} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`text-labs-top-rated-name-${i}`}>
-                    {w.name}
+                    {String(w.name ?? "")}
                   </p>
                   {w.distillery && (
                     <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {w.distillery}
+                      {String(w.distillery ?? "")}
                     </p>
                   )}
                 </div>
                 <span className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }} data-testid={`text-labs-top-rated-score-${i}`}>
-                  {w.avgScore.toFixed(1)}
+                  {Number(w.avgScore).toFixed(1)}
                 </span>
                 {pid && (
                   <div style={{ marginLeft: 6 }}>
@@ -482,10 +482,10 @@ export default function LabsTastingRecap() {
             {t("recap.mostDivisive")}
           </h2>
           <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-labs-most-divisive-name">
-            {recap.mostDivisive.name}
+            {String(recap.mostDivisive.name ?? "")}
           </p>
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0 }}>
-            {t("recap.stddev")}: {recap.mostDivisive.stddev.toFixed(2)}
+            {t("recap.stddev")}: {Number(recap.mostDivisive.stddev).toFixed(2)}
           </p>
         </div>
       )}
@@ -546,7 +546,7 @@ export default function LabsTastingRecap() {
               }} data-testid="card-labs-most-ratings">
                 <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 4px" }}>{t("recap.mostRatings")}</p>
                 <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{stripGuestSuffix(mostRatings.name)}</p>
-                <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{mostRatings.ratingsCount} {t("recap.ratings")}</p>
+                <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{String(mostRatings.ratingsCount ?? 0)} {t("recap.ratings")}</p>
               </div>
             )}
             {highestAvg && (
@@ -558,7 +558,7 @@ export default function LabsTastingRecap() {
               }} data-testid="card-labs-highest-avg">
                 <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 4px" }}>{t("recap.highestAvg")}</p>
                 <p className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 2px" }}>{stripGuestSuffix(highestAvg.name)}</p>
-                <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{highestAvg.avgScore.toFixed(1)}</p>
+                <p style={{ fontSize: 13, color: "var(--labs-accent)", margin: 0 }}>{Number(highestAvg.avgScore).toFixed(1)}</p>
               </div>
             )}
           </div>
@@ -578,7 +578,7 @@ export default function LabsTastingRecap() {
               >
                 <span style={{ fontSize: 13, color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
                 <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-                  {p.ratingsCount} {t("recap.ratings")} · Avg {p.avgScore.toFixed(1)}
+                  {String(p.ratingsCount ?? 0)} {t("recap.ratings")} · Avg {Number(p.avgScore).toFixed(1)}
                 </span>
               </div>
             ))}

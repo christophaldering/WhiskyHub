@@ -1072,7 +1072,7 @@ function FriendDetailSheet({
           </div>
           <div className="text-center">
             <p className="text-base font-bold labs-serif" style={{ color: "var(--labs-text)" }}>
-              {friend.name}
+              {String(friend.name ?? "")}
             </p>
             <p className="text-xs flex items-center justify-center gap-1.5 mt-1" style={{ color: "var(--labs-success)" }}>
               <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--labs-success)", animation: "pulse 2s infinite" }} />
@@ -1102,7 +1102,7 @@ function FriendDetailSheet({
               <div className="flex-1 min-w-0">
                 <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Contact</p>
                 <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                  {friend.email}
+                  {String(friend.email ?? "")}
                 </p>
               </div>
             </div>

@@ -117,13 +117,13 @@ export default function LabsActivity() {
                   <div>
                     <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>logged a dram</p>
                     <p className="text-xs font-medium truncate mt-0.5" style={{ color: "var(--labs-text)" }}>
-                      {a.details.title as string}
+                      {String(a.details.title ?? "")}
                     </p>
                     {a.details.personalScore && (
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
                         <span className="text-xs font-bold" style={{ color: "var(--labs-accent)" }}>
-                          {a.details.personalScore as number}
+                          {String(a.details.personalScore)}
                         </span>
                       </div>
                     )}

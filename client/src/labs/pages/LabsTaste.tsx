@@ -552,10 +552,10 @@ export default function LabsTaste() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {dram.name}
+                        {String(dram.name ?? "")}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
-                        {dram.distillery && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 120 }}>{dram.distillery}</span>}
+                        {dram.distillery && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 120 }}>{String(dram.distillery)}</span>}
                         {dram.source === "tasting" && dram.count && (
                           <span style={{ whiteSpace: "nowrap" }}>{dram.count} {dram.count === 1 ? "Whisky" : "Whiskys"}</span>
                         )}
@@ -654,7 +654,7 @@ export default function LabsTaste() {
                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste Insight</span>
               </div>
               <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="text-insight-message">
-                {insight.message}
+                {String(insight.message ?? "")}
               </p>
             </div>
           )}
@@ -760,10 +760,10 @@ export default function LabsTaste() {
                   <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{t.title}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{String(t.title ?? "")}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                      <Calendar className="w-3 h-3" />{t.date}
+                      <Calendar className="w-3 h-3" />{typeof t.date === "string" ? t.date : t.date instanceof Date ? t.date.toLocaleDateString() : String(t.date ?? "")}
                     </span>
                   </div>
                 </div>

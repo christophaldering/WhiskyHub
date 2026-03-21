@@ -268,13 +268,13 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     return whiskyResults.map((w) => ({
       id: `whisky-${w.id}`,
       category: "whiskies" as const,
-      label: w.name,
-      subtitle: [w.distillery, w.region].filter(Boolean).join(" · ") || "",
+      label: String(w.name ?? ""),
+      subtitle: [w.distillery, w.region].filter(Boolean).map(String).join(" · ") || "",
       route: `/labs/explore/bottles/${w.id}`,
       icon: Wine,
       iconColor: "var(--labs-dim-nose)",
       iconBg: "rgba(201, 167, 108, 0.12)",
-      extra: { rating: w.avgOverall ? Number(w.avgOverall) : undefined, region: w.region },
+      extra: { rating: w.avgOverall ? Number(w.avgOverall) : undefined, region: typeof w.region === "string" ? w.region : undefined },
     }));
   }, [whiskyResults]);
 

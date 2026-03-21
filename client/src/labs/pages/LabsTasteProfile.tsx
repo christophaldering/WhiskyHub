@@ -108,14 +108,14 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
                 borderBottom: idx < entries.length - 1 ? "1px solid var(--labs-border)" : "none",
               }} data-testid={`row-${testId}-${idx}`}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)", marginBottom: 4 }}>{name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)", marginBottom: 4 }}>{String(name ?? "")}</div>
                   <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: "var(--labs-accent)", borderRadius: 2, transition: "width 0.3s" }} />
                   </div>
                 </div>
                 <div style={{ textAlign: "right", minWidth: 50 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{data.avgScore.toFixed(1)}</div>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{data.count} rated</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{Number(data.avgScore).toFixed(1)}</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(data.count ?? 0)} rated</div>
                 </div>
               </div>
             );
@@ -329,7 +329,7 @@ export default function LabsTasteProfile() {
                         }} data-testid={`badge-confidence-${dim}`}>
                           <span style={{ width: 6, height: 6, borderRadius: "50%", background: confColor }} />
                           {dimLabels[dim]}
-                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{conf.percent}%</span>
+                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(conf.percent ?? 0)}%</span>
                         </span>
                       );
                     })}
@@ -347,9 +347,9 @@ export default function LabsTasteProfile() {
               </h2>
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: "Mean", value: whiskyProfile.ratingStyle.meanScore.toFixed(1) },
-                  { label: "StdDev", value: whiskyProfile.ratingStyle.stdDev.toFixed(2) },
-                  { label: "Range", value: `${whiskyProfile.ratingStyle.scaleRange.min}–${whiskyProfile.ratingStyle.scaleRange.max}` },
+                  { label: "Mean", value: Number(whiskyProfile.ratingStyle.meanScore).toFixed(1) },
+                  { label: "StdDev", value: Number(whiskyProfile.ratingStyle.stdDev).toFixed(2) },
+                  { label: "Range", value: `${String(whiskyProfile.ratingStyle.scaleRange?.min ?? "?")}–${String(whiskyProfile.ratingStyle.scaleRange?.max ?? "?")}` },
                   { label: "Count", value: String(whiskyProfile.ratingStyle.nRatings || 0) },
                 ].map(s => (
                   <div key={s.label} style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 6px", textAlign: "center" }}>
@@ -365,11 +365,11 @@ export default function LabsTasteProfile() {
                     fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums",
                     color: whiskyProfile.ratingStyle.systematicDeviation.avgDelta >= 0 ? "var(--labs-success)" : "var(--labs-danger)",
                   }}>
-                    {whiskyProfile.ratingStyle.systematicDeviation.avgDelta >= 0 ? "+" : ""}
-                    {whiskyProfile.ratingStyle.systematicDeviation.avgDelta.toFixed(1)}
+                    {Number(whiskyProfile.ratingStyle.systematicDeviation.avgDelta) >= 0 ? "+" : ""}
+                    {Number(whiskyProfile.ratingStyle.systematicDeviation.avgDelta).toFixed(1)}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                    Compared across {whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared} whiskies
+                    Compared across {String(whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared ?? 0)} whiskies
                   </div>
                 </div>
               )}
@@ -403,19 +403,19 @@ export default function LabsTasteProfile() {
                     {whiskyProfile.whiskyComparison.slice(0, 10).map((w, idx) => (
                       <tr key={w.whiskyId} data-testid={`row-comparison-${idx}`}>
                         <td style={{ padding: "6px 4px", color: "var(--labs-text)", borderBottom: "1px solid var(--labs-border)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {w.whiskyName || "—"}
+                          {String(w.whiskyName ?? "") || "—"}
                         </td>
                         <td style={{ padding: "6px 4px", textAlign: "right", color: "var(--labs-text)", fontWeight: 600, borderBottom: "1px solid var(--labs-border)", fontVariantNumeric: "tabular-nums" }}>
-                          {w.userScore?.toFixed(1) ?? "—"}
+                          {w.userScore != null ? Number(w.userScore).toFixed(1) : "—"}
                         </td>
                         <td style={{ padding: "6px 4px", textAlign: "right", color: "var(--labs-text-muted)", borderBottom: "1px solid var(--labs-border)", fontVariantNumeric: "tabular-nums" }}>
-                          {w.platformMedian?.toFixed(1) ?? "—"}
+                          {w.platformMedian != null ? Number(w.platformMedian).toFixed(1) : "—"}
                         </td>
                         <td style={{
                           padding: "6px 4px", textAlign: "right", fontWeight: 600, borderBottom: "1px solid var(--labs-border)",
-                          color: (w.delta ?? 0) >= 0 ? "var(--labs-success)" : "var(--labs-danger)", fontVariantNumeric: "tabular-nums",
+                          color: (Number(w.delta) || 0) >= 0 ? "var(--labs-success)" : "var(--labs-danger)", fontVariantNumeric: "tabular-nums",
                         }}>
-                          {typeof w.delta === "number" ? `${w.delta >= 0 ? "+" : ""}${w.delta.toFixed(1)}` : "—"}
+                          {w.delta != null ? `${Number(w.delta) >= 0 ? "+" : ""}${Number(w.delta).toFixed(1)}` : "—"}
                         </td>
                       </tr>
                     ))}

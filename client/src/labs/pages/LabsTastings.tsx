@@ -364,7 +364,7 @@ export default function LabsTastings() {
                       }}
                       data-testid={`labs-tasting-title-${tasting.id}`}
                     >
-                      {tasting.title}
+                      {String(tasting.title ?? "")}
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                       {isInvited && (
@@ -448,7 +448,7 @@ export default function LabsTastings() {
                         }}
                       >
                         <MapPin style={{ width: 12, height: 12, opacity: 0.75, flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{tasting.location}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{String(tasting.location ?? "")}</span>
                       </span>
                     )}
                   </div>

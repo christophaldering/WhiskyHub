@@ -443,10 +443,10 @@ function OnlineTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name as string}</span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{String(u.name ?? "")}</span>
                   {u.role === "admin" && <span className="text-[11px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Admin</span>}
                 </div>
-                {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email as string}</div>}
+                {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
               </div>
               <span className="text-[11px] flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>{formatTime(u.lastSeenAt as string)}</span>
             </div>
@@ -533,10 +533,10 @@ function ActivityTab() {
               <div className="flex justify-between items-start">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name as string}</span>
-                    <span className="text-[11px] px-1.5 rounded uppercase font-semibold" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{u.role as string}</span>
+                    <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{String(u.name ?? "")}</span>
+                    <span className="text-[11px] px-1.5 rounded uppercase font-semibold" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{String(u.role ?? "")}</span>
                   </div>
-                  {u.email && <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email as string}</div>}
+                  {u.email && <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatRel(u.lastSeenAt as string)}</div>
@@ -1337,7 +1337,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
           <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>Top Whiskies</span>
           {(analytics.topWhiskies as Array<Record<string, unknown>>).slice(0, 10).map((w, i) => (
             <div key={(w.id as string) || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
-              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name as string}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery as string}</span>}</div>
+              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {String(w.name ?? "")}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{String(w.distillery)}</span>}</div>
               <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{Number(w.avgScore).toFixed(1)}</span>
             </div>
           ))}
@@ -1481,8 +1481,8 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
           <ChevronRight className="w-3.5 h-3.5" style={{ transform: "rotate(180deg)" }} /> Back to Communities
         </button>
         <div className="labs-card p-4 mb-3">
-          <div className="flex items-center gap-2 mb-3"><Globe className="w-5 h-5" style={{ color: "var(--labs-accent)" }} /><div><div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{detail.name as string}</div><div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{detail.slug as string}</div></div></div>
-          {detail.description && <div className="text-xs mb-3" style={{ color: "var(--labs-text-secondary)" }}>{detail.description as string}</div>}
+          <div className="flex items-center gap-2 mb-3"><Globe className="w-5 h-5" style={{ color: "var(--labs-accent)" }} /><div><div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{String(detail.name ?? "")}</div><div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{String(detail.slug ?? "")}</div></div></div>
+          {detail.description && <div className="text-xs mb-3" style={{ color: "var(--labs-text-secondary)" }}>{String(detail.description)}</div>}
         </div>
         <div className="labs-card p-4 mb-3">
           <div className="flex items-center gap-1.5 mb-3"><Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Members</span><span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>({members.length})</span></div>
@@ -1715,12 +1715,12 @@ function FeedbackTab({ pid }: { pid: string }) {
           {(feedback as Array<Record<string, unknown>>).map((fb) => (
             <div key={fb.id as string} className="labs-card p-3" data-testid={`labs-admin-feedback-${fb.id}`}>
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-sm">{icons[(fb.category as string)] || "\u{1F4DD}"}</span>
-                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--labs-accent)" }}>{fb.category as string}</span>
-                {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(fb.participantName as string)}</span>}
-                {fb.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(fb.createdAt as string).toLocaleDateString()}</span>}
+                <span className="text-sm">{icons[String(fb.category ?? "")] || "\u{1F4DD}"}</span>
+                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--labs-accent)" }}>{String(fb.category ?? "")}</span>
+                {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(fb.participantName)}</span>}
+                {fb.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(String(fb.createdAt)).toLocaleDateString()}</span>}
               </div>
-              <div className="text-xs" style={{ color: "var(--labs-text)", lineHeight: 1.5 }}>{fb.message as string}</div>
+              <div className="text-xs" style={{ color: "var(--labs-text)", lineHeight: 1.5 }}>{String(fb.message ?? "")}</div>
             </div>
           ))}
         </div>

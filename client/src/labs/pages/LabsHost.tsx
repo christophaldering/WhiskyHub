@@ -1919,7 +1919,7 @@ function MobileCompanion({
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>
-                {tasting.blindMode ? `Dram ${String.fromCharCode(65 + guidedIdx)}` : ((activeWhisky as Record<string, unknown>).name as string) || `Whisky ${guidedIdx + 1}`}
+                {tasting.blindMode ? `Dram ${String.fromCharCode(65 + guidedIdx)}` : String((activeWhisky as Record<string, unknown>).name ?? "") || `Whisky ${guidedIdx + 1}`}
               </p>
             </div>
             <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>

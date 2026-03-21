@@ -428,7 +428,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 style={{ color: "var(--labs-text)", flex: 1, minWidth: 0 }}
                 data-testid="labs-detail-title"
               >
-                {tasting.title}
+                {String(tasting.title ?? "")}
               </h1>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {isHost && (
@@ -452,7 +452,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 style={{ color: "var(--labs-text-secondary)" }}
                 data-testid="labs-detail-description"
               >
-                {tasting.description}
+                {String(tasting.description ?? "")}
               </p>
             )}
 
@@ -460,13 +460,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               {tasting.date && (
                 <span className="flex items-center gap-1.5" data-testid="labs-detail-date">
                   <Calendar className="w-3.5 h-3.5" />
-                  {tasting.date}
+                  {typeof tasting.date === "string" ? tasting.date : tasting.date instanceof Date ? tasting.date.toLocaleDateString() : String(tasting.date)}
                 </span>
               )}
               {tasting.location && (
                 <span className="flex items-center gap-1.5" data-testid="labs-detail-location">
                   <MapPin className="w-3.5 h-3.5" />
-                  {tasting.location}
+                  {String(tasting.location ?? "")}
                 </span>
               )}
               {tasting.hostName && (
@@ -973,7 +973,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-accent)" }}>Invitations sent</p>
                           {inviteResults.map((r, i) => (
                             <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: i < inviteResults.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
-                              <span className="text-sm truncate" style={{ color: "var(--labs-text-secondary)" }}>{r.email}</span>
+                              <span className="text-sm truncate" style={{ color: "var(--labs-text-secondary)" }}>{String(r.email ?? "")}</span>
                               <span
                                 className="labs-badge text-[11px]"
                                 style={{
@@ -981,7 +981,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                                   color: r.status === "sent" ? "var(--labs-success)" : "var(--labs-accent)",
                                 }}
                               >
-                                {r.status}
+                                {String(r.status ?? "")}
                               </span>
                             </div>
                           ))}
@@ -1039,7 +1039,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                                       }}
                                       data-testid={`text-invite-name-${invite.id}`}
                                     >
-                                      {matchedFriend.firstName} {matchedFriend.lastName}
+                                      {String(matchedFriend.firstName ?? "")} {String(matchedFriend.lastName ?? "")}
                                     </p>
                                   )}
                                   <p
@@ -1053,7 +1053,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                                     }}
                                     data-testid={`text-invite-email-${invite.id}`}
                                   >
-                                    {invite.email}
+                                    {String(invite.email ?? "")}
                                   </p>
                                 </div>
                                 <span
@@ -1064,7 +1064,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                                   }}
                                   data-testid={`badge-invite-status-${invite.id}`}
                                 >
-                                  {invite.status}
+                                  {String(invite.status ?? "")}
                                 </span>
                               </div>
                             );
