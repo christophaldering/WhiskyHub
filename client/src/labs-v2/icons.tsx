@@ -353,3 +353,71 @@ export function FileText(p: IconProps) {
     <line x1="16" y1="17" x2="8" y2="17" />
   </>);
 }
+
+export function Sound(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill={p.color} stroke="none" />
+    <path d="M15.54 8.46a5 5 0 010 7.07" />
+    <path d="M19.07 4.93a10 10 0 010 14.14" />
+  </>);
+}
+
+export function SoundOff(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill={p.color} stroke="none" />
+    <line x1="23" y1="9" x2="17" y2="15" />
+    <line x1="17" y1="9" x2="23" y2="15" />
+  </>);
+}
+
+export function MicOff(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <line x1="1" y1="1" x2="23" y2="23" />
+    <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
+    <path d="M17 16.95A7 7 0 015 12v-2m14 0v2c0 .87-.16 1.71-.46 2.49" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="8" y1="22" x2="16" y2="22" />
+  </>);
+}
+
+export function Lock(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0110 0v4" />
+  </>);
+}
+
+export function Unlock(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 019.9-1" />
+  </>);
+}
+
+export function Flame(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M12 22c4-4 8-7.5 8-12A8 8 0 004 10c0 4.5 4 8 8 12z" />
+    <path d="M12 22c-2-2-4-3.5-4-6a4 4 0 018 0c0 2.5-2 4-4 6z" fill={p.color} stroke="none" opacity={0.3} />
+  </>);
+}
+
+export function Music(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </>);
+}
+
+export function Eye(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </>);
+}
+
+export function Sparkle(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" fill={p.color} stroke="none" />
+  </>);
+}

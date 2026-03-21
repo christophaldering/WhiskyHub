@@ -7,10 +7,11 @@ import PlaceholderTab from "./PlaceholderTab";
 import { RatingFlow } from "./screens/rating/RatingFlow";
 import SoloFlow from "./screens/solo/SoloFlow";
 import HostWizard from "./screens/host/HostWizard";
+import LiveTasting from "./screens/live/LiveTasting";
 import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
-type SubScreen = null | "join" | "solo" | "host" | "rating";
+type SubScreen = null | "join" | "solo" | "host" | "rating" | "live";
 
 function SoloScreen({ onBack }: { onBack: () => void }) {
   const { th } = useV2Theme();
@@ -48,6 +49,7 @@ function RatingScreen({ onBack }: { onBack: () => void }) {
 export default function LabsV2App() {
   const [activeTab, setActiveTab] = useState<TabId>("tastings");
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
+  const [activeTastingId, setActiveTastingId] = useState<string>("");
 
   const handleTabChange = useCallback((tab: TabId) => {
     setActiveTab(tab);
@@ -56,10 +58,12 @@ export default function LabsV2App() {
 
   const goBack = useCallback(() => {
     setSubScreen(null);
+    setActiveTastingId("");
   }, []);
 
-  const handleEnterLive = useCallback((_tid: string) => {
-    setSubScreen("rating");
+  const handleEnterLive = useCallback((tid: string) => {
+    setActiveTastingId(tid);
+    setSubScreen("live");
   }, []);
 
   const handleLogoClick = useCallback(() => {
@@ -73,6 +77,8 @@ export default function LabsV2App() {
 
   if (subScreen === "join") {
     content = <JoinFlow onBack={goBack} onEnterLive={handleEnterLive} />;
+  } else if (subScreen === "live" && activeTastingId) {
+    content = <LiveTasting tastingId={activeTastingId} onBack={goBack} />;
   } else if (subScreen === "rating") {
     content = <RatingScreen onBack={goBack} />;
   } else if (subScreen === "solo") {

@@ -45,16 +45,62 @@
   animation: pulse-ring 1.5s ease-out infinite;
 }
 
+@keyframes revealFlash {
+  0%   { opacity: 0; transform: scale(0.8); filter: brightness(1); }
+  30%  { opacity: 1; transform: scale(1.05); filter: brightness(1.8); }
+  60%  { transform: scale(1); filter: brightness(1.2); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes breathingPause {
+  0%   { opacity: 0; transform: scale(0.96); }
+  50%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sparkleFloat {
+  0%   { opacity: 0; transform: translateY(0) scale(0); }
+  50%  { opacity: 1; transform: translateY(-12px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.6); }
+}
+
+@keyframes lobbyPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.06); }
+}
+
+.v2-reveal-flash {
+  animation: revealFlash 0.7s ease-out both;
+}
+
+.v2-breathing-pause {
+  animation: breathingPause 0.35s ease-out both;
+}
+
+.v2-sparkle-float {
+  animation: sparkleFloat 1.2s ease-out both;
+}
+
+.v2-lobby-pulse {
+  animation: lobbyPulse 2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v2-fade-up,
   .v2-ping,
   .v2-save-flash,
   .v2-spin,
-  .v2-pulse-ring {
+  .v2-pulse-ring,
+  .v2-reveal-flash,
+  .v2-breathing-pause,
+  .v2-sparkle-float,
+  .v2-lobby-pulse {
     animation: none !important;
   }
 
-  .v2-fade-up {
+  .v2-fade-up,
+  .v2-reveal-flash,
+  .v2-breathing-pause {
     opacity: 1;
     transform: none;
   }

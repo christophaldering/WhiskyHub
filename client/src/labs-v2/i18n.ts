@@ -205,6 +205,42 @@ export interface Translations {
   circleSub: string;
   comingSoon: string;
   newExperience: string;
+  liveLobbyTitle: string;
+  liveWaitingHost: string;
+  livePourHint: string;
+  liveDram: string;
+  liveOf: string;
+  liveBlind: string;
+  liveRevealed: string;
+  liveRevealName: string;
+  liveRevealDetails: string;
+  liveRevealPhoto: string;
+  liveLocked: string;
+  liveLockedHint: string;
+  liveBreathing: string;
+  liveVoiceMemo: string;
+  liveRecording: string;
+  liveUploading: string;
+  liveDeleteMemo: string;
+  liveDeleteConfirm: string;
+  liveCancel: string;
+  liveTranscript: string;
+  liveAmbient: string;
+  liveAmbientOff: string;
+  liveFireplace: string;
+  liveRain: string;
+  liveNight: string;
+  liveBagpipe: string;
+  liveVolume: string;
+  liveClosed: string;
+  liveClosedSub: string;
+  liveToResults: string;
+  liveArchived: string;
+  liveSaving: string;
+  liveSaved: string;
+  liveSaveError: string;
+  liveNextDram: string;
+  livePrevDram: string;
 }
 
 const de: Translations = {
@@ -412,6 +448,42 @@ const de: Translations = {
   circleSub: "Deine Community",
   comingSoon: "Kommt bald",
   newExperience: "\u2726 Neue Erfahrung",
+  liveLobbyTitle: "Tasting-Lobby",
+  liveWaitingHost: "Warte auf den Host\u2026",
+  livePourHint: "Giess dir schon mal ein.",
+  liveDram: "Dram",
+  liveOf: "von",
+  liveBlind: "Blind Tasting",
+  liveRevealed: "Enth\u00fcllt",
+  liveRevealName: "Name",
+  liveRevealDetails: "Details",
+  liveRevealPhoto: "Foto",
+  liveLocked: "Gesperrt",
+  liveLockedHint: "Warte auf den Host, diesen Dram freizugeben.",
+  liveBreathing: "N\u00e4chster Dram wird vorbereitet\u2026",
+  liveVoiceMemo: "Sprachnotiz",
+  liveRecording: "Aufnahme l\u00e4uft\u2026",
+  liveUploading: "Wird hochgeladen\u2026",
+  liveDeleteMemo: "Sprachnotiz l\u00f6schen",
+  liveDeleteConfirm: "Wirklich l\u00f6schen?",
+  liveCancel: "Abbrechen",
+  liveTranscript: "Transkript",
+  liveAmbient: "Atmosph\u00e4re",
+  liveAmbientOff: "Aus",
+  liveFireplace: "Kamin",
+  liveRain: "Regen",
+  liveNight: "Nacht",
+  liveBagpipe: "Dudelsack",
+  liveVolume: "Lautst\u00e4rke",
+  liveClosed: "Tasting beendet",
+  liveClosedSub: "Vielen Dank f\u00fcr deine Teilnahme!",
+  liveToResults: "Ergebnisse ansehen \u2192",
+  liveArchived: "Dieses Tasting wurde archiviert.",
+  liveSaving: "Speichern\u2026",
+  liveSaved: "Gespeichert",
+  liveSaveError: "Speichern fehlgeschlagen",
+  liveNextDram: "N\u00e4chster Dram \u2192",
+  livePrevDram: "\u2190 Vorheriger Dram",
 };
 
 const en: Translations = {
@@ -619,6 +691,42 @@ const en: Translations = {
   circleSub: "Your community",
   comingSoon: "Coming soon",
   newExperience: "\u2726 New Experience",
+  liveLobbyTitle: "Tasting Lobby",
+  liveWaitingHost: "Waiting for the host\u2026",
+  livePourHint: "Go ahead and pour yourself one.",
+  liveDram: "Dram",
+  liveOf: "of",
+  liveBlind: "Blind Tasting",
+  liveRevealed: "Revealed",
+  liveRevealName: "Name",
+  liveRevealDetails: "Details",
+  liveRevealPhoto: "Photo",
+  liveLocked: "Locked",
+  liveLockedHint: "Wait for the host to unlock this dram.",
+  liveBreathing: "Next dram is being prepared\u2026",
+  liveVoiceMemo: "Voice Memo",
+  liveRecording: "Recording\u2026",
+  liveUploading: "Uploading\u2026",
+  liveDeleteMemo: "Delete voice memo",
+  liveDeleteConfirm: "Really delete?",
+  liveCancel: "Cancel",
+  liveTranscript: "Transcript",
+  liveAmbient: "Ambience",
+  liveAmbientOff: "Off",
+  liveFireplace: "Fireplace",
+  liveRain: "Rain",
+  liveNight: "Night",
+  liveBagpipe: "Bagpipe",
+  liveVolume: "Volume",
+  liveClosed: "Tasting Complete",
+  liveClosedSub: "Thank you for participating!",
+  liveToResults: "View Results \u2192",
+  liveArchived: "This tasting has been archived.",
+  liveSaving: "Saving\u2026",
+  liveSaved: "Saved",
+  liveSaveError: "Save failed",
+  liveNextDram: "Next Dram \u2192",
+  livePrevDram: "\u2190 Previous Dram",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };
