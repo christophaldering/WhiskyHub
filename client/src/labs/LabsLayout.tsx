@@ -565,6 +565,11 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   useHeartbeat();
   const onlineFriendsCount = useFriendOnlineNotifications();
   const { theme } = useLabsTheme();
+
+  const handleLang = (lang: 'de' | 'en') => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('casksense-language', lang);
+  };
   const vb = useVerificationBanner();
   const prevLocationRef = useRef(location);
   const [autoResumeChecked, setAutoResumeChecked] = useState(() => getSession().signedIn);
@@ -691,6 +696,42 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           >
             <Search className="w-4 h-4" />
           </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <button
+              onClick={() => handleLang('de')}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: i18n.language.startsWith('de') ? 600 : 400,
+                opacity: i18n.language.startsWith('de') ? 1 : 0.5,
+                color: "var(--labs-text-secondary)",
+                padding: "4px 6px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              data-testid="labs-lang-de"
+            >
+              DE
+            </button>
+            <button
+              onClick={() => handleLang('en')}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: i18n.language.startsWith('en') ? 600 : 400,
+                opacity: i18n.language.startsWith('en') ? 1 : 0.5,
+                color: "var(--labs-text-secondary)",
+                padding: "4px 6px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              data-testid="labs-lang-en"
+            >
+              EN
+            </button>
+          </div>
           <button
             onClick={() => setProfileOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
