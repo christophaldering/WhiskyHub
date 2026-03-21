@@ -115,6 +115,8 @@ const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
 
+const LabsV2App = lazy(() => import("@/labs-v2/LabsV2App"));
+
 function LazyFallback() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60dvh" }}>
@@ -540,6 +542,10 @@ function Router() {
             </Switch>
           </LabsLayout>
         </Route>
+
+        {/* ── CaskSense V2 ── */}
+        <Route path="/labs-v2/:rest*" component={LabsV2App} />
+        <Route path="/labs-v2" component={LabsV2App} />
 
         {/* ── Catch-all: redirect all remaining old routes to Labs ── */}
         <Route>

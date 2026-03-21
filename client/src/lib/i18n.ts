@@ -509,6 +509,7 @@ const resources = {
           body1: "What the community knows about every whisky.",
           body2: "What your ratings reveal about you.",
           startTasting: "Start Tasting",
+          newExperience: "New Experience",
         },
         twoways: {
           solo: {
@@ -6908,6 +6909,7 @@ const resources = {
           body1: "Was die Community über jeden Whisky weiß.",
           body2: "Was deine Bewertungen über dich verraten.",
           startTasting: "Tasting starten",
+          newExperience: "Neue Erfahrung",
         },
         quickJoin: {
           label: "Zum Tasting eingeladen?",
