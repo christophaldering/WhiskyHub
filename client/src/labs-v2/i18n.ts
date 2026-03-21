@@ -82,10 +82,49 @@ export interface Translations {
   band70: string;
   band0: string;
   soloTitle: string;
+  soloCaptureSub: string;
   soloPhoto: string;
+  soloPhotoDesc: string;
   soloManual: string;
+  soloManualDesc: string;
   soloBarcode: string;
+  soloBarcodeDesc: string;
   soloSkip: string;
+  soloName: string;
+  soloNamePH: string;
+  soloRegion: string;
+  soloRegionPH: string;
+  soloCask: string;
+  soloCaskPH: string;
+  soloAge: string;
+  soloAgePH: string;
+  soloAbv: string;
+  soloAbvPH: string;
+  soloDistillery: string;
+  soloDistilleryPH: string;
+  soloToRating: string;
+  soloIdentifying: string;
+  soloIdentifyFail: string;
+  soloIdentifyRetry: string;
+  soloSaved: string;
+  soloAnother: string;
+  soloToHub: string;
+  soloJournalTitle: string;
+  soloJournalEmpty: string;
+  soloQuickRate: string;
+  soloFullEdit: string;
+  soloVoiceMemo: string;
+  soloRecording: string;
+  soloUploading: string;
+  soloDeleteMemo: string;
+  soloDeleteConfirm: string;
+  soloCancel: string;
+  soloRecognized: string;
+  soloBarcodeInput: string;
+  soloBarcodeInputPH: string;
+  soloBarcodeSubmit: string;
+  soloSaveRetry: string;
+  soloParticipantError: string;
   hostTitle: string;
   hostName: string;
   hostDate: string;
@@ -193,11 +232,50 @@ const de: Translations = {
   band75: "Sehr gut",
   band70: "Gut",
   band0: "Okay",
-  soloTitle: "",
-  soloPhoto: "",
-  soloManual: "",
-  soloBarcode: "",
-  soloSkip: "",
+  soloTitle: "Dram erfassen",
+  soloCaptureSub: "Wie m\u00f6chtest du den Whisky erfassen?",
+  soloPhoto: "Foto aufnehmen",
+  soloPhotoDesc: "Flasche fotografieren und per KI erkennen",
+  soloManual: "Manuell eingeben",
+  soloManualDesc: "Name, Destillerie und Details selbst eintragen",
+  soloBarcode: "Barcode scannen",
+  soloBarcodeDesc: "EAN- oder QR-Code einlesen",
+  soloSkip: "Ohne Angaben bewerten",
+  soloName: "Name",
+  soloNamePH: "z.B. Lagavulin 16",
+  soloRegion: "Region",
+  soloRegionPH: "z.B. Islay",
+  soloCask: "Fasstyp",
+  soloCaskPH: "z.B. Sherry",
+  soloAge: "Alter",
+  soloAgePH: "Jahre",
+  soloAbv: "ABV",
+  soloAbvPH: "%",
+  soloDistillery: "Destillerie",
+  soloDistilleryPH: "z.B. Lagavulin",
+  soloToRating: "Weiter zur Bewertung",
+  soloIdentifying: "Whisky wird erkannt\u2026",
+  soloIdentifyFail: "Erkennung fehlgeschlagen",
+  soloIdentifyRetry: "Erneut versuchen",
+  soloSaved: "Im Journal gespeichert",
+  soloAnother: "Noch einen Dram erfassen",
+  soloToHub: "Zur\u00fcck zur \u00dcbersicht",
+  soloJournalTitle: "Journal",
+  soloJournalEmpty: "Noch keine Eintr\u00e4ge",
+  soloQuickRate: "Schnellbewertung",
+  soloFullEdit: "Detailliert bearbeiten",
+  soloVoiceMemo: "Sprachnotiz",
+  soloRecording: "Aufnahme l\u00e4uft\u2026",
+  soloUploading: "Wird hochgeladen\u2026",
+  soloDeleteMemo: "Sprachnotiz l\u00f6schen",
+  soloDeleteConfirm: "Wirklich l\u00f6schen?",
+  soloCancel: "Abbrechen",
+  soloRecognized: "Per Foto erkannt",
+  soloBarcodeInput: "Barcode eingeben",
+  soloBarcodeInputPH: "EAN / UPC Nummer",
+  soloBarcodeSubmit: "Weiter",
+  soloSaveRetry: "Erneut speichern",
+  soloParticipantError: "Sitzung konnte nicht erstellt werden. Bitte erneut versuchen.",
   hostTitle: "",
   hostName: "",
   hostDate: "",
@@ -305,11 +383,50 @@ const en: Translations = {
   band75: "Very good",
   band70: "Good",
   band0: "Okay",
-  soloTitle: "",
-  soloPhoto: "",
-  soloManual: "",
-  soloBarcode: "",
-  soloSkip: "",
+  soloTitle: "Log a Dram",
+  soloCaptureSub: "How would you like to capture the whisky?",
+  soloPhoto: "Take a Photo",
+  soloPhotoDesc: "Photograph the bottle and identify via AI",
+  soloManual: "Manual Entry",
+  soloManualDesc: "Enter name, distillery, and details yourself",
+  soloBarcode: "Scan Barcode",
+  soloBarcodeDesc: "Read an EAN or QR code",
+  soloSkip: "Rate without details",
+  soloName: "Name",
+  soloNamePH: "e.g. Lagavulin 16",
+  soloRegion: "Region",
+  soloRegionPH: "e.g. Islay",
+  soloCask: "Cask Type",
+  soloCaskPH: "e.g. Sherry",
+  soloAge: "Age",
+  soloAgePH: "Years",
+  soloAbv: "ABV",
+  soloAbvPH: "%",
+  soloDistillery: "Distillery",
+  soloDistilleryPH: "e.g. Lagavulin",
+  soloToRating: "Continue to Rating",
+  soloIdentifying: "Identifying whisky...",
+  soloIdentifyFail: "Identification failed",
+  soloIdentifyRetry: "Try again",
+  soloSaved: "Saved to journal",
+  soloAnother: "Log another dram",
+  soloToHub: "Back to overview",
+  soloJournalTitle: "Journal",
+  soloJournalEmpty: "No entries yet",
+  soloQuickRate: "Quick rate",
+  soloFullEdit: "Detailed edit",
+  soloVoiceMemo: "Voice Memo",
+  soloRecording: "Recording...",
+  soloUploading: "Uploading...",
+  soloDeleteMemo: "Delete voice memo",
+  soloDeleteConfirm: "Really delete?",
+  soloCancel: "Cancel",
+  soloRecognized: "Identified from photo",
+  soloBarcodeInput: "Enter barcode",
+  soloBarcodeInputPH: "EAN / UPC number",
+  soloBarcodeSubmit: "Continue",
+  soloSaveRetry: "Retry save",
+  soloParticipantError: "Could not create session. Please try again.",
   hostTitle: "",
   hostName: "",
   hostDate: "",

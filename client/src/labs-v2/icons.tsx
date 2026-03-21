@@ -190,3 +190,64 @@ export function ChevronDown(p: IconProps) {
     <polyline points="6 9 12 15 18 9" />
   </>);
 }
+
+export function Camera(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </>);
+}
+
+export function Edit(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </>);
+}
+
+export function Barcode(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <line x1="4" y1="4" x2="4" y2="20" />
+    <line x1="8" y1="4" x2="8" y2="16" />
+    <line x1="12" y1="4" x2="12" y2="20" />
+    <line x1="16" y1="4" x2="16" y2="16" />
+    <line x1="20" y1="4" x2="20" y2="20" />
+    <line x1="6" y1="4" x2="6" y2="16" />
+    <line x1="14" y1="4" x2="14" y2="16" />
+    <line x1="18" y1="4" x2="18" y2="16" />
+  </>);
+}
+
+export function Skip(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <polyline points="13 17 18 12 13 7" />
+    <polyline points="6 17 11 12 6 7" />
+  </>);
+}
+
+export function Spinner(p: IconProps) {
+  return svg(
+    { ...p, style: { ...p.style, animation: "spin 1s linear infinite" } },
+    "0 0 24 24",
+    <path d="M21 12a9 9 0 11-6.219-8.56" />
+  );
+}
+
+export function Mic(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M19 10v2a7 7 0 01-14 0v-2" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="8" y1="22" x2="16" y2="22" />
+  </>);
+}
+
+export function Trash(p: IconProps) {
+  return svg(p, "0 0 24 24", <>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+  </>);
+}

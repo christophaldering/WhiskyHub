@@ -5,10 +5,18 @@ import TastingsHub from "./TastingsHub";
 import JoinFlow from "./JoinFlow";
 import PlaceholderTab from "./PlaceholderTab";
 import { RatingFlow } from "./screens/rating/RatingFlow";
+import SoloFlow from "./screens/solo/SoloFlow";
 import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
 type SubScreen = null | "join" | "solo" | "host" | "rating";
+
+function SoloScreen({ onBack }: { onBack: () => void }) {
+  const { th } = useV2Theme();
+  const { t } = useV2Lang();
+
+  return <SoloFlow th={th} t={t} onBack={onBack} />;
+}
 
 function RatingScreen({ onBack }: { onBack: () => void }) {
   const { th } = useV2Theme();
@@ -66,7 +74,9 @@ export default function LabsV2App() {
     content = <JoinFlow onBack={goBack} onEnterLive={handleEnterLive} />;
   } else if (subScreen === "rating") {
     content = <RatingScreen onBack={goBack} />;
-  } else if (subScreen === "solo" || subScreen === "host") {
+  } else if (subScreen === "solo") {
+    content = <SoloScreen onBack={goBack} />;
+  } else if (subScreen === "host") {
     content = <PlaceholderTab variant="discover" />;
   } else if (activeTab === "tastings") {
     content = (
