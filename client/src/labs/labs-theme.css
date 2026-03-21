@@ -873,6 +873,51 @@
   font-weight: 600;
 }
 
+@media (max-width: 480px) {
+  .labs-chip {
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 2px;
+  }
+
+  .labs-circle-tabs {
+    gap: 6px;
+  }
+
+  .labs-circle-tabs-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, transparent, var(--labs-bg));
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .labs-circle-tabs-wrapper.has-overflow::after {
+    opacity: 1;
+  }
+
+  .labs-circle-tab-icon {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .labs-circle-tab-badge {
+    width: 14px !important;
+    height: 14px !important;
+    font-size: 9px !important;
+  }
+}
+
+.labs-circle-tabs {
+  gap: 8px;
+}
+
 .labs-list-row {
   display: flex;
   align-items: center;

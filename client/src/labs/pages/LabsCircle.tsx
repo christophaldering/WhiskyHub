@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
@@ -83,6 +83,27 @@ export default function LabsCircle() {
   const [friendFirstName, setFriendFirstName] = useState("");
   const [friendLastName, setFriendLastName] = useState("");
   const [friendEmail, setFriendEmail] = useState("");
+  const tabsWrapperRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  const checkTabsOverflow = useCallback(() => {
+    const wrapper = tabsWrapperRef.current;
+    const tabs = tabsRef.current;
+    if (wrapper && tabs) {
+      const hasOverflow = tabs.scrollWidth > tabs.clientWidth;
+      wrapper.classList.toggle("has-overflow", hasOverflow);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkTabsOverflow();
+    window.addEventListener("resize", checkTabsOverflow);
+    return () => window.removeEventListener("resize", checkTabsOverflow);
+  }, [checkTabsOverflow]);
+
+  useEffect(() => {
+    checkTabsOverflow();
+  }, [tab, pendingList.length, checkTabsOverflow]);
 
   const { data: friends, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
@@ -221,46 +242,67 @@ export default function LabsCircle() {
           >
             Circle
           </h1>
-          {onlineCount > 0 && (
-            <span
-              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
-              data-testid="labs-circle-online-count"
+          <div className="flex items-center gap-2">
+            {onlineCount > 0 && (
+              <span
+                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
+                data-testid="labs-circle-online-count"
+              >
+                <Wifi className="w-3 h-3" />
+                {onlineCount} online
+              </span>
+            )}
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={{
+                background: addFriendOpen ? "var(--labs-surface)" : "var(--labs-accent)",
+                color: addFriendOpen ? "var(--labs-text)" : "var(--labs-bg)",
+                border: addFriendOpen ? "1px solid var(--labs-border)" : "1px solid transparent",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                if (!addFriendOpen) setTab("friends");
+                setAddFriendOpen(!addFriendOpen);
+              }}
+              data-testid="labs-circle-add-friend-btn"
             >
-              <Wifi className="w-3 h-3" />
-              {onlineCount} online
-            </span>
-          )}
+              <UserPlus className="w-3.5 h-3.5" />
+              {addFriendOpen ? "Cancel" : "Add"}
+            </button>
+          </div>
         </div>
         <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
           Friends, rankings & tastings
         </p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 20, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`labs-chip ${tab === t.key ? "labs-chip-active" : ""}`}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-            onClick={() => setTab(t.key)}
-            data-testid={`labs-circle-tab-${t.key}`}
-          >
-            <t.icon style={{ width: 14, height: 14 }} />
-            {t.label}
-            {t.key === "friends" && pendingList.length > 0 && (
-              <span
-                className="inline-flex items-center justify-center rounded-full"
-                style={{
-                  width: 16, height: 16, fontSize: 11, fontWeight: 700,
-                  background: "var(--labs-danger)", color: "var(--labs-on-accent)",
-                }}
-              >
-                {pendingList.length}
-              </span>
-            )}
-          </button>
-        ))}
+      <div ref={tabsWrapperRef} className="labs-circle-tabs-wrapper" style={{ marginBottom: 20, position: "relative" }}>
+        <div ref={tabsRef} className="labs-circle-tabs flex overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              className={`labs-chip ${tab === t.key ? "labs-chip-active" : ""}`}
+              style={{ display: "flex", alignItems: "center" }}
+              onClick={() => setTab(t.key)}
+              data-testid={`labs-circle-tab-${t.key}`}
+            >
+              <t.icon className="labs-circle-tab-icon" style={{ width: 14, height: 14, flexShrink: 0 }} />
+              {t.label}
+              {t.key === "friends" && pendingList.length > 0 && (
+                <span
+                  className="labs-circle-tab-badge inline-flex items-center justify-center rounded-full"
+                  style={{
+                    width: 16, height: 16, fontSize: 11, fontWeight: 700,
+                    background: "var(--labs-danger)", color: "var(--labs-on-accent)",
+                  }}
+                >
+                  {pendingList.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === "leaderboard" && renderLeaderboardTab()}
@@ -496,22 +538,6 @@ export default function LabsCircle() {
 
     return (
       <div className="labs-fade-in" data-testid="labs-circle-friends">
-        <div className="flex justify-end mb-4">
-          <button
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: addFriendOpen ? "var(--labs-surface)" : "var(--labs-accent)",
-              color: addFriendOpen ? "var(--labs-text)" : "var(--labs-bg)",
-              border: addFriendOpen ? "1px solid var(--labs-border)" : "none",
-              cursor: "pointer",
-            }}
-            onClick={() => setAddFriendOpen(!addFriendOpen)}
-            data-testid="labs-circle-add-friend-btn"
-          >
-            <UserPlus className="w-4 h-4" />
-            {addFriendOpen ? "Cancel" : "Add Friend"}
-          </button>
-        </div>
 
         {addFriendOpen && (
           <div className="labs-card p-4 mb-5 space-y-3" data-testid="labs-circle-add-friend-form">
