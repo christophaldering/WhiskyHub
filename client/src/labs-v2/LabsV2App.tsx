@@ -6,6 +6,7 @@ import JoinFlow from "./JoinFlow";
 import PlaceholderTab from "./PlaceholderTab";
 import { RatingFlow } from "./screens/rating/RatingFlow";
 import SoloFlow from "./screens/solo/SoloFlow";
+import HostWizard from "./screens/host/HostWizard";
 import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
@@ -77,7 +78,7 @@ export default function LabsV2App() {
   } else if (subScreen === "solo") {
     content = <SoloScreen onBack={goBack} />;
   } else if (subScreen === "host") {
-    content = <PlaceholderTab variant="discover" />;
+    content = <HostWizard onBack={goBack} />;
   } else if (activeTab === "tastings") {
     content = (
       <TastingsHub

@@ -132,7 +132,9 @@ export interface Translations {
   hostLoc: string;
   hostFormat: string;
   hostBlind: string;
+  hostBlindDesc: string;
   hostOpen: string;
+  hostOpenDesc: string;
   hostNext: string;
   hostBack: string;
   hostWhiskies: string;
@@ -141,6 +143,60 @@ export interface Translations {
   hostCode: string;
   hostLive: string;
   hostStart: string;
+  hostStep1: string;
+  hostStep2: string;
+  hostStep3: string;
+  hostStep4: string;
+  hostRevealOrder: string;
+  hostRevealNose: string;
+  hostRevealPalate: string;
+  hostRevealFull: string;
+  hostRevealImmediate: string;
+  hostRatingScale: string;
+  hostCreateTasting: string;
+  hostSampleN: string;
+  hostWhiskyN: string;
+  hostRegion: string;
+  hostCask: string;
+  hostAge: string;
+  hostDeleteWhisky: string;
+  hostAiImport: string;
+  hostAiImportDesc: string;
+  hostDragDrop: string;
+  hostDragDropHint: string;
+  hostParsing: string;
+  hostParseErr: string;
+  hostSelectAll: string;
+  hostImportSelected: string;
+  hostPrintSheets: string;
+  hostCodeCopied: string;
+  hostCopyCode: string;
+  hostQrDownload: string;
+  hostEmailSection: string;
+  hostEmailPlaceholder: string;
+  hostPersonalNote: string;
+  hostNotePlaceholder: string;
+  hostSendInvites: string;
+  hostSending: string;
+  hostEmailSent: string;
+  hostEmailQueued: string;
+  hostStartTasting: string;
+  hostLiveStatus: string;
+  hostLiveRunning: string;
+  hostCurrentDram: string;
+  hostNextDram: string;
+  hostReveal: string;
+  hostEndTasting: string;
+  hostEndConfirm: string;
+  hostEndConfirmMsg: string;
+  hostEndCancel: string;
+  hostEndYes: string;
+  hostAllRated: string;
+  hostInProgress: string;
+  hostNotStarted: string;
+  hostWhiskyLineup: string;
+  hostActiveDram: string;
+  hostNoParticipants: string;
   entTitle: string;
   entSub: string;
   mwTitle: string;
@@ -276,22 +332,78 @@ const de: Translations = {
   soloBarcodeSubmit: "Weiter",
   soloSaveRetry: "Erneut speichern",
   soloParticipantError: "Sitzung konnte nicht erstellt werden. Bitte erneut versuchen.",
-  hostTitle: "",
-  hostName: "",
-  hostDate: "",
-  hostTime: "",
-  hostLoc: "",
-  hostFormat: "",
-  hostBlind: "",
-  hostOpen: "",
-  hostNext: "",
-  hostBack: "",
-  hostWhiskies: "",
-  hostAddW: "",
-  hostInvite: "",
-  hostCode: "",
-  hostLive: "",
-  hostStart: "",
+  hostTitle: "Tasting erstellen",
+  hostName: "Name des Tastings",
+  hostDate: "Datum",
+  hostTime: "Uhrzeit",
+  hostLoc: "Ort",
+  hostFormat: "Format",
+  hostBlind: "Blind",
+  hostBlindDesc: "Whiskys werden verdeckt verkostet",
+  hostOpen: "Offen",
+  hostOpenDesc: "Alle Infos sind sichtbar",
+  hostNext: "Weiter",
+  hostBack: "Zurück",
+  hostWhiskies: "Whiskys",
+  hostAddW: "Whisky hinzufügen",
+  hostInvite: "Einladungen",
+  hostCode: "Tasting-Code",
+  hostLive: "Live",
+  hostStart: "Tasting starten",
+  hostStep1: "Setup",
+  hostStep2: "Whiskys",
+  hostStep3: "Einladen",
+  hostStep4: "Live",
+  hostRevealOrder: "Enthüllungsreihenfolge",
+  hostRevealNose: "Nach Nase",
+  hostRevealPalate: "Nach Gaumen",
+  hostRevealFull: "Komplett",
+  hostRevealImmediate: "Sofort",
+  hostRatingScale: "Bewertungsskala",
+  hostCreateTasting: "Tasting erstellen →",
+  hostSampleN: "Sample",
+  hostWhiskyN: "Whisky",
+  hostRegion: "Region",
+  hostCask: "Fass",
+  hostAge: "Alter",
+  hostDeleteWhisky: "Entfernen",
+  hostAiImport: "AI Import",
+  hostAiImportDesc: "Datei hochladen und Whiskys importieren",
+  hostDragDrop: "Datei hierher ziehen",
+  hostDragDropHint: "xlsx, csv, pdf oder Bild",
+  hostParsing: "Wird analysiert…",
+  hostParseErr: "Fehler beim Parsen",
+  hostSelectAll: "Alle auswählen",
+  hostImportSelected: "Ausgewählte importieren",
+  hostPrintSheets: "Bewertungsbögen drucken",
+  hostCodeCopied: "Kopiert!",
+  hostCopyCode: "Code kopieren",
+  hostQrDownload: "QR-Code herunterladen",
+  hostEmailSection: "Per E-Mail einladen",
+  hostEmailPlaceholder: "E-Mail-Adressen (eine pro Zeile)",
+  hostPersonalNote: "Persönliche Nachricht",
+  hostNotePlaceholder: "Optionale Nachricht an die Gäste…",
+  hostSendInvites: "Einladungen senden",
+  hostSending: "Wird gesendet…",
+  hostEmailSent: "Gesendet",
+  hostEmailQueued: "Warteschlange",
+  hostStartTasting: "Tasting starten →",
+  hostLiveStatus: "Status",
+  hostLiveRunning: "Tasting läuft",
+  hostCurrentDram: "Aktueller Dram",
+  hostNextDram: "Nächster Dram",
+  hostReveal: "Enthüllen",
+  hostEndTasting: "Tasting beenden",
+  hostEndConfirm: "Tasting beenden?",
+  hostEndConfirmMsg: "Alle Bewertungen werden gespeichert. Diese Aktion kann nicht rückgängig gemacht werden.",
+  hostEndCancel: "Abbrechen",
+  hostEndYes: "Ja, beenden",
+  hostAllRated: "Alle bewertet",
+  hostInProgress: "Bewertet gerade",
+  hostNotStarted: "Noch nicht begonnen",
+  hostWhiskyLineup: "Whisky Lineup",
+  hostActiveDram: "Aktiv",
+  hostNoParticipants: "Noch keine Teilnehmer",
   entTitle: "Entdecken",
   entSub: "Whisky-Welt erkunden",
   mwTitle: "Meine Welt",
@@ -427,22 +539,78 @@ const en: Translations = {
   soloBarcodeSubmit: "Continue",
   soloSaveRetry: "Retry save",
   soloParticipantError: "Could not create session. Please try again.",
-  hostTitle: "",
-  hostName: "",
-  hostDate: "",
-  hostTime: "",
-  hostLoc: "",
-  hostFormat: "",
-  hostBlind: "",
-  hostOpen: "",
-  hostNext: "",
-  hostBack: "",
-  hostWhiskies: "",
-  hostAddW: "",
-  hostInvite: "",
-  hostCode: "",
-  hostLive: "",
-  hostStart: "",
+  hostTitle: "Create Tasting",
+  hostName: "Tasting name",
+  hostDate: "Date",
+  hostTime: "Time",
+  hostLoc: "Location",
+  hostFormat: "Format",
+  hostBlind: "Blind",
+  hostBlindDesc: "Whiskies are tasted without labels",
+  hostOpen: "Open",
+  hostOpenDesc: "All info is visible",
+  hostNext: "Continue",
+  hostBack: "Back",
+  hostWhiskies: "Whiskies",
+  hostAddW: "Add whisky",
+  hostInvite: "Invitations",
+  hostCode: "Tasting code",
+  hostLive: "Live",
+  hostStart: "Start tasting",
+  hostStep1: "Setup",
+  hostStep2: "Whiskies",
+  hostStep3: "Invite",
+  hostStep4: "Live",
+  hostRevealOrder: "Reveal order",
+  hostRevealNose: "After nose",
+  hostRevealPalate: "After palate",
+  hostRevealFull: "Full reveal",
+  hostRevealImmediate: "Immediate",
+  hostRatingScale: "Rating scale",
+  hostCreateTasting: "Create tasting →",
+  hostSampleN: "Sample",
+  hostWhiskyN: "Whisky",
+  hostRegion: "Region",
+  hostCask: "Cask",
+  hostAge: "Age",
+  hostDeleteWhisky: "Remove",
+  hostAiImport: "AI Import",
+  hostAiImportDesc: "Upload a file and import whiskies",
+  hostDragDrop: "Drop file here",
+  hostDragDropHint: "xlsx, csv, pdf or image",
+  hostParsing: "Analysing…",
+  hostParseErr: "Parse error",
+  hostSelectAll: "Select all",
+  hostImportSelected: "Import selected",
+  hostPrintSheets: "Print rating sheets",
+  hostCodeCopied: "Copied!",
+  hostCopyCode: "Copy code",
+  hostQrDownload: "Download QR code",
+  hostEmailSection: "Invite by email",
+  hostEmailPlaceholder: "Email addresses (one per line)",
+  hostPersonalNote: "Personal note",
+  hostNotePlaceholder: "Optional message to your guests…",
+  hostSendInvites: "Send invitations",
+  hostSending: "Sending…",
+  hostEmailSent: "Sent",
+  hostEmailQueued: "Queued",
+  hostStartTasting: "Start tasting →",
+  hostLiveStatus: "Status",
+  hostLiveRunning: "Tasting in progress",
+  hostCurrentDram: "Current dram",
+  hostNextDram: "Next dram",
+  hostReveal: "Reveal",
+  hostEndTasting: "End tasting",
+  hostEndConfirm: "End tasting?",
+  hostEndConfirmMsg: "All ratings will be saved. This action cannot be undone.",
+  hostEndCancel: "Cancel",
+  hostEndYes: "Yes, end it",
+  hostAllRated: "All rated",
+  hostInProgress: "In progress",
+  hostNotStarted: "Not started",
+  hostWhiskyLineup: "Whisky lineup",
+  hostActiveDram: "Active",
+  hostNoParticipants: "No participants yet",
   entTitle: "Discover",
   entSub: "Explore the whisky world",
   mwTitle: "My World",
