@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { adminApi, feedbackApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { apiRequest } from "@/lib/queryClient";
@@ -96,6 +97,7 @@ const labsSelect: React.CSSProperties = {
 
 export default function LabsAdmin() {
   const [, navigate] = useLocation();
+  const goBackToHome = useBackNavigation("/labs/home");
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -144,7 +146,7 @@ export default function LabsAdmin() {
 
   return (
     <div className="px-4 py-6 labs-fade-in" data-testid="labs-admin-page">
-      <button onClick={() => navigate("/labs/home")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-admin-back">
+      <button onClick={goBackToHome} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-admin-back">
         <ChevronLeft className="w-4 h-4" /> Home
       </button>
 

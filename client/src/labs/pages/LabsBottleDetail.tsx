@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import {
   ChevronLeft,
   Wine,
@@ -27,6 +28,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
   const whiskyId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const goBackToExplore = useBackNavigation("/labs/explore");
   const { t } = useTranslation();
 
   const { data: whisky, isLoading, isError } = useQuery({
@@ -47,7 +49,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
         </p>
         <button
           className="labs-btn-secondary"
-          onClick={() => navigate("/labs/explore")}
+          onClick={goBackToExplore}
           data-testid="labs-bottle-back-btn"
         >
           Explore
@@ -100,7 +102,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
     <div className="px-5 py-6 max-w-2xl mx-auto">
       <button
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4 labs-fade-in"
-        onClick={() => navigate("/labs/explore")}
+        onClick={goBackToExplore}
         data-testid="labs-bottle-back"
       >
         <ChevronLeft className="w-4 h-4" />

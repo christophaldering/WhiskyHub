@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { communityApi, leaderboardApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { Users, ChevronLeft } from "lucide-react";
@@ -9,7 +9,7 @@ type Tab = "twins" | "rankings" | "leaderboard";
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
 export default function LabsCommunity() {
-  const [, navigate] = useLocation();
+  const goBackToCircle = useBackNavigation("/labs/circle");
   const session = getSession();
   const pid = session.pid;
   const [tab, setTab] = useState<Tab>("twins");
@@ -52,7 +52,7 @@ export default function LabsCommunity() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-community-page">
       <button
-        onClick={() => navigate("/labs/circle")}
+        onClick={goBackToCircle}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-community-back"

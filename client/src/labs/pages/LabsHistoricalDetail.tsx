@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link, useLocation } from "wouter";
+import { useParams, Link } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
   Trophy, Wine, Calendar, Flame,
@@ -231,7 +232,7 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: (k: 
 
 export default function LabsHistoricalDetail() {
   const { t, i18n } = useTranslation();
-  const [, navigate] = useLocation();
+  const goBackToHistory = useBackNavigation("/labs/host/history");
   const lang = i18n.language;
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
@@ -272,7 +273,7 @@ export default function LabsHistoricalDetail() {
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }} data-testid="labs-historical-detail">
       <button
-        onClick={() => navigate("/labs/host/history")}
+        onClick={goBackToHistory}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="button-back"

@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation, Link } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import type { JournalEntry } from "@shared/schema";
 import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
@@ -66,6 +67,7 @@ export default function LabsTasteDrams() {
   const { t } = useTranslation();
   const session = useSession();
   const [, navigate] = useLocation();
+  const goBackToTaste = useBackNavigation("/labs/taste");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
@@ -440,7 +442,7 @@ export default function LabsTasteDrams() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-drams">
-      <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
+      <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
         <ChevronLeft className="w-4 h-4" /> Taste
       </button>
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>

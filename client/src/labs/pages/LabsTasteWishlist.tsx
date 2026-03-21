@@ -6,6 +6,7 @@ import { wishlistApi, wishlistScanApi } from "@/lib/api";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +30,7 @@ export default function LabsTasteWishlist() {
   const session = useSession();
   const participantId = session.pid;
   const [, navigate] = useLocation();
+  const goBackToTaste = useBackNavigation("/labs/taste");
   const [view, setView] = useState<View>("list");
   const [editingEntry, setEditingEntry] = useState<WishlistEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WishlistEntry | null>(null);
@@ -58,7 +60,7 @@ export default function LabsTasteWishlist() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
         </div>
         <AuthGateMessage
@@ -86,7 +88,7 @@ export default function LabsTasteWishlist() {
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
-                <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+                <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
                 <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">Wishlist</h1>
               </div>
               <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">

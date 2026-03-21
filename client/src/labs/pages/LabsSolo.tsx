@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import { participantApi, collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
@@ -134,6 +135,7 @@ type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSea
 export default function LabsSolo() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
+  const goBackToTaste = useBackNavigation("/labs/taste");
   const { currentParticipant, setParticipant } = useAppStore();
   const ratingScale = useRatingScale();
 
@@ -2127,7 +2129,7 @@ export default function LabsSolo() {
   if (soloView === "hub") {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-solo-page">
-        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-labs">
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-labs">
           <ChevronLeft className="w-4 h-4" />
           Taste
         </button>

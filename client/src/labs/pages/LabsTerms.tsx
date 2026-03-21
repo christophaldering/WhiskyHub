@@ -1,17 +1,17 @@
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { FileText, ChevronLeft } from "lucide-react";
 
 const SECTIONS = ["scope", "usage", "content", "liability", "changes"] as const;
 
 export default function LabsTerms() {
-  const [, navigate] = useLocation();
+  const goBackToAbout = useBackNavigation("/labs/about");
   const { t } = useTranslation();
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-terms-page">
       <button
-        onClick={() => navigate("/labs/about")}
+        onClick={goBackToAbout}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-terms-back"

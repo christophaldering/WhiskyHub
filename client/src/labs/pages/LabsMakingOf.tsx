@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
@@ -252,10 +252,10 @@ export default function LabsMakingOf() {
 }
 
 function BackBtn() {
-  const [, navigate] = useLocation();
+  const goBackToHome = useBackNavigation("/labs/home");
   return (
     <button
-      onClick={() => navigate("/labs/home")}
+      onClick={goBackToHome}
       className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
       style={{ color: "var(--labs-text-muted)" }}
       data-testid="labs-makingof-back"

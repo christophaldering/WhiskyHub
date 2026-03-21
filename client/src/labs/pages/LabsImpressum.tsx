@@ -1,15 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { Mail, Linkedin, ChevronLeft } from "lucide-react";
 
 export default function LabsImpressum() {
-  const [, navigate] = useLocation();
+  const goBackToAbout = useBackNavigation("/labs/about");
   const { t } = useTranslation();
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-impressum-page">
       <button
-        onClick={() => navigate("/labs/about")}
+        onClick={goBackToAbout}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-impressum-back"

@@ -6,6 +6,7 @@ import { collectionApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { Link , useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check, ArrowUpDown,
   BarChart3, Star, RefreshCw, Sparkles, X, CheckSquare,
@@ -19,6 +20,7 @@ type StatusFilter = "all" | "open" | "closed" | "empty";
 export default function LabsTasteCollection() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBackToTaste = useBackNavigation("/labs/taste");
   const session = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const syncFileInputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +129,7 @@ export default function LabsTasteCollection() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-collection">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Collection</h1>
         </div>
         <AuthGateMessage
@@ -147,7 +149,7 @@ export default function LabsTasteCollection() {
       <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} data-testid="input-labs-sync-file" />
 
       <div className="flex items-center gap-3 mb-1">
-        <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">Collection</h1>
       </div>
       {items.length > 0 && <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{items.length} bottles</p>}

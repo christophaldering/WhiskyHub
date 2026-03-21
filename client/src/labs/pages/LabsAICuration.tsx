@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -62,6 +63,7 @@ function Tag({ icon: Icon, label, variant }: { icon: React.ElementType; label: s
 
 export default function LabsAICuration() {
   const [, navigate] = useLocation();
+  const goBackToTaste = useBackNavigation("/labs/taste");
   const session = useSession();
   const pid = session.pid;
   const [selectedId, setSelectedId] = useState("");
@@ -93,7 +95,7 @@ export default function LabsAICuration() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-ai-curation">
-      <button onClick={() => navigate("/labs/taste")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-curation">
+      <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-curation">
         <ChevronLeft className="w-4 h-4" /> Taste
       </button>
 

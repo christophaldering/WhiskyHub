@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -27,7 +27,7 @@ function relTime(ts: string): string {
 }
 
 export default function LabsActivity() {
-  const [, navigate] = useLocation();
+  const goBackToHome = useBackNavigation("/labs/home");
   const session = getSession();
   const pid = session.pid;
 
@@ -43,7 +43,7 @@ export default function LabsActivity() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-activity-page">
       <button
-        onClick={() => navigate("/labs/home")}
+        onClick={goBackToHome}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-activity-back"

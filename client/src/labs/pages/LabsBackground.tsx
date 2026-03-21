@@ -5,7 +5,7 @@ import {
   SlidersHorizontal, Eye, PartyPopper, Radar, NotebookPen,
   Award, Heart, BarChart3, Activity, TrendingUp, ShieldCheck, Ban, ChevronLeft
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import type { ElementType } from "react";
 
 interface StepCard { key: string; icon: ElementType; num: string; }
@@ -27,7 +27,7 @@ function SectionHeader({ icon: Icon, title, tagline, color }: { icon: ElementTyp
 }
 
 export default function LabsBackground() {
-  const [, navigate] = useLocation();
+  const goBackToRabbitHole = useBackNavigation("/labs/discover/rabbit-hole");
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function LabsBackground() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-background-page">
-      <button onClick={() => navigate("/labs/discover/rabbit-hole")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-background">
+      <button onClick={goBackToRabbitHole} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-background">
         <ChevronLeft className="w-4 h-4" /> {t("rabbitHole.title", "Rabbit Hole")}
       </button>
 

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { Heart, Info, ChevronLeft } from "lucide-react";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
@@ -8,12 +9,13 @@ type Block = { heading?: string; lines: string[]; italic?: boolean; accent?: boo
 export default function LabsAbout() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBackToDiscover = useBackNavigation("/labs/entdecken");
   const blocks = t("about.blocks", { returnObjects: true }) as Block[];
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-about-page">
       <button
-        onClick={() => navigate("/labs/entdecken")}
+        onClick={goBackToDiscover}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-about-back"
