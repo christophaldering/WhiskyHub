@@ -6779,9 +6779,55 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ===== COMMUNITY SCORES =====
+  // ===== PUBLIC INSIGHTS (no auth, rate limited, cached) =====
 
-  app.get("/api/community-scores", async (_req, res) => {
+  const publicInsightsCache = new LRUCacheImpl<any>(1, 10 * 60 * 1000);
+  const publicInsightsRateLimit = new Map<string, { count: number; resetAt: number }>();
+  const PUBLIC_INSIGHTS_RATE_LIMIT = 30;
+  const PUBLIC_INSIGHTS_RATE_WINDOW_MS = 60 * 1000;
+  const PUBLIC_INSIGHTS_MAX_KEYS = 10000;
+  let publicInsightsLastCleanup = Date.now();
+
+  app.get("/api/public/insights", async (req, res) => {
+    const rawIp = req.ip || "unknown";
+    const clientIp = typeof rawIp === "string" ? rawIp.split(",")[0].trim() : "unknown";
+
+    const now = Date.now();
+    if (now - publicInsightsLastCleanup > PUBLIC_INSIGHTS_RATE_WINDOW_MS * 2 || publicInsightsRateLimit.size > PUBLIC_INSIGHTS_MAX_KEYS) {
+      for (const [k, v] of publicInsightsRateLimit) {
+        if (now > v.resetAt) publicInsightsRateLimit.delete(k);
+      }
+      publicInsightsLastCleanup = now;
+    }
+    const entry = publicInsightsRateLimit.get(clientIp);
+    if (entry && now <= entry.resetAt && entry.count >= PUBLIC_INSIGHTS_RATE_LIMIT) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      res.set("Retry-After", String(retryAfter));
+      return res.status(429).json({ message: "Too many requests" });
+    }
+    if (!entry || now > entry.resetAt) {
+      publicInsightsRateLimit.set(clientIp, { count: 1, resetAt: now + PUBLIC_INSIGHTS_RATE_WINDOW_MS });
+    } else {
+      entry.count++;
+    }
+
+    try {
+      let insights = publicInsightsCache.get("insights");
+      if (!insights) {
+        insights = await storage.getPublicInsights();
+        publicInsightsCache.set("insights", insights);
+      }
+      res.json(insights);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== COMMUNITY SCORES (auth required) =====
+
+  app.get("/api/community-scores", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
     try {
       const scores = await storage.getCommunityScores();
       res.json(scores);

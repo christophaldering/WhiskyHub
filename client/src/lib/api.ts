@@ -368,6 +368,18 @@ export const communityApi = {
   getContributors: () => fetchJSON("/community-contributors"),
 };
 
+// ===== Public Insights (no auth needed) =====
+export const publicInsightsApi = {
+  get: async () => {
+    const res = await fetch(`${API_BASE}/public/insights`);
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Request failed");
+    }
+    return res.json();
+  },
+};
+
 // ===== Rating Notes =====
 export const ratingNotesApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/rating-notes`),

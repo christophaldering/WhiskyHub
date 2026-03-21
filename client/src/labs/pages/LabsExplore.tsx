@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Star, ChevronRight, ChevronDown, ChevronLeft, Globe } from "lucide-react";
 import { Link } from "wouter";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import CommunityInsights from "@/labs/components/CommunityInsights";
 import { exploreApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
@@ -210,6 +211,8 @@ export default function LabsExplore() {
           })}
         </div>
       )}
+
+      <CommunityInsights />
 
       <div className="relative labs-fade-in labs-stagger-1" style={{ marginBottom: 16 }}>
         <Search

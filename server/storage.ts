@@ -242,6 +242,15 @@ export interface IStorage {
     sharedWhiskies: number;
   }>>;
 
+  getPublicInsights(): Promise<{
+    communityPulse: { totalRatings: number; totalWhiskies: number; totalTasters: number; avgOverall: number };
+    topRated: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
+    mostExplored: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
+    regionalHighlights: Array<{ region: string; avgOverall: number; count: number }>;
+    flavorTrends: { peatLevels: Record<string, number>; caskInfluences: Record<string, number> };
+    divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
+  }>;
+
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
 
@@ -1608,6 +1617,120 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results.sort((a, b) => b.avgOverall - a.avgOverall);
+  }
+
+  async getPublicInsights(): Promise<{
+    communityPulse: { totalRatings: number; totalWhiskies: number; totalTasters: number; avgOverall: number };
+    topRated: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
+    mostExplored: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
+    regionalHighlights: Array<{ region: string; avgOverall: number; count: number }>;
+    flavorTrends: { peatLevels: Record<string, number>; caskInfluences: Record<string, number> };
+    divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
+  }> {
+    const allWhiskyRows = await db.select().from(whiskies);
+    const allRatings = await db.select().from(ratings);
+    const allTastingsRows = await db.select().from(tastings);
+    const tastingScaleMap = new Map(allTastingsRows.map(t => [t.id, t.ratingScale ?? 100]));
+    const testTastingIds = new Set(allTastingsRows.filter(t => t.isTestData).map(t => t.id));
+
+    const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
+
+    const grouped: Record<string, {
+      scores: number[];
+      whisky: typeof whiskies.$inferSelect;
+      participantIds: Set<string>;
+    }> = {};
+
+    for (const r of allRatings) {
+      if (testTastingIds.has(r.tastingId)) continue;
+      const w = whiskyMap.get(r.whiskyId);
+      if (!w) continue;
+
+      const key = w.whiskybaseId
+        ? `wb:${w.whiskybaseId}`
+        : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+
+      if (!grouped[key]) {
+        grouped[key] = { scores: [], whisky: w, participantIds: new Set() };
+      }
+      if (!grouped[key].whisky.imageUrl && w.imageUrl) {
+        grouped[key].whisky = w;
+      }
+      const scaleNorm = 100 / (tastingScaleMap.get(r.tastingId) ?? 100);
+      grouped[key].scores.push(r.normalizedScore ?? r.overall * scaleNorm);
+      grouped[key].participantIds.add(r.participantId);
+    }
+
+    const allParticipantIds = new Set<string>();
+    const entries = Object.values(grouped).filter(g => g.scores.length >= 2);
+    for (const g of entries) {
+      for (const pid of g.participantIds) allParticipantIds.add(pid);
+    }
+
+    const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : 0;
+    const variance = (arr: number[]) => {
+      if (arr.length < 2) return 0;
+      const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+      return Math.round((arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length) * 10) / 10;
+    };
+
+    const allOveralls = entries.flatMap(g => g.scores);
+    const uniqueTasters = await getUniquePersonCount(Array.from(allParticipantIds));
+
+    const communityPulse = {
+      totalRatings: allOveralls.length,
+      totalWhiskies: entries.length,
+      totalTasters: uniqueTasters,
+      avgOverall: avg(allOveralls),
+    };
+
+    const scored = entries.map(g => ({
+      name: g.whisky.name,
+      distillery: g.whisky.distillery,
+      region: g.whisky.region,
+      avgOverall: avg(g.scores),
+      ratingCount: g.scores.length,
+      imageUrl: g.whisky.imageUrl,
+      peatLevel: g.whisky.peatLevel,
+      caskInfluence: g.whisky.caskInfluence,
+      variance: variance(g.scores),
+    }));
+
+    const topRated = [...scored]
+      .sort((a, b) => b.avgOverall - a.avgOverall)
+      .slice(0, 5)
+      .map(({ peatLevel, caskInfluence, variance, ...rest }) => rest);
+
+    const mostExplored = [...scored]
+      .sort((a, b) => b.ratingCount - a.ratingCount)
+      .slice(0, 5)
+      .map(({ peatLevel, caskInfluence, variance, ...rest }) => rest);
+
+    const regionMap: Record<string, { scores: number[] }> = {};
+    for (const s of scored) {
+      if (!s.region) continue;
+      if (!regionMap[s.region]) regionMap[s.region] = { scores: [] };
+      regionMap[s.region].scores.push(s.avgOverall);
+    }
+    const regionalHighlights = Object.entries(regionMap)
+      .map(([region, data]) => ({ region, avgOverall: avg(data.scores), count: data.scores.length }))
+      .filter(r => r.count >= 2)
+      .sort((a, b) => b.avgOverall - a.avgOverall);
+
+    const peatLevels: Record<string, number> = {};
+    const caskInfluences: Record<string, number> = {};
+    for (const s of scored) {
+      if (s.peatLevel) peatLevels[s.peatLevel] = (peatLevels[s.peatLevel] || 0) + 1;
+      if (s.caskInfluence) caskInfluences[s.caskInfluence] = (caskInfluences[s.caskInfluence] || 0) + 1;
+    }
+
+    const divisiveDrams = [...scored]
+      .filter(s => s.ratingCount >= 3)
+      .sort((a, b) => b.variance - a.variance)
+      .slice(0, 3)
+      .map(({ peatLevel, caskInfluence, ...rest }) => rest);
+
+    return { communityPulse, topRated, mostExplored, regionalHighlights, flavorTrends: { peatLevels, caskInfluences }, divisiveDrams };
   }
 
   async getTasteTwins(participantId: string): Promise<Array<{
