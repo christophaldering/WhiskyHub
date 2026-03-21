@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { Search, Star, ChevronRight, ChevronDown, ChevronLeft, Globe } from "lucide-react";
 import { Link } from "wouter";
 import WhiskyImage from "@/labs/components/WhiskyImage";
-import CommunityInsights from "@/labs/components/CommunityInsights";
 import { exploreApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
@@ -146,7 +145,7 @@ export default function LabsExplore() {
     <div className="labs-page-wide">
       <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-explore">
-          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
+          <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Discover")}
         </button>
       </Link>
       <div style={{ marginBottom: 20 }}>
@@ -211,8 +210,6 @@ export default function LabsExplore() {
           })}
         </div>
       )}
-
-      <CommunityInsights />
 
       <div className="relative labs-fade-in labs-stagger-1" style={{ marginBottom: 16 }}>
         <Search
