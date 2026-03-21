@@ -331,7 +331,7 @@ export default function LabsTaste() {
     enabled: !!currentParticipant,
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["participant-stats", pid],
     queryFn: () => statsApi.get(pid!),
     enabled: !!pid,
@@ -454,7 +454,6 @@ export default function LabsTaste() {
   const insight = insightData?.insight ?? null;
 
   const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, overall: 0 };
-  const dimensionMax = Math.max(avgScores.nose, avgScores.taste, avgScores.finish, 1);
   const dimensions = [
     { label: "Nose", value: avgScores.nose, color: "var(--labs-dim-nose)" },
     { label: "Taste", value: avgScores.taste, color: "var(--labs-dim-taste)" },
@@ -481,7 +480,13 @@ export default function LabsTaste() {
         </p>
       )}
 
-      {analyticsLocked ? (
+      {statsLoading ? (
+        <div className="labs-fade-in" style={{ display: "flex", flexDirection: "column", gap: 16, padding: "2rem 0" }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ height: 48, borderRadius: 12, background: "var(--labs-border)", opacity: 0.4, animation: "pulse 1.5s ease-in-out infinite" }} />
+          ))}
+        </div>
+      ) : analyticsLocked ? (
         <>
           <div className="labs-empty labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
             <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
@@ -666,17 +671,18 @@ export default function LabsTaste() {
                 Your Palate
               </p>
               <div className="labs-card p-4">
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
                   {dimensions.map(dim => (
-                    <div key={dim.label} className="flex items-center gap-3">
-                      <span className="text-xs font-medium w-14 text-right" style={{ color: "var(--labs-text-secondary)" }}>{dim.label}</span>
-                      <div className="flex-1 h-2 rounded-full" style={{ background: "var(--labs-border)" }}>
-                        <div className="h-full rounded-full" style={{ width: `${dimensionMax > 0 ? (dim.value / dimensionMax) * 100 : 0}%`, background: dim.color || "var(--labs-accent)", transition: "width 0.5s" }} />
-                      </div>
-                      <span className="text-xs font-semibold w-10" style={{ color: "var(--labs-accent)" }}>
-                        {dim.value > 0 ? dim.value.toFixed(1) : "–"}
-                      </span>
-                    </div>
+                    <LabsScoreRing
+                      key={dim.label}
+                      score={dim.value > 0 ? dim.value : null}
+                      maxScore={100}
+                      size={72}
+                      strokeWidth={5}
+                      color={dim.color}
+                      label={dim.label}
+                      formatValue={(v) => Math.round(v).toString()}
+                    />
                   ))}
                 </div>
               </div>
