@@ -710,7 +710,40 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ background: tv.elevated, borderRadius: 12, padding: "16px", marginBottom: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <User style={{ width: 32, height: 32, color: tv.accent }} />
+          {session.photoUrl ? (
+            <img
+              src={session.photoUrl}
+              alt={session.name ?? ''}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '0.5px solid var(--labs-border)',
+              }}
+              data-testid="m2-profile-avatar-img"
+            />
+          ) : (
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'var(--labs-surface)',
+                border: '0.5px solid var(--labs-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--labs-text-secondary)',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              data-testid="m2-profile-avatar-initials"
+            >
+              {(session.name ?? 'G').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <div style={{ fontSize: 16, fontWeight: 600, color: tv.text }} data-testid="m2-profile-display-name">
               {typeof session.name === "string" ? session.name : "—"}
