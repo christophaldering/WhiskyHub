@@ -735,20 +735,21 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           <button
             onClick={() => setProfileOpen(true)}
             style={{
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
-              background: 'var(--labs-surface)',
-              border: '1px solid var(--labs-border)',
+              background: 'rgba(139, 90, 43, 0.25)',
+              border: '1.5px solid rgba(196, 160, 80, 0.6)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 500,
-              color: 'var(--labs-text-secondary)',
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#C4A050',
               flexShrink: 0,
+              marginLeft: 8,
             }}
             data-testid="labs-profile-btn"
           >
@@ -756,11 +757,11 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               <img
                 src={currentParticipant.photoUrl}
                 alt=""
-                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
+                style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }}
                 data-testid="labs-profile-avatar"
               />
             ) : (
-              (currentParticipant?.name ?? 'G').charAt(0).toUpperCase()
+              (currentParticipant?.name ?? 'C').charAt(0).toUpperCase()
             )}
           </button>
         </div>
