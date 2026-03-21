@@ -182,9 +182,13 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     onClose();
   };
 
+  const handleLang = (lang: 'de' | 'en') => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('casksense-language', lang);
+  };
+
   const toggleLanguage = () => {
-    const newLang = i18n.language === "de" ? "en" : "de";
-    i18n.changeLanguage(newLang);
+    handleLang(i18n.language === "de" ? "en" : "de");
   };
 
   const toggleTheme = () => {
