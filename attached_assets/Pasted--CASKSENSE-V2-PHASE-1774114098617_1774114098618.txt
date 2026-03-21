@@ -1,0 +1,808 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 2: RATING SCREEN
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phase 1 ist abgeschlossen. /labs-v2 läuft mit Tab-Navigation, Join-Flow
+und Lobby. Jetzt bauen wir den Rating-Screen als Phase 2.
+
+Alle Sicherheitsregeln aus Phase 1 gelten unverändert weiter.
+Alle Design-Standards aus Phase 1 gelten unverändert weiter.
+Nur neue Dateien in client/src/labs-v2/ anlegen.
+Keine bestehenden Dateien verändern — auch nicht die aus Phase 1.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — UNVERÄNDERT, KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anlegen oder ändern
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS .env Variablen ändern
+❌ NIEMALS bestehende Dateien in client/src/labs/ löschen oder umbenennen
+❌ NIEMALS bestehende Dateien in client/src/labs-v2/ verändern
+❌ NIEMALS bestehende Routen in App.tsx ändern oder löschen
+
+✅ NUR neue Dateien in client/src/labs-v2/ anlegen
+✅ Bestehende /api/* Endpunkte per fetch() konsumieren
+✅ Flavor-Tags aus GET /api/flavour-categories laden (nicht hardcodieren)
+✅ Bestehende Hooks aus client/src/labs/hooks/ importieren
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KRITISCHE INHALTLICHE REGEL — BEWERTUNGS-DIMENSIONEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die Bewertung hat GENAU VIER Dimensionen — nicht mehr, nicht weniger:
+
+  1. Nase     (nose)
+  2. Gaumen   (palate)
+  3. Abgang   (finish)
+  4. Gesamt   (overall)
+
+BALANCE IST NICHT VORHANDEN. Wird Balance irgendwo eingebaut,
+ist das ein kritischer Fehler der sofort korrigiert werden muss.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN-STANDARDS PHASE 2 — ZUSÄTZLICH ZU PHASE 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASEN-SIGNATUREN (Tobias van Schneider):
+Jede der 4 Dimensionen hat eine eigene visuelle Identität:
+  - Eigenes SVG-Icon (Nose, Palate, Finish, Overall)
+  - Eigene Akzentfarbe (aus tokens.ts, phases.nose/palate/finish/overall)
+  - Eigener Hintergrund-Glow von unten (radial-gradient)
+  - Phase-Tabs zeigen Icon + Label + gespeicherten Score wenn done
+
+SCORE-INPUT (Rasmus Andersson — Custom Component, kein input[type=range]):
+  - Eigene Touch-Track-Komponente mit Mouse/Touch-Events
+  - Thumb: 44×44px Touch-Area, visuell 24×24px
+  - Track-Höhe: 6px, Track-Touch-Area: 44px (damit Finger sicher treffen)
+  - Zahl antippen → inline Input zum direkten Eintippen
+  - Quick-Pick-Buttons: 70 / 75 / 80 / 85 / 90 (height: 44px, flex: 1)
+  - Tick-Labels: 60, 65, 70, 75, 80, 85, 90, 95, 100
+  - Slider-Start: 75 (neutral, kein Centrality Bias)
+  - Farbe des Scores und Labels wechselt dynamisch nach Bewertungsband
+
+FLAVOR-TAGS (Julie Zhuo — max 6 pro Phase):
+  - Maximal 6 Tags pro Phase — Entscheidungslähmung ab 7 Optionen
+  - Tags kommen AUSSCHLIESSLICH aus GET /api/flavour-categories
+  - Fallback auf hardcodierte Daten aus flavor-data.ts NUR wenn API leer
+  - Im Blind-Modus: generische Tags (keine regionsspezifischen)
+  - Im offenen Modus: whisky-spezifische Tags basierend auf Region + Cask
+  - Tag-Höhe: minHeight 44px, padding: 10px 18px
+
+SAVE-ANIMATION (Julie Zhuo — 300ms):
+  - Nach jedem Speichern einer Phase: Check-Icon Flash (300ms, saveFlash-Animation)
+  - Check erscheint zentriert über dem Content, pointerEvents: none
+  - Dann automatisch zur nächsten Phase wechseln (nach 300ms Pause)
+
+AUTOSAVE (Stability Hardening aus bestehender Labs-Logik):
+  - Debounced Autosave alle 2000ms bei Änderungen
+  - Status-Gating: kein Speichern wenn Tasting nicht open oder draft
+  - Debounce-Cleanup bei Unmount und bei Whisky-Wechsel
+  - Fehlerbehandlung: AlertTriangle + Fehlermeldung bei gescheitertem Save
+  - Fehler löschen sich beim nächsten Whisky-Wechsel automatisch
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS FÜR PHASE 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ergänze client/src/labs-v2/icons/Icons.tsx um folgende Icons:
+
+Nose    — stilisierte Nase: geschwungene Linie von oben nach unten,
+          mit kleiner Ausrundung am Ende. Viewbox 0 0 20 20.
+          Beispiel-Path: "M10 3c0 0 0 5 3 7.5S15 14 13 15.5s-4 .5-4.5-1
+          S9 12 10 11V3z" + "M7 16c0 0 .5 1.5 3 1.5S13 16 13 16"
+
+Palate  — stilisierter Gaumen: halbkreis oben + halbkreis unten (gestrichelt)
+          mit Punkt in der Mitte und Linie nach unten.
+          Stroke: solid oben, dashed unten, filled circle in der Mitte.
+
+Finish  — stilisierter Abgang: horizontale Linie mit Pfeil rechts.
+          Links: kürzere geschwungene Linie (Nachhall, opacity 0.4).
+
+Overall — 5-zackiger Stern. Standard Stern-Path.
+
+AlertTriangle — Dreieck mit ! innen (für Fehlermeldungen)
+
+Globe   — Kreis mit Längen- und Breitengrad-Linien (für Flavor-Badge)
+
+WICHTIG: Alle neuen Icons in die bestehende Icons.tsx Datei ergänzen
+(append-only, keine bestehenden Icons verändern).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS FÜR PHASE 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ergänze client/src/labs-v2/theme/i18n.ts (append-only) um:
+
+DE:
+  ratingModeQ:     "Wie möchtest du bewerten?"
+  ratingModeSub:   "Beide Modi erfassen Nase · Gaumen · Abgang · Gesamt."
+  ratingGuided:    "Geführt"
+  ratingGuidedD:   "Eine Dimension nach der anderen — mit Fragen und Aroma-Vorschlägen."
+  ratingGuidedH:   "Wenn man sich Zeit nimmt."
+  ratingCompact:   "Kompakt"
+  ratingCompactD:  "Alle vier Dimensionen auf einmal — Score direkt eingeben."
+  ratingCompactH:  "Wenn man sein Bewertungsschema kennt."
+  ratingNose:      "Nase"
+  ratingPalate:    "Gaumen"
+  ratingFinish:    "Abgang"
+  ratingOverall:   "Gesamt"
+  ratingQ_nose:    "Was nimmst du zuerst wahr?"
+  ratingQ_palate:  "Was spürst du beim ersten Schluck?"
+  ratingQ_finish:  "Was bleibt zurück?"
+  ratingQ_overall: "Dein Gesamteindruck."
+  ratingHint_nose:    "Lass das Glas kurz atmen."
+  ratingHint_palate:  "Lass ihn auf der Zunge verweilen."
+  ratingHint_finish:  "Warte einen Moment."
+  ratingHint_overall: "Vertrau deiner Intuition."
+  ratingAromen:    "Aromen wählen"
+  ratingAromenS:   "Tippe an was du erkennst — oder lass es weg."
+  ratingNote:      "Notiz"
+  ratingNoteSub:   "Optional — deine eigenen Worte."
+  ratingNotePH:    "Was fällt dir auf..."
+  ratingTapEdit:   "Tippe auf die Zahl zum direkten Eingeben"
+  ratingSave:      "speichern"
+  ratingDone:      "Gespeichert"
+  ratingNext:      "Weiter zu Dram"
+  ratingEdit:      "Bewertung anpassen"
+  ratingFinish2:   "Bewertung abschließen →"
+  ratingOf:        "von"
+  ratingDram:      "Dram"
+  ratingMyRating:  "Deine Bewertung"
+  ratingBlind:     "Blind · Allgemeine Vorschläge"
+  ratingProfile:   "Aromen typisch für"
+  ratingError:     "Bewertung konnte nicht gespeichert werden."
+  band90: "Außergewöhnlich"
+  band85: "Exzellent"
+  band80: "Hervorragend"
+  band75: "Sehr gut"
+  band70: "Gut"
+  band0:  "Okay"
+
+EN: (entsprechende englische Übersetzungen für alle Keys oben)
+  ratingModeQ:     "How would you like to rate?"
+  ratingModeSub:   "Both modes capture Nose · Palate · Finish · Overall."
+  ratingGuided:    "Guided"
+  ratingGuidedD:   "One dimension at a time — with questions and aroma suggestions."
+  ratingGuidedH:   "When you want to take your time."
+  ratingCompact:   "Compact"
+  ratingCompactD:  "All four dimensions at once — type scores directly."
+  ratingCompactH:  "When you know your rating scheme."
+  ratingNose:      "Nose"
+  ratingPalate:    "Palate"
+  ratingFinish:    "Finish"
+  ratingOverall:   "Overall"
+  ratingQ_nose:    "What do you notice first?"
+  ratingQ_palate:  "What do you taste on the first sip?"
+  ratingQ_finish:  "What lingers?"
+  ratingQ_overall: "Your overall impression."
+  ratingHint_nose:    "Let the glass breathe a moment."
+  ratingHint_palate:  "Let it rest on your tongue."
+  ratingHint_finish:  "Wait a moment."
+  ratingHint_overall: "Trust your instinct."
+  ratingAromen:    "Choose aromas"
+  ratingAromenS:   "Tap what you recognise — or skip."
+  ratingNote:      "Note"
+  ratingNoteSub:   "Optional — your own words."
+  ratingNotePH:    "What stands out..."
+  ratingTapEdit:   "Tap the number to type directly"
+  ratingSave:      "save"
+  ratingDone:      "Saved"
+  ratingNext:      "Continue to Dram"
+  ratingEdit:      "Adjust rating"
+  ratingFinish2:   "Complete rating →"
+  ratingOf:        "of"
+  ratingDram:      "Dram"
+  ratingMyRating:  "Your rating"
+  ratingBlind:     "Blind · General suggestions"
+  ratingProfile:   "Aromas typical for"
+  ratingError:     "Rating could not be saved."
+  band90: "Extraordinary"
+  band85: "Excellent"
+  band80: "Outstanding"
+  band75: "Very good"
+  band70: "Good"
+  band0:  "Okay"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 2 — VOLLSTÄNDIGE DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/components/ScoreInput.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Custom Score-Input Komponente. Kein input[type=range].
+
+Props:
+  value: number          — aktueller Score (60–100)
+  onChange: (v: number) => void
+  phaseId: "nose" | "palate" | "finish" | "overall"
+  th: ThemeTokens
+  t: Translations
+
+Interner State:
+  editing: boolean       — zeigt inline Input zum Eintippen
+  draft: string          — Zwischenwert beim Eintippen
+  dragging: ref<boolean> — für Track-Drag
+
+Aufbau (von oben nach unten):
+
+1. Score-Anzeige + Band-Label (Zeile, space-between):
+   Links:
+     - Hinweis: "Tippe auf die Zahl zum direkten Eingeben" (12px, faint)
+     - Score-Zahl: 52px, bold, fontFamily DM Sans
+       - Normal: div mit onClick → editing = true
+       - Beim Editieren: <input> autoFocus, selektiert bei Mount
+       - Farbe: dynamisch nach Score-Band (getBandColor)
+   Rechts (padding-bottom: 8px für Ausrichtung):
+     - Band-Label: 15px, bold, Band-Farbe (z.B. "Hervorragend")
+     - "von 100": 12px, faint
+
+2. Custom Track (44px Höhe, cursor: pointer):
+   - Track-Background: 6px Höhe, zentriert, Farbe: th.border
+   - Track-Fill: von links bis zum aktuellen Wert, Phasen-Akzentfarbe (Gradient)
+   - Thumb: 44×44px Touch-Area div, darin 24×24px visueller Kreis
+     - Farbe: linear-gradient(135deg, th.gold, th.amber)
+     - boxShadow: gold glow
+     - Position: left: calc(${pct}% - 22px)
+   - Mouse/Touch Events auf dem Track-Container:
+     onMouseDown → dragging.current = true, fromX(e.clientX)
+     onTouchStart → dragging.current = true, fromX(e.touches[0].clientX)
+     Window-Events (useEffect, cleanup on unmount):
+       mousemove → if dragging: fromX(e.clientX)
+       mouseup   → dragging.current = false
+       touchmove → if dragging: fromX(e.touches[0].clientX)
+       touchend  → dragging.current = false
+   - fromX-Funktion: berechnet Score aus X-Position relativ zum Track
+
+3. Tick-Labels (Zeile, space-between):
+   [60, 65, 70, 75, 80, 85, 90, 95, 100]
+   Aktiver Tick (=== value): Band-Farbe, andere: faint
+   fontSize: 10px
+
+4. Quick-Pick-Buttons (Zeile, gap: SP.sm):
+   [70, 75, 80, 85, 90] als Buttons
+   Aktiver: phase.dim Hintergrund, phase.accent Border + Textfarbe
+   Inaktiver: bgCard, border, muted Text
+   Alle: flex: 1, height: 44px, borderRadius: 10px
+
+Score-Band-Farben (getBandColor):
+  >= 90 → #d4a847 (gold)
+  >= 85 → #c4a040
+  >= 80 → #86c678 (green)
+  >= 70 → #7ab8c4
+  >= 0  → rgba(200,180,160,0.5)
+
+Commit-Logik beim Editieren:
+  onBlur + onKeyDown Enter → parseInt(draft), range-check 60–100, onChange
+  Ungültige Werte: ignorieren, alten Wert behalten
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/components/FlavorTags.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Flavor-Tag-Auswahl mit API-Integration.
+
+Props:
+  phaseId: "nose" | "palate" | "finish"
+  whiskyRegion?: string
+  whiskyCask?: string
+  blind: boolean
+  selected: string[]
+  onToggle: (tag: string) => void
+  th: ThemeTokens
+  t: Translations
+
+Interner Ablauf:
+
+1. Flavor-Kategorien laden via GET /api/flavour-categories
+   - Stale-Time: 5 Minuten (React Query oder einfaches useState + useEffect)
+   - Fallback: wenn API leer oder fehlerhaft → importiere FLAVOR_CATEGORIES
+     aus client/src/labs/data/flavor-data.ts
+
+2. Profil-Erkennung (nur wenn nicht blind):
+   Funktion detectProfile(region, cask):
+     region.includes("islay") oder region.includes("island") → "peated-maritime"
+     cask.includes("sherry") oder cask.includes("px")        → "sherried-rich"
+     region.includes("speyside")                             → "speyside-fruity"
+     region.includes("highland")                             → "highland-elegant"
+     cask.includes("bourbon")                                → "bourbon-classic"
+     sonst                                                   → "generic"
+
+3. Tag-Selektion (max 6 pro Phase):
+   Aus den geladenen Kategorien: wähle Kategorie passend zum Profil + Phase
+   Zeige maximal 6 Tags (slice(0, 6))
+   Wenn blind: generische Tags ohne Profil-Referenz
+
+4. Profil-Badge (kein Emoji — Icon.Globe SVG):
+   Wenn blind:   Globe-Icon (faint) + "Blind · Allgemeine Vorschläge" (muted)
+   Wenn offen:   Globe-Icon (gold)  + Profil-Label (gold) + Region (faint)
+   Hintergrund: blind → bgCard, offen → gold mit 6% Opacity
+   Border: blind → border, offen → gold mit 22% Opacity
+
+5. Tag-Rendering:
+   KEINE Emojis, nur Text
+   Jeder Tag: button, minHeight: 44px, padding: 10px 18px, borderRadius: 22px
+   Aktiv: phase.dim Hintergrund, phase.accent Border + Text, fontWeight: 600
+   Inaktiv: bgCard, border, muted
+   Animations-Delay: i * 40ms, fadeUp-Animation
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/components/PhaseSignature.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Visuelle Phasen-Signatur — Icon + Akzentfarbe in einem Container.
+
+Props:
+  phaseId: "nose" | "palate" | "finish" | "overall"
+  th: ThemeTokens
+  size?: "normal" | "large"   — normal: 32px Container, large: 40px Container
+
+Rendert:
+  Container: borderRadius = size/2.5, background: phase.dim,
+             border: phase.accent mit 44% Opacity
+  Icon: das phasespezifische SVG-Icon in phase.accent Farbe
+        Größe: size * 0.55 (also 18px bei normal, 22px bei large)
+
+Phasen-Icon-Mapping:
+  nose    → Icon.Nose
+  palate  → Icon.Palate
+  finish  → Icon.Finish
+  overall → Icon.Overall
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/components/SaveConfirm.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+300ms Save-Bestätigungs-Flash (Julie Zhuo).
+
+Props:
+  show: boolean
+  color: string
+
+Rendert nur wenn show === true:
+  Fixed, inset: 0, display: flex, center, zIndex: 999, pointerEvents: none
+  Container: 80×80px Kreis
+    Hintergrund: color mit 22% Opacity
+    Border: 2px solid color
+    Animation: saveFlash 300ms ease forwards (aus animations.css)
+  Icon.Check in color, size: 32
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/rating/RatingModeSelect.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Modus-Auswahl vor der Bewertung.
+
+Props:
+  th: ThemeTokens
+  t: Translations
+  whisky: { name?: string; blind: boolean }
+  dramIdx: number
+  total: number
+  onSelect: (mode: "guided" | "compact") => void
+  onBack: () => void
+
+Aufbau:
+  BackBtn oben (Back-Icon + "Zurück", minHeight: 44px)
+  Dram-Fortschrittsbalken: total dünne Bars, aktiver heller gold
+  Titel: t.ratingModeQ (28px Playfair Display)
+  Untertitel: t.ratingModeSub (15px DM Sans, muted)
+
+  Zwei Auswahl-Karten (Geführt + Kompakt):
+    Jede Karte:
+      bgCard, border border-radius: 20px, padding: SP.lg
+      Hover: phase.dim Hintergrund + phase.accent Border
+      Klick: onSelect("guided") bzw. onSelect("compact")
+
+    Links: PhaseSignature (large) — nose für Geführt, palate für Kompakt
+    Rechts:
+      Titel: 19px Playfair Display, bold
+      Beschreibung: 14px DM Sans, muted, lineHeight: 1.5
+      Hinweis: 13px DM Sans, faint, kursiv
+
+    KEINE Persona-Namen (kein Rudi, Michael etc.)
+    Nur Verhaltens-Beschreibungen aus i18n (ratingGuidedD/H, ratingCompactD/H)
+
+    Animations-Delay: i * 80ms, fadeUp
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/screens/rating/GuidedRating.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Geführter Rating-Modus — eine Phase nach der anderen.
+
+Props:
+  th: ThemeTokens
+  t: Translations
+  whisky: {
+    id?: string
+    name?: string
+    region?: string
+    cask?: string
+    blind: boolean
+    flavorProfile?: string
+  }
+  tastingId: string
+  dramIdx: number
+  total: number
+  tastingStatus: "draft" | "open" | "closed" | "reveal" | "archived"
+  participantId: string
+  onDone: (data: RatingData) => void
+  onBack: () => void
+
+Interner State:
+  phaseIndex: number (0–3)
+  scores: { nose: number, palate: number, finish: number, overall: number }
+         — Startwerte alle 75
+  tags: { nose: string[], palate: string[], finish: string[], overall: string[] }
+  notes: { nose: string, palate: string, finish: string, overall: string }
+  showFlash: boolean
+  visibleContent: boolean — für Transitions
+  saveError: string | null
+
+Phase-Definitionen (Array, Index 0–3):
+  [
+    { id: "nose",    label: t.ratingNose,    q: t.ratingQ_nose,    hint: t.ratingHint_nose    },
+    { id: "palate",  label: t.ratingPalate,  q: t.ratingQ_palate,  hint: t.ratingHint_palate  },
+    { id: "finish",  label: t.ratingFinish,  q: t.ratingQ_finish,  hint: t.ratingHint_finish  },
+    { id: "overall", label: t.ratingOverall, q: t.ratingQ_overall, hint: t.ratingHint_overall },
+  ]
+
+Autosave-Logik:
+  useEffect auf scores + notes → debounced (2000ms) API-Call
+  Nur wenn tastingStatus === "open" || "draft"
+  API: POST /api/tastings/:tastingId/ratings mit:
+    { whiskeyId: whisky.id, dimension: phaseId, score: scores[phaseId],
+      notes: notes[phaseId], flavorTags: tags[phaseId] }
+  Header: x-participant-id: participantId
+  Bei Fehler: saveError setzen
+  Cleanup: clearTimeout bei Unmount und bei Whisky-Wechsel
+  Fehler automatisch löschen bei Phase-Wechsel
+
+Layout-Struktur:
+
+1. Glow-Hintergrund (fixed, bottom: 56px, kein pointer-events):
+   radial-gradient mit phase.glow der aktuellen Phase
+
+2. SaveConfirm (showFlash, phase.accent als color)
+
+3. Sub-Header (sticky, nach TopBar, zIndex: 10):
+   a) Dram-Fortschrittsbalken (4px Höhe, SP.xs Gap):
+      total Bars: abgeschlossene gold, aktuelle gold 44% opacity, rest grau
+   b) Phasen-Tabs (4 Tabs, SP.sm Gap):
+      Jeder Tab: flex: 1, minHeight: 44px, borderRadius: 10px
+        Aktiv: phase.dim, phase.accent Border
+        Inaktiv: transparent, border
+      Inhalt des Tabs:
+        - Wenn done: Icon.Check (green, 16px)
+        - Wenn aktiv oder ausstehend: PhaseSignature Icon (16px)
+        - Label (10px, DM Sans, bold wenn aktiv)
+        - Wenn done: gespeicherter Score (10px, bold, Band-Farbe)
+      Klick auf Tab: goTo(i) — wechselt Phase mit Transition
+
+4. Scrollbarer Body (paddingBottom: 130px):
+   a) Wenn nicht blind und name vorhanden:
+      "Dram X · [Whisky-Name]" in Cormorant Garamond, kleine Regions-Info faint
+   b) PhaseSignature (large) + Phase-Label (11px uppercase, phase.accent)
+   c) Frage: 24px Playfair Display
+   d) Hinweis: 15px Cormorant Garamond, italic, muted
+   e) Score-Karte (Card-Komponente):
+      ScoreInput Komponente
+   f) Wenn phaseId !== "overall":
+      FlavorTags Komponente
+   g) Notiz-Bereich:
+      Label "Notiz" (15px, bold, text)
+      Unter-Label (14px, muted) aus t.ratingNoteSub
+      <textarea> placeholder: "[Phase-Label]: [t.ratingNotePH]"
+
+5. Fehler-Banner (wenn saveError):
+   Festes Banner über CTA, auto-dismisses nach 5s
+   Icon.AlertTriangle + Fehlermeldung
+
+6. CTA-Button (fixed, bottom: 72px — über Tab-Bar):
+   Gradient gold → amber, 17px, bold, Höhe: 56px
+   Wenn phaseIndex < 3: "[Phase-Label] speichern → [nächste Phase]"
+   Wenn phaseIndex === 3: t.ratingFinish2
+
+Transition-Logik bei Phase-Wechsel:
+  1. showFlash = true (SaveConfirm erscheint 300ms)
+  2. Nach 300ms: visibleContent = false (fadeOut)
+  3. Nach weiteren 150ms: phaseIndex++, visibleContent = true (fadeIn)
+  Bei letzter Phase: onDone({ scores, tags, notes }) nach 400ms
+
+goTo(i): visibleContent = false → nach 120ms phaseIndex = i, visibleContent = true
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 7: client/src/labs-v2/screens/rating/CompactRating.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Kompakter Rating-Modus — alle 4 Phasen auf einem Screen.
+
+Props: identisch zu GuidedRating.
+
+Interner State:
+  scores: { nose: 75, palate: 75, finish: 75, overall: 75 }
+  tags: { ... }
+  openPhase: string | null — welche Phase aufgeklappt ist
+  saving: boolean
+  saveError: string | null
+
+Autosave: identisch zu GuidedRating (debounced, status-gated)
+
+Layout:
+
+1. Sub-Header:
+   Dram-Fortschrittsbalken
+   Whisky-Info: Name + Region (wenn nicht blind)
+
+2. Gesamt-Score-Anzeige (oben rechts, groß):
+   Berechnet: Math.round((nose + palate + finish + overall) / 4)
+   Dynamische Farbe nach Band
+   Aktualisiert sich live bei Slider-Bewegung
+
+3. Flavor-Profil-Badge (Globe-Icon, kein Emoji)
+
+4. Vier aufklappbare Karten (eine pro Phase):
+   Jede Karte: bgCard, border, borderRadius: 18px, marginBottom: SP.sm+4
+
+   Header-Zeile (immer sichtbar, klickbar, minHeight: 44px):
+     - PhaseSignature (normal, 36×36px)
+     - Phase-Label (14px, bold)
+     - Mini-Fortschrittsbalken (4px Höhe, phase.accent Fill)
+     - Score rechts (28px, bold, Band-Farbe)
+     - Anzahl gewählter Tags (10px, faint) wenn > 0
+     - ChevronDown-Icon (rotiert 180° wenn offen)
+   Klick: openPhase togglen
+
+   Expanded-Bereich (nur wenn openPhase === phaseId):
+     borderTop: border
+     Padding oben: SP.md
+     ScoreInput für diese Phase
+     FlavorTags (wenn nicht overall)
+
+5. Gesamt-Übersicht (unten, immer sichtbar):
+   Alle 4 Scores + gewählte Tags als kleine Chips
+
+6. CTA-Button:
+   "Dram [X] speichern →"
+   saving: grüner Ghost-Button mit Check + "Gespeichert"
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 8: client/src/labs-v2/screens/rating/RatingSummary.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Zusammenfassung nach Abschluss eines Drams.
+
+Props:
+  th: ThemeTokens
+  t: Translations
+  data: RatingData
+  whisky: { name?: string; blind: boolean }
+  dramIdx: number
+  onNext: () => void   — nächster Dram
+  onEdit: () => void   — zurück zur Bewertung
+
+Layout:
+
+1. Zentrierter Header:
+   Icon.Whisky in 64×64px Kreis (gold Gradient Border)
+   Whisky-Name oder "Blind Sample #X"
+   "Gespeichert." (muted)
+
+2. Score-Karte:
+   "Deine Bewertung" (links) + Gesamt-Score 48px fett (rechts)
+   Gesamt = Math.round(mean aller 4 Dimensionen)
+   Für jede der 4 Phasen:
+     PhaseSignature-Icon (14px) + Phase-Label + Score rechts
+     Fortschrittsbalken (6px, phase.accent Fill)
+     Gewählte Tags als kleine Chips (phase.dim, phase.accent)
+
+3. Primär-Button: "Weiter zu Dram #[dramIdx+1] →"
+4. Ghost-Button: t.ratingEdit
+
+Eintrittsanimation: fadeUp mit 0.1s/0.2s Delay gestaffelt.
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 9: client/src/labs-v2/screens/rating/RatingFlow.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Orchestrierungs-Komponente für den kompletten Rating-Flow.
+
+Props:
+  th: ThemeTokens
+  t: Translations
+  whisky: WhiskyData
+  tastingId: string
+  dramIdx: number
+  total: number
+  tastingStatus: string
+  participantId: string
+  onDone: (data: RatingData) => void
+  onBack: () => void
+
+Interner State:
+  mode: null | "guided" | "compact"
+  step: "mode" | "rating" | "summary"
+  result: RatingData | null
+
+Rendert:
+  step === "mode"    → RatingModeSelect
+  step === "rating" && mode === "guided"  → GuidedRating
+  step === "rating" && mode === "compact" → CompactRating
+  step === "summary" → RatingSummary
+
+Übergänge:
+  ModeSelect → onSelect(m): mode = m, step = "rating"
+  Rating     → onDone(d):   result = d, step = "summary"
+  Summary    → onNext():    onDone(result) (weiter zum nächsten Dram)
+  Summary    → onEdit():    step = "rating"
+  Überall    → onBack():    onBack() prop aufrufen
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 10: client/src/labs-v2/types/rating.ts
+──────────────────────────────────────────────────────────────────────────────
+
+TypeScript-Typen für das Rating-System:
+
+  export type PhaseId = "nose" | "palate" | "finish" | "overall"
+
+  export interface PhaseScores {
+    nose:    number
+    palate:  number
+    finish:  number
+    overall: number
+  }
+
+  export interface PhaseTags {
+    nose:    string[]
+    palate:  string[]
+    finish:  string[]
+    overall: string[]
+  }
+
+  export interface PhaseNotes {
+    nose:    string
+    palate:  string
+    finish:  string
+    overall: string
+  }
+
+  export interface RatingData {
+    scores: PhaseScores
+    tags:   PhaseTags
+    notes:  PhaseNotes
+  }
+
+  export interface WhiskyData {
+    id?:           string
+    name?:         string
+    region?:       string
+    cask?:         string
+    blind:         boolean
+    flavorProfile?: string
+  }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ergänze LabsV2App.tsx (append-only zu den bestehenden Imports und States):
+
+Neuer Import:
+  import { RatingFlow } from './screens/rating/RatingFlow'
+
+Neuer State:
+  const [ratingStep, setRatingStep] = useState<"mode"|"rating"|"summary">("mode")
+  const [ratingResult, setRatingResult] = useState<RatingData | null>(null)
+
+Im renderContent()-Block ergänzen:
+  // Nach dem "join"-Block:
+  if (subScreen === "rating") {
+    return (
+      <RatingFlow
+        th={th}
+        t={t}
+        whisky={{
+          name: "Bunnahabhain 12",    // Demo-Daten, später aus Tasting laden
+          region: "Islay",
+          cask: "Sherry",
+          blind: false
+        }}
+        tastingId="demo"
+        dramIdx={1}
+        total={6}
+        tastingStatus="open"
+        participantId="demo"
+        onDone={(data) => { setRatingResult(data) }}
+        onBack={goBack}
+      />
+    )
+  }
+
+Im JoinFlow: onEnterLive={() => { setSubScreen("rating"); setRatingStep("mode") }}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE DIE IN PHASE 2 VERWENDET WERDEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/flavour-categories
+     → Flavor-Kategorien laden (5min Stale-Time)
+     → Fallback: client/src/labs/data/flavor-data.ts
+
+POST /api/tastings/:tastingId/ratings
+     Body: { whiskeyId, dimension, score, notes, flavorTags }
+     Header: x-participant-id
+     Response: { id, ...rating }
+     Fehler 403: Tasting nicht offen → saveError setzen, kein Retry
+
+PATCH /api/tastings/:tastingId/ratings/:ratingId
+      Body: { score?, notes?, flavorTags? }
+      Header: x-participant-id
+      (Wenn Rating bereits existiert — ID aus erstem POST speichern)
+
+GET  /api/tastings/:tastingId/ratings/mine
+     → Beim Start: prüfen ob bereits Ratings für dieses Tasting vorhanden
+     → Wenn ja: Scores vorbelegen statt 75 als Default
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datensicherheit:
+  [ ] schema.ts unverändert
+  [ ] server/ unverändert
+  [ ] Phase-1-Dateien unverändert
+  [ ] /labs/* und /labs-v2 (Phase 1) noch erreichbar
+
+Design:
+  [ ] Kein einziges Emoji — alle Icons sind SVG
+  [ ] Alle Spacing-Werte sind SP-Token-Vielfache
+  [ ] Touch-Targets überall 44px
+  [ ] Slider ist Custom-Component (kein input[type=range])
+  [ ] Slider-Thumb hat 44×44px Touch-Area
+  [ ] Slider-Start: 75 (nicht höher, nicht niedriger)
+  [ ] Quick-Pick-Buttons vorhanden (70/75/80/85/90)
+  [ ] Direkte Zahleneingabe per Tippen funktioniert
+  [ ] Save-Flash nach jeder Phase (300ms)
+  [ ] Phasen-Signaturen: jede Phase hat eigenes Icon + Farbe
+  [ ] Hintergrund-Glow wechselt mit der Phase
+
+Inhalt:
+  [ ] GENAU 4 Dimensionen: Nase · Gaumen · Abgang · Gesamt
+  [ ] Balance ist NICHT vorhanden
+  [ ] Max 6 Flavor-Tags pro Phase
+  [ ] Tags kommen aus /api/flavour-categories (Fallback: flavor-data.ts)
+  [ ] Im Blind-Modus: generische Tags, kein Profil-Badge mit Region
+  [ ] KEINE Persona-Namen in der UI
+
+Funktionalität:
+  [ ] Geführt-Modus: alle 4 Phasen durchlaufbar
+  [ ] Kompakt-Modus: alle 4 Phasen aufklappbar
+  [ ] Zusammenfassung nach Abschluss
+  [ ] Autosave debounced (2000ms)
+  [ ] Status-Gating: kein Save wenn Tasting closed/reveal/archived
+  [ ] Fehlerbehandlung bei gescheitertem Save
+  [ ] Bestehende Ratings beim Start laden (GET .../ratings/mine)
+  [ ] DE/EN funktioniert in allen neuen Texten
+  [ ] Dark/Light Theme in allen neuen Komponenten
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 2 PROMPT
+═══════════════════════════════════════════════════════════════════════════════

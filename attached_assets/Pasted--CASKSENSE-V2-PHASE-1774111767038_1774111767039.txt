@@ -1,0 +1,494 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 1: INTENT · JOIN · LOBBY
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Du arbeitest am Projekt CaskSense auf Replit. Es ist eine Whisky-Tasting-App
+mit React/TypeScript/Vite Frontend, Express 5 Backend und PostgreSQL via
+Drizzle ORM.
+
+Die bestehende Version läuft unter /labs/* und ist produktiv in Betrieb.
+Wir bauen eine vollständige parallele neue Version unter /labs-v2/*.
+Beide Versionen nutzen exakt dieselbe PostgreSQL-Datenbank und dieselben
+API-Endpunkte. Es gibt keine eigene Datenbank für V2.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN, KEIN KOMPROMISS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anlegen oder ändern
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS .env Variablen ändern
+❌ NIEMALS bestehende Dateien in client/src/labs/ löschen oder umbenennen
+❌ NIEMALS bestehende Routen in App.tsx ändern oder löschen
+❌ NIEMALS package.json Dependencies hinzufügen die DB-Migrationen auslösen
+
+✅ NUR neue Dateien in client/src/labs-v2/ anlegen
+✅ Bestehende /api/* Endpunkte per fetch() konsumieren
+✅ In App.tsx ausschließlich neue Routen hinzufügen (append-only)
+✅ Bestehende Hooks aus client/src/labs/hooks/ importieren (nicht kopieren)
+✅ Bestehende lib/api.ts Funktionen importieren (nicht duplizieren)
+✅ i18n Keys in client/src/lib/i18n.ts ergänzen (niemals bestehende ändern)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERBINDLICHE DESIGN-STANDARDS — ALLE UNUMGÄNGLICH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. KEIN EINZIGES EMOJI — ausschließlich eigene SVG-Icons (inline, keine
+   externen Libraries). Jedes Icon als React-Komponente mit color + size Props.
+
+2. 8PX-RASTER — alle Spacing-Werte sind Vielfache von 8px. Verwende das
+   SP-Token-System aus tokens.ts (SP.xs=4, SP.sm=8, SP.md=16, SP.lg=24,
+   SP.xl=32, SP.xxl=48, SP.xxxl=64). Kein einziger willkürlicher Pixelwert.
+
+3. 44PX TOUCH-TARGETS — alle interaktiven Elemente haben minHeight: 44px.
+   Das gilt für Buttons, Inputs, Tab-Bar-Elemente und alle klickbaren Flächen.
+
+4. TYPOGRAFIE-STACK:
+   - Playfair Display: Seitentitel, Whisky-Namen, Hauptüberschriften
+   - Cormorant Garamond: Notizen, Zitate, sekundäre Inhalte, Platzhalter
+   - DM Sans: UI-Text, Labels, Buttons, Navigation, alles andere
+
+5. FONTS via Google Fonts CDN laden:
+   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:
+   wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400
+   &family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+6. BOTTOM NAVIGATION mit 4 Tabs — iOS HIG-konform, 72px Höhe, custom SVG Icons.
+   Tab-Bar verschwindet während Sub-Flows (Join, Solo, Host, Rating).
+
+7. DARK + LIGHT THEME via Context. Dark ist Default. Theme-Toggle im TopBar.
+
+8. DE/EN SPRACHE via Context. DE ist Default. Lang-Toggle im TopBar.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN TOKENS — VERBINDLICH FÜR PHASE 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DARK THEME:
+  bg:        #0e0b05
+  bgCard:    rgba(255,255,255,0.045)
+  bgHover:   rgba(255,255,255,0.08)
+  border:    rgba(255,255,255,0.08)
+  text:      #f5ede0
+  muted:     rgba(245,237,224,0.55)
+  faint:     rgba(245,237,224,0.28)
+  gold:      #d4a847
+  amber:     #c47a3a
+  green:     #86c678
+  tabBg:     rgba(14,11,5,0.96)
+  headerBg:  rgba(14,11,5,0.92)
+  inputBg:   rgba(255,255,255,0.06)
+
+LIGHT THEME:
+  bg:        #faf6f0
+  bgCard:    rgba(0,0,0,0.032)
+  bgHover:   rgba(0,0,0,0.06)
+  border:    rgba(0,0,0,0.09)
+  text:      #1a1208
+  muted:     rgba(26,18,8,0.55)
+  faint:     rgba(26,18,8,0.28)
+  gold:      #b8892a
+  amber:     #a05e22
+  green:     #4a8c3a
+  tabBg:     rgba(250,246,240,0.96)
+  headerBg:  rgba(250,246,240,0.92)
+  inputBg:   rgba(0,0,0,0.04)
+
+PHASEN-AKZENTE (für spätere Phasen bereits definieren):
+  nose:    accent=#a8c4d4  dim=rgba(168,196,212,0.08)  glow=rgba(168,196,212,0.15)
+  palate:  accent=#d4a847  dim=rgba(212,168,71,0.08)   glow=rgba(212,168,71,0.15)
+  finish:  accent=#c47a3a  dim=rgba(196,122,58,0.08)   glow=rgba(196,122,58,0.15)
+  overall: accent=#86c678  dim=rgba(134,198,120,0.08)  glow=rgba(134,198,120,0.15)
+
+LIGHT-PHASEN-AKZENTE:
+  nose:    accent=#5a8fa8  dim=rgba(90,143,168,0.08)
+  palate:  accent=#b8892a  dim=rgba(184,137,42,0.08)
+  finish:  accent=#a05e22  dim=rgba(160,94,34,0.08)
+  overall: accent=#4a8c3a  dim=rgba(74,140,58,0.08)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SVG ICONS — MINDEST-SET FÜR PHASE 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alle Icons als React-Komponenten: ({ color, size = 24 }) => <svg .../>
+Stroke-based, fill="none", strokeWidth ca. 1.7–1.8, strokeLinecap="round"
+
+Für Phase 1 benötigt:
+
+TabTastings — 4 kleine Rechtecke (2×2 Grid)
+TabDiscover — Kreis mit Kompass-Nadel
+TabWorld    — Silhouette Person
+TabCircle   — Zwei Personen-Silhouetten überlappend
+
+Join        — Rechteck mit Pfeil nach innen (Eintreten)
+Solo        — Einzelne Person mit Kreis
+Host        — Stern (5-zackig)
+
+ChevronRight — > Pfeil
+Back         — < Pfeil
+Check        — Haken
+Add          — + Kreuz
+Copy         — Zwei überlagerte Rechtecke
+Live         — Ausgefüllter Kreis mit größerem Ring
+
+Whisky       — Stilisierte Flasche (Rechteck + schmaler Hals)
+
+Alle weiteren Icons (Camera, Edit, Barcode, Nose, Palate, Finish, Overall,
+Globe, Analytics, Report, Journal, Leaderboard, Friends, Feed, Distillery,
+Lexicon, Guide, Compare, Skip) werden in späteren Phasen ergänzt.
+Für Phase 1 werden NUR die oben gelisteten benötigt.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 1 — VOLLSTÄNDIGE DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Erstelle exakt diese Dateien — keine weiteren:
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/theme/tokens.ts
+──────────────────────────────────────────────────────────────────────────────
+
+Exportiert:
+- SP: Spacing-Token-System (xs/sm/md/lg/xl/xxl/xxxl)
+- THEMES: { dark: ThemeTokens, light: ThemeTokens }
+  Jedes ThemeTokens-Objekt enthält: bg, bgCard, bgHover, border, text, muted,
+  faint, gold, amber, green, tabBg, headerBg, inputBg, phases
+  phases enthält: nose, palate, finish, overall — je { accent, dim, glow }
+- Typen: ThemeTokens, PhaseTokens, SpacingTokens
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/theme/i18n.ts
+──────────────────────────────────────────────────────────────────────────────
+
+Exportiert:
+- I18N: { de: Translations, en: Translations }
+
+Alle Translations-Keys für Phase 1:
+  appName, tabTastings, tabEntdecken, tabMeineWelt, tabCircle,
+  hubGreeting, hubSub, hubJoin, hubJoinDesc, hubSolo, hubSoloDesc,
+  hubHost, hubHostDesc, hubRecent,
+  joinTitle, joinCodeLabel, joinCodePH, joinCTA, joinNoAcc,
+  joinNameQ, joinNameSub, joinNamePH, joinEnter,
+  joinWaiting, joinPour,
+  back, darkMode, lightMode,
+  participantsLabel, hostLabel, youLabel, readyLabel, waitingLabel
+
+Bereits alle weiteren Keys für spätere Phasen als leere Strings vorbereiten:
+  ratingModeQ, ratingModeSub, ratingGuided, ratingCompact,
+  ratingNose, ratingPalate, ratingFinish, ratingOverall,
+  soloTitle, soloPhoto, soloManual, soloBarcode, soloSkip,
+  hostTitle, hostName, hostDate, hostTime, hostLoc, hostFormat,
+  hostBlind, hostOpen, hostNext, hostBack, hostWhiskies,
+  hostAddW, hostInvite, hostCode, hostLive, hostStart,
+  entTitle, entSub, mwTitle, mwSub, circleTitle, circleSub
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/icons/Icons.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Alle Icons als benannte Exports. Interface:
+  interface IconProps { color: string; size?: number; }
+
+Enthält für Phase 1 (später ergänzbar):
+  TabTastings, TabDiscover, TabWorld, TabCircle,
+  Join, Solo, Host,
+  ChevronRight, Back, Check, Add, Copy, Live, Whisky
+
+Jedes Icon ist eine React-Funktionskomponente mit SVG.
+Viewbox: "0 0 24 24" für Tab-Icons, "0 0 28 28" für Aktions-Icons.
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/LabsV2Layout.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Shell-Komponente mit:
+
+ThemeContext und LanguageContext als React.createContext mit Provider.
+Beide Contexts werden hier definiert und exportiert:
+  export const ThemeContext = React.createContext<ThemeContextType>(...)
+  export const LanguageContext = React.createContext<LanguageContextType>(...)
+  export const useTheme = () => useContext(ThemeContext)
+  export const useLang  = () => useContext(LanguageContext)
+
+TopBar (position: sticky, top: 0, zIndex: 50, Höhe: 56px):
+  Links: "CaskSense" in Playfair Display, gold, klickbar → navigiert zu Tab 1
+  Rechts: DE/EN Toggle + Dark/Hell Toggle
+  DE/EN Toggle: zwei Buttons nebeneinander, aktiver in gold, background: bgCard
+  Theme Toggle: ein Button, zeigt "Hell" im Dark-Mode und "Dark" im Light-Mode
+  Alle Buttons: minHeight: 32px, keine Emojis
+
+Bottom Tab Bar (position: fixed, bottom: 0, Höhe: 72px, zIndex: 50):
+  4 Tabs: Tastings · Entdecken · Meine Welt · Circle
+  Jeder Tab: SVG-Icon (24px) + Label (10px, DM Sans) + aktiver Dot unten
+  Aktiver Tab: Icon und Label in gold, Icon leicht skaliert (scale: 1.08)
+  Inaktiver Tab: Icon und Label in faint
+  Tab-Bar: background: tabBg, backdropFilter: blur(24px), borderTop: border
+  Tab-Bar sichtbar NUR wenn kein Sub-Screen aktiv (prop: showTabBar)
+
+Content-Area: flex: 1, overflowY: auto, paddingBottom: 72px wenn Tab-Bar
+sichtbar
+
+Navigation intern: activeTab State (tastings/entdecken/meinewelt/circle),
+subScreen State (null | string). Beide als Props oder Context nach unten.
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/TastingsHub.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Der erste Tab — gleichzeitig die Startseite. Enthält:
+
+Begrüßung (oben):
+  Titel: "Guten Abend" / "Good evening" (28px Playfair Display)
+  Untertitel: "Was möchtest du heute tun?" (15px DM Sans, muted)
+
+Drei Aktionskarten (Hauptinhalt):
+  1. Tasting beitreten — Icon: Join, Akzentfarbe: phases.nose
+  2. Dram erfassen    — Icon: Solo, Akzentfarbe: phases.palate
+  3. Tasting leiten   — Icon: Host, Akzentfarbe: phases.finish
+
+Jede Karte:
+  - Hintergrund: bgCard, Border: border, borderRadius: 20px
+  - Padding: SP.lg (24px)
+  - Hover: Hintergrund wechselt zu phase.dim, Border zu phase.accent mit 55% Opacity
+  - Icon-Container: 52×52px, borderRadius: 16px, Hintergrund: phase.dim
+  - Titel: 17px Playfair Display, bold
+  - Beschreibung: 14px DM Sans, muted
+  - ChevronRight-Icon rechts
+  - KEINE Persona-Namen (Rudi, Michael etc.) — nur Verhaltens-Beschreibungen
+  - Klick navigiert zu: "join" / "solo" / "host" (via navigate-Prop)
+  - Animations-Delay: i * 70ms, fadeUp-Animation
+
+Letzte Bewertungen (unten):
+  Überschrift: 11px uppercase, faint, "ZULETZT BEWERTET"
+  2 Einträge (Placeholder-Daten):
+    - Whisky-Icon (40×40px, phase.dim Hintergrund)
+    - Tasting-Name (Cormorant Garamond, 15px)
+    - Datum (12px, faint)
+    - Score rechts (22px, bold, getColor(score))
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/screens/join/JoinFlow.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Drei-Schritt-Flow: code → name → lobby
+
+Props: { th: ThemeTokens, t: Translations, onBack: () => void,
+         onEnterLive: () => void }
+
+Schritt 1 — Code eingeben:
+  Zurück-Button oben (Back-Icon + "Zurück", 44px Touch-Target)
+  Titel: "Tasting beitreten" (28px Playfair Display)
+  Untertitel: "Dein Tasting-Code" (15px DM Sans, muted)
+  Input: zentrierter Text, 26px Cormorant Garamond, letterSpacing: 0.14em
+         Automatisch Großbuchstaben (toUpperCase)
+         borderColor wechselt zu gold wenn Eingabe vorhanden
+  CTA-Button: "Beitreten →" — deaktiviert wenn < 4 Zeichen
+  Hinweis: "Kein Account nötig" (13px, faint, zentriert)
+  API bei Weiter: GET /api/tastings?code=CODE um Tasting zu finden
+                  (Fehlerbehandlung: Code nicht gefunden → Fehlermeldung)
+
+Schritt 2 — Name eingeben:
+  Zurück-Button → zurück zu Schritt 1
+  Titel: "Wie sollen wir dich nennen?" (28px Playfair Display)
+  Untertitel: "Nur dein Name — das war's." (15px DM Sans, muted)
+  Input: 22px Cormorant Garamond, autoFocus, Enter-Taste löst Weiter aus
+  Primär-Button: "Eintreten →" — deaktiviert wenn leer
+  Ghost-Button: "Zurück"
+  API bei Weiter: POST /api/auth/guest (falls kein Account)
+                  dann POST /api/tastings/:id/join mit { name }
+                  Header: x-participant-id falls vorhanden
+
+Schritt 3 — Lobby:
+  Avatar-Kreis (64×64px): erster Buchstabe des Namens, gold Gradient
+  Titel: "Willkommen, [Name]!" (26px Playfair Display)
+  Teilnehmer-Karte:
+    Überschrift: "Im Raum" (11px uppercase, faint)
+    Liste via GET /api/tastings/:id/participants
+    Jeder Eintrag: Avatar (36px) + Name + Rolle-Badge (Host/Du) + Status-Dot
+    Host-Badge: amber, Du-Badge: gold
+    Status-Dot: green wenn bereit, grau wenn wartend
+  Warte-Karte (gold Akzent):
+    Live-Icon + "Christoph startet gleich" + "Giess dir schon mal ein."
+  Primär-Button: "Zur Bewertung →" → ruft onEnterLive() auf
+  SSE-Integration:
+    Importiere useTastingEvents aus client/src/labs/hooks/useTastingEvents.ts
+    Bei status_changed Event: automatisch onEnterLive() aufrufen
+
+Transitions zwischen Schritten: opacity 0→1 + translateY(8px→0), 400ms ease
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 7: client/src/labs-v2/screens/PlaceholderTab.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Wiederverwendbare Platzhalter-Komponente für Tabs 2–4 (werden in späteren
+Phasen durch echte Inhalte ersetzt).
+
+Props: { th, t, title, sub, items: Array<{ Icon, label, pid }> }
+
+Zeigt: Titel + Untertitel + 2-spaltige Icon-Karten-Grid
+Jede Karte: phase.dim Hintergrund, SVG-Icon (28px) + Label
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 8: client/src/labs-v2/LabsV2App.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Root-Komponente die alles zusammenhält. Verwaltet:
+  - themeKey State: "dark" | "light"
+  - lang State: "de" | "en"
+  - activeTab State: "tastings" | "entdecken" | "meinewelt" | "circle"
+  - subScreen State: null | "join" | "solo" | "host" | "rating"
+
+Rendert: LabsV2Layout mit den entsprechenden Screen-Komponenten.
+
+Sub-Screens überschreiben Tab-Inhalt und verstecken Tab-Bar.
+navigate(screen)-Funktion setzt subScreen.
+goBack()-Funktion setzt subScreen auf null.
+
+Tabs 2–4 zeigen PlaceholderTab mit passendem Inhalt.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROUTING — NUR DIESE ÄNDERUNG IN App.tsx (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Füge am Ende der bestehenden Route-Liste in App.tsx hinzu:
+
+  import { LabsV2App } from './labs-v2/LabsV2App'
+
+  // In der Route-Konfiguration ergänzen (NICHT bestehende Routen anfassen):
+  <Route path="/labs-v2" component={LabsV2App} />
+  <Route path="/labs-v2/:rest*" component={LabsV2App} />
+
+Das Routing innerhalb von /labs-v2 wird von LabsV2App selbst verwaltet
+(kein Wouter-Router nötig, State-basierte Navigation).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANDING PAGE — ZWEITEN BUTTON ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/pages/landing-new.tsx:
+Den bestehenden Haupt-CTA-Button NICHT verändern.
+Daneben (oder darunter) einen zweiten Button hinzufügen:
+
+  Deutsch: "✦ Neue Erfahrung"
+  Englisch: "✦ New Experience"
+  Link: /labs-v2
+  Style: transparenter Hintergrund, gold Border (1px solid),
+         gold Text, gleiche Höhe wie bestehender Button
+         hover: gold Hintergrund mit 10% Opacity
+
+Kein Tracking, kein Analytics, einfacher <a href="/labs-v2">-Link.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE DIE IN PHASE 1 VERWENDET WERDEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/auth/me                          — Session laden beim Start
+POST /api/auth/guest                       — Gast-Account erstellen
+GET  /api/tastings?code=XXXX              — Tasting per Code finden
+POST /api/tastings/:id/join               — Tasting beitreten
+GET  /api/tastings/:id/participants       — Teilnehmer laden
+GET  /api/tastings/:id/events             — SSE-Verbindung (via useTastingEvents)
+
+Alle Requests die eine Authentifizierung benötigen senden:
+  Header: x-participant-id: [participantId aus Session]
+
+Fehlerbehandlung für alle Calls:
+  - Netzwerkfehler: Fehlermeldung anzeigen, Retry-Möglichkeit
+  - 404: "Code nicht gefunden" auf Code-Screen
+  - 409: "Du bist bereits beigetreten"
+  - 500: Generische Fehlermeldung
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANIMATIONEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Definiere in einer zentralen CSS-Datei client/src/labs-v2/theme/animations.css:
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ping {
+    0%       { transform: scale(1); opacity: 0.7; }
+    75%, 100%{ transform: scale(2.2); opacity: 0; }
+  }
+
+  @keyframes saveFlash {
+    0%   { transform: scale(0.6); opacity: 0; }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+Importiere diese Datei in LabsV2Layout.tsx.
+Beachte: prefers-reduced-motion — alle Animationen deaktivieren wenn gesetzt.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE — VOR FERTIGSTELLUNG ABHAKEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datensicherheit:
+  [ ] schema.ts unverändert
+  [ ] server/ Verzeichnis unverändert
+  [ ] Keine DB-Migrationen ausgelöst
+  [ ] /labs/* Routen noch erreichbar und funktionsfähig
+
+Design-Standards:
+  [ ] Kein einziges Emoji — nur SVG-Icons
+  [ ] Alle Spacing-Werte sind SP-Token-Vielfache
+  [ ] Touch-Targets überall mindestens 44px
+  [ ] Playfair Display / Cormorant Garamond / DM Sans korrekt eingesetzt
+  [ ] Dark-Theme vollständig funktionsfähig
+  [ ] Light-Theme vollständig funktionsfähig
+  [ ] DE/EN Umschaltung ohne Reload
+  [ ] KEINE Persona-Namen (Rudi, Michael etc.) sichtbar
+  [ ] Tab-Bar verschwindet im Sub-Screen
+  [ ] Hintergrund-Glow-Effekt vorhanden
+
+Funktionalität:
+  [ ] /labs-v2 Route erreichbar
+  [ ] Tab-Navigation funktioniert
+  [ ] Join-Flow komplett durchführbar (Code → Name → Lobby)
+  [ ] SSE-Hook aktiv in Lobby
+  [ ] Fehlerbehandlung für API-Calls vorhanden
+  [ ] Landing Page zeigt zweiten Button "✦ Neue Erfahrung"
+
+Nicht in Phase 1 (kommt später):
+  [ ] Rating-Screen → Phase 2
+  [ ] Solo-Flow → Phase 3
+  [ ] Host-Wizard → Phase 4
+  [ ] Live-Tasting + Reveal → Phase 5
+  [ ] Ergebnisse + Insights → Phase 6
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WICHTIGE HINWEISE FÜR REPLIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Der Dev-Server (npm run dev) muss nach den Änderungen neu gestartet werden
+- TypeScript-Fehler in bestehenden Dateien sind kein Problem — nur neue Fehler
+  die durch diese Änderungen entstehen müssen behoben werden
+- Falls Wouter-Routing nicht für /labs-v2/* funktioniert: in App.tsx prüfen
+  ob ein Catch-All-Route die neuen Routes überschreibt
+- Google Fonts Imports funktionieren nur mit aktiver Internetverbindung in
+  Replit — falls offline, Fallback-Fonts (serif / sans-serif) sind akzeptabel
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 1 PROMPT
+═══════════════════════════════════════════════════════════════════════════════
