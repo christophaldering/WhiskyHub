@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import i18n from "@/lib/i18n";
 
-type MenuView = "main" | "register" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
+type MenuView = "main" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
 
 interface M2ProfileMenuProps {
   open: boolean;
@@ -412,85 +412,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     opacity: loading ? 0.6 : 1,
     transition: "opacity 0.15s, background 0.15s",
   });
-
-  const renderRegisterView = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {renderBackButton(t("m2.register.back", "Back to Sign In"))}
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: tv.text, margin: "0 0 4px" }}>
-        {t("m2.register.title", "Create Account")}
-      </h3>
-      {regSuccess ? (
-        <div style={{ textAlign: "center", padding: 20 }}>
-          <CheckCircle2 style={{ width: 48, height: 48, color: tv.success, margin: "0 auto 12px" }} />
-          <div style={{ fontSize: 15, color: tv.text, fontWeight: 600 }}>
-            {t("m2.register.success", "Account created successfully!")}
-          </div>
-        </div>
-      ) : (
-        <>
-          <input
-            type="text"
-            value={regName}
-            onChange={(e) => { setRegName(e.target.value); setError(""); }}
-            placeholder={t("m2.register.namePlaceholder", "Display Name")}
-            autoComplete="name"
-            style={inputStyle(!!error)}
-            data-testid="m2-register-name"
-          />
-          <input
-            type="email"
-            value={regEmail}
-            onChange={(e) => { setRegEmail(e.target.value); setError(""); }}
-            placeholder={t("m2.register.emailPlaceholder", "Email")}
-            autoComplete="email"
-            style={inputStyle(!!error)}
-            data-testid="m2-register-email"
-          />
-          <div style={{ position: "relative" }}>
-            <input
-              type={regShowPin ? "text" : "password"}
-              value={regPin}
-              onChange={(e) => { setRegPin(e.target.value); setError(""); }}
-              placeholder={t("m2.register.passwordPlaceholder", "Password (min 4 chars)")}
-              autoComplete="new-password"
-              style={inputStyle(!!error)}
-              data-testid="m2-register-password"
-            />
-            <button
-              type="button"
-              onClick={() => setRegShowPin(!regShowPin)}
-              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 0 }}
-              data-testid="m2-register-toggle-password"
-            >
-              {regShowPin ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
-            </button>
-          </div>
-          <input
-            type={regShowPin ? "text" : "password"}
-            value={regPinConfirm}
-            onChange={(e) => { setRegPinConfirm(e.target.value); setError(""); }}
-            placeholder={t("m2.register.confirmPasswordPlaceholder", "Confirm Password")}
-            autoComplete="new-password"
-            style={inputStyle(!!error)}
-            data-testid="m2-register-confirm-password"
-          />
-          {error && (
-            <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-register-error">
-              {error}
-            </div>
-          )}
-          <button
-            onClick={handleRegister}
-            disabled={loading}
-            style={primaryBtnStyle(!regName.trim() || !regEmail.trim() || !regPin.trim())}
-            data-testid="m2-register-submit"
-          >
-            {loading ? t("m2.register.creating", "Creating...") : t("m2.register.create", "Create Account")}
-          </button>
-        </>
-      )}
-    </div>
-  );
 
   const renderForgotPinView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -939,14 +860,76 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            onClick={() => { setView("register"); setError(""); }}
-            style={primaryBtnStyle(false)}
-            data-testid="m2-profile-register"
-          >
-            <UserPlus style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 6 }} />
-            {t("m2.profile.createAccount", "Register")}
-          </button>
+          {regSuccess ? (
+            <div style={{ textAlign: "center", padding: 20 }}>
+              <CheckCircle2 style={{ width: 48, height: 48, color: tv.success, margin: "0 auto 12px" }} />
+              <div style={{ fontSize: 15, color: tv.text, fontWeight: 600 }}>
+                {t("m2.register.success", "Account created successfully!")}
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={regName}
+                onChange={(e) => { setRegName(e.target.value); setError(""); }}
+                placeholder={t("m2.register.namePlaceholder", "Display Name")}
+                autoComplete="name"
+                style={inputStyle(!!error)}
+                data-testid="m2-register-name"
+              />
+              <input
+                type="email"
+                value={regEmail}
+                onChange={(e) => { setRegEmail(e.target.value); setError(""); }}
+                placeholder={t("m2.register.emailPlaceholder", "Email")}
+                autoComplete="email"
+                style={inputStyle(!!error)}
+                data-testid="m2-register-email"
+              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={regShowPin ? "text" : "password"}
+                  value={regPin}
+                  onChange={(e) => { setRegPin(e.target.value); setError(""); }}
+                  placeholder={t("m2.register.passwordPlaceholder", "Password (min 4 chars)")}
+                  autoComplete="new-password"
+                  style={inputStyle(!!error)}
+                  data-testid="m2-register-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRegShowPin(!regShowPin)}
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 0 }}
+                  data-testid="m2-register-toggle-password"
+                >
+                  {regShowPin ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
+                </button>
+              </div>
+              <input
+                type={regShowPin ? "text" : "password"}
+                value={regPinConfirm}
+                onChange={(e) => { setRegPinConfirm(e.target.value); setError(""); }}
+                placeholder={t("m2.register.confirmPasswordPlaceholder", "Confirm Password")}
+                autoComplete="new-password"
+                style={inputStyle(!!error)}
+                data-testid="m2-register-confirm-password"
+              />
+              {error && (
+                <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-register-error">
+                  {error}
+                </div>
+              )}
+              <button
+                onClick={handleRegister}
+                disabled={loading}
+                style={primaryBtnStyle(!regName.trim() || !regEmail.trim() || !regPin.trim())}
+                data-testid="m2-register-submit"
+              >
+                {loading ? t("m2.register.creating", "Creating...") : t("m2.register.create", "Create Account")}
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1048,7 +1031,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderContent = () => {
     switch (view) {
-      case "register": return renderRegisterView();
       case "forgot-pin": return renderForgotPinView();
       case "reset-pin": return renderResetPinView();
       case "verify-email": return renderVerifyEmailView();
@@ -1089,8 +1071,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           <h2 style={{ fontSize: 18, fontWeight: 700, color: tv.text, margin: 0 }}>
             {view === "main"
               ? t("m2.profile.label", "Profile")
-              : view === "register"
-              ? t("m2.register.title", "Create Account")
               : view === "forgot-pin"
               ? t("m2.forgotPin.title", "Reset Password")
               : view === "reset-pin"
