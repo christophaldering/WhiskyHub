@@ -13412,7 +13412,21 @@ Rules:
         avgOverall: number | null;
         ratingCount: number;
         tastingCount: number;
+        peatLevel: string | null;
+        caskInfluence: string | null;
+        ageBand: string | null;
+        abvBand: string | null;
+        price: number | null;
+        wbScore: number | null;
+        vintage: string | null;
+        avgNose: number | null;
+        avgTaste: number | null;
+        avgFinish: number | null;
+        scoreVariance: number | null;
         _allScores: number[];
+        _noseScores: number[];
+        _tasteScores: number[];
+        _finishScores: number[];
       }
 
       const whiskyMap = new Map<string, ExploreWhiskyEntry>();
@@ -13421,15 +13435,23 @@ Rules:
         id: string; name: string; distillery?: string | null; region?: string | null;
         country?: string | null; category?: string | null; age?: string | null;
         abv?: string | null; caskType?: string | null; imageUrl?: string | null;
-      }, scores: number[], isTasting: boolean) => {
+        peatLevel?: string | null; caskInfluence?: string | null;
+        ageBand?: string | null; abvBand?: string | null;
+        price?: number | null; wbScore?: number | null; vintage?: string | null;
+      }, scores: number[], noseScores: number[], tasteScores: number[], finishScores: number[], isTasting: boolean) => {
+        const avg = (arr: number[]) => arr.length > 0 ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : null;
         const existing = whiskyMap.get(key);
         if (existing) {
           existing._allScores.push(...scores);
+          existing._noseScores.push(...noseScores);
+          existing._tasteScores.push(...tasteScores);
+          existing._finishScores.push(...finishScores);
           existing.ratingCount = existing._allScores.length;
           if (isTasting) existing.tastingCount += 1;
-          existing.avgOverall = existing._allScores.length > 0
-            ? parseFloat((existing._allScores.reduce((a, b) => a + b, 0) / existing._allScores.length).toFixed(1))
-            : null;
+          existing.avgOverall = avg(existing._allScores);
+          existing.avgNose = avg(existing._noseScores);
+          existing.avgTaste = avg(existing._tasteScores);
+          existing.avgFinish = avg(existing._finishScores);
           if (!existing.age && entry.age) existing.age = entry.age;
           if (!existing.abv && entry.abv) existing.abv = entry.abv;
           if (!existing.region && entry.region) existing.region = entry.region;
@@ -13437,6 +13459,13 @@ Rules:
           if (!existing.category && entry.category) existing.category = entry.category;
           if (!existing.caskType && entry.caskType) existing.caskType = entry.caskType;
           if (!existing.imageUrl && entry.imageUrl) existing.imageUrl = entry.imageUrl;
+          if (!existing.peatLevel && entry.peatLevel) existing.peatLevel = entry.peatLevel;
+          if (!existing.caskInfluence && entry.caskInfluence) existing.caskInfluence = entry.caskInfluence;
+          if (!existing.ageBand && entry.ageBand) existing.ageBand = entry.ageBand;
+          if (!existing.abvBand && entry.abvBand) existing.abvBand = entry.abvBand;
+          if (existing.price == null && entry.price != null) existing.price = entry.price;
+          if (existing.wbScore == null && entry.wbScore != null) existing.wbScore = entry.wbScore;
+          if (!existing.vintage && entry.vintage) existing.vintage = entry.vintage;
         } else {
           whiskyMap.set(key, {
             id: entry.id,
@@ -13449,12 +13478,24 @@ Rules:
             abv: entry.abv || null,
             caskType: entry.caskType || null,
             imageUrl: entry.imageUrl || null,
-            avgOverall: scores.length > 0
-              ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
-              : null,
+            avgOverall: avg(scores),
             ratingCount: scores.length,
             tastingCount: isTasting ? 1 : 0,
+            peatLevel: entry.peatLevel || null,
+            caskInfluence: entry.caskInfluence || null,
+            ageBand: entry.ageBand || null,
+            abvBand: entry.abvBand || null,
+            price: entry.price ?? null,
+            wbScore: entry.wbScore ?? null,
+            vintage: entry.vintage || null,
+            avgNose: avg(noseScores),
+            avgTaste: avg(tasteScores),
+            avgFinish: avg(finishScores),
+            scoreVariance: null,
             _allScores: [...scores],
+            _noseScores: [...noseScores],
+            _tasteScores: [...tasteScores],
+            _finishScores: [...finishScores],
           });
         }
       };
@@ -13463,11 +13504,18 @@ Rules:
         const key = `${(w.name || "").toLowerCase()}::${(w.distillery || "").toLowerCase()}`;
         const whiskyRatings = allRatingsData.filter(r => r.whiskyId === w.id);
         const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
+        const noseScores = whiskyRatings.map(r => r.nose).filter((v): v is number => v != null && v > 0);
+        const tasteScores = whiskyRatings.map(r => r.taste).filter((v): v is number => v != null && v > 0);
+        const finishScores = whiskyRatings.map(r => r.finish).filter((v): v is number => v != null && v > 0);
         mergeIntoMap(key, {
           id: w.id, name: w.name || "", distillery: w.distillery, region: w.region,
-          country: w.country, category: w.category, age: w.age, abv: w.abv,
+          country: w.country, category: w.category, age: w.age, abv: w.abv != null ? String(w.abv) : null,
           caskType: w.caskType, imageUrl: w.imageUrl,
-        }, overallScores, true);
+          peatLevel: w.peatLevel, caskInfluence: w.caskInfluence,
+          ageBand: w.ageBand, abvBand: w.abvBand,
+          price: w.price, wbScore: w.wbScore,
+          vintage: w.distilledYear || w.vintage,
+        }, overallScores, noseScores, tasteScores, finishScores, true);
       }
 
       const curatedEntries = await storage.getCuratedDatabaseEntries();
@@ -13475,11 +13523,15 @@ Rules:
         if (!je.whiskyName) continue;
         const key = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
         const scores = je.personalScore != null && je.personalScore > 0 ? [je.personalScore] : [];
+        const jePrice = je.price != null ? parseFloat(String(je.price)) : null;
         mergeIntoMap(key, {
           id: je.id, name: je.whiskyName, distillery: je.distillery, region: je.region,
           country: je.country, category: je.category, age: je.age, abv: je.abv,
           caskType: je.caskType, imageUrl: je.imageUrl,
-        }, scores, false);
+          peatLevel: je.peatLevel, wbScore: je.wbScore,
+          price: jePrice != null && !isNaN(jePrice) ? jePrice : null,
+          vintage: je.vintage,
+        }, scores, [], [], [], false);
       }
 
       const allCollectionItems = await storage.getAllCollectionItems();
@@ -13491,14 +13543,31 @@ Rules:
           id: ci.id.toString(), name: ci.name, distillery: ci.distillery, region: null,
           country: null, category: null, age: ci.statedAge, abv: ci.abv,
           caskType: ci.caskType, imageUrl: ci.imageUrl,
-        }, scores, false);
+          vintage: ci.vintage, price: ci.pricePaid,
+        }, scores, [], [], [], false);
       }
 
-      for (const entry of whiskyMap.values()) {
-        delete entry._allScores;
-      }
-
-      let results = Array.from(whiskyMap.values());
+      let results = Array.from(whiskyMap.values()).map(entry => {
+        let computedVariance: number | null = null;
+        if (entry._allScores.length >= 2) {
+          const mean = entry._allScores.reduce((a, b) => a + b, 0) / entry._allScores.length;
+          computedVariance = parseFloat(
+            (entry._allScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / entry._allScores.length).toFixed(2)
+          );
+        }
+        return {
+          id: entry.id, name: entry.name, distillery: entry.distillery,
+          region: entry.region, country: entry.country, category: entry.category,
+          age: entry.age, abv: entry.abv, caskType: entry.caskType,
+          imageUrl: entry.imageUrl, avgOverall: entry.avgOverall,
+          ratingCount: entry.ratingCount, tastingCount: entry.tastingCount,
+          peatLevel: entry.peatLevel, caskInfluence: entry.caskInfluence,
+          ageBand: entry.ageBand, abvBand: entry.abvBand,
+          price: entry.price, wbScore: entry.wbScore, vintage: entry.vintage,
+          avgNose: entry.avgNose, avgTaste: entry.avgTaste, avgFinish: entry.avgFinish,
+          scoreVariance: computedVariance,
+        };
+      });
 
       if (search) {
         results = results.filter(w =>

@@ -2,16 +2,28 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Star, ChevronRight, ChevronDown, ChevronLeft, Globe } from "lucide-react";
+import { Search, Star, ChevronRight, ChevronDown, ChevronLeft, Globe, Filter, X } from "lucide-react";
 import { Link } from "wouter";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
+import ExploreStatistics from "@/labs/components/ExploreStatistics";
 
 type SortOption = "alphabetical" | "alphabetical_desc" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
 type ExploreTab = "all";
+type FilterDimension = "region" | "caskInfluence" | "peatLevel" | "ageBand" | "abvBand" | "category" | "country";
 
 const BATCH_SIZE = 50;
+
+const FILTER_DIMENSIONS: { key: FilterDimension; labelKey: string; fallback: string }[] = [
+  { key: "region", labelKey: "explore.filterRegion", fallback: "Region" },
+  { key: "country", labelKey: "explore.filterCountry", fallback: "Country" },
+  { key: "category", labelKey: "explore.filterCategory", fallback: "Category" },
+  { key: "caskInfluence", labelKey: "explore.filterCask", fallback: "Cask" },
+  { key: "peatLevel", labelKey: "explore.filterPeat", fallback: "Peat Level" },
+  { key: "ageBand", labelKey: "explore.filterAge", fallback: "Age Band" },
+  { key: "abvBand", labelKey: "explore.filterAbv", fallback: "ABV Band" },
+];
 
 export default function LabsExplore() {
   const { t } = useTranslation();
@@ -32,7 +44,16 @@ export default function LabsExplore() {
       setActiveTab("all");
     }
   }, [location]);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Record<FilterDimension, Set<string>>>({
+    region: new Set(),
+    caskInfluence: new Set(),
+    peatLevel: new Set(),
+    ageBand: new Set(),
+    abvBand: new Set(),
+    category: new Set(),
+    country: new Set(),
+  });
+  const [expandedFilter, setExpandedFilter] = useState<FilterDimension | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("alphabetical");
   const [displayLimit, setDisplayLimit] = useState(BATCH_SIZE);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -40,24 +61,91 @@ export default function LabsExplore() {
   const listTopRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const { data: whiskies, isLoading: isLoadingAll } = useQuery({
-    queryKey: ["labs-explore-whiskies", searchText, selectedRegion],
-    queryFn: () => exploreApi.getWhiskies(searchText || undefined, selectedRegion || undefined),
+  const { data: allWhiskies, isLoading: isLoadingAll } = useQuery({
+    queryKey: ["labs-explore-whiskies", searchText],
+    queryFn: () => exploreApi.getWhiskies(searchText || undefined),
     enabled: activeTab === "all",
   });
 
-  const regions = useMemo(() => {
-    if (activeTab !== "all" || !whiskies || !Array.isArray(whiskies)) return [];
-    const regionSet = new Set<string>();
-    whiskies.forEach((w: any) => { if (w.region) regionSet.add(w.region); });
-    return Array.from(regionSet).sort();
-  }, [whiskies, activeTab]);
+  const filterValues = useMemo(() => {
+    if (!allWhiskies || !Array.isArray(allWhiskies)) return {} as Record<FilterDimension, string[]>;
+    const result: Record<FilterDimension, Set<string>> = {
+      region: new Set(),
+      caskInfluence: new Set(),
+      peatLevel: new Set(),
+      ageBand: new Set(),
+      abvBand: new Set(),
+      category: new Set(),
+      country: new Set(),
+    };
+    for (const w of allWhiskies) {
+      if (w.region) result.region.add(w.region);
+      if (w.caskInfluence) result.caskInfluence.add(w.caskInfluence);
+      if (w.peatLevel) result.peatLevel.add(w.peatLevel);
+      if (w.ageBand) result.ageBand.add(w.ageBand);
+      if (w.abvBand) result.abvBand.add(w.abvBand);
+      if (w.category) result.category.add(w.category);
+      if (w.country) result.country.add(w.country);
+    }
+    const out: Record<FilterDimension, string[]> = {
+      region: Array.from(result.region).sort(),
+      caskInfluence: Array.from(result.caskInfluence).sort(),
+      peatLevel: Array.from(result.peatLevel).sort(),
+      ageBand: Array.from(result.ageBand).sort(),
+      abvBand: Array.from(result.abvBand).sort(),
+      category: Array.from(result.category).sort(),
+      country: Array.from(result.country).sort(),
+    };
+    return out;
+  }, [allWhiskies]);
+
+  const activeFilterCount = useMemo(() => {
+    return Object.values(filters).reduce((sum, set) => sum + set.size, 0);
+  }, [filters]);
+
+  const toggleFilter = useCallback((dim: FilterDimension, value: string) => {
+    setFilters(prev => {
+      const newSet = new Set(prev[dim]);
+      if (newSet.has(value)) {
+        newSet.delete(value);
+      } else {
+        newSet.add(value);
+      }
+      return { ...prev, [dim]: newSet };
+    });
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({
+      region: new Set(),
+      caskInfluence: new Set(),
+      peatLevel: new Set(),
+      ageBand: new Set(),
+      abvBand: new Set(),
+      category: new Set(),
+      country: new Set(),
+    });
+  }, []);
+
+  const filteredWhiskies = useMemo(() => {
+    if (!allWhiskies || !Array.isArray(allWhiskies)) return [];
+    return allWhiskies.filter((w: any) => {
+      if (filters.region.size > 0 && (!w.region || !filters.region.has(w.region))) return false;
+      if (filters.caskInfluence.size > 0 && (!w.caskInfluence || !filters.caskInfluence.has(w.caskInfluence))) return false;
+      if (filters.peatLevel.size > 0 && (!w.peatLevel || !filters.peatLevel.has(w.peatLevel))) return false;
+      if (filters.ageBand.size > 0 && (!w.ageBand || !filters.ageBand.has(w.ageBand))) return false;
+      if (filters.abvBand.size > 0 && (!w.abvBand || !filters.abvBand.has(w.abvBand))) return false;
+      if (filters.category.size > 0 && (!w.category || !filters.category.has(w.category))) return false;
+      if (filters.country.size > 0 && (!w.country || !filters.country.has(w.country))) return false;
+      return true;
+    });
+  }, [allWhiskies, filters]);
 
   const collator = useMemo(() => new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }), []);
 
   const sortedWhiskies = useMemo(() => {
-    if (activeTab !== "all" || !whiskies || !Array.isArray(whiskies)) return [];
-    let list = [...whiskies];
+    if (activeTab !== "all") return [];
+    let list = [...filteredWhiskies];
     const parseNum = (v: string | null | undefined): number => {
       if (!v) return 0;
       const n = parseFloat(v.replace(/[^0-9.]/g, ""));
@@ -88,7 +176,7 @@ export default function LabsExplore() {
         break;
     }
     return list;
-  }, [whiskies, sortBy, activeTab, collator]);
+  }, [filteredWhiskies, sortBy, activeTab, collator]);
 
   const visibleWhiskies = useMemo(() => sortedWhiskies.slice(0, displayLimit), [sortedWhiskies, displayLimit]);
 
@@ -97,7 +185,7 @@ export default function LabsExplore() {
     if (listTopRef.current) {
       listTopRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [sortBy, searchText, selectedRegion]);
+  }, [sortBy, searchText, filters]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -184,7 +272,7 @@ export default function LabsExplore() {
             return (
               <button
                 key={tab.key}
-                onClick={() => { setActiveTab(tab.key); setSearchText(""); setSelectedRegion(null); }}
+                onClick={() => { setActiveTab(tab.key); setSearchText(""); clearAllFilters(); }}
                 data-testid={`labs-explore-tab-${tab.key}`}
                 style={{
                   flex: 1,
@@ -226,39 +314,94 @@ export default function LabsExplore() {
         />
       </div>
 
-      {activeTab === "all" && regions.length > 0 && (
-        <div
-          className="labs-fade-in labs-stagger-2"
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 16,
-            overflowX: "auto",
-            paddingBottom: 4,
-            scrollbarWidth: "none",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          <button
-            className={`labs-chip ${!selectedRegion ? "labs-chip-active" : ""}`}
-            onClick={() => setSelectedRegion(null)}
-            style={{ whiteSpace: "nowrap", flexShrink: 0 }}
-            data-testid="labs-explore-region-all"
+      {activeTab === "all" && (
+        <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 16 }} data-testid="section-extended-filters">
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: expandedFilter ? 8 : 0,
+            }}
           >
-            {t("allRegions", "All Regions")}
-          </button>
-          {regions.map((region) => (
-            <button
-              key={region}
-              className={`labs-chip ${selectedRegion === region ? "labs-chip-active" : ""}`}
-              onClick={() => setSelectedRegion(selectedRegion === region ? null : region)}
-              style={{ whiteSpace: "nowrap", flexShrink: 0 }}
-              data-testid={`labs-explore-region-${region}`}
+            {FILTER_DIMENSIONS.map(({ key, labelKey, fallback }) => {
+              const values = filterValues[key] || [];
+              if (values.length === 0) return null;
+              const selected = filters[key];
+              const isExpanded = expandedFilter === key;
+              return (
+                <button
+                  key={key}
+                  className={`labs-chip ${selected.size > 0 ? "labs-chip-active" : ""}`}
+                  onClick={() => setExpandedFilter(isExpanded ? null : key)}
+                  style={{ whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}
+                  data-testid={`filter-chip-${key}`}
+                >
+                  <Filter style={{ width: 11, height: 11 }} />
+                  {t(labelKey, fallback)}
+                  {selected.size > 0 && (
+                    <span style={{
+                      background: "var(--labs-accent)",
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      borderRadius: 10,
+                      padding: "0 5px",
+                      minWidth: 16,
+                      textAlign: "center",
+                      lineHeight: "16px",
+                    }}>
+                      {selected.size}
+                    </span>
+                  )}
+                  <ChevronDown style={{ width: 10, height: 10, transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0)" }} />
+                </button>
+              );
+            })}
+            {activeFilterCount > 0 && (
+              <button
+                className="labs-chip"
+                onClick={clearAllFilters}
+                style={{ whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)" }}
+                data-testid="button-clear-filters"
+              >
+                <X style={{ width: 12, height: 12 }} />
+                {t("explore.clearFilters", "Clear all")}
+              </button>
+            )}
+          </div>
+
+          {expandedFilter && (filterValues[expandedFilter] || []).length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                flexWrap: "wrap",
+                padding: "8px 0",
+              }}
+              data-testid={`filter-values-${expandedFilter}`}
             >
-              {region}
-            </button>
-          ))}
+              {(filterValues[expandedFilter] || []).map((val) => {
+                const isSelected = filters[expandedFilter].has(val);
+                return (
+                  <button
+                    key={val}
+                    className={`labs-chip ${isSelected ? "labs-chip-active" : ""}`}
+                    onClick={() => toggleFilter(expandedFilter, val)}
+                    style={{ whiteSpace: "nowrap", flexShrink: 0, fontSize: 12 }}
+                    data-testid={`filter-value-${expandedFilter}-${val}`}
+                  >
+                    {val}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
+      )}
+
+      {activeTab === "all" && !isLoading && filteredWhiskies.length > 0 && (
+        <ExploreStatistics whiskies={filteredWhiskies} />
       )}
 
       {activeTab === "all" && (
@@ -360,12 +503,12 @@ export default function LabsExplore() {
                 <circle cx="20" cy="20" r="2" fill="currentColor" opacity="0.2"/>
               </svg>
               <h2 className="labs-empty-title">
-                {searchText || selectedRegion
+                {searchText || activeFilterCount > 0
                   ? t("explore.noMatchingWhiskies", "Keine Ergebnisse")
                   : t("explore.noWhiskiesYet", "Noch keine Whiskies")}
               </h2>
               <p className="labs-empty-sub">
-                {searchText || selectedRegion
+                {searchText || activeFilterCount > 0
                   ? t("explore.adjustFilters", "Passe deine Suche oder Filter an.")
                   : t("explore.whiskiesWillAppear", "Whiskies erscheinen hier, sobald sie einer Session hinzugefügt werden.")}
               </p>
