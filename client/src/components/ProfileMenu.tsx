@@ -9,80 +9,8 @@ import {
   X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
   Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart,
-  FlaskConical, Layout
 } from "lucide-react";
 import i18n from "@/lib/i18n";
-
-function mapRouteToCounterpart(path: string): { target: string; isLabs: boolean } {
-  const isLabs = path.startsWith("/labs");
-
-  const specialM2ToLabs: Record<string, string> = {
-    "/m2": "/labs/home",
-    "/m2/tastings": "/labs/tastings",
-    "/m2/tastings/host": "/labs/host",
-    "/m2/tastings/dashboard": "/labs/host/dashboard",
-    "/m2/tastings/solo": "/labs/solo",
-    "/m2/tastings/join": "/labs/join",
-    "/m2/taste/historical": "/labs/host/history",
-    "/m2/taste/historical/insights": "/labs/host/history/insights",
-    "/m2/taste/profile": "/labs/taste/profile",
-    "/m2/taste/analytics": "/labs/taste/analytics",
-    "/m2/taste/drams": "/labs/taste/drams",
-    "/m2/taste/collection": "/labs/taste/collection",
-    "/m2/taste/compare": "/labs/taste/compare",
-    "/m2/taste/pairings": "/labs/taste/pairings",
-    "/m2/taste/wheel": "/labs/taste/wheel",
-    "/m2/taste/downloads": "/labs/taste/downloads",
-    "/m2/taste/recommendations": "/labs/taste/recommendations",
-    "/m2/taste/benchmark": "/labs/taste/benchmark",
-    "/m2/taste/collection-analysis": "/labs/taste/collection-analysis",
-    "/m2/taste/connoisseur": "/labs/taste/connoisseur",
-    "/m2/taste/wishlist": "/labs/taste/wishlist",
-    "/m2/taste/settings": "/labs/taste/settings",
-    "/m2/taste": "/labs/taste",
-    "/m2/discover/about": "/labs/about",
-    "/m2/discover/lexicon": "/labs/discover/lexicon",
-    "/m2/discover/distilleries": "/labs/discover/distilleries",
-    "/m2/discover/bottlers": "/labs/discover/bottlers",
-    "/m2/discover/templates": "/labs/discover/templates",
-    "/m2/discover/guide": "/labs/discover/guide",
-    "/m2/discover/ai-curation": "/labs/taste/ai-curation",
-    "/m2/discover/research": "/labs/discover/research",
-    "/m2/discover/rabbit-hole": "/labs/discover/rabbit-hole",
-    "/m2/discover/vocabulary": "/labs/discover/vocabulary",
-    "/m2/discover/activity": "/labs/activity",
-    "/m2/discover/community": "/labs/community",
-    "/m2/discover/donate": "/labs/donate",
-    "/m2/discover": "/labs/entdecken",
-    "/m2/impressum": "/labs/impressum",
-    "/m2/privacy": "/labs/privacy",
-    "/m2/making-of": "/labs/making-of",
-    "/m2/admin": "/labs/admin",
-    "/m2/circle": "/labs/circle",
-  };
-
-  const specialLabsToM2: Record<string, string> = {};
-  for (const [m2, labs] of Object.entries(specialM2ToLabs)) {
-    specialLabsToM2[labs] = m2;
-  }
-
-  const knownM2Prefixes = ["/m2/tastings", "/m2/taste", "/m2/discover", "/m2/circle", "/m2/admin", "/m2/impressum", "/m2/privacy", "/m2/making-of"];
-  const knownLabsPrefixes = ["/labs/home", "/labs/tastings", "/labs/host", "/labs/solo", "/labs/join", "/labs/live", "/labs/taste", "/labs/discover", "/labs/explore", "/labs/circle", "/labs/admin", "/labs/about", "/labs/activity", "/labs/community", "/labs/donate", "/labs/impressum", "/labs/privacy", "/labs/making-of"];
-
-  if (isLabs) {
-    if (specialLabsToM2[path]) return { target: specialLabsToM2[path], isLabs: true };
-    const sub = path.replace(/^\/labs/, "");
-    const candidate = "/m2" + (sub || "");
-    if (knownM2Prefixes.some(p => candidate.startsWith(p))) return { target: candidate, isLabs: true };
-    return { target: "/m2/tastings", isLabs: true };
-  } else {
-    if (specialM2ToLabs[path]) return { target: specialM2ToLabs[path], isLabs: false };
-    const sub = path.replace(/^\/m2/, "");
-    const candidate = "/labs" + (sub || "/home");
-    if (knownLabsPrefixes.some(p => candidate.startsWith(p))) return { target: candidate, isLabs: false };
-    return { target: "/labs/home", isLabs: false };
-  }
-}
 
 type MenuView = "main" | "register" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
 
@@ -788,21 +716,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </div>
       </div>
 
-      {session.role === "admin" && (() => {
-        const ri = mapRouteToCounterpart(location);
-        return (
-          <MenuButton theme={tv}
-            icon={ri.isLabs
-              ? <Layout style={{ width: 18, height: 18, color: tv.accent }} />
-              : <FlaskConical style={{ width: 18, height: 18, color: tv.accent }} />}
-            label={ri.isLabs
-              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
-              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
-            onClick={() => { onClose(); navigate(ri.target); }}
-            testId="m2-profile-switch-version"
-          />
-        );
-      })()}
 
       <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
 
