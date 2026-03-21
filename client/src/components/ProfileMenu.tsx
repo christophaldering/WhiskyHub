@@ -80,6 +80,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [regPin, setRegPin] = useState("");
   const [regPinConfirm, setRegPinConfirm] = useState("");
   const [regShowPin, setRegShowPin] = useState(false);
+  const [signInShowPin, setSignInShowPin] = useState(false);
+  const [resetShowPin, setResetShowPin] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
   const [regConsent, setRegConsent] = useState(false);
   const [regVerifyMode, setRegVerifyMode] = useState(false);
@@ -547,15 +549,25 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             style={inputStyle(!!error)}
             data-testid="m2-reset-code"
           />
-          <input
-            type="password"
-            value={resetNewPin}
-            onChange={(e) => { setResetNewPin(e.target.value); setError(""); }}
-            placeholder={t("m2.resetPin.newPinPlaceholder", "New password (min 4 chars)")}
-            autoComplete="new-password"
-            style={inputStyle(!!error)}
-            data-testid="m2-reset-new-pin"
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              type={resetShowPin ? "text" : "password"}
+              value={resetNewPin}
+              onChange={(e) => { setResetNewPin(e.target.value); setError(""); }}
+              placeholder={t("m2.resetPin.newPinPlaceholder", "New password (min 4 chars)")}
+              autoComplete="new-password"
+              style={inputStyle(!!error)}
+              data-testid="m2-reset-new-pin"
+            />
+            <button
+              type="button"
+              onClick={() => setResetShowPin(!resetShowPin)}
+              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 0 }}
+              data-testid="m2-reset-toggle-password"
+            >
+              {resetShowPin ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
+            </button>
+          </div>
           {error && (
             <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-reset-error">
               {error}
@@ -889,16 +901,26 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
             style={inputStyle(!!error)}
             data-testid="m2-profile-email"
           />
-          <input
-            type="password"
-            value={pin}
-            onChange={(e) => { setPin(e.target.value); setError(""); }}
-            placeholder={t("m2.profile.passwordPlaceholder", "Password")}
-            autoComplete="current-password"
-            onKeyDown={(e) => { if (e.key === "Enter" && email.trim() && pin.trim() && !loading) handleSignIn(); }}
-            style={inputStyle(!!error)}
-            data-testid="m2-profile-password"
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              type={signInShowPin ? "text" : "password"}
+              value={pin}
+              onChange={(e) => { setPin(e.target.value); setError(""); }}
+              placeholder={t("m2.profile.passwordPlaceholder", "Password")}
+              autoComplete="current-password"
+              onKeyDown={(e) => { if (e.key === "Enter" && email.trim() && pin.trim() && !loading) handleSignIn(); }}
+              style={inputStyle(!!error)}
+              data-testid="m2-profile-password"
+            />
+            <button
+              type="button"
+              onClick={() => setSignInShowPin(!signInShowPin)}
+              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: tv.muted, padding: 0 }}
+              data-testid="m2-signin-toggle-password"
+            >
+              {signInShowPin ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
+            </button>
+          </div>
           {error && (
             <div style={{ fontSize: 13, color: tv.danger, padding: "4px 2px" }} data-testid="m2-profile-error">
               {error}
