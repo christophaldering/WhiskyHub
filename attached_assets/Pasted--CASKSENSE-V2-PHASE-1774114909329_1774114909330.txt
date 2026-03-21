@@ -1,0 +1,509 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 4: HOST-WIZARD
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phasen 1–3 abgeschlossen. Jetzt bauen wir den vollständigen Host-Wizard:
+Tasting erstellen, Whiskies hinzufügen (inkl. AI-Import), Einladungen
+versenden und die Live-Cockpit-Ansicht für den Host.
+
+Alle Sicherheitsregeln und Design-Standards gelten weiter.
+Nur neue Dateien anlegen. Keine bestehenden Dateien verändern.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien verändern
+✅ NUR neue Dateien in client/src/labs-v2/ anlegen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  hostTitle:         "Tasting einrichten"
+  hostStep1:         "Setup"
+  hostStep2:         "Whiskies"
+  hostStep3:         "Einladungen"
+  hostStep4:         "Live"
+  hostName:          "Name des Tastings"
+  hostNamePH:        "z.B. Highland Herbst-Session"
+  hostDate:          "Datum"
+  hostTime:          "Uhrzeit"
+  hostLoc:           "Ort"
+  hostLocPH:         "z.B. Zürich, Wohnzimmer"
+  hostFormat:        "Format"
+  hostBlind:         "Blind"
+  hostBlindDesc:     "Whiskies werden erst am Ende enthüllt"
+  hostOpen:          "Offen"
+  hostOpenDesc:      "Alle sehen den Whisky von Anfang an"
+  hostScale:         "Bewertungsskala"
+  hostScale100:      "0 – 100 Punkte"
+  hostScale20:       "0 – 20 Punkte"
+  hostScale10:       "0 – 10 Punkte"
+  hostRevealOrder:   "Enthüllungs-Reihenfolge"
+  hostRevealClassic: "Klassisch (Name → Details → Foto)"
+  hostRevealPhoto:   "Foto zuerst"
+  hostRevealDetails: "Details zuerst"
+  hostRevealOne:     "Einzeln (ein Feld nach dem anderen)"
+  hostNext:          "Weiter →"
+  hostBack:          "← Zurück"
+  hostSaving:        "Wird gespeichert..."
+  hostWhiskies:      "Whiskies"
+  hostWhiskyCount:   "Whisky"
+  hostAddManual:     "Manuell hinzufügen"
+  hostAiImport:      "KI-Import"
+  hostAiImportDesc:  "Excel, CSV, Foto oder PDF hochladen"
+  hostAiImporting:   "Wird importiert..."
+  hostAiPreview:     "Import-Vorschau"
+  hostAiConfirm:     "Auswahl übernehmen →"
+  hostWhiskyName:    "Name"
+  hostWhiskyNamePH:  "z.B. Talisker 10"
+  hostWhiskyRegion:  "Region"
+  hostWhiskyRegionPH:"z.B. Islands"
+  hostWhiskyCask:    "Fass"
+  hostWhiskyCaskPH:  "z.B. Bourbon"
+  hostWhiskyAge:     "Alter"
+  hostWhiskyAgePH:   "10"
+  hostWhiskyDelete:  "Entfernen"
+  hostInviteTitle:   "Einladungen versenden"
+  hostInviteDesc:    "Teile den Code oder Link mit deinen Gästen."
+  hostCode:          "Tasting-Code"
+  hostLinkCopy:      "Link kopieren"
+  hostLinkCopied:    "Kopiert!"
+  hostQrDownload:    "QR-Code herunterladen"
+  hostEmailLabel:    "Per E-Mail einladen"
+  hostEmailPH:       "name@beispiel.de"
+  hostEmailNote:     "Persönliche Notiz (optional)"
+  hostEmailNotePH:   "Freue mich auf euren Besuch..."
+  hostEmailSend:     "Einladen"
+  hostEmailSent:     "Einladung gesendet"
+  hostEmailError:    "Einladung fehlgeschlagen"
+  hostPdfSheets:     "Bewertungsbögen drucken"
+  hostPdfDesc:       "PDF mit personalisierten QR-Codes pro Teilnehmer"
+  hostStart:         "Tasting starten →"
+  hostLiveTitle:     "Tasting läuft"
+  hostParticipants:  "Teilnehmer"
+  hostRatedAll:      "Alle bewertet"
+  hostInProgress:    "In Bearbeitung"
+  hostNotStarted:    "Noch nicht gestartet"
+  hostNextDram:      "Nächster Dram →"
+  hostReveal:        "Enthüllen →"
+  hostClose:         "Tasting beenden"
+  hostEndConfirm:    "Tasting wirklich beenden?"
+  hostEndYes:        "Ja, beenden"
+  hostEndNo:         "Weiter"
+  hostPaperScan:     "Zettel einscannen"
+  hostCockpit:       "Desktop-Cockpit"
+
+EN: (entsprechende Übersetzungen)
+  hostTitle:         "Set up tasting"
+  hostStep1:         "Setup"
+  hostStep2:         "Whiskies"
+  hostStep3:         "Invitations"
+  hostStep4:         "Live"
+  hostName:          "Tasting name"
+  hostNamePH:        "e.g. Highland Autumn Session"
+  hostDate:          "Date"
+  hostTime:          "Time"
+  hostLoc:           "Location"
+  hostLocPH:         "e.g. Zurich, living room"
+  hostFormat:        "Format"
+  hostBlind:         "Blind"
+  hostBlindDesc:     "Whiskies revealed at the end"
+  hostOpen:          "Open"
+  hostOpenDesc:      "Everyone sees the whisky from the start"
+  hostScale:         "Rating scale"
+  hostScale100:      "0 – 100 points"
+  hostScale20:       "0 – 20 points"
+  hostScale10:       "0 – 10 points"
+  hostRevealOrder:   "Reveal order"
+  hostRevealClassic: "Classic (Name → Details → Photo)"
+  hostRevealPhoto:   "Photo first"
+  hostRevealDetails: "Details first"
+  hostRevealOne:     "One by one"
+  hostNext:          "Continue →"
+  hostBack:          "← Back"
+  hostSaving:        "Saving..."
+  hostWhiskies:      "Whiskies"
+  hostWhiskyCount:   "Whisky"
+  hostAddManual:     "Add manually"
+  hostAiImport:      "AI import"
+  hostAiImportDesc:  "Upload Excel, CSV, photo or PDF"
+  hostAiImporting:   "Importing..."
+  hostAiPreview:     "Import preview"
+  hostAiConfirm:     "Apply selection →"
+  hostWhiskyName:    "Name"
+  hostWhiskyNamePH:  "e.g. Talisker 10"
+  hostWhiskyRegion:  "Region"
+  hostWhiskyRegionPH:"e.g. Islands"
+  hostWhiskyCask:    "Cask"
+  hostWhiskyCaskPH:  "e.g. Bourbon"
+  hostWhiskyAge:     "Age"
+  hostWhiskyAgePH:   "10"
+  hostWhiskyDelete:  "Remove"
+  hostInviteTitle:   "Send invitations"
+  hostInviteDesc:    "Share the code or link with your guests."
+  hostCode:          "Tasting code"
+  hostLinkCopy:      "Copy link"
+  hostLinkCopied:    "Copied!"
+  hostQrDownload:    "Download QR code"
+  hostEmailLabel:    "Invite by email"
+  hostEmailPH:       "name@example.com"
+  hostEmailNote:     "Personal note (optional)"
+  hostEmailNotePH:   "Looking forward to seeing you..."
+  hostEmailSend:     "Invite"
+  hostEmailSent:     "Invitation sent"
+  hostEmailError:    "Invitation failed"
+  hostPdfSheets:     "Print rating sheets"
+  hostPdfDesc:       "PDF with personalised QR codes per participant"
+  hostStart:         "Start tasting →"
+  hostLiveTitle:     "Tasting live"
+  hostParticipants:  "Participants"
+  hostRatedAll:      "All rated"
+  hostInProgress:    "In progress"
+  hostNotStarted:    "Not started"
+  hostNextDram:      "Next dram →"
+  hostReveal:        "Reveal →"
+  hostClose:         "End tasting"
+  hostEndConfirm:    "End tasting?"
+  hostEndYes:        "Yes, end it"
+  hostEndNo:         "Continue"
+  hostPaperScan:     "Scan paper sheet"
+  hostCockpit:       "Desktop cockpit"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Upload      — Pfeil nach oben + horizontale Basis-Linie
+QrCode      — 3 Quadrate in den Ecken (klassisches QR-Icon)
+Mail        — Umschlag: Rechteck + V-Falte oben
+Printer     — Drucker-Silhouette: Rechteck-Körper + Papier oben + unten
+Users       — Zwei Personen-Silhouetten nebeneinander
+Play        — Dreieck (Abspielen)
+Stop        — Quadrat (Stopp)
+Reveal      — Auge mit Wimper (Enthüllen)
+Eye         — Auge (offen sichtbar)
+EyeOff      — Auge mit Strich (blind)
+Settings    — Zahnrad
+Download    — Pfeil nach unten + horizontale Basis-Linie
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 4 — DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/host/HostStep1Setup.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Schritt 1: Tasting-Grunddaten.
+
+Props: th, t, onNext: (config: TastingConfig) => void, onBack: () => void
+
+State: name, date, time, location, format, scale, revealOrder
+
+Layout:
+  BackBtn, Titel, Fortschritts-Stepper (4 Schritte)
+
+  Felder (alle 44px Höhe, SP-Raster):
+  - Name*: Input, Cormorant Garamond 18px
+  - Datum + Uhrzeit: nebeneinander in 1fr 1fr Grid
+    PFLICHT: Beide Felder vorhanden — Datum allein reicht nicht
+  - Ort: Input
+
+  Format-Auswahl (2 Karten):
+    Blind: Icon.EyeOff + Label + Beschreibung → phases.palate
+    Offen: Icon.Eye + Label + Beschreibung → phases.overall
+    Aktive Karte: phase.dim, phase.accent Border
+
+  Wenn Blind gewählt — Enthüllungs-Reihenfolge:
+    4 Radio-Style Buttons (Klassisch, Foto zuerst, Details zuerst, Einzeln)
+    Jeder: 44px Höhe, border, borderRadius: 12px
+
+  Bewertungsskala:
+    3 Buttons: 0-100 / 0-20 / 0-10 (flex, 44px Höhe)
+
+  CTA: t.hostNext — deaktiviert wenn Name leer
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/host/HostStep2Whiskies.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Schritt 2: Whisky-Lineup zusammenstellen.
+
+Props:
+  th, t, tastingId: string, format: "blind" | "open",
+  whiskies: WhiskyEntry[], onWhiskiesChange: (w: WhiskyEntry[]) => void,
+  onNext: () => void, onBack: () => void
+
+Jeder Eintrag in der Liste:
+  Card (bgCard, border, borderRadius: 16px, SP.md Padding)
+  Header: "Sample #X" (blind) oder "Whisky X" (offen), gold, 11px uppercase
+  Felder: Name / Region / Fass in 2-spaltigem Grid
+  Lösch-Button: Icon.Trash, minHeight: 44px, rechts oben
+
+  + Manuell hinzufügen Button:
+    Gestrichelter Border, gold, Icon.Add + t.hostAddManual
+
+  KI-Import Sektion (collapsible):
+    Icon.Upload + t.hostAiImport + t.hostAiImportDesc
+    Drag-and-Drop Zone + File Input (Excel/CSV/Bild/PDF)
+    accept=".xlsx,.csv,.pdf,image/*"
+    API: POST /api/tastings/ai-import mit FormData
+    Import-Vorschau: Liste mit Checkboxen (select/deselect)
+    t.hostAiConfirm-Button → fügt ausgewählte zur Liste hinzu
+
+  PDF-Bewertungsbögen Button:
+    Icon.Printer + t.hostPdfSheets
+    Generiert jsPDF via bestehende printable-tasting-sheets.tsx Funktionen
+    Importiere drawCoverPage, drawScoringPage aus
+    client/src/components/printable-tasting-sheets.tsx
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/host/HostStep3Invitations.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Schritt 3: Einladungen versenden.
+
+Props: th, t, tastingId: string, tastingCode: string,
+       onNext: () => void, onBack: () => void
+
+Sektionen:
+
+1. Tasting-Code Karte (gold Akzent):
+   Großer Code (38px, DM Sans, letterSpacing: 0.18em)
+   Copy-Button: Icon.Copy + t.hostLinkCopy
+   Nach Klick: Icon.Check + t.hostLinkCopied (1.5s, dann zurück)
+
+2. QR-Code:
+   Generiert via qrcode Library aus bestehender Codebasis
+   Importiere aus client/src/labs/ oder nutze window.qrcode
+   Download-Button: Icon.Download + t.hostQrDownload
+
+3. E-Mail-Einladung (collapsible):
+   Textarea: E-Mail-Adressen (eine pro Zeile)
+   Textarea: Persönliche Notiz
+   Send-Button: Icon.Mail + t.hostEmailSend
+   API: POST /api/tastings/:id/invite
+   Body: { emails: string[], note?: string }
+   Status pro E-Mail: gesendet (green Check) oder Fehler (red X)
+
+4. Bewertungsbögen-Link:
+   Icon.Printer + t.hostPdfSheets + t.hostPdfDesc
+   (Link zu Schritt 2 zurück, dort PDF generieren)
+
+CTA: t.hostStart → POST /api/tastings/:id/start
+     Bei Erfolg: onNext()
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/host/HostStep4Live.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Schritt 4: Live-Tasting-Steuerung für den Host.
+
+Props:
+  th, t, tastingId: string, tasting: TastingData,
+  whiskies: WhiskyData[], participants: ParticipantData[],
+  onEnd: () => void
+
+Echtzeit-Daten (Polling alle 5s):
+  GET /api/tastings/:id (Status, guidedWhiskyIndex)
+  GET /api/tastings/:id/participants (mit Rating-Status)
+  GET /api/tastings/:id/ratings (Anzahl pro Dram)
+
+Layout (Mobile, vertikal gestapelt):
+
+1. Status-Header:
+   Pulsierender grüner Punkt + t.hostLiveTitle
+   Tasting-Name (24px Playfair)
+   Datum/Uhrzeit/Ort (14px, muted)
+   Code: [CODE] (gold, bold)
+
+2. Aktions-Sektion:
+   Wenn status === "open":
+     Aktueller Dram (X von N): Whisky-Name oder "Sample #X"
+     Icon.Play + t.hostNextDram → POST /api/tastings/:id/guided-advance
+     Wenn Blind: Icon.Reveal + t.hostReveal → POST .../guided-advance (reveal)
+   Wenn alle bewertet:
+     Icon.Stop + t.hostClose → Bestätigungs-Dialog → POST .../close
+
+3. Teilnehmer-Status (gruppiert):
+   "Alle bewertet" Gruppe (green): Liste mit Check-Icons
+   "In Bearbeitung" Gruppe (gold): Liste mit Fortschritts-Dots
+   "Noch nicht" Gruppe (faint): Liste mit Wartesymbol
+
+4. Whisky-Lineup:
+   Jeder Whisky: PhaseSignature + Name/Label + Anzahl Bewertungen
+   Aktiver Dram: gold hervorgehoben
+
+5. Tools-Sektion:
+   Icon.Printer + t.hostPaperScan → navigiert zu Paper-Scan-Screen
+   Icon.Settings + t.hostCockpit  → Hinweis "Im Browser verfügbar" (Desktop)
+
+Bestätigungs-Dialog (Modal) für Tasting beenden:
+  Overlay, zentriertes Card
+  t.hostEndConfirm + t.hostEndYes (red) + t.hostEndNo (ghost)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/host/HostWizard.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Orchestrierung des 4-Schritt-Wizards.
+
+Props: th, t, onBack: () => void, onDone: () => void
+
+States:
+  step: 1 | 2 | 3 | 4
+  config: TastingConfig
+  tastingId: string | null
+  tastingCode: string | null
+  whiskies: WhiskyEntry[]
+
+Step-Indikator (sticky, unter TopBar):
+  4 Fortschrittsbalken (3px)
+  4 Labels: Setup / Whiskies / Einladungen / Live
+  Abgeschlossene: green Check-Icon
+  Aktive: gold
+  Ausstehende: faint
+
+Schritt 1 → HostStep1Setup:
+  onNext(cfg):
+    POST /api/tastings mit cfg
+    tastingId = response.id
+    tastingCode = response.code
+    step = 2
+
+Schritt 2 → HostStep2Whiskies:
+  Whiskies werden laufend per PATCH /api/tastings/:id gespeichert
+  onNext(): step = 3
+
+Schritt 3 → HostStep3Invitations:
+  onNext(): step = 4
+
+Schritt 4 → HostStep4Live:
+  onEnd(): onDone()
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/types/host.ts
+──────────────────────────────────────────────────────────────────────────────
+
+  export interface TastingConfig {
+    name: string
+    date: string
+    time: string
+    location: string
+    format: "blind" | "open"
+    scale: "100" | "20" | "10"
+    revealOrder: "classic" | "photo-first" | "details-first" | "one-by-one"
+  }
+
+  export interface WhiskyEntry {
+    id?: string
+    name: string
+    distillery?: string
+    region?: string
+    cask?: string
+    age?: number
+    abv?: number
+    flavorProfile?: string
+  }
+
+  export interface TastingData {
+    id: string
+    code: string
+    name: string
+    status: "draft" | "open" | "closed" | "reveal" | "archived"
+    format: "blind" | "open"
+    guidedWhiskyIndex: number
+    createdAt: string
+  }
+
+  export interface ParticipantData {
+    id: string
+    name: string
+    ratingStatus: "all" | "partial" | "none"
+    source: "app" | "paper"
+  }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Import ergänzen:
+  import { HostWizard } from './screens/host/HostWizard'
+
+In renderContent() ergänzen:
+  if (subScreen === "host") return (
+    <HostWizard th={th} t={t}
+      onBack={goBack}
+      onDone={() => { setSubScreen(null); setActiveTab("tastings"); }}
+    />
+  )
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/tastings
+     Body: { name, date, time, location, format, ratingScale, revealOrder }
+     → Erstellt Tasting, gibt { id, code } zurück
+
+PATCH /api/tastings/:id
+      Body: Teilfelder des Tastings
+
+POST /api/tastings/:id/whiskies
+     Body: { name, distillery, region, cask, age, abv, flavorProfile }
+
+PATCH /api/tastings/:id/whiskies/:wid
+DELETE /api/tastings/:id/whiskies/:wid
+
+POST /api/tastings/ai-import
+     FormData: { file }
+     Response: Array<WhiskyEntry> (Vorschau, noch nicht gespeichert)
+
+POST /api/tastings/:id/invite
+     Body: { emails: string[], note?: string }
+
+POST /api/tastings/:id/start
+POST /api/tastings/:id/guided-advance
+POST /api/tastings/:id/close
+
+GET  /api/tastings/:id
+GET  /api/tastings/:id/participants
+GET  /api/tastings/:id/ratings
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Datum UND Uhrzeit in Schritt 1 — beide Felder vorhanden
+  [ ] Format-Auswahl: Blind/Offen mit Beschreibung
+  [ ] Enthüllungs-Reihenfolge nur bei Blind sichtbar
+  [ ] KI-Import mit Drag-and-Drop und Vorschau
+  [ ] Manuell hinzufügen funktioniert
+  [ ] E-Mail-Einladung mit Status-Feedback
+  [ ] QR-Code Generierung + Download
+  [ ] Live-Ansicht: Teilnehmer-Status gruppiert
+  [ ] Tasting beenden mit Bestätigungs-Dialog
+  [ ] PDF-Bögen: existierende Funktionen importiert (nicht neu gebaut)
+  [ ] Kein einziges Emoji
+  [ ] Alle SP-Token korrekt
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 4 PROMPT
+═══════════════════════════════════════════════════════════════════════════════

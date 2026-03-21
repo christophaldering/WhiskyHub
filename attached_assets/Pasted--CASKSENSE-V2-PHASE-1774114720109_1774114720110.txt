@@ -1,0 +1,349 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 3: SOLO-FLOW
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phasen 1 und 2 sind abgeschlossen. Tab-Navigation, Join-Flow, Lobby und
+Rating-Screen laufen. Jetzt bauen wir den Solo-Flow (Dram alleine erfassen).
+
+Alle Sicherheitsregeln und Design-Standards aus Phase 1+2 gelten weiter.
+Nur neue Dateien anlegen. Keine bestehenden Dateien verändern.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien in labs/ oder labs-v2/ verändern
+✅ NUR neue Dateien in client/src/labs-v2/ anlegen
+✅ Bestehende /api/* Endpunkte per fetch() konsumieren
+✅ RatingFlow aus Phase 2 importieren und wiederverwenden
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only in i18n.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  soloTitle:        "Neuen Dram erfassen"
+  soloCaptureSub:   "Flasche erfassen oder direkt bewerten."
+  soloPhoto:        "Flasche fotografieren"
+  soloPhotoDesc:    "KI erkennt Whisky automatisch"
+  soloManual:       "Manuell eingeben"
+  soloManualDesc:   "Name, Region und Fass eingeben"
+  soloBarcode:      "Barcode scannen"
+  soloBarcodeDesc:  "Whiskybase-ID automatisch befüllen"
+  soloSkip:         "Direkt zur Bewertung"
+  soloName:         "Whisky-Name"
+  soloNamePH:       "z.B. Glenfarclas 15"
+  soloRegion:       "Region"
+  soloRegionPH:     "z.B. Speyside"
+  soloCask:         "Fasslagerung"
+  soloCaskPH:       "z.B. Sherry"
+  soloAge:          "Alter (Jahre)"
+  soloAgePH:        "z.B. 15"
+  soloAbv:          "Alkohol (%)"
+  soloAbvPH:        "z.B. 43"
+  soloDistillery:   "Destillerie"
+  soloDistilleryPH: "z.B. Glenfarclas"
+  soloToRating:     "Zur Bewertung →"
+  soloIdentifying:  "Flasche wird erkannt..."
+  soloIdentifyFail: "Konnte nicht erkannt werden."
+  soloIdentifyRetry:"Erneut versuchen"
+  soloSaved:        "Im Journal gespeichert"
+  soloAnother:      "Weiteren Dram erfassen →"
+  soloToHub:        "Zurück"
+  soloJournalTitle: "Deine Drams"
+  soloJournalEmpty: "Noch keine Drams erfasst."
+  soloQuickRate:    "Schnellbewertung"
+  soloFullEdit:     "Vollständige Eingabe"
+
+EN: (entsprechende Übersetzungen)
+  soloTitle:        "Log a new dram"
+  soloCaptureSub:   "Capture the bottle or go straight to rating."
+  soloPhoto:        "Photograph bottle"
+  soloPhotoDesc:    "AI identifies the whisky automatically"
+  soloManual:       "Enter manually"
+  soloManualDesc:   "Enter name, region and cask"
+  soloBarcode:      "Scan barcode"
+  soloBarcodeDesc:  "Auto-fill from Whiskybase ID"
+  soloSkip:         "Go straight to rating"
+  soloName:         "Whisky name"
+  soloNamePH:       "e.g. Glenfarclas 15"
+  soloRegion:       "Region"
+  soloRegionPH:     "e.g. Speyside"
+  soloCask:         "Cask type"
+  soloCaskPH:       "e.g. Sherry"
+  soloAge:          "Age (years)"
+  soloAgePH:        "e.g. 15"
+  soloAbv:          "ABV (%)"
+  soloAbvPH:        "e.g. 43"
+  soloDistillery:   "Distillery"
+  soloDistilleryPH: "e.g. Glenfarclas"
+  soloToRating:     "Go to rating →"
+  soloIdentifying:  "Identifying bottle..."
+  soloIdentifyFail: "Could not be identified."
+  soloIdentifyRetry:"Try again"
+  soloSaved:        "Saved to journal"
+  soloAnother:      "Log another dram →"
+  soloToHub:        "Back"
+  soloJournalTitle: "Your drams"
+  soloJournalEmpty: "No drams logged yet."
+  soloQuickRate:    "Quick rating"
+  soloFullEdit:     "Full entry"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS (append-only in Icons.tsx)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Camera     — Kamera-Körper (Rechteck) + kleines Oval oben (Linse) +
+             Kreis in der Mitte. Viewbox 0 0 28 28.
+
+Edit       — Stift-Icon: Diagonales Rechteck (Stift-Körper) +
+             Spitze unten + horizontale Linie unten (Papier-Kante).
+
+Barcode    — Zwei L-Formen an den Ecken (Scanner-Rahmen) +
+             mehrere vertikale Linien unterschiedlicher Dicke in der Mitte.
+
+Skip       — Pfeil nach rechts + vertikale Linie rechts (Skip-Symbol).
+             Viewbox 0 0 20 20.
+
+Spinner    — Kreis mit fehlendem Segment (Lade-Indikator).
+             Wird via CSS-Animation gedreht: @keyframes spin.
+
+Mic        — Mikrofon-Körper (Rechteck mit gerundeter Oberkante) +
+             Halterung unten + Bogen als Schallaufnehmer.
+
+Trash      — Mülleimer: Rechteck-Körper + Deckel (horizontal) + Linien innen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 3 — DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/solo/SoloCaptureScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Capture-First-Einstieg in den Solo-Flow (kein leeres Formular als Startpunkt).
+
+Props:
+  th, t, onCapture: (whisky: WhiskyData) => void, onSkip: () => void,
+  onBack: () => void
+
+Aufbau:
+  BackBtn oben
+  Titel: t.soloTitle (28px Playfair Display)
+  Untertitel: t.soloCaptureSub (15px, muted)
+
+  Primäre Aktion — großer Button (Kamera):
+    Höhe: 120px, volle Breite, borderRadius: 20px
+    Hintergrund: phases.nose.dim, Border: phases.nose.accent mit 33% Opacity
+    Icon.Camera (40px, phases.nose.accent) + t.soloPhoto (17px, bold) +
+    t.soloPhotoDesc (13px, faint) — alle zentriert, vertikal gestapelt
+    Klick → startet AI-Erkennung (simuliert in Phase 3, echt in Production)
+
+  Sekundäre Aktionen — 2-spaltige Grid (je 88px Höhe):
+    1. Icon.Edit    + t.soloManual  + t.soloManualDesc  → phases.palate
+    2. Icon.Barcode + t.soloBarcode + t.soloBarcodeDesc → phases.finish
+    Klick auf Manual → onCapture mit leerem Whisky-Objekt (öffnet Formular)
+    Klick auf Barcode → Barcode-Scanner öffnen
+
+  Trennlinie + Ghost-Link:
+    "── oder ──" (faint, zentriert)
+    Button: Icon.Skip + t.soloSkip → onSkip()
+
+AI-Erkennung (wenn Foto-Button geklickt):
+  State: identifying = true
+  Zeige Spinner (Icon.Spinner mit CSS-Rotation) + t.soloIdentifying
+  API: POST /api/identify-bottle mit FormData (file: imageFile)
+  Bei Erfolg: onCapture(erkannterWhisky)
+  Bei Fehler: t.soloIdentifyFail + t.soloIdentifyRetry-Button
+
+  HINWEIS: In Phase 3 simulieren wir die Kamera-Aufnahme mit einem
+  hidden <input type="file" accept="image/*" capture="environment">
+  Der echte Capacitor-Camera-Plugin wird in einer späteren Mobile-Phase
+  ergänzt. Für jetzt: file input genügt.
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/solo/SoloWhiskyForm.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Manuelle Whisky-Eingabe oder Nachbearbeitung nach AI-Erkennung.
+
+Props:
+  th, t
+  initialWhisky?: WhiskyData  — vorausgefüllte Daten (z.B. von AI-Erkennung)
+  onSubmit: (whisky: WhiskyData) => void
+  onBack: () => void
+
+Felder:
+  Name*       — Input, soloNamePH, Cormorant Garamond 18px
+  Destillerie — Input, soloDistilleryPH
+  Region      — Input, soloRegionPH
+  Fasslagerung— Input, soloCaskPH
+  Alter       — Input type="number", soloAgePH, Breite: 50%
+  Alkohol     — Input type="number", soloAbvPH, Breite: 50%
+  (Alter + Alkohol nebeneinander in Grid 1fr 1fr)
+
+Alle Inputs: minHeight 44px, 8px-Raster-Padding
+
+CTA: t.soloToRating — deaktiviert wenn Name leer
+Ghost: Zurück
+
+Wenn initialWhisky vorhanden (AI-Erkennung):
+  Banner oben: "Erkannt — bitte prüfen" in phases.overall.dim mit Check-Icon
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/solo/SoloVoiceMemo.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Voice-Memo-Aufnahme für Solo-Drams (optional, nach der Bewertung).
+
+Props:
+  th, t
+  journalEntryId: string
+  onSaved: () => void
+  onSkip: () => void
+
+Funktionalität:
+  MediaRecorder API für Audioaufnahme (15–30 Sekunden)
+  Aufnahme-Button: Icon.Mic (großer Kreis, 80×80px)
+    Vor Aufnahme: phases.nose.dim Hintergrund
+    Während Aufnahme: roter Pulsring (ping-Animation), REC-Badge
+  Fortschrittsbalken (4px, gold→amber, warnt bei < 6s in orange→rot)
+  Upload: POST /api/journal/voice-memo mit FormData
+  Nach Upload: Transkription automatisch angezeigt (wenn vorhanden)
+  Löschen: Icon.Trash + Bestätigung
+
+  Fallback wenn MediaRecorder nicht verfügbar:
+  "Sprachaufnahme nicht verfügbar" (faint, zentriert)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/solo/SoloDoneScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Abschluss-Screen nach erfolgreichem Solo-Dram.
+
+Props:
+  th, t, whisky: WhiskyData, score: number,
+  journalEntryId: string,
+  onAnother: () => void, onBack: () => void
+
+Aufbau:
+  Zentriert: Icon.Check in 80px Kreis (green) + Whisky-Name + Score
+  t.soloSaved (muted)
+  Voice-Memo-Karte (optional, collapsible):
+    SoloVoiceMemo Komponente eingebettet
+  Primär-Button: t.soloAnother
+  Ghost-Button: t.soloToHub
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/solo/SoloFlow.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Orchestrierung des kompletten Solo-Flows.
+
+Props: th, t, onBack: () => void
+
+States:
+  step: "capture" | "form" | "rating" | "done"
+  whisky: WhiskyData
+  journalEntryId: string | null
+  ratingData: RatingData | null
+
+Flow:
+  capture → SoloCaptureScreen
+    onCapture(w) → whisky = w, step = "form"
+    onSkip()     → whisky = { blind: false }, step = "rating"
+
+  form → SoloWhiskyForm
+    onSubmit(w) → whisky = w, step = "rating"
+    initialWhisky = whisky (wenn von AI erkannt)
+
+  rating → RatingFlow (aus Phase 2 importieren)
+    whisky = whisky State
+    tastingId = "solo"
+    dramIdx = 1, total = 1
+    tastingStatus = "open" (solo immer offen)
+    participantId aus Session
+    onDone(data):
+      1. Journal-Eintrag speichern:
+         POST /api/journal mit { whiskeyName, region, cask, age, abv,
+         distillery, scores: data.scores, notes: data.notes,
+         flavorTags: data.tags }
+         Header: x-participant-id
+      2. journalEntryId = response.id
+      3. ratingData = data, step = "done"
+
+  done → SoloDoneScreen
+    onAnother() → step = "capture", whisky = {}, ratingData = null
+    onBack() → onBack() prop
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Import ergänzen:
+  import { SoloFlow } from './screens/solo/SoloFlow'
+
+In renderContent() ergänzen (nach "join"-Block):
+  if (subScreen === "solo") return (
+    <SoloFlow th={th} t={t} onBack={goBack} />
+  )
+
+TastingsHub: hubSolo-Karte navigiert zu "solo" (bereits in Phase 1 verdrahtet).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/identify-bottle
+     FormData: { file: imageFile }
+     Header: x-participant-id
+     Response: { name, distillery, region, cask, age, abv, confidence }
+
+POST /api/journal
+     Body: { whiskeyName, distillery, region, cask, age, abv,
+             scores, notes, flavorTags, source: "app" }
+     Header: x-participant-id
+     Response: { id, ...entry }
+
+GET  /api/journal
+     Header: x-participant-id
+     Query: ?limit=20&offset=0
+     Response: Array<JournalEntry>
+
+POST /api/journal/voice-memo
+     FormData: { file: audioFile, journalEntryId }
+     Header: x-participant-id
+     Response: { url, transcript, duration }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Capture-First: Kamera-Button ist primäre Aktion
+  [ ] Kein leeres Formular als Startpunkt
+  [ ] AI-Erkennung mit Fehlerbehandlung + Retry
+  [ ] file input für Kamera (capture="environment")
+  [ ] Manuell-Formular: alle 6 Felder, 44px Inputs
+  [ ] Voice-Memo optional (überspringbar)
+  [ ] Journal-Eintrag wird nach Rating gespeichert
+  [ ] Kein einziges Emoji
+  [ ] Alle SP-Token-Werte korrekt
+  [ ] RatingFlow aus Phase 2 wiederverwendet (nicht kopiert)
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 3 PROMPT
+═══════════════════════════════════════════════════════════════════════════════
