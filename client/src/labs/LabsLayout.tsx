@@ -661,8 +661,15 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   return (
     <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} onTouchStart={handleButtonHaptic}>
       <header
-        className="sticky top-0 z-40 flex items-center justify-between px-5 py-3"
+        className="sticky top-0 z-40"
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 16px',
+          height: 52,
+          overflow: 'visible',
+          width: '100%',
           background: "var(--labs-header-bg)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -679,7 +686,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           </span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <LabsNotificationBell />
           <button
             onClick={() => { setSearchOpen(true); triggerHaptic("light"); }}
