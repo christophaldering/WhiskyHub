@@ -12937,7 +12937,7 @@ i18n
   .init({
     resources,
     fallbackLng: "en",
-    lng: "en",
+    lng: localStorage.getItem('casksense-language') ?? 'de',
     supportedLngs: ["en", "de"],
     detection: {
       order: ["localStorage"],
