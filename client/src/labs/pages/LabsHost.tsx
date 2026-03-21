@@ -2015,7 +2015,7 @@ function MobileCompanion({
         );
       })()}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {isDraft && (
           <button
             className="labs-btn-primary flex items-center justify-center gap-2 w-full"
@@ -2027,10 +2027,10 @@ function MobileCompanion({
               queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
             }}
             disabled={whiskyCount === 0}
-            style={{ opacity: whiskyCount === 0 ? 0.5 : 1 }}
+            style={{ opacity: whiskyCount === 0 ? 0.5 : 1, minHeight: 48, fontSize: 15, fontWeight: 600, borderRadius: 14 }}
             data-testid="mobile-start-tasting"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-5 h-5" />
             Start Tasting
           </button>
         )}
@@ -2040,10 +2040,10 @@ function MobileCompanion({
             className="labs-btn-primary flex items-center justify-center gap-2 w-full"
             onClick={() => guidedAdvanceMut.mutate()}
             disabled={guidedAdvanceMut.isPending || guidedIdx >= whiskyCount - 1}
-            style={{ opacity: guidedIdx >= whiskyCount - 1 ? 0.5 : 1 }}
+            style={{ opacity: guidedIdx >= whiskyCount - 1 ? 0.5 : 1, minHeight: 48, fontSize: 15, fontWeight: 600, borderRadius: 14 }}
             data-testid="mobile-next-dram"
           >
-            {guidedAdvanceMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <SkipForward className="w-4 h-4" />}
+            {guidedAdvanceMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <SkipForward className="w-5 h-5" />}
             {guidedIdx < 0 ? "Start First Dram" : guidedIdx >= whiskyCount - 1 ? "All Drams Done" : "Next Dram"}
           </button>
         )}
@@ -2052,24 +2052,53 @@ function MobileCompanion({
           const rv = getRevealState(tasting, whiskyCount);
           return (
             <button
-              className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+              className="labs-btn-primary flex items-center justify-center gap-2 w-full"
               onClick={() => revealMutation.mutate()}
               disabled={revealMutation.isPending || rv.allRevealed}
-              style={{ opacity: rv.allRevealed ? 0.5 : 1 }}
+              style={{ opacity: rv.allRevealed ? 0.5 : 1, minHeight: 48, fontSize: 15, fontWeight: 600, borderRadius: 14 }}
               data-testid="mobile-reveal"
             >
-              {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+              {revealMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eye className="w-5 h-5" />}
               {rv.nextLabel}
             </button>
           );
         })()}
 
+        {isLive && (
+          <button
+            className="flex items-center justify-center gap-2 w-full"
+            onClick={() => navigate(`/labs/live/${tastingId}`)}
+            style={{
+              minHeight: 48,
+              fontSize: 15,
+              fontWeight: 600,
+              borderRadius: 14,
+              border: "2px solid var(--labs-accent)",
+              background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)",
+              color: "var(--labs-accent)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "background 0.15s, border-color 0.15s",
+            }}
+            data-testid="mobile-rate-btn"
+          >
+            <Star className="w-5 h-5" />
+            {t("m2.host.myRating", "Dram bewerten")}
+          </button>
+        )}
+
         {isLive && tasting.guidedMode && activeWhisky && (
           <button
-            className={`labs-btn-secondary flex items-center justify-center gap-2 w-full`}
+            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
             onClick={() => toggleDramLock((activeWhisky as any).id)}
             data-testid="mobile-lock-dram"
-            style={isDramLocked((activeWhisky as any).id) ? { borderColor: "var(--labs-success)", color: "var(--labs-success)" } : {}}
+            style={{
+              minHeight: 44,
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 12,
+              ...(isDramLocked((activeWhisky as any).id) ? { borderColor: "var(--labs-success)", color: "var(--labs-success)" } : {}),
+            }}
           >
             {isDramLocked((activeWhisky as any).id)
               ? <><Lock className="w-4 h-4" /> {t("m2.host.lockedBadge", "Locked")} — {t("m2.host.unlockDram", "Tap to Unlock")}</>
@@ -2083,6 +2112,7 @@ function MobileCompanion({
             className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
             onClick={() => setConfirmEndSession(true)}
             disabled={statusMutation.isPending}
+            style={{ minHeight: 44, fontSize: 14, fontWeight: 500, borderRadius: 12 }}
             data-testid="mobile-end-tasting"
           >
             <Square className="w-4 h-4" />
@@ -2094,8 +2124,8 @@ function MobileCompanion({
             <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.host.endSessionConfirmTitle")}</p>
             <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.host.endSessionConfirmDesc")}</p>
             <div className="flex gap-2">
-              <button className="labs-btn-ghost flex-1" onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
-              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
+              <button className="labs-btn-ghost flex-1" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
+              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
                 <Square className="w-4 h-4" />
                 {t("m2.host.endSessionConfirm")}
               </button>
@@ -2107,34 +2137,11 @@ function MobileCompanion({
           <button
             className="labs-btn-primary flex items-center justify-center gap-2 w-full"
             onClick={() => navigate(`/labs/results/${tastingId}`)}
+            style={{ minHeight: 48, fontSize: 15, fontWeight: 600, borderRadius: 14 }}
             data-testid="mobile-view-results"
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-5 h-5" />
             View Results
-          </button>
-        )}
-
-        {isLive && (
-          <button
-            className="labs-btn-ghost flex items-center justify-center gap-2 w-full"
-            onClick={() => navigate(`/labs/live/${tastingId}`)}
-            style={{ color: "var(--labs-accent)", fontSize: 13 }}
-            data-testid="mobile-rate-btn"
-          >
-            <Star className="w-4 h-4" />
-            {t("m2.host.myRating", "My Rating")}
-          </button>
-        )}
-
-        {onSwitchToManage && (
-          <button
-            className="labs-btn-ghost flex items-center justify-center gap-2 w-full text-sm"
-            onClick={onSwitchToManage}
-            style={{ color: "var(--labs-text-secondary)", padding: "10px 16px" }}
-            data-testid="mobile-switch-manage"
-          >
-            <Sliders className="w-4 h-4" />
-            {t("m2.host.allSettings", "Alle Einstellungen")}
           </button>
         )}
       </div>
@@ -2206,15 +2213,28 @@ function MobileCompanion({
         );
       })()}
 
-
-      {pid && whiskies.length > 0 && (
-        <div className="mt-6">
-          <HostRatingPanel
-            whiskies={whiskies as Array<{ id: string; name?: string; distillery?: string; age?: number; abv?: number }>}
-            tastingId={tastingId}
-            participantId={pid}
-            ratingScale={(tasting.ratingScale as number) || 100}
-          />
+      {onSwitchToManage && (
+        <div className="mt-4">
+          <button
+            className="flex items-center justify-center gap-2 w-full"
+            onClick={onSwitchToManage}
+            style={{
+              minHeight: 44,
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 12,
+              border: "1px solid var(--labs-border)",
+              background: "transparent",
+              color: "var(--labs-text-secondary)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "background 0.15s",
+            }}
+            data-testid="mobile-switch-manage"
+          >
+            <Sliders className="w-4 h-4" />
+            {t("m2.host.allSettings", "Alle Einstellungen")}
+          </button>
         </div>
       )}
 
