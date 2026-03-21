@@ -3391,8 +3391,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             }
             let friendPhoto: string | null = null;
             if (match) { try { const prof = await storage.getProfile(match.id); if (prof?.photoUrl) friendPhoto = prof.photoUrl; } catch {} }
-            return { ...f, photoUrl: friendPhoto };
-          } catch { return { ...f, photoUrl: null }; }
+            return { ...f, photoUrl: friendPhoto, matchedParticipantId: match?.id || null };
+          } catch { return { ...f, photoUrl: null, matchedParticipantId: null }; }
         })
       );
       res.json(enriched);

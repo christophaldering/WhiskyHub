@@ -700,8 +700,8 @@ export default function LabsCircle() {
                             style={{ background: "var(--labs-success)", borderColor: "var(--labs-surface)" }}
                           />
                         </div>
-                        <span className="text-[11px] font-medium truncate w-full text-center" style={{ color: "var(--labs-text)" }}>
-                          {stripGuestSuffix(of.name).split(" ")[0]}
+                          <span className="text-[11px] font-medium truncate w-full text-center" style={{ color: of.participantId === pid ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                          {of.participantId === pid ? "You ★" : stripGuestSuffix(of.name).split(" ")[0]}
                         </span>
                       </button>
                     );
@@ -720,6 +720,7 @@ export default function LabsCircle() {
                 const fid = friend.id as string;
                 const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(v => v != null && typeof v !== "object").map(String).join(" ") || String(friend.name ?? "") || "Friend");
                 const onlineInfo = onlineFriendsMap.get(fid);
+                const isSelf = onlineInfo?.participantId === pid || friend.matchedParticipantId === pid;
                 return (
                   <div
                     key={fid || i}
@@ -762,8 +763,8 @@ export default function LabsCircle() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                          {displayName}
+                        <p className="text-sm font-semibold truncate" style={{ color: isSelf ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                          {isSelf ? "You ★" : displayName}
                         </p>
                         {isOnline && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>
@@ -785,6 +786,7 @@ export default function LabsCircle() {
                       {isOnline && (
                         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
                       )}
+                        {!isSelf && (
                         <button
                           className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
                           style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "none", cursor: "pointer" }}
@@ -798,6 +800,7 @@ export default function LabsCircle() {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
+                        )}
                       </div>
                     </div>
                   );
