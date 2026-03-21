@@ -16,6 +16,7 @@ import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel"
 import RatingFlow from "@/labs/components/RatingFlow";
 import { buildScale } from "@/labs/hooks/useRatingScale";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
+import { useToast } from "@/hooks/use-toast";
 
 const POLL_FAST = 15000;
 const POLL_NORMAL = 15000;
@@ -152,6 +153,7 @@ function getDefaultTab(status: string): CockpitTab {
 export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitProps) {
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const pid = currentParticipant?.id || "";
 
@@ -275,6 +277,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       const currentIdx = localGuidedIdx ?? (tasting?.guidedWhiskyIndex ?? -1);
       let maxSteps = 3;
       try { if (tasting?.revealOrder) maxSteps = JSON.parse(tasting.revealOrder).length; } catch {}
+      const prevIdx = currentIdx;
+      const prevStep = currentStep;
       if (currentIdx === -1) {
         setLocalGuidedIdx(0);
         setLocalRevealStep(0);
@@ -284,8 +288,16 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         setLocalGuidedIdx(currentIdx + 1);
         setLocalRevealStep(0);
       }
+      return { prevIdx, prevStep };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
+    onError: (_err: Error, _vars: void, context: { prevIdx: number; prevStep: number } | undefined) => {
+      if (context) {
+        setLocalGuidedIdx(context.prevIdx);
+        setLocalRevealStep(context.prevStep);
+      }
+      toast({ title: t("cockpit.advanceError", "Failed to advance"), description: _err.message, variant: "destructive" });
+    },
   });
 
   const guidedGoToMut = useMutation({
@@ -449,8 +461,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const status = tasting?.status ?? "draft";
   const isBlind = tasting?.blindMode ?? false;
   const isGuided = tasting?.guidedMode ?? false;
-  const guidedIdx = tasting?.guidedWhiskyIndex ?? -1;
-  const guidedRevealStep = tasting?.guidedRevealStep ?? 0;
+  const guidedIdx = localGuidedIdx ?? (tasting?.guidedWhiskyIndex ?? -1);
+  const guidedRevealStep = localRevealStep ?? (tasting?.guidedRevealStep ?? 0);
   const ratingScale = tasting?.ratingScale ?? 100;
   const scaleDefault = Math.round(ratingScale / 2);
   const isLive = status === "open" || status === "reveal";

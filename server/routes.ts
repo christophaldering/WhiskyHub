@@ -3914,7 +3914,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (idx === -1) {
         idx = 0;
         step = 0;
-      } else if (step < maxSteps) {
+      } else if (tasting.blindMode && step < maxSteps) {
         step++;
       } else {
         if (idx < totalWhiskies - 1) {
