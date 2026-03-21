@@ -2779,11 +2779,13 @@ function CreateTastingForm() {
         Create a new tasting session for your group
       </p>
       <div
-        className="text-xs mb-6 flex items-center gap-1 transition-opacity duration-300"
+        className="text-xs flex items-center gap-1 transition-all duration-300"
         style={{
           color: "var(--labs-text-muted)",
           opacity: draftSaved ? 1 : 0,
-          height: 20,
+          height: draftSaved ? 20 : 0,
+          marginBottom: draftSaved ? 24 : 0,
+          overflow: "hidden",
         }}
         data-testid="labs-draft-saved-indicator"
       >
