@@ -69,3 +69,6 @@ SIMPLE_MODE_PIN = "#Sammy26"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-52c3ba03-705e-43cc-b57e-57a389954380"
