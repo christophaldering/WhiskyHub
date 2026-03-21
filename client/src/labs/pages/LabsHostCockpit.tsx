@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -151,6 +152,7 @@ function getDefaultTab(status: string): CockpitTab {
 export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitProps) {
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const pid = currentParticipant?.id || "";
 
   const [activeTab, setActiveTab] = useState<CockpitTab>("live");
@@ -1071,7 +1073,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         {isMobile && (() => {
           const tabs: { key: CockpitTab; label: string }[] = [
             { key: "live", label: t("cockpit.tabOverview", "Overview") },
-            { key: "rating", label: t("cockpit.tabMyRating", "My Rating") },
             { key: "guests", label: t("cockpit.tabGroup", "Group") },
           ];
           const activeIdx = tabs.findIndex(t => t.key === activeTab);
@@ -1110,9 +1111,30 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 {renderControls(true)}
                 {renderLineup()}
                 {renderParticipants()}
+                <button
+                  onClick={() => { navigate(`/labs/live/${tastingId}`); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "14px 16px", borderRadius: 12,
+                    border: "1px solid var(--labs-border)",
+                    background: "var(--labs-surface-elevated)",
+                    cursor: "pointer", fontFamily: "inherit",
+                    textAlign: "left",
+                  }}
+                  data-testid="cockpit-rate-dram-btn"
+                >
+                  <Star style={{ width: 18, height: 18, color: "var(--labs-accent)", flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                      {t("cockpit.rateDram", "Dram bewerten")}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                      {t("cockpit.rateDramDesc", "Zur Tasting-Seite wechseln")}
+                    </div>
+                  </div>
+                  <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", transform: "rotate(-90deg)", flexShrink: 0 }} />
+                </button>
               </>)}
-
-              {activeTab === "rating" && renderMyRating()}
 
               {activeTab === "guests" && renderGroupStats()}
 
