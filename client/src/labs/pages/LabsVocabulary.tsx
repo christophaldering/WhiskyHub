@@ -710,7 +710,7 @@ export default function LabsVocabulary() {
     <div className="px-5 py-6 max-w-2xl mx-auto" style={{ paddingBottom: collectedTerms.length > 0 ? 140 : undefined }} data-testid="labs-flavour-map-page">
       <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-flavour-map">
-          <ChevronLeft className="w-4 h-4" /> Discover
+          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
       </Link>
 

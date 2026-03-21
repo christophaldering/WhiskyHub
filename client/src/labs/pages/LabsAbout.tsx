@@ -20,7 +20,7 @@ export default function LabsAbout() {
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-about-back"
       >
-        <ChevronLeft className="w-4 h-4" /> Discover
+        <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

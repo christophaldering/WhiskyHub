@@ -9,7 +9,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export default function LabsLexicon() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -29,7 +29,7 @@ export default function LabsLexicon() {
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-lexicon-page">
       <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-lexicon">
-          <ChevronLeft className="w-4 h-4" /> Discover
+          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
       </Link>
 

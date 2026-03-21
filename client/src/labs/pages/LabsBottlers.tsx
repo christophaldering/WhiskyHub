@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { bottlers, type Bottler } from "@/data/bottlers";
 import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink, ChevronLeft } from "lucide-react";
 
@@ -49,6 +50,7 @@ function Card({ b }: { b: Bottler }) {
 }
 
 export default function LabsBottlers() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "founded">("name");
@@ -66,7 +68,7 @@ export default function LabsBottlers() {
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-bottlers-page">
       <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-bottlers">
-          <ChevronLeft className="w-4 h-4" /> Discover
+          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
       </Link>
 
