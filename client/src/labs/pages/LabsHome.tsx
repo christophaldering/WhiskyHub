@@ -1,6 +1,7 @@
 import { useLocation, Redirect } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
+import { PenLine, Ticket, Crown } from "lucide-react";
 
 export default function LabsHome() {
   const [, navigate] = useLocation();
@@ -12,91 +13,80 @@ export default function LabsHome() {
   }
 
   return (
-    <div style={{ padding: '2rem 1.25rem 6rem', maxWidth: '440px', margin: '0 auto' }}>
-      <p className="ty-label" style={{ marginBottom: '0.75rem' }} data-testid="labs-home-eyebrow">
-        CaskSense
-      </p>
-      <h1 className="ty-h1" style={{ marginBottom: '0.5rem', whiteSpace: 'pre-line' }} data-testid="labs-home-title">
-        {t('home.greeting')}
-      </h1>
-      <p className="ty-sub" style={{ marginBottom: '2rem', opacity: 0.6 }} data-testid="labs-home-tagline">
-        {t('home.greetingSub')}
-      </p>
+    <div className="labs-home-container labs-fade-in">
+      <div className="labs-home-header">
+        <p className="ty-label labs-home-eyebrow" data-testid="labs-home-eyebrow">
+          CaskSense
+        </p>
+        <h1 className="ty-h1 labs-home-title" data-testid="labs-home-title">
+          {t('home.greeting')}
+        </h1>
+        <p className="ty-sub labs-home-tagline" data-testid="labs-home-tagline">
+          {t('home.greetingSub')}
+        </p>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '2rem' }}>
+      <div className="labs-home-cards">
         <button
+          className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
           onClick={() => navigate('/labs/solo')}
-          style={{
-            width: '100%',
-            padding: '1rem 1.25rem',
-            border: '0.5px solid var(--labs-border)',
-            borderRadius: '14px',
-            background: 'transparent',
-            textAlign: 'left',
-            cursor: 'pointer',
-            transition: 'opacity 0.15s',
-            color: 'inherit',
-          }}
           data-testid="labs-action-solo"
         >
-          <div className="ty-ui">{t('home.solo')}</div>
-          <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
-            {t('home.soloSub')}
+          <div className="labs-home-action-icon">
+            <PenLine size={20} strokeWidth={1.6} />
+          </div>
+          <div className="labs-home-action-text">
+            <div className="ty-ui">{t('home.solo')}</div>
+            <div className="ty-caption labs-home-action-sub">
+              {t('home.soloSub')}
+            </div>
           </div>
         </button>
 
         <button
+          className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-2"
           onClick={() => navigate('/labs/join')}
-          style={{
-            width: '100%',
-            padding: '1rem 1.25rem',
-            border: '0.5px solid var(--labs-border)',
-            borderRadius: '14px',
-            background: 'transparent',
-            textAlign: 'left',
-            cursor: 'pointer',
-            transition: 'opacity 0.15s',
-            color: 'inherit',
-          }}
           data-testid="labs-action-join"
         >
-          <div className="ty-ui">{t('home.join')}</div>
-          <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
-            {t('home.joinSub')}
+          <div className="labs-home-action-icon">
+            <Ticket size={20} strokeWidth={1.6} />
+          </div>
+          <div className="labs-home-action-text">
+            <div className="ty-ui">{t('home.join')}</div>
+            <div className="ty-caption labs-home-action-sub">
+              {t('home.joinSub')}
+            </div>
           </div>
         </button>
 
         <button
+          className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-3"
           onClick={() => navigate('/labs/host')}
-          style={{
-            width: '100%',
-            padding: '1rem 1.25rem',
-            border: '0.5px solid var(--labs-border)',
-            borderRadius: '14px',
-            background: 'transparent',
-            textAlign: 'left',
-            cursor: 'pointer',
-            transition: 'opacity 0.15s',
-            color: 'inherit',
-          }}
           data-testid="labs-action-host"
         >
-          <div className="ty-ui">{t('home.host')}</div>
-          <div className="ty-caption" style={{ marginTop: '3px', opacity: 0.6 }}>
-            {t('home.hostSub')}
+          <div className="labs-home-action-icon">
+            <Crown size={20} strokeWidth={1.6} />
+          </div>
+          <div className="labs-home-action-text">
+            <div className="ty-ui">{t('home.host')}</div>
+            <div className="ty-caption labs-home-action-sub">
+              {t('home.hostSub')}
+            </div>
           </div>
         </button>
       </div>
 
-      <p className="ty-caption" style={{ textAlign: 'center', opacity: 0.35 }} data-testid="labs-home-more">
+      <p className="ty-caption labs-home-more labs-fade-in labs-stagger-4" data-testid="labs-home-more">
         {t('home.moreAppears')}
       </p>
 
-      <div style={{ marginTop: '3rem', textAlign: 'center' }} data-testid="labs-home-stille">
-        <p className="ty-caption" style={{ opacity: 0.3, fontStyle: 'italic', letterSpacing: '0.08em' }}>
+      <div className="labs-home-divider labs-fade-in labs-stagger-5" />
+
+      <div className="labs-home-stille labs-fade-in labs-stagger-6" data-testid="labs-home-stille">
+        <p className="ty-caption labs-home-stille-title">
           Stille
         </p>
-        <p className="ty-caption" style={{ opacity: 0.3, marginTop: '4px' }}>
+        <p className="ty-caption labs-home-stille-sub">
           {t('home.noAccount')}
         </p>
       </div>
