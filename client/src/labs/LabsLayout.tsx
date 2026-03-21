@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { User, Bell, Download, X, Search, AlertTriangle } from "lucide-react";
@@ -111,12 +111,8 @@ function NavIconCircle({ active }: { active: boolean }) {
   );
 }
 
-const NAV_ITEMS = [
-  { href: "/labs/tastings", icon: "glencairn" as const, labelKey: "nav.tastings" },
-  { href: "/labs/taste", icon: "meinewelt" as const, labelKey: "nav.myWorld" },
-  { href: "/labs/entdecken", icon: "entdecken" as const, labelKey: "nav.discover" },
-  { href: "/labs/circle", icon: "circle" as const, labelKey: "nav.circle" },
-];
+type NavIcon = "glencairn" | "meinewelt" | "entdecken" | "circle";
+interface NavItem { href: string; icon: NavIcon; label: string; labelKey: string; }
 
 
 function usePwaInstall() {
@@ -552,7 +548,14 @@ function LabsAuthDialog() {
 
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const navItems = useMemo<NavItem[]>(() => [
+    { href: "/labs/tastings", icon: "glencairn", label: t("nav.tastings"), labelKey: "nav.tastings" },
+    { href: "/labs/taste", icon: "meinewelt", label: t("nav.myWorld"), labelKey: "nav.myWorld" },
+    { href: "/labs/entdecken", icon: "entdecken", label: t("nav.discover"), labelKey: "nav.discover" },
+    { href: "/labs/circle", icon: "circle", label: t("nav.circle"), labelKey: "nav.circle" },
+  ], [t, i18n.language]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { currentParticipant, setParticipant } = useAppStore();
@@ -880,7 +883,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             paddingBottom: "env(safe-area-inset-bottom, 8px)",
           }}
         >
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive =
               location === item.href ||
               (item.href === "/labs/tastings" && (
@@ -897,7 +900,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
             const color = isActive ? "var(--labs-gold, #bf8f3e)" : "var(--labs-text-muted, rgba(255,255,255,0.45))";
             const isCircle = item.href === "/labs/circle";
-            const label = t(item.labelKey);
+            const label = item.label;
             const testLabel = item.labelKey.split('.').pop()!.toLowerCase().replace(/\s+/g, "-");
 
             return (
