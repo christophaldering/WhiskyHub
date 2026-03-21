@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import BackLink from "@/labs/components/BackLink";
 import { ChevronLeft, X, Copy, Check, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { STYLE_CATEGORY_SVG, renderIcon } from "@/labs/components/FlavourIcons";
 
 const CATEGORY_IDS = ["islay", "speyside", "sherry", "bourbon", "highland", "japanese"] as const;
 type CategoryId = typeof CATEGORY_IDS[number];
@@ -13,11 +14,6 @@ const CATEGORY_COLORS: Record<CategoryId, string> = {
   bourbon: "#D4A05A",
   highland: "#9B7DB8",
   japanese: "#E8A0B4",
-};
-
-const CATEGORY_ICONS: Record<CategoryId, string> = {
-  islay: "\uD83D\uDD25", speyside: "\uD83C\uDF4E", sherry: "\uD83C\uDF77",
-  bourbon: "\uD83C\uDF3D", highland: "\u26F0\uFE0F", japanese: "\uD83C\uDDEF\uD83C\uDDF5",
 };
 
 const COMPASS_POSITIONS: Record<CategoryId, { x: number; y: number }> = {
@@ -166,7 +162,7 @@ function FlavourWheel({
           data-testid={`wheel-detail-${focusedCategory}`}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 20 }}>{CATEGORY_ICONS[focusedCategory!]}</span>
+            <span style={{ fontSize: 20, display: "inline-flex" }}>{renderIcon(STYLE_CATEGORY_SVG, focusedCategory!, 20)}</span>
             <span className="labs-serif" style={{ fontSize: 16, fontWeight: 600, color: CATEGORY_COLORS[focusedCategory!] }}>{focused.name}</span>
           </div>
           {(["nose", "palate", "finish"] as TermSection[]).map((section) => (
@@ -281,7 +277,7 @@ function StyleCompass({
           data-testid={`compass-detail-${selectedCategory}`}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 20 }}>{CATEGORY_ICONS[selectedCategory]}</span>
+            <span style={{ fontSize: 20, display: "inline-flex" }}>{renderIcon(STYLE_CATEGORY_SVG, selectedCategory, 20)}</span>
             <span className="labs-serif" style={{ fontSize: 16, fontWeight: 600, color: CATEGORY_COLORS[selectedCategory] }}>{selected.name}</span>
             <button onClick={(e) => { e.stopPropagation(); onSelectCategory(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="button-close-compass-detail">
               <X style={{ width: 16, height: 16 }} />
@@ -397,7 +393,7 @@ function AromaRadar({
               style={isOn ? { background: `${CATEGORY_COLORS[cat.id]}18`, borderColor: CATEGORY_COLORS[cat.id], color: CATEGORY_COLORS[cat.id] } : {}}
               data-testid={`button-toggle-radar-${cat.id}`}
             >
-              <span style={{ fontSize: 14 }}>{CATEGORY_ICONS[cat.id]}</span>
+              <span style={{ fontSize: 14, display: "inline-flex" }}>{renderIcon(STYLE_CATEGORY_SVG, cat.id, 14)}</span>
               {cat.name.split(" / ")[0]}
             </button>
           );
@@ -479,7 +475,7 @@ function AromaRadar({
           data-testid={`radar-detail-${selectedRadarCat}`}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 20 }}>{CATEGORY_ICONS[selectedRadarCat]}</span>
+            <span style={{ fontSize: 20, display: "inline-flex" }}>{renderIcon(STYLE_CATEGORY_SVG, selectedRadarCat, 20)}</span>
             <span className="labs-serif" style={{ fontSize: 16, fontWeight: 600, color: CATEGORY_COLORS[selectedRadarCat] }}>{selectedCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setSelectedRadarCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="button-close-radar-detail">
               <X style={{ width: 16, height: 16 }} />

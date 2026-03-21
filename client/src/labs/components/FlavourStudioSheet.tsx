@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { FLAVOR_CATEGORIES, JOURNEY_CATEGORY_ORDER, FLAVOR_PROFILES, type FlavorCategory, type FlavorSubGroup } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import type { DimKey } from "./LabsRatingPanel";
+import { STYLE_CATEGORY_SVG, GUIDE_CATEGORY_SVG, renderIcon } from "@/labs/components/FlavourIcons";
 
 export type StudioView = "guide" | "journey" | "wheel" | "compass" | "radar" | "describe";
 type CategoryId = "islay" | "speyside" | "sherry" | "bourbon" | "highland" | "japanese";
@@ -77,10 +78,6 @@ function useIsDarkTheme(): boolean {
   return isDark;
 }
 
-const CATEGORY_ICONS: Record<CategoryId, string> = {
-  islay: "\uD83D\uDD25", speyside: "\uD83C\uDF4E", sherry: "\uD83C\uDF77",
-  bourbon: "\uD83C\uDF3D", highland: "\u26F0\uFE0F", japanese: "\uD83C\uDDEF\uD83C\uDDF5",
-};
 
 const COMPASS_POSITIONS: Record<CategoryId, { x: number; y: number }> = {
   islay: { x: 0.78, y: 0.18 }, speyside: { x: 0.22, y: 0.75 },
@@ -317,11 +314,6 @@ function findDescriptorHierarchy(termLower: string, isDE: boolean): DescriptorHi
   return null;
 }
 
-const GUIDE_CATEGORY_ICONS: Record<string, string> = {
-  fruity: "🍎", floral: "🌸", sweet: "🍯", spicy: "🌶️", woody: "🪵",
-  smoky: "🔥", malty: "🌾", maritime: "🌊", nutty: "🥜", herbal: "🌿",
-  earthy: "🍂", creamy: "🧈", mineral: "💎",
-};
 
 function GuidedView({
   selected, onToggle, isDE,
@@ -484,14 +476,13 @@ function GuidedView({
                     const cat = FLAVOR_CATEGORIES.find((c) => c.id === catId);
                     const color = cat?.color || "var(--labs-accent)";
                     const catLabel = cat ? (isDE ? cat.de : cat.en) : catId;
-                    const icon = GUIDE_CATEGORY_ICONS[catId] || "";
                     return (
                       <div key={catId}>
                         <div style={{
                           display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
                           fontSize: 11, color: adjustCategoryTextColor(color as string, isDark), fontWeight: 600,
                         }}>
-                          <span style={{ fontSize: 12 }}>{icon}</span>
+                          <span style={{ fontSize: 12, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, catId, 12)}</span>
                           <span>{catLabel}</span>
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
@@ -553,7 +544,7 @@ function GuidedView({
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
                       <span style={{ fontSize: 16, lineHeight: 1 }}>
-                        {GUIDE_CATEGORY_ICONS[cat.id] || ""}
+                        {renderIcon(GUIDE_CATEGORY_SVG, cat.id, 16)}
                       </span>
                       <span className="labs-serif" style={{
                         fontSize: 13, fontWeight: 600, color: count > 0 ? "#f5f0e8" : adjustCategoryTextColor(cat.color, isDark),
@@ -866,7 +857,7 @@ function CompactWheel({
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }} data-testid={`wheel-detail-${focused}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[focused]}</span>
+            <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, focused, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[focused], isDark) }}>{focusedCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setFocused(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="button-close-wheel-detail">
               <X style={{ width: 14, height: 14 }} />
@@ -1018,7 +1009,7 @@ function CompactCompass({
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }} data-testid={`compass-detail-${selectedCat}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[selectedCat]}</span>
+            <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, selectedCat, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedCat], isDark) }}>{selCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setSelectedCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
               <X style={{ width: 14, height: 14 }} />
@@ -1106,7 +1097,7 @@ function CompactRadar({
               }}
               data-testid={`studio-radar-toggle-${cat.id}`}
             >
-              <span style={{ fontSize: 12 }}>{CATEGORY_ICONS[cat.id]}</span>
+              <span style={{ fontSize: 12 }}>{renderIcon(STYLE_CATEGORY_SVG, cat.id, 12)}</span>
               {cat.name.split(" / ")[0]}
             </button>
           );
@@ -1198,7 +1189,7 @@ function CompactRadar({
           animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 18 }}>{CATEGORY_ICONS[selectedRadarCat]}</span>
+            <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, selectedRadarCat, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedRadarCat], isDark) }}>{selCat.name}</span>
             <button onClick={(e) => { e.stopPropagation(); setSelectedRadarCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
               <X style={{ width: 14, height: 14 }} />
@@ -1456,11 +1447,6 @@ function DescribeView({
 type JourneyDecision = "yes" | "maybe" | "no";
 type JourneyPhase = "sweep" | "drilldown" | "profile";
 
-const GUIDE_ICONS: Record<string, string> = {
-  fruity: "🍎", floral: "🌸", sweet: "🍯", spicy: "🌶️", woody: "🪵",
-  smoky: "🔥", malty: "🌾", maritime: "🌊", nutty: "🥜", herbal: "🌿",
-  earthy: "🍂", creamy: "🧈", mineral: "💎",
-};
 
 function matchProfile(catWeights: Record<string, number>, isDE: boolean): { label: string; score: number } | null {
   let best: { label: string; score: number } | null = null;
@@ -1614,8 +1600,8 @@ function JourneyView({
               border: `1.5px solid ${tintBorder(currentSweepCat.color)}`,
               textAlign: "center", marginBottom: 16,
             }} data-testid={`journey-sweep-card-${currentSweepCat.id}`}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>
-                {GUIDE_ICONS[currentSweepCat.id] || ""}
+              <div style={{ fontSize: 32, marginBottom: 8, display: "flex", justifyContent: "center" }}>
+                {renderIcon(GUIDE_CATEGORY_SVG, currentSweepCat.id, 32)}
               </div>
               <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${tintBorder(currentSweepCat.color)}`, marginBottom: 4 }}>
                 {isDE ? currentSweepCat.de : currentSweepCat.en}
@@ -1729,7 +1715,7 @@ function JourneyView({
           <div style={{
             display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
           }}>
-            <span style={{ fontSize: 20 }}>{GUIDE_ICONS[currentDrillCat.id] || ""}</span>
+            <span style={{ fontSize: 20, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, currentDrillCat.id, 20)}</span>
             <div>
               <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
                 {isDE ? currentDrillCat.de : currentDrillCat.en}
@@ -1944,7 +1930,7 @@ function JourneyView({
                   const pct = (w / maxWeight) * 100;
                   return (
                     <div key={cat.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{GUIDE_ICONS[cat.id]}</span>
+                      <span style={{ fontSize: 14, width: 20, textAlign: "center", display: "inline-flex", justifyContent: "center" }}>{renderIcon(GUIDE_CATEGORY_SVG, cat.id, 14)}</span>
                       <span style={{ fontSize: 11, width: 60, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600 }}>
                         {isDE ? cat.de : cat.en}
                       </span>
@@ -1984,7 +1970,7 @@ function JourneyView({
                         display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
                         fontSize: 11, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600,
                       }}>
-                        <span style={{ fontSize: 12 }}>{GUIDE_ICONS[cat.id]}</span>
+                        <span style={{ fontSize: 12, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, cat.id, 12)}</span>
                         <span>{isDE ? cat.de : cat.en}</span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
