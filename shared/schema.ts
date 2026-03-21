@@ -397,6 +397,8 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
   estimatedPriceCurrency: text("estimated_price_currency"),
   estimatedPriceDate: timestamp("estimated_price_date"),
   estimatedPriceSource: text("estimated_price_source"),
+  source: text("source").default("whiskybase"),
+  locallyModified: jsonb("locally_modified").$type<Record<string, boolean>>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -404,6 +406,24 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
 export const insertWhiskybaseCollectionSchema = createInsertSchema(whiskybaseCollection).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWhiskybaseCollection = z.infer<typeof insertWhiskybaseCollectionSchema>;
 export type WhiskybaseCollectionItem = typeof whiskybaseCollection.$inferSelect;
+
+// --- Collection Sync Log ---
+export const collectionSyncLog = pgTable("collection_sync_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  syncedAt: timestamp("synced_at").defaultNow(),
+  summary: jsonb("summary").$type<{ added: number; updated: number; removed: number; conflicts: number; unchanged: number }>().notNull(),
+  details: jsonb("details").$type<Array<{
+    whiskybaseId: string;
+    name: string;
+    action: "added" | "removed" | "updated" | "conflict";
+    changes?: Array<{ field: string; oldValue: any; newValue: any; source: "whiskybase" | "casksense" }>;
+  }>>().notNull(),
+});
+
+export const insertCollectionSyncLogSchema = createInsertSchema(collectionSyncLog).omit({ id: true, syncedAt: true });
+export type InsertCollectionSyncLog = z.infer<typeof insertCollectionSyncLogSchema>;
+export type CollectionSyncLog = typeof collectionSyncLog.$inferSelect;
 
 // --- Tasting Reminders ---
 

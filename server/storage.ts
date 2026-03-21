@@ -19,6 +19,8 @@ import {
   type InsertWishlistEntry, type WishlistEntry,
   type InsertNewsletter, type Newsletter,
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
+  collectionSyncLog,
+  type InsertCollectionSyncLog, type CollectionSyncLog,
   type InsertTastingReminder, type TastingReminder,
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
   type InsertTastingPhoto, type TastingPhoto,
@@ -283,10 +285,17 @@ export interface IStorage {
   // Whiskybase Collection
   getAllCollectionItems(): Promise<WhiskybaseCollectionItem[]>;
   getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]>;
+  getWhiskybaseCollectionItem(id: string, participantId: string): Promise<WhiskybaseCollectionItem | undefined>;
   upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
+  patchWhiskybaseCollectionItem(id: string, participantId: string, fields: Partial<{ status: string; personalRating: number | null; notes: string | null }>): Promise<WhiskybaseCollectionItem | null>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
   deleteWhiskybaseCollection(participantId: string): Promise<void>;
   updateWhiskybaseCollectionItemPrice(id: string, participantId: string, price: number, currency: string, source: string): Promise<WhiskybaseCollectionItem | null>;
+
+  // Collection Sync Log
+  createCollectionSyncLog(data: InsertCollectionSyncLog): Promise<CollectionSyncLog>;
+  getCollectionSyncLogs(participantId: string): Promise<CollectionSyncLog[]>;
+  getCollectionSyncLog(id: string): Promise<CollectionSyncLog | undefined>;
 
   // Encyclopedia Suggestions
   getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
@@ -1312,6 +1321,26 @@ export class DatabaseStorage implements IStorage {
     ));
   }
 
+  async getWhiskybaseCollectionItem(id: string, participantId: string): Promise<WhiskybaseCollectionItem | undefined> {
+    const [result] = await db.select().from(whiskybaseCollection).where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)));
+    return result;
+  }
+
+  async patchWhiskybaseCollectionItem(id: string, participantId: string, fields: Partial<{ status: string; personalRating: number | null; notes: string | null }>): Promise<WhiskybaseCollectionItem | null> {
+    const [existing] = await db.select().from(whiskybaseCollection).where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)));
+    if (!existing) return null;
+    const currentModified = (existing.locallyModified as Record<string, boolean>) || {};
+    const newModified = { ...currentModified };
+    for (const key of Object.keys(fields)) {
+      newModified[key] = true;
+    }
+    const [updated] = await db.update(whiskybaseCollection)
+      .set({ ...fields, locallyModified: newModified, updatedAt: new Date() })
+      .where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)))
+      .returning();
+    return updated || null;
+  }
+
   async deleteWhiskybaseCollection(participantId: string): Promise<void> {
     await db.delete(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId));
   }
@@ -1322,6 +1351,21 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)))
       .returning();
     return updated || null;
+  }
+
+  // --- Collection Sync Log ---
+  async createCollectionSyncLog(data: InsertCollectionSyncLog): Promise<CollectionSyncLog> {
+    const [result] = await db.insert(collectionSyncLog).values(data).returning();
+    return result;
+  }
+
+  async getCollectionSyncLogs(participantId: string): Promise<CollectionSyncLog[]> {
+    return db.select().from(collectionSyncLog).where(eq(collectionSyncLog.participantId, participantId)).orderBy(desc(collectionSyncLog.syncedAt));
+  }
+
+  async getCollectionSyncLog(id: string): Promise<CollectionSyncLog | undefined> {
+    const [result] = await db.select().from(collectionSyncLog).where(eq(collectionSyncLog.id, id));
+    return result;
   }
 
   // --- Tasting Reminders ---

@@ -50,6 +50,13 @@
       "when": 1773957703876,
       "tag": "0006_tricky_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774081149193,
+      "tag": "0007_military_smasher",
+      "breakpoints": true
     }
   ]
 }

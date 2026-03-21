@@ -5459,6 +5459,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         caskType: caskType || null,
         status: status || "open",
         imageUrl: imageUrl || null,
+        source: whiskybaseId ? "whiskybase" : "manual",
       });
       res.json(item);
     } catch (error: any) {
@@ -5494,8 +5495,67 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
 
   app.delete("/api/collection/:participantId/:id", async (req: Request, res: Response) => {
     try {
-      await storage.deleteWhiskybaseCollectionItem(req.params.id as string, req.params.participantId as string);
+      const { participantId, id } = req.params;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      await storage.deleteWhiskybaseCollectionItem(id, participantId);
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/collection/:participantId/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, id } = req.params;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const { status, personalRating, notes } = req.body;
+      const fields: any = {};
+      if (status !== undefined) {
+        const validStatuses = ["open", "closed", "empty"];
+        if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status. Must be open, closed, or empty" });
+        fields.status = status;
+      }
+      if (personalRating !== undefined) {
+        if (personalRating !== null) {
+          const rating = Number(personalRating);
+          if (isNaN(rating) || rating < 0 || rating > 100) return res.status(400).json({ error: "Rating must be between 0 and 100" });
+          fields.personalRating = rating;
+        } else {
+          fields.personalRating = null;
+        }
+      }
+      if (notes !== undefined) fields.notes = notes;
+      if (Object.keys(fields).length === 0) return res.status(400).json({ error: "No fields to update" });
+      const updated = await storage.patchWhiskybaseCollectionItem(id, participantId, fields);
+      if (!updated) return res.status(404).json({ error: "Item not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/collection/:participantId/sync-history", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const logs = await storage.getCollectionSyncLogs(participantId);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/collection/:participantId/sync-history/:logId", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const log = await storage.getCollectionSyncLog(req.params.logId as string);
+      if (!log || log.participantId !== participantId) return res.status(404).json({ error: "Not found" });
+      res.json(log);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -5639,6 +5699,8 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file provided" });
       const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
 
       const rows = await parseCollectionCSV(file);
       const uploadedItems = rows.map(r => mapCollectionRow(r, participantId)).filter(Boolean);
@@ -5659,15 +5721,28 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         if (!existing) {
           newItems.push(uploaded);
         } else {
-          const changes: any[] = [];
-          if (uploaded.status && uploaded.status !== existing.status) changes.push({ field: "status", old: existing.status, new: uploaded.status });
-          if (uploaded.communityRating != null && uploaded.communityRating !== existing.communityRating) changes.push({ field: "communityRating", old: existing.communityRating, new: uploaded.communityRating });
-          if (uploaded.personalRating != null && uploaded.personalRating !== existing.personalRating) changes.push({ field: "personalRating", old: existing.personalRating, new: uploaded.personalRating });
-          if (uploaded.pricePaid != null && uploaded.pricePaid !== existing.pricePaid) changes.push({ field: "pricePaid", old: existing.pricePaid, new: uploaded.pricePaid });
-          if (uploaded.avgPrice != null && uploaded.avgPrice !== existing.avgPrice) changes.push({ field: "avgPrice", old: existing.avgPrice, new: uploaded.avgPrice });
-          if (uploaded.auctionPrice != null && uploaded.auctionPrice !== existing.auctionPrice) changes.push({ field: "auctionPrice", old: existing.auctionPrice, new: uploaded.auctionPrice });
+          const changes: Array<{ field: string; old: unknown; new: unknown; conflict: boolean; source: string }> = [];
+          const localMod = existing.locallyModified || {};
+          const checkFields = [
+            { field: "status", uploaded: uploaded.status, existing: existing.status },
+            { field: "communityRating", uploaded: uploaded.communityRating, existing: existing.communityRating },
+            { field: "personalRating", uploaded: uploaded.personalRating, existing: existing.personalRating },
+            { field: "pricePaid", uploaded: uploaded.pricePaid, existing: existing.pricePaid },
+            { field: "avgPrice", uploaded: uploaded.avgPrice, existing: existing.avgPrice },
+            { field: "auctionPrice", uploaded: uploaded.auctionPrice, existing: existing.auctionPrice },
+            { field: "notes", uploaded: uploaded.notes, existing: existing.notes },
+          ];
+          for (const { field, uploaded: uVal, existing: eVal } of checkFields) {
+            if (uVal != null && uVal !== eVal) {
+              if (localMod[field]) {
+                changes.push({ field, old: eVal, new: uVal, conflict: true, source: "casksense" });
+              } else {
+                changes.push({ field, old: eVal, new: uVal, conflict: false, source: "whiskybase" });
+              }
+            }
+          }
           if (changes.length > 0) {
-            changedItems.push({ existingId: existing.id, whiskybaseId: uploaded.whiskybaseId, name: existing.name, brand: existing.brand, changes, uploadedData: uploaded });
+            changedItems.push({ existingId: existing.id, whiskybaseId: uploaded.whiskybaseId, name: existing.name, brand: existing.brand, changes, uploadedData: uploaded, locallyModified: localMod });
           } else {
             unchangedCount++;
           }
@@ -5676,6 +5751,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
 
       const removedItems = existingItems
         .filter(item => {
+          if (item.source === "manual" || item.whiskybaseId?.startsWith("manual-")) return false;
           if (item.collectionId) return !uploadedByCollId.has(item.collectionId);
           return !uploadedItems.some((u: any) => u.whiskybaseId === item.whiskybaseId);
         })
@@ -5691,39 +5767,85 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
   app.post("/api/collection/:participantId/sync/apply", async (req: Request, res: Response) => {
     try {
       const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
       const { addItems, removeItemIds, updateItems } = req.body as {
         addItems: any[];
         removeItemIds: string[];
         updateItems: { id: string; data: any }[];
       };
 
-      let added = 0, removed = 0, updated = 0;
+      let added = 0, removed = 0, updated = 0, conflicts = 0, unchanged = 0;
+      const logDetails: Array<{ whiskybaseId: string; name: string; action: "added" | "removed" | "updated" | "conflict"; changes?: Array<{ field: string; oldValue: any; newValue: any; source: "whiskybase" | "casksense" }> }> = [];
 
       if (addItems?.length) {
         for (const item of addItems) {
-          await storage.upsertWhiskybaseCollectionItem({ ...item, participantId });
+          await storage.upsertWhiskybaseCollectionItem({ ...item, participantId, source: "whiskybase" });
           added++;
+          logDetails.push({ whiskybaseId: item.whiskybaseId, name: item.name || "", action: "added" });
         }
       }
 
       if (removeItemIds?.length) {
+        const allItems = await storage.getWhiskybaseCollection(participantId);
         for (const id of removeItemIds) {
+          const item = allItems.find(i => i.id === id);
+          if (item && (item.source === "manual" || item.whiskybaseId?.startsWith("manual-"))) continue;
           await storage.deleteWhiskybaseCollectionItem(id, participantId);
           removed++;
+          logDetails.push({ whiskybaseId: item?.whiskybaseId || id, name: item?.name || "", action: "removed" });
         }
       }
 
       if (updateItems?.length) {
+        const protectedFields = ["status", "personalRating", "notes", "communityRating", "pricePaid", "avgPrice", "auctionPrice"];
         for (const { id, data } of updateItems) {
-          const existing = (await storage.getWhiskybaseCollection(participantId)).find(i => i.id === id);
+          const existing = await storage.getWhiskybaseCollectionItem(id, participantId);
           if (existing) {
-            await storage.upsertWhiskybaseCollectionItem({ ...existing, ...data, participantId });
-            updated++;
+            const localMod = existing.locallyModified || {};
+            const safeData = { ...data };
+            const changeDetails: Array<{ field: string; oldValue: any; newValue: any; source: "whiskybase" | "casksense" }> = [];
+            let hasConflict = false;
+
+            for (const field of protectedFields) {
+              const existingVal = existing[field as keyof typeof existing];
+              const incomingVal = safeData[field];
+              if (field in safeData && incomingVal !== existingVal) {
+                if (localMod[field]) {
+                  delete safeData[field];
+                  hasConflict = true;
+                  changeDetails.push({ field, oldValue: existingVal, newValue: incomingVal, source: "casksense" });
+                } else {
+                  changeDetails.push({ field, oldValue: existingVal, newValue: incomingVal, source: "whiskybase" });
+                }
+              }
+            }
+
+            await storage.upsertWhiskybaseCollectionItem({ ...existing, ...safeData, participantId });
+            if (hasConflict) {
+              conflicts++;
+            } else {
+              updated++;
+            }
+            logDetails.push({
+              whiskybaseId: existing.whiskybaseId,
+              name: existing.name || "",
+              action: hasConflict ? "conflict" : "updated",
+              changes: changeDetails,
+            });
           }
         }
       }
 
-      res.json({ added, removed, updated });
+      unchanged = req.body.unchangedCount || 0;
+
+      await storage.createCollectionSyncLog({
+        participantId,
+        summary: { added, updated, removed, conflicts, unchanged },
+        details: logDetails,
+      });
+
+      res.json({ added, removed, updated, conflicts, unchanged });
     } catch (error: any) {
       console.error("Collection sync apply error:", error);
       res.status(500).json({ error: error.message });

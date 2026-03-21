@@ -1,21 +1,24 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Link , useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check, ArrowUpDown,
   BarChart3, Star, RefreshCw, Sparkles, X, CheckSquare,
   FileSpreadsheet, FileText, Download, ChevronDown, ChevronUp, ChevronLeft,
+  ExternalLink, Clock, AlertTriangle, History,
 } from "lucide-react";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 type SortKey = "name" | "rating" | "price" | "added";
 type StatusFilter = "all" | "open" | "closed" | "empty";
+
+const STATUS_CYCLE: string[] = ["closed", "open", "empty"];
 
 export default function LabsTasteCollection() {
   const { t } = useTranslation();
@@ -38,12 +41,23 @@ export default function LabsTasteCollection() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [editingRatingId, setEditingRatingId] = useState<string | null>(null);
+  const [ratingValue, setRatingValue] = useState("");
+  const [syncResultDialog, setSyncResultDialog] = useState<any>(null);
+  const [showSyncHistory, setShowSyncHistory] = useState(false);
+  const [expandedSyncLogId, setExpandedSyncLogId] = useState<string | null>(null);
 
   const pid = session.pid;
 
   const { data: items = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["collection", pid],
     queryFn: () => collectionApi.getAll(pid!),
+    enabled: !!pid,
+  });
+
+  const { data: syncHistory = [] } = useQuery({
+    queryKey: ["sync-history", pid],
+    queryFn: () => collectionApi.getSyncHistory(pid!),
     enabled: !!pid,
   });
 
@@ -76,6 +90,25 @@ export default function LabsTasteCollection() {
   const manualPriceMutation = useMutation({
     mutationFn: ({ itemId, price, currency }: { itemId: string; price: number; currency: string }) => collectionApi.manualPrice(pid!, itemId, price, currency),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["collection"] }); setEditingPriceId(null); setManualPriceValue(""); },
+  });
+
+  const patchMutation = useMutation({
+    mutationFn: ({ id, fields }: { id: string; fields: { status?: string; personalRating?: number | null; notes?: string | null } }) =>
+      collectionApi.patch(pid!, id, fields),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["collection"] }); },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: (file: File) => collectionApi.sync(pid!, file),
+  });
+
+  const syncApplyMutation = useMutation({
+    mutationFn: (data: any) => collectionApi.syncApply(pid!, data),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["collection"] });
+      queryClient.invalidateQueries({ queryKey: ["sync-history"] });
+      setSyncResultDialog(result);
+    },
   });
 
   const filtered = useMemo(() => {
@@ -111,8 +144,34 @@ export default function LabsTasteCollection() {
     return { total: all.length, open, closed, empty, avgRating, totalValue, topDistilleries };
   }, [items]);
 
+  const lastSyncDate = useMemo(() => {
+    if (!syncHistory || syncHistory.length === 0) return null;
+    return new Date(syncHistory[0].syncedAt);
+  }, [syncHistory]);
+
+  const isSyncStale = useMemo(() => {
+    if (!lastSyncDate) return false;
+    const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+    return lastSyncDate < fourWeeksAgo;
+  }, [lastSyncDate]);
+
   const statusColor = (s: string | null) => s === "open" ? "var(--labs-success)" : s === "closed" ? "var(--labs-info)" : "var(--labs-text-muted)";
   const statusLabel = (s: string | null) => s === "open" ? "Open" : s === "closed" ? "Closed" : s === "empty" ? "Empty" : (s || "");
+
+  const cycleStatus = (item: WhiskybaseCollectionItem) => {
+    const currentIdx = STATUS_CYCLE.indexOf(item.status || "closed");
+    const next = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length];
+    patchMutation.mutate({ id: item.id, fields: { status: next } });
+  };
+
+  const isManualItem = (item: WhiskybaseCollectionItem) => {
+    return (item as WhiskybaseCollectionItem & { source?: string }).source === "manual" || item.whiskybaseId?.startsWith("manual-");
+  };
+
+  const getWbUrl = (item: WhiskybaseCollectionItem) => {
+    if (isManualItem(item)) return null;
+    return `https://www.whiskybase.com/whiskies/whisky/${item.whiskybaseId}`;
+  };
 
   const downloadCsv = (itemsToExport: WhiskybaseCollectionItem[]) => {
     const headers = ["Name", "Brand", "Distillery", "Age", "ABV", "Status", "Series", "Cask", "Size", "Rating", "Price Paid", "Currency", "Estimated Price", "Added"];
@@ -124,6 +183,45 @@ export default function LabsTasteCollection() {
   };
 
   const getExportItems = (): WhiskybaseCollectionItem[] => selectMode && selectedIds.size > 0 ? filtered.filter(i => selectedIds.has(i.id)) : filtered;
+
+  const handleSyncFile = async (file: File) => {
+    try {
+      const diffResult = await syncMutation.mutateAsync(file);
+      const addItems = diffResult.newItems || [];
+      const removeItemIds = (diffResult.removedItems || []).map((r: any) => r.id);
+      const updateItems = (diffResult.changedItems || []).map((c: any) => ({
+        id: c.existingId,
+        data: c.uploadedData,
+      }));
+      const applyResult = await syncApplyMutation.mutateAsync({
+        addItems,
+        removeItemIds,
+        updateItems,
+        unchangedCount: diffResult.unchangedCount || 0,
+      });
+      const details: any[] = [];
+      for (const item of addItems) {
+        details.push({ name: item.name || "", action: "added" });
+      }
+      for (const r of (diffResult.removedItems || [])) {
+        details.push({ name: r.name || "", action: "removed" });
+      }
+      for (const c of (diffResult.changedItems || [])) {
+        const hasConflict = c.changes?.some((ch: any) => ch.conflict);
+        details.push({
+          name: c.name || c.brand || "",
+          action: hasConflict ? "conflict" : "updated",
+          changes: c.changes?.map((ch: any) => ({
+            field: ch.field,
+            oldValue: ch.old,
+            newValue: ch.new,
+            source: ch.conflict ? "casksense" : "whiskybase",
+          })),
+        });
+      }
+      setSyncResultDialog({ ...applyResult, details });
+    } catch {}
+  };
 
   if (!session.signedIn) {
     return (
@@ -146,7 +244,7 @@ export default function LabsTasteCollection() {
     <div className="px-5 py-6 max-w-2xl mx-auto" style={{ paddingBottom: selectMode ? 140 : 80 }} data-testid="labs-taste-collection">
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { importMutation.mutate(f); e.target.value = ""; } }} data-testid="input-labs-import-file" />
-      <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} data-testid="input-labs-sync-file" />
+      <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleSyncFile(f); e.target.value = ""; } }} data-testid="input-labs-sync-file" />
 
       <div className="flex items-center gap-3 mb-1">
         <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
@@ -154,11 +252,25 @@ export default function LabsTasteCollection() {
       </div>
       {items.length > 0 && <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{items.length} bottles</p>}
 
+      {isSyncStale && items.length > 0 && (
+        <div className="labs-card p-3 mb-4 flex items-center gap-3" style={{ background: "rgba(255,180,0,0.08)", border: "1px solid rgba(255,180,0,0.25)" }} data-testid="banner-sync-stale">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "#e6a800" }} />
+          <p className="text-xs" style={{ color: "var(--labs-text-secondary)", flex: 1 }}>
+            Last sync was {lastSyncDate ? Math.floor((Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60 * 24)) : "?"} days ago. Consider syncing your Whiskybase export.
+          </p>
+          <button onClick={() => syncFileInputRef.current?.click()} className="labs-btn-secondary" style={{ padding: "4px 10px", fontSize: 11, flexShrink: 0 }} data-testid="button-sync-stale">
+            <RefreshCw className="w-3 h-3" /> Sync
+          </button>
+        </div>
+      )}
+
       {items.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
           <ActionBtn icon={<BarChart3 className="w-4 h-4" />} label="Stats" onClick={() => setShowStats(!showStats)} active={showStats} testId="button-labs-toggle-stats" />
           {!priceSelectMode && <ActionBtn icon={<Sparkles className="w-4 h-4" />} label="AI Prices" onClick={() => { setPriceSelectMode(true); setSelectedForPrice(new Set()); setSelectMode(false); }} testId="button-labs-start-price-estimate" />}
           <ActionBtn icon={importMutation.isPending ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Upload className="w-4 h-4" />} label="Import" onClick={() => fileInputRef.current?.click()} primary disabled={importMutation.isPending} testId="button-labs-import-collection" />
+          <ActionBtn icon={(syncMutation.isPending || syncApplyMutation.isPending) ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw className="w-4 h-4" />} label="Sync" onClick={() => syncFileInputRef.current?.click()} disabled={syncMutation.isPending || syncApplyMutation.isPending} testId="button-labs-sync-collection" />
+          <ActionBtn icon={<History className="w-4 h-4" />} label="History" onClick={() => setShowSyncHistory(!showSyncHistory)} active={showSyncHistory} testId="button-labs-sync-history" />
           <ActionBtn icon={<CheckSquare className="w-4 h-4" />} label={selectMode ? "Cancel" : "Select"} onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); if (!selectMode) { setPriceSelectMode(false); } }} active={selectMode} testId="button-labs-toggle-select" />
         </div>
       )}
@@ -178,6 +290,65 @@ export default function LabsTasteCollection() {
             </button>
             <button onClick={() => { setPriceSelectMode(false); setSelectedForPrice(new Set()); }} style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
           </div>
+        </div>
+      )}
+
+      {showSyncHistory && (
+        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="labs-sync-history-panel">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Sync History</h3>
+            <button onClick={() => setShowSyncHistory(false)} style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
+          </div>
+          {syncHistory.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>No syncs recorded yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {syncHistory.map((log: any) => {
+                const expanded = expandedSyncLogId === log.id;
+                const s = log.summary;
+                return (
+                  <div key={log.id} style={{ border: "1px solid var(--labs-border)", borderRadius: 8, overflow: "hidden" }} data-testid={`sync-log-${log.id}`}>
+                    <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedSyncLogId(expanded ? null : log.id)}>
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                      <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>{new Date(log.syncedAt).toLocaleDateString("de-DE")} {new Date(log.syncedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <div className="flex gap-1.5 ml-auto">
+                        {s.added > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "var(--labs-success)" }}>+{s.added}</span>}
+                        {s.updated > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(59,130,246,0.1)", color: "var(--labs-info)" }}>{s.updated} upd</span>}
+                        {s.conflicts > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(245,158,11,0.1)", color: "#e6a800" }}>{s.conflicts} conf</span>}
+                        {s.removed > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "var(--labs-danger)" }}>-{s.removed}</span>}
+                      </div>
+                      {expanded ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
+                    </div>
+                    {expanded && log.details && (
+                      <div style={{ borderTop: "1px solid var(--labs-border)", padding: "8px 12px", maxHeight: 300, overflowY: "auto" }}>
+                        {log.details.map((d: any, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 py-1.5" style={{ borderBottom: idx < log.details.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5" style={{
+                              background: d.action === "added" ? "rgba(34,197,94,0.1)" : d.action === "removed" ? "rgba(239,68,68,0.1)" : d.action === "conflict" ? "rgba(245,158,11,0.15)" : "rgba(59,130,246,0.1)",
+                              color: d.action === "added" ? "var(--labs-success)" : d.action === "removed" ? "var(--labs-danger)" : d.action === "conflict" ? "#e6a800" : "var(--labs-info)",
+                              fontWeight: 600,
+                            }}>{d.action}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span className="text-xs truncate block" style={{ color: "var(--labs-text)" }}>{d.name}</span>
+                              {d.changes && d.changes.length > 0 && (
+                                <div className="mt-1">
+                                  {d.changes.map((ch: any, ci: number) => (
+                                    <div key={ci} className="text-[10px]" style={{ color: ch.source === "casksense" ? "#e6a800" : "var(--labs-text-muted)" }}>
+                                      {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? "kept (CS)" : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -270,6 +441,8 @@ export default function LabsTasteCollection() {
             const expanded = expandedId === item.id;
             const isSelected = selectMode && selectedIds.has(item.id);
             const isPriceSelected = priceSelectMode && selectedForPrice.has(item.id);
+            const manual = isManualItem(item);
+            const wbUrl = getWbUrl(item);
             return (
               <div key={item.id} className="labs-card" style={{ overflow: "hidden", border: isSelected || isPriceSelected ? "1px solid var(--labs-accent)" : undefined }} data-testid={`labs-collection-${item.id}`}>
                 <div className="flex items-center gap-3 p-3.5 cursor-pointer" onClick={() => {
@@ -291,15 +464,75 @@ export default function LabsTasteCollection() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {item.status && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: statusColor(item.status), border: `1px solid ${statusColor(item.status)}` }}>{statusLabel(item.status)}</span>}
-                    {item.communityRating && <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-accent)" }}><Star className="w-3 h-3" />{item.communityRating.toFixed(1)}</span>}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); cycleStatus(item); }}
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                      style={{ color: statusColor(item.status || "closed"), border: `1px solid ${statusColor(item.status || "closed")}`, background: "transparent", cursor: "pointer" }}
+                      data-testid={`button-status-cycle-${item.id}`}
+                    >{statusLabel(item.status || "closed")}</button>
+                    {item.personalRating != null && item.personalRating > 0 && (
+                      <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-accent)" }}>
+                        <Star className="w-3 h-3" fill="currentColor" />{item.personalRating.toFixed(1)}
+                      </span>
+                    )}
+                    {item.communityRating != null && item.communityRating > 0 && !item.personalRating && (
+                      <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                        <Star className="w-3 h-3" />{item.communityRating.toFixed(1)}
+                      </span>
+                    )}
                     {!selectMode && !priceSelectMode && (expanded ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />)}
                   </div>
                 </div>
 
                 {expanded && (
                   <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--labs-border)" }}>
-                    <div className="grid grid-cols-2 gap-2 mt-3 text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                    <div className="flex items-center gap-2 mt-3 mb-2">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{
+                        background: manual ? "rgba(139,92,246,0.1)" : "rgba(59,130,246,0.1)",
+                        color: manual ? "#8b5cf6" : "var(--labs-info)",
+                      }} data-testid={`badge-source-${item.id}`}>
+                        {manual ? "Manual" : "Whiskybase Import"}
+                      </span>
+                      {wbUrl && (
+                        <a href={wbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px]" style={{ color: "var(--labs-accent)", textDecoration: "none" }} data-testid={`link-wb-${item.id}`}>
+                          WB <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>My Rating:</span>
+                      {editingRatingId === item.id ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0" max="100" step="0.5"
+                            value={ratingValue}
+                            onChange={(e) => setRatingValue(e.target.value)}
+                            placeholder="0-100"
+                            style={{ width: 60, padding: "3px 6px", fontSize: 12, background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 6, color: "var(--labs-text)", outline: "none" }}
+                            data-testid={`input-rating-${item.id}`}
+                          />
+                          <button onClick={() => {
+                            const val = ratingValue ? parseFloat(ratingValue) : null;
+                            patchMutation.mutate({ id: item.id, fields: { personalRating: val } });
+                            setEditingRatingId(null); setRatingValue("");
+                          }} className="labs-btn-primary" style={{ padding: "3px 8px", fontSize: 11 }} data-testid={`button-save-rating-${item.id}`}>Save</button>
+                          <button onClick={() => { setEditingRatingId(null); setRatingValue(""); }} style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setEditingRatingId(item.id); setRatingValue(item.personalRating?.toString() || ""); }}
+                          className="flex items-center gap-1 text-xs"
+                          style={{ color: item.personalRating ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "none", border: "1px solid var(--labs-border)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}
+                          data-testid={`button-edit-rating-${item.id}`}
+                        >
+                          <Star className="w-3 h-3" /> {item.personalRating ? item.personalRating.toFixed(1) : "Rate"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "var(--labs-text-secondary)" }}>
                       {item.caskType && <div><span style={{ color: "var(--labs-text-muted)" }}>Cask:</span> {item.caskType}</div>}
                       {item.bottlingSeries && <div><span style={{ color: "var(--labs-text-muted)" }}>Series:</span> {item.bottlingSeries}</div>}
                       {item.size && <div><span style={{ color: "var(--labs-text-muted)" }}>Size:</span> {item.size}</div>}
@@ -339,7 +572,7 @@ export default function LabsTasteCollection() {
       )}
 
       {deleteTarget && (
-        <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-collection">
+        <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }} data-testid="dialog-labs-delete-collection">
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
             <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Bottle</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Remove "{deleteTarget.name}" from your collection?</p>
@@ -352,7 +585,7 @@ export default function LabsTasteCollection() {
       )}
 
       {bulkDeleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }}>
+        <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }}>
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
             <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete {selectedIds.size} bottles?</h3>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This cannot be undone.</p>
@@ -362,6 +595,10 @@ export default function LabsTasteCollection() {
             </div>
           </div>
         </div>
+      )}
+
+      {syncResultDialog && (
+        <SyncResultDialog result={syncResultDialog} onClose={() => setSyncResultDialog(null)} />
       )}
     </div>
   );
@@ -373,5 +610,67 @@ function ActionBtn({ icon, label, onClick, primary, active, disabled, testId }: 
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 14px", borderRadius: 12, border: "none", cursor: disabled ? "default" : "pointer", background: primary ? "var(--labs-accent)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)", color: primary ? "var(--labs-bg)" : active ? "var(--labs-accent)" : "var(--labs-text)", opacity: disabled ? 0.4 : 1, fontSize: 11, fontWeight: 500, minWidth: 64, transition: "all 0.15s" }}>
       {icon}<span>{label}</span>
     </button>
+  );
+}
+
+function SyncResultDialog({ result, onClose }: { result: { added: number; updated: number; removed: number; conflicts: number; unchanged: number; details?: Array<{ name: string; action: string; changes?: Array<{ field: string; oldValue: string; newValue: string; source: string }> }> }; onClose: () => void }) {
+  const [showDetails, setShowDetails] = useState(false);
+  const details = result.details || [];
+  const hasChanges = details.length > 0;
+
+  return (
+    <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }} data-testid="dialog-sync-result">
+      <div className="labs-card" style={{ maxWidth: 480, width: "90%", padding: 24, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+        <h3 className="labs-h3 mb-3" style={{ color: "var(--labs-text)" }}>Sync Complete</h3>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {result.added > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-success)", fontWeight: 700 }}>+{result.added}</span> <span style={{ color: "var(--labs-text-muted)" }}>added</span></div>}
+          {result.updated > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-info)", fontWeight: 700 }}>{result.updated}</span> <span style={{ color: "var(--labs-text-muted)" }}>updated</span></div>}
+          {result.removed > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-danger)", fontWeight: 700 }}>-{result.removed}</span> <span style={{ color: "var(--labs-text-muted)" }}>removed</span></div>}
+          {result.conflicts > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "#e6a800", fontWeight: 700 }}>{result.conflicts}</span> <span style={{ color: "var(--labs-text-muted)" }}>conflicts (CS kept)</span></div>}
+          {result.unchanged > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-text-muted)", fontWeight: 700 }}>{result.unchanged}</span> <span style={{ color: "var(--labs-text-muted)" }}>unchanged</span></div>}
+        </div>
+        {result.conflicts > 0 && (
+          <p className="text-xs mb-3" style={{ color: "#e6a800" }}>
+            Fields you changed in CaskSense were kept. Whiskybase values were logged but not applied.
+          </p>
+        )}
+        {hasChanges && (
+          <div className="mb-3">
+            <button onClick={() => setShowDetails(!showDetails)} className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-toggle-sync-details">
+              {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {showDetails ? "Hide" : "Show"} details ({details.length} bottles)
+            </button>
+            {showDetails && (
+              <div style={{ maxHeight: 260, overflowY: "auto", marginTop: 8, border: "1px solid var(--labs-border)", borderRadius: 8, padding: 8 }}>
+                {details.map((d, idx) => (
+                  <div key={idx} className="flex items-start gap-2 py-1.5" style={{ borderBottom: idx < details.length - 1 ? "1px solid var(--labs-border)" : "none" }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5" style={{
+                      background: d.action === "added" ? "rgba(34,197,94,0.1)" : d.action === "removed" ? "rgba(239,68,68,0.1)" : d.action === "conflict" ? "rgba(245,158,11,0.15)" : "rgba(59,130,246,0.1)",
+                      color: d.action === "added" ? "var(--labs-success)" : d.action === "removed" ? "var(--labs-danger)" : d.action === "conflict" ? "#e6a800" : "var(--labs-info)",
+                      fontWeight: 600,
+                    }}>{d.action}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span className="text-xs truncate block" style={{ color: "var(--labs-text)" }}>{d.name}</span>
+                      {d.changes && d.changes.length > 0 && (
+                        <div className="mt-1">
+                          {d.changes.map((ch, ci) => (
+                            <div key={ci} className="text-[10px]" style={{ color: ch.source === "casksense" ? "#e6a800" : "var(--labs-text-muted)" }}>
+                              {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? "kept (CS)" : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex justify-end">
+          <button onClick={onClose} className="labs-btn-primary" style={{ padding: "8px 20px", fontSize: 14 }} data-testid="button-close-sync-result">OK</button>
+        </div>
+      </div>
+    </div>
   );
 }
