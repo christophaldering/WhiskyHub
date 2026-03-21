@@ -1,0 +1,623 @@
+# CaskSense Labs — VOLLSTÄNDIGE WIEDERHERSTELLUNG
+## Hard Prompt für Replit — ALLE fehlenden Features
+
+**Priorität: KRITISCH. Nichts weglassen. Keine Eigeninitiative. Exakt wie beschrieben.**
+
+---
+
+## KONTEXT & PROBLEM
+
+Die Labs-Oberfläche hat bei einem Redesign-Schritt mehrere bestehende Features verloren.
+Dieses Prompt stellt alle fehlenden Features exakt so wieder her, wie sie in replit.md dokumentiert sind.
+
+**Nichts löschen. Nur ergänzen und reparieren.**
+
+---
+
+## SCHRITT 0 — DIAGNOSE ZUERST (vor jeder Änderung ausführen)
+
+Führe folgende Checks aus und notiere die Ergebnisse:
+
+```bash
+# 1. Ist ProfileMenu noch im LabsLayout eingebunden?
+grep -n "ProfileMenu" client/src/labs/LabsLayout.tsx
+
+# 2. Welche i18n-Keys hat die Navigation aktuell?
+grep -n "nav\." client/src/labs/LabsLayout.tsx | head -20
+
+# 3. Sind alle Discover-Routen in App.tsx registriert?
+grep -n "labs/discover" client/src/App.tsx
+
+# 4. Ist die Distilleries Map-View noch vorhanden?
+grep -n "map\|Map\|mapView" client/src/labs/pages/LabsDistilleries.tsx 2>/dev/null || echo "DATEI FEHLT"
+
+# 5. Ist der Admin-Bereich erreichbar?
+grep -n "LabsAdmin\|/labs/admin" client/src/App.tsx
+
+# 6. Alle Labs-Routen auflisten
+grep -n "labs/" client/src/App.tsx | grep "Route\|component"
+```
+
+Erst nach der Diagnose mit den Korrekturen beginnen.
+
+---
+
+## SCHRITT 1 — ProfileMenu in LabsLayout.tsx wiederherstellen
+
+### Problem
+`ProfileMenu.tsx` existiert noch in `client/src/components/ProfileMenu.tsx` (explizit preserved laut replit.md), ist aber nicht mehr in `LabsLayout.tsx` eingebunden.
+
+### Lösung
+
+**Datei: `client/src/labs/LabsLayout.tsx`**
+
+#### 1a — Import hinzufügen (falls fehlt):
+```tsx
+import ProfileMenu from '../components/ProfileMenu';
+```
+
+#### 1b — In der Top-Bar (rechts neben DE/EN/Dark Toggle) einbinden:
+
+Die Top-Bar-Zeile sieht aktuell etwa so aus:
+```tsx
+<div className="labs-top-bar">
+  <div className="labs-logo">CaskSense <sup>V2</sup></div>
+  <div className="labs-top-actions">
+    {/* Sprachumschalter, Dark-Mode */}
+  </div>
+</div>
+```
+
+Erweitern zu:
+```tsx
+<div className="labs-top-bar">
+  <div className="labs-logo">CaskSense <sup>V2</sup></div>
+  <div className="labs-top-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    {/* Sprachumschalter DE/EN */}
+    {/* Dark-Mode Toggle */}
+    {/* ↓ WIEDERHERSTELLEN: ProfileMenu oben rechts */}
+    <ProfileMenu />
+  </div>
+</div>
+```
+
+#### 1c — CSS sicherstellen (labs-theme.css):
+Das ProfileMenu verwendet Labs-Tokens. Falls es visuell bricht:
+```css
+/* ProfileMenu im Labs-Kontext */
+.labs-top-bar .profile-menu-trigger {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0.5px solid var(--labs-border);
+  background: var(--labs-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.labs-top-bar .profile-menu-trigger:hover {
+  background: var(--labs-surface-hover);
+}
+```
+
+---
+
+## SCHRITT 2 — Admin-Zugang wiederherstellen
+
+### Problem
+Der Admin-Bereich (`LabsAdmin.tsx`, Route `/labs/admin`) ist nicht mehr über die Navigation erreichbar.
+
+### Lösung
+
+#### 2a — Admin-Link im ProfileMenu
+
+**Datei: `client/src/components/ProfileMenu.tsx`**
+
+Stelle sicher, dass für Admin-User ein Admin-Link sichtbar ist:
+```tsx
+{participant?.isAdmin && (
+  <Link href="/labs/admin">
+    <div className="profile-menu-item">
+      Admin
+    </div>
+  </Link>
+)}
+```
+
+#### 2b — Route in App.tsx prüfen und ggf. ergänzen:
+
+```tsx
+// In App.tsx — falls nicht vorhanden:
+import LabsAdmin from './labs/pages/LabsAdmin';
+
+// In der Route-Konfiguration:
+<Route path="/labs/admin" component={LabsAdmin} />
+```
+
+#### 2c — LabsAdmin Tabs sicherstellen
+
+`LabsAdmin.tsx` muss folgende Tabs haben (laut replit.md):
+- **Participants** — mit Verification-Status, makingOfAccess-Toggle
+- **Making-Of** — Zugangs-Management pro Participant
+- **Sessions** — Activity Tracking (stat cards, daily chart, hourly heatmap, user drill-down)
+- **Aromas** — Flavour Categories & Descriptors CRUD
+- **Flavour-Editor** — (Teil von Aromas oder eigener Tab)
+
+Falls einzelne Tabs fehlen, diese aus der letzten funktionierenden Version wiederherstellen.
+
+---
+
+## SCHRITT 3 — i18n Navigation reparieren
+
+### Problem
+Bottom-Nav zeigt "Discover" und "My World" statt "Entdecken" und "Meine Welt" bei DE-Spracheinstellung.
+
+### Lösung
+
+#### 3a — i18n.ts: Keys prüfen und ergänzen
+
+**Datei: `client/src/lib/i18n.ts`**
+
+Im **EN-Block** (ca. Zeile 11) — im `nav:`-Objekt:
+```typescript
+nav: {
+  tastings: "Tastings",
+  entdecken: "Discover",      // EN: Discover
+  meineWelt: "My World",      // EN: My World
+  circle: "Circle",
+},
+```
+
+Im **DE-Block** (ca. Zeile 5492) — im `nav:`-Objekt:
+```typescript
+nav: {
+  tastings: "Tastings",
+  entdecken: "Entdecken",     // DE: Entdecken (NICHT Discover!)
+  meineWelt: "Meine Welt",    // DE: Meine Welt (NICHT My World!)
+  circle: "Circle",
+},
+```
+
+#### 3b — LabsLayout.tsx: Nav-Labels über i18n ausgeben
+
+```tsx
+// FALSCH (hart kodiert):
+<span>Discover</span>
+<span>My World</span>
+
+// RICHTIG (i18n):
+const { t } = useTranslation();
+// ...
+<span>{t('nav.entdecken')}</span>
+<span>{t('nav.meineWelt')}</span>
+```
+
+Alle vier Nav-Labels müssen über `t('nav.*')` übersetzt werden:
+```tsx
+const navItems = [
+  { path: '/labs',          label: t('nav.tastings'),   ... },
+  { path: '/labs/entdecken', label: t('nav.entdecken'),  ... },
+  { path: '/labs/taste',    label: t('nav.meineWelt'),  ... },
+  { path: '/labs/circle',   label: t('nav.circle'),     ... },
+];
+```
+
+---
+
+## SCHRITT 4 — Destillerien Map-View wiederherstellen
+
+### Problem
+In `LabsDistilleries.tsx` fehlt die Kartenansicht (Map View). Laut replit.md: **„List + map views, country filter chips, search, expandable detail cards."**
+
+### Lösung
+
+**Datei: `client/src/labs/pages/LabsDistilleries.tsx`**
+
+#### 4a — View-Toggle (Liste / Karte) oben einbauen:
+
+```tsx
+const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+// In der Render-Funktion:
+<div className="labs-segmented" style={{ marginBottom: '1rem' }}>
+  <button
+    className={`labs-segmented-btn ${viewMode === 'list' ? 'active' : ''}`}
+    onClick={() => setViewMode('list')}
+  >
+    {t('distilleries.listView')}  {/* "Liste" / "List" */}
+  </button>
+  <button
+    className={`labs-segmented-btn ${viewMode === 'map' ? 'active' : ''}`}
+    onClick={() => setViewMode('map')}
+  >
+    {t('distilleries.mapView')}   {/* "Karte" / "Map" */}
+  </button>
+</div>
+
+{viewMode === 'list' && <DistilleriesList distilleries={filtered} />}
+{viewMode === 'map'  && <DistilleriesMap  distilleries={filtered} />}
+```
+
+#### 4b — Map-Komponente (Leaflet oder SVG-basiert):
+
+Falls Leaflet bereits installiert (`leaflet` in package.json), verwende:
+
+```tsx
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
+function DistilleriesMap({ distilleries }: { distilleries: Distillery[] }) {
+  return (
+    <div style={{ height: '60vh', borderRadius: '12px', overflow: 'hidden', border: '0.5px solid var(--labs-border)' }}>
+      <MapContainer
+        center={[56.5, -4.5]}  // Schottland als Default
+        zoom={5}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='© OpenStreetMap contributors'
+        />
+        {distilleries
+          .filter(d => d.latitude && d.longitude)
+          .map(d => (
+            <Marker key={d.id} position={[d.latitude!, d.longitude!]}>
+              <Popup>
+                <strong>{d.name}</strong><br/>
+                {d.region}, {d.country}
+              </Popup>
+            </Marker>
+          ))
+        }
+      </MapContainer>
+    </div>
+  );
+}
+```
+
+Falls Leaflet NICHT installiert ist:
+```bash
+npm install leaflet react-leaflet @types/leaflet
+```
+
+Und CSS-Import in `index.html` oder Entry-File:
+```html
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+```
+
+#### 4c — i18n Keys für Destillerien:
+```typescript
+// EN:
+distilleries: {
+  listView: "List",
+  mapView: "Map",
+  searchPlaceholder: "Search distilleries...",
+  noResults: "No distilleries found.",
+  expandDetails: "Show details",
+}
+
+// DE:
+distilleries: {
+  listView: "Liste",
+  mapView: "Karte",
+  searchPlaceholder: "Destillerien suchen...",
+  noResults: "Keine Destillerien gefunden.",
+  expandDetails: "Details anzeigen",
+}
+```
+
+---
+
+## SCHRITT 5 — Alle Discover-Routen sicherstellen
+
+### Problem
+9 Discover-Sub-Pages müssen alle über `/labs/entdecken` erreichbar und in App.tsx registriert sein.
+
+### Lösung
+
+**Datei: `client/src/App.tsx`**
+
+Prüfe ob ALLE folgenden Routen registriert sind. Fehlende ergänzen:
+
+```tsx
+import LabsDiscover        from './labs/pages/LabsDiscover';
+import LabsEntdecken       from './labs/pages/LabsEntdecken';  // Hub-Seite
+import LabsLexicon         from './labs/pages/LabsLexicon';
+import LabsDistilleries    from './labs/pages/LabsDistilleries';
+import LabsBottlers        from './labs/pages/LabsBottlers';
+import LabsTemplates       from './labs/pages/LabsTemplates';
+import LabsGuide           from './labs/pages/LabsGuide';
+import LabsResearch        from './labs/pages/LabsResearch';
+import LabsRabbitHole      from './labs/pages/LabsRabbitHole';
+import LabsVocabulary      from './labs/pages/LabsVocabulary';
+
+// Routen:
+<Route path="/labs/entdecken"                  component={LabsEntdecken} />
+<Route path="/labs/discover"                   component={LabsDiscover} />
+<Route path="/labs/discover/lexicon"           component={LabsLexicon} />
+<Route path="/labs/discover/distilleries"      component={LabsDistilleries} />
+<Route path="/labs/discover/bottlers"          component={LabsBottlers} />
+<Route path="/labs/discover/templates"         component={LabsTemplates} />
+<Route path="/labs/discover/guide"             component={LabsGuide} />
+<Route path="/labs/discover/research"          component={LabsResearch} />
+<Route path="/labs/discover/rabbit-hole"       component={LabsRabbitHole} />
+<Route path="/labs/discover/vocabulary"        component={LabsVocabulary} />
+```
+
+---
+
+## SCHRITT 6 — Alle Meine-Welt/Taste-Routen sicherstellen
+
+**Datei: `client/src/App.tsx`**
+
+Prüfe und ergänze alle Taste-Sub-Routen:
+
+```tsx
+import LabsTaste             from './labs/pages/LabsTaste';
+import LabsTasteProfile      from './labs/pages/LabsTasteProfile';
+import LabsTasteAnalytics    from './labs/pages/LabsTasteAnalytics';
+import LabsTasteWheel        from './labs/pages/LabsTasteWheel';
+import LabsCompare           from './labs/pages/LabsCompare';
+import LabsConnoisseur       from './labs/pages/LabsConnoisseur';
+import LabsRecommendations   from './labs/pages/LabsRecommendations';
+import LabsPairings          from './labs/pages/LabsPairings';
+import LabsBenchmark         from './labs/pages/LabsBenchmark';
+import LabsCollectionAnalysis from './labs/pages/LabsCollectionAnalysis';
+import LabsAICuration        from './labs/pages/LabsAICuration';
+
+// Routen:
+<Route path="/labs/taste"                        component={LabsTaste} />
+<Route path="/labs/taste/profile"                component={LabsTasteProfile} />
+<Route path="/labs/taste/analytics"              component={LabsTasteAnalytics} />
+<Route path="/labs/taste/wheel"                  component={LabsTasteWheel} />
+<Route path="/labs/taste/compare"                component={LabsCompare} />
+<Route path="/labs/taste/connoisseur"            component={LabsConnoisseur} />
+<Route path="/labs/taste/recommendations"        component={LabsRecommendations} />
+<Route path="/labs/taste/pairings"               component={LabsPairings} />
+<Route path="/labs/taste/benchmark"              component={LabsBenchmark} />
+<Route path="/labs/taste/collection-analysis"    component={LabsCollectionAnalysis} />
+<Route path="/labs/taste/ai-curation"            component={LabsAICuration} />
+```
+
+---
+
+## SCHRITT 7 — Host-Routen sicherstellen
+
+```tsx
+import LabsDashboard         from './labs/pages/LabsDashboard';
+import LabsCalendar          from './labs/pages/LabsCalendar';
+import LabsHistory           from './labs/pages/LabsHistory';
+import LabsAdmin             from './labs/pages/LabsAdmin';
+
+// Routen:
+<Route path="/labs/dashboard"          component={LabsDashboard} />
+<Route path="/labs/calendar"           component={LabsCalendar} />
+<Route path="/labs/history"            component={LabsHistory} />
+<Route path="/labs/history/insights"   component={LabsHistory} />  {/* insights als Tab in LabsHistory */}
+<Route path="/labs/admin"              component={LabsAdmin} />
+```
+
+---
+
+## SCHRITT 8 — Entdecken Hub-Seite (LabsEntdecken.tsx)
+
+Falls `/labs/entdecken` noch nicht als eigene Seite existiert oder unvollständig ist:
+
+**Datei: `client/src/labs/pages/LabsEntdecken.tsx`**
+
+Diese Seite ist der Hub, der Explore + Discover zusammenfasst. Sie listet alle Unterseiten auf zwei Sektionen:
+
+```tsx
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
+
+export default function LabsEntdecken() {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  const whiskyItems = [
+    { label: t('discover.allWhiskies'), sub: t('discover.allWhiskiesSub'), path: '/labs/explore' },
+    { label: t('discover.compare'),     sub: t('discover.compareSub'),     path: '/labs/taste/compare' },
+  ];
+
+  const knowledgeItems = [
+    { label: t('discover.lexicon'),       sub: t('discover.lexiconSub'),       path: '/labs/discover/lexicon' },
+    { label: t('discover.distilleries'), sub: t('discover.distilleriesSub'),  path: '/labs/discover/distilleries' },
+    { label: t('discover.bottlers'),      sub: t('discover.bottlersSub'),      path: '/labs/discover/bottlers' },
+    { label: t('discover.guide'),         sub: t('discover.guideSub'),         path: '/labs/discover/guide' },
+    { label: t('discover.templates'),     sub: t('discover.templatesSub'),     path: '/labs/discover/templates' },
+    { label: t('discover.vocabulary'),    sub: t('discover.vocabularySub'),    path: '/labs/discover/vocabulary' },
+    { label: t('discover.research'),      sub: t('discover.researchSub'),      path: '/labs/discover/research' },
+    { label: t('discover.rabbitHole'),    sub: t('discover.rabbitHoleSub'),    path: '/labs/discover/rabbit-hole' },
+  ];
+
+  const renderItems = (items: typeof whiskyItems) => (
+    <div className="labs-grouped-list">
+      {items.map(item => (
+        <div
+          key={item.path}
+          className="labs-list-row"
+          onClick={() => navigate(item.path)}
+          style={{ cursor: 'pointer' }}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--labs-text-primary)' }}>
+              {item.label}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--labs-text-muted)', marginTop: '2px' }}>
+              {item.sub}
+            </div>
+          </div>
+          <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '1.5rem 1.25rem 6rem', maxWidth: '480px', margin: '0 auto' }}>
+      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+                  letterSpacing: '0.07em', color: 'var(--labs-text-muted)', marginBottom: '4px' }}>
+        {t('nav.entdecken')}
+      </p>
+      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 400,
+                   color: 'var(--labs-text-primary)', margin: '0 0 6px' }}>
+        {t('discover.title')}
+      </h1>
+      <p style={{ fontSize: '14px', color: 'var(--labs-text-muted)', marginBottom: '2rem' }}>
+        {t('discover.sub')}
+      </p>
+
+      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+                  letterSpacing: '0.07em', color: 'var(--labs-text-muted)', marginBottom: '0.75rem' }}>
+        {t('discover.whiskies')}
+      </p>
+      {renderItems(whiskyItems)}
+
+      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+                  letterSpacing: '0.07em', color: 'var(--labs-text-muted)', margin: '2rem 0 0.75rem' }}>
+        {t('discover.knowledge')}
+      </p>
+      {renderItems(knowledgeItems)}
+    </div>
+  );
+}
+```
+
+---
+
+## SCHRITT 9 — i18n Keys für Entdecken (vollständig)
+
+**Datei: `client/src/lib/i18n.ts`**
+
+Im **EN-Block** ergänzen:
+```typescript
+discover: {
+  title: "Whiskies & Knowledge",
+  sub: "Browse bottles or explore the world of whisky.",
+  whiskies: "Whiskies",
+  knowledge: "Knowledge",
+  allWhiskies: "All Whiskies",
+  allWhiskiesSub: "Browse community ratings",
+  compare: "Compare",
+  compareSub: "Your scores vs. platform median",
+  lexicon: "Lexicon",
+  lexiconSub: "Terms & definitions",
+  distilleries: "Distilleries",
+  distilleriesSub: "Map & details",
+  bottlers: "Bottlers",
+  bottlersSub: "Independent bottlers database",
+  guide: "Tasting Guide",
+  guideSub: "Step by step",
+  templates: "Templates",
+  templatesSub: "Notes & vocabulary cards",
+  vocabulary: "Vocabulary",
+  vocabularySub: "By region & style",
+  research: "Research",
+  researchSub: "The science of taste",
+  rabbitHole: "Rabbit Hole",
+  rabbitHoleSub: "Deep dives into whisky",
+},
+```
+
+Im **DE-Block** ergänzen:
+```typescript
+discover: {
+  title: "Whiskies & Wissen",
+  sub: "Stöbere durch Flaschen oder tauche in die Welt des Whiskys ein.",
+  whiskies: "Whiskies",
+  knowledge: "Wissen",
+  allWhiskies: "Alle Whiskies",
+  allWhiskiesSub: "Community-Bewertungen durchsuchen",
+  compare: "Vergleichen",
+  compareSub: "Deine Scores vs. Plattform-Median",
+  lexicon: "Lexikon",
+  lexiconSub: "Begriffe & Definitionen",
+  distilleries: "Destillerien",
+  distilleriesSub: "Karte & Details",
+  bottlers: "Abfüller",
+  bottlersSub: "Independent Bottler Datenbank",
+  guide: "Tasting-Guide",
+  guideSub: "Schritt für Schritt",
+  templates: "Vorlagen",
+  templatesSub: "Notiz- & Vokabelkarten",
+  vocabulary: "Wortschatz",
+  vocabularySub: "Nach Region & Stil",
+  research: "Forschung",
+  researchSub: "Die Wissenschaft des Geschmacks",
+  rabbitHole: "Rabbit Hole",
+  rabbitHoleSub: "Tiefer eintauchen",
+},
+```
+
+---
+
+## SCHRITT 10 — Abschluss-Verifikation
+
+Nach allen Änderungen folgende manuelle Tests durchführen:
+
+### ✅ ProfileMenu
+- [ ] Oben rechts sichtbar (Avatar oder Initialen-Kreis)
+- [ ] Dropdown öffnet sich mit: Profil, Einstellungen, Logout
+- [ ] Für Admin-User: "Admin" Link sichtbar → führt zu `/labs/admin`
+
+### ✅ Admin-Bereich
+- [ ] `/labs/admin` erreichbar (nur für isAdmin=true)
+- [ ] Tabs vorhanden: Participants / Making-Of / Sessions / Aromas
+- [ ] Sessions-Tab zeigt Activity Tracking
+
+### ✅ Navigation
+- [ ] DE aktiv → Nav zeigt: Tastings · Entdecken · Meine Welt · Circle
+- [ ] EN aktiv → Nav zeigt: Tastings · Discover · My World · Circle
+- [ ] Aktiver Tab hat Amber-Akzentfarbe + kleinen Punkt darunter
+
+### ✅ Entdecken
+- [ ] `/labs/entdecken` öffnet Hub mit zwei Sektionen
+- [ ] Alle 8 Wissen-Links funktionieren
+- [ ] `/labs/discover/distilleries` öffnet Seite mit Liste/Karte Toggle
+- [ ] Kartenansicht zeigt Destillerien als Marker auf OpenStreetMap
+
+### ✅ Meine Welt
+- [ ] `/labs/taste` öffnet persönlichen Snapshot
+- [ ] `/labs/taste/profile` → Radar-Chart
+- [ ] `/labs/taste/analytics` → Evolution Chart
+- [ ] `/labs/taste/connoisseur` → AI Report
+- [ ] `/labs/taste/compare` → Vergleich
+- [ ] `/labs/taste/recommendations` → Empfehlungen
+- [ ] `/labs/taste/collection-analysis` → Sammlung
+- [ ] `/labs/taste/pairings` → Pairings
+- [ ] `/labs/taste/ai-curation` → AI Curation
+
+### ✅ Host-Bereiche
+- [ ] `/labs/dashboard` → Host Dashboard
+- [ ] `/labs/calendar` → Kalender
+- [ ] `/labs/history` → Historisches Archiv
+- [ ] `/labs/history/insights` → Archiv-Insights
+
+### ✅ Entdecken Subseiten
+- [ ] `/labs/discover/lexicon`
+- [ ] `/labs/discover/distilleries` (mit Map-Toggle!)
+- [ ] `/labs/discover/bottlers`
+- [ ] `/labs/discover/guide`
+- [ ] `/labs/discover/templates`
+- [ ] `/labs/discover/vocabulary`
+- [ ] `/labs/discover/research`
+- [ ] `/labs/discover/rabbit-hole`
+
+---
+
+## WICHTIGE REGELN FÜR REPLIT
+
+1. **Nichts löschen** — nur ergänzen und reparieren
+2. **Keine eigenen Vereinfachungen** — alle Features aus replit.md sind gewollt
+3. **Keine Emojis** — ausschließlich SVG-Icons
+4. **Balance-Dimension bleibt entfernt** — Scoring: Nase · Gaumen · Abgang · Gesamt
+5. **Alle i18n-Keys in beiden Sprachen** — kein EN-only
+6. **Min. 44px Touch-Targets** — alle interaktiven Elemente
+7. **ProfileMenu muss Admin-Link zeigen** — für isAdmin=true Teilnehmer
+
+---
+
+*Erstellt: 21.03.2026 — CaskSense V2 Vollständige Wiederherstellung*

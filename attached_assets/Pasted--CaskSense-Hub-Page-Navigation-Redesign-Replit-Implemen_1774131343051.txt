@@ -1,0 +1,500 @@
+# CaskSense – Hub-Page & Navigation Redesign
+## Replit Implementation Prompt
+
+---
+
+## Kontext
+
+Die aktuelle Labs-Startseite (`LabsLanding.tsx` oder die erste Seite unter `/labs/`) hat drei Probleme:
+1. **i18n kaputt** — Navigation zeigt "Discover" und "My World" auch wenn DE aktiv ist
+2. **Typografie nicht angewandt** — Playfair Display/Cormorant Garamond fehlen bei der Begrüßung
+3. **Design dünn** — zu viel ungenutzter Leerraum, Generic-Look, keine Tiefe
+
+---
+
+## CHANGE 1 — i18n-Keys für Navigation korrigieren
+
+**Datei: `client/src/lib/i18n.ts`**
+
+Prüfe und ergänze die folgenden Keys sowohl im EN- als auch im DE-Block:
+
+```typescript
+// EN-Block
+nav: {
+  tastings: "Tastings",
+  entdecken: "Discover",
+  meineWelt: "My World",
+  circle: "Circle",
+}
+
+// DE-Block
+nav: {
+  tastings: "Tastings",
+  entdecken: "Entdecken",
+  meineWelt: "Meine Welt",
+  circle: "Circle",
+}
+```
+
+**Datei: `client/src/labs/LabsLayout.tsx`**
+
+Stelle sicher, dass alle vier Bottom-Nav-Labels über `t('nav.tastings')` etc. übersetzt werden — keine hartkodierten englischen Strings.
+
+---
+
+## CHANGE 2 — Hub-Seite Typography & Layout
+
+**Datei: `client/src/labs/LabsLanding.tsx`** (oder äquivalente Hub-Komponente)
+
+### 2a — Google Fonts sicherstellen
+
+In `index.html` oder dem CSS-Entry prüfen, ob folgende Fonts geladen werden:
+
+```html
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+```
+
+### 2b — Begrüßungsbereich
+
+Ersetze die aktuelle Begrüßung ("Good evening / What would you like to do?") durch:
+
+```tsx
+<div className="labs-hub-greeting">
+  {/* Kleines Label oben — DM Sans, uppercase, muted */}
+  <p className="labs-hub-greeting-time">
+    {t('hub.greeting')} {/* z.B. "Guten Abend" / "Good evening" */}
+  </p>
+
+  {/* Name in Playfair Display */}
+  <h1 className="labs-hub-greeting-name">
+    {participant?.name ?? t('hub.guest')}
+  </h1>
+
+  {/* Stimmungs-Subtitle in Cormorant Garamond, kursiv */}
+  <p className="labs-hub-greeting-mood">
+    {t('hub.moodLine')} {/* DE: "Was bringst du heute zum Glas?" */}
+  </p>
+</div>
+```
+
+**CSS (labs-theme.css):**
+
+```css
+.labs-hub-greeting {
+  padding: 16px 0 24px;
+}
+
+.labs-hub-greeting-time {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--labs-text-muted);
+  margin: 0 0 4px;
+}
+
+.labs-hub-greeting-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--labs-text-primary);
+  margin: 0 0 6px;
+}
+
+.labs-hub-greeting-mood {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-style: italic;
+  color: var(--labs-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+```
+
+### 2c — i18n-Keys für Begrüßung
+
+```typescript
+// EN
+hub: {
+  greeting: "Good evening",
+  guest: "Guest",
+  moodLine: "What are you bringing to the glass tonight?",
+  joinTasting: "Join a tasting",
+  joinSub: "Enter a code and join",
+  soloDram: "Solo dram",
+  soloSub: "Taste a whisky on your own",
+  hostTasting: "Host a tasting",
+  hostSub: "Create and lead an event",
+  recentlyRated: "Recently rated",
+}
+
+// DE
+hub: {
+  greeting: "Guten Abend",
+  guest: "Gast",
+  moodLine: "Was bringst du heute zum Glas?",
+  joinTasting: "Tasting beitreten",
+  joinSub: "Code eingeben und loslegen",
+  soloDram: "Solo Dram",
+  soloSub: "Einen Whisky für dich allein verkosten",
+  hostTasting: "Tasting leiten",
+  hostSub: "Event erstellen und führen",
+  recentlyRated: "Zuletzt bewertet",
+}
+```
+
+---
+
+## CHANGE 3 — Action Cards visuell aufwerten
+
+### 3a — Keine Emojis (Pflicht!)
+
+Alle Emojis in der Flavour Journey (Phase 1, Category Sweep) und auf der Hub-Seite sind durch SVG-Icons zu ersetzen. **Keine Ausnahme.**
+
+Für die drei Hub-Karten:
+
+```tsx
+// JOIN-Icon
+const JoinIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 3L17 10L10 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 10H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+)
+
+// GLASS/SOLO-Icon
+const GlassIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M7 3h6l1.5 9H5.5L7 3Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5.5 15h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <path d="M10 12v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+)
+
+// HOST/STAR-Icon
+const HostIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2l2 5.5h5.5l-4.5 3.5 2 5.5L10 13.5 5 16.5l2-5.5L2.5 7.5H8L10 2Z"
+      stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+```
+
+### 3b — Card-Layout
+
+```tsx
+const actionCards = [
+  {
+    key: 'join',
+    icon: <JoinIcon />,
+    title: t('hub.joinTasting'),
+    sub: t('hub.joinSub'),
+    iconBg: 'labs-card-icon-join',
+    onClick: () => navigate('/labs/join'),
+  },
+  {
+    key: 'solo',
+    icon: <GlassIcon />,
+    title: t('hub.soloDram'),
+    sub: t('hub.soloSub'),
+    iconBg: 'labs-card-icon-solo',
+    onClick: () => navigate('/labs/solo'),
+  },
+  {
+    key: 'host',
+    icon: <HostIcon />,
+    title: t('hub.hostTasting'),
+    sub: t('hub.hostSub'),
+    iconBg: 'labs-card-icon-host',
+    onClick: () => navigate('/labs/host/new'),
+  },
+]
+
+return (
+  <div className="labs-hub-actions">
+    {actionCards.map(card => (
+      <button
+        key={card.key}
+        className="labs-hub-action-card"
+        onClick={card.onClick}
+        style={{ minHeight: 64 }} /* 44px touch-target: erfüllt durch padding */
+      >
+        <div className={`labs-hub-action-icon ${card.iconBg}`}>
+          {card.icon}
+        </div>
+        <div className="labs-hub-action-body">
+          <span className="labs-hub-action-title">{card.title}</span>
+          <span className="labs-hub-action-sub">{card.sub}</span>
+        </div>
+        <ChevronRightIcon />
+      </button>
+    ))}
+  </div>
+)
+```
+
+**CSS:**
+
+```css
+.labs-hub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.labs-hub-action-card {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  /* Style */
+  background: var(--labs-surface);
+  border: 0.5px solid var(--labs-border);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  /* Interaction */
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.labs-hub-action-card:active {
+  transform: scale(0.985);
+  background: var(--labs-surface-pressed);
+}
+
+.labs-hub-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Individuelle Icon-Farben */
+.labs-card-icon-join  { background: rgba(138, 106, 46, 0.12); color: #8A6A2E; }
+.labs-card-icon-solo  { background: rgba(74, 106, 138, 0.12); color: #4A6A8A; }
+.labs-card-icon-host  { background: rgba(138, 106, 46, 0.10); color: #8A6A2E; }
+
+/* Dark-Mode Anpassungen */
+.labs-dark .labs-card-icon-join  { background: rgba(196, 152, 72, 0.18); color: #C49848; }
+.labs-dark .labs-card-icon-solo  { background: rgba(100, 140, 180, 0.18); color: #648CB4; }
+.labs-dark .labs-card-icon-host  { background: rgba(196, 152, 72, 0.15); color: #C49848; }
+
+.labs-hub-action-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.labs-hub-action-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--labs-text-primary);
+  line-height: 1.3;
+}
+
+.labs-hub-action-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--labs-text-muted);
+  line-height: 1.3;
+}
+```
+
+---
+
+## CHANGE 4 — "Zuletzt bewertet" Section
+
+```tsx
+// Section Label
+<p className="labs-section-label">{t('hub.recentlyRated')}</p>
+
+// Dram items
+{recentDrams.map(dram => (
+  <div key={dram.id} className="labs-dram-item" onClick={() => navigate(...)}>
+    <div className="labs-dram-thumb">
+      {dram.imageUrl
+        ? <img src={dram.imageUrl} alt="" />
+        : <GlassIcon />
+      }
+    </div>
+    <div className="labs-dram-info">
+      <span className="labs-dram-name">{dram.name}</span>
+      <span className="labs-dram-date">
+        {new Date(dram.createdAt).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-GB')}
+      </span>
+    </div>
+    <span className={`labs-dram-score ${dram.overallScore >= 90 ? 'labs-dram-score--high' : ''}`}>
+      {dram.overallScore}
+    </span>
+  </div>
+))}
+```
+
+**CSS:**
+
+```css
+.labs-section-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--labs-text-muted);
+  margin: 0 0 10px;
+}
+
+.labs-dram-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--labs-surface);
+  border: 0.5px solid var(--labs-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  min-height: 52px; /* >= 44px touch target */
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.labs-dram-item:active { background: var(--labs-surface-pressed); }
+
+.labs-dram-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--labs-surface-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.labs-dram-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.labs-dram-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.labs-dram-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--labs-text-primary);
+}
+
+.labs-dram-date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--labs-text-muted);
+}
+
+.labs-dram-score {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--labs-amber);         /* Standard: amber/warm gold */
+}
+
+.labs-dram-score--high {
+  color: var(--labs-green);         /* >= 90: grün */
+}
+```
+
+---
+
+## CHANGE 5 — Bottom Navigation Labels
+
+**Datei: `client/src/labs/LabsLayout.tsx`**
+
+Alle vier Nav-Labels müssen über i18n-Keys übersetzt werden:
+
+```tsx
+const navItems = [
+  {
+    to: '/labs',
+    icon: <TastingsIcon />,
+    label: t('nav.tastings'),        // "Tastings" (beide Sprachen)
+  },
+  {
+    to: '/labs/entdecken',
+    icon: <EntdeckenIcon />,
+    label: t('nav.entdecken'),       // DE: "Entdecken", EN: "Discover"
+  },
+  {
+    to: '/labs/taste',
+    icon: <MeineWeltIcon />,
+    label: t('nav.meineWelt'),       // DE: "Meine Welt", EN: "My World"
+  },
+  {
+    to: '/labs/circle',
+    icon: <CircleIcon />,
+    label: t('nav.circle'),          // "Circle" (beide Sprachen)
+  },
+]
+```
+
+Sicherstellen, dass der aktive Tab den Amber-Akzent (`var(--labs-amber)`) erhält und ein kleiner Punkt als Aktivindikator unter dem Label erscheint.
+
+---
+
+## CHANGE 6 — Flavour Journey Emojis → SVG Icons
+
+**Datei: `client/src/labs/components/FlavourStudioSheet.tsx`** (Journey/Phase 1)
+
+In `JOURNEY_CATEGORY_ORDER` oder der Render-Funktion von Phase 1 jedes Emoji durch ein entsprechendes `<svg>`-Icon ersetzen. Beispiele:
+
+| Kategorie   | War (Emoji) | Neu (SVG-Pfad-Beschreibung)         |
+|-------------|-------------|--------------------------------------|
+| Fruity      | 🍎          | Stilisierter Apfel (Kreis + Stiel)   |
+| Floral      | 🌸          | Einfache 5-Blatt-Blüte               |
+| Sweet       | 🍯          | Honigtopf-Silhouette                 |
+| Smoky       | 💨          | Drei geschwungene Linien             |
+| Woody       | 🌳          | Einfacher Baum (Dreieck + Stiel)     |
+| Maritime    | 🌊          | Welle (einfache Kurve)               |
+| Spicy       | 🌶          | Chili-Silhouette                     |
+| Malty       | 🌾          | Ähre                                 |
+| Nutty       | 🥜          | Oval mit Mittellinie                 |
+| Herbal      | 🌿          | Blatt (geschwungener Pfad)           |
+| Earthy      | 🍄          | Pilz-Silhouette                      |
+| Creamy      | 🥛          | Einfaches Glas                       |
+| Mineral     | 💎          | Raute                                |
+
+Alle Icons als inline `<svg width="24" height="24">`, `stroke="currentColor"`, kein Fill, keine Emojis.
+
+---
+
+## Qualitäts-Checklist vor dem Commit
+
+- [ ] Navigation zeigt "Entdecken" und "Meine Welt" wenn DE aktiv
+- [ ] Begrüßung nutzt Playfair Display für den Namen
+- [ ] Stimmungszeile nutzt Cormorant Garamond, kursiv
+- [ ] Keine einzige Emoji-Verwendung in der App (grep auf: 🍎🌸💨🌳🌊🌶🌾🥜🌿🍄🥛💎🍯)
+- [ ] Action Cards min-height: 64px (Touch-Target ≥ 44px)
+- [ ] Dram-Items min-height: 52px (Touch-Target ≥ 44px)
+- [ ] Scores >= 90 erscheinen in Grün, darunter in Amber
+- [ ] Dark Mode: alle Farben invertieren korrekt
+- [ ] Kein "Balance" in Scoring-Dimensionen (Nase · Gaumen · Abgang · Gesamt)
+
+---
+
+*Prompt erstellt: 21.03.2026 — CaskSense V2 Hub Redesign*
