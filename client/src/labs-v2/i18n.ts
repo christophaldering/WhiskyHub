@@ -292,6 +292,78 @@ export interface Translations {
   resPresentStart: string;
   resPresentStop: string;
   resNext: string;
+  mwTastings: string;
+  mwRatings: string;
+  mwAvgScore: string;
+  mwActiveSince: string;
+  mwAiInsight: string;
+  mwProgress: string;
+  mwWhiskies: string;
+  mwProgressHint: string;
+  mwPalateDimensions: string;
+  mwProfile: string;
+  mwProfileDesc: string;
+  mwAnalytics: string;
+  mwAnalyticsDesc: string;
+  mwConnoisseur: string;
+  mwConnoisseurDesc: string;
+  mwJournal: string;
+  mwJournalDesc: string;
+  mwCompare: string;
+  mwCompareDesc: string;
+  mwCalendar: string;
+  mwCalendarDesc: string;
+  mwTasteProfile: string;
+  mwJustMe: string;
+  mwFriends: string;
+  mwGlobal: string;
+  mwConfidence: string;
+  mwStyleSnapshot: string;
+  mwMeanScore: string;
+  mwSpread: string;
+  mwTrend: string;
+  mwTrendRising: string;
+  mwTrendDropping: string;
+  mwTrendStable: string;
+  mwConsistency: string;
+  mwLocked: string;
+  mwLockedHint: string;
+  mwFlavourWheel: string;
+  mwClickDetail: string;
+  mwWhiskyCompare: string;
+  mwSearch: string;
+  mwSortBy: string;
+  mwSortDelta: string;
+  mwSortScore: string;
+  mwSortName: string;
+  mwFilterAll: string;
+  mwFilterAbove: string;
+  mwFilterBelow: string;
+  mwUserScore: string;
+  mwPlatformMedian: string;
+  mwDelta: string;
+  mwRecommendations: string;
+  mwMatchScore: string;
+  mwRegion: string;
+  mwCask: string;
+  mwPeat: string;
+  mwAge: string;
+  mwAbv: string;
+  mwJournalEntries: string;
+  mwNoEntries: string;
+  mwStartSolo: string;
+  mwCalendarTitle: string;
+  mwCalendarAll: string;
+  mwCalendarMine: string;
+  mwCalendarFriends: string;
+  mwProfileEdit: string;
+  mwNameLabel: string;
+  mwPhotoUpload: string;
+  mwLanguage: string;
+  mwSaveProfile: string;
+  mwSaved: string;
+  mwMonthlyAvg: string;
+  mwNRatings: string;
 }
 
 const de: Translations = {
@@ -586,6 +658,78 @@ const de: Translations = {
   resPresentStart: "Pr\u00e4sentation starten",
   resPresentStop: "Beenden",
   resNext: "Weiter",
+  mwTastings: "Tastings",
+  mwRatings: "Bewertungen",
+  mwAvgScore: "\u00d8 Score",
+  mwActiveSince: "Aktiv seit",
+  mwAiInsight: "KI-Einblick",
+  mwProgress: "Dein Fortschritt",
+  mwWhiskies: "Whiskies",
+  mwProgressHint: "Bewerte 10 Whiskies, um dein Geschmacksprofil freizuschalten.",
+  mwPalateDimensions: "Gaumen-Dimensionen",
+  mwProfile: "Profil",
+  mwProfileDesc: "Name, Foto & Sprache",
+  mwAnalytics: "Analytik",
+  mwAnalyticsDesc: "Zeitverl\u00e4ufe & Trends",
+  mwConnoisseur: "Kenner",
+  mwConnoisseurDesc: "Aromenrad & Geschmackskarte",
+  mwJournal: "Journal",
+  mwJournalDesc: "Alle Eintr\u00e4ge durchsuchen",
+  mwCompare: "Vergleich",
+  mwCompareDesc: "Deine Scores vs. Community",
+  mwCalendar: "Kalender",
+  mwCalendarDesc: "Tastings im \u00dcberblick",
+  mwTasteProfile: "Geschmacksprofil",
+  mwJustMe: "Nur ich",
+  mwFriends: "Freunde",
+  mwGlobal: "Global",
+  mwConfidence: "Konfidenz",
+  mwStyleSnapshot: "Stil-Snapshot",
+  mwMeanScore: "\u00d8 Bewertung",
+  mwSpread: "Spanne",
+  mwTrend: "Trend",
+  mwTrendRising: "Steigend",
+  mwTrendDropping: "Sinkend",
+  mwTrendStable: "Stabil",
+  mwConsistency: "Konstanz",
+  mwLocked: "Gesperrt",
+  mwLockedHint: "Bewerte mindestens 10 Whiskies, um diese Ansicht freizuschalten.",
+  mwFlavourWheel: "Aromenrad",
+  mwClickDetail: "Tippe f\u00fcr Details",
+  mwWhiskyCompare: "Whisky-Vergleich",
+  mwSearch: "Suchen\u2026",
+  mwSortBy: "Sortieren",
+  mwSortDelta: "Abweichung",
+  mwSortScore: "Score",
+  mwSortName: "Name",
+  mwFilterAll: "Alle",
+  mwFilterAbove: "\u00dcber \u00d8",
+  mwFilterBelow: "Unter \u00d8",
+  mwUserScore: "Dein Score",
+  mwPlatformMedian: "Plattform-Median",
+  mwDelta: "Abweichung",
+  mwRecommendations: "Empfehlungen",
+  mwMatchScore: "Match",
+  mwRegion: "Region",
+  mwCask: "Fass",
+  mwPeat: "Torf",
+  mwAge: "Alter",
+  mwAbv: "ABV",
+  mwJournalEntries: "Journal-Eintr\u00e4ge",
+  mwNoEntries: "Noch keine Eintr\u00e4ge vorhanden.",
+  mwStartSolo: "Ersten Dram erfassen",
+  mwCalendarTitle: "Tasting-Kalender",
+  mwCalendarAll: "Alle",
+  mwCalendarMine: "Meine",
+  mwCalendarFriends: "Freunde",
+  mwProfileEdit: "Profil bearbeiten",
+  mwNameLabel: "Name",
+  mwPhotoUpload: "Foto hochladen",
+  mwLanguage: "Sprache",
+  mwSaveProfile: "Speichern",
+  mwSaved: "Gespeichert!",
+  mwMonthlyAvg: "Monatlicher Durchschnitt",
+  mwNRatings: "Bewertungen",
 };
 
 const en: Translations = {
@@ -880,6 +1024,78 @@ const en: Translations = {
   resPresentStart: "Start Presentation",
   resPresentStop: "Stop",
   resNext: "Next",
+  mwTastings: "Tastings",
+  mwRatings: "Ratings",
+  mwAvgScore: "\u00d8 Score",
+  mwActiveSince: "Active since",
+  mwAiInsight: "AI Insight",
+  mwProgress: "Your progress",
+  mwWhiskies: "Whiskies",
+  mwProgressHint: "Rate 10 whiskies to unlock your taste profile.",
+  mwPalateDimensions: "Palate Dimensions",
+  mwProfile: "Profile",
+  mwProfileDesc: "Name, photo & language",
+  mwAnalytics: "Analytics",
+  mwAnalyticsDesc: "Trends & time series",
+  mwConnoisseur: "Connoisseur",
+  mwConnoisseurDesc: "Flavour wheel & taste map",
+  mwJournal: "Journal",
+  mwJournalDesc: "Browse all entries",
+  mwCompare: "Compare",
+  mwCompareDesc: "Your scores vs. community",
+  mwCalendar: "Calendar",
+  mwCalendarDesc: "Tastings at a glance",
+  mwTasteProfile: "Taste Profile",
+  mwJustMe: "Just me",
+  mwFriends: "Friends",
+  mwGlobal: "Global",
+  mwConfidence: "Confidence",
+  mwStyleSnapshot: "Style Snapshot",
+  mwMeanScore: "\u00d8 Rating",
+  mwSpread: "Spread",
+  mwTrend: "Trend",
+  mwTrendRising: "Rising",
+  mwTrendDropping: "Dropping",
+  mwTrendStable: "Stable",
+  mwConsistency: "Consistency",
+  mwLocked: "Locked",
+  mwLockedHint: "Rate at least 10 whiskies to unlock this view.",
+  mwFlavourWheel: "Flavour Wheel",
+  mwClickDetail: "Tap for details",
+  mwWhiskyCompare: "Whisky Compare",
+  mwSearch: "Search\u2026",
+  mwSortBy: "Sort by",
+  mwSortDelta: "Delta",
+  mwSortScore: "Score",
+  mwSortName: "Name",
+  mwFilterAll: "All",
+  mwFilterAbove: "Above \u00d8",
+  mwFilterBelow: "Below \u00d8",
+  mwUserScore: "Your score",
+  mwPlatformMedian: "Platform median",
+  mwDelta: "Delta",
+  mwRecommendations: "Recommendations",
+  mwMatchScore: "Match",
+  mwRegion: "Region",
+  mwCask: "Cask",
+  mwPeat: "Peat",
+  mwAge: "Age",
+  mwAbv: "ABV",
+  mwJournalEntries: "Journal Entries",
+  mwNoEntries: "No entries yet.",
+  mwStartSolo: "Log your first dram",
+  mwCalendarTitle: "Tasting Calendar",
+  mwCalendarAll: "All",
+  mwCalendarMine: "Mine",
+  mwCalendarFriends: "Friends",
+  mwProfileEdit: "Edit Profile",
+  mwNameLabel: "Name",
+  mwPhotoUpload: "Upload photo",
+  mwLanguage: "Language",
+  mwSaveProfile: "Save",
+  mwSaved: "Saved!",
+  mwMonthlyAvg: "Monthly Average",
+  mwNRatings: "Ratings",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };

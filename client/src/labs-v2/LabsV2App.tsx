@@ -9,6 +9,7 @@ import SoloFlow from "./screens/solo/SoloFlow";
 import HostWizard from "./screens/host/HostWizard";
 import LiveTasting from "./screens/live/LiveTasting";
 import ResultsScreen from "./screens/results/ResultsScreen";
+import MeineWeltScreen from "./screens/meinewelt/MeineWeltScreen";
 import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
@@ -116,7 +117,7 @@ export default function LabsV2App() {
   } else if (activeTab === "discover") {
     content = <PlaceholderTab variant="discover" />;
   } else if (activeTab === "world") {
-    content = <PlaceholderTab variant="world" />;
+    content = <MeineWeltScreen />;
   } else {
     content = <PlaceholderTab variant="circle" />;
   }
