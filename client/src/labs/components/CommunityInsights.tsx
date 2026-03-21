@@ -4,6 +4,7 @@ import { publicInsightsApi } from "@/lib/api";
 import { Star, TrendingUp, BarChart3, Flame, Users, Zap } from "lucide-react";
 import { Link } from "wouter";
 import WhiskyImage from "./WhiskyImage";
+import { useSession } from "@/lib/session";
 
 interface InsightsData {
   communityPulse: { totalRatings: number; totalWhiskies: number; totalTasters: number; avgOverall: number };
@@ -129,6 +130,7 @@ function DonutChart({ data, size = 80 }: { data: Record<string, number>; size?: 
 
 export default function CommunityInsights() {
   const { t } = useTranslation();
+  const { signedIn } = useSession();
 
   const { data: insights, isLoading } = useQuery<InsightsData>({
     queryKey: ["public-insights"],
@@ -198,7 +200,7 @@ export default function CommunityInsights() {
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{t("insights.avgScore")}</p>
             </div>
           </div>
-          <CtaBadge text={t("insights.ctaJoin")} />
+          <CtaBadge text={signedIn ? t("insights.ctaJoinLoggedIn") : t("insights.ctaJoin")} />
         </InsightCard>
 
         {topRated.length > 0 && (
@@ -220,7 +222,7 @@ export default function CommunityInsights() {
                 </div>
               ))}
             </div>
-            <CtaBadge text={t("insights.ctaVote")} />
+            <CtaBadge text={signedIn ? t("insights.ctaVoteLoggedIn") : t("insights.ctaVote")} />
           </InsightCard>
         )}
 
@@ -243,7 +245,7 @@ export default function CommunityInsights() {
                 </div>
               ))}
             </div>
-            <CtaBadge text={t("insights.ctaStart")} />
+            <CtaBadge text={signedIn ? t("insights.ctaStartLoggedIn") : t("insights.ctaStart")} />
           </InsightCard>
         )}
 
@@ -289,7 +291,7 @@ export default function CommunityInsights() {
                 <DonutChart data={flavorTrends.caskInfluences} size={80} />
               </div>
             )}
-            <CtaBadge text={t("insights.ctaVote")} />
+            <CtaBadge text={signedIn ? t("insights.ctaVoteLoggedIn") : t("insights.ctaVote")} />
           </InsightCard>
         )}
 
@@ -314,7 +316,7 @@ export default function CommunityInsights() {
                 </div>
               ))}
             </div>
-            <CtaBadge text={t("insights.ctaStart")} />
+            <CtaBadge text={signedIn ? t("insights.ctaStartLoggedIn") : t("insights.ctaStart")} />
           </InsightCard>
         )}
 
@@ -337,18 +339,18 @@ export default function CommunityInsights() {
         >
           <Zap style={{ width: 24, height: 24, color: "var(--labs-accent)", marginBottom: 8 }} />
           <p className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}>
-            {t("insights.ctaVote")}
+            {signedIn ? t("insights.ctaVoteHeadline") : t("insights.ctaVote")}
           </p>
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 14px" }}>
-            {t("insights.ctaStart")}
+            {signedIn ? t("insights.ctaVoteSubline") : t("insights.ctaStart")}
           </p>
-          <Link href="/labs/onboarding">
+          <Link href={signedIn ? "/labs/search" : "/labs/onboarding"}>
             <button
               className="labs-btn-primary"
               style={{ fontSize: 13, padding: "8px 20px", borderRadius: 20 }}
-              data-testid="button-insights-signup"
+              data-testid={signedIn ? "button-insights-find-whisky" : "button-insights-signup"}
             >
-              {t("insights.signUpFree")}
+              {signedIn ? t("insights.ctaVoteButton") : t("insights.signUpFree")}
             </button>
           </Link>
         </div>
