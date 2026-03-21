@@ -391,19 +391,20 @@ export default function LabsTasteCollection() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
         {(["all", "open", "closed", "empty"] as StatusFilter[]).map(sf => (
           <button key={sf} onClick={() => setStatusFilter(sf)}
             style={{ padding: "5px 12px", fontSize: 11, fontWeight: statusFilter === sf ? 600 : 400, color: statusFilter === sf ? "var(--labs-accent)" : "var(--labs-text-muted)", background: statusFilter === sf ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${statusFilter === sf ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
             data-testid={`labs-status-${sf}`}>{sf === "all" ? "All" : statusLabel(sf)}</button>
         ))}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-          {(["name", "rating", "price", "added"] as SortKey[]).map(sk => (
-            <button key={sk} onClick={() => setSortBy(sk)}
-              style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer" }}
-              data-testid={`labs-sort-${sk}`}>{sk.charAt(0).toUpperCase() + sk.slice(1)}</button>
-          ))}
-        </div>
+      </div>
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>Sort:</span>
+        {(["name", "rating", "price", "added"] as SortKey[]).map(sk => (
+          <button key={sk} onClick={() => setSortBy(sk)}
+            style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+            data-testid={`labs-sort-${sk}`}>{sk.charAt(0).toUpperCase() + sk.slice(1)}</button>
+        ))}
       </div>
 
       {selectMode && selectedIds.size > 0 && (
