@@ -247,3 +247,12 @@ iframe {
   animation: spotlight-pulse 1.5s ease-in-out infinite;
   border-radius: 8px;
 }
+
+.password-input::-webkit-credentials-auto-fill-button,
+.password-input::-webkit-textfield-decoration-container,
+.password-input::-ms-reveal,
+.password-input::-ms-clear {
+  display: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}

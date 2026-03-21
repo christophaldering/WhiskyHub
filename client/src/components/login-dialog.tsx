@@ -7,7 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 
 interface LoginDialogProps {
@@ -28,6 +28,10 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   useEffect(() => {
     if (open) {
       setIsReturning(authDialogTab !== 'register');
+    }
+    if (!open) {
+      setShowPin(false);
+      setShowNewPin(false);
     }
   }, [open, authDialogTab]);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
@@ -57,6 +61,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [blockedParticipantId, setBlockedParticipantId] = useState("");
   const [blockedResendLoading, setBlockedResendLoading] = useState(false);
   const [blockedResendSuccess, setBlockedResendSuccess] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -242,6 +248,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setResetEmail("");
     setResetCode("");
     setNewPin("");
+    setShowNewPin(false);
     setResetError("");
     setResetParticipantId("");
   };
@@ -504,16 +511,28 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('forgotPin.newPin')}</Label>
-                  <Input
-                    type="password"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    placeholder={t('forgotPin.newPinPlaceholder')}
-                    maxLength={6}
-                    className="bg-secondary/20"
-                    data-testid="input-new-pin"
-                    onKeyDown={(e) => e.key === "Enter" && handleForgotPinVerify()}
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showNewPin ? "text" : "password"}
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      placeholder={t('forgotPin.newPinPlaceholder')}
+                      maxLength={6}
+                      className="bg-secondary/20 pr-10 password-input"
+                      data-testid="input-new-pin"
+                      onKeyDown={(e) => e.key === "Enter" && handleForgotPinVerify()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPin(!showNewPin)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                      data-testid="button-toggle-new-pin-visibility"
+                      aria-label={showNewPin ? "PIN verbergen" : "PIN anzeigen"}
+                      aria-pressed={showNewPin}
+                    >
+                      {showNewPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {resetError && <p className="text-sm text-destructive" data-testid="text-reset-error">{resetError}</p>}
@@ -633,16 +652,28 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
 
           <div className="space-y-2">
             <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.pin')}</Label>
-            <Input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder={t('login.pinPlaceholder')}
-              maxLength={6}
-              className="bg-secondary/20"
-              data-testid="input-pin"
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            />
+            <div className="relative">
+              <Input
+                type={showPin ? "text" : "password"}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder={t('login.pinPlaceholder')}
+                maxLength={6}
+                className="bg-secondary/20 pr-10 password-input"
+                data-testid="input-pin"
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                data-testid="button-toggle-pin-visibility"
+                aria-label={showPin ? "PIN verbergen" : "PIN anzeigen"}
+                aria-pressed={showPin}
+              >
+                {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {!isReturning && (
               <p className="text-xs text-muted-foreground">{t('login.pinHint')}</p>
             )}
