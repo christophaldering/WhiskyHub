@@ -936,6 +936,20 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/:id/offline", async (req, res) => {
+    try {
+      const paramId = req.params.id;
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
+      if (!requesterId || requesterId !== paramId) return res.status(403).json({ message: "Forbidden" });
+      const participant = await storage.getParticipant(paramId);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      await storage.markOffline(participant.id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.get("/api/admin/user-activity", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string || req.query.participantId as string;
@@ -3406,7 +3420,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const authCheck = await requireOwnerOrAdmin(req, req.params.id);
       if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
       const friends = await storage.getWhiskyFriends(req.params.id);
-      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const thresholdAgo = new Date(Date.now() - 2.5 * 60 * 1000);
       const allParticipants = await Promise.all(
         friends.map(async (f: WhiskyFriend) => {
           let match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
@@ -3420,7 +3434,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           return { friendId: f.id, name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), email: f.email, participantId: match.id, lastSeenAt: match.lastSeenAt, photoUrl: friendPhoto };
         })
       );
-      const onlineFriends = allParticipants.filter((p) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
+      const onlineFriends = allParticipants.filter((p) => p && p.lastSeenAt && new Date(p.lastSeenAt) > thresholdAgo);
       res.json({ online: onlineFriends, count: onlineFriends.length });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unknown error";
@@ -3433,11 +3447,11 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const auth = await requireAuth(req);
       if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const selfId = auth.participant!.id;
-      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const thresholdAgo = new Date(Date.now() - 2.5 * 60 * 1000);
       const { db: dbInst } = await import("./db");
       const { sql: sqlTag } = await import("drizzle-orm");
       const result = await dbInst.execute(
-        sqlTag`SELECT id, name, last_seen_at FROM participants WHERE last_seen_at > ${fiveMinAgo.toISOString()} AND id != ${selfId} ORDER BY last_seen_at DESC LIMIT 50`
+        sqlTag`SELECT id, name, last_seen_at FROM participants WHERE last_seen_at > ${thresholdAgo.toISOString()} AND id != ${selfId} ORDER BY last_seen_at DESC LIMIT 50`
       );
       const rows = (result as any).rows || result;
       const online = rows.map((r: { id: string; name: string; last_seen_at: string }) => ({

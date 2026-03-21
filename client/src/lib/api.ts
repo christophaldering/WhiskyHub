@@ -52,6 +52,8 @@ export const participantApi = {
     fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
   heartbeat: (id: string, pageContext?: string) =>
     fetchJSON(`/participants/${id}/heartbeat`, { method: "POST", body: JSON.stringify({ pageContext }) }),
+  goOffline: (id: string) =>
+    fetchJSON(`/participants/${id}/offline`, { method: "POST", body: JSON.stringify({}) }),
 };
 
 // ===== Tastings =====

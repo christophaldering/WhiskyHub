@@ -227,7 +227,33 @@ function useHeartbeat() {
     const beat = () => { participantApi.heartbeat(pid, window.location.pathname).catch(() => {}); };
     beat();
     const interval = setInterval(beat, 120000);
-    return () => clearInterval(interval);
+
+    const goOffline = () => {
+      try {
+        const url = `/api/participants/${pid}/offline`;
+        const blob = new Blob([JSON.stringify({ participantId: pid })], { type: "application/json" });
+        navigator.sendBeacon(url, blob);
+      } catch {
+        participantApi.goOffline(pid).catch(() => {});
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        goOffline();
+      } else if (document.visibilityState === "visible") {
+        beat();
+      }
+    };
+
+    window.addEventListener("beforeunload", goOffline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", goOffline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [currentParticipant?.id]);
 }
 

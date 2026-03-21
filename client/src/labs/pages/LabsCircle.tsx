@@ -181,17 +181,26 @@ export default function LabsCircle() {
 
   const [selectedFriend, setSelectedFriend] = useState<OnlineFriend | null>(null);
 
-  const onlineFriendIds = useMemo(() => {
-    return new Set<string>((onlineData?.online || []).map((f) => f.friendId));
+  const filteredOnline = useMemo(() => {
+    const thresholdMs = 2.5 * 60 * 1000;
+    const now = Date.now();
+    return (onlineData?.online || []).filter((f) => {
+      if (!f.lastSeenAt) return false;
+      return now - new Date(f.lastSeenAt).getTime() < thresholdMs;
+    });
   }, [onlineData]);
+
+  const onlineFriendIds = useMemo(() => {
+    return new Set<string>(filteredOnline.map((f) => f.friendId));
+  }, [filteredOnline]);
 
   const onlineFriendsMap = useMemo(() => {
     const m = new Map<string, OnlineFriend>();
-    for (const f of onlineData?.online || []) m.set(f.friendId, f);
+    for (const f of filteredOnline) m.set(f.friendId, f);
     return m;
-  }, [onlineData]);
+  }, [filteredOnline]);
 
-  const onlineCount = onlineData?.count || onlineFriendIds.size;
+  const onlineCount = filteredOnline.length;
 
   const sharedSessions = useMemo(() => {
     return (tastings || [])
@@ -669,7 +678,7 @@ export default function LabsCircle() {
               </p>
               {onlineCount > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-                  {(onlineData?.online || []).map((of) => {
+                  {filteredOnline.map((of) => {
                     const initials = stripGuestSuffix(of.name).trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
                     return (
                       <button
