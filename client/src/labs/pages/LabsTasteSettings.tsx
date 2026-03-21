@@ -130,11 +130,11 @@ export default function LabsTasteSettings() {
     mutationFn: async (pin: string) => {
       if (!currentParticipant) return;
       const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, { method: "DELETE", headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant.id }, body: JSON.stringify({ pin }) });
-      if (!res.ok) { if (res.status === 403) throw new Error("INVALID_PIN"); const err = await res.json().catch(() => ({ message: "Request failed" })); throw new Error(err.message); }
+      if (!res.ok) { if (res.status === 403) throw new Error("INVALID_PIN"); const err = await res.json().catch(() => ({ message: t("m2.taste.settings.deleteAccountRequestFailed") })); throw new Error(err.message); }
       return res.json();
     },
-    onSuccess: async () => { toast({ title: "Account deleted" }); await signOut(); navigate("/labs"); },
-    onError: (error: Error) => { if (error.message === "INVALID_PIN") setDeletePinError("Incorrect PIN"); else toast({ title: error.message, variant: "destructive" }); },
+    onSuccess: async () => { toast({ title: t("m2.taste.settings.deleteAccountSuccess") }); await signOut(); navigate("/labs"); },
+    onError: (error: Error) => { if (error.message === "INVALID_PIN") setDeletePinError(t("m2.taste.settings.deleteAccountPinError")); else toast({ title: error.message, variant: "destructive" }); },
   });
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -353,27 +353,27 @@ export default function LabsTasteSettings() {
       </button>
 
       <div className="labs-card p-5">
-        <SectionHeading icon={Trash2} label="Data & Privacy" />
+        <SectionHeading icon={Trash2} label={t("m2.taste.settings.sectionData")} />
         <div className="flex flex-col gap-4 mt-3">
           <div>
             <button onClick={() => navigate("/labs/taste/downloads")} className="labs-btn-secondary w-full flex items-center justify-center gap-2" data-testid="button-labs-goto-downloads">
-              <ExternalLink className="w-3.5 h-3.5" /> Go to Downloads & Export
+              <ExternalLink className="w-3.5 h-3.5" /> {t("m2.taste.settings.exportDataLink")}
             </button>
           </div>
           <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
-            <p className="text-sm font-semibold mb-1" style={{ color: "var(--labs-danger)" }}>Delete Account</p>
-            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Permanently delete your account and all data</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: "var(--labs-danger)" }}>{t("m2.taste.settings.deleteAccount")}</p>
+            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.settings.deleteAccountDesc")}</p>
             {!deleteConfirm ? (
-              <button onClick={() => setDeleteConfirm(true)} style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, background: "transparent", color: "var(--labs-danger)", border: "1px solid var(--labs-danger)", borderRadius: 10, cursor: "pointer", opacity: 0.8 }} data-testid="button-labs-delete-account">Delete Account</button>
+              <button onClick={() => setDeleteConfirm(true)} style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, background: "transparent", color: "var(--labs-danger)", border: "1px solid var(--labs-danger)", borderRadius: 10, cursor: "pointer", opacity: 0.8 }} data-testid="button-labs-delete-account">{t("m2.taste.settings.deleteAccount")}</button>
             ) : (
               <div className="flex flex-col gap-2">
-                <p className="text-xs" style={{ color: "var(--labs-danger)" }}>Enter your PIN to confirm:</p>
+                <p className="text-xs" style={{ color: "var(--labs-danger)" }}>{t("m2.taste.settings.deleteAccountPinPrompt")}</p>
                 <input type="password" value={deletePin} onChange={(e) => { setDeletePin(e.target.value); setDeletePinError(""); }} maxLength={6} style={{ ...inputStyle, letterSpacing: 3, maxWidth: 200, borderColor: deletePinError ? "var(--labs-danger)" : undefined }} data-testid="input-labs-delete-pin" />
                 {deletePinError && <p className="text-xs" style={{ color: "var(--labs-danger)" }}>{deletePinError}</p>}
                 <div className="flex gap-2">
-                  <button onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>Cancel</button>
+                  <button onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>{t("m2.taste.settings.deleteAccountCancel")}</button>
                   <button onClick={() => deleteMutation.mutate(deletePin)} disabled={!deletePin || deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: !deletePin ? 0.5 : 1 }} data-testid="button-labs-confirm-delete-account">
-                    {deleteMutation.isPending ? "..." : "Confirm Delete"}
+                    {deleteMutation.isPending ? "..." : t("m2.taste.settings.deleteAccountConfirmButton")}
                   </button>
                 </div>
               </div>
