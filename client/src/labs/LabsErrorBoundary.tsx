@@ -3,6 +3,8 @@ import { Wine, RefreshCw } from "lucide-react";
 
 interface Props {
   children: ReactNode;
+  overlay?: boolean;
+  onClose?: () => void;
 }
 
 interface State {
@@ -71,16 +73,16 @@ export default class LabsErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
+      const content = (
         <div
           className="labs-fade-in"
           style={{
-            minHeight: "60vh",
+            minHeight: this.props.overlay ? undefined : "60vh",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "48px 24px",
+            padding: this.props.overlay ? "32px 24px" : "48px 24px",
             textAlign: "center",
           }}
         >
@@ -116,16 +118,61 @@ export default class LabsErrorBoundary extends Component<Props, State> {
               <RefreshCw className="w-4 h-4" />
               {this.state.isChunkError ? "Reload Page" : "Try Again"}
             </button>
-            <a
-              href="/labs"
-              className="labs-btn-ghost"
-              data-testid="labs-error-boundary-home"
-            >
-              Back to Labs
-            </a>
+            {this.props.overlay && this.props.onClose ? (
+              <button
+                className="labs-btn-ghost"
+                onClick={this.props.onClose}
+                data-testid="labs-error-boundary-close"
+              >
+                Close
+              </button>
+            ) : (
+              <a
+                href="/labs"
+                className="labs-btn-ghost"
+                data-testid="labs-error-boundary-home"
+              >
+                Back to Labs
+              </a>
+            )}
           </div>
         </div>
       );
+
+      if (this.props.overlay) {
+        return (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 200,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && this.props.onClose) {
+                this.props.onClose();
+              }
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                background: "var(--labs-surface, #1a1a2e)",
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
+            >
+              {content}
+            </div>
+          </div>
+        );
+      }
+
+      return content;
     }
 
     return this.props.children;

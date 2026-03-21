@@ -139,7 +139,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [session, setSession] = useState(getSession());
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+  const [error, setErrorRaw] = useState("");
+  const setError = useCallback((v: unknown) => {
+    setErrorRaw(typeof v === "string" ? v : v != null ? String(v) : "");
+  }, []);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<MenuView>("main");
   const [currentTheme, setCurrentTheme] = useState<ThemeName>(getTheme());
@@ -752,10 +755,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           data-testid="m2-guest-consent"
         />
         <span style={{ fontSize: 11, color: tv.muted, lineHeight: 1.4 }}>
-          {t('login.privacyConsentLabel')}{" "}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.privacyConsentLink')}</a>{" "}
-          {t('login.andThe')}{" "}
-          <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{t('login.termsConsentLink')}</a>
+          {String(t('login.privacyConsentLabel'))}{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{String(t('login.privacyConsentLink'))}</a>{" "}
+          {String(t('login.andThe'))}{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: tv.accent, textDecoration: "underline" }}>{String(t('login.termsConsentLink'))}</a>
         </span>
       </label>
       <button

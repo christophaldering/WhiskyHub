@@ -934,9 +934,11 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </nav>
       )}
 
-      <LabsErrorBoundary>
-        <M2ProfileMenu open={profileOpen} onClose={() => setProfileOpen(false)} />
-      </LabsErrorBoundary>
+      {profileOpen && (
+        <LabsErrorBoundary overlay onClose={() => setProfileOpen(false)}>
+          <M2ProfileMenu open onClose={() => setProfileOpen(false)} />
+        </LabsErrorBoundary>
+      )}
       <LabsErrorBoundary>
         <LabsGlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
       </LabsErrorBoundary>
