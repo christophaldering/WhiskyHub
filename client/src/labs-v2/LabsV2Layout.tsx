@@ -191,25 +191,26 @@ export default function LabsV2Layout({ children, activeTab, onTabChange, hideTab
                 </button>
               </div>
               <button
-                onClick={toggleTheme}
-                data-testid="v2-theme-toggle"
+                onClick={onLogoClick}
+                data-testid="v2-profile-btn"
                 style={{
-                  minHeight: 32,
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: `rgba(196,160,80,0.15)`,
+                  border: `1.5px solid ${th.gold}`,
+                  color: th.gold,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: FONT.body,
+                  cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "none",
-                  border: `1px solid ${th.border}`,
-                  borderRadius: RADIUS.full,
-                  color: th.text,
-                  cursor: "pointer",
-                  padding: `0 ${SP.sm}px`,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  fontFamily: FONT.body,
+                  flexShrink: 0,
                 }}
               >
-                {mode === "dark" ? t.lightMode : t.darkMode}
+                C
               </button>
             </div>
           </header>
