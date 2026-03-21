@@ -241,6 +241,57 @@ export interface Translations {
   liveSaveError: string;
   liveNextDram: string;
   livePrevDram: string;
+  resTitle: string;
+  resInsightsTitle: string;
+  resInsightsTab: string;
+  resRecapTab: string;
+  resReportTabLabel: string;
+  resStoryTab: string;
+  resPresentTab: string;
+  resOverview: string;
+  resVsGroup: string;
+  resPriceReveal: string;
+  resProfile: string;
+  resYourAvg: string;
+  resGroupAvg: string;
+  resGroup: string;
+  resRatings: string;
+  resTopWhisky: string;
+  resLowestWhisky: string;
+  resStrongestDim: string;
+  resBiggestOutlier: string;
+  resPriceSurprise: string;
+  resCaskPreference: string;
+  resYourRange: string;
+  resRecapTitle: string;
+  resTopRated: string;
+  resMostDivisive: string;
+  resAverages: string;
+  resParticipants: string;
+  resPdf: string;
+  resShare: string;
+  resPrint: string;
+  resCopied: string;
+  resConnoisseurTitle: string;
+  resConnoisseurEmpty: string;
+  resGenerate: string;
+  resGenerating: string;
+  resRegenerate: string;
+  resReportTab: string;
+  resWhiskiesTab: string;
+  resAromasTab: string;
+  resHistoryTab: string;
+  resNoData: string;
+  resLoading: string;
+  resRetry: string;
+  resNarrativeTitle: string;
+  resNarrativeEmpty: string;
+  resGenerateNarrative: string;
+  resPresentTitle: string;
+  resPresentDesc: string;
+  resPresentStart: string;
+  resPresentStop: string;
+  resNext: string;
 }
 
 const de: Translations = {
@@ -484,6 +535,57 @@ const de: Translations = {
   liveSaveError: "Speichern fehlgeschlagen",
   liveNextDram: "N\u00e4chster Dram \u2192",
   livePrevDram: "\u2190 Vorheriger Dram",
+  resTitle: "Ergebnisse",
+  resInsightsTitle: "Deine Aha-Momente",
+  resInsightsTab: "Insights",
+  resRecapTab: "Recap",
+  resReportTabLabel: "Connoisseur",
+  resStoryTab: "Story",
+  resPresentTab: "Pr\u00e4sentation",
+  resOverview: "\u00dcbersicht",
+  resVsGroup: "Du vs. Gruppe",
+  resPriceReveal: "Preis-Ranking",
+  resProfile: "Dein Profil",
+  resYourAvg: "Dein Schnitt",
+  resGroupAvg: "Gruppenschnitt",
+  resGroup: "Gruppe",
+  resRatings: "Bewertungen",
+  resTopWhisky: "Favorit",
+  resLowestWhisky: "Niedrigster",
+  resStrongestDim: "St\u00e4rkste Dimension",
+  resBiggestOutlier: "Gr\u00f6\u00dfter Ausrei\u00dfer",
+  resPriceSurprise: "Preis-\u00dcberraschung!",
+  resCaskPreference: "Fass-Pr\u00e4ferenz",
+  resYourRange: "Deine Spannweite",
+  resRecapTitle: "Tasting Recap",
+  resTopRated: "Top bewertet",
+  resMostDivisive: "Am kontroversesten",
+  resAverages: "Durchschnitte",
+  resParticipants: "Teilnehmer",
+  resPdf: "PDF",
+  resShare: "Teilen",
+  resPrint: "Drucken",
+  resCopied: "Kopiert!",
+  resConnoisseurTitle: "Connoisseur-Bericht",
+  resConnoisseurEmpty: "Noch kein Bericht erstellt. Lass dir einen pers\u00f6nlichen Bericht generieren.",
+  resGenerate: "Bericht erstellen",
+  resGenerating: "Wird erstellt\u2026",
+  resRegenerate: "Neu erstellen",
+  resReportTab: "Bericht",
+  resWhiskiesTab: "Whiskies",
+  resAromasTab: "Aromen",
+  resHistoryTab: "Verlauf",
+  resNoData: "Keine Daten vorhanden",
+  resLoading: "Wird geladen\u2026",
+  resRetry: "Erneut versuchen",
+  resNarrativeTitle: "Session-Story",
+  resNarrativeEmpty: "Erstelle eine KI-generierte Geschichte \u00fcber dieses Tasting.",
+  resGenerateNarrative: "Story erstellen",
+  resPresentTitle: "Pr\u00e4sentationsmodus",
+  resPresentDesc: "Pr\u00e4sentiere die Ergebnisse Folie f\u00fcr Folie.",
+  resPresentStart: "Pr\u00e4sentation starten",
+  resPresentStop: "Beenden",
+  resNext: "Weiter",
 };
 
 const en: Translations = {
@@ -727,6 +829,57 @@ const en: Translations = {
   liveSaveError: "Save failed",
   liveNextDram: "Next Dram \u2192",
   livePrevDram: "\u2190 Previous Dram",
+  resTitle: "Results",
+  resInsightsTitle: "Your Aha Moments",
+  resInsightsTab: "Insights",
+  resRecapTab: "Recap",
+  resReportTabLabel: "Connoisseur",
+  resStoryTab: "Story",
+  resPresentTab: "Present",
+  resOverview: "Overview",
+  resVsGroup: "You vs. Group",
+  resPriceReveal: "Price Reveal",
+  resProfile: "Your Profile",
+  resYourAvg: "Your Average",
+  resGroupAvg: "Group Average",
+  resGroup: "Group",
+  resRatings: "Ratings",
+  resTopWhisky: "Favourite",
+  resLowestWhisky: "Lowest",
+  resStrongestDim: "Strongest Dimension",
+  resBiggestOutlier: "Biggest Outlier",
+  resPriceSurprise: "Price Surprise!",
+  resCaskPreference: "Cask Preference",
+  resYourRange: "Your Range",
+  resRecapTitle: "Tasting Recap",
+  resTopRated: "Top Rated",
+  resMostDivisive: "Most Divisive",
+  resAverages: "Averages",
+  resParticipants: "Participants",
+  resPdf: "PDF",
+  resShare: "Share",
+  resPrint: "Print",
+  resCopied: "Copied!",
+  resConnoisseurTitle: "Connoisseur Report",
+  resConnoisseurEmpty: "No report yet. Generate a personalised connoisseur report.",
+  resGenerate: "Generate Report",
+  resGenerating: "Generating...",
+  resRegenerate: "Regenerate",
+  resReportTab: "Report",
+  resWhiskiesTab: "Whiskies",
+  resAromasTab: "Aromas",
+  resHistoryTab: "History",
+  resNoData: "No data available",
+  resLoading: "Loading...",
+  resRetry: "Retry",
+  resNarrativeTitle: "Session Story",
+  resNarrativeEmpty: "Generate an AI-crafted story about this tasting session.",
+  resGenerateNarrative: "Generate Story",
+  resPresentTitle: "Presentation Mode",
+  resPresentDesc: "Present results slide by slide to your group.",
+  resPresentStart: "Start Presentation",
+  resPresentStop: "Stop",
+  resNext: "Next",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };

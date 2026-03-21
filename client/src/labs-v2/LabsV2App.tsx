@@ -8,16 +8,34 @@ import { RatingFlow } from "./screens/rating/RatingFlow";
 import SoloFlow from "./screens/solo/SoloFlow";
 import HostWizard from "./screens/host/HostWizard";
 import LiveTasting from "./screens/live/LiveTasting";
+import ResultsScreen from "./screens/results/ResultsScreen";
 import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
-type SubScreen = null | "join" | "solo" | "host" | "rating" | "live";
+type SubScreen = null | "join" | "solo" | "host" | "rating" | "live" | "results";
 
 function SoloScreen({ onBack }: { onBack: () => void }) {
   const { th } = useV2Theme();
   const { t } = useV2Lang();
 
   return <SoloFlow th={th} t={t} onBack={onBack} />;
+}
+
+function ResultsScreenWrapper({ onBack }: { onBack: () => void }) {
+  const { th } = useV2Theme();
+  const { t, lang } = useV2Lang();
+
+  return (
+    <ResultsScreen
+      th={th}
+      t={t}
+      lang={lang}
+      tastingId="demo"
+      participantId="demo"
+      isHost={false}
+      onBack={onBack}
+    />
+  );
 }
 
 function RatingScreen({ onBack }: { onBack: () => void }) {
@@ -75,7 +93,9 @@ export default function LabsV2App() {
 
   let content: React.ReactNode;
 
-  if (subScreen === "join") {
+  if (subScreen === "results") {
+    content = <ResultsScreenWrapper onBack={goBack} />;
+  } else if (subScreen === "join") {
     content = <JoinFlow onBack={goBack} onEnterLive={handleEnterLive} />;
   } else if (subScreen === "live" && activeTastingId) {
     content = <LiveTasting tastingId={activeTastingId} onBack={goBack} />;
