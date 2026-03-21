@@ -8,7 +8,6 @@ import { signOut, updateSessionPhotoUrl } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
-import { useLabsBack } from "@/labs/LabsLayout";
 import { downloadBlob } from "@/lib/download";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import ScaleBadge from "@/labs/components/ScaleBadge";
@@ -27,7 +26,9 @@ export default function LabsTasteSettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const goBack = useLabsBack("/labs/taste/profile");
+  const goBack = useCallback(() => {
+    navigate("/labs/taste/profile");
+  }, [navigate]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
