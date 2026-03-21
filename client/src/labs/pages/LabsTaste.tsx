@@ -469,10 +469,10 @@ export default function LabsTaste() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
-        {t("myTastePage.title", "My World")}
+        {t("myTastePage.title", "My Whisky")}
       </h1>
       <p className="text-sm mb-4 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
-        {t("myTastePage.subtitle", "Your personal whisky world")}
+        {t("myTastePage.subtitle", "Your personal whisky collection & insights")}
       </p>
       {!analyticsLocked && flavorProfile?.hasMultipleScales && (
         <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="taste-normalized-hint">

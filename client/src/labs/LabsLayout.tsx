@@ -113,8 +113,8 @@ function NavIconCircle({ active }: { active: boolean }) {
 
 const NAV_ITEMS = [
   { href: "/labs/tastings", icon: "glencairn" as const, labelKey: "nav.tastings" },
+  { href: "/labs/taste", icon: "meinewelt" as const, labelKey: "nav.myWhisky" },
   { href: "/labs/entdecken", icon: "entdecken" as const, labelKey: "nav.discover" },
-  { href: "/labs/taste", icon: "meinewelt" as const, labelKey: "nav.myWorld" },
   { href: "/labs/circle", icon: "circle" as const, labelKey: "nav.circle" },
 ];
 

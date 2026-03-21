@@ -48,20 +48,6 @@ export default function LabsEntdecken() {
           </div>
           <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
         </div>
-        <div
-          className="labs-list-row"
-          onClick={() => navigate('/labs/taste/compare')}
-          style={{ cursor: 'pointer' }}
-          data-testid="link-entdecken-compare"
-        >
-          <div>
-            <div className="ty-ui">{t('discover.compare')}</div>
-            <div className="ty-caption" style={{ marginTop: '2px', opacity: 0.6 }}>
-              {t('discover.compareSub')}
-            </div>
-          </div>
-          <span style={{ opacity: 0.3, fontSize: '16px' }}>›</span>
-        </div>
       </div>
 
       <p className="ty-label" style={{ marginBottom: '0.75rem' }}>

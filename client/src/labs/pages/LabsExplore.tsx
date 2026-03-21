@@ -2,28 +2,26 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Star, ChevronRight, ChevronDown, Archive, BookOpen, Globe, Heart } from "lucide-react";
+import { Search, Star, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
-import { exploreApi, collectionApi, journalApi, tastingHistoryApi, wishlistApi, getParticipantId } from "@/lib/api";
+import { exploreApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type SortOption = "alphabetical" | "alphabetical_desc" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
-type ExploreTab = "bottles" | "drams" | "wishlist" | "all";
-type DramFilter = "all" | "solo" | "tasting";
+type ExploreTab = "all";
 
 const BATCH_SIZE = 50;
 
 export default function LabsExplore() {
   const { t } = useTranslation();
   const [location, navigate] = useLocation();
-  const pid = getParticipantId();
   const getQueryParam = () => {
     try {
       return new URLSearchParams(window.location.search).get("q") || "";
     } catch { return ""; }
   };
   const initialQuery = getQueryParam();
-  const [activeTab, setActiveTab] = useState<ExploreTab>(initialQuery ? "all" : (pid ? "bottles" : "all"));
+  const [activeTab, setActiveTab] = useState<ExploreTab>("all");
   const [searchText, setSearchText] = useState(initialQuery);
 
   useEffect(() => {
@@ -38,7 +36,6 @@ export default function LabsExplore() {
   const [displayLimit, setDisplayLimit] = useState(BATCH_SIZE);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortBtnRef = useRef<HTMLButtonElement>(null);
-  const [dramFilter, setDramFilter] = useState<DramFilter>("all");
   const listTopRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -46,30 +43,6 @@ export default function LabsExplore() {
     queryKey: ["labs-explore-whiskies", searchText, selectedRegion],
     queryFn: () => exploreApi.getWhiskies(searchText || undefined, selectedRegion || undefined),
     enabled: activeTab === "all",
-  });
-
-  const { data: collectionItems, isLoading: isLoadingCollection } = useQuery({
-    queryKey: ["labs-explore-collection", pid],
-    queryFn: () => collectionApi.getAll(pid!),
-    enabled: !!pid && activeTab === "bottles",
-  });
-
-  const { data: journalItems, isLoading: isLoadingJournal } = useQuery({
-    queryKey: ["labs-explore-journal", pid],
-    queryFn: () => journalApi.getAll(pid!),
-    enabled: !!pid && activeTab === "drams",
-  });
-
-  const { data: tastingHistory, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ["labs-explore-tasting-history", pid],
-    queryFn: () => tastingHistoryApi.get(pid!),
-    enabled: !!pid && activeTab === "drams",
-  });
-
-  const { data: wishlistItems, isLoading: isLoadingWishlist } = useQuery({
-    queryKey: ["labs-explore-wishlist", pid],
-    queryFn: () => wishlistApi.getAll(pid!),
-    enabled: !!pid && activeTab === "wishlist",
   });
 
   const regions = useMemo(() => {
@@ -148,80 +121,7 @@ export default function LabsExplore() {
     setShowSortMenu(false);
   }, []);
 
-  const filteredCollection = useMemo(() => {
-    if (!collectionItems || !Array.isArray(collectionItems)) return [];
-    if (!searchText.trim()) return collectionItems;
-    const q = searchText.toLowerCase();
-    return collectionItems.filter((item: any) =>
-      (item.name || "").toLowerCase().includes(q) ||
-      (item.brand || "").toLowerCase().includes(q) ||
-      (item.distillery || "").toLowerCase().includes(q)
-    );
-  }, [collectionItems, searchText]);
-
-  const dramsData = useMemo(() => {
-    const entries: any[] = [];
-    if (journalItems && Array.isArray(journalItems)) {
-      for (const j of journalItems) {
-        entries.push({
-          id: j.id,
-          name: j.whiskyName || j.title,
-          distillery: j.distillery,
-          score: j.personalScore,
-          occasion: j.occasion,
-          source: "journal",
-          date: j.createdAt,
-          imageUrl: j.imageUrl,
-        });
-      }
-    }
-    const historyTastings = (tastingHistory as any)?.tastings || (Array.isArray(tastingHistory) ? tastingHistory : []);
-    if (historyTastings.length > 0) {
-      for (const t of historyTastings) {
-        for (const w of (t.whiskies || [])) {
-          entries.push({
-            id: `rating-${w.id}-${t.id}`,
-            name: w.name || w.whiskyName || "—",
-            distillery: w.distillery || null,
-            score: w.overall ?? w.personalScore ?? (w.myRating ? w.myRating.overall : null),
-            occasion: null,
-            source: "tasting",
-            tastingTitle: t.title,
-            date: t.date || t.createdAt,
-            imageUrl: w.imageUrl || null,
-          });
-        }
-      }
-    }
-    entries.sort((a, b) => {
-      const da = a.date ? new Date(a.date).getTime() : 0;
-      const db = b.date ? new Date(b.date).getTime() : 0;
-      return db - da;
-    });
-    let filtered = entries;
-    if (dramFilter === "solo") filtered = filtered.filter(e => e.source === "journal");
-    else if (dramFilter === "tasting") filtered = filtered.filter(e => e.source === "tasting");
-    if (searchText.trim()) {
-      const q = searchText.toLowerCase();
-      filtered = filtered.filter(e =>
-        (e.name || "").toLowerCase().includes(q) ||
-        (e.distillery || "").toLowerCase().includes(q)
-      );
-    }
-    return filtered;
-  }, [journalItems, tastingHistory, searchText, dramFilter]);
-
-  const filteredWishlist = useMemo(() => {
-    if (!wishlistItems || !Array.isArray(wishlistItems)) return [];
-    if (!searchText.trim()) return wishlistItems;
-    const q = searchText.toLowerCase();
-    return wishlistItems.filter((item: any) =>
-      (item.name || "").toLowerCase().includes(q) ||
-      (item.distillery || "").toLowerCase().includes(q)
-    );
-  }, [wishlistItems, searchText]);
-
-  const isLoading = activeTab === "all" ? isLoadingAll : activeTab === "bottles" ? isLoadingCollection : activeTab === "wishlist" ? isLoadingWishlist : (isLoadingJournal || isLoadingHistory);
+  const isLoading = isLoadingAll;
 
   const sortLabels: Record<SortOption, string> = {
     alphabetical: t("explore.sortAZ", "A\u2013Z"),
@@ -234,34 +134,11 @@ export default function LabsExplore() {
     most_rated: t("explore.sortMostRated", "Most Rated"),
   };
 
-  const tabs: { key: ExploreTab; label: string; icon: any }[] = pid
-    ? [
-        { key: "bottles", label: t("myTastePage.myBottles"), icon: Archive },
-        { key: "drams", label: t("myTastePage.myDrams"), icon: BookOpen },
-        { key: "wishlist", label: t("myTastePage.wishlist"), icon: Heart },
-        { key: "all", label: t("myTastePage.database", "Database"), icon: Globe },
-      ]
-    : [{ key: "all", label: t("myTastePage.database", "Database"), icon: Globe }];
+  const tabs: { key: ExploreTab; label: string; icon: any }[] = [
+    { key: "all", label: t("myTastePage.database", "Database"), icon: Globe },
+  ];
 
-  const statusColors: Record<string, string> = {
-    open: "#4CAF50",
-    closed: "#9E9E9E",
-    empty: "#F44336",
-  };
-
-  const statusLabels: Record<string, string> = {
-    open: "Open",
-    closed: "Closed",
-    empty: "Empty",
-  };
-
-  const searchPlaceholder = activeTab === "all"
-    ? t("explore.searchDatabase", "Search by name, distillery, region\u2026")
-    : activeTab === "bottles"
-    ? t("explore.searchCollection", "Search your collection\u2026")
-    : activeTab === "wishlist"
-    ? t("explore.searchWishlist", "Search your wishlist\u2026")
-    : t("explore.searchDrams", "Search your drams\u2026");
+  const searchPlaceholder = t("explore.searchDatabase", "Search by name, distillery, region\u2026");
 
   return (
     <div className="labs-page-wide">
@@ -271,19 +148,13 @@ export default function LabsExplore() {
           style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}
           data-testid="labs-explore-title"
         >
-          Explore
+          {t("myTastePage.database", "Database")}
         </h1>
         <p
           className="labs-fade-in labs-stagger-1"
           style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0 }}
         >
-          {activeTab === "bottles"
-            ? t("myTastePage.collectionSubtitle")
-            : activeTab === "drams"
-            ? t("myTastePage.journalDesc")
-            : activeTab === "wishlist"
-            ? t("myTastePage.wishlistDesc")
-            : t("myTastePage.databaseDesc", "Browse all whiskies in the CaskSense database")}
+          {t("myTastePage.databaseDesc", "Browse all whiskies in the CaskSense database")}
         </p>
       </div>
 
@@ -562,255 +433,6 @@ export default function LabsExplore() {
         </>
       )}
 
-      {activeTab === "bottles" && !isLoading && (
-        <>
-          {filteredCollection.length === 0 && (
-            <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-collection-empty">
-              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-                <rect x="8" y="10" width="24" height="20" rx="3" fill="currentColor" opacity="0.1"/>
-                <rect x="12" y="14" width="16" height="2" rx="1" fill="currentColor" opacity="0.15"/>
-                <rect x="12" y="20" width="10" height="2" rx="1" fill="currentColor" opacity="0.1"/>
-              </svg>
-              <h2 className="labs-empty-title">
-                {searchText ? "Keine Ergebnisse" : "Noch keine Flaschen"}
-              </h2>
-              <p className="labs-empty-sub">
-                {searchText ? "Passe deine Suche an." : "Füge Flaschen aus Tastings hinzu oder importiere deine Sammlung."}
-              </p>
-            </div>
-          )}
-          {filteredCollection.length > 0 && (
-            <>
-              <p className="text-xs font-medium mb-3 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-                {filteredCollection.length} {filteredCollection.length === 1 ? "bottle" : "bottles"}
-              </p>
-              <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-                {filteredCollection.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="labs-list-row"
-                    data-testid={`labs-explore-collection-${item.id}`}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={44} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.name}
-                      </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                        {(item.brand || item.distillery) && (
-                          <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{item.brand || item.distillery}</span>
-                        )}
-                        {item.statedAge && (
-                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{item.statedAge}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                      {item.status && (
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "2px 8px",
-                            borderRadius: 10,
-                            background: `${statusColors[item.status] || "#9E9E9E"}22`,
-                            color: statusColors[item.status] || "#9E9E9E",
-                          }}
-                          data-testid={`badge-collection-status-${item.id}`}
-                        >
-                          {statusLabels[item.status] || item.status}
-                        </span>
-                      )}
-                      {item.personalRating != null && item.personalRating > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                          <Star style={{ width: 12, height: 12, color: "var(--labs-accent)" }} />
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{item.personalRating}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {activeTab === "wishlist" && !isLoading && (
-        <>
-          {filteredWishlist.length === 0 && (
-            <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-wishlist-empty">
-              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-                <path d="M20 30 Q10 22 10 16 A6 6 0 0 1 20 14 A6 6 0 0 1 30 16 Q30 22 20 30Z"
-                  fill="currentColor" opacity="0.12"/>
-              </svg>
-              <h2 className="labs-empty-title">
-                {searchText ? t("myTastePage.noMatchingWishlist", "Keine Ergebnisse") : t("myTastePage.emptyWishlist", "Deine Wunschliste ist noch leer")}
-              </h2>
-              <p className="labs-empty-sub">
-                {searchText ? t("myTastePage.tryDifferentSearch", "Passe deine Suche an.") : t("myTastePage.wishlistHint", "Füge Whiskies hinzu, die du probieren möchtest.")}
-              </p>
-            </div>
-          )}
-          {filteredWishlist.length > 0 && (
-            <>
-              <p className="text-xs font-medium mb-3 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-                {filteredWishlist.length} {filteredWishlist.length === 1 ? "whisky" : "whiskies"}
-              </p>
-              <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-                {filteredWishlist.map((item: any) => {
-                  const priorityColors: Record<string, string> = { high: "#F44336", medium: "#FF9800", low: "#4CAF50" };
-                  const priorityLabels: Record<string, string> = { high: "High", medium: "Medium", low: "Low" };
-                  return (
-                    <div
-                      key={item.id}
-                      className="labs-list-row"
-                      data-testid={`labs-explore-wishlist-${item.id}`}
-                    >
-                      <div style={{ flexShrink: 0 }}>
-                        <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={44} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {item.name}
-                        </p>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                          {item.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{item.distillery}</span>}
-                          {item.region && (
-                            <span style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4 }}>
-                              {item.region}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                        {item.priority && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              padding: "2px 8px",
-                              borderRadius: 10,
-                              background: `${priorityColors[item.priority] || "#9E9E9E"}22`,
-                              color: priorityColors[item.priority] || "#9E9E9E",
-                            }}
-                            data-testid={`badge-wishlist-priority-${item.id}`}
-                          >
-                            {priorityLabels[item.priority] || item.priority}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {activeTab === "drams" && !isLoading && (
-        <>
-          <div className="labs-fade-in" style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-            {(["all", "solo", "tasting"] as DramFilter[]).map(f => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setDramFilter(f)}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "5px 12px",
-                  borderRadius: 20,
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  background: dramFilter === f ? "var(--labs-accent)" : "var(--labs-bg-secondary)",
-                  color: dramFilter === f ? "#fff" : "var(--labs-text-secondary)",
-                  transition: "all 0.15s",
-                }}
-                data-testid={`filter-dram-${f}`}
-              >
-                {f === "all" ? t("myTastePage.filterAll") : f === "solo" ? t("myTastePage.filterSolo") : t("myTastePage.filterTastings")}
-              </button>
-            ))}
-          </div>
-          {dramsData.length === 0 && (
-            <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-drams-empty">
-              <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-                <rect x="9" y="8" width="22" height="24" rx="2" fill="currentColor" opacity="0.1"/>
-                <rect x="13" y="13" width="14" height="1.5" rx="0.75" fill="currentColor" opacity="0.15"/>
-                <rect x="13" y="18" width="10" height="1.5" rx="0.75" fill="currentColor" opacity="0.1"/>
-                <rect x="13" y="23" width="12" height="1.5" rx="0.75" fill="currentColor" opacity="0.08"/>
-              </svg>
-              <h2 className="labs-empty-title">
-                {searchText ? "Keine Ergebnisse" : "Noch keine Drams"}
-              </h2>
-              <p className="labs-empty-sub">
-                {searchText ? "Passe deine Suche an." : "Deine Tastings und Drams erscheinen hier."}
-              </p>
-            </div>
-          )}
-          {dramsData.length > 0 && (
-            <>
-              <p className="text-xs font-medium mb-3 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-                {dramsData.length} {dramsData.length === 1 ? "dram" : "drams"}
-              </p>
-              <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-                {dramsData.map((entry: any) => (
-                  <div
-                    key={entry.id}
-                    className="labs-list-row"
-                    data-testid={`labs-explore-dram-${entry.id}`}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      <WhiskyImage imageUrl={entry.imageUrl} name={entry.name || ""} size={44} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {entry.name}
-                      </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
-                        {entry.distillery && <span style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>{entry.distillery}</span>}
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
-                          background: entry.source === "journal" ? "rgba(139, 92, 246, 0.15)" : "rgba(59, 130, 246, 0.15)",
-                          color: entry.source === "journal" ? "#8B5CF6" : "#3B82F6",
-                        }}>
-                          {entry.source === "journal" ? "Solo" : "Tasting"}
-                        </span>
-                        {entry.occasion && (
-                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{entry.occasion}</span>
-                        )}
-                      </div>
-                      {entry.tastingTitle && (
-                        <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {entry.tastingTitle}
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                      {entry.score != null && entry.score > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                          <Star style={{ width: 12, height: 12, color: "var(--labs-accent)" }} />
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{Math.round(entry.score)}</span>
-                        </div>
-                      )}
-                      {entry.date && (
-                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                          {new Date(entry.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
     </div>
   );
 }
