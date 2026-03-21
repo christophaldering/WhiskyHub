@@ -1,11 +1,40 @@
 import { useState, useCallback } from "react";
 import LabsV2Layout from "./LabsV2Layout";
+import { useV2Theme, useV2Lang } from "./LabsV2Layout";
 import TastingsHub from "./TastingsHub";
 import JoinFlow from "./JoinFlow";
 import PlaceholderTab from "./PlaceholderTab";
+import { RatingFlow } from "./screens/rating/RatingFlow";
+import type { RatingData } from "./types/rating";
 
 type TabId = "tastings" | "discover" | "world" | "circle";
 type SubScreen = null | "join" | "solo" | "host" | "rating";
+
+function RatingScreen({ onBack }: { onBack: () => void }) {
+  const { th } = useV2Theme();
+  const { t } = useV2Lang();
+  const [, setRatingResult] = useState<RatingData | null>(null);
+
+  return (
+    <RatingFlow
+      th={th}
+      t={t}
+      whisky={{
+        name: "Bunnahabhain 12",
+        region: "Islay",
+        cask: "Sherry",
+        blind: false,
+      }}
+      tastingId="demo"
+      dramIdx={1}
+      total={6}
+      tastingStatus="open"
+      participantId="demo"
+      onDone={(data) => { setRatingResult(data); }}
+      onBack={onBack}
+    />
+  );
+}
 
 export default function LabsV2App() {
   const [activeTab, setActiveTab] = useState<TabId>("tastings");
@@ -35,7 +64,9 @@ export default function LabsV2App() {
 
   if (subScreen === "join") {
     content = <JoinFlow onBack={goBack} onEnterLive={handleEnterLive} />;
-  } else if (subScreen === "solo" || subScreen === "host" || subScreen === "rating") {
+  } else if (subScreen === "rating") {
+    content = <RatingScreen onBack={goBack} />;
+  } else if (subScreen === "solo" || subScreen === "host") {
     content = <PlaceholderTab variant="discover" />;
   } else if (activeTab === "tastings") {
     content = (
