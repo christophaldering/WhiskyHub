@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
@@ -230,9 +230,9 @@ export default function LabsBenchmark() {
   if (!hasAccess) {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
-        <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Taste</button>
-        </Link>
+        </BackLink>
         <div className="labs-empty" data-testid="text-access-denied">
           <AlertCircle className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>This feature is available for hosts and admins only.</p>
@@ -252,11 +252,11 @@ export default function LabsBenchmark() {
 
   return (
     <div className="px-5 py-6 max-w-[900px] mx-auto" data-testid="labs-benchmark">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-benchmark">
           <ChevronLeft className="w-4 h-4" /> Taste
         </button>
-      </Link>
+      </BackLink>
 
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">

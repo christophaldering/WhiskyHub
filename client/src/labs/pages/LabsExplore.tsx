@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Search, Star, ChevronRight, ChevronDown, ChevronLeft, Globe, Filter, X } from "lucide-react";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { exploreApi } from "@/lib/api";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -231,11 +231,11 @@ export default function LabsExplore() {
 
   return (
     <div className="labs-page-wide">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-explore">
           <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
       <div style={{ marginBottom: 20 }}>
         <h1
           className="labs-serif labs-fade-in"

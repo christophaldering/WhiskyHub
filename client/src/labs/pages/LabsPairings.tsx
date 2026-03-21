@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import {
@@ -87,11 +87,11 @@ export default function LabsPairings() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-pairings">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-pairings">
           <ChevronLeft className="w-4 h-4" /> Taste
         </button>
-      </Link>
+      </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Utensils className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

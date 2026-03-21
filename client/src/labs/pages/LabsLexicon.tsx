@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown, ChevronLeft } from "lucide-react";
 import { lexiconData, categoryLabelsEn, categoryLabelsDe, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
 
@@ -27,11 +27,11 @@ export default function LabsLexicon() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-lexicon-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-lexicon">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />

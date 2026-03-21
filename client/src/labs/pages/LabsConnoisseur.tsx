@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { pidHeaders, profileApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -880,11 +880,11 @@ export default function LabsConnoisseur() {
 
   return (
     <div className="px-5 py-6 pb-24 max-w-2xl mx-auto" data-testid="labs-connoisseur">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-connoisseur">
           <ChevronLeft className="w-4 h-4" /> {t("common.back", "Back")}
         </button>
-      </Link>
+      </BackLink>
 
       {/* Cover Section */}
       <div className="labs-fade-in" style={{ marginBottom: 24 }}>

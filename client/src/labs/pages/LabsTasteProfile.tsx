@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -161,11 +161,11 @@ export default function LabsTasteProfile() {
   if (isLoading) {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
-        <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back">
             <ChevronLeft className="w-4 h-4" /> Taste
           </button>
-        </Link>
+        </BackLink>
         <div className="labs-card p-8 text-center">
           <div className="labs-spinner mx-auto" />
         </div>
@@ -212,11 +212,11 @@ export default function LabsTasteProfile() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-profile">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-profile">
           <ChevronLeft className="w-4 h-4" /> Taste
         </button>
-      </Link>
+      </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

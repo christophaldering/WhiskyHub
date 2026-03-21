@@ -1,6 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon, ExternalLink } from "lucide-react";
 
@@ -63,11 +63,11 @@ export default function LabsDistilleries() {
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>

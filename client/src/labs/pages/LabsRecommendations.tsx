@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -160,11 +160,11 @@ export default function LabsRecommendations() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-recommendations">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-recommendations">
           <ChevronLeft className="w-4 h-4" /> Taste
         </button>
-      </Link>
+      </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

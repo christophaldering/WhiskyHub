@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { ChevronLeft, X, Copy, Check, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 
 const CATEGORY_IDS = ["islay", "speyside", "sherry", "bourbon", "highland", "japanese"] as const;
@@ -708,11 +708,11 @@ export default function LabsVocabulary() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" style={{ paddingBottom: collectedTerms.length > 0 ? 140 : undefined }} data-testid="labs-flavour-map-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-flavour-map">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-flavour-map-title">

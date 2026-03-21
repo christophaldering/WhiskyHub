@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useSearch, useLocation } from "wouter";
+import { markBackNavigation } from "@/lib/navStack";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
@@ -143,7 +144,7 @@ export default function LabsPaperScan() {
       margin: "0 auto",
     }} data-testid="labs-paper-scan-page">
       <button
-        onClick={() => navigate(tastingId ? `/labs/tastings/${tastingId}` : "/labs/tastings")}
+        onClick={() => { markBackNavigation(); navigate(tastingId ? `/labs/tastings/${tastingId}` : "/labs/tastings"); }}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-paper-scan-back"

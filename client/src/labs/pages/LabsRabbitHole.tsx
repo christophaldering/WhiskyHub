@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { FlaskConical, SlidersHorizontal, BarChart3, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import type { ElementType } from "react";
 
 interface RCard { icon: ElementType; titleKey: string; descKey: string; href: string; testId: string; }
@@ -16,11 +17,11 @@ export default function LabsRabbitHole() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-rabbit-hole-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-rabbit-hole">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <FlaskConical style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />

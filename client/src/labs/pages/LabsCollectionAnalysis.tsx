@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
@@ -149,9 +149,9 @@ export default function LabsCollectionAnalysis() {
   if (items.length === 0) {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
-        <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-empty"><ChevronLeft className="w-4 h-4" /> Taste</button>
-        </Link>
+        </BackLink>
         <div className="labs-empty">
           <Library className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p className="labs-serif" style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>No Collection Yet</p>
@@ -245,11 +245,11 @@ export default function LabsCollectionAnalysis() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-collection-analysis">
-      <Link href="/labs/taste" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-collection">
           <ChevronLeft className="w-4 h-4" /> Taste
         </button>
-      </Link>
+      </BackLink>
 
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">

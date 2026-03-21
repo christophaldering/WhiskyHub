@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
 import { Map, ChevronLeft } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import aboutNose from "@/assets/images/about-nose.png";
 import aboutTaste from "@/assets/images/about-taste.png";
 import aboutReflect from "@/assets/images/about-reflect.png";
@@ -14,11 +14,11 @@ export default function LabsGuide() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-guide-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-guide">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 6 }}>

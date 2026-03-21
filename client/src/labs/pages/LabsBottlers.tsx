@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "wouter";
+import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
 import { bottlers, type Bottler } from "@/data/bottlers";
 import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink, ChevronLeft } from "lucide-react";
@@ -66,11 +66,11 @@ export default function LabsBottlers() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-bottlers-page">
-      <Link href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-bottlers">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
         </button>
-      </Link>
+      </BackLink>
 
       <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-bottlers-title">Independent Bottlers</h1>
       <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>Explore {bottlers.length} independent bottlers worldwide</p>

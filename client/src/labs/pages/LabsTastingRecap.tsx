@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { markBackNavigation } from "@/lib/navStack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { recapApi, collectionApi, getParticipantId } from "@/lib/api";
@@ -346,7 +347,7 @@ export default function LabsTastingRecap() {
       `}</style>
 
       <button
-        onClick={() => navigate(`/labs/tastings/${tastingId}`)}
+        onClick={() => { markBackNavigation(); navigate(`/labs/tastings/${tastingId}`); }}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="button-recap-back"

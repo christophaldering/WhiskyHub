@@ -576,8 +576,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       if (savedY != null && savedY > 0) {
         let attempts = 0;
-        const maxAttempts = 25;
-        const interval = 20;
+        const maxAttempts = 50;
+        const interval = 30;
         const tryScroll = () => {
           if (document.documentElement.scrollHeight >= savedY + window.innerHeight * 0.5 || attempts >= maxAttempts) {
             window.scrollTo(0, savedY);
