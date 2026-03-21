@@ -11,7 +11,6 @@ export default function LabsEntdecken() {
     { key: 'guide',         path: '/labs/discover/guide' },
     { key: 'templates',     path: '/labs/discover/templates' },
     { key: 'vocabulary',    path: '/labs/discover/flavour-map' },
-    { key: 'research',      path: '/labs/discover/research' },
   ];
 
   const deepDiveItems = [
