@@ -1,0 +1,461 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 6: ERGEBNISSE · INSIGHTS · RECAP
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phasen 1–5 abgeschlossen. Jetzt bauen wir die Auswertungs-Screens:
+Post-Tasting Insights (die 3 Aha-Karten), Tasting-Recap, Connoisseur-
+Report und den Präsentationsmodus.
+
+Dies sind überwiegend lesende Operationen — geringes Risiko.
+Alle Sicherheitsregeln und Design-Standards gelten weiter.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien verändern
+✅ jsPDF aus bestehender Codebasis importieren wo möglich
+✅ Recharts aus bestehender Codebasis importieren
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  resultsTitle:       "Ergebnisse"
+  resultsOverview:    "Überblick"
+  resultsVsGroup:     "Du vs. Gruppe"
+  resultsPriceSurp:   "Preis-Aha"
+  resultsCaskProfile: "Dein Profil"
+  resultsInsight1:    "Erkenntnis 1 von 3"
+  resultsInsight2:    "Erkenntnis 2 von 3"
+  resultsInsight3:    "Erkenntnis 3 von 3"
+  resultsYourAvg:     "Dein Schnitt"
+  resultsGroupAvg:    "Gruppen-Ø"
+  resultsDifference:  "Differenz"
+  resultsBiggestOut:  "Größter Ausreißer"
+  resultsCheapest:    "günstigster"
+  resultsPriceCorr:   "Preis und Qualität korrelierten heute kaum."
+  resultsCaskDelta:   "Punkte höher als"
+  resultsSherryFass:  "Sherryfass"
+  resultsBourbon:     "Bourbonfass"
+  resultsFavorite:    "Dein Favorit"
+  resultsGroupWinner: "Gruppen-Sieger"
+  resultsMostDebated: "Meistdiskutiert"
+  resultsSurprise:    "Preis-Überraschung"
+  resultsRanking:     "Heutiges Ranking"
+  resultsShare:       "Teilen"
+  resultsPdf:         "Als PDF"
+  resultsCopyLink:    "Link kopieren"
+  recapTitle:         "Tasting-Recap"
+  recapTop:           "Spitzenreiter"
+  recapDivisive:      "Meistdiskutiert"
+  recapAvgScore:      "Durchschnitts-Score"
+  recapParticipants:  "Teilnehmer-Highlights"
+  recapExport:        "Export"
+  recapPrint:         "Drucken"
+  connoisseurTitle:   "Connoisseur Report"
+  connoisseurGenerate:"Report erstellen"
+  connoisseurRegen:   "Neu erstellen"
+  connoisseurLoading: "KI analysiert dein Profil..."
+  connoisseurTabReport:"Report"
+  connoisseurTabWhisky:"Whiskies"
+  connoisseurTabAroma: "Aromen"
+  connoisseurTabHist:  "Verlauf"
+  connoisseurShare:   "Teilen"
+  connoisseurDelete:  "Löschen"
+  narrativeTitle:     "Session-Story"
+  narrativeGenerate:  "Story erstellen"
+  narrativeLoading:   "KI schreibt eure Geschichte..."
+  presentTitle:       "Präsentation"
+  presentStart:       "Präsentation starten"
+  presentNext:        "Nächste Folie →"
+  presentStop:        "Beenden"
+  presentSlide:       "Folie"
+
+EN:
+  resultsTitle:       "Results"
+  resultsOverview:    "Overview"
+  resultsVsGroup:     "You vs. Group"
+  resultsPriceSurp:   "Price reveal"
+  resultsCaskProfile: "Your profile"
+  resultsInsight1:    "Insight 1 of 3"
+  resultsInsight2:    "Insight 2 of 3"
+  resultsInsight3:    "Insight 3 of 3"
+  resultsYourAvg:     "Your average"
+  resultsGroupAvg:    "Group avg"
+  resultsDifference:  "Difference"
+  resultsBiggestOut:  "Biggest outlier"
+  resultsCheapest:    "cheapest"
+  resultsPriceCorr:   "Price and quality barely correlated today."
+  resultsCaskDelta:   "points higher than"
+  resultsSherryFass:  "Sherry cask"
+  resultsBourbon:     "Bourbon cask"
+  resultsFavorite:    "Your favourite"
+  resultsGroupWinner: "Group winner"
+  resultsMostDebated: "Most debated"
+  resultsSurprise:    "Price surprise"
+  resultsRanking:     "Today's ranking"
+  resultsShare:       "Share"
+  resultsPdf:         "Save as PDF"
+  resultsCopyLink:    "Copy link"
+  recapTitle:         "Tasting recap"
+  recapTop:           "Top rated"
+  recapDivisive:      "Most divisive"
+  recapAvgScore:      "Average score"
+  recapParticipants:  "Participant highlights"
+  recapExport:        "Export"
+  recapPrint:         "Print"
+  connoisseurTitle:   "Connoisseur Report"
+  connoisseurGenerate:"Generate report"
+  connoisseurRegen:   "Regenerate"
+  connoisseurLoading: "AI is analysing your profile..."
+  connoisseurTabReport:"Report"
+  connoisseurTabWhisky:"Whiskies"
+  connoisseurTabAroma: "Aromas"
+  connoisseurTabHist:  "History"
+  connoisseurShare:   "Share"
+  connoisseurDelete:  "Delete"
+  narrativeTitle:     "Session story"
+  narrativeGenerate:  "Create story"
+  narrativeLoading:   "AI is writing your story..."
+  presentTitle:       "Presentation"
+  presentStart:       "Start presentation"
+  presentNext:        "Next slide →"
+  presentStop:        "End"
+  presentSlide:       "Slide"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Share       — Drei Punkte verbunden (Teilen-Symbol) oder Pfeil aus Box
+Medal       — Kreis mit Zahl + Band unten (Medaille)
+TrendUp     — Pfeil-Kurve nach oben rechts
+TrendDown   — Pfeil-Kurve nach unten rechts
+Trophy      — Pokal-Silhouette
+Insight     — Glühbirne oder Diamant
+Present     — Bildschirm mit Pfeil-Zeiger
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 6 — DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/results/InsightsEngine.ts
+──────────────────────────────────────────────────────────────────────────────
+
+Pure Berechnungs-Funktionen für die 3 Aha-Karten. Kein React.
+
+export function computeInsights(
+  whiskies: WhiskyData[],
+  ratings: RatingData[],
+  participantId: string,
+  historicalProfile?: HistoricalProfile
+): InsightsResult
+
+InsightsResult:
+  vsGroup: {
+    userAvg: number        — Eigener Schnitt (overall)
+    groupAvg: number       — Gruppen-Ø
+    delta: number          — userAvg - groupAvg
+    biggestOutlier: {      — Whisky mit größter Differenz
+      whisky: WhiskyData
+      userScore: number
+      groupScore: number
+      delta: number
+    }
+  }
+  priceSurprise: {
+    cheapest: WhiskyData   — Günstigster Whisky
+    cheapestRank: number   — Rang im Gruppen-Ranking
+    totalWhiskies: number
+    isSurprise: boolean    — cheapestRank <= ceil(total/2)
+    ranked: WhiskyData[]   — Alle Whiskies nach Gruppen-Score sortiert
+  }
+  caskPattern: {
+    userSherryAvg: number
+    userBourbonAvg: number
+    groupSherryAvg: number
+    groupBourbonAvg: number
+    userDelta: number      — userSherryAvg - userBourbonAvg
+    groupDelta: number
+    isOutlier: boolean     — abs(userDelta - groupDelta) > 8
+    sherryCount: number
+    bourbonCount: number
+  }
+  historicalContext: {
+    tastingsCount: number
+    ratingsCount: number
+  }
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/results/PostTastingInsights.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Die 3 Aha-Karten — das Herzstück der Ergebnisseite.
+
+Props: th, t, tastingId: string, participantId: string
+
+Daten laden:
+  GET /api/tastings/:id/ratings
+  GET /api/tastings/:id/whiskies
+  GET /api/participants/:participantId/connoisseur-reports (historische Daten)
+
+Insights berechnen via InsightsEngine.computeInsights()
+
+Layout:
+  Sticky Header: Tasting-Name + Datum + "Abgeschlossen"-Badge
+  Tab-Bar: 4 Tabs mit Pill-Chips
+    - Überblick (t.resultsOverview)
+    - Du vs. Gruppe (t.resultsVsGroup)
+    - Preis-Aha (t.resultsPriceSurp)
+    - Dein Profil (t.resultsCaskProfile)
+
+  Tab: Überblick:
+    4 Karten in 2×2 Grid:
+      1. Dein Favorit (höchster eigener Score)
+      2. Gruppen-Sieger (höchster Gruppen-Score)
+      3. Meistdiskutiert (höchste Score-Streuung)
+      4. Preis-Überraschung (günstigster Whisky, hoher Rang)
+    Jede Karte: Card mit Titel, Whisky-Name (Cormorant), Sub-Info
+
+  Tab: Du vs. Gruppe:
+    t.resultsInsight1 (11px, gold, uppercase)
+    Headline: "Du warst heute kritischer/großzügiger als die Gruppe."
+    Sub: Vergleich Dein Schnitt vs. Gruppen-Ø
+    Score-Vergleich: Zwei große Zahlen nebeneinander + DeltaBadge
+    Größter Ausreißer Card (gold Akzent): Whisky-Name + Du vs. Gruppe + Delta
+
+  Tab: Preis-Aha:
+    t.resultsInsight2 (11px, gold, uppercase)
+    Headline dynamisch: Überraschung oder Bestätigung
+    Ranking-Liste aller Whiskies mit Preisen
+      Günstigster hervorgehoben (gold Rahmen + "günstigster" Badge)
+      Mini-Fortschrittsbalken: Gruppen-Score
+    Kontext-Karte (grün): t.resultsPriceCorr (wenn Überraschung)
+
+  Tab: Dein Profil:
+    t.resultsInsight3 (11px, gold, uppercase)
+    Headline: Sherry-Präferenz stärker/schwächer als Gruppe
+    Zwei expandierbare Karten: Sherryfass / Bourbonfass
+      Je Karte: Dein Schnitt + Gruppen-Ø als horizontale Balken
+    Historischer Kontext: "Basierend auf X Tastings · Y Bewertungen"
+
+  DeltaBadge Komponente:
+    Grünes Badge für positiv (▲ X Pkt), rotes für negativ (▼ X Pkt)
+
+  Dot-Navigation unten (4 Punkte, aktiver Punkt breiter = 28px)
+  Punkt-Klick: Tab wechseln mit Fade-Transition
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/results/TastingRecap.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Visueller Recap mit Charts und Highlights.
+
+Props: th, t, tastingId: string, participantId: string
+
+Daten: GET /api/tastings/:id + ratings + whiskies + participants
+
+Sektionen:
+
+1. Medaillen (Top 3 Whiskies nach Gruppen-Score):
+   Gold / Silber / Bronze Icon.Medal + Whisky-Name + Score
+   Horizontal scrollbar wenn > 3
+
+2. Meistdiskutiert:
+   Whisky mit höchster Score-Varianz (Std-Abweichung)
+   "Diskutiert von X Meinungen" + Score-Range (min–max)
+
+3. Durchschnitts-Scores Chart (Recharts BarChart):
+   Importiere Recharts aus bestehender Codebasis
+   Alle Whiskies, horizontale Balken, Farbe nach Score-Band
+   Responsive, dark-theme Farben
+
+4. Teilnehmer-Highlights:
+   Für jeden Teilnehmer: Avatar + Name + Eigener Favorit + Ø-Score
+   Wer war am kritischsten? Wer am großzügigsten?
+
+5. Export-Buttons:
+   Icon.Download + t.recapPdf → jsPDF Export
+   Icon.Share + t.resultsShare → Web Share API (navigator.share)
+   Icon.Printer + t.recapPrint → window.print()
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/results/ConnoisseurReport.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+AI-Connoisseur-Report für den Teilnehmer.
+
+Props: th, t, participantId: string
+
+Daten:
+  GET /api/participants/:id/connoisseur-reports (Liste aller Reports)
+  POST /api/participants/:id/connoisseur-report (neuen generieren)
+
+States:
+  reports: ConnoisseurReport[], loading: boolean, generating: boolean
+  activeReport: ConnoisseurReport | null, activeTab: string
+
+Layout wenn kein Report:
+  Leerer Zustand: Illustration (Icon.Report groß) +
+  Beschreibung was der Report bietet
+  PrimaryBtn: t.connoisseurGenerate
+
+Während Generierung:
+  Spinner + t.connoisseurLoading
+  Animierter Fortschritts-Text (3 Phasen, je 2s)
+
+Report-Anzeige:
+  Cover: AI-Headline (aus report.summary, 22px Playfair) +
+         Meta-Chips: Ø Score, vs. Gruppe, Höchster, Niedrigster
+  4 Tabs:
+    Report: Markdown-Renderer (einfacher, kein externes Package nötig —
+            eigene Markdown-zu-JSX Konvertierung für **bold**, *italic*,
+            ## Überschriften, - Listen)
+    Whiskies: Tabelle Dein Score vs. Gruppen-Ø mit Deltas
+    Aromen: Top-Tags als Bubble-Chart (CSS, kein Recharts nötig)
+    Verlauf: Timeline aller Reports
+
+  Action-Buttons: Icon.Share + Icon.Download + Icon.Trash
+
+  Language Selector (DE/EN): zwei kleine Buttons
+    Beim Generieren: mitübergeben in Request Body
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/results/SessionNarrative.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+KI-generierte Session-Story (nur für Host sichtbar).
+
+Props: th, t, tastingId: string, isHost: boolean
+
+Wenn nicht Host: null rendern (Komponente unsichtbar)
+
+Daten: GET /api/tastings/:id (aiNarrative Feld)
+
+Layout:
+  Collapsible Section am Ende der Ergebnisseite
+  Header: Icon.Insight + t.narrativeTitle + ChevronDown
+
+  Wenn kein Narrative:
+    PrimaryBtn: t.narrativeGenerate
+    Während Generierung: Spinner + t.narrativeLoading
+
+  Wenn vorhanden:
+    Markdown-Text (Cormorant Garamond 17px, lineHeight: 1.7)
+    Datum der Generierung (faint)
+    Regenerieren-Button + Language Selector
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/screens/results/PresentationMode.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Präsentationsmodus — Host steuert Slides für alle sichtbar.
+
+Props: th, t, tastingId: string, isHost: boolean, whiskies: WhiskyData[]
+
+Wenn isHost:
+  Start-Button: PrimaryBtn t.presentStart
+  → POST /api/tastings/:id/presentation-start
+  Weiter-Button: t.presentNext (56px Höhe)
+  → POST /api/tastings/:id/presentation-slide { slideIndex: current+1 }
+  Beenden: Ghost t.presentStop
+  → POST /api/tastings/:id/presentation-stop
+
+  Slide-Content (zentriert, Vollbild-ähnlich):
+    Whisky-Name (40px Playfair), Score, Gruppen-Ø, Rang
+
+Wenn nicht Host (Zuschauer):
+  Polling alle 5s: GET /api/tastings/:id (presentationSlide Feld)
+  Zeigt aktuellen Slide read-only
+  Overlay-Hinweis: "Präsentation läuft" (gold Badge)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 7: client/src/labs-v2/screens/results/ResultsScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Container der Ergebnis-Seite.
+
+Props: th, t, tastingId: string, participantId: string, isHost: boolean
+
+Tabs (Bottom-Navigation innerhalb der Screen, nicht Tab-Bar):
+  1. Insights (PostTastingInsights)
+  2. Recap (TastingRecap)
+  3. Connoisseur (ConnoisseurReport)
+  Wenn isHost: + Story (SessionNarrative) + Präsentation (PresentationMode)
+
+Alle Sub-Komponenten lazy geladen (keine Parallelrequests beim Start).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Import ergänzen:
+  import { ResultsScreen } from './screens/results/ResultsScreen'
+
+In renderContent() ergänzen:
+  if (subScreen === "results" && activeTastingId) return (
+    <ResultsScreen
+      th={th} t={t}
+      tastingId={activeTastingId}
+      participantId={/* aus Session */}
+      isHost={/* aus Tasting-Daten */}
+    />
+  )
+
+LiveTasting: bei status "closed" → setSubScreen("results")
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 6
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/tastings/:id/ratings               — Alle Ratings für Insights
+GET  /api/tastings/:id/whiskies
+GET  /api/tastings/:id/participants
+
+POST /api/participants/:id/connoisseur-report
+     Body: { language: "de" | "en", customPrompt?: string }
+GET  /api/participants/:id/connoisseur-reports
+
+POST /api/tastings/:id/ai-narrative
+     Body: { language: "de" | "en" }
+
+POST /api/tastings/:id/presentation-start
+POST /api/tastings/:id/presentation-slide   Body: { slideIndex: number }
+POST /api/tastings/:id/presentation-stop
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 6
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] InsightsEngine ist pure TypeScript (kein React, testbar)
+  [ ] Alle 3 Aha-Karten implementiert (vsGroup, priceSurprise, caskPattern)
+  [ ] DeltaBadge: grün bei positiv, rot bei negativ
+  [ ] Dot-Navigation zwischen Tabs
+  [ ] Recharts BarChart importiert (nicht neu installiert)
+  [ ] Connoisseur Report: Markdown-Renderer eigen implementiert
+  [ ] Language Selector bei Connoisseur + Narrative (DE/EN)
+  [ ] Präsentationsmodus: Host steuert, Zuschauer pollt
+  [ ] Session-Narrative nur für Host sichtbar
+  [ ] Kein einziges Emoji
+  [ ] PDF-Export via jsPDF (bestehende Funktionen importieren)
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 6 PROMPT
+═══════════════════════════════════════════════════════════════════════════════

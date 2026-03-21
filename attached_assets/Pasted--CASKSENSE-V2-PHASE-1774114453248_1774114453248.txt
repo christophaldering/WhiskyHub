@@ -1,0 +1,485 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 8: ENTDECKEN · CIRCLE
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phase 8 ist die letzte Phase. Tab 2 "Entdecken" und Tab 4 "Circle" bekommen
+echten Inhalt. Nach dieser Phase ist CaskSense V2 vollständig.
+
+Alle Sicherheitsregeln und Design-Standards gelten weiter.
+Dies ist die letzte Phase — keine weiteren Dateien nach dieser Phase nötig.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien verändern
+✅ Anonymisierungs-Logik für Leaderboard exakt wie in bestehender labs-
+   Version umsetzen (keine echten Namen für Nicht-Freunde)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  entTitle:           "Entdecken"
+  entSub:             "Whiskies · Wissen · Welt"
+  entExplore:         "Whiskies entdecken"
+  entExploreSub:      "Alle bewerteten Whiskies der Community"
+  entLexikon:         "Lexikon"
+  entLexikonSub:      "Whisky-Begriffe erklärt"
+  entGuide:           "Tasting-Guide"
+  entGuideSub:        "Schritt für Schritt verkosten"
+  entDest:            "Destillerien"
+  entDestSub:         "Weltkarte der Brennereien"
+  entBottlers:        "Abfüller"
+  entBottlersSub:     "Unabhängige Abfüller"
+  entHistory:         "Historische Tastings"
+  entHistorySub:      "Tasting-Archiv der Community"
+  entTemplates:       "Vokabular"
+  entTemplatesSub:    "Beschreibungs-Vorlagen nach Stil"
+  entSearch:          "Suche..."
+  entFilterRegion:    "Region"
+  entFilterAll:       "Alle"
+  entSortAvg:         "Ø Score"
+  entSortMost:        "Meist bewertet"
+  entSortAlpha:       "A–Z"
+  entBottleDetail:    "Flasche"
+  entBottleRatings:   "Community-Bewertungen"
+  entBottleMyRating:  "Meine Bewertung"
+  entBottleHistory:   "Tasting-Verlauf"
+  entLexSearch:       "Begriff suchen..."
+  entLexCategories:   "Kategorien"
+  entDistSearch:      "Destillerie suchen..."
+  entDistCountry:     "Land"
+  entHistSearch:      "Archiv durchsuchen..."
+  entHistRegion:      "Region"
+  entHistSmoky:       "Rauchig"
+  circleTitle:        "Circle"
+  circleSub:          "Deine Whisky-Community."
+  circleFriends:      "Freunde"
+  circleBoard:        "Bestenliste"
+  circleSessions:     "Sessions"
+  circleFeed:         "Feed"
+  circleYourRank:     "Dein Rang"
+  circlePercentile:   "Prozentrang"
+  circleAnonymous:    "Whisky-Alias"
+  circleFriend:       "Freund"
+  circleAddFriend:    "Hinzufügen"
+  circlePending:      "Ausstehend"
+  circleAccept:       "Annehmen"
+  circleDecline:      "Ablehnen"
+  circleFeedEmpty:    "Noch keine Aktivitäten von Freunden."
+  circleOnline:       "Online"
+  circleSearchFriend: "Freund suchen..."
+  historyGated:       "Nur für Community-Mitglieder"
+  historyJoin:        "Community beitreten"
+
+EN:
+  entTitle:           "Discover"
+  entSub:             "Whiskies · Knowledge · World"
+  entExplore:         "Explore whiskies"
+  entExploreSub:      "All rated whiskies from the community"
+  entLexikon:         "Lexicon"
+  entLexikonSub:      "Whisky terms explained"
+  entGuide:           "Tasting guide"
+  entGuideSub:        "Step-by-step tasting"
+  entDest:            "Distilleries"
+  entDestSub:         "World map of distilleries"
+  entBottlers:        "Bottlers"
+  entBottlersSub:     "Independent bottlers"
+  entHistory:         "Historical tastings"
+  entHistorySub:      "Community tasting archive"
+  entTemplates:       "Vocabulary"
+  entTemplatesSub:    "Description templates by style"
+  entSearch:          "Search..."
+  entFilterRegion:    "Region"
+  entFilterAll:       "All"
+  entSortAvg:         "Avg score"
+  entSortMost:        "Most rated"
+  entSortAlpha:       "A–Z"
+  entBottleDetail:    "Bottle"
+  entBottleRatings:   "Community ratings"
+  entBottleMyRating:  "My rating"
+  entBottleHistory:   "Tasting history"
+  entLexSearch:       "Search term..."
+  entLexCategories:   "Categories"
+  entDistSearch:      "Search distillery..."
+  entDistCountry:     "Country"
+  entHistSearch:      "Search archive..."
+  entHistRegion:      "Region"
+  entHistSmoky:       "Smoky"
+  circleTitle:        "Circle"
+  circleSub:          "Your whisky community."
+  circleFriends:      "Friends"
+  circleBoard:        "Leaderboard"
+  circleSessions:     "Sessions"
+  circleFeed:         "Feed"
+  circleYourRank:     "Your rank"
+  circlePercentile:   "Percentile"
+  circleAnonymous:    "Whisky alias"
+  circleFriend:       "Friend"
+  circleAddFriend:    "Add"
+  circlePending:      "Pending"
+  circleAccept:       "Accept"
+  circleDecline:      "Decline"
+  circleFeedEmpty:    "No activity from friends yet."
+  circleOnline:       "Online"
+  circleSearchFriend: "Search friend..."
+  historyGated:       "Community members only"
+  historyJoin:        "Join community"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MapPin      — Standort-Pin (Kreis + Spitze unten)
+Map         — Gefaltete Karte (3 Segmente)
+BookOpen    — Aufgeschlagenes Buch mit Mittelfalte
+Filter      — Trichter-Symbol
+SortAZ      — "AZ" mit Pfeil nach unten
+UserPlus    — Person + Plus-Zeichen
+UserCheck   — Person + Haken (Freund bestätigt)
+Clock       — Uhr mit Zeigern
+History     — Pfeil im Kreis (Rückwärts)
+Star        — 5-Punkt Stern (ausgefüllt für Bewertungen)
+Calendar    — Kalender-Blatt mit Linien (falls noch nicht vorhanden)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 8 — TEIL A: ENTDECKEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/entdecken/EntdeckenHub.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Hub für Tab 2.
+
+Sektionen:
+  Titel + Untertitel
+  3×2 Navigations-Grid (88px Karten, SVG-Icons):
+    Explore (Icon.Whisky), Lexikon (Icon.BookOpen), Guide (Icon.Guide),
+    Destillerien (Icon.Distillery), Abfüller (Icon.Globe),
+    Historische Tastings (Icon.History)
+  Jede Karte: phase.dim, phase.accent, Icon (28px) + Label + Sub
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/entdecken/ExploreWhiskies.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Whisky-Entdeckungs-Seite der Community.
+
+Daten: GET /api/labs/explore/whiskies?search=&region=&sort=avg
+
+Suche + Region-Chips + Sort-Segmented Control
+Whisky-Liste (paginiert, 20 pro Seite):
+  Name + Destillerie + Region + Ø Score + Anzahl Bewertungen
+  Klick → BottleDetail
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/entdecken/BottleDetail.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Detail-Ansicht einer Flasche.
+
+Daten: GET /api/labs/explore/whiskies/:id
+
+Sektionen:
+  Flasche-Header: Name + Destillerie + Region + Cask + Age + ABV
+  Community-Bewertungen:
+    Ø Score + Dimensions-Breakdown (4 Bars für Nase/Gaumen/Abgang/Gesamt)
+    Score-Verteilung (10 Buckets, 60–100, CSS-Bars)
+  Meine Bewertung (wenn vorhanden): eigene Scores + Tags
+  Tasting-Verlauf: Links zu Tastings in denen dieser Whisky vorkam
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/entdecken/Lexikon.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Durchsuchbares Whisky-Wörterbuch.
+
+Hardcodierte Daten (aus bestehender LabsLexicon.tsx importieren oder
+die Daten-Konstante kopieren — es gibt keine API dafür):
+
+5 Kategorien: Herstellung / Reifung / Aromen / Regionen / Bewertung
+Suchfeld (44px) + Kategorie-Chips
+Einträge als expandierbare Rows (DE/EN je nach Sprache)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/entdecken/TastingGuide.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Schritt-für-Schritt Tasting-Guide.
+
+Hardcodierte Inhalte (aus LabsGuide.tsx importieren):
+  8 Sektionen: Vorbereitung / Glas / Nase / Gaumen / Abgang / Bewertung /
+               Pairing / Notizen
+  Jede Sektion: Titel + Icon + Beschreibung (DE/EN)
+  Vertikal gescrollt, ankerbasierte Navigation
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/screens/entdecken/Distilleries.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Destillerie-Übersicht.
+
+Hardcodierte Daten (aus LabsDistilleries.tsx importieren):
+  Liste + Länder-Filter-Chips + Suchfeld
+  Jede Destillerie: Name + Land + Region + Gründungsjahr + kurze Beschreibung
+  Expandierbare Detail-Cards
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 7: client/src/labs-v2/screens/entdecken/HistoricalArchive.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Historisches Tasting-Archiv (Community-gated).
+
+Daten: GET /api/historical-tastings
+       GET /api/historical-tastings/insights
+
+Community-Gate:
+  Prüfe ob Nutzer Community-Mitglied ist
+  Wenn nicht: Gesperrter Zustand mit Icon.Lock + t.historyGated + t.historyJoin
+
+Wenn freigeschaltet:
+  Suchfeld + Region-Filter + Smoky-Toggle
+  Stat-Karten: Tastings / Whiskies / Regionen / Smoky%
+  Liste aller historischen Tastings
+    Name + Datum + Anzahl Whiskies + Regions-Badge
+    Klick → ResultsScreen mit historischem Tasting
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 8: client/src/labs-v2/screens/entdecken/EntdeckenScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Container für Tab 2. Navigation zwischen Sub-Screens.
+
+State: activeSubScreen: string | null
+
+Rendert:
+  null        → EntdeckenHub
+  "explore"   → ExploreWhiskies
+  "bottle/:id"→ BottleDetail
+  "lexikon"   → Lexikon
+  "guide"     → TastingGuide
+  "dest"      → Distilleries
+  "history"   → HistoricalArchive
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 8 — TEIL B: CIRCLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 9: client/src/labs-v2/screens/circle/Leaderboard.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Anonymisiertes Leaderboard (DSGVO-konform).
+
+Daten: GET /api/community/leaderboard
+
+KRITISCHE DATENSCHUTZ-REGEL:
+  Nicht-Freunde und Nicht-Selbst: Namen durch Whisky-Alias ersetzen
+  (z.B. "Peated Fox", "Sherried Flask")
+  Alias wird deterministisch aus participantId gehashed (kein Zufalls-Alias)
+  Backend streift bereits participant-IDs — trotzdem clientseitig prüfen
+
+"Dein Rang" Karte (oben, gold Akzent):
+  Deine Position + Prozentrang + Ø Score
+
+Leaderboard-Liste:
+  Rang / Name (oder Alias) / Ø Score / Tastings-Anzahl
+  Freunde: grüner "Freund" Badge + echter Name
+  Du selbst: gold Badge + "Du"
+  Andere: Whisky-Alias, kein Avatar
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 10: client/src/labs-v2/screens/circle/FriendsTab.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Freunde-Verwaltung.
+
+Daten:
+  GET /api/participants/:id/friends (eigene Freunde)
+  Für Anfragen: GET /api/participants/:id/friend-requests
+
+Sektionen:
+  1. Freunde-Liste:
+     Avatar + Name + Online-Dot (wenn aktiv) + Ø Score
+     Letztes gemeinsames Tasting (faint)
+
+  2. Ausstehende Anfragen (wenn vorhanden):
+     Eingehende: Name + Annehmen/Ablehnen-Buttons (44px)
+     Ausgehende: Name + "Ausstehend" Badge
+
+  3. Freund suchen:
+     Suchfeld (44px) + Ergebnisse mit + Hinzufügen-Button
+     POST /api/participants/:id/friend-request bei Klick
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 11: client/src/labs-v2/screens/circle/SessionsBoard.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Laufende und kommende Tastings der Community.
+
+Daten: GET /api/community/sessions
+
+Gruppen:
+  Jetzt live (status "open"): grüner Puls-Indikator
+  Kommende (status "draft"): gold
+  Abgeschlossen (status "archived"): faint
+
+Jede Session: Tasting-Name + Host + Datum + Status + Teilnehmer-Zahl
+Klick auf laufendes Tasting: Direkt beitreten wenn eingeladen
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 12: client/src/labs-v2/screens/circle/ActivityFeed.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Aktivitäts-Feed (nur Freunde, DSGVO-konform).
+
+Daten: GET /api/participants/:id/feed
+
+Feed-Einträge (chronologisch):
+  Freund X hat Whisky Y bewertet (Score)
+  Freund X hat Tasting Z abgeschlossen
+  Freund X hat Dram W erfasst
+
+Leerer Zustand: Icon.Feed (groß) + t.circleFeedEmpty
+                Direktlink zum Freunde-Suchen
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 13: client/src/labs-v2/screens/circle/CircleScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Container für Tab 4. 4-Tab Navigation intern.
+
+Interner State: activeTab: "friends" | "board" | "sessions" | "feed"
+
+Segmented Control (oben, 44px):
+  Freunde / Bestenliste / Sessions / Feed
+
+Rendert je nach activeTab den entsprechenden Sub-Screen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Imports ergänzen:
+  import { EntdeckenScreen } from './screens/entdecken/EntdeckenScreen'
+  import { CircleScreen }    from './screens/circle/CircleScreen'
+
+In renderContent() — Tabs ersetzen:
+  case "entdecken": return (
+    <EntdeckenScreen th={th} t={t}
+      participantId={/* aus Session */}
+    />
+  )
+  case "circle": return (
+    <CircleScreen th={th} t={t}
+      participantId={/* aus Session */}
+    />
+  )
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 8
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/labs/explore/whiskies             — Explore-Liste
+GET  /api/labs/explore/whiskies/:id         — Flasche Detail
+
+GET  /api/historical-tastings               — Archiv-Liste (Community-gated)
+GET  /api/historical-tastings/insights      — Archiv-Statistiken
+
+GET  /api/community/leaderboard             — Bestenliste
+GET  /api/community/sessions                — Sessions-Board
+
+GET  /api/participants/:id/friends          — Freunde
+GET  /api/participants/:id/friend-requests  — Anfragen
+POST /api/participants/:id/friend-request   — Anfrage senden
+PATCH /api/participants/:id/friend-request/:fid  — Annehmen/Ablehnen
+GET  /api/participants/:id/feed             — Activity Feed
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSCHLUSS: NACH PHASE 8 IN APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Wenn Phase 8 erfolgreich deployed und getestet ist, ist CaskSense V2
+vollständig. Für die Umschaltung auf der Landing Page:
+
+  Bestehender Button: "→ Bewährte Version" → /labs
+  Neuer Button:       "✦ Neue Erfahrung"   → /labs-v2
+
+  Optional: Nach ausreichendem Testing kann /labs-v2 zur primären Route
+  werden und /labs als Legacy-Route erhalten bleiben.
+  Diese Entscheidung liegt beim Produkt-Owner (Christoph).
+  Technisch: nur 2 Zeilen in App.tsx ändern.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 8
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Entdecken:
+  [ ] Explore: Suche + Region-Filter + Sort funktionieren
+  [ ] Bottle Detail: Ø Score + Dimensions-Breakdown + Score-Verteilung
+  [ ] Lexikon: Suchfeld 44px, Kategorien-Chips
+  [ ] Historical Archive: Community-Gate korrekt implementiert
+  [ ] Hardcodierte Inhalte (Lexikon, Guide, Destillerien) aus bestehenden
+      Komponenten importiert — nicht neu geschrieben
+
+Circle:
+  [ ] Leaderboard: Whisky-Alias für Nicht-Freunde (DSGVO)
+  [ ] "Dein Rang" Karte oben vorhanden
+  [ ] Freunde-Verwaltung: Annehmen/Ablehnen mit 44px Buttons
+  [ ] Activity Feed: nur Freunde sichtbar
+  [ ] Segmented Control: 44px Höhe
+
+Allgemein:
+  [ ] Kein einziges Emoji
+  [ ] Alle SP-Token korrekt
+  [ ] DE/EN in allen neuen Texten
+  [ ] Dark/Light in allen neuen Komponenten
+  [ ] /labs/* und /labs-v2 (alle Phasen) noch erreichbar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GLÜCKWUNSCH — CASKSENSE V2 IST VOLLSTÄNDIG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Mit Phase 8 sind alle 8 Phasen abgeschlossen:
+  Phase 1: Intent · Join · Lobby
+  Phase 2: Rating Screen
+  Phase 3: Solo Flow
+  Phase 4: Host Wizard
+  Phase 5: Live Tasting · SSE · Reveal
+  Phase 6: Ergebnisse · Insights · Recap
+  Phase 7: Meine Welt
+  Phase 8: Entdecken · Circle
+
+Alle Designer-Empfehlungen sind umgesetzt:
+  ✓ Kein einziges Emoji — vollständiges SVG-Icon-System
+  ✓ Striktes 8px-Raster
+  ✓ 44px Touch-Targets überall
+  ✓ Max 6 Flavor-Tags, 300ms Save-Animation, Slider bei 75
+  ✓ Phasen-Signaturen (Nose/Palate/Finish/Overall visuell unterscheidbar)
+  ✓ Dark + Light Theme
+  ✓ DE + EN Sprache
+  ✓ Bottom Navigation iOS HIG-konform
+  ✓ Datenbasis vollständig erhalten
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 8 PROMPT — ENDE ALLER PHASEN
+═══════════════════════════════════════════════════════════════════════════════

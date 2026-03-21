@@ -1,0 +1,379 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 5: LIVE-TASTING · SSE · REVEAL
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phasen 1–4 abgeschlossen. Jetzt bauen wir das Herzstück: den Live-Tasting-
+Raum für Teilnehmer — mit geführter Progression, SSE-Echtzeit-Updates,
+der Reveal-Sequenz, Voice Memos und Ambient Sound.
+
+Dies ist die technisch komplexeste Phase. Besondere Sorgfalt bei:
+- SSE-Verbindung: bestehenden Hook importieren, nicht neu bauen
+- Autosave: Status-Gating und Debounce-Cleanup exakt wie in Phase 2
+- Reveal-Animation: emotionaler Höhepunkt — sorgfältig umsetzen
+
+Alle Sicherheitsregeln und Design-Standards gelten weiter.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien verändern
+✅ useTastingEvents aus client/src/labs/hooks/useTastingEvents.ts IMPORTIEREN
+✅ Haptics via useHaptics aus client/src/labs/hooks/ IMPORTIEREN
+✅ Ambient Sound via lib/ambient.ts IMPORTIEREN
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  liveLobby:        "Warteraum"
+  liveLobbySub:     "Der Host startet gleich."
+  liveLobbyPour:    "Giess dir schon mal ein."
+  liveDram:         "Dram"
+  liveOf:           "von"
+  liveBlindSample:  "Blind Sample"
+  liveNosePhase:    "Nase"
+  liveTastePhase:   "Gaumen"
+  liveFinishPhase:  "Abgang"
+  liveOverallPhase: "Gesamt"
+  liveRatingLocked: "Bewertung gesperrt"
+  liveWaitingHost:  "Warte auf Host..."
+  liveRevealTitle:  "Enthüllung"
+  liveRevealName:   "Name wird enthüllt"
+  liveRevealDetails:"Details werden enthüllt"
+  liveRevealPhoto:  "Foto wird enthüllt"
+  liveRevealDone:   "Vollständig enthüllt"
+  liveRevealFlash:  "Enthüllt!"
+  liveTastingDone:  "Tasting beendet"
+  liveSeeResults:   "Ergebnisse ansehen →"
+  liveAmbient:      "Ambiente"
+  liveAmbientFire:  "Kaminfeuer"
+  liveAmbientRain:  "Regen"
+  liveAmbientNight: "Nacht"
+  liveAmbientBag:   "Dudelsack"
+  liveAmbientOff:   "Aus"
+  liveVoiceMemo:    "Sprachnotiz"
+  liveVoiceRecord:  "Aufnehmen"
+  liveVoiceStop:    "Stopp"
+  liveVoicePlaying: "Wiedergabe"
+  liveVoiceDelete:  "Löschen"
+  liveVoiceTranscript: "Transkription"
+  liveProgress:     "Fortschritt"
+  liveParticipants: "Teilnehmer"
+
+EN:
+  liveLobby:        "Waiting room"
+  liveLobbySub:     "The host will start shortly."
+  liveLobbyPour:    "Pour yourself a glass."
+  liveDram:         "Dram"
+  liveOf:           "of"
+  liveBlindSample:  "Blind Sample"
+  liveNosePhase:    "Nose"
+  liveTastePhase:   "Palate"
+  liveFinishPhase:  "Finish"
+  liveOverallPhase: "Overall"
+  liveRatingLocked: "Rating locked"
+  liveWaitingHost:  "Waiting for host..."
+  liveRevealTitle:  "Reveal"
+  liveRevealName:   "Name being revealed"
+  liveRevealDetails:"Details being revealed"
+  liveRevealPhoto:  "Photo being revealed"
+  liveRevealDone:   "Fully revealed"
+  liveRevealFlash:  "Revealed!"
+  liveTastingDone:  "Tasting ended"
+  liveSeeResults:   "See results →"
+  liveAmbient:      "Ambience"
+  liveAmbientFire:  "Fireplace"
+  liveAmbientRain:  "Rain"
+  liveAmbientNight: "Night"
+  liveAmbientBag:   "Bagpipe"
+  liveAmbientOff:   "Off"
+  liveVoiceMemo:    "Voice memo"
+  liveVoiceRecord:  "Record"
+  liveVoiceStop:    "Stop"
+  liveVoicePlaying: "Playing"
+  liveVoiceDelete:  "Delete"
+  liveVoiceTranscript: "Transcript"
+  liveProgress:     "Progress"
+  liveParticipants: "Participants"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE SVG-ICONS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sound       — Lautsprecher-Körper + Schallwellen (2 Bögen)
+SoundOff    — Lautsprecher-Körper + X-Linie
+Mic         — Mikrofon-Körper + Halterung + Bogen
+MicOff      — Mikrofon + Strich durch
+Lock        — Schloss geschlossen
+Unlock      — Schloss offen
+Flame       — Flamme-Silhouette (für Kaminfeuer-Ambient)
+Music       — Noten-Symbol (für Ambient allgemein)
+Eye         — Auge (falls noch nicht vorhanden)
+Sparkle     — 4 Strahlen-Stern (für Reveal-Moment)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 5 — DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/live/LiveLobby.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Warteraum während Tasting noch nicht gestartet (status === "draft").
+
+Props: th, t, tasting, participants, participantId
+
+Layout:
+  Großer zentrierter Avatar des aktuellen Teilnehmers (64px)
+  Tasting-Name (26px Playfair)
+  t.liveLobby (11px uppercase, gold)
+  t.liveLobbySub + t.liveLobbyPour (muted)
+
+  Teilnehmer-Liste: Avatar + Name + grüner Dot für "bereit"
+  Pulsierender Indikator: "Wartet auf Host"
+    Animate: ping auf kleinem grünen Kreis
+
+SSE-Event: status_changed → wenn status "open" → weiterleiten zu LiveTasting
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/live/RevealSequence.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Die emotionale Enthüllungs-Sequenz — der Kern-Moment von CaskSense.
+
+Props:
+  th, t, whisky: WhiskyData, revealedFields: Set<string>,
+  revealOrder: string, onClose: () => void
+
+Ablauf (gesteuert durch revealedFields Set):
+
+  Phase 0 — Blind (nichts bekannt):
+    Dunkler Screen, Icon.EyeOff (groß, gedimmt)
+    "Blind Sample" in faint
+
+  Phase 1 — Name enthüllt:
+    Reveal-Flash-Animation (500ms):
+      Screen wird kurz bright-gold (rgba(212,168,71,0.15))
+      Icon.Sparkle erscheint (400ms, dann verschwindet)
+      Haptic: Notification-Feedback via useHaptics()
+    Whisky-Name erscheint (34px Playfair Display)
+    fadeUp 600ms, 0.1s delay
+
+  Phase 2 — Details enthüllt:
+    Region, Cask, Age, ABV erscheinen als Chips
+    Jeder Chip: phase.dim, phase.accent, fadeUp mit gestaffeltem Delay
+
+  Phase 3 — Foto enthüllt (wenn vorhanden):
+    Foto erscheint mit scale(0.8→1) + opacity(0→1), 500ms ease-out
+
+  Vollständig enthüllt:
+    Icon.Check (green) + t.liveRevealDone
+
+Reveal-Flash-Keyframe (in animations.css ergänzen):
+  @keyframes revealFlash {
+    0%   { background: rgba(212,168,71,0); }
+    30%  { background: rgba(212,168,71,0.12); }
+    100% { background: rgba(212,168,71,0); }
+  }
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/live/LiveVoiceMemo.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Voice-Memo Komponente für den Live-Tasting-Raum.
+
+Props:
+  th, t, tastingId: string, whiskyId: string, participantId: string
+
+State:
+  recording: boolean, duration: number, audioUrl: string | null,
+  transcript: string | null, playing: boolean
+
+Aufnahme:
+  MediaRecorder API, Max 30s
+  Fortschrittsbalken (4px):
+    0–24s: gold → amber Gradient
+    24–30s: amber → orange → rot (Warnung)
+    Sheen-Animation über den Balken
+  REC-Badge (rot, 11px, animiert blinkend via shimmer)
+  Stopp-Button: Icon.Stop, 56×56px Touch-Target
+
+Upload nach Stopp:
+  POST /api/tastings/:tastingId/whiskies/:whiskyId/voice-memo
+  FormData: { file: audioBlob }
+  Response: { id, url, transcript, duration }
+
+Transkription (wenn vorhanden):
+  Accordion-Section: Icon.Check + "Transkription"
+  Text 14px Cormorant Garamond, italic
+
+Wiedergabe: HTML5 Audio Element, Play/Pause-Button
+Löschen: Icon.Trash + Bestätigung → DELETE /api/.../voice-memo/:id
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/live/LiveAmbient.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Ambient Sound Panel (collapsible).
+
+Props: th, t
+
+Importiere: lib/ambient.ts aus bestehender Codebasis
+import { ambientEngine } from '../../../../lib/ambient'
+
+4 Soundscape-Buttons + Aus-Button:
+  Icon.Flame + t.liveAmbientFire
+  (Regen-Icon) + t.liveAmbientRain
+  (Nacht-Icon, z.B. Mond) + t.liveAmbientNight
+  Icon.Music + t.liveAmbientBag
+  Icon.SoundOff + t.liveAmbientOff
+
+Aktiver Sound: phase.dim Hintergrund, phase.accent Border
+Lautstärke-Slider (custom, gleiche Komponente wie ScoreInput-Track, 0–100%)
+
+Collapsible: Header mit Icon.Sound + t.liveAmbient + ChevronDown
+Bei geschlossen: zeige aktiven Sound-Name wenn ein Sound spielt
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/live/LiveTasting.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Screen für Teilnehmer während des Live-Tastings.
+
+Props:
+  th, t, tastingId: string, participantId: string
+
+Echtzeit-State via SSE + Polling:
+  Importiere: useTastingEvents aus client/src/labs/hooks/useTastingEvents.ts
+  SSE-Events: reveal_triggered → revealedFields aktualisieren + Flash
+              status_changed → bei "closed" → Weiterleitung zu Ergebnissen
+              presentation_changed → bei Präsentationsmodus
+
+  Polling-Fallback (15s): GET /api/tastings/:id
+  Polling schnell (5s): GET /api/tastings/:id/participants (Status-Update)
+
+Tasting-Daten laden:
+  GET /api/tastings/:id (guidedMode, guidedWhiskyIndex, guidedRevealStep,
+                         status, revealOrder, format)
+  GET /api/tastings/:id/whiskies
+  GET /api/tastings/:id/ratings/mine (eigene bisherige Ratings)
+
+Layout-Zustände:
+
+  STATUS "draft" → LiveLobby Komponente
+
+  STATUS "open":
+    1. Sub-Header (sticky):
+       Dram-Fortschrittsbalken
+       Whisky-Bezeichnung (Name oder "Sample #X" bei blind)
+       Live-Indikator (grüner Puls-Punkt)
+
+    2. Whisky-Info / RevealSequence:
+       Wenn guided + blind: RevealSequence (zeigt nur enthüllte Felder)
+       Wenn offen: Whisky-Details direkt (Name, Region, Cask, Age, ABV)
+       Wenn nicht guided: alle Details sichtbar
+
+    3. RatingFlow Komponente (aus Phase 2):
+       Gesperrte Anzeige wenn guidedMode + nicht beim aktuellen Dram
+       Icon.Lock + t.liveRatingLocked + t.liveWaitingHost
+
+    4. Voice-Memo Section (collapsible, unter Rating):
+       LiveVoiceMemo Komponente
+       Nur wenn Tasting status = "open"
+
+    5. Ambient Panel (collapsible, ganz unten):
+       LiveAmbient Komponente
+
+  STATUS "closed" | "reveal":
+    RevealSequence für alle Whiskies
+    "Tasting beendet" Badge
+    PrimaryBtn: t.liveSeeResults → navigiert zu Ergebnissen
+
+  STATUS "archived":
+    Redirect zu Ergebnissen
+
+Haptic Feedback (importiere useHaptics):
+  Bei Reveal: Notification-Haptic
+  Bei Rating-Save: Light-Haptic
+  Bei Tasting-Ende: Medium-Haptic
+
+Breathing Pause (350ms) bei Dram-Wechsel:
+  Wenn guidedWhiskyIndex sich ändert:
+    visibleContent = false (300ms fade)
+    dann: neuen Dram laden, visibleContent = true
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Import ergänzen:
+  import { LiveTasting } from './screens/live/LiveTasting'
+
+State ergänzen:
+  const [activeTastingId, setActiveTastingId] = useState<string|null>(null)
+
+In renderContent() ergänzen:
+  if (subScreen === "live" && activeTastingId) return (
+    <LiveTasting
+      th={th} t={t}
+      tastingId={activeTastingId}
+      participantId={/* aus Session */}
+    />
+  )
+
+JoinFlow: nach Lobby → onEnterLive setzt activeTastingId + subScreen="live"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 5
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/tastings/:id                               — Tasting-Status
+GET  /api/tastings/:id/events                        — SSE-Stream
+GET  /api/tastings/:id/whiskies                      — Lineup
+GET  /api/tastings/:id/ratings/mine                  — Eigene Ratings
+GET  /api/tastings/:id/participants                  — Teilnehmer-Status
+
+POST /api/tastings/:id/ratings                       — Rating speichern
+PATCH /api/tastings/:id/ratings/:rid                 — Rating aktualisieren
+
+POST /api/tastings/:tid/whiskies/:wid/voice-memo     — Voice Memo Upload
+GET  /api/tastings/:tid/whiskies/:wid/voice-memos    — Voice Memos laden
+DELETE /api/tastings/:tid/whiskies/:wid/voice-memo/:id
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 5
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] SSE via useTastingEvents importiert (nicht neu gebaut)
+  [ ] useHaptics importiert (nicht neu gebaut)
+  [ ] lib/ambient.ts importiert (nicht neu gebaut)
+  [ ] Reveal-Flash-Animation implementiert (gold Aufleuchten + Sparkle)
+  [ ] Haptic bei Reveal
+  [ ] 350ms Breathing Pause bei Dram-Wechsel
+  [ ] Rating gesperrt wenn nicht beim aktuellen Dram (guided)
+  [ ] Autosave Status-Gating (kein Save bei closed/reveal/archived)
+  [ ] Debounce-Cleanup bei Unmount und Whisky-Wechsel
+  [ ] Voice Memo: Fortschrittsbalken mit Farbwarnung < 6s
+  [ ] Ambient Sound: 4 Soundscapes + Lautstärke
+  [ ] Lobby: Weiterleitung bei status_changed
+  [ ] Tasting-Ende: Weiterleitung zu Ergebnissen
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 5 PROMPT
+═══════════════════════════════════════════════════════════════════════════════

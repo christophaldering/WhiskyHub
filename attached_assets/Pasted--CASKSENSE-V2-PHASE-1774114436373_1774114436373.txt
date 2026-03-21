@@ -1,0 +1,424 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — PHASE 7: MEINE WELT
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phasen 1–6 abgeschlossen. Tab 3 "Meine Welt" bekommt jetzt echten Inhalt:
+Persönliches Profil, Analytics, Flavour Wheel, Vergleich, Empfehlungen,
+Journal-Übersicht und Kalender.
+
+Alle überwiegend lesende Operationen — geringes Risiko.
+Alle Sicherheitsregeln und Design-Standards gelten weiter.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS bestehende Dateien verändern
+✅ Recharts aus bestehender Codebasis importieren
+✅ Alle bestehenden API-Endpunkte per fetch() nutzen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  mwTitle:          "Meine Welt"
+  mwSub:            "Dein Gaumen. Deine Geschichte."
+  mwStatTastings:   "Tastings"
+  mwStatRatings:    "Bewertungen"
+  mwStatAvg:        "Ø Score"
+  mwStatActivity:   "Aktiv seit"
+  mwUnlockAt:       "Freischalten ab 10 Whiskies"
+  mwUnlockProgress: "noch {n} Whiskies bis zur Analyse"
+  mwProfileTitle:   "Mein Geschmacksprofil"
+  mwProfileSub:     "Deine Dimensionen im Vergleich"
+  mwJustMe:         "Nur ich"
+  mwFriends:        "Freunde"
+  mwGlobal:         "Global"
+  mwAnalyticsTitle: "Analytics"
+  mwAnalyticsSub:   "Deine Entwicklung über Zeit"
+  mwTrendRising:    "Steigende Tendenz"
+  mwTrendDropping:  "Sinkende Tendenz"
+  mwTrendStable:    "Stabil"
+  mwConsistency:    "Konsistenz"
+  mwWheelTitle:     "Flavour-Rad"
+  mwWheelSub:       "Deine häufigsten Aromen"
+  mwCompareTitle:   "Vergleich"
+  mwCompareSub:     "Du vs. Plattform-Median"
+  mwCompareAbove:   "Du liegst höher"
+  mwCompareBelow:   "Du liegst niedriger"
+  mwCompareSame:    "Im Einklang"
+  mwRecoTitle:      "Empfehlungen"
+  mwRecoSub:        "Basierend auf deinem Geschmacksprofil"
+  mwRecoLocked:     "Erst ab 10 bewerteten Whiskies verfügbar"
+  mwJournalTitle:   "Journal"
+  mwJournalSub:     "Alle deine Drams"
+  mwJournalSearch:  "Suche..."
+  mwJournalEmpty:   "Noch keine Drams im Journal."
+  mwCalendarTitle:  "Kalender"
+  mwCalendarSub:    "Deine Tasting-Geschichte"
+  mwCalendarAll:    "Alle"
+  mwCalendarMine:   "Meine"
+  mwCalendarFriends:"Freunde"
+  mwProfileEdit:    "Profil bearbeiten"
+  mwProfilePhoto:   "Foto ändern"
+  mwProfileName:    "Name"
+  mwProfileEmail:   "E-Mail"
+  mwProfileSave:    "Speichern"
+  mwInsightCard:    "KI-Einschätzung"
+
+EN:
+  mwTitle:          "My World"
+  mwSub:            "Your palate. Your story."
+  mwStatTastings:   "Tastings"
+  mwStatRatings:    "Ratings"
+  mwStatAvg:        "Avg score"
+  mwStatActivity:   "Active since"
+  mwUnlockAt:       "Unlock at 10 whiskies"
+  mwUnlockProgress: "{n} more whiskies to analytics"
+  mwProfileTitle:   "My taste profile"
+  mwProfileSub:     "Your dimensions compared"
+  mwJustMe:         "Just me"
+  mwFriends:        "Friends"
+  mwGlobal:         "Global"
+  mwAnalyticsTitle: "Analytics"
+  mwAnalyticsSub:   "Your development over time"
+  mwTrendRising:    "Rising trend"
+  mwTrendDropping:  "Dropping trend"
+  mwTrendStable:    "Stable"
+  mwConsistency:    "Consistency"
+  mwWheelTitle:     "Flavour wheel"
+  mwWheelSub:       "Your most common aromas"
+  mwCompareTitle:   "Compare"
+  mwCompareSub:     "You vs. platform median"
+  mwCompareAbove:   "You rate higher"
+  mwCompareBelow:   "You rate lower"
+  mwCompareSame:    "In line"
+  mwRecoTitle:      "Recommendations"
+  mwRecoSub:        "Based on your taste profile"
+  mwRecoLocked:     "Available after 10 rated whiskies"
+  mwJournalTitle:   "Journal"
+  mwJournalSub:     "All your drams"
+  mwJournalSearch:  "Search..."
+  mwJournalEmpty:   "No drams in journal yet."
+  mwCalendarTitle:  "Calendar"
+  mwCalendarSub:    "Your tasting history"
+  mwCalendarAll:    "All"
+  mwCalendarMine:   "Mine"
+  mwCalendarFriends:"Friends"
+  mwProfileEdit:    "Edit profile"
+  mwProfilePhoto:   "Change photo"
+  mwProfileName:    "Name"
+  mwProfileEmail:   "Email"
+  mwProfileSave:    "Save"
+  mwInsightCard:    "AI insight"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE PHASE 7 — DATEILISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 1: client/src/labs-v2/screens/meinewelt/MeineWeltHub.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Hub für Tab 3. Navigiert zu Sub-Screens.
+
+Lädt beim Start:
+  GET /api/participants/:id (Profil, Ø-Score, Tastings-Anzahl)
+  GET /api/participants/:id/flavor-profile (Dimensionen)
+  GET /api/participants/:id/insights (AI-Einschätzung)
+
+Sektionen:
+
+1. Snapshot-Karten (2×2 Grid, 8px Gap):
+   Tastings / Bewertungen / Ø Score / Aktiv seit
+   Jede Karte: 64px Höhe, bgCard, Zahl (22px bold gold) + Label (11px faint)
+
+2. KI-Einschätzung (wenn vorhanden):
+   Card mit Icon.Insight + t.mwInsightCard
+   Kurzer Text + Typ-Badge (aus insights.type)
+
+3. Fortschritts-Tracker (wenn < 10 Whiskies):
+   Horizontaler Fortschrittsbalken: X/10
+   t.mwUnlockProgress (n = 10 - count)
+   Farbe: phases.overall.accent
+
+4. Palate-Balken (wenn >= 10):
+   Dimension-Balken für Nase/Gaumen/Abgang/Gesamt
+   Aus flavor-profile Daten (normalisiert 0–100)
+
+5. Navigation-Grid (2×3, 88px Karten):
+   Profil → mwProfile (Icon.Profile, nose)
+   Analytics → mwAnalytics (Icon.Analytics, palate)
+   Connoisseur → mwConnoisseur (Icon.Report, finish)
+   Journal → mwJournal (Icon.Journal, overall)
+   Vergleich → mwCompare (Icon.Compare, nose)
+   Kalender → mwCalendar (Icon.Calendar, palate)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 2: client/src/labs-v2/screens/meinewelt/TasteProfile.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Persönliches Geschmacksprofil mit Radar-Chart.
+
+Daten:
+  GET /api/participants/:id (Profil)
+  GET /api/participants/:id/flavor-profile (mit compare-Modus)
+
+Recharts RadarChart:
+  5 Dimensionen: Nose, Palate, Finish, Overall, + Gesamt-Ø
+  Vergleichs-Modi: Nur ich / Freunde / Global (Segmented Control)
+  User-Polygon: gold, 60% Opacity
+  Vergleichs-Polygon: faint, gestrichelt
+
+  Confidence-Badges pro Dimension (basierend auf Anzahl Ratings):
+    Hoch (>20): gold "Sicher"
+    Mittel (10-20): muted "Gut"
+    Niedrig (<10): faint "Wenig Daten"
+
+Stil-Snapshot-Karten (3 Karten):
+  Stil (z.B. "Kritischer Bewerter"), Sweet Spot (z.B. "Speyside Sherry"),
+  Stabilität (Konsistenz-Score als Kreis)
+
+Rating-Stil-Statistiken:
+  Mean / Std-Abweichung / Range / Anzahl
+  Systematische Abweichung vs. Plattform
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 3: client/src/labs-v2/screens/meinewelt/TasteAnalytics.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Zeitreihen-Analyse des Geschmacks.
+
+Daten: GET /api/participants/:id/flavor-profile?period=all
+
+Wenn < 10 Whiskies:
+  Gesperrter Zustand: Fortschrittsbalken + t.mwUnlockAt
+  Unlock-Banner-Animation bei Erreichen von 10
+
+Wenn >= 10:
+  SVG Zeitreihen-Chart (monatliche Ø-Scores):
+    Selbst implementiert (kein Recharts nötig — einfache SVG-Linie)
+    X-Achse: Monate, Y-Achse: Scores 60–100
+    Datenreihe: gold Linie mit Punkten
+    Hover/Touch: Tooltip mit Datum + Score
+
+  Trend-Erkennung:
+    Steigend / Sinkend / Stabil (letzten 3 Monate vs. vorherige 3)
+    Icon.TrendUp / TrendDown + Label + Farbe
+
+  Konsistenz-Karte:
+    Stabilitäts-Score als Kreis (0–100)
+    Label: "Sehr konsistent" / "Konsistent" / "Variabel"
+    Streuungs-Analyse (Std-Abweichung aller Scores)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 4: client/src/labs-v2/screens/meinewelt/FlavourWheel.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Interaktives Flavour-Rad.
+
+Daten: GET /api/journal + GET /api/tastings/:id/ratings (alle)
+Verarbeitung: Keyword-Frequenz-Analyse aus Notizen + Tags
+
+Recharts Nested PieChart:
+  Innerer Ring: 8 Haupt-Kategorien (Fruity/Floral/Sweet/Spicy/
+                Woody/Smoky/Malty/Maritime)
+  Äußerer Ring: Sub-Kategorien
+  Farben: je Kategorie eine Farbe aus phases Palette
+
+Interaktion:
+  Klick auf Kategorie → Detail-Panel öffnet sich
+  Detail-Panel: häufigste Deskriptoren + Anzahl Erwähnungen
+
+Stat-Karten (3 Karten):
+  Gesamt-Nennungen / Top-Kategorie / Einzigartigste Aromen
+
+Legende mit Toggle-Buttons (Kategorien ein/ausblenden)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 5: client/src/labs-v2/screens/meinewelt/WhiskyCompare.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Eigene Scores vs. Plattform-Median.
+
+Daten: GET /api/participants/:id/compare
+
+Filter-Optionen:
+  Suche (Input, 44px), Sort (Dropdown: Delta abst/aufst/Score/Name)
+  Richtung (Alle/Über/Unter Median), Min-Anzahl-Filter, Zeitraum
+
+Liste aller bewerteten Whiskies:
+  Whisky-Name + Deine Wertung + Plattform + Delta-Badge
+  Mini-Fortschrittsbalken (deine Wertung blau, Plattform gold)
+
+Radar-Overlay (collapsible):
+  Bis zu 3 Whiskies auswählen für Dimensions-Vergleich
+  Recharts RadarChart mit mehreren Polygonen
+
+CSV-Export Button: Icon.Download + "CSV Export"
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 6: client/src/labs-v2/screens/meinewelt/Recommendations.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Personalisierte Whisky-Empfehlungen.
+
+Wenn < 10 Whiskies: gesperrter Zustand (wie Analytics)
+
+Daten: GET /api/participants/:id/recommendations
+
+Faktor-Toggles (Region / Cask / Torf / Alter / ABV):
+  Jeder Toggle: 44px Höhe, aktiv = phases.palate.dim + accent
+
+Empfehlungs-Karten:
+  Whisky-Name + Match-Score (%) + Begründung
+  Match-Score als Farbbalken (phases.overall)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 7: client/src/labs-v2/screens/meinewelt/JournalList.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Journal-Übersicht aller Solo-Drams.
+
+Daten: GET /api/journal?limit=20&offset=0 (paginiert)
+
+Filter/Sort:
+  Suchfeld (44px), Sort: Datum/Score/Name, Zeitraum-Chips, Score-Range
+
+Jeder Eintrag:
+  Whisky-Name (Cormorant Garamond 16px, bold)
+  Datum + Region + Cask (faint, 12px)
+  Gesamt-Score rechts (22px, bold, Band-Farbe)
+  Tastings-Icon wenn Teil eines Tastings
+
+Klick auf Eintrag: Detail-View (inline expandierbar)
+  Alle 4 Dimensions-Scores + Tags + Notizen
+  Voice-Memo-Wiedergabe wenn vorhanden
+
+Leerer Zustand:
+  Icon.Journal (groß, gedimmt) + t.mwJournalEmpty
+  Direktlink zur Solo-Erfassung
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 8: client/src/labs-v2/screens/meinewelt/TastingCalendar.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Monats-Kalender aller Tastings.
+
+Daten: GET /api/calendar (mit x-participant-id Header)
+
+Monatsgitter (7 Spalten, dynamisch generiert):
+  Jeder Tag mit Tastings: farbiger Dot (Status-Farbe)
+  Status-Farben: open=green, closed=gold, draft=faint, archived=faint
+
+Filter-Tabs: Alle / Meine / Freunde (Segmented Control)
+
+Ausgewählter Tag: Tasting-Karten darunter
+  Name + Zeit + Status-Badge + Teilnehmer-Zahl
+
+Sidebar (wenn Breit genug — min-width: 600px):
+  Upcoming Events Liste (nächste 5)
+  Stats: Tastings dieses Monat / dieses Jahr
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 9: client/src/labs-v2/screens/meinewelt/ProfileEdit.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Profil bearbeiten.
+
+Props: th, t, participantId: string, onBack: () => void
+
+Felder: Name (Input) + E-Mail (Input, readonly wenn verifiziert)
+Foto-Upload: hidden file input + click-through via Icon.Camera-Button
+  POST /api/participants/:id/photo (FormData)
+
+Speichern: PATCH /api/participants/:id
+  Body: { name, language }
+
+Sprach-Einstellung: DE/EN Toggle (persistiert über PATCH)
+
+──────────────────────────────────────────────────────────────────────────────
+DATEI 10: client/src/labs-v2/screens/meinewelt/MeineWeltScreen.tsx
+──────────────────────────────────────────────────────────────────────────────
+
+Haupt-Container für Tab 3. Verwaltet Navigation zwischen Sub-Screens.
+
+Interner State: activeSubScreen: string | null
+
+Rendert je nach activeSubScreen:
+  null        → MeineWeltHub
+  "profile"   → TasteProfile
+  "analytics" → TasteAnalytics
+  "wheel"     → FlavourWheel
+  "compare"   → WhiskyCompare
+  "reco"      → Recommendations
+  "journal"   → JournalList
+  "calendar"  → TastingCalendar
+  "edit"      → ProfileEdit
+
+Alle Sub-Screens haben BackBtn → activeSubScreen = null
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRATION IN LABSV2APP.TSX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Import ergänzen:
+  import { MeineWeltScreen } from './screens/meinewelt/MeineWeltScreen'
+
+In renderContent() — Tab "meinewelt" ersetzen:
+  case "meinewelt": return (
+    <MeineWeltScreen th={th} t={t}
+      participantId={/* aus Session */}
+    />
+  )
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE PHASE 7
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/participants/:id                    — Profil-Daten
+GET  /api/participants/:id/flavor-profile     — Dimensionen + Top-Regionen
+GET  /api/participants/:id/insights           — KI-Einschätzung
+GET  /api/participants/:id/compare            — Du vs. Plattform
+GET  /api/participants/:id/recommendations    — Empfehlungen
+PATCH /api/participants/:id                   — Profil speichern
+PATCH /api/participants/:id/language          — Sprache persistieren
+
+GET  /api/journal                             — Journal-Einträge
+GET  /api/journal/:id                         — Einzelner Eintrag
+DELETE /api/journal/:id                       — Eintrag löschen
+
+GET  /api/calendar                            — Kalender-Daten
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE PHASE 7
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Fortschritts-Tracker: Analytics-Lock bei < 10 Whiskies
+  [ ] Radar-Chart: Recharts importiert (nicht neu installiert)
+  [ ] Zeitreihen: eigenes SVG (kein Recharts nötig)
+  [ ] Flavour-Rad: Recharts Nested PieChart
+  [ ] Kalender: x-participant-id Header gesetzt
+  [ ] Journal: Pagination (limit/offset)
+  [ ] Alle Filter-Inputs: 44px Höhe
+  [ ] Segmented Controls: SP-Raster korrekt
+  [ ] Kein einziges Emoji
+  [ ] BackBtn überall mit minHeight 44px
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PHASE 7 PROMPT
+═══════════════════════════════════════════════════════════════════════════════
