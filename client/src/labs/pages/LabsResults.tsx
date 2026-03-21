@@ -956,6 +956,18 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const isHost = currentParticipant?.id === tasting.hostId;
   const presentationActive = tasting.presentationSlide != null && !isHost;
 
+  const getWhiskyDisplayName = (
+    whisky: any,
+    index: number
+  ) => {
+    if (!tasting.blindMode) return whisky.name;
+    const isRevealed = (tasting.guidedRevealStep ?? 0) >= 1 ||
+                        tasting.status === 'archived';
+    return isRevealed
+      ? whisky.name
+      : `Sample ${index + 1}`;
+  };
+
   if (presentationActive) {
     return (
       <PresentationViewerOverlay
