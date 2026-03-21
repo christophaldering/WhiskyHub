@@ -101,10 +101,6 @@ export default function LabsCircle() {
     return () => window.removeEventListener("resize", checkTabsOverflow);
   }, [checkTabsOverflow]);
 
-  useEffect(() => {
-    checkTabsOverflow();
-  }, [tab, pendingList.length, checkTabsOverflow]);
-
   const { data: friends, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
@@ -117,6 +113,12 @@ export default function LabsCircle() {
     enabled: !!pid && tab === "friends",
     refetchInterval: 30000,
   });
+
+  const pendingList: Array<Record<string, unknown>> = Array.isArray(pendingRequests) ? pendingRequests as Array<Record<string, unknown>> : [];
+
+  useEffect(() => {
+    checkTabsOverflow();
+  }, [tab, pendingList.length, checkTabsOverflow]);
 
   const { data: onlineData } = useQuery<{ online: OnlineFriend[]; count: number }>({
     queryKey: ["friends-online", pid],
@@ -220,9 +222,6 @@ export default function LabsCircle() {
       />
     );
   }
-
-  const friendsList: Array<Record<string, unknown>> = Array.isArray(friends) ? friends : [];
-  const pendingList: Array<Record<string, unknown>> = Array.isArray(pendingRequests) ? pendingRequests as Array<Record<string, unknown>> : [];
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Users }> = [
     { key: "friends", label: "Friends", icon: Users },
