@@ -48,7 +48,7 @@ export default function TastingRecap({ th, t, recap }: Props) {
     if (recap.tasting.location) lines.push(recap.tasting.location);
     lines.push("");
     lines.push(`${t.resTopRated}:`);
-    recap.topRated.slice(0, 3).forEach((w, i) => {
+    (recap.topRated || []).slice(0, 3).forEach((w, i) => {
       lines.push(`  #${i + 1} ${w.name} - ${w.avgScore.toFixed(1)}`);
     });
     lines.push("");
@@ -102,7 +102,7 @@ export default function TastingRecap({ th, t, recap }: Props) {
 
     doc.setDrawColor(...accent); doc.setLineWidth(0.5); doc.line(margin, y, pw - margin, y); y += 12;
 
-    if (recap.topRated.length > 0) {
+    if ((recap.topRated || []).length > 0) {
       doc.setFontSize(15); doc.setFont("helvetica", "bold"); doc.setTextColor(...dark);
       doc.text(t.resTopRated, margin, y); y += 10;
       recap.topRated.slice(0, 5).forEach((w, i) => {
@@ -172,7 +172,7 @@ export default function TastingRecap({ th, t, recap }: Props) {
         {recap.tasting.location && ` -- ${recap.tasting.location}`}
       </div>
 
-      {recap.topRated.length > 0 && (
+      {(recap.topRated || []).length > 0 && (
         <div
           data-testid="card-top-rated"
           style={{
@@ -286,7 +286,7 @@ export default function TastingRecap({ th, t, recap }: Props) {
         </div>
       </div>
 
-      {recap.participantHighlights.length > 0 && (
+      {(recap.participantHighlights || []).length > 0 && (
         <div
           data-testid="card-participant-highlights"
           style={{

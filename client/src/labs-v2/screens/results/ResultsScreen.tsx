@@ -122,7 +122,7 @@ export default function ResultsScreen({ th, t, lang, tastingId, participantId, i
       },
       participantCount: recapData.participantCount,
       whiskyCount: recapData.whiskyCount,
-      topRated: recapData.topRated.map(w => ({
+      topRated: (recapData.topRated || []).map(w => ({
         name: w.name,
         distillery: w.distillery,
         avgScore: w.avgScore,
@@ -135,7 +135,7 @@ export default function ResultsScreen({ th, t, lang, tastingId, participantId, i
 
   const presentationWhiskies = useMemo(() => {
     if (!resultsData) return [];
-    const sorted = [...resultsData.results].sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0));
+    const sorted = [...(resultsData.results || [])].sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0));
     return sorted.map((w, i) => ({
       name: w.name,
       distillery: w.distillery ?? undefined,

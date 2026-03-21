@@ -81,7 +81,7 @@ export default function PostTastingInsights({ th, t, results, participantId, pri
   ];
 
   const ranked = useMemo(
-    () => [...results].filter(r => r.avgOverall != null).sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0)),
+    () => [...(results || [])].filter(r => r.avgOverall != null).sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0)),
     [results]
   );
 

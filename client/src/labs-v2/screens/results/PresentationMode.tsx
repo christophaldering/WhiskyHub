@@ -20,7 +20,7 @@ interface Props {
   whiskies: WhiskySlide[];
 }
 
-export default function PresentationMode({ th, t, tastingId, participantId, isHost, whiskies }: Props) {
+export default function PresentationMode({ th, t, tastingId, participantId, isHost, whiskies = [] }: Props) {
   const [active, setActive] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [viewerSlide, setViewerSlide] = useState<number | null>(null);

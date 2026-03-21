@@ -44,6 +44,7 @@ export function computeInsights(
   participantId: string,
   prices?: Record<string, number>
 ): InsightsData {
+  if (!results) results = [];
   const userScores: { name: string; userScore: number; groupScore: number }[] = [];
   let userTotal = 0;
   let userCount = 0;
@@ -58,7 +59,7 @@ export function computeInsights(
   const groupFinishAvgs: number[] = [];
 
   for (const w of results) {
-    const userRating = w.ratings.find(r => r.participantId === participantId);
+    const userRating = (w.ratings || []).find(r => r.participantId === participantId);
     const groupAvg = w.avgOverall ?? 0;
 
     if (groupAvg > 0) {
@@ -147,14 +148,14 @@ export function computeInsights(
 
   const sherryAvg = sherryWhiskies.length > 0
     ? Math.round(avg(sherryWhiskies.map(w => {
-        const ur = w.ratings.find(r => r.participantId === participantId);
+        const ur = (w.ratings || []).find(r => r.participantId === participantId);
         return ur?.overall ?? w.avgOverall ?? 0;
       })) * 10) / 10
     : null;
 
   const bourbonAvg = bourbonWhiskies.length > 0
     ? Math.round(avg(bourbonWhiskies.map(w => {
-        const ur = w.ratings.find(r => r.participantId === participantId);
+        const ur = (w.ratings || []).find(r => r.participantId === participantId);
         return ur?.overall ?? w.avgOverall ?? 0;
       })) * 10) / 10
     : null;

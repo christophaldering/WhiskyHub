@@ -20,6 +20,7 @@ const WHISKY_NOUNS = [
 ];
 
 function hashCode(str: string): number {
+  if (!str) return 0;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const ch = str.charCodeAt(i);
@@ -213,7 +214,7 @@ export default function Leaderboard({ th, t, participantId }: Props) {
           {activeCat.entries.map((entry, i) => {
             const isSelf = entry.isSelf;
             const isFriend = entry.isFriend;
-            const displayName = isSelf ? t.youLabel : isFriend ? String(entry.name || "") : getWhiskyAlias(entry.id);
+            const displayName = isSelf ? t.youLabel : isFriend ? String(entry.name || "") : (entry.name || getWhiskyAlias(entry.id || ""));
             const borderStyle = isSelf
               ? `1px solid ${th.gold}`
               : isFriend
