@@ -30,23 +30,21 @@ export const LabsAppleApp: React.FC = () => {
   const th = THEMES[themeKey]
   const t  = I18N[lang]
 
-  // Check session on mount
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.id) setSession(data) })
-      .catch(() => {})
-      .finally(() => setAuthChecked(true))
+    try {
+      const saved = localStorage.getItem('casksense_session')
+      if (saved) { const s = JSON.parse(saved); if (s?.id) setSession(s) }
+    } catch {}
+    setAuthChecked(true)
   }, [])
 
   const handleLogin = (data: any) => {
     setSession(data)
+    try { localStorage.setItem('casksense_session', JSON.stringify(data)) } catch {}
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    } catch { }
+  const handleLogout = () => {
+    try { localStorage.removeItem('casksense_session') } catch {}
     setSession(null)
     setSubScreen(null)
     setActiveTab('tastings')

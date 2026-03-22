@@ -25,7 +25,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
   // Load session
   useEffect(() => {
-    fetch('/api/auth/me', { headers: { 'x-participant-id': '' } }).then(r => r.json()).then(setSession).catch(() => {})
+    try { const s = localStorage.getItem('casksense_session'); if (s) { const p = JSON.parse(s); if (p?.id) setSession(p) } } catch {}
   }, [])
 
   // SSE in lobby
@@ -77,7 +77,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
     try {
       let pid = session?.id
       if (!pid) {
-        const gRes = await fetch('/api/auth/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+        const gRes = await fetch('/api/participants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
         const g = await gRes.json(); pid = g.id
       }
       await fetch(`/api/tastings/${tasting.id}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': pid }, body: JSON.stringify({ name }) })

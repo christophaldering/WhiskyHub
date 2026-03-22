@@ -1,6 +1,6 @@
 // CaskSense Apple — AuthScreen
 // Login · Registrieren · Gast-Modus
-// APIs: POST /api/auth/login, POST /api/auth/register, POST /api/auth/guest
+// APIs: POST /api/participants/login, POST /api/participants
 import React, { useState } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
@@ -51,9 +51,9 @@ const LoginView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
     if (!email || !pass) { setError((t as any).authMissingFields); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) })
+      const res = await fetch('/api/participants/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pin: pass }) })
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.message || data.error || (t as any).authLoginError); return }
       const data = await res.json()
-      if (!res.ok) { setError(data.message || data.error || (t as any).authLoginError); return }
       onSuccess(data)
     } catch { setError((t as any).authNetworkError) }
     finally { setLoading(false) }
@@ -89,16 +89,13 @@ const RegisterView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: 
   const submit = async () => {
     if (!name || !email || !pass) { setError((t as any).authMissingFields); return }
     if (pass !== pass2) { setError((t as any).authPasswordMismatch); return }
-    if (pass.length < 8) { setError((t as any).authPasswordTooShort); return }
+    if (pass.length < 4) { setError((t as any).authPasswordTooShort); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password: pass }) })
+      const res = await fetch('/api/participants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, pin: pass }) })
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.message || data.error || (t as any).authRegisterError); return }
       const data = await res.json()
-      if (!res.ok) { setError(data.message || data.error || (t as any).authRegisterError); return }
-      // Auto-login after register
-      const loginRes = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) })
-      if (loginRes.ok) { const session = await loginRes.json(); onSuccess(session) }
-      else onSuccess(data)
+      onSuccess(data)
     } catch { setError((t as any).authNetworkError) }
     finally { setLoading(false) }
   }
@@ -136,10 +133,9 @@ const GuestView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
     setLoading(true); setError('')
     try {
       const body: any = { name: name.trim() }
-      if (mode === 'ultra') body.ephemeral = true
-      const res = await fetch('/api/auth/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const res = await fetch('/api/participants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.message || (t as any).authGuestError); return }
       const data = await res.json()
-      if (!res.ok) { setError(data.message || (t as any).authGuestError); return }
       onSuccess(data)
     } catch { setError((t as any).authNetworkError) }
     finally { setLoading(false) }
