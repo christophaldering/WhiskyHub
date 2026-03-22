@@ -148,6 +148,22 @@ export interface Translations {
   authPasswordMismatch: string; authPasswordTooShort: string
   authLoginError: string; authRegisterError: string; authGuestError: string; authNetworkError: string
   authVerifyReminder: string; authLogout: string
+  authForgotPin: string; authForgotPinTitle: string; authForgotPinSub: string; authForgotPinSend: string; authForgotPinSending: string
+  authForgotPinVerifyTitle: string; authForgotPinVerifySub: string; authForgotPinCode: string; authForgotPinCodePH: string
+  authForgotPinNewPin: string; authForgotPinNewPinPH: string; authForgotPinReset: string; authForgotPinResetting: string
+  authForgotPinDoneTitle: string; authForgotPinDoneMsg: string; authForgotPinBackToLogin: string
+  authForgotPinPinTooShort: string; authForgotPinCodeAndPinRequired: string
+  authVerifyTitle: string; authVerifySub: string; authVerifyCodeLabel: string; authVerifyCodePH: string
+  authVerifyCodeHint: string; authVerifyConfirm: string; authVerifyVerifying: string
+  authVerifyResend: string; authVerifyResending: string; authVerifyResent: string; authVerifyBackToLogin: string
+  authBlockedTitle: string; authBlockedSub: string; authBlockedMsg: string
+  authBlockedResendHint: string; authBlockedResend: string; authBlockedBack: string
+  authConsentTitle: string; authConsentSub: string; authConsentText: string
+  authConsentCheckLabel: string; authConsentPrivacyLink: string; authConsentTermsLink: string; authConsentAnd: string
+  authConsentCancel: string; authConsentAccept: string; authConsentAccepting: string
+  authPrivacyConsent: string; authPrivacyConsentRequired: string
+  authNewsletterOptIn: string; authNewsletterHint: string
+  authInvalidEmail: string; authLoginPrivacyNotice: string; authPrivacyLink: string
 }
 
 const DE: Translations = {
@@ -290,6 +306,34 @@ const DE: Translations = {
   authRegisterError: 'Registrierung fehlgeschlagen.', authGuestError: 'Gast-Login fehlgeschlagen.',
   authNetworkError: 'Netzwerkfehler. Bitte versuche es erneut.', authVerifyReminder: 'Bitte bestätige deine E-Mail-Adresse.',
   authLogout: 'Abmelden',
+  authForgotPin: 'PIN vergessen?', authForgotPinTitle: 'PIN zurücksetzen', authForgotPinSub: 'Gib deine E-Mail-Adresse ein, um einen Reset-Code zu erhalten.',
+  authForgotPinSend: 'Code senden', authForgotPinSending: 'Wird gesendet...',
+  authForgotPinVerifyTitle: 'Neues Passwort setzen', authForgotPinVerifySub: 'Gib den Code aus deiner E-Mail und dein neues Passwort ein.',
+  authForgotPinCode: 'Reset-Code', authForgotPinCodePH: '6-stelliger Code',
+  authForgotPinNewPin: 'Neues Passwort', authForgotPinNewPinPH: 'min. 4 Zeichen',
+  authForgotPinReset: 'Passwort zurücksetzen', authForgotPinResetting: 'Wird zurückgesetzt...',
+  authForgotPinDoneTitle: 'Passwort zurückgesetzt', authForgotPinDoneMsg: 'Dein Passwort wurde erfolgreich geändert. Du kannst dich jetzt anmelden.',
+  authForgotPinBackToLogin: 'Zurück zum Login',
+  authForgotPinPinTooShort: 'Passwort muss mindestens 4 Zeichen lang sein.',
+  authForgotPinCodeAndPinRequired: 'Bitte Code und neues Passwort eingeben.',
+  authVerifyTitle: 'E-Mail bestätigen', authVerifySub: 'Wir haben dir einen Bestätigungscode gesendet.',
+  authVerifyCodeLabel: 'Bestätigungscode', authVerifyCodePH: '6-stelliger Code',
+  authVerifyCodeHint: 'Prüfe deinen Posteingang und Spam-Ordner.', authVerifyConfirm: 'Bestätigen', authVerifyVerifying: 'Wird geprüft...',
+  authVerifyResend: 'Code erneut senden', authVerifyResending: 'Wird gesendet...', authVerifyResent: 'Code gesendet!', authVerifyBackToLogin: 'Zurück zum Login',
+  authBlockedTitle: 'Konto gesperrt', authBlockedSub: 'E-Mail-Verifizierung nicht abgeschlossen',
+  authBlockedMsg: 'Deine E-Mail wurde nicht rechtzeitig bestätigt. Bitte wende dich an den Administrator:',
+  authBlockedResendHint: 'Falls du deinen Verifizierungscode erneut benötigst:',
+  authBlockedResend: 'Code erneut senden', authBlockedBack: 'Zurück zum Login',
+  authConsentTitle: 'Datenschutz', authConsentSub: 'Bitte akzeptiere die Datenschutzbestimmungen, um fortzufahren.',
+  authConsentText: 'Wir verarbeiten deine Daten gemäß unserer Datenschutzrichtlinie, um dir die bestmögliche Erfahrung zu bieten.',
+  authConsentCheckLabel: 'Ich akzeptiere die', authConsentPrivacyLink: 'Datenschutzrichtlinie',
+  authConsentTermsLink: 'AGB', authConsentAnd: 'und die',
+  authConsentCancel: 'Abbrechen', authConsentAccept: 'Akzeptieren & weiter', authConsentAccepting: 'Wird gespeichert...',
+  authPrivacyConsent: 'Ich akzeptiere die Datenschutzrichtlinie und AGB', authPrivacyConsentRequired: 'Bitte akzeptiere die Datenschutzbestimmungen.',
+  authNewsletterOptIn: 'Newsletter abonnieren', authNewsletterHint: 'Gelegentlich Neuigkeiten und Tipps per E-Mail.',
+  authInvalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+  authLoginPrivacyNotice: 'Mit der Anmeldung stimmst du unserer Datenschutzrichtlinie zu.',
+  authPrivacyLink: 'Datenschutzrichtlinie',
 }
 
 const EN: Translations = {
@@ -432,6 +476,34 @@ const EN: Translations = {
   authRegisterError: 'Registration failed.', authGuestError: 'Guest login failed.',
   authNetworkError: 'Network error. Please try again.', authVerifyReminder: 'Please verify your email address.',
   authLogout: 'Sign out',
+  authForgotPin: 'Forgot PIN?', authForgotPinTitle: 'Reset PIN', authForgotPinSub: 'Enter your email to receive a reset code.',
+  authForgotPinSend: 'Send code', authForgotPinSending: 'Sending...',
+  authForgotPinVerifyTitle: 'Set new password', authForgotPinVerifySub: 'Enter the code from your email and your new password.',
+  authForgotPinCode: 'Reset code', authForgotPinCodePH: '6-digit code',
+  authForgotPinNewPin: 'New password', authForgotPinNewPinPH: 'min. 4 characters',
+  authForgotPinReset: 'Reset password', authForgotPinResetting: 'Resetting...',
+  authForgotPinDoneTitle: 'Password reset', authForgotPinDoneMsg: 'Your password has been successfully changed. You can now sign in.',
+  authForgotPinBackToLogin: 'Back to login',
+  authForgotPinPinTooShort: 'Password must be at least 4 characters.',
+  authForgotPinCodeAndPinRequired: 'Please enter code and new password.',
+  authVerifyTitle: 'Verify email', authVerifySub: 'We sent you a verification code.',
+  authVerifyCodeLabel: 'Verification code', authVerifyCodePH: '6-digit code',
+  authVerifyCodeHint: 'Check your inbox and spam folder.', authVerifyConfirm: 'Confirm', authVerifyVerifying: 'Verifying...',
+  authVerifyResend: 'Resend code', authVerifyResending: 'Sending...', authVerifyResent: 'Code sent!', authVerifyBackToLogin: 'Back to login',
+  authBlockedTitle: 'Account blocked', authBlockedSub: 'Email verification not completed',
+  authBlockedMsg: 'Your email was not verified in time. Please contact the administrator:',
+  authBlockedResendHint: 'If you need your verification code again:',
+  authBlockedResend: 'Resend code', authBlockedBack: 'Back to login',
+  authConsentTitle: 'Privacy', authConsentSub: 'Please accept the privacy policy to continue.',
+  authConsentText: 'We process your data according to our privacy policy to provide you the best experience.',
+  authConsentCheckLabel: 'I accept the', authConsentPrivacyLink: 'Privacy Policy',
+  authConsentTermsLink: 'Terms of Service', authConsentAnd: 'and the',
+  authConsentCancel: 'Cancel', authConsentAccept: 'Accept & continue', authConsentAccepting: 'Saving...',
+  authPrivacyConsent: 'I accept the Privacy Policy and Terms of Service', authPrivacyConsentRequired: 'Please accept the privacy policy.',
+  authNewsletterOptIn: 'Subscribe to newsletter', authNewsletterHint: 'Occasional news and tips via email.',
+  authInvalidEmail: 'Please enter a valid email address.',
+  authLoginPrivacyNotice: 'By signing in, you agree to our privacy policy.',
+  authPrivacyLink: 'Privacy Policy',
 }
 
 export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }

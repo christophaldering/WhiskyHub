@@ -494,3 +494,16 @@ export const Map = ({ color, size }: IconProps) => {
     <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
   </svg>
 }
+export const Shield = ({ color, size }: IconProps) => {
+  const { color: c, size: s } = def(color, size)
+  return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+}
+export const CheckCircle = ({ color, size }: IconProps) => {
+  const { color: c, size: s } = def(color, size)
+  return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+}
