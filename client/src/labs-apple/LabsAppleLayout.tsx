@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ThemeTokens, SP } from './theme/tokens'
 import { Translations } from './theme/i18n'
@@ -64,6 +64,25 @@ export const LabsAppleLayout: React.FC<Props> = ({
   const isAdmin = session?.isAdmin || session?.role === 'admin'
 
   const closeProfile = () => setProfileOpen(false)
+
+  useEffect(() => {
+    const root = document.getElementById('root')
+    if (!root) return
+    if (profileOpen) {
+      root.style.position = 'relative'
+      root.style.zIndex = '1'
+      root.style.isolation = 'isolate'
+    } else {
+      root.style.position = ''
+      root.style.zIndex = ''
+      root.style.isolation = ''
+    }
+    return () => {
+      root.style.position = ''
+      root.style.zIndex = ''
+      root.style.isolation = ''
+    }
+  }, [profileOpen])
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
