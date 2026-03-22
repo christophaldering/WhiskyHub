@@ -145,7 +145,7 @@ export interface Translations {
 const DE: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Entdecken', tabMeineWelt: 'Meine Welt', tabCircle: 'Circle',
-  hubGreeting: 'Guten Abend.', hubSub: 'Was bringst du mit heute Abend?',
+  hubGreeting: 'Guten Abend.', hubSub: 'Was darf es heute sein?',
   hubJoin: 'Tasting beitreten', hubJoinDesc: 'Code eingeben und loslegen',
   hubSolo: 'Dram erfassen', hubSoloDesc: 'Alleine verkosten und notieren',
   hubHost: 'Tasting veranstalten', hubHostDesc: 'Neue Session einrichten',
@@ -274,7 +274,7 @@ const DE: Translations = {
 const EN: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Discover', tabMeineWelt: 'My World', tabCircle: 'Circle',
-  hubGreeting: 'Good evening.', hubSub: 'What are you bringing tonight?',
+  hubGreeting: 'Good evening.', hubSub: 'What shall it be today?',
   hubJoin: 'Join tasting', hubJoinDesc: 'Enter code and dive in',
   hubSolo: 'Log a dram', hubSoloDesc: 'Taste and note on your own',
   hubHost: 'Host a tasting', hubHostDesc: 'Set up a new session',
