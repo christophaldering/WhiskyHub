@@ -208,7 +208,6 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
     { id: 'join', icon: <Icon.Join color={th.phases.nose.accent} size={32} />, label: t.hubJoin, desc: t.hubJoinDesc, phaseId: 'nose' as const, action: onJoin },
     { id: 'solo', icon: <Icon.Solo color={th.phases.palate.accent} size={32} />, label: t.hubSolo, desc: t.hubSoloDesc, phaseId: 'palate' as const, action: onSolo },
     { id: 'host', icon: <Icon.Host color={th.phases.finish.accent} size={32} />, label: t.hubHost, desc: t.hubHostDesc, phaseId: 'finish' as const, action: onHost },
-    ...(onHostDashboard ? [{ id: 'dashboard', icon: <Icon.Analytics color={th.phases.overall.accent} size={32} />, label: t.hubDashboard, desc: t.hubDashboardDesc, phaseId: 'overall' as const, action: onHostDashboard }] : []),
   ]
 
   return (
