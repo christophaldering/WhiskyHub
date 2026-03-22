@@ -3,6 +3,55 @@ import { useV2Theme, useV2Lang } from "../../LabsV2Layout";
 import { Back, Spinner, Nose, Palate, Finish, Overall } from "../../icons";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
 import type { ThemeTokens } from "../../tokens";
+
+function BottlePlaceholderLarge({ color }: { color: string }) {
+  return (
+    <svg width="80" height="120" viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="28" y="6" width="24" height="12" rx="3" fill={color} opacity="0.25" />
+      <rect x="32" y="18" width="16" height="8" fill={color} opacity="0.2" />
+      <path d="M24 34C24 30 28 26 32 26H48C52 26 56 30 56 34V104C56 108.4 52.4 112 48 112H32C27.6 112 24 108.4 24 104V34Z" fill={color} fillOpacity="0.12" stroke={color} strokeWidth="1.5" strokeOpacity="0.25" />
+      <rect x="30" y="52" width="20" height="16" rx="2" fill={color} opacity="0.1" />
+    </svg>
+  );
+}
+
+function BottleHeroImage({ imageUrl, th }: { imageUrl: string | null; th: ThemeTokens }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (!imageUrl || imgError) {
+    return (
+      <div
+        style={{
+          width: "100%", display: "flex", justifyContent: "center",
+          padding: `${SP.md}px 0`, marginBottom: SP.md,
+        }}
+        data-testid="img-bottle-hero-placeholder"
+      >
+        <BottlePlaceholderLarge color={th.muted} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%", display: "flex", justifyContent: "center",
+        marginBottom: SP.md,
+      }}
+      data-testid="img-bottle-hero"
+    >
+      <img
+        src={imageUrl}
+        alt=""
+        onError={() => setImgError(true)}
+        style={{
+          maxWidth: 200, maxHeight: 280, objectFit: "contain",
+          borderRadius: RADIUS.md,
+        }}
+      />
+    </div>
+  );
+}
 interface AggregatedData {
   avgNose: number | null;
   avgTaste: number | null;
@@ -27,6 +76,7 @@ interface BottleData {
   caskType: string | null;
   age: string | null;
   abv: string | null;
+  imageUrl: string | null;
   aggregated: AggregatedData;
   relatedTastings: RelatedTasting[];
   ratings: Array<{
@@ -128,6 +178,8 @@ export default function BottleDetail({ bottleId, onBack }: BottleDetailProps) {
 
       {!loading && !error && bottle && (
         <>
+          <BottleHeroImage imageUrl={bottle.imageUrl} th={th} />
+
           <div style={{ marginBottom: SP.lg }}>
             <h1
               style={{ fontFamily: FONT.display, fontSize: 22, fontWeight: 600, color: th.text, marginBottom: SP.xs }}

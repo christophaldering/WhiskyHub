@@ -4300,6 +4300,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [editWbLookupId, setEditWbLookupId] = useState("");
   const [editWbLookupLoading, setEditWbLookupLoading] = useState(false);
   const [editWbLookupResult, setEditWbLookupResult] = useState<string>("");
+  const [editWbFetchImageLoading, setEditWbFetchImageLoading] = useState(false);
+  const [editWbFetchImageResult, setEditWbFetchImageResult] = useState<string>("");
   const [showAiImport, setShowAiImport] = useState(false);
   const [aiImportFiles, setAiImportFiles] = useState<File[]>([]);
   const [aiImportText, setAiImportText] = useState("");
@@ -4665,6 +4667,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     setEditingWhiskyId(w.id);
     setEditWbLookupId(w.whiskybaseId ? String(w.whiskybaseId) : "");
     setEditWbLookupResult("");
+    setEditWbFetchImageResult("");
+    setEditWbFetchImageLoading(false);
     setEditFields({
       name: w.name || "",
       distillery: w.distillery || "",
@@ -6108,6 +6112,49 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       )}
                       <span className="text-xs flex-1" style={{ color: "var(--labs-text-muted)", textAlign: "right" }}>Whiskybase Lookup</span>
                     </div>
+                    {editWbLookupId.trim() && (
+                      <div className="flex items-center gap-2" style={{ marginTop: 4, marginBottom: 4 }}>
+                        <button
+                          className="labs-btn-ghost text-xs"
+                          disabled={editWbFetchImageLoading || !editWbLookupId.trim()}
+                          onClick={async () => {
+                            setEditWbFetchImageLoading(true);
+                            setEditWbFetchImageResult("");
+                            try {
+                              const res = await fetch(`/api/whiskies/${w.id}/fetch-whiskybase-image`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ whiskybaseId: editWbLookupId.trim() }),
+                              });
+                              if (res.ok) {
+                                setEditWbFetchImageResult("ok");
+                                queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+                              } else {
+                                const data = await res.json().catch(() => ({}));
+                                setEditWbFetchImageResult(data.message || "Failed");
+                              }
+                            } catch {
+                              setEditWbFetchImageResult("Network error");
+                            } finally {
+                              setEditWbFetchImageLoading(false);
+                            }
+                          }}
+                          data-testid="labs-edit-wb-fetch-image-btn"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "4px 10px", borderRadius: 6,
+                            border: `1px solid ${editWbFetchImageResult === "ok" ? "var(--labs-success)" : "var(--labs-accent)"}`,
+                            color: editWbFetchImageResult === "ok" ? "var(--labs-success)" : "var(--labs-accent)",
+                          }}
+                        >
+                          {editWbFetchImageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : editWbFetchImageResult === "ok" ? <Check className="w-3 h-3" /> : <Image className="w-3 h-3" />}
+                          Bild von Whiskybase laden
+                        </button>
+                        {editWbFetchImageResult && editWbFetchImageResult !== "ok" && (
+                          <span className="text-xs" style={{ color: "var(--labs-danger)" }}>{editWbFetchImageResult}</span>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <input className="labs-input col-span-2" placeholder="Name" value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
                       <input className="labs-input" placeholder="Distillery" value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />

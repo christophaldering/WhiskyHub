@@ -2,12 +2,63 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useV2Theme, useV2Lang } from "../../LabsV2Layout";
 import { Back, Search, Spinner } from "../../icons";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
+import type { ThemeTokens } from "../../tokens";
+
+function BottlePlaceholderSvg({ color, size = 48 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="18" y="4" width="12" height="6" rx="2" fill={color} opacity="0.25" />
+      <rect x="20" y="10" width="8" height="4" fill={color} opacity="0.2" />
+      <path d="M16 18C16 15.8 18 14 20 14H28C30 14 32 15.8 32 18V40C32 42.2 30.2 44 28 44H20C17.8 44 16 42.2 16 40V18Z" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="1.5" strokeOpacity="0.3" />
+      <rect x="19" y="24" width="10" height="8" rx="1" fill={color} opacity="0.12" />
+    </svg>
+  );
+}
+
+function BottleThumbnail({ imageUrl, th }: { imageUrl: string | null; th: ThemeTokens }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (!imageUrl || imgError) {
+    return (
+      <div
+        style={{
+          width: 48, height: 48, borderRadius: RADIUS.sm,
+          background: th.bgCard, border: `1px solid ${th.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0, overflow: "hidden",
+        }}
+        data-testid="img-bottle-placeholder"
+      >
+        <BottlePlaceholderSvg color={th.muted} size={36} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: 48, height: 48, borderRadius: RADIUS.sm,
+        overflow: "hidden", flexShrink: 0,
+        border: `1px solid ${th.border}`,
+      }}
+      data-testid="img-bottle-thumbnail"
+    >
+      <img
+        src={imageUrl}
+        alt=""
+        onError={() => setImgError(true)}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    </div>
+  );
+}
 
 interface WhiskyItem {
   id: string;
   name: string;
   distillery: string | null;
   region: string | null;
+  imageUrl: string | null;
   avgOverall: number | null;
   ratingCount: number;
 }
@@ -227,6 +278,7 @@ export default function ExploreWhiskies({ onBack, onSelectBottle }: ExploreWhisk
                 }}
                 data-testid={`whisky-card-${w.id}`}
               >
+                <BottleThumbnail imageUrl={w.imageUrl} th={th} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: th.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {w.name}

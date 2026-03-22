@@ -1934,6 +1934,26 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.post("/api/whiskies/:id/fetch-whiskybase-image", async (req, res) => {
+    try {
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+      const wbId = req.body.whiskybaseId || whisky.whiskybaseId;
+      if (!wbId) return res.status(400).json({ message: "No Whiskybase ID provided" });
+      const imageUrl = await tryFetchWhiskybaseImage(wbId, objectStorage);
+      if (!imageUrl) return res.status(404).json({ message: "No image found on Whiskybase" });
+      if (whisky.imageUrl && whisky.imageUrl !== imageUrl) {
+        await storage.addWhiskyGalleryPhoto({ whiskyId: whisky.id, photoUrl: whisky.imageUrl, source: "replaced" });
+      }
+      const updateData: Record<string, string> = { imageUrl };
+      if (!whisky.whiskybaseId && wbId) updateData.whiskybaseId = wbId;
+      const updated = await storage.updateWhisky(whisky.id, updateData);
+      res.json(updated || { ...whisky, ...updateData });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to fetch image" });
+    }
+  });
+
   app.patch("/api/tastings/:id/reorder", async (req, res) => {
     try {
       const tastingId = req.params.id;
