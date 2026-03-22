@@ -8,7 +8,8 @@ import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
 import { BottlersScreen } from './Bottlers'
 import { Distilleries } from './Destilleries'
-import { Vocabulary, Research, MakingOf } from '../misc/MiscScreens'
+import { Vocabulary, MakingOf } from '../misc/MiscScreens'
+import { DeepDiveHub } from './DeepDiveHub'
 
 // ── Tasting Guide ─────────────────────────────────────────────────────────
 const GUIDE_SECTIONS = [
@@ -312,7 +313,7 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   if (sub === 'history') return <HistoricalArchive th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'bottlers')  return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'vocab')     return <Vocabulary th={th} t={t} lang={lang} onBack={goBack} />
-  if (sub === 'research')  return <Research th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'research')  return <DeepDiveHub th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'makingof')  return <MakingOf th={th} t={t} participantId={participantId} onBack={goBack} />
 
   return <div style={{ minHeight: '100%', background: th.bg }}><EntdeckenHub th={th} t={t} lang={lang} onNav={setSub} /></div>
