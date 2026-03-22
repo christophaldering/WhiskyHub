@@ -13,8 +13,8 @@ import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
-import RatingFlow from "@/labs/components/RatingFlow";
-import { buildScale } from "@/labs/hooks/useRatingScale";
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingData } from "@/labs/components/rating/types";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import { useToast } from "@/hooks/use-toast";
 
@@ -2091,53 +2091,58 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </div>
 
           {currentRatingWhisky ? (
-            <RatingFlow
-              scale={buildScale(ratingScale)}
-              scores={getScores(currentRatingWhisky.id)}
-              onScoreChange={(dim, val) => handleScoreChange(currentRatingWhisky.id, dim, val)}
-              overall={getOverall(currentRatingWhisky.id)}
-              onOverallChange={(val) => handleOverallChange(currentRatingWhisky.id, val)}
-              overrideActive={!!hostOverride[currentRatingWhisky.id]}
-              onOverrideToggle={() => {
-                const wId = currentRatingWhisky.id;
-                setHostOverride(prev => ({ ...prev, [wId]: !prev[wId] }));
+            <RatingFlowV2
+              key={currentRatingWhisky.id}
+              whisky={{
+                name: isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`,
+                region: currentRatingWhisky.region || undefined,
+                cask: currentRatingWhisky.caskInfluence || undefined,
+                blind: isBlind,
               }}
-              onResetOverride={() => {
+              initialData={(() => {
                 const wId = currentRatingWhisky.id;
-                setHostOverride(prev => ({ ...prev, [wId]: false }));
-                const auto = getOverallAuto(wId);
-                setHostOverall(prev => ({ ...prev, [wId]: auto }));
-                debouncedSave(wId, getScores(wId), auto, hostNotes[wId] || "");
-              }}
-              chips={(() => {
-                const ch = hostChips[currentRatingWhisky.id] || emptyChips;
-                return [...ch.nose, ...ch.taste, ...ch.finish];
+                const sc = getScores(wId);
+                const ov = getOverall(wId);
+                const ch = hostChips[wId] || emptyChips;
+                const tx = hostTexts[wId] || emptyTexts;
+                return {
+                  scores: { nose: sc.nose, palate: sc.taste, finish: sc.finish, overall: ov },
+                  tags: { nose: ch.nose, palate: ch.taste, finish: ch.finish, overall: [] },
+                  notes: { nose: tx.nose, palate: tx.taste, finish: tx.finish, overall: hostNotes[wId] || "" },
+                } as RatingData;
               })()}
-              onChipToggle={(chip) => {
+              onDone={(data: RatingData) => {
                 const wId = currentRatingWhisky.id;
-                const current = hostChips[wId] || emptyChips;
-                const dims: DimKey[] = ["nose", "taste", "finish"];
-                for (const d of dims) {
-                  if (current[d].includes(chip)) {
-                    handleChipToggle(wId, d, chip);
-                    return;
-                  }
-                }
-                handleChipToggle(wId, "nose", chip);
+                const updatedScores: Record<DimKey, number> = {
+                  nose: data.scores.nose,
+                  taste: data.scores.palate,
+                  finish: data.scores.finish,
+                };
+                setHostScores(prev => ({ ...prev, [wId]: updatedScores }));
+
+                const computeOv = (s: { nose: number; palate: number; finish: number }) =>
+                  Math.round((s.nose + s.palate + s.finish) / 3);
+                const eff = data.scores.overall > 0
+                  ? data.scores.overall
+                  : Math.max(1, computeOv(data.scores));
+                setHostOverall(prev => ({ ...prev, [wId]: eff }));
+
+                setHostChips(prev => ({
+                  ...prev,
+                  [wId]: { nose: data.tags.nose, taste: data.tags.palate, finish: data.tags.finish },
+                }));
+
+                setHostTexts(prev => ({
+                  ...prev,
+                  [wId]: { nose: data.notes.nose || "", taste: data.notes.palate || "", finish: data.notes.finish || "" },
+                }));
+
+                const overallNote = data.notes.overall?.trim() || "";
+                setHostNotes(prev => ({ ...prev, [wId]: overallNote }));
+
+                debouncedSave(wId, updatedScores, eff, overallNote);
               }}
-              notes={hostNotes[currentRatingWhisky.id] || ""}
-              onNotesChange={(text) => {
-                const wId = currentRatingWhisky.id;
-                setHostNotes(prev => ({ ...prev, [wId]: text }));
-                debouncedSave(wId, getScores(wId), getOverall(wId), text);
-              }}
-              onSave={async () => {
-                const wId = currentRatingWhisky.id;
-                debouncedSave(wId, getScores(wId), getOverall(wId), hostNotes[wId] || "");
-              }}
-              whiskyName={isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`}
-              flavorProfileId={(currentRatingWhisky as any).flavorProfileId ?? null}
-              isBlind={isBlind}
+              onBack={() => {}}
             />
           ) : (
             <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
