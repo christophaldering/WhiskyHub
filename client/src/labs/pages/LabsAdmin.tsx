@@ -18,28 +18,66 @@ import {
   MessageSquarePlus, Rocket, AlertTriangle,
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
   BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, GripVertical, Pencil, X,
+  FileText,
 } from "lucide-react";
 
 type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas";
 
-const TAB_CONFIG: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-  { id: "participants", label: "Participants", icon: Users },
-  { id: "tastings", label: "Tastings", icon: Wine },
-  { id: "online", label: "Online", icon: Wifi },
-  { id: "activity", label: "Activity", icon: Activity },
-  { id: "sessions", label: "Sessions", icon: Clock },
-  { id: "ai", label: "AI Controls", icon: Brain },
-  { id: "newsletter", label: "Newsletter", icon: Mail },
-  { id: "changelog", label: "Changelog", icon: Rocket },
-  { id: "cleanup", label: "Cleanup", icon: Trash2 },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
-  { id: "historical", label: "Historical", icon: FileArchive },
-  { id: "communities", label: "Communities", icon: Globe },
-  { id: "settings", label: "Settings", icon: Settings },
-  { id: "feedback", label: "Feedback", icon: MessageSquarePlus },
-  { id: "making-of", label: "Making-Of", icon: BookOpen },
-  { id: "aromas", label: "Aromas", icon: Flower2 },
-];
+const ADMIN_GROUPS = [
+  {
+    id: "nutzer",
+    label: "Nutzer",
+    icon: Users,
+    tabs: [
+      { id: "participants", label: "Teilnehmer" },
+      { id: "online",       label: "Online" },
+      { id: "sessions",     label: "Sessions" },
+      { id: "activity",     label: "Aktivit\u00e4t" },
+    ],
+  },
+  {
+    id: "tastings",
+    label: "Tastings",
+    icon: Wine,
+    tabs: [
+      { id: "tastings",     label: "Tastings" },
+      { id: "historical",   label: "Archiv-Import" },
+      { id: "communities",  label: "Communities" },
+    ],
+  },
+  {
+    id: "inhalt",
+    label: "Inhalt",
+    icon: FileText,
+    tabs: [
+      { id: "aromas",       label: "Aromen" },
+      { id: "changelog",    label: "Changelog" },
+      { id: "making-of",    label: "Making Of" },
+    ],
+  },
+  {
+    id: "tools",
+    label: "KI & Tools",
+    icon: Sparkles,
+    tabs: [
+      { id: "ai",           label: "KI-Status" },
+      { id: "newsletter",   label: "Newsletter" },
+      { id: "feedback",     label: "Feedback" },
+    ],
+  },
+  {
+    id: "system",
+    label: "System",
+    icon: Settings,
+    tabs: [
+      { id: "settings",     label: "Einstellungen" },
+      { id: "cleanup",      label: "Aufr\u00e4umen" },
+      { id: "analytics",    label: "Analytics" },
+    ],
+  },
+] as const;
+
+type AdminGroup = typeof ADMIN_GROUPS[number]["id"];
 
 interface AdminParticipant {
   id: string;
@@ -103,7 +141,16 @@ export default function LabsAdmin() {
   const queryClient = useQueryClient();
   const session = useSession();
   const pid = session.pid || "";
+  const [activeGroup, setActiveGroup] = useState<AdminGroup>("nutzer");
   const [activeTab, setActiveTab] = useState<AdminTab>("participants");
+
+  const activateGroup = (groupId: AdminGroup) => {
+    const group = ADMIN_GROUPS.find(g => g.id === groupId);
+    if (group) {
+      setActiveGroup(groupId);
+      setActiveTab(group.tabs[0].id as AdminTab);
+    }
+  };
 
   const { data, isLoading, isError, refetch } = useQuery<AdminOverview>({
     queryKey: ["/admin/overview", pid],
@@ -145,73 +192,222 @@ export default function LabsAdmin() {
   }
 
   return (
-    <div className="px-4 py-6 labs-fade-in" data-testid="labs-admin-page">
-      <button onClick={goBackToHome} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-admin-back">
-        <ChevronLeft className="w-4 h-4" /> Home
-      </button>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 80px" }}
+         data-testid="labs-admin-page">
 
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
-        <a href="/labs-apple" className="labs-btn-ghost flex items-center gap-1.5 text-xs" style={{ color: "var(--labs-accent)", border: "1px solid var(--labs-accent)", borderRadius: 8, padding: "6px 12px", textDecoration: "none" }} data-testid="link-apple-labs">
-          <FlaskConical className="w-3.5 h-3.5" /> Apple Labs
-          <ExternalLink className="w-3 h-3" />
-        </a>
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={goBackToHome}
+          style={{ display: "flex", alignItems: "center", gap: 4,
+                   background: "none", border: "none", cursor: "pointer",
+                   color: "var(--labs-text-muted)", fontSize: 14,
+                   minHeight: 44, padding: "0 0 8px" }}
+          data-testid="labs-admin-back">
+          <ChevronLeft className="w-4 h-4" /> Home
+        </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26,
+                       fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
+              data-testid="labs-admin-title">
+            Admin
+          </h1>
+          <a href="/labs-apple" style={{ display: "flex", alignItems: "center", gap: 6,
+                 color: "var(--labs-accent)", border: "1px solid var(--labs-accent)",
+                 borderRadius: 8, padding: "6px 12px", textDecoration: "none",
+                 fontSize: 12 }}
+             data-testid="link-apple-labs">
+            <FlaskConical style={{ width: 14, height: 14 }} /> Apple Labs
+            <ExternalLink style={{ width: 12, height: 12 }} />
+          </a>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: 8, marginBottom: 0 }}>
+          {[
+            { label: "Nutzer",   value: data.stats.totalParticipants, Icon: Users },
+            { label: "Hosts",    value: data.stats.totalHosts,        Icon: Crown },
+            { label: "Tastings", value: data.stats.totalTastings,     Icon: Wine  },
+            { label: "Admins",   value: data.stats.totalAdmins,       Icon: Shield },
+          ].map(s => (
+            <div key={s.label}
+              style={{ background: "var(--labs-surface)",
+                       border: "1px solid var(--labs-border)",
+                       borderRadius: 10, padding: "10px 12px",
+                       display: "flex", alignItems: "center", gap: 8 }}
+              data-testid={`labs-admin-stat-${s.label.toLowerCase()}`}>
+              <s.Icon style={{ width: 14, height: 14, color: "var(--labs-accent)",
+                               flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700,
+                              color: "var(--labs-text)", lineHeight: 1 }}>
+                  {s.value}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--labs-text-muted)",
+                              marginTop: 2 }}>
+                  {s.label}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-5">
-        {[
-          { label: "Users", value: data.stats.totalParticipants, Icon: Users },
-          { label: "Hosts", value: data.stats.totalHosts, Icon: Crown },
-          { label: "Tastings", value: data.stats.totalTastings, Icon: Wine },
-          { label: "Admins", value: data.stats.totalAdmins, Icon: Shield },
-        ].map(s => (
-          <div key={s.label} className="labs-card text-center py-3 px-2" data-testid={`labs-admin-stat-${s.label.toLowerCase()}`}>
-            <s.Icon className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
-            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{s.value}</div>
-            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}
+           className="admin-layout">
+        <style>{`
+          @media (max-width: 767px) {
+            .admin-sidebar { display: none !important; }
+            .admin-mobile-nav { display: block !important; }
+            .admin-layout { display: block !important; }
+          }
+          @media (min-width: 768px) {
+            .admin-mobile-nav { display: none !important; }
+          }
+        `}</style>
+
+        <div className="admin-sidebar"
+          style={{ width: 220, flexShrink: 0, position: "sticky", top: 16 }}>
+          {ADMIN_GROUPS.map(group => {
+            const isGroupActive = activeGroup === group.id;
+            const GroupIcon = group.icon;
+            return (
+              <div key={group.id} style={{ marginBottom: 4 }}>
+                <button
+                  onClick={() => activateGroup(group.id)}
+                  data-testid={`admin-group-${group.id}`}
+                  style={{
+                    width: "100%", textAlign: "left",
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "10px 12px", borderRadius: 10,
+                    border: "none", cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: isGroupActive ? 600 : 400,
+                    background: isGroupActive
+                      ? "var(--labs-surface-elevated)" : "none",
+                    color: isGroupActive
+                      ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                    minHeight: 44,
+                    transition: "background 150ms, color 150ms",
+                  }}>
+                  <GroupIcon style={{ width: 16, height: 16, flexShrink: 0,
+                    color: isGroupActive
+                      ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                  {group.label}
+                </button>
+
+                {isGroupActive && (
+                  <div style={{ marginTop: 2 }}>
+                    {group.tabs.map(tab => {
+                      const isTabActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as AdminTab)}
+                          data-testid={`labs-admin-tab-${tab.id}`}
+                          style={{
+                            width: "100%", textAlign: "left",
+                            padding: "7px 12px 7px 36px",
+                            borderRadius: 8, border: "none",
+                            cursor: "pointer", fontSize: 13,
+                            fontWeight: isTabActive ? 600 : 400,
+                            background: isTabActive
+                              ? "var(--labs-accent-muted)" : "none",
+                            color: isTabActive
+                              ? "var(--labs-accent)"
+                              : "var(--labs-text-secondary)",
+                            minHeight: 36,
+                            display: "block",
+                            transition: "background 150ms, color 150ms",
+                          }}>
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="admin-mobile-nav" style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto",
+                        scrollbarWidth: "none", paddingBottom: 8,
+                        marginBottom: 8 }}>
+            {ADMIN_GROUPS.map(group => {
+              const isGroupActive = activeGroup === group.id;
+              return (
+                <button key={group.id}
+                  onClick={() => activateGroup(group.id)}
+                  data-testid={`admin-group-mobile-${group.id}`}
+                  style={{
+                    padding: "6px 14px", borderRadius: 999,
+                    minHeight: 36, fontSize: 13, flexShrink: 0,
+                    fontWeight: isGroupActive ? 600 : 400,
+                    background: isGroupActive
+                      ? "var(--labs-accent)"
+                      : "var(--labs-surface-elevated)",
+                    color: isGroupActive
+                      ? "var(--labs-bg)"
+                      : "var(--labs-text-secondary)",
+                    border: "none", cursor: "pointer",
+                    transition: "background 150ms, color 150ms",
+                  }}>
+                  {group.label}
+                </button>
+              );
+            })}
           </div>
-        ))}
-      </div>
 
-      <div className="flex gap-1.5 overflow-x-auto mb-5 pb-1" data-testid="labs-admin-tabs">
-        {TAB_CONFIG.map(tab => {
-          const active = activeTab === tab.id;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-              style={{
-                background: active ? "var(--labs-accent)" : "var(--labs-surface-elevated)",
-                color: active ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-                border: "none", cursor: "pointer",
-              }}
-              data-testid={`labs-admin-tab-${tab.id}`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto",
+                        scrollbarWidth: "none", paddingBottom: 4 }}>
+            {ADMIN_GROUPS.find(g => g.id === activeGroup)?.tabs.map(tab => {
+              const isTabActive = activeTab === tab.id;
+              return (
+                <button key={tab.id}
+                  onClick={() => setActiveTab(tab.id as AdminTab)}
+                  data-testid={`labs-admin-tab-${tab.id}`}
+                  style={{
+                    padding: "5px 12px", borderRadius: 999,
+                    minHeight: 32, fontSize: 12, flexShrink: 0,
+                    fontWeight: isTabActive ? 600 : 400,
+                    background: isTabActive
+                      ? "var(--labs-surface-elevated)"
+                      : "none",
+                    color: isTabActive
+                      ? "var(--labs-accent)"
+                      : "var(--labs-text-muted)",
+                    border: isTabActive
+                      ? "1px solid var(--labs-accent)"
+                      : "1px solid var(--labs-border)",
+                    cursor: "pointer",
+                    transition: "all 150ms",
+                  }}>
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      {activeTab === "participants" && <ParticipantsTab data={data} pid={pid} />}
-      {activeTab === "tastings" && <TastingsTab data={data} pid={pid} />}
-      {activeTab === "online" && <OnlineTab />}
-      {activeTab === "activity" && <ActivityTab />}
-      {activeTab === "sessions" && <SessionsTab pid={pid} />}
-      {activeTab === "ai" && <AITab pid={pid} />}
-      {activeTab === "newsletter" && <NewsletterTab participants={data.participants} pid={pid} />}
-      {activeTab === "changelog" && <ChangelogTab pid={pid} />}
-      {activeTab === "cleanup" && <CleanupTab data={data} pid={pid} />}
-      {activeTab === "analytics" && <AnalyticsTab pid={pid} />}
-      {activeTab === "historical" && <HistoricalImportTab pid={pid} />}
-      {activeTab === "communities" && <CommunitiesTab pid={pid} participants={data.participants} />}
-      {activeTab === "settings" && <SettingsTab pid={pid} />}
-      {activeTab === "feedback" && <FeedbackTab pid={pid} />}
-      {activeTab === "making-of" && <MakingOfTab pid={pid} participants={data.participants} />}
-      {activeTab === "aromas" && <AromasTab pid={pid} />}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {activeTab === "participants" && <ParticipantsTab data={data} pid={pid} />}
+          {activeTab === "tastings"     && <TastingsTab data={data} pid={pid} />}
+          {activeTab === "online"       && <OnlineTab />}
+          {activeTab === "activity"     && <ActivityTab />}
+          {activeTab === "sessions"     && <SessionsTab pid={pid} />}
+          {activeTab === "ai"           && <AITab pid={pid} />}
+          {activeTab === "newsletter"   && <NewsletterTab participants={data.participants} pid={pid} />}
+          {activeTab === "changelog"    && <ChangelogTab pid={pid} />}
+          {activeTab === "cleanup"      && <CleanupTab data={data} pid={pid} />}
+          {activeTab === "analytics"    && <AnalyticsTab pid={pid} />}
+          {activeTab === "historical"   && <HistoricalImportTab pid={pid} />}
+          {activeTab === "communities"  && <CommunitiesTab pid={pid} participants={data.participants} />}
+          {activeTab === "settings"     && <SettingsTab pid={pid} />}
+          {activeTab === "feedback"     && <FeedbackTab pid={pid} />}
+          {activeTab === "making-of"    && <MakingOfTab pid={pid} participants={data.participants} />}
+          {activeTab === "aromas"       && <AromasTab pid={pid} />}
+        </div>
+      </div>
     </div>
   );
 }
