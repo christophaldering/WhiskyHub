@@ -69,6 +69,7 @@ export interface Translations {
   hostQrDownload: string; hostEmailLabel: string; hostEmailPH: string
   hostEmailNote: string; hostEmailNotePH: string
   hostEmailSend: string; hostEmailSent: string; hostEmailError: string
+  hostFriendsTitle: string; hostFriendsAlreadyInvited: string
   hostPdfSheets: string; hostPdfDesc: string; hostStart: string
   hostLiveTitle: string; hostParticipants: string
   hostRatedAll: string; hostInProgress: string; hostNotStarted: string
@@ -227,6 +228,7 @@ const DE: Translations = {
   hostQrDownload: 'QR-Code herunterladen', hostEmailLabel: 'Per E-Mail einladen', hostEmailPH: 'name@beispiel.de',
   hostEmailNote: 'Persönliche Notiz (optional)', hostEmailNotePH: 'Freue mich auf euren Besuch...',
   hostEmailSend: 'Einladen', hostEmailSent: 'Einladung gesendet', hostEmailError: 'Einladung fehlgeschlagen',
+  hostFriendsTitle: 'Whisky Friends', hostFriendsAlreadyInvited: 'bereits eingeladen',
   hostPdfSheets: 'Bewertungsbögen drucken', hostPdfDesc: 'PDF mit personalisierten QR-Codes pro Teilnehmer',
   hostStart: 'Tasting starten →', hostLiveTitle: 'Tasting läuft', hostParticipants: 'Teilnehmer',
   hostRatedAll: 'Alle bewertet', hostInProgress: 'In Bearbeitung', hostNotStarted: 'Noch nicht gestartet',
@@ -397,6 +399,7 @@ const EN: Translations = {
   hostQrDownload: 'Download QR code', hostEmailLabel: 'Invite by email', hostEmailPH: 'name@example.com',
   hostEmailNote: 'Personal note (optional)', hostEmailNotePH: 'Looking forward to seeing you...',
   hostEmailSend: 'Invite', hostEmailSent: 'Invitation sent', hostEmailError: 'Invitation failed',
+  hostFriendsTitle: 'Whisky Friends', hostFriendsAlreadyInvited: 'already invited',
   hostPdfSheets: 'Print rating sheets', hostPdfDesc: 'PDF with personalised QR codes per participant',
   hostStart: 'Start tasting →', hostLiveTitle: 'Tasting live', hostParticipants: 'Participants',
   hostRatedAll: 'All rated', hostInProgress: 'In progress', hostNotStarted: 'Not started',

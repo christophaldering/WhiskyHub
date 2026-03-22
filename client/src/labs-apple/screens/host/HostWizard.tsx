@@ -2,11 +2,13 @@
 // Fix: Weiter-Button nur noch von Name abhängig (nicht Datum/Zeit)
 // Ablage: client/src/labs-apple/screens/host/HostWizard.tsx
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import { TastingConfig, WhiskyEntry, TastingData } from '../../types/host'
 import * as Icon from '../../icons/Icons'
+import { friendsApi, inviteApi } from '@/lib/api'
+import type { WhiskyFriend } from '@shared/schema'
 
 const inputStyle = (th: ThemeTokens) => ({ width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, fontFamily: 'DM Sans, sans-serif', outline: 'none', boxSizing: 'border-box' as const })
 const labelStyle = (th: ThemeTokens) => ({ fontSize: 11, color: th.muted, marginBottom: 4, display: 'block', textTransform: 'uppercase' as const, letterSpacing: '0.08em' })
@@ -171,11 +173,42 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 }
 
 // ── Step 3: Invitations ─────────────────────────────────────────────────────
-const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string; tastingCode: string; onNext: () => void; onBack: () => void }> = ({ th, t, tastingId, tastingCode, onNext, onBack }) => {
+const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; tastingId: string; tastingCode: string; onNext: () => void; onBack: () => void }> = ({ th, t, participantId, tastingId, tastingCode, onNext, onBack }) => {
   const [copied, setCopied]     = useState(false)
   const [email, setEmail]       = useState('')
   const [note, setNote]         = useState('')
   const [emailSent, setEmailSent] = useState(false)
+  const [friends, setFriends]   = useState<WhiskyFriend[]>([])
+  const [existingInvites, setExistingInvites] = useState<{ email: string }[]>([])
+  const [selectedFriendEmails, setSelectedFriendEmails] = useState<Set<string>>(new Set())
+  const [friendsExpanded, setFriendsExpanded] = useState(true)
+
+  useEffect(() => {
+    if (participantId) {
+      friendsApi.getAll(participantId).then(setFriends).catch(() => {})
+    }
+  }, [participantId])
+
+  useEffect(() => {
+    if (tastingId) {
+      inviteApi.getForTasting(tastingId).then(setExistingInvites).catch(() => {})
+    }
+  }, [tastingId])
+
+  const alreadyInvitedEmails = new Set(existingInvites.map(inv => inv.email.toLowerCase()))
+  const friendsWithEmail = friends.filter(f => f.email && f.status === 'accepted')
+  const availableFriends = friendsWithEmail.filter(f => !alreadyInvitedEmails.has(f.email!.toLowerCase()))
+  const alreadyInvitedFriends = friendsWithEmail.filter(f => alreadyInvitedEmails.has(f.email!.toLowerCase()))
+
+  const toggleFriend = (friendEmail: string) => {
+    const lower = friendEmail.toLowerCase()
+    setSelectedFriendEmails(prev => {
+      const next = new Set(prev)
+      if (next.has(lower)) next.delete(lower)
+      else next.add(lower)
+      return next
+    })
+  }
 
   const copyCode = () => {
     navigator.clipboard.writeText(`${window.location.origin}/labs-apple?code=${tastingCode}`)
@@ -184,24 +217,73 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 
   const sendInvite = async () => {
     try {
-      await fetch(`/api/tastings/${tastingId}/invite`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': 'host' }, body: JSON.stringify({ emails: email.split('\n').filter(Boolean), note }) })
+      const manualEmails = email.split('\n').map(e => e.trim().toLowerCase()).filter(Boolean)
+      const friendEmails = Array.from(selectedFriendEmails)
+      const allEmails = [...new Set([...manualEmails, ...friendEmails])]
+      if (allEmails.length === 0) return
+      await fetch(`/api/tastings/${tastingId}/invite`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': participantId }, body: JSON.stringify({ emails: allEmails, note }) })
       setEmailSent(true)
     } catch { }
   }
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 120, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
-      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }} data-testid="button-back-step3"><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.lg}px` }}>{t.hostStep3}</h1>
 
       <div style={{ background: `${th.gold}10`, border: `1px solid ${th.gold}44`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg, textAlign: 'center' }}>
         <div style={{ fontSize: 11, color: th.gold, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: SP.sm }}>{t.hostCode}</div>
-        <div style={{ fontSize: 38, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.18em', color: th.text, marginBottom: SP.md }}>{tastingCode}</div>
-        <button onClick={copyCode} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 20px', borderRadius: 12, border: `1px solid ${th.gold}44`, background: 'none', color: th.gold, cursor: 'pointer', fontSize: 14 }}>
+        <div style={{ fontSize: 38, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.18em', color: th.text, marginBottom: SP.md }} data-testid="text-tasting-code">{tastingCode}</div>
+        <button onClick={copyCode} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 20px', borderRadius: 12, border: `1px solid ${th.gold}44`, background: 'none', color: th.gold, cursor: 'pointer', fontSize: 14 }} data-testid="button-copy-code">
           {copied ? <Icon.Check color={th.green} size={16} /> : <Icon.Copy color={th.gold} size={16} />}
           {copied ? t.hostLinkCopied : t.hostLinkCopy}
         </button>
       </div>
+
+      {friendsWithEmail.length > 0 && (
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg }} data-testid="friends-quick-select">
+          <button onClick={() => setFriendsExpanded(!friendsExpanded)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%', marginBottom: friendsExpanded ? SP.md : 0 }} data-testid="button-toggle-friends">
+            <Icon.Users color={th.gold} size={18} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: th.text, flex: 1, textAlign: 'left' }}>{t.hostFriendsTitle}</span>
+            {selectedFriendEmails.size > 0 && (
+              <span style={{ fontSize: 12, color: th.gold, fontWeight: 600 }} data-testid="text-selected-count">{selectedFriendEmails.size}</span>
+            )}
+            <span style={{ fontSize: 12, color: th.muted }}>{friendsExpanded ? '▲' : '▼'}</span>
+          </button>
+
+          {friendsExpanded && (
+            <div style={{ maxHeight: 200, overflowY: 'auto', borderRadius: 12, border: `1px solid ${th.border}` }}>
+              {availableFriends.map(friend => {
+                const isSelected = selectedFriendEmails.has(friend.email!.toLowerCase())
+                return (
+                  <label key={friend.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${th.border}`, background: isSelected ? `${th.gold}10` : 'transparent', transition: 'background 0.15s' }} data-testid={`friend-row-${friend.id}`}>
+                    <div style={{ width: 20, height: 20, borderRadius: 6, border: isSelected ? `2px solid ${th.gold}` : `2px solid ${th.border}`, background: isSelected ? th.gold : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }} data-testid={`checkbox-friend-${friend.id}`}>
+                      {isSelected && <Icon.Check color="#fff" size={12} />}
+                    </div>
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleFriend(friend.email!)} style={{ display: 'none' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} data-testid={`text-friend-name-${friend.id}`}>{friend.firstName} {friend.lastName}</div>
+                      <div style={{ fontSize: 12, color: th.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} data-testid={`text-friend-email-${friend.id}`}>{friend.email}</div>
+                    </div>
+                  </label>
+                )
+              })}
+
+              {alreadyInvitedFriends.map(friend => (
+                <div key={friend.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${th.border}`, opacity: 0.45, cursor: 'not-allowed' }} data-testid={`friend-row-disabled-${friend.id}`}>
+                  <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${th.border}`, background: th.bgCard, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon.Check color={th.muted} size={12} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{friend.firstName} {friend.lastName}</div>
+                    <div style={{ fontSize: 12, color: th.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{friend.email} ({t.hostFriendsAlreadyInvited})</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: SP.md }}>
@@ -209,18 +291,18 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
           <span style={{ fontSize: 14, fontWeight: 600 }}>{t.hostEmailLabel}</span>
         </div>
         {emailSent ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: th.green }}><Icon.Check color={th.green} size={16} />{t.hostEmailSent}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: th.green }} data-testid="text-email-sent"><Icon.Check color={th.green} size={16} />{t.hostEmailSent}</div>
         ) : (
           <>
-            <textarea value={email} onChange={e => setEmail(e.target.value)} placeholder={t.hostEmailPH} rows={3} style={{ width: '100%', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 14, padding: '10px 14px', resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
-            <textarea value={note} onChange={e => setNote(e.target.value)} placeholder={t.hostEmailNotePH} rows={2} style={{ width: '100%', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 14, padding: '10px 14px', resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
-            <button onClick={sendInvite} style={{ height: 44, padding: '0 20px', borderRadius: 12, border: `1px solid ${th.gold}44`, background: 'none', color: th.gold, cursor: 'pointer', fontSize: 14 }}>{t.hostEmailSend}</button>
+            <textarea value={email} onChange={e => setEmail(e.target.value)} placeholder={t.hostEmailPH} rows={3} style={{ width: '100%', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 14, padding: '10px 14px', resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} data-testid="input-invite-emails" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} placeholder={t.hostEmailNotePH} rows={2} style={{ width: '100%', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 14, padding: '10px 14px', resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} data-testid="input-invite-note" />
+            <button onClick={sendInvite} style={{ height: 44, padding: '0 20px', borderRadius: 12, border: `1px solid ${th.gold}44`, background: 'none', color: th.gold, cursor: 'pointer', fontSize: 14 }} data-testid="button-send-invite">{t.hostEmailSend}</button>
           </>
         )}
       </div>
 
       <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
-        <button onClick={onNext} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>{t.hostStart}</button>
+        <button onClick={onNext} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }} data-testid="button-start-tasting">{t.hostStart}</button>
       </div>
     </div>
   )
@@ -352,7 +434,7 @@ export const HostWizard: React.FC<Props> = ({ th, t, participantId, onBack, onDo
         <HostStep2 th={th} t={t} tastingId={tastingId} format={config?.format || 'blind'} whiskies={whiskies} onChange={setWhiskies} onBack={() => setStep(1)} onNext={() => setStep(3)} />
       )}
       {step === 3 && tastingId && tastingCode && (
-        <HostStep3 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onBack={() => setStep(2)} onNext={async () => {
+        <HostStep3 th={th} t={t} participantId={participantId} tastingId={tastingId} tastingCode={tastingCode} onBack={() => setStep(2)} onNext={async () => {
           await fetch(`/api/tastings/${tastingId}/start`, { method: 'POST', headers: { 'x-participant-id': participantId } })
           setStep(4)
         }} />
