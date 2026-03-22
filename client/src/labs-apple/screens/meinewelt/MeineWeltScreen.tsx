@@ -1,5 +1,7 @@
-// CaskSense Apple — MeineWeltScreen VOLLSTÄNDIG (Ersatz für original)
-// Alle Sub-Screens: Profil, Analytics, Flavour Wheel, Vergleich, Empfehlungen, Journal, Kalender
+// CaskSense Apple — MeineWeltScreen VOLLSTÄNDIG
+// Fix: Duplikate in navItems + if-Blöcken bereinigt
+// Ablage: client/src/labs-apple/screens/meinewelt/MeineWeltScreen.tsx
+
 import React, { useState, useEffect } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
@@ -7,9 +9,9 @@ import { TasteAnalytics } from './TasteAnalytics'
 import { FlavourWheel } from './FlavourWheel'
 import { WhiskyCompare } from './WhiskyCompare'
 import { Recommendations } from './Recommendations'
-import * as Icon from '../../icons/Icons'
 import { ConnoisseurReport } from './ConnoisseurReport'
 import { AICuration, Benchmark, CollectionAnalysis } from './AIFeatures'
+import * as Icon from '../../icons/Icons'
 
 // ── TasteProfile mit SVG-Radar ────────────────────────────────────────────
 const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; lang: 'de' | 'en'; onBack: () => void }> = ({ th, t, participantId, lang, onBack }) => {
@@ -25,7 +27,6 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   const dimLabels = { nose: t.ratingNose, palate: t.ratingPalate, finish: t.ratingFinish, overall: t.ratingOverall }
   const vals = dims.map(d => profile?.dimensions?.[d] || 75)
 
-  // SVG Radar
   const W = 220, cx = 110, cy = 110, R = 80
   const angles = dims.map((_, i) => (i / dims.length) * 2 * Math.PI - Math.PI / 2)
   const points = (values: number[]) => values.map((v, i) => {
@@ -33,9 +34,8 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
     return [cx + r * Math.cos(angles[i]), cy + r * Math.sin(angles[i])]
   })
   const toPath = (pts: number[][]) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`).join(' ') + ' Z'
-
-  const userPts   = points(vals)
-  const avgPts    = points([78, 76, 74, 77])
+  const userPts = points(vals)
+  const avgPts  = points([78, 76, 74, 77])
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
@@ -43,7 +43,7 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{t.mwProfileTitle}</h1>
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.lg}px` }}>{t.mwProfileSub}</p>
 
-      {/* Compare mode */}
+      {/* Vergleich-Modi */}
       <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.lg }}>
         {([['me', t.mwJustMe], ['friends', t.mwFriends], ['global', t.mwGlobal]] as const).map(([id, label]) => (
           <button key={id} onClick={() => setCompare(id)} style={{ flex: 1, height: 40, borderRadius: 20, border: 'none', cursor: 'pointer', background: compare === id ? th.gold : th.bgCard, color: compare === id ? '#1a0f00' : th.muted, fontSize: 13, fontWeight: compare === id ? 700 : 400, transition: 'all 150ms' }}>{label}</button>
@@ -53,20 +53,13 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
       {/* Radar */}
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md, marginBottom: SP.md, display: 'flex', justifyContent: 'center' }}>
         <svg width={W} height={W} viewBox={`0 0 ${W} ${W}`}>
-          {/* Grid rings */}
           {[0.25, 0.5, 0.75, 1].map(s => (
-            <polygon key={s} points={angles.map(a => `${cx + R * s * Math.cos(a)},${cy + R * s * Math.sin(a)}`).join(' ')}
-              fill="none" stroke={th.border} strokeWidth="1" />
+            <polygon key={s} points={angles.map(a => `${cx + R * s * Math.cos(a)},${cy + R * s * Math.sin(a)}`).join(' ')} fill="none" stroke={th.border} strokeWidth="1" />
           ))}
-          {/* Axes */}
           {angles.map((a, i) => <line key={i} x1={cx} y1={cy} x2={cx + R * Math.cos(a)} y2={cy + R * Math.sin(a)} stroke={th.border} strokeWidth="1" />)}
-          {/* Avg polygon */}
           {compare !== 'me' && <path d={toPath(avgPts)} fill={`${th.faint}30`} stroke={th.faint} strokeWidth="1.5" strokeDasharray="4 2" />}
-          {/* User polygon */}
           <path d={toPath(userPts)} fill={`${th.gold}25`} stroke={th.gold} strokeWidth="2" />
-          {/* Dots */}
           {userPts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="5" fill={th.gold} />)}
-          {/* Labels */}
           {dims.map((d, i) => {
             const lx = cx + (R + 16) * Math.cos(angles[i])
             const ly = cy + (R + 16) * Math.sin(angles[i])
@@ -78,16 +71,16 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
       {/* Dimension bars */}
       {dims.map(d => {
         const score = profile?.dimensions?.[d] || 75
-        const pct = ((score - 60) / 40) * 100
-        const pt = th.phases[d]
-        const ratingCount = profile?.dimensionCounts?.[d] || 0
-        const confidence = ratingCount > 20 ? { label: 'Sicher', color: th.gold } : ratingCount > 10 ? { label: 'Gut', color: th.muted } : { label: 'Wenig Daten', color: th.faint }
+        const pct   = ((score - 60) / 40) * 100
+        const pt    = th.phases[d]
+        const count = profile?.dimensionCounts?.[d] || 0
+        const conf  = count > 20 ? { label: 'Sicher', color: th.gold } : count > 10 ? { label: 'Gut', color: th.muted } : { label: 'Wenig Daten', color: th.faint }
         return (
           <div key={d} style={{ marginBottom: SP.md }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14, color: th.muted }}>{dimLabels[d]}</span>
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${confidence.color}15`, color: confidence.color }}>{confidence.label}</span>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${conf.color}15`, color: conf.color }}>{conf.label}</span>
               </div>
               <span style={{ fontSize: 16, fontWeight: 700, color: pt.accent }}>{score}</span>
             </div>
@@ -101,13 +94,13 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   )
 }
 
-// ── JournalList ─────────────────────────────────────────────────────────────
+// ── JournalList ───────────────────────────────────────────────────────────
 const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
-  const [entries, setEntries]  = useState<any[]>([])
-  const [search, setSearch]    = useState('')
-  const [sort, setSort]        = useState<'date' | 'score' | 'name'>('date')
+  const [entries, setEntries]   = useState<any[]>([])
+  const [search, setSearch]     = useState('')
+  const [sort, setSort]         = useState<'date' | 'score' | 'name'>('date')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [offset, setOffset]    = useState(0)
+  const [offset, setOffset]     = useState(0)
 
   const load = (off: number) => {
     fetch(`/api/journal?limit=20&offset=${off}`, { headers: { 'x-participant-id': participantId } })
@@ -122,7 +115,7 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
     .filter(e => !search || (e.whiskeyName || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sort === 'score') return (b.scores?.overall || 0) - (a.scores?.overall || 0)
-      if (sort === 'name') return (a.whiskeyName || '').localeCompare(b.whiskeyName || '')
+      if (sort === 'name')  return (a.whiskeyName || '').localeCompare(b.whiskeyName || '')
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     })
 
@@ -130,18 +123,14 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.mwJournalTitle}</h1>
-
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.mwJournalSearch}
         style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
-
       <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md }}>
         {([['date', 'Datum'], ['score', 'Score'], ['name', 'Name']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setSort(id)} style={{ height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer', background: sort === id ? th.gold : th.bgCard, color: sort === id ? '#1a0f00' : th.muted, fontSize: 12, fontWeight: sort === id ? 700 : 400 }}>{label}</button>
         ))}
       </div>
-
       {filtered.length === 0 && <div style={{ textAlign: 'center', padding: SP.xl, color: th.faint, fontStyle: 'italic', fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{t.mwJournalEmpty}</div>}
-
       {filtered.map(entry => {
         const score = entry.scores?.overall || entry.overallScore || 0
         const isOpen = expanded === entry.id
@@ -175,14 +164,14 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
                     </div>
                   )
                 })}
-                {entry.notes && typeof entry.notes === 'object' && Object.entries(entry.notes).some(([, v]) => v) && (
+                {entry.notes && typeof entry.notes === 'object' && Object.values(entry.notes).some(Boolean) && (
                   <div style={{ marginTop: SP.sm, fontFamily: 'Cormorant Garamond, serif', fontSize: 14, fontStyle: 'italic', color: th.muted, lineHeight: 1.5 }}>
                     {Object.values(entry.notes).filter(Boolean).join(' · ')}
                   </div>
                 )}
                 {entry.flavorTags && typeof entry.flavorTags === 'object' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: SP.xs }}>
-                    {Object.values(entry.flavorTags).flat().filter(Boolean).slice(0, 8).map((tag: any, i) => (
+                    {(Object.values(entry.flavorTags) as any[]).flat().filter(Boolean).slice(0, 8).map((tag: any, i) => (
                       <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: `${th.gold}15`, color: th.gold }}>{tag}</span>
                     ))}
                   </div>
@@ -192,7 +181,6 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
           </div>
         )
       })}
-
       {entries.length >= 20 && (
         <button onClick={() => { const next = offset + 20; setOffset(next); load(next) }}
           style={{ width: '100%', height: 44, borderRadius: 14, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 14, marginTop: SP.md }}>
@@ -203,7 +191,7 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
   )
 }
 
-// ── TastingCalendar ─────────────────────────────────────────────────────────
+// ── TastingCalendar ───────────────────────────────────────────────────────
 const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
   const [events, setEvents]     = useState<any[]>([])
   const [currentDate, setDate]  = useState(new Date())
@@ -217,9 +205,9 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
 
   const year  = currentDate.getFullYear()
   const month = currentDate.getMonth()
-  const firstDay = new Date(year, month, 1).getDay()
+  const firstDay    = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const monthName = currentDate.toLocaleDateString('de', { month: 'long', year: 'numeric' })
+  const monthName   = currentDate.toLocaleDateString('de', { month: 'long', year: 'numeric' })
 
   const eventsByDay: Record<number, any[]> = {}
   events.forEach(e => {
@@ -232,7 +220,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
     }
   })
 
-  const selectedEvents = selected ? (eventsByDay[parseInt(selected)] || []) : []
+  const selectedEvents  = selected ? (eventsByDay[parseInt(selected)] || []) : []
   const statusColor = (s: string) => s === 'open' ? th.green : s === 'closed' ? th.gold : th.faint
 
   return (
@@ -253,21 +241,23 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
         ))}
       </div>
 
-      {/* Day headers */}
+      {/* Wochentage */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: SP.xs }}>
-        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, color: th.faint, padding: '4px 0' }}>{d}</div>)}
+        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 11, color: th.faint, padding: '4px 0' }}>{d}</div>
+        ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Kalender-Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: SP.md }}>
         {Array.from({ length: (firstDay === 0 ? 6 : firstDay - 1) }).map((_, i) => <div key={`e${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1
+          const day       = i + 1
           const dayEvents = eventsByDay[day] || []
           const isSelected = selected === String(day)
-          const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
+          const isToday   = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
           return (
-            <button key={day} onClick={() => setSelected(isSelected ? null : String(day))} style={{ aspectRatio: '1', borderRadius: 10, border: `1px solid ${isSelected ? th.gold : th.border}`, background: isSelected ? `${th.gold}15` : isToday ? `${th.phases.nose.dim}` : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <button key={day} onClick={() => setSelected(isSelected ? null : String(day))} style={{ aspectRatio: '1', borderRadius: 10, border: `1px solid ${isSelected ? th.gold : th.border}`, background: isSelected ? `${th.gold}15` : isToday ? th.phases.nose.dim : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
               <span style={{ fontSize: 13, fontWeight: isToday ? 700 : 400, color: isToday ? th.gold : th.text }}>{day}</span>
               {dayEvents.length > 0 && (
                 <div style={{ display: 'flex', gap: 2 }}>
@@ -279,7 +269,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
         })}
       </div>
 
-      {/* Selected day events */}
+      {/* Gewählter Tag */}
       {selectedEvents.length > 0 && (
         <div>
           <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.sm, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selected}. {monthName.split(' ')[0]}</div>
@@ -298,7 +288,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
   )
 }
 
-// ── ProfileEdit ─────────────────────────────────────────────────────────────
+// ── ProfileEdit ───────────────────────────────────────────────────────────
 const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
   const [name, setName]   = useState('')
   const [saved, setSaved] = useState(false)
@@ -330,7 +320,7 @@ const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
   )
 }
 
-// ── MeineWeltHub ─────────────────────────────────────────────────────────────
+// ── MeineWeltHub ──────────────────────────────────────────────────────────
 const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onNav: (s: string) => void }> = ({ th, t, participantId, onNav }) => {
   const [profile, setProfile] = useState<any>(null)
 
@@ -341,21 +331,20 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   }, [participantId])
 
   const ratingCount = profile?.ratingCount || 0
+
+  // Bereinigt — keine Duplikate
   const navItems = [
-    { id: 'profile',    icon: <Icon.Profile color={th.phases.nose.accent} size={28} />,     label: t.mwProfileTitle,   phase: 'nose'    as const },
-    { id: 'analytics',  icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,  label: t.mwAnalyticsTitle, phase: 'palate'  as const },
-    { id: 'wheel',      icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.mwWheelTitle,     phase: 'finish'  as const },
-    { id: 'journal',    icon: <Icon.Journal color={th.phases.overall.accent} size={28} />,    label: t.mwJournalTitle,   phase: 'overall' as const },
-    { id: 'compare',    icon: <Icon.Compare color={th.phases.nose.accent} size={28} />,       label: t.mwCompareTitle,   phase: 'nose'    as const },
+    { id: 'profile',     icon: <Icon.Profile color={th.phases.nose.accent} size={28} />,     label: t.mwProfileTitle,     phase: 'nose'    as const },
+    { id: 'analytics',   icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,  label: t.mwAnalyticsTitle,   phase: 'palate'  as const },
+    { id: 'wheel',       icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.mwWheelTitle,       phase: 'finish'  as const },
+    { id: 'journal',     icon: <Icon.Journal color={th.phases.overall.accent} size={28} />,    label: t.mwJournalTitle,     phase: 'overall' as const },
+    { id: 'compare',     icon: <Icon.Compare color={th.phases.nose.accent} size={28} />,       label: t.mwCompareTitle,     phase: 'nose'    as const },
+    { id: 'reco',        icon: <Icon.Star color={th.phases.palate.accent} size={28} />,        label: t.mwRecoTitle,        phase: 'palate'  as const },
     { id: 'connoisseur', icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: 'Connoisseur Report', phase: 'finish'  as const },
-    { id: 'ai-curation', icon: <Icon.Insight color={th.phases.nose.accent} size={28} />,     label: 'KI-Kuration',        phase: 'nose'    as const },
-    { id: 'reco',       icon: <Icon.Star color={th.phases.palate.accent} size={28} />,        label: t.mwRecoTitle,      phase: 'palate'  as const },
-    { id: 'connoisseur',icon: <Icon.Report color={th.phases.finish.accent} size={28} />,     label: 'Connoisseur Report',phase: 'finish' as const },
-    { id: 'curation',   icon: <Icon.Insight color={th.phases.overall.accent} size={28} />,   label: 'KI-Kuration',      phase: 'overall' as const },
-    { id: 'benchmark',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,     label: 'Benchmark',        phase: 'nose'    as const },
-    { id: 'collection', icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,  label: 'Collection',       phase: 'palate'  as const },
-    { id: 'collection', icon: <Icon.Whisky color={th.phases.overall.accent} size={28} />,    label: 'Collection Sync', phase: 'overall' as const },
-    { id: 'calendar',   icon: <Icon.Calendar color={th.phases.finish.accent} size={28} />,    label: t.mwCalendarTitle,  phase: 'finish'  as const },
+    { id: 'curation',    icon: <Icon.Insight color={th.phases.overall.accent} size={28} />,    label: 'KI-Kuration',        phase: 'overall' as const },
+    { id: 'benchmark',   icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,      label: 'Benchmark',          phase: 'nose'    as const },
+    { id: 'collection',  icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,   label: 'Collection',         phase: 'palate'  as const },
+    { id: 'calendar',    icon: <Icon.Calendar color={th.phases.finish.accent} size={28} />,    label: t.mwCalendarTitle,    phase: 'finish'  as const },
   ]
 
   return (
@@ -383,7 +372,7 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
         ))}
       </div>
 
-      {/* Unlock progress */}
+      {/* Unlock-Fortschritt */}
       {ratingCount < 10 && (
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.lg }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SP.sm }}>
@@ -397,10 +386,11 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
         </div>
       )}
 
-      {/* Nav grid */}
+      {/* Nav-Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
         {navItems.map(item => (
-          <button key={item.id} onClick={() => onNav(item.id)} style={{ height: 88, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 150ms' }}
+          <button key={item.id} onClick={() => onNav(item.id)}
+            style={{ height: 88, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 150ms' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = th.phases[item.phase].dim; (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = th.bgCard; (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
             {item.icon}
@@ -412,27 +402,26 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   )
 }
 
-// ── MeineWeltScreen (Root) ───────────────────────────────────────────────────
+// ── MeineWeltScreen (Root) ────────────────────────────────────────────────
 interface Props { th: ThemeTokens; t: Translations; participantId: string; lang: 'de' | 'en' }
 
 export const MeineWeltScreen: React.FC<Props> = ({ th, t, participantId, lang }) => {
   const [sub, setSub] = useState<string | null>(null)
   const goBack = () => setSub(null)
 
-  if (sub === 'profile')   return <TasteProfile th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
-  if (sub === 'analytics') return <TasteAnalytics th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'wheel')     return <FlavourWheel th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  // Bereinigt — keine doppelten if-Blöcke
+  if (sub === 'profile')     return <TasteProfile th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  if (sub === 'analytics')   return <TasteAnalytics th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'wheel')       return <FlavourWheel th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  if (sub === 'compare')     return <WhiskyCompare th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'reco')        return <Recommendations th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'connoisseur') return <ConnoisseurReport th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
-  if (sub === 'ai-curation') return <AICuration th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'compare')   return <WhiskyCompare th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'reco')      return <Recommendations th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'journal')   return <JournalList th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'calendar')  return <TastingCalendar th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'edit')       return <ProfileEdit th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'connoisseur') return <ConnoisseurReport th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
-  if (sub === 'curation')  return <AICuration th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'benchmark') return <Benchmark th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'collection')return <CollectionAnalysis th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'curation')    return <AICuration th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'benchmark')   return <Benchmark th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'collection')  return <CollectionAnalysis th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'journal')     return <JournalList th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'calendar')    return <TastingCalendar th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'edit')        return <ProfileEdit th={th} t={t} participantId={participantId} onBack={goBack} />
 
   return (
     <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
