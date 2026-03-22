@@ -136,6 +136,10 @@ export interface Translations {
   circleFriend: string; circleAddFriend: string; circlePending: string; circleAccept: string; circleDecline: string
   circleFeedEmpty: string; circleOnline: string; circleSearchFriend: string
   historyGated: string; historyJoin: string
+  authLogin: string; authRegister: string; authLogout: string
+  authEmail: string; authEmailPH: string; authPin: string; authPinPH: string
+  authName: string; authNamePH: string; authSubmit: string; authSwitchLogin: string; authSwitchRegister: string
+  authError: string; authClose: string
 }
 
 const DE: Translations = {
@@ -261,6 +265,10 @@ const DE: Translations = {
   circleFriend: 'Freund', circleAddFriend: 'Hinzufügen', circlePending: 'Ausstehend', circleAccept: 'Annehmen', circleDecline: 'Ablehnen',
   circleFeedEmpty: 'Noch keine Aktivitäten von Freunden.', circleOnline: 'Online', circleSearchFriend: 'Freund suchen...',
   historyGated: 'Nur für Community-Mitglieder', historyJoin: 'Community beitreten',
+  authLogin: 'Anmelden', authRegister: 'Registrieren', authLogout: 'Abmelden',
+  authEmail: 'E-Mail', authEmailPH: 'name@beispiel.de', authPin: 'PIN', authPinPH: '4–6 Zeichen',
+  authName: 'Name', authNamePH: 'Dein Name', authSubmit: 'Weiter', authSwitchLogin: 'Schon registriert? Anmelden', authSwitchRegister: 'Neu hier? Registrieren',
+  authError: 'Anmeldung fehlgeschlagen', authClose: 'Schließen',
 }
 
 const EN: Translations = {
@@ -386,6 +394,10 @@ const EN: Translations = {
   circleFriend: 'Friend', circleAddFriend: 'Add', circlePending: 'Pending', circleAccept: 'Accept', circleDecline: 'Decline',
   circleFeedEmpty: 'No activity from friends yet.', circleOnline: 'Online', circleSearchFriend: 'Search friend...',
   historyGated: 'Community members only', historyJoin: 'Join community',
+  authLogin: 'Sign in', authRegister: 'Register', authLogout: 'Sign out',
+  authEmail: 'Email', authEmailPH: 'name@example.com', authPin: 'PIN', authPinPH: '4–6 characters',
+  authName: 'Name', authNamePH: 'Your name', authSubmit: 'Continue', authSwitchLogin: 'Already registered? Sign in', authSwitchRegister: 'New here? Register',
+  authError: 'Sign in failed', authClose: 'Close',
 }
 
 export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }
