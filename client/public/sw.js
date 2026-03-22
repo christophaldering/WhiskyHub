@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casksense-v3';
+const CACHE_NAME = 'casksense-v4';
 const STATIC_ASSETS = [
   '/manifest.json',
 ];
@@ -27,6 +27,13 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.startsWith('/objects/')) return;
   if (url.pathname.startsWith('/uploads/')) return;
+
+  if (url.pathname.match(/\.[0-9a-f]{8,}\./i) || url.pathname.match(/[-_][A-Za-z0-9_-]{6,}\.(js|css)$/)) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(
