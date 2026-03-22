@@ -311,7 +311,7 @@ const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
         <label style={{ fontSize: 11, color: th.muted, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.mwProfileName}</label>
         <input value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 16, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box' }} />
       </div>
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px`, maxWidth: 480, margin: '0 auto', boxSizing: 'border-box' }}>
         <button onClick={save} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: saved ? th.bgCard : `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: saved ? th.green : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           {saved ? <><Icon.Check color={th.green} size={20} />{t.ratingDone}</> : t.mwProfileSave}
         </button>
