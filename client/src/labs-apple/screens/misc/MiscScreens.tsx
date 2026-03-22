@@ -124,7 +124,7 @@ export const MakingOf: React.FC<MakingOfProps> = ({ th, t, participantId, onBack
   useEffect(() => {
     fetch('/api/making-of', { headers: { 'x-participant-id': participantId } })
       .then(r => { if (r.status === 403) { setAccess(false); return null } return r.json() })
-      .then(d => { if (d) { setTimeline(d); setAccess(true) } })
+      .then(d => { if (d) { setTimeline(Array.isArray(d) ? d : d.chapters || []); setAccess(true) } })
       .catch(() => setAccess(false))
   }, [participantId])
 
