@@ -74,6 +74,7 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
 const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string; format: string; whiskies: WhiskyEntry[]; onChange: (w: WhiskyEntry[]) => void; onNext: () => void; onBack: () => void }> = ({ th, t, tastingId, format, whiskies, onChange, onNext, onBack }) => {
   const [importing, setImporting] = useState(false)
   const [importPreview, setImportPreview] = useState<WhiskyEntry[] | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const addWhisky = () => onChange([...whiskies, { name: '' }])
@@ -84,12 +85,22 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 
   const handleImport = async (file: File) => {
     setImporting(true)
+    setImportError(null)
+    setImportPreview(null)
     try {
-      const fd = new FormData(); fd.append('file', file)
+      const fd = new FormData()
+      fd.append('files', file)
+      fd.append('hostId', tastingId)
       const res = await fetch('/api/tastings/ai-import', { method: 'POST', body: fd, headers: { 'x-participant-id': 'host' } })
-      if (!res.ok) throw new Error()
-      setImportPreview(await res.json())
-    } catch { /* show error */ }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new Error(err.message || 'Import failed')
+      }
+      const data = await res.json()
+      setImportPreview(data.whiskies || data)
+    } catch (e: any) {
+      setImportError(e?.message || 'Import failed. Please try again.')
+    }
     finally { setImporting(false) }
   }
 
@@ -111,6 +122,13 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
           <div style={{ fontSize: 12, color: th.faint }}>{t.hostAiImportDesc}</div>
         </div>
       </button>
+
+      {importError && (
+        <div data-testid="text-import-error" style={{ background: '#c0303015', border: '1px solid #c0303044', borderRadius: 12, padding: `${SP.sm}px ${SP.md}px`, marginBottom: SP.md, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: '#c03030', flex: 1 }}>{importError}</span>
+          <button onClick={() => setImportError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c03030', fontSize: 16, padding: 4 }}>✕</button>
+        </div>
+      )}
 
       {importPreview && (
         <div style={{ background: th.bgCard, border: `1px solid ${th.gold}44`, borderRadius: 16, padding: SP.md, marginBottom: SP.md }}>
