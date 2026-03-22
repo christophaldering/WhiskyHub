@@ -43,7 +43,7 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
 
   useEffect(() => {
     fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => setWhiskies(data || [])).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => setWhiskies(Array.isArray(data) ? data : [])).catch(() => {})
   }, [search, sort, participantId])
 
   return (
@@ -135,9 +135,10 @@ const Leaderboard: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   useEffect(() => {
     fetch('/api/community/leaderboard', { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => {
-        setBoard(data || [])
-        setMine((data || []).find((e: any) => e.participantId === participantId))
+      .then(r => r.ok ? r.json() : []).then(data => {
+        const arr = Array.isArray(data) ? data : []
+        setBoard(arr)
+        setMine(arr.find((e: any) => e.participantId === participantId))
       }).catch(() => {})
   }, [participantId])
 
@@ -177,7 +178,7 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/friends`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => setFriends(data || [])).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => setFriends(Array.isArray(data) ? data : [])).catch(() => {})
   }, [participantId])
 
   const doSearch = async (q: string) => {

@@ -25,7 +25,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
   // Load session
   useEffect(() => {
-    fetch('/api/auth/me', { headers: { 'x-participant-id': '' } }).then(r => r.json()).then(setSession).catch(() => {})
+    fetch('/api/auth/me', { headers: { 'x-participant-id': '' } }).then(r => r.ok ? r.json() : null).then(data => setSession(data && typeof data === 'object' ? data : null)).catch(() => {})
   }, [])
 
   // SSE in lobby
@@ -185,7 +185,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
   useEffect(() => {
     if (!session?.id) return
     fetch('/api/tastings', { headers: { 'x-participant-id': session.id } })
-      .then(r => r.json()).then(data => setRecent((data || []).slice(0, 3))).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => setRecent((Array.isArray(data) ? data : []).slice(0, 3))).catch(() => {})
   }, [session?.id])
 
   const greeting = (() => {

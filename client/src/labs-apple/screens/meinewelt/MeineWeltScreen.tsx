@@ -12,9 +12,9 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   useEffect(() => {
     if (!participantId) return
     Promise.all([
-      fetch(`/api/participants/${participantId}`, { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
-      fetch(`/api/participants/${participantId}/flavor-profile`, { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
-    ]).then(([p, f]) => { setProfile(p); setFlavor(f) }).catch(() => {})
+      fetch(`/api/participants/${participantId}`, { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : null),
+      fetch(`/api/participants/${participantId}/flavor-profile`, { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : null),
+    ]).then(([p, f]) => { setProfile(p && typeof p === 'object' ? p : null); setFlavor(f && typeof f === 'object' ? f : null) }).catch(() => {})
   }, [participantId])
 
   const ratingCount = profile?.ratingCount || 0
@@ -91,7 +91,7 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   useEffect(() => {
     fetch(`/api/journal?limit=20&offset=0`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => setEntries(data || [])).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => setEntries(Array.isArray(data) ? data : [])).catch(() => {})
   }, [participantId])
 
   const filtered = entries.filter(e => !search || (e.whiskeyName || '').toLowerCase().includes(search.toLowerCase()))
@@ -125,7 +125,7 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/flavor-profile`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(setProfile).catch(() => {})
+      .then(r => r.ok ? r.json() : null).then(data => setProfile(data && typeof data === 'object' ? data : null)).catch(() => {})
   }, [participantId])
 
   return (
@@ -169,7 +169,7 @@ const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(p => setName(p.name || '')).catch(() => {})
+      .then(r => r.ok ? r.json() : {}).then(p => setName(p?.name || '')).catch(() => {})
   }, [participantId])
 
   const save = async () => {
