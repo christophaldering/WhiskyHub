@@ -78,7 +78,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
       />
 
       {/* Top Bar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
         <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
           {t.appName}
         </span>
