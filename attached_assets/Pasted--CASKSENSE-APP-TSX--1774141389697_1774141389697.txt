@@ -1,0 +1,87 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — APP.TSX ROUTING ERGÄNZUNG FÜR LABS-APPLE
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ergänze client/src/App.tsx um genau 3 Dinge:
+  1. Einen neuen Import-Statement
+  2. Zwei neue Route-Einträge
+
+Das ist alles. Keine weiteren Änderungen an irgendeiner Datei.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Routen anfassen oder verändern
+❌ NIEMALS bestehende Imports anfassen oder verändern
+❌ NIEMALS server/ Dateien anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS irgendeine andere Datei außer App.tsx ändern
+❌ NIEMALS den neuen Import mitten in die bestehenden Imports einfügen
+   (er kommt ans Ende der Import-Sektion, nach allen bestehenden Imports)
+
+✅ NUR append-only: neuen Import hinzufügen, zwei neue Routen hinzufügen
+✅ Bestehende Routen und ihre Reihenfolge bleiben exakt unverändert
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — IMPORT HINZUFÜGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Füge NACH dem letzten bestehenden Import-Statement ein:
+
+  import { LabsAppleApp } from './labs-apple/LabsAppleApp'
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — ROUTEN HINZUFÜGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in App.tsx nach den bestehenden /labs Routen. Sie sehen ungefähr so aus:
+
+  <Route path="/labs" component={...} />
+  <Route path="/labs/:rest*" component={...} />
+
+Füge DIREKT DAHINTER (nach diesen Zeilen, vor allem anderen) ein:
+
+  <Route path="/labs-apple" component={LabsAppleApp} />
+  <Route path="/labs-apple/:rest*" component={LabsAppleApp} />
+
+WICHTIG: Die neuen Routen müssen VOR jedem Catch-All stehen.
+Ein Catch-All ist eine Route ohne Pfad oder mit component={NotFound} o.ä.
+Falls ein solcher Catch-All existiert, kommen die neuen Routen DAVOR.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERWARTETES ERGEBNIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach der Änderung muss /labs-apple erreichbar sein.
+Alle bestehenden Routen (/labs, /labs/*, /, etc.) müssen weiterhin
+unverändert funktionieren.
+
+Die Datei client/src/labs-apple/LabsAppleApp.tsx existiert bereits —
+sie wurde manuell hochgeladen. Du musst sie nicht erstellen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE — VOR FERTIGSTELLUNG ABHAKEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Import von LabsAppleApp ist hinzugefügt
+  [ ] Route /labs-apple ist hinzugefügt
+  [ ] Route /labs-apple/:rest* ist hinzugefügt
+  [ ] Neue Routen stehen VOR einem eventuellen Catch-All
+  [ ] Alle bestehenden Routen sind unverändert
+  [ ] Keine anderen Dateien wurden geändert
+  [ ] Dev-Server nach der Änderung neu gestartet
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════
