@@ -389,3 +389,59 @@ const EN: Translations = {
 }
 
 export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }
+
+// ─── Auth i18n additions (appended) ───────────────────────────────────────
+// These extend the Translations type via module augmentation approach —
+// since we can't change the type definition without breaking things,
+// these are cast as (t as any).authXxx in AuthScreen.tsx
+// The keys are added directly to the DE/EN objects below via Object.assign
+
+Object.assign(I18N.de, {
+  authWelcomeSub: 'Dein Gaumen. Deine Geschichte.',
+  authLoginTitle: 'Willkommen zurück', authLoginSub: 'Melde dich an, um fortzufahren.',
+  authLoginBtn: 'Anmelden', authToRegister: 'Noch kein Konto?', authToLogin: 'Bereits registriert?',
+  authRegisterTitle: 'Konto erstellen', authRegisterSub: 'Starte deine Whisky-Geschichte.',
+  authRegisterBtn: 'Registrieren',
+  authGuestLink: 'Als Gast fortfahren',
+  authGuestTitle: 'Als Gast einloggen', authGuestSub: 'Kein Konto nötig. Wähl deinen Modus.',
+  authGuestBtn: 'Als Gast starten',
+  authGuestStandard: 'Standard', authGuestStandardDesc: 'Name wird gespeichert.',
+  authGuestUltra: 'Anonym', authGuestUltraDesc: 'Kein Verlauf, kein Speichern.',
+  authName: 'Name', authEmail: 'E-Mail', authPassword: 'Passwort',
+  authPasswordConfirm: 'Passwort wiederholen',
+  authNamePH: 'Dein Name', authNameRequired: 'Bitte gib deinen Namen ein.',
+  authMissingFields: 'Bitte alle Felder ausfüllen.',
+  authPasswordMismatch: 'Passwörter stimmen nicht überein.',
+  authPasswordTooShort: 'Passwort mindestens 8 Zeichen.',
+  authLoginError: 'E-Mail oder Passwort falsch.',
+  authRegisterError: 'Registrierung fehlgeschlagen.',
+  authGuestError: 'Gast-Login fehlgeschlagen.',
+  authNetworkError: 'Netzwerkfehler. Bitte versuche es erneut.',
+  authVerifyReminder: 'Bitte bestätige deine E-Mail-Adresse.',
+  authLogout: 'Abmelden',
+})
+
+Object.assign(I18N.en, {
+  authWelcomeSub: 'Your palate. Your story.',
+  authLoginTitle: 'Welcome back', authLoginSub: 'Sign in to continue.',
+  authLoginBtn: 'Sign in', authToRegister: 'No account yet?', authToLogin: 'Already registered?',
+  authRegisterTitle: 'Create account', authRegisterSub: 'Start your whisky story.',
+  authRegisterBtn: 'Register',
+  authGuestLink: 'Continue as guest',
+  authGuestTitle: 'Guest login', authGuestSub: 'No account needed. Choose your mode.',
+  authGuestBtn: 'Start as guest',
+  authGuestStandard: 'Standard', authGuestStandardDesc: 'Name is saved.',
+  authGuestUltra: 'Anonymous', authGuestUltraDesc: 'No history, no storage.',
+  authName: 'Name', authEmail: 'Email', authPassword: 'Password',
+  authPasswordConfirm: 'Confirm password',
+  authNamePH: 'Your name', authNameRequired: 'Please enter your name.',
+  authMissingFields: 'Please fill in all fields.',
+  authPasswordMismatch: 'Passwords do not match.',
+  authPasswordTooShort: 'Password must be at least 8 characters.',
+  authLoginError: 'Wrong email or password.',
+  authRegisterError: 'Registration failed.',
+  authGuestError: 'Guest login failed.',
+  authNetworkError: 'Network error. Please try again.',
+  authVerifyReminder: 'Please verify your email address.',
+  authLogout: 'Sign out',
+})

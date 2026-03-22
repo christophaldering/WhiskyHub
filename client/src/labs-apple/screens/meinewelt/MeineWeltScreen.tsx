@@ -16,7 +16,7 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/flavor-profile`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : null).then(data => setProfile(data && typeof data === 'object' ? data : null)).catch(() => setProfile({ dimensions: { nose: 82, palate: 78, finish: 76, overall: 80 } }))
+      .then(r => r.json()).then(setProfile).catch(() => setProfile({ dimensions: { nose: 82, palate: 78, finish: 76, overall: 80 } }))
   }, [participantId])
 
   const dims = ['nose', 'palate', 'finish', 'overall'] as const
@@ -109,10 +109,9 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   const load = (off: number) => {
     fetch(`/api/journal?limit=20&offset=${off}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => {
-        const arr = Array.isArray(data) ? data : []
-        if (off === 0) setEntries(arr)
-        else setEntries(e => [...e, ...arr])
+      .then(r => r.json()).then(data => {
+        if (off === 0) setEntries(data || [])
+        else setEntries(e => [...e, ...(data || [])])
       }).catch(() => {})
   }
   useEffect(() => { load(0) }, [participantId])
@@ -211,7 +210,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
 
   useEffect(() => {
     fetch('/api/calendar', { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setEvents(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(data => setEvents(data || [])).catch(() => {})
   }, [participantId])
 
   const year  = currentDate.getFullYear()
@@ -304,7 +303,7 @@ const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : {}).then(p => setName((p && p.name) || '')).catch(() => {})
+      .then(r => r.json()).then(p => setName(p.name || '')).catch(() => {})
   }, [participantId])
 
   const save = async () => {
@@ -336,7 +335,7 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   useEffect(() => {
     if (!participantId) return
     fetch(`/api/participants/${participantId}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : null).then(data => setProfile(data && typeof data === 'object' ? data : null)).catch(() => {})
+      .then(r => r.json()).then(setProfile).catch(() => {})
   }, [participantId])
 
   const ratingCount = profile?.ratingCount || 0

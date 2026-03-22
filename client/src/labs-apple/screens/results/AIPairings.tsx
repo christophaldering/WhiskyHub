@@ -15,7 +15,7 @@ export const AIPairings: React.FC<Props> = ({ th, t, participantId, lang, onBack
 
   useEffect(() => {
     fetch('/api/tastings', { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setTastings((Array.isArray(data) ? data : []).filter((t: any) => t.status !== 'draft').slice(0, 10))).catch(() => {}).finally(() => setLT(false))
+      .then(r => r.json()).then(data => setTastings((data || []).filter((t: any) => t.status !== 'draft').slice(0, 10))).catch(() => {}).finally(() => setLT(false))
   }, [participantId])
 
   const loadPairings = async (tastingId: string) => {

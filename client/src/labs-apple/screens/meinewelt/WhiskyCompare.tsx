@@ -70,8 +70,8 @@ export const WhiskyCompare: React.FC<Props> = ({ th, t, participantId, lang, onB
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/compare`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setEntries(Array.isArray(data) ? data : []))
+      .then(r => r.json())
+      .then(data => setEntries(data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [participantId])

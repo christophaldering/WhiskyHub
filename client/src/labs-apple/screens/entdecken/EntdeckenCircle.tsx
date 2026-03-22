@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
+import { BottlersScreen } from './Bottlers'
 
 // ── Tasting Guide ─────────────────────────────────────────────────────────
 const GUIDE_SECTIONS = [
@@ -28,7 +29,7 @@ const TastingGuide: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
         <div style={{ width: 40, height: 40, borderRadius: 20, background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#1a0f00', flexShrink: 0 }}>{s.icon}</div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{s.title}</div>
-          <div style={{ color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{lang === 'de' ? s.de : s.en}</div>
+          <div style={{ fontSize: 14, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{lang === 'de' ? s.de : s.en}</div>
         </div>
       </div>
     ))}
@@ -81,7 +82,7 @@ const Distilleries: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
             <Icon.ChevronDown color={th.faint} size={16} />
           </button>
           {expanded === d.name && (
-            <div style={{ padding: `0 0 ${SP.md}px ${50}px`, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>
+            <div style={{ padding: `0 0 ${SP.md}px ${50}px`, fontSize: 14, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>
               {d.desc}
             </div>
           )}
@@ -100,9 +101,9 @@ const HistoricalArchive: React.FC<{ th: ThemeTokens; t: Translations; participan
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/historical-tastings', { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : []),
-      fetch('/api/historical-tastings/insights', { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : null),
-    ]).then(([t, i]) => { setTastings(Array.isArray(t) ? t : []); setInsights(i && typeof i === 'object' ? i : null); setMember(true) })
+      fetch('/api/historical-tastings', { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
+      fetch('/api/historical-tastings/insights', { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
+    ]).then(([t, i]) => { setTastings(t || []); setInsights(i); setMember(true) })
       .catch(() => setMember(false))
   }, [participantId])
 
@@ -157,7 +158,7 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
 
   useEffect(() => {
     fetch(`/api/labs/explore/whiskies/${bottleId}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : null).then(data => setBottle(data && typeof data === 'object' ? data : null)).catch(() => {})
+      .then(r => r.json()).then(setBottle).catch(() => {})
   }, [bottleId])
 
   if (!bottle) return <div style={{ display: 'flex', justifyContent: 'center', padding: SP.xl }}><Icon.Spinner color={th.gold} size={28} /></div>
@@ -273,7 +274,7 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
 
   useEffect(() => {
     fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setWhiskies(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(data => setWhiskies(data || [])).catch(() => {})
   }, [search, sort, participantId])
 
   return (
@@ -341,12 +342,7 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   if (sub === 'guide')   return <TastingGuide th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'dest')    return <Distilleries th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'history') return <HistoricalArchive th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'bottlers') return (
-    <div style={{ padding: SP.md }}>
-      <button onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
-      <div style={{ textAlign: 'center', padding: SP.xl, color: th.faint, fontStyle: 'italic', fontFamily: 'Cormorant Garamond, serif', fontSize: 17 }}>{t.entBottlers} — Coming soon.</div>
-    </div>
-  )
+  if (sub === 'bottlers') return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
 
   return <div style={{ minHeight: '100%', background: th.bg }}><EntdeckenHub th={th} t={t} onNav={setSub} /></div>
 }
@@ -365,7 +361,7 @@ const Leaderboard: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
 
   useEffect(() => {
     fetch('/api/community/leaderboard', { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => { const arr = Array.isArray(data) ? data : []; setBoard(arr); setMine(arr.find((e: any) => e.participantId === participantId)) })
+      .then(r => r.json()).then(data => { setBoard(data || []); setMine((data || []).find((e: any) => e.participantId === participantId)) })
       .catch(() => {})
   }, [participantId])
 
@@ -384,7 +380,7 @@ const Leaderboard: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
         const name     = isMe ? `${entry.name} (Du)` : isFriend ? entry.name : hashAlias(entry.participantId || String(i))
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid ${th.border}` }}>
-            <span style={{ fontSize: 14, width: 24, textAlign: 'center', fontWeight: i < 3 ? 700 : 400, color: i === 0 ? th.gold : i === 1 ? th.muted : i === 2 ? th.amber : th.faint }}>{i + 1}</span>
+            <span style={{ fontSize: 14, color: th.faint, width: 24, textAlign: 'center', fontWeight: i < 3 ? 700 : 400, color: i === 0 ? th.gold : i === 1 ? th.muted : i === 2 ? th.amber : th.faint }}>{i + 1}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: isMe ? 700 : 400, color: isMe ? th.gold : th.text }}>{name}</div>
               {isFriend && <span style={{ fontSize: 10, color: th.green, background: `${th.green}15`, padding: '1px 6px', borderRadius: 8 }}>{t.circleFriend}</span>}
@@ -407,9 +403,9 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/friends`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setFriends(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(data => setFriends(data || [])).catch(() => {})
     fetch(`/api/participants/${participantId}/friend-requests`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setRequests(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(data => setRequests(data || [])).catch(() => {})
   }, [participantId])
 
   const handleRequest = async (id: string, action: 'accept' | 'decline') => {
@@ -476,7 +472,7 @@ const SessionsBoard: React.FC<{ th: ThemeTokens; t: Translations; participantId:
   const [sessions, setSessions] = useState<any[]>([])
   useEffect(() => {
     fetch('/api/community/sessions', { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setSessions(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(setSessions).catch(() => {})
   }, [participantId])
 
   const statusColor = (s: string) => s === 'open' ? th.green : s === 'draft' ? th.gold : th.faint
@@ -523,7 +519,7 @@ const ActivityFeed: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   const [feed, setFeed] = useState<any[]>([])
   useEffect(() => {
     fetch(`/api/participants/${participantId}/feed`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => setFeed(Array.isArray(data) ? data : [])).catch(() => {})
+      .then(r => r.json()).then(setFeed).catch(() => {})
   }, [participantId])
 
   if (feed.length === 0) return (
