@@ -36,7 +36,7 @@ export const VoiceMemoRecorder: React.FC<Props> = ({ th, participantId, uploadUr
   // Load existing memos
   useEffect(() => {
     fetch(fetchUrl, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => setMemos(data || [])).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => setMemos(Array.isArray(data) ? data : [])).catch(() => {})
   }, [fetchUrl])
 
   const startRecording = async () => {

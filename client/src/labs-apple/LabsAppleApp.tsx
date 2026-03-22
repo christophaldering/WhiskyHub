@@ -29,7 +29,7 @@ export const LabsAppleApp: React.FC = () => {
   const t  = I18N[lang]
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(setSession).catch(() => {})
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(data => setSession(data && typeof data === 'object' ? data : null)).catch(() => {})
   }, [])
 
   const goBack = () => setSubScreen(null)

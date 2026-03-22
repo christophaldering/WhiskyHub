@@ -161,7 +161,7 @@ const ConnoisseurReport: React.FC<{ th: ThemeTokens; t: Translations; participan
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/connoisseur-reports`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(data => { setReports(data || []); if (data?.[0]) setActive(data[0]) }).catch(() => {})
+      .then(r => r.ok ? r.json() : []).then(data => { const arr = Array.isArray(data) ? data : []; setReports(arr); if (arr[0]) setActive(arr[0]) }).catch(() => {})
   }, [participantId])
 
   const generate = async () => {
