@@ -71,7 +71,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
                   {onLogout && (
                     <button onClick={() => { setProfileOpen(false); onLogout() }} style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
                       <Icon.Back color="#e06060" size={16} />
-                      {(t as any).authLogout || (lang === 'de' ? 'Abmelden' : 'Sign out')}
+                      {t.authLogout}
                     </button>
                   )}
                 </div>

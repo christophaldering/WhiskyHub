@@ -7,7 +7,7 @@ export interface Translations {
   tabTastings: string; tabEntdecken: string; tabMeineWelt: string; tabCircle: string
   // Hub
   hubGreeting: string; hubSub: string
-  hubJoin: string; hubJoinDesc: string
+  hubJoin: string; hubJoinDesc: string; hubDashboard: string; hubDashboardDesc: string
   hubSolo: string; hubSoloDesc: string
   hubHost: string; hubHostDesc: string
   hubRecent: string
@@ -136,13 +136,24 @@ export interface Translations {
   circleFriend: string; circleAddFriend: string; circlePending: string; circleAccept: string; circleDecline: string
   circleFeedEmpty: string; circleOnline: string; circleSearchFriend: string
   historyGated: string; historyJoin: string
+  // Auth
+  authWelcomeSub: string; authLoginTitle: string; authLoginSub: string; authLoginBtn: string
+  authToRegister: string; authToLogin: string; authGuestLink: string
+  authRegisterTitle: string; authRegisterSub: string; authRegisterBtn: string
+  authGuestTitle: string; authGuestSub: string; authGuestBtn: string
+  authGuestStandard: string; authGuestStandardDesc: string; authGuestUltra: string; authGuestUltraDesc: string
+  authName: string; authEmail: string; authPassword: string; authPasswordConfirm: string
+  authNamePH: string; authNameRequired: string; authMissingFields: string
+  authPasswordMismatch: string; authPasswordTooShort: string
+  authLoginError: string; authRegisterError: string; authGuestError: string; authNetworkError: string
+  authVerifyReminder: string; authLogout: string
 }
 
 const DE: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Entdecken', tabMeineWelt: 'Meine Welt', tabCircle: 'Circle',
   hubGreeting: 'Guten Abend.', hubSub: 'Was bringst du mit heute Abend?',
-  hubJoin: 'Tasting beitreten', hubJoinDesc: 'Code eingeben und loslegen',
+  hubJoin: 'Tasting beitreten', hubJoinDesc: 'Code eingeben und loslegen', hubDashboard: 'Dashboard', hubDashboardDesc: 'Statistiken und Kalender',
   hubSolo: 'Dram erfassen', hubSoloDesc: 'Alleine verkosten und notieren',
   hubHost: 'Tasting veranstalten', hubHostDesc: 'Neue Session einrichten',
   hubRecent: 'Letzte Aktivität',
@@ -261,13 +272,30 @@ const DE: Translations = {
   circleFriend: 'Freund', circleAddFriend: 'Hinzufügen', circlePending: 'Ausstehend', circleAccept: 'Annehmen', circleDecline: 'Ablehnen',
   circleFeedEmpty: 'Noch keine Aktivitäten von Freunden.', circleOnline: 'Online', circleSearchFriend: 'Freund suchen...',
   historyGated: 'Nur für Community-Mitglieder', historyJoin: 'Community beitreten',
+  authWelcomeSub: 'Dein Gaumen. Deine Geschichte.',
+  authLoginTitle: 'Willkommen zurück', authLoginSub: 'Melde dich an, um fortzufahren.',
+  authLoginBtn: 'Anmelden', authToRegister: 'Noch kein Konto?', authToLogin: 'Bereits registriert?',
+  authGuestLink: 'Als Gast fortfahren',
+  authRegisterTitle: 'Konto erstellen', authRegisterSub: 'Starte deine Whisky-Geschichte.',
+  authRegisterBtn: 'Registrieren',
+  authGuestTitle: 'Als Gast einloggen', authGuestSub: 'Kein Konto nötig. Wähl deinen Modus.',
+  authGuestBtn: 'Als Gast starten',
+  authGuestStandard: 'Standard', authGuestStandardDesc: 'Name wird gespeichert.',
+  authGuestUltra: 'Anonym', authGuestUltraDesc: 'Kein Verlauf, kein Speichern.',
+  authName: 'Name', authEmail: 'E-Mail', authPassword: 'Passwort', authPasswordConfirm: 'Passwort wiederholen',
+  authNamePH: 'Dein Name', authNameRequired: 'Bitte gib deinen Namen ein.',
+  authMissingFields: 'Bitte alle Felder ausfüllen.', authPasswordMismatch: 'Passwörter stimmen nicht überein.',
+  authPasswordTooShort: 'Passwort mindestens 8 Zeichen.', authLoginError: 'E-Mail oder Passwort falsch.',
+  authRegisterError: 'Registrierung fehlgeschlagen.', authGuestError: 'Gast-Login fehlgeschlagen.',
+  authNetworkError: 'Netzwerkfehler. Bitte versuche es erneut.', authVerifyReminder: 'Bitte bestätige deine E-Mail-Adresse.',
+  authLogout: 'Abmelden',
 }
 
 const EN: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Discover', tabMeineWelt: 'My World', tabCircle: 'Circle',
   hubGreeting: 'Good evening.', hubSub: 'What are you bringing tonight?',
-  hubJoin: 'Join tasting', hubJoinDesc: 'Enter code and dive in',
+  hubJoin: 'Join tasting', hubJoinDesc: 'Enter code and dive in', hubDashboard: 'Dashboard', hubDashboardDesc: 'Statistics and calendar',
   hubSolo: 'Log a dram', hubSoloDesc: 'Taste and note on your own',
   hubHost: 'Host a tasting', hubHostDesc: 'Set up a new session',
   hubRecent: 'Recent activity',
@@ -386,62 +414,23 @@ const EN: Translations = {
   circleFriend: 'Friend', circleAddFriend: 'Add', circlePending: 'Pending', circleAccept: 'Accept', circleDecline: 'Decline',
   circleFeedEmpty: 'No activity from friends yet.', circleOnline: 'Online', circleSearchFriend: 'Search friend...',
   historyGated: 'Community members only', historyJoin: 'Join community',
-}
-
-export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }
-
-// ─── Auth i18n additions (appended) ───────────────────────────────────────
-// These extend the Translations type via module augmentation approach —
-// since we can't change the type definition without breaking things,
-// these are cast as (t as any).authXxx in AuthScreen.tsx
-// The keys are added directly to the DE/EN objects below via Object.assign
-
-Object.assign(I18N.de, {
-  authWelcomeSub: 'Dein Gaumen. Deine Geschichte.',
-  authLoginTitle: 'Willkommen zurück', authLoginSub: 'Melde dich an, um fortzufahren.',
-  authLoginBtn: 'Anmelden', authToRegister: 'Noch kein Konto?', authToLogin: 'Bereits registriert?',
-  authRegisterTitle: 'Konto erstellen', authRegisterSub: 'Starte deine Whisky-Geschichte.',
-  authRegisterBtn: 'Registrieren',
-  authGuestLink: 'Als Gast fortfahren',
-  authGuestTitle: 'Als Gast einloggen', authGuestSub: 'Kein Konto nötig. Wähl deinen Modus.',
-  authGuestBtn: 'Als Gast starten',
-  authGuestStandard: 'Standard', authGuestStandardDesc: 'Name wird gespeichert.',
-  authGuestUltra: 'Anonym', authGuestUltraDesc: 'Kein Verlauf, kein Speichern.',
-  authName: 'Name', authEmail: 'E-Mail', authPassword: 'Passwort',
-  authPasswordConfirm: 'Passwort wiederholen',
-  authNamePH: 'Dein Name', authNameRequired: 'Bitte gib deinen Namen ein.',
-  authMissingFields: 'Bitte alle Felder ausfüllen.',
-  authPasswordMismatch: 'Passwörter stimmen nicht überein.',
-  authPasswordTooShort: 'Passwort mindestens 8 Zeichen.',
-  authLoginError: 'E-Mail oder Passwort falsch.',
-  authRegisterError: 'Registrierung fehlgeschlagen.',
-  authGuestError: 'Gast-Login fehlgeschlagen.',
-  authNetworkError: 'Netzwerkfehler. Bitte versuche es erneut.',
-  authVerifyReminder: 'Bitte bestätige deine E-Mail-Adresse.',
-  authLogout: 'Abmelden',
-})
-
-Object.assign(I18N.en, {
   authWelcomeSub: 'Your palate. Your story.',
   authLoginTitle: 'Welcome back', authLoginSub: 'Sign in to continue.',
   authLoginBtn: 'Sign in', authToRegister: 'No account yet?', authToLogin: 'Already registered?',
+  authGuestLink: 'Continue as guest',
   authRegisterTitle: 'Create account', authRegisterSub: 'Start your whisky story.',
   authRegisterBtn: 'Register',
-  authGuestLink: 'Continue as guest',
   authGuestTitle: 'Guest login', authGuestSub: 'No account needed. Choose your mode.',
   authGuestBtn: 'Start as guest',
   authGuestStandard: 'Standard', authGuestStandardDesc: 'Name is saved.',
   authGuestUltra: 'Anonymous', authGuestUltraDesc: 'No history, no storage.',
-  authName: 'Name', authEmail: 'Email', authPassword: 'Password',
-  authPasswordConfirm: 'Confirm password',
+  authName: 'Name', authEmail: 'Email', authPassword: 'Password', authPasswordConfirm: 'Confirm password',
   authNamePH: 'Your name', authNameRequired: 'Please enter your name.',
-  authMissingFields: 'Please fill in all fields.',
-  authPasswordMismatch: 'Passwords do not match.',
-  authPasswordTooShort: 'Password must be at least 8 characters.',
-  authLoginError: 'Wrong email or password.',
-  authRegisterError: 'Registration failed.',
-  authGuestError: 'Guest login failed.',
-  authNetworkError: 'Network error. Please try again.',
-  authVerifyReminder: 'Please verify your email address.',
+  authMissingFields: 'Please fill in all fields.', authPasswordMismatch: 'Passwords do not match.',
+  authPasswordTooShort: 'Password must be at least 8 characters.', authLoginError: 'Wrong email or password.',
+  authRegisterError: 'Registration failed.', authGuestError: 'Guest login failed.',
+  authNetworkError: 'Network error. Please try again.', authVerifyReminder: 'Please verify your email address.',
   authLogout: 'Sign out',
-})
+}
+
+export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }

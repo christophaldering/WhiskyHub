@@ -1,5 +1,6 @@
-// CaskSense Apple — LabsAppleApp (Root) v2 — mit Auth-Gate
-import React, { useState, useEffect } from 'react'
+// CaskSense Apple — LabsAppleApp (Root) — Phase A
+// Neu: Auto-Resume, Heartbeat, vollständige Session-Persistenz
+import React, { useState, useEffect, useRef } from 'react'
 import { THEMES } from './theme/tokens'
 import { I18N } from './theme/i18n'
 import { LabsAppleLayout } from './LabsAppleLayout'
@@ -13,71 +14,97 @@ import { ResultsScreen } from './screens/results/ResultsScreen'
 import { MeineWeltScreen } from './screens/meinewelt/MeineWeltScreen'
 import { EntdeckenScreen, CircleScreen } from './screens/entdecken/EntdeckenCircle'
 import './theme/animations.css'
+import { LabsErrorBoundary } from './LabsErrorBoundary'
 
 type TabId = 'tastings' | 'entdecken' | 'meinewelt' | 'circle'
 type SubScreen = null | 'join' | 'solo' | 'host' | 'host-dashboard' | 'live' | 'results'
 
+const SESSION_KEY = 'casksense_apple_session'
+
 export const LabsAppleApp: React.FC = () => {
-  const [themeKey, setThemeKey]       = useState<'dark' | 'light'>('dark')
-  const [lang, setLang]               = useState<'de' | 'en'>('de')
+  const [themeKey, setThemeKey]       = useState<'dark' | 'light'>(() => (localStorage.getItem('casksense_theme') as any) || 'dark')
+  const [lang, setLang]               = useState<'de' | 'en'>(() => (localStorage.getItem('casksense_lang') as any) || 'de')
   const [activeTab, setActiveTab]     = useState<TabId>('tastings')
   const [subScreen, setSubScreen]     = useState<SubScreen>(null)
   const [session, setSession]         = useState<any>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTastingId, setActiveTastingId]         = useState<string | null>(null)
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null)
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const th = THEMES[themeKey]
   const t  = I18N[lang]
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('casksense_session')
-      if (saved) { const s = JSON.parse(saved); if (s?.id) setSession(s) }
-    } catch {}
-    setAuthChecked(true)
+    const tryAutoResume = async () => {
+      const cached = localStorage.getItem(SESSION_KEY)
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached)
+          if (parsed?.id) {
+            const res = await fetch(`/api/participants/${parsed.id}`, { headers: { 'x-participant-id': parsed.id } })
+            if (res.ok) {
+              const fresh = await res.json()
+              setSession(fresh)
+              localStorage.setItem(SESSION_KEY, JSON.stringify({ id: fresh.id, name: fresh.name, email: fresh.email }))
+              setAuthChecked(true)
+              return
+            }
+          }
+        } catch { }
+        localStorage.removeItem(SESSION_KEY)
+      }
+      setAuthChecked(true)
+    }
+    tryAutoResume()
   }, [])
+
+  // ── Heartbeat alle 5 Min ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!session?.id) { if (heartbeatRef.current) clearInterval(heartbeatRef.current); return }
+    const beat = () => fetch('/api/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': session.id }, body: JSON.stringify({ participantId: session.id }) }).catch(() => {})
+    beat()
+    heartbeatRef.current = setInterval(beat, 5 * 60 * 1000)
+    return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current) }
+  }, [session?.id])
+
+  // ── Theme + Lang Persistenz ───────────────────────────────────────────
+  const toggleTheme = () => setThemeKey(k => { const n = k === 'dark' ? 'light' : 'dark'; localStorage.setItem('casksense_theme', n); return n })
+  const toggleLang  = () => setLang(l => { const n = l === 'de' ? 'en' : 'de'; localStorage.setItem('casksense_lang', n); return n })
 
   const handleLogin = (data: any) => {
     setSession(data)
-    try { localStorage.setItem('casksense_session', JSON.stringify(data)) } catch {}
+    if (data?.id) localStorage.setItem(SESSION_KEY, JSON.stringify({ id: data.id, name: data.name, email: data.email }))
   }
 
   const handleLogout = () => {
-    try { localStorage.removeItem('casksense_session') } catch {}
     setSession(null)
+    localStorage.removeItem(SESSION_KEY)
     setSubScreen(null)
     setActiveTab('tastings')
   }
 
   const goBack = () => setSubScreen(null)
-
   const enterLive = (tastingId: string, participantId: string) => {
-    setActiveTastingId(tastingId)
-    setActiveParticipantId(participantId)
-    setSubScreen('live')
+    setActiveTastingId(tastingId); setActiveParticipantId(participantId); setSubScreen('live')
   }
 
-  // Loading
-  if (!authChecked) {
-    return (
-      <div style={{ minHeight: '100dvh', background: THEMES.dark.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 48, height: 48, borderRadius: 24, border: `2px solid ${THEMES.dark.gold}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-      </div>
-    )
-  }
+  // Loading splash
+  if (!authChecked) return (
+    <div style={{ minHeight: '100dvh', background: THEMES.dark.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <div style={{ width: 52, height: 52, borderRadius: 26, border: `2px solid ${THEMES.dark.gold}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, color: THEMES.dark.gold, letterSpacing: '0.04em' }}>CaskSense</div>
+    </div>
+  )
 
   // Auth gate
-  if (!session) {
-    return <AuthScreen th={th} t={t} onLogin={handleLogin} />
-  }
+  if (!session) return <AuthScreen th={th} t={t} onLogin={handleLogin} />
 
-  // Email verification banner (grace period: within 24h, not guest, not @casksense.local)
-  const isGuest = !session.email
-  const isLocal = session.email?.endsWith('@casksense.local')
-  const isVerified = session.emailVerified
-  const withinGrace = session.createdAt && (Date.now() - new Date(session.createdAt).getTime()) < 24 * 60 * 60 * 1000
-  const showVerifyBanner = !isGuest && !isLocal && !isVerified && withinGrace
+  const isGuest      = !session.email
+  const isLocal      = session.email?.endsWith('@casksense.local')
+  const isVerified   = session.emailVerified
+  const withinGrace  = session.createdAt && (Date.now() - new Date(session.createdAt).getTime()) < 24 * 60 * 60 * 1000
+  const showVerify   = !isGuest && !isLocal && !isVerified && withinGrace
 
   const renderContent = () => {
     if (subScreen === 'join')           return <JoinFlow th={th} t={t} onEnterLive={enterLive} onBack={goBack} />
@@ -90,7 +117,6 @@ export const LabsAppleApp: React.FC = () => {
     if (subScreen === 'results' && activeTastingId) return (
       <ResultsScreen th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || 'guest'} isHost={session?.isHost || false} />
     )
-
     switch (activeTab) {
       case 'tastings':  return <TastingsHub th={th} t={t} session={session} onJoin={() => setSubScreen('join')} onSolo={() => setSubScreen('solo')} onHost={() => setSubScreen('host')} onHostDashboard={() => setSubScreen('host-dashboard')} />
       case 'entdecken': return <EntdeckenScreen th={th} t={t} participantId={session?.id || ''} lang={lang} />
@@ -101,19 +127,12 @@ export const LabsAppleApp: React.FC = () => {
   }
 
   return (
-    <LabsAppleLayout
-      th={th} t={t}
-      themeKey={themeKey} lang={lang}
-      activeTab={activeTab} subScreen={subScreen}
-      session={session}
-      onTabChange={setActiveTab}
-      onToggleTheme={() => setThemeKey(k => k === 'dark' ? 'light' : 'dark')}
-      onToggleLang={() => setLang(l => l === 'de' ? 'en' : 'de')}
-      onLogout={handleLogout}
-    >
-      {showVerifyBanner && <VerificationBanner th={th} t={t} email={session.email} />}
+    <LabsErrorBoundary th={th}>
+    <LabsAppleLayout th={th} t={t} themeKey={themeKey} lang={lang} activeTab={activeTab} subScreen={subScreen} session={session} onTabChange={setActiveTab} onToggleTheme={toggleTheme} onToggleLang={toggleLang} onLogout={handleLogout}>
+      {showVerify && <VerificationBanner th={th} t={t} email={session.email} />}
       {renderContent()}
     </LabsAppleLayout>
+    </LabsErrorBoundary>
   )
 }
 

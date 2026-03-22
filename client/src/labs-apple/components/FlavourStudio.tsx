@@ -328,6 +328,31 @@ type StudioMode = 'guide' | 'journey' | 'describe'
 
 export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onToggle, onNote }) => {
   const [mode, setMode] = useState<StudioMode>('guide')
+  const [apiCategories, setApiCategories] = React.useState<Category[] | null>(null)
+
+  // Fetch categories from API, fall back to hardcoded CATEGORIES
+  React.useEffect(() => {
+    fetch('/api/flavour-categories')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.length) return
+        // Map API format to internal Category format
+        const mapped: Category[] = data.map((cat: any) => ({
+          key: cat.id || cat.key || cat.en?.toLowerCase().replace(/\s+/g, '-'),
+          de: cat.de || cat.name || cat.en,
+          en: cat.en || cat.name,
+          descriptors: (cat.descriptors || []).map((d: any) => ({
+            key: d.id || d.en?.toLowerCase().replace(/\s+/g, '-'),
+            de: d.de || d.en,
+            en: d.en
+          }))
+        }))
+        if (mapped.length > 0) setApiCategories(mapped)
+      })
+      .catch(() => { /* use hardcoded */ })
+  }, [])
+
+  const activeCategories = apiCategories || CATEGORIES
 
   const modes: { id: StudioMode; label: string }[] = [
     { id: 'guide',   label: lang === 'de' ? 'Geführt' : 'Guide'    },

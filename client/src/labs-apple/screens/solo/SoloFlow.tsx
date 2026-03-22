@@ -139,8 +139,94 @@ const SoloDoneScreen: React.FC<{ th: ThemeTokens; t: Translations; whisky: Whisk
 // ── SoloFlow orchestrator ────────────────────────────────────────────────────
 interface Props { th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }
 
+
+// ── QuickRateScreen ─────────────────────────────────────────────────────────
+// Schnellbewertung: Score-Chips + Flavour-Tags + Quick Note (ohne Dimensionen)
+const QuickRateScreen: React.FC<{ th: ThemeTokens; t: Translations; whisky: WhiskyData; participantId: string; onSave: (score: number, note: string, tags: string[]) => void; onFull: () => void; onBack: () => void }> = ({ th, t, whisky, participantId, onSave, onFull, onBack }) => {
+  const [score, setScore]   = React.useState<number | null>(null)
+  const [note, setNote]     = React.useState('')
+  const [tags, setTags]     = React.useState<string[]>([])
+  const [saving, setSaving] = React.useState(false)
+
+  const QUICK_SCORES = [70, 75, 80, 85, 88, 90, 92, 95]
+  const QUICK_TAGS   = ['Fruchtig', 'Rauchig', 'Süß', 'Würzig', 'Holzig', 'Blumig', 'Malzig', 'Cremig', 'Meerig', 'Erdig']
+
+  const handleSave = async () => {
+    if (!score) return
+    setSaving(true)
+    try {
+      await fetch('/api/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-participant-id': participantId },
+        body: JSON.stringify({
+          whiskeyName: whisky.name, distillery: whisky.distillery, region: whisky.region,
+          overallScore: score,
+          notes: { overall: note },
+          flavorTags: { quick: tags },
+          source: 'quick'
+        })
+      })
+      onSave(score, note, tags)
+    } catch { setSaving(false) }
+  }
+
+  return (
+    <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: th.headerBg, backdropFilter: 'blur(12px)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${th.border}` }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, fontSize: 15 }}>
+          <Icon.Back color={th.muted} size={18} />{t.back}
+        </button>
+        <div style={{ flex: 1, textAlign: 'center', fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic', color: th.muted }}>
+          {whisky.name || 'Quick Rate'}
+        </div>
+        <button onClick={onFull} style={{ background: 'none', border: 'none', color: th.phases.nose.accent, cursor: 'pointer', fontSize: 13, minHeight: 44 }}>
+          Vollständig
+        </button>
+      </div>
+
+      <div style={{ flex: 1, padding: 16, paddingBottom: 120, overflowY: 'auto' }}>
+        {/* Score chips */}
+        <div style={{ fontSize: 13, fontWeight: 600, color: th.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+          {QUICK_SCORES.map(s => (
+            <button key={s} onClick={() => setScore(s)} style={{ height: 44, padding: '0 20px', borderRadius: 22, border: `1px solid ${score === s ? th.gold : th.border}`, background: score === s ? `${th.gold}20` : th.bgCard, color: score === s ? th.gold : th.muted, fontSize: 16, fontWeight: score === s ? 700 : 400, cursor: 'pointer', transition: 'all 150ms' }}>
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Flavour Tags */}
+        <div style={{ fontSize: 13, fontWeight: 600, color: th.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Aromen</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+          {QUICK_TAGS.map(tag => {
+            const active = tags.includes(tag)
+            return (
+              <button key={tag} onClick={() => setTags(ts => active ? ts.filter(x => x !== tag) : [...ts, tag])} style={{ height: 40, padding: '0 16px', borderRadius: 20, border: `1px solid ${active ? th.phases.palate.accent : th.border}`, background: active ? th.phases.palate.dim : th.bgCard, color: active ? th.phases.palate.accent : th.muted, fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 150ms' }}>
+                {tag}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Quick note */}
+        <div style={{ fontSize: 13, fontWeight: 600, color: th.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Notiz</div>
+        <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Kurzer Eindruck…" rows={3}
+          style={{ width: '100%', borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 16, fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic', padding: '12px 14px', resize: 'none', outline: 'none', boxSizing: 'border-box' }} />
+      </div>
+
+      {/* CTA */}
+      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, padding: '12px 16px 24px', background: th.bg }}>
+        <button onClick={handleSave} disabled={!score || saving} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: !score ? 'default' : 'pointer', background: !score ? th.bgCard : `linear-gradient(135deg, ${th.gold}, #c47a3a)`, color: !score ? th.faint : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {saving ? <Icon.Spinner color={th.faint} size={20} /> : `Quick speichern${score ? ` · ${score} Pkt` : ''}`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
 export const SoloFlow: React.FC<Props> = ({ th, t, participantId, onBack }) => {
-  const [step, setStep]             = useState<'capture' | 'form' | 'rating' | 'done'>('capture')
+  const [step, setStep]             = useState<'capture' | 'quickRate' | 'form' | 'rating' | 'done'>('capture')
   const [whisky, setWhisky]         = useState<WhiskyData>({ blind: false })
   const [ratingData, setRatingData] = useState<RatingData | null>(null)
 
@@ -158,7 +244,8 @@ export const SoloFlow: React.FC<Props> = ({ th, t, participantId, onBack }) => {
 
   const avgScore = ratingData ? Math.round(Object.values(ratingData.scores).reduce((a, b) => a + b, 0) / 4) : 0
 
-  if (step === 'capture') return <SoloCaptureScreen th={th} t={t} onCapture={w => { setWhisky(w); setStep(w.name ? 'form' : 'form') }} onSkip={() => { setWhisky({ blind: false }); setStep('rating') }} onBack={onBack} />
+  if (step === 'capture') return <SoloCaptureScreen th={th} t={t} onCapture={w => { setWhisky(w); setStep('quickRate') }} onSkip={() => { setWhisky({ blind: false }); setStep('rating') }} onBack={onBack} />
+  if (step === 'quickRate') return <QuickRateScreen th={th} t={t} whisky={whisky} participantId={participantId} onSave={(score, note, tags) => { setAvgScore(score); setRatingData({ scores: { nose: score, palate: score, finish: score, overall: score }, tags: { nose: [], palate: [], finish: [], overall: [] }, notes: { nose: '', palate: '', finish: '', overall: note } }); setStep('done') }} onFull={() => setStep('form')} onBack={() => setStep('capture')} />
   if (step === 'form')    return <SoloWhiskyForm th={th} t={t} initial={whisky} onSubmit={w => { setWhisky(w); setStep('rating') }} onBack={() => setStep('capture')} />
   if (step === 'rating')  return <RatingFlow th={th} t={t} whisky={whisky} tastingId="solo" dramIdx={1} total={1} tastingStatus="open" participantId={participantId} onDone={handleRatingDone} onBack={() => setStep(whisky.name ? 'form' : 'capture')} />
   if (step === 'done')    return <SoloDoneScreen th={th} t={t} whisky={whisky} score={avgScore} onAnother={() => { setWhisky({ blind: false }); setRatingData(null); setStep('capture') }} onBack={onBack} />

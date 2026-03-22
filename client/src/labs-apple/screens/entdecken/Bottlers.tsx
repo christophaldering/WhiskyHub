@@ -43,8 +43,8 @@ export const BottlersScreen: React.FC<Props> = ({ th, t, lang, onBack }) => {
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}>
         <Icon.Back color={th.muted} size={18} />{t.back}
       </button>
-      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{(t as any).entBottlers || 'Abfüller'}</h1>
-      <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.md}px` }}>{(t as any).entBottlersSub || 'Unabhängige Abfüller weltweit'}</p>
+      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{t.entBottlers}</h1>
+      <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.md}px` }}>{t.entBottlersSub}</p>
 
       {/* Search */}
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Abfüller suchen..."

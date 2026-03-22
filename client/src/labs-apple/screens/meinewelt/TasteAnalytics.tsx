@@ -26,6 +26,7 @@ function stdDev(pts: DataPoint[]): number {
 export const TasteAnalytics: React.FC<Props> = ({ th, t, participantId, onBack }) => {
   const [data, setData]     = useState<DataPoint[]>([])
   const [ratingCount, setCount] = useState(0)
+  const [insight, setInsight]   = useState<{ message: string; type: string } | null>(null)
 
   function mockData(): DataPoint[] {
     return Array.from({ length: 8 }, (_, i) => {
@@ -35,6 +36,8 @@ export const TasteAnalytics: React.FC<Props> = ({ th, t, participantId, onBack }
   }
 
   useEffect(() => {
+    fetch(`/api/participants/${participantId}/insights`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.json()).then(d => { if (d?.message) setInsight(d) }).catch(() => {})
     fetch(`/api/participants/${participantId}/flavor-profile?period=all`, { headers: { 'x-participant-id': participantId } })
       .then(r => r.json())
       .then(d => { setData(d?.timeSeries || mockData()); setCount(d?.ratingCount || 0) })
@@ -90,6 +93,18 @@ export const TasteAnalytics: React.FC<Props> = ({ th, t, participantId, onBack }
         </svg>
       </div>
 
+      {/* AI Insight Card */}
+      {insight && (
+        <div style={{ background: `${th.phases.palate.dim}`, border: `1px solid ${th.phases.palate.accent}44`, borderRadius: 16, padding: SP.md, marginBottom: SP.md, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <Icon.Insight color={th.phases.palate.accent} size={20} />
+          <div>
+            <div style={{ fontSize: 11, color: th.phases.palate.accent, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+              KI-Analyse · {insight.type || 'Insight'}
+            </div>
+            <div style={{ fontSize: 14, color: th.muted, lineHeight: 1.5, fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic' }}>{insight.message}</div>
+          </div>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.md }}>
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
           <TrendIcon color={trendColor} size={24} />
