@@ -258,7 +258,7 @@ function SmartRedirectToLabs() {
     "/discover/database": "/labs/explore",
     "/discover-hub": "/labs/entdecken",
     "/data-export": "/labs/taste/downloads",
-    "/home": "/labs-apple",
+    "/home": "/labs",
     "/tasting/sessions": "/labs/tastings",
     "/tasting/calendar": "/labs/host/calendar",
     "/tasting/host": "/labs/host/dashboard",

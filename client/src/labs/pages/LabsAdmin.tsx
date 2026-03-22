@@ -150,7 +150,13 @@ export default function LabsAdmin() {
         <ChevronLeft className="w-4 h-4" /> Home
       </button>
 
-      <h1 className="labs-h2 mb-3" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
+        <a href="/labs-apple" className="labs-btn-ghost flex items-center gap-1.5 text-xs" style={{ color: "var(--labs-accent)", border: "1px solid var(--labs-accent)", borderRadius: 8, padding: "6px 12px", textDecoration: "none" }} data-testid="link-apple-labs">
+          <FlaskConical className="w-3.5 h-3.5" /> Apple Labs
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
 
       <div className="grid grid-cols-4 gap-2 mb-5">
         {[

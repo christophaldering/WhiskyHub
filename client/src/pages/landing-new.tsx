@@ -355,7 +355,7 @@ function HeroSection() {
           }}
         >
           <Link
-            href="/labs-apple"
+            href="/labs"
             data-testid="cta-hero-primary"
             style={{
               display: "inline-flex",
@@ -428,14 +428,14 @@ function TwoWaysSection() {
       icon: <Wine style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.solo.title"),
       desc: t("landing.twoways.solo.text"),
-      href: "/labs-apple",
+      href: "/labs/solo",
       testId: "card-solo",
     },
     {
       icon: <Users style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.together.title"),
       desc: t("landing.twoways.together.text"),
-      href: "/labs-apple",
+      href: "/labs",
       testId: "card-together",
     },
   ];
@@ -1129,7 +1129,7 @@ function CTASection() {
             }}
           >
             <Link
-              href="/labs-apple"
+              href="/labs"
               data-testid="cta-final-primary"
               style={{
                 display: "inline-flex",
