@@ -107,9 +107,9 @@ export const LabsAppleLayout: React.FC<Props> = ({
                 }
               </button>
 
-              {/* Dropdown */}
+              {/* Dropdown — fixed to viewport to escape sticky stacking context */}
               {profileOpen && (
-                <div style={{ position: 'absolute', top: 42, right: 0, width: 220, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', zIndex: 50, overflow: 'hidden' }}>
+                <div style={{ position: 'fixed', top: 56, right: 'max(16px, calc((100vw - 480px) / 2 + 16px))', width: 220, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', zIndex: 9999, overflow: 'hidden' }}>
 
                   {/* Header mit Foto */}
                   <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -188,7 +188,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
 
       {/* Backdrop */}
       {profileOpen && (
-        <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+        <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
       )}
 
       {/* Content */}
