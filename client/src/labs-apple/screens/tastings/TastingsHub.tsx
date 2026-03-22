@@ -181,10 +181,11 @@ interface HubProps {
   onCockpit?: (id: string) => void
   onPrintSheets?: (id: string) => void
   onPaperScan?: (id: string) => void
+  onResults?: (id: string) => void
   session: any
 }
 
-export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, onTastingDetail, onCockpit, onPrintSheets, onPaperScan, session }) => {
+export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, onTastingDetail, onCockpit, onPrintSheets, onPaperScan, onResults, session }) => {
   const [recentTastings, setRecent] = useState<any[]>([])
   const [detailId, setDetailId]   = useState<string | null>(null)
   const [recapId, setRecapId]     = useState<string | null>(null)
@@ -249,15 +250,40 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
         {recentTastings.length > 0 && (
           <div>
             <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', color: th.faint, marginBottom: SP.sm }}>{t.hubRecent}</div>
-            {recentTastings.map((tasting, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${th.border}` }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{tasting.name}</div>
-                  <div style={{ fontSize: 12, color: th.faint }}>{tasting.date}</div>
-                </div>
-                <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: tasting.status === 'open' ? `${th.green}20` : th.bgCard, color: tasting.status === 'open' ? th.green : th.faint }}>{tasting.status}</span>
-              </div>
-            ))}
+            {recentTastings.map((tasting, i) => {
+              const canViewResults = ['closed', 'archived', 'reveal'].includes(tasting.status)
+              const isOpen = tasting.status === 'open'
+              const isClickable = canViewResults || isOpen
+              const handleClick = () => {
+                if (canViewResults && onResults) onResults(tasting.id)
+                else if (isOpen && onTastingDetail) onTastingDetail(tasting.id, tasting.hostId === session?.id)
+              }
+              return (
+                <button
+                  key={i}
+                  data-testid={`recent-tasting-${tasting.id}`}
+                  onClick={isClickable ? handleClick : undefined}
+                  style={{
+                    display: 'flex', alignItems: 'center', padding: '10px 0', width: '100%',
+                    borderBottom: `1px solid ${th.border}`, background: 'none', border: 'none',
+                    borderBottomStyle: 'solid', borderBottomWidth: 1, borderBottomColor: th.border,
+                    cursor: isClickable ? 'pointer' : 'default', textAlign: 'left', color: th.text,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{tasting.name}</div>
+                    <div style={{ fontSize: 12, color: th.faint }}>{tasting.date}</div>
+                  </div>
+                  {canViewResults ? (
+                    <span style={{ fontSize: 12, color: th.gold, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {t.resultsTitle} <Icon.ChevronRight color={th.gold} size={14} />
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: isOpen ? `${th.green}20` : th.bgCard, color: isOpen ? th.green : th.faint }}>{tasting.status}</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

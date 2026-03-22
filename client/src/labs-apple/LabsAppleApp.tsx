@@ -150,7 +150,7 @@ export const LabsAppleApp: React.FC = () => {
       <LiveTasting th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || 'guest'} lang={lang} onResults={() => setSubScreen('results')} />
     )
     if (subScreen === 'results' && activeTastingId) return (
-      <ResultsScreen th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || 'guest'} isHost={session?.isHost || false} />
+      <ResultsScreen th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || 'guest'} isHost={session?.isHost || false} onBack={goBack} />
     )
     if (subScreen === 'tasting-detail' && activeTastingId) return (
       <TastingDetail th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} isHost={isHostForActive} onBack={goBack} onEnterLive={() => { setSubScreen('live') }} />
@@ -180,6 +180,7 @@ export const LabsAppleApp: React.FC = () => {
         onCockpit={(id) => { setActiveTastingId(id); setSubScreen('host-cockpit') }}
         onPrintSheets={(id) => { setActiveTastingId(id); setSubScreen('print-sheets') }}
         onPaperScan={(id) => { setActiveTastingId(id); setSubScreen('paper-scan') }}
+        onResults={(id) => { setActiveTastingId(id); setSubScreen('results') }}
       />
       case 'entdecken': return <EntdeckenScreen th={th} t={t} participantId={session?.id || ''} lang={lang} />
       case 'meinewelt': return <MeineWeltScreen th={th} t={t} participantId={session?.id || ''} lang={lang} />

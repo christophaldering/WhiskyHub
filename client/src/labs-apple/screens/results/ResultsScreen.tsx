@@ -243,15 +243,25 @@ interface Props {
   participantId: string
   isHost: boolean
   lang?: 'de' | 'en'
+  onBack?: () => void
 }
 
-export const ResultsScreen: React.FC<Props> = ({ th, t, tastingId, participantId, isHost, lang = 'de' }) => {
+export const ResultsScreen: React.FC<Props> = ({ th, t, tastingId, participantId, isHost, lang = 'de', onBack }) => {
   const [activeTab, setTab] = useState(0)
   const tabs = [t.resultsTitle, t.recapTitle, t.connoisseurTitle, ...(isHost ? [t.narrativeTitle] : [])]
 
   return (
     <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
       <div style={{ padding: `${SP.lg}px ${SP.md}px ${SP.md}px` }}>
+        {onBack && (
+          <button
+            data-testid="button-results-back"
+            onClick={onBack}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px', fontFamily: 'DM Sans, sans-serif' }}
+          >
+            <Icon.Back color={th.muted} size={18} />{t.back}
+          </button>
+        )}
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 600, margin: 0 }}>{t.resultsTitle}</h1>
       </div>
       <div style={{ display: 'flex', gap: SP.xs, padding: `0 ${SP.md}px ${SP.md}px`, overflowX: 'auto' }}>
