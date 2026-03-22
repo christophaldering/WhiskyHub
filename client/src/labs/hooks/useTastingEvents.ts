@@ -1,65 +1,60 @@
-import { useEffect, useRef, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAppStore } from "@/lib/store";
+// CaskSense — useTastingEvents
+// Ablage: client/src/labs/hooks/useTastingEvents.ts
 
-type SSEEventType = "reveal_triggered" | "status_changed" | "presentation_changed";
+import { useEffect, useRef } from 'react'
 
-interface UseTastingEventsOptions {
-  tastingId: string;
-  enabled?: boolean;
-  onReveal?: (data: Record<string, unknown>) => void;
-  onStatusChange?: (data: Record<string, unknown>) => void;
-  onPresentationChange?: (data: Record<string, unknown>) => void;
+interface TastingEventCallbacks {
+  onReveal?:       () => void
+  onStatus?:       () => void
+  onPresentation?: () => void
 }
 
-export function useTastingEvents({
-  tastingId,
-  enabled = true,
-  onReveal,
-  onStatusChange,
-  onPresentationChange,
-}: UseTastingEventsOptions) {
-  const queryClient = useQueryClient();
-  const { currentParticipant } = useAppStore();
-  const pid = currentParticipant?.id;
-  const sourceRef = useRef<EventSource | null>(null);
-  const callbacksRef = useRef({ onReveal, onStatusChange, onPresentationChange });
-  callbacksRef.current = { onReveal, onStatusChange, onPresentationChange };
-
-  const invalidateTasting = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-    queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-  }, [queryClient, tastingId]);
+export function useTastingEvents(
+  tastingId: string | null | undefined,
+  callbacks: TastingEventCallbacks,
+) {
+  const cbRef = useRef(callbacks)
+  cbRef.current = callbacks
 
   useEffect(() => {
-    if (!enabled || !tastingId || !pid || typeof EventSource === "undefined") return;
+    if (!tastingId) return
 
-    const es = new EventSource(`/api/tastings/${tastingId}/events?pid=${encodeURIComponent(pid)}`);
-    sourceRef.current = es;
+    let es: EventSource | null = null
+    let closed = false
 
-    const handle = (eventType: SSEEventType) => (e: MessageEvent) => {
-      let data: Record<string, unknown> = {};
-      try { data = JSON.parse(e.data); } catch {}
+    const connect = () => {
+      if (closed) return
+      try {
+        es = new EventSource(`/api/tastings/${tastingId}/events`)
 
-      invalidateTasting();
+        es.addEventListener('reveal_triggered', () => {
+          cbRef.current.onReveal?.()
+        })
 
-      if (eventType === "reveal_triggered") {
-        callbacksRef.current.onReveal?.(data);
-      } else if (eventType === "status_changed") {
-        queryClient.invalidateQueries({ queryKey: ["tastings"] });
-        callbacksRef.current.onStatusChange?.(data);
-      } else if (eventType === "presentation_changed") {
-        callbacksRef.current.onPresentationChange?.(data);
+        es.addEventListener('status_changed', () => {
+          cbRef.current.onStatus?.()
+        })
+
+        es.addEventListener('presentation_changed', () => {
+          cbRef.current.onPresentation?.()
+        })
+
+        es.onerror = () => {
+          es?.close()
+          es = null
+          if (!closed) setTimeout(connect, 3000)
+        }
+      } catch {
+        // EventSource nicht verfügbar — ignorieren
       }
-    };
+    }
 
-    es.addEventListener("reveal_triggered", handle("reveal_triggered"));
-    es.addEventListener("status_changed", handle("status_changed"));
-    es.addEventListener("presentation_changed", handle("presentation_changed"));
+    connect()
 
     return () => {
-      es.close();
-      sourceRef.current = null;
-    };
-  }, [tastingId, enabled, pid, invalidateTasting, queryClient]);
+      closed = true
+      es?.close()
+      es = null
+    }
+  }, [tastingId])
 }
