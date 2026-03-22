@@ -1,11 +1,13 @@
-// CaskSense Apple — EntdeckenCircle VOLLSTÄNDIG (Ersatz für original)
-// Entdecken: Explore, Lexikon, Guide, Destillerien, Bottlers, Historisch
-// Circle: Freunde, Leaderboard, Sessions, Feed
+// CaskSense Apple — EntdeckenCircle VOLLSTÄNDIG
+// Fix: Distilleries aus eigener Datei importiert (API-Daten statt hardcodiert)
+// Ablage: client/src/labs-apple/screens/entdecken/EntdeckenCircle.tsx
+
 import React, { useState, useEffect } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
 import { BottlersScreen } from './Bottlers'
+import { Distilleries } from './Destilleries'
 import { Vocabulary, Research, MakingOf } from '../misc/MiscScreens'
 
 // ── Tasting Guide ─────────────────────────────────────────────────────────
@@ -36,62 +38,6 @@ const TastingGuide: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
     ))}
   </div>
 )
-
-// ── Distilleries ──────────────────────────────────────────────────────────
-const DISTILLERIES = [
-  { name: 'Glenfarclas', country: 'Schottland', region: 'Speyside', founded: 1836, desc: 'Familiengeführt seit 6 Generationen. Bekannt für kräftige Sherryfass-Whiskys.' },
-  { name: 'Bruichladdich', country: 'Schottland', region: 'Islay', founded: 1881, desc: 'Progressive Hebridean Distillers. Drei Stile: Bruichladdich, Port Charlotte, Octomore.' },
-  { name: 'Springbank', country: 'Schottland', region: 'Campbeltown', founded: 1828, desc: 'Einer der wenigen verbliebenen unabhängigen Brennereien Campbeltowns.' },
-  { name: 'Glendronach', country: 'Schottland', region: 'Highland', founded: 1826, desc: 'Master of Sherry Cask Maturation. Zweistöckige Warehouses mit Erdböden.' },
-  { name: 'Highland Park', country: 'Schottland', region: 'Islands', founded: 1798, desc: 'Nördlichste Schottische Destillerie auf Orkney. Leicht torfig, Heideblumen.' },
-  { name: 'Talisker', country: 'Schottland', region: 'Islands', founded: 1830, desc: 'Die einzige Destillerie auf Skye. Pfeffer, Salz, Rauch.' },
-  { name: 'Glenmorangie', country: 'Schottland', region: 'Highland', founded: 1843, desc: 'Höchste Pot Stills in Schottland. Sanft, elegant, Bourbon-Fass geprägt.' },
-  { name: 'Nikka Yoichi', country: 'Japan', region: 'Hokkaido', founded: 1934, desc: 'Gegründet von Masataka Taketsuru. Kühleres Klima für intensive Reifung.' },
-  { name: 'Kavalan', country: 'Taiwan', region: 'Yilan', founded: 2006, desc: 'Tropisches Klima beschleunigt die Reifung dramatisch. Weltklasse in kurzer Zeit.' },
-  { name: 'Four Roses', country: 'USA', region: 'Kentucky', founded: 1888, desc: 'Einzige Bourbon-Brennerei mit 5 proprietären Hefestämmen und 2 Mashbills = 10 Rezepte.' },
-]
-
-const Distilleries: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onBack: () => void }> = ({ th, t, lang, onBack }) => {
-  const [search, setSearch]     = useState('')
-  const [country, setCountry]   = useState('Alle')
-  const [expanded, setExpanded] = useState<string | null>(null)
-
-  const countries = ['Alle', ...Array.from(new Set(DISTILLERIES.map(d => d.country)))]
-  const filtered = DISTILLERIES.filter(d =>
-    (!search || d.name.toLowerCase().includes(search.toLowerCase())) &&
-    (country === 'Alle' || d.country === country)
-  )
-
-  return (
-    <div style={{ padding: SP.md, paddingBottom: 80 }}>
-      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
-      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.entDest}</h1>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.entDistSearch} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
-      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md, overflowX: 'auto', paddingBottom: 4 }}>
-        {countries.map(c => <button key={c} onClick={() => setCountry(c)} style={{ flexShrink: 0, height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer', background: country === c ? th.gold : th.bgCard, color: country === c ? '#1a0f00' : th.muted, fontSize: 12, fontWeight: country === c ? 700 : 400 }}>{c}</button>)}
-      </div>
-      {filtered.map(d => (
-        <div key={d.name} style={{ borderBottom: `1px solid ${th.border}` }}>
-          <button onClick={() => setExpanded(expanded === d.name ? null : d.name)} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', gap: 10, textAlign: 'left' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: th.phases.palate.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon.Distillery color={th.phases.palate.accent} size={20} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: th.text }}>{d.name}</div>
-              <div style={{ fontSize: 12, color: th.faint }}>{d.country} · {d.region} · {d.founded}</div>
-            </div>
-            <Icon.ChevronDown color={th.faint} size={16} />
-          </button>
-          {expanded === d.name && (
-            <div style={{ padding: `0 0 ${SP.md}px ${50}px`, fontSize: 16, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif' }}>
-              {d.desc}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // ── HistoricalArchive ──────────────────────────────────────────────────────
 const HistoricalArchive: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
@@ -176,8 +122,6 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
           <span key={i} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 12, background: th.bgCard, color: th.muted, border: `1px solid ${th.border}` }}>{v}</span>
         ))}
       </div>
-
-      {/* Community scores */}
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md, marginBottom: SP.md }}>
         <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.entBottleRatings}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: SP.lg, marginBottom: SP.md }}>
@@ -203,7 +147,6 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
             })}
           </div>
         </div>
-        {/* Score distribution */}
         {bottle.scoreDistribution && (
           <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 40 }}>
             {bottle.scoreDistribution.map((count: number, i: number) => (
@@ -233,7 +176,7 @@ const LEXIKON = [
   { term: 'Nose', category: 'Bewertung', de: 'Die Nase — das Aromenspektrum, das man beim Riechen wahrnimmt.' },
   { term: 'Ex-Bourbon Cask', category: 'Reifung', de: 'Gebrauchtes Bourbon-Fass. Gibt Vanille, Karamell, Kokos ab.' },
   { term: 'Sherry Cask', category: 'Reifung', de: 'Ehemaliges Sherry-Fass. Gibt Trockenfrüchte, Nüsse, Würze ab.' },
-  { term: 'Angel\'s Share', category: 'Reifung', de: 'Alkohol der jährlich durch die Fasswände verdunstet. Schottland: ~2% pro Jahr.' },
+  { term: "Angel's Share", category: 'Reifung', de: 'Alkohol der jährlich durch die Fasswände verdunstet. Schottland: ~2% pro Jahr.' },
   { term: 'Warehousing', category: 'Reifung', de: 'Art der Fass-Lagerung beeinflusst Reifung: Dunnage (niedrig) oder Racked (gestapelt).' },
   { term: 'Washback', category: 'Herstellung', de: 'Gärbehälter in dem Maische zu Wash (Bier ~8%) fermentiert.' },
   { term: 'Pot Still', category: 'Herstellung', de: 'Geigenförmiger Kupferkessel für traditionelle Destillation in zwei Durchläufen.' },
@@ -241,7 +184,7 @@ const LEXIKON = [
 ]
 
 const Lexikon: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onBack: () => void }> = ({ th, t, lang, onBack }) => {
-  const [search, setSearch]   = useState('')
+  const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('Alle')
   const categories = ['Alle', ...Array.from(new Set(LEXIKON.map(e => e.category)))]
   const filtered = LEXIKON.filter(e =>
@@ -305,18 +248,15 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
 // ── EntdeckenHub ──────────────────────────────────────────────────────────
 const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onNav: (s: string) => void }> = ({ th, t, lang, onNav }) => {
   const items = [
-    { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,    label: t.entExplore,   sub: t.entExploreSub,   phase: 'palate'  as const },
-    { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,    label: t.entLexikon,   sub: t.entLexikonSub,   phase: 'nose'    as const },
-    { id: 'guide',    icon: <Icon.Report color={th.phases.finish.accent} size={28} />,    label: t.entGuide,     sub: t.entGuideSub,     phase: 'finish'  as const },
-    { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />,label: t.entDest,     sub: t.entDestSub,      phase: 'overall' as const },
-    { id: 'vocab',    icon: <Icon.BookOpen color={th.phases.palate.accent} size={28} />,    label: lang === 'de' ? 'Vokabular' : 'Vocabulary',  sub: lang === 'de' ? 'Vorlagen & Tipps' : 'Templates & tips',   phase: 'palate'  as const },
-    { id: 'making-of', icon: <Icon.History color={th.phases.overall.accent} size={28} />,    label: 'Making Of',  sub: 'Die Geschichte von CaskSense',    phase: 'overall' as const },
-    { id: 'research', icon: <Icon.Analytics color={th.phases.finish.accent} size={28} />,   label: lang === 'de' ? 'Wissenschaft' : 'Science',   sub: lang === 'de' ? 'Forschung & Rabbit Hole' : 'Research & rabbit hole', phase: 'finish'  as const },
-        { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,   label: t.entHistory,   sub: t.entHistorySub,   phase: 'palate'  as const },
-    { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,         label: t.entVocab,   sub: 'Copy-Paste Tasting-Notizen', phase: 'finish' as const },
-    { id: 'research', icon: <Icon.BookOpen color={th.phases.overall.accent} size={28} />,    label: t.entResearch,  sub: 'Deep Dives & Wissenschaft',  phase: 'overall' as const },
-    { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,        label: t.entMakingOf, sub: 'Die Geschichte von CaskSense',phase: 'nose'   as const },
-    { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,       label: t.entBottlers,  sub: t.entBottlersSub,  phase: 'nose'    as const },
+    { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,      label: t.entExplore,  sub: t.entExploreSub,  phase: 'palate'  as const },
+    { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,      label: t.entLexikon,  sub: t.entLexikonSub,  phase: 'nose'    as const },
+    { id: 'guide',    icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.entGuide,    sub: t.entGuideSub,    phase: 'finish'  as const },
+    { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />, label: t.entDest,     sub: t.entDestSub,     phase: 'overall' as const },
+    { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,         label: t.entBottlers, sub: t.entBottlersSub, phase: 'nose'    as const },
+    { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,     label: t.entHistory,  sub: t.entHistorySub,  phase: 'palate'  as const },
+    { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,        label: t.entVocab,    sub: lang === 'de' ? 'Copy-Paste Tasting-Notizen' : 'Copy-paste tasting notes', phase: 'finish' as const },
+    { id: 'research', icon: <Icon.Analytics color={th.phases.overall.accent} size={28} />, label: t.entResearch, sub: lang === 'de' ? 'Deep Dives & Wissenschaft' : 'Deep dives & science', phase: 'overall' as const },
+    { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,       label: t.entMakingOf, sub: lang === 'de' ? 'Die Geschichte von CaskSense' : 'The story of CaskSense', phase: 'nose' as const },
   ]
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
@@ -324,7 +264,8 @@ const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
       <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic', color: th.muted, margin: `0 0 ${SP.lg}px` }}>{t.entSub}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
         {items.map(item => (
-          <button key={item.id} onClick={() => onNav(item.id)} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, textAlign: 'left', transition: 'all 150ms' }}
+          <button key={item.id} onClick={() => onNav(item.id)}
+            style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, textAlign: 'left', transition: 'all 150ms' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
             {item.icon}
@@ -339,7 +280,7 @@ const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
 
 // ── EntdeckenScreen ────────────────────────────────────────────────────────
 export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; lang: 'de' | 'en' }> = ({ th, t, participantId, lang }) => {
-  const [sub, setSub]       = useState<string | null>(null)
+  const [sub, setSub]           = useState<string | null>(null)
   const [bottleId, setBottleId] = useState<string | null>(null)
   const goBack = () => { setSub(null); setBottleId(null) }
 
@@ -347,11 +288,7 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   if (sub === 'explore') return <ExploreWhiskies th={th} t={t} participantId={participantId} onBottle={id => setBottleId(id)} onBack={goBack} />
   if (sub === 'lexikon') return <Lexikon th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'guide')   return <TastingGuide th={th} t={t} lang={lang} onBack={goBack} />
-  if (sub === 'dest') return (
-    <div>
-      <Distilleries th={th} t={t} lang={lang} onBack={goBack} />
-    </div>
-  )
+  if (sub === 'dest')    return <Distilleries th={th} t={t} participantId={participantId} />
   if (sub === 'history') return <HistoricalArchive th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'bottlers')  return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'vocab')     return <Vocabulary th={th} t={t} lang={lang} onBack={goBack} />
@@ -363,7 +300,7 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
 
 // ── Circle: Leaderboard ────────────────────────────────────────────────────
 function hashAlias(id: string): string {
-  const adj = ['Peated', 'Sherried', 'Smoky', 'Aged', 'Cask', 'Malty', 'Spiced', 'Golden', 'Briny', 'Mossy']
+  const adj  = ['Peated', 'Sherried', 'Smoky', 'Aged', 'Cask', 'Malty', 'Spiced', 'Golden', 'Briny', 'Mossy']
   const noun = ['Fox', 'Flask', 'Dram', 'Cask', 'Glen', 'Still', 'Barrel', 'Mash', 'Tun', 'Stave']
   let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff
   return `${adj[Math.abs(h) % adj.length]} ${noun[Math.abs(h >> 4) % noun.length]}`
@@ -413,7 +350,6 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
   const [friends, setFriends]   = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
   const [search, setSearch]     = useState('')
-  const [searchResults, setSR]  = useState<any[]>([])
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/friends`, { headers: { 'x-participant-id': participantId } })
@@ -435,7 +371,6 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.circleSearchFriend}
         style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.md }} />
-
       {incomingRequests.length > 0 && (
         <div style={{ marginBottom: SP.lg }}>
           <div style={{ fontSize: 11, color: th.gold, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: SP.sm }}>Anfragen ({incomingRequests.length})</div>
@@ -448,11 +383,9 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
           ))}
         </div>
       )}
-
       {friends.length === 0 && incomingRequests.length === 0 && (
         <div style={{ textAlign: 'center', padding: SP.xl, color: th.faint, fontStyle: 'italic', fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{t.circleFeedEmpty}</div>
       )}
-
       {friends.filter(f => !search || (f.name || '').toLowerCase().includes(search.toLowerCase())).map((f, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${th.border}` }}>
           <div style={{ width: 36, height: 36, borderRadius: 18, background: th.phases.nose.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: th.phases.nose.accent, flexShrink: 0 }}>
@@ -465,7 +398,6 @@ const FriendsTab: React.FC<{ th: ThemeTokens; t: Translations; participantId: st
           <div style={{ width: 8, height: 8, borderRadius: 4, background: f.online ? th.green : th.faint }} />
         </div>
       ))}
-
       {outgoingRequests.length > 0 && (
         <div style={{ marginTop: SP.md }}>
           <div style={{ fontSize: 11, color: th.faint, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: SP.sm }}>Ausstehend</div>
@@ -489,11 +421,9 @@ const SessionsBoard: React.FC<{ th: ThemeTokens; t: Translations; participantId:
       .then(r => r.json()).then(setSessions).catch(() => {})
   }, [participantId])
 
-  const statusColor = (s: string) => s === 'open' ? th.green : s === 'draft' ? th.gold : th.faint
   const grouped = {
     live:     sessions.filter(s => s.status === 'open'),
     upcoming: sessions.filter(s => s.status === 'draft'),
-    done:     sessions.filter(s => s.status === 'archived' || s.status === 'closed'),
   }
 
   return (
