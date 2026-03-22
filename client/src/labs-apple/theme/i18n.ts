@@ -136,16 +136,12 @@ export interface Translations {
   circleFriend: string; circleAddFriend: string; circlePending: string; circleAccept: string; circleDecline: string
   circleFeedEmpty: string; circleOnline: string; circleSearchFriend: string
   historyGated: string; historyJoin: string
-  authLogin: string; authRegister: string; authLogout: string
-  authEmail: string; authEmailPH: string; authPin: string; authPinPH: string
-  authName: string; authNamePH: string; authSubmit: string; authSwitchLogin: string; authSwitchRegister: string
-  authError: string; authClose: string
 }
 
 const DE: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Entdecken', tabMeineWelt: 'Meine Welt', tabCircle: 'Circle',
-  hubGreeting: 'Guten Abend.', hubSub: 'Was darf es heute sein?',
+  hubGreeting: 'Guten Abend.', hubSub: 'Was bringst du mit heute Abend?',
   hubJoin: 'Tasting beitreten', hubJoinDesc: 'Code eingeben und loslegen',
   hubSolo: 'Dram erfassen', hubSoloDesc: 'Alleine verkosten und notieren',
   hubHost: 'Tasting veranstalten', hubHostDesc: 'Neue Session einrichten',
@@ -265,16 +261,12 @@ const DE: Translations = {
   circleFriend: 'Freund', circleAddFriend: 'Hinzufügen', circlePending: 'Ausstehend', circleAccept: 'Annehmen', circleDecline: 'Ablehnen',
   circleFeedEmpty: 'Noch keine Aktivitäten von Freunden.', circleOnline: 'Online', circleSearchFriend: 'Freund suchen...',
   historyGated: 'Nur für Community-Mitglieder', historyJoin: 'Community beitreten',
-  authLogin: 'Anmelden', authRegister: 'Registrieren', authLogout: 'Abmelden',
-  authEmail: 'E-Mail', authEmailPH: 'name@beispiel.de', authPin: 'PIN', authPinPH: '4–6 Zeichen',
-  authName: 'Name', authNamePH: 'Dein Name', authSubmit: 'Weiter', authSwitchLogin: 'Schon registriert? Anmelden', authSwitchRegister: 'Neu hier? Registrieren',
-  authError: 'Anmeldung fehlgeschlagen', authClose: 'Schließen',
 }
 
 const EN: Translations = {
   appName: 'CaskSense',
   tabTastings: 'Tastings', tabEntdecken: 'Discover', tabMeineWelt: 'My World', tabCircle: 'Circle',
-  hubGreeting: 'Good evening.', hubSub: 'What shall it be today?',
+  hubGreeting: 'Good evening.', hubSub: 'What are you bringing tonight?',
   hubJoin: 'Join tasting', hubJoinDesc: 'Enter code and dive in',
   hubSolo: 'Log a dram', hubSoloDesc: 'Taste and note on your own',
   hubHost: 'Host a tasting', hubHostDesc: 'Set up a new session',
@@ -394,10 +386,6 @@ const EN: Translations = {
   circleFriend: 'Friend', circleAddFriend: 'Add', circlePending: 'Pending', circleAccept: 'Accept', circleDecline: 'Decline',
   circleFeedEmpty: 'No activity from friends yet.', circleOnline: 'Online', circleSearchFriend: 'Search friend...',
   historyGated: 'Community members only', historyJoin: 'Join community',
-  authLogin: 'Sign in', authRegister: 'Register', authLogout: 'Sign out',
-  authEmail: 'Email', authEmailPH: 'name@example.com', authPin: 'PIN', authPinPH: '4–6 characters',
-  authName: 'Name', authNamePH: 'Your name', authSubmit: 'Continue', authSwitchLogin: 'Already registered? Sign in', authSwitchRegister: 'New here? Register',
-  authError: 'Sign in failed', authClose: 'Close',
 }
 
 export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }

@@ -36,9 +36,9 @@ const InsightsTab: React.FC<{ th: ThemeTokens; t: Translations; tastingId: strin
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/tastings/${tastingId}/ratings`, { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : []),
-      fetch(`/api/tastings/${tastingId}/whiskies`, { headers: { 'x-participant-id': participantId } }).then(r => r.ok ? r.json() : []),
-    ]).then(([r, w]) => { setRatings(Array.isArray(r) ? r : []); setWhiskies(Array.isArray(w) ? w : []) }).catch(() => {})
+      fetch(`/api/tastings/${tastingId}/ratings`, { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
+      fetch(`/api/tastings/${tastingId}/whiskies`, { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
+    ]).then(([r, w]) => { setRatings(r || []); setWhiskies(w || []) }).catch(() => {})
   }, [tastingId])
 
   const myRatings = ratings.filter(r => r.participantId === participantId)
@@ -161,7 +161,7 @@ const ConnoisseurReport: React.FC<{ th: ThemeTokens; t: Translations; participan
 
   useEffect(() => {
     fetch(`/api/participants/${participantId}/connoisseur-reports`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.ok ? r.json() : []).then(data => { const arr = Array.isArray(data) ? data : []; setReports(arr); if (arr[0]) setActive(arr[0]) }).catch(() => {})
+      .then(r => r.json()).then(data => { setReports(data || []); if (data?.[0]) setActive(data[0]) }).catch(() => {})
   }, [participantId])
 
   const generate = async () => {

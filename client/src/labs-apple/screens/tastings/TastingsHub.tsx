@@ -25,7 +25,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
   // Load session
   useEffect(() => {
-    fetch('/api/auth/me', { headers: { 'x-participant-id': '' } }).then(r => r.ok ? r.json() : null).then(data => setSession(data && typeof data === 'object' ? data : null)).catch(() => {})
+    fetch('/api/auth/me', { headers: { 'x-participant-id': '' } }).then(r => r.json()).then(setSession).catch(() => {})
   }, [])
 
   // SSE in lobby
@@ -101,14 +101,14 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
     <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', opacity: visible ? 1 : 0, transition: 'opacity 200ms' }}>
       {/* Step: Code */}
       {step === 'code' && (
-        <div style={{ padding: `${SP.md}px ${SP.md}px`, paddingBottom: SP.xl }}>
+        <div style={{ padding: `${SP.md}px ${SP.md}px`, paddingBottom: 120 }}>
           <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{t.joinTitle}</h1>
           <p style={{ fontSize: 15, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{t.joinNoAcc}</p>
           <label style={{ fontSize: 11, color: th.muted, display: 'block', marginBottom: SP.xs, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t.joinCodeLabel}</label>
           <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder={t.joinCodePH} style={inputStyle} onKeyDown={e => e.key === 'Enter' && code.trim() && findTasting()} autoFocus />
           {error && <div style={{ fontSize: 13, color: '#e06060', marginTop: SP.sm }}>{error}</div>}
-          <div style={{ marginTop: SP.xl }}>
+          <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
             <button disabled={!code.trim()} onClick={findTasting} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: code.trim() ? 'pointer' : 'not-allowed', background: code.trim() ? `linear-gradient(135deg, ${th.gold}, ${th.amber})` : th.bgCard, color: code.trim() ? '#1a0f00' : th.faint, fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', opacity: code.trim() ? 1 : 0.4 }}>{t.joinCTA}</button>
           </div>
         </div>
@@ -116,13 +116,13 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
       {/* Step: Name */}
       {step === 'name' && (
-        <div style={{ padding: `${SP.md}px ${SP.md}px`, paddingBottom: SP.xl }}>
+        <div style={{ padding: `${SP.md}px ${SP.md}px`, paddingBottom: 120 }}>
           <button onClick={() => transition('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{t.joinNameQ}</h1>
           <p style={{ fontSize: 15, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{t.joinNameSub}</p>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={t.joinNamePH} style={{ ...inputStyle, letterSpacing: 'normal', textTransform: 'none', fontFamily: 'Cormorant Garamond, serif', fontSize: 22 }} autoFocus onKeyDown={e => e.key === 'Enter' && name.trim() && enterTasting()} />
           {error && <div style={{ fontSize: 13, color: '#e06060', marginTop: SP.sm }}>{error}</div>}
-          <div style={{ marginTop: SP.xl }}>
+          <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
             <button disabled={!name.trim()} onClick={enterTasting} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: name.trim() ? 'pointer' : 'not-allowed', background: name.trim() ? `linear-gradient(135deg, ${th.gold}, ${th.amber})` : th.bgCard, color: name.trim() ? '#1a0f00' : th.faint, fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', opacity: name.trim() ? 1 : 0.4 }}>{t.joinEnter}</button>
           </div>
         </div>
@@ -130,7 +130,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
       {/* Step: Lobby */}
       {step === 'lobby' && (
-        <div style={{ padding: `${SP.md}px`, paddingBottom: SP.xl }}>
+        <div style={{ padding: `${SP.md}px`, paddingBottom: 120 }}>
           <div style={{ textAlign: 'center', padding: `${SP.xl}px 0 ${SP.lg}px` }}>
             <div style={{ width: 64, height: 64, borderRadius: 32, background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: '#1a0f00', margin: '0 auto 12px', fontFamily: 'DM Sans, sans-serif' }}>
               {(name || 'G')[0].toUpperCase()}
@@ -138,6 +138,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: 0 }}>Willkommen, {name}!</h1>
           </div>
 
+          {/* Participants */}
           <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md, marginBottom: SP.md }}>
             <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: th.faint, marginBottom: SP.sm }}>{t.participantsLabel}</div>
             {participants.map(p => (
@@ -151,7 +152,8 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
             ))}
           </div>
 
-          <div style={{ background: `${th.gold}10`, border: `1px solid ${th.gold}33`, borderRadius: 20, padding: SP.md, marginBottom: SP.xl }}>
+          {/* Waiting card */}
+          <div style={{ background: `${th.gold}10`, border: `1px solid ${th.gold}33`, borderRadius: 20, padding: SP.md }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Icon.Live color={th.green} size={16} />
               <span style={{ fontSize: 14, fontWeight: 600 }}>{hostName} {t.joinWaiting}</span>
@@ -159,9 +161,11 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
             <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', color: th.muted }}>{t.joinPour}</span>
           </div>
 
-          <button onClick={() => tasting && onEnterLive(tasting.id, session?.id || 'guest')} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
-            Zur Bewertung →
-          </button>
+          <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+            <button onClick={() => tasting && onEnterLive(tasting.id, session?.id || 'guest')} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+              Zur Bewertung →
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -172,16 +176,17 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 interface HubProps {
   th: ThemeTokens; t: Translations
   onJoin: () => void; onSolo: () => void; onHost: () => void
+  onHostDashboard?: () => void
   session: any
 }
 
-export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, session }) => {
+export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, session }) => {
   const [recentTastings, setRecent] = useState<any[]>([])
 
   useEffect(() => {
     if (!session?.id) return
     fetch('/api/tastings', { headers: { 'x-participant-id': session.id } })
-      .then(r => r.ok ? r.json() : []).then(data => setRecent((Array.isArray(data) ? data : []).slice(0, 3))).catch(() => {})
+      .then(r => r.json()).then(data => setRecent((data || []).slice(0, 3))).catch(() => {})
   }, [session?.id])
 
   const greeting = (() => {
@@ -195,6 +200,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
     { id: 'join', icon: <Icon.Join color={th.phases.nose.accent} size={32} />, label: t.hubJoin, desc: t.hubJoinDesc, phaseId: 'nose' as const, action: onJoin },
     { id: 'solo', icon: <Icon.Solo color={th.phases.palate.accent} size={32} />, label: t.hubSolo, desc: t.hubSoloDesc, phaseId: 'palate' as const, action: onSolo },
     { id: 'host', icon: <Icon.Host color={th.phases.finish.accent} size={32} />, label: t.hubHost, desc: t.hubHostDesc, phaseId: 'finish' as const, action: onHost },
+    ...(onHostDashboard ? [{ id: 'dashboard', icon: <Icon.Analytics color={th.phases.overall.accent} size={32} />, label: (t as any).hubDashboard || 'Dashboard', desc: (t as any).hubDashboardDesc || 'Statistiken & Kalender', phaseId: 'overall' as const, action: onHostDashboard }] : []),
   ]
 
   return (

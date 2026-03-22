@@ -13,11 +13,9 @@ interface Props {
   lang:       'de' | 'en'
   activeTab:  TabId
   subScreen:  string | null
-  session:    any
   onTabChange: (tab: TabId) => void
   onToggleTheme: () => void
   onToggleLang:  () => void
-  onProfileClick: () => void
   children:   React.ReactNode
 }
 
@@ -28,24 +26,20 @@ const TABS: { id: TabId; labelKey: keyof Translations; icon: (active: boolean, t
   { id: 'circle',    labelKey: 'tabCircle',    icon: (a, th) => <Icon.TabCircle color={a ? th.gold : th.faint} size={24} /> },
 ]
 
-export const LabsAppleLayout: React.FC<Props> = ({ th, t, themeKey, lang, activeTab, subScreen, session, onTabChange, onToggleTheme, onToggleLang, onProfileClick, children }) => {
+export const LabsAppleLayout: React.FC<Props> = ({ th, t, themeKey, lang, activeTab, subScreen, onTabChange, onToggleTheme, onToggleLang, children }) => {
   const hideTabBar = subScreen !== null
-  const initial = (session?.name ?? '').charAt(0).toUpperCase() || '?'
 
   return (
     <div style={{ minHeight: '100vh', background: th.bg, color: th.text, position: 'relative', maxWidth: 480, margin: '0 auto' }}>
       {/* Top bar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 20, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
         <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>{t.appName}</span>
-        <div style={{ display: 'flex', gap: SP.sm, alignItems: 'center' }}>
-          <button onClick={onToggleLang} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }} data-testid="apple-lang-toggle">
+        <div style={{ display: 'flex', gap: SP.sm }}>
+          <button onClick={onToggleLang} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
             {lang === 'de' ? 'EN' : 'DE'}
           </button>
-          <button onClick={onToggleTheme} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }} data-testid="apple-theme-toggle">
+          <button onClick={onToggleTheme} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
             {themeKey === 'dark' ? t.lightMode : t.darkMode}
-          </button>
-          <button onClick={onProfileClick} data-testid="apple-profile-btn" style={{ width: 32, height: 32, borderRadius: '50%', background: session ? 'rgba(196,160,80,0.2)' : 'none', border: session ? '1.5px solid rgba(196,160,80,0.5)' : `1.5px solid ${th.border}`, color: session ? th.gold : th.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif' }}>
-            {session ? initial : <Icon.Users color={th.muted} size={16} />}
           </button>
         </div>
       </div>
