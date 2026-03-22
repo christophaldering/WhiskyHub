@@ -157,9 +157,6 @@ export const LabsAppleLayout: React.FC<Props> = ({
           padding: 0,
           border: 'none',
           background: 'transparent',
-          display: profileOpen ? 'flex' : 'none',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
           fontFamily: 'DM Sans, sans-serif',
         }}
       >
@@ -251,6 +248,11 @@ export const LabsAppleLayout: React.FC<Props> = ({
       <style>{`
         dialog[data-testid="profile-dialog"]::backdrop {
           background: rgba(0,0,0,0.3);
+        }
+        dialog[data-testid="profile-dialog"][open] {
+          display: flex;
+          align-items: flex-start;
+          justify-content: flex-end;
         }
       `}</style>
     </div>

@@ -214,9 +214,9 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       {/* Glow background */}
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, height: 400, background: `radial-gradient(ellipse at 50% 100%, ${th.phases.palate.glow}, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, height: 400, background: `radial-gradient(ellipse at 50% 100%, ${th.phases.palate.glow}, transparent 70%)`, pointerEvents: 'none', zIndex: -1 }} />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative' }}>
         <div style={{ padding: `${SP.lg}px 0 ${SP.xl}px` }}>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 32, fontWeight: 600, margin: 0 }}>{session?.name ? `${greeting.replace('.', ',')} ${session.name}.` : greeting}</h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontStyle: 'italic', color: th.muted, margin: `${SP.xs}px 0 0` }}>{t.hubSub}</p>
