@@ -1,0 +1,212 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — COCKPIT: NEUER RATING-SLIDER IM HOST-MENÜ
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Das Desktop-Host-Cockpit (LabsHostCockpit.tsx) zeigt im "MY RATING"-Panel
+noch den alten kreisförmigen RatingDial mit −1/−0.5/+0.5/+1 Buttons.
+
+Das Live-Tasting (LabsLive.tsx) nutzt bereits RatingFlowV2 mit dem neuen
+Slider (Phasen-Tabs, Quick-Picks, Flavor-Tags). Das Cockpit muss genau das
+gleiche Component bekommen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN, KEIN KOMPROMISS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS RatingFlowV2.tsx, GuidedRating.tsx, CompactRating.tsx verändern
+❌ NIEMALS RatingDial.tsx löschen (wird noch anderswo genutzt)
+❌ NIEMALS LabsLive.tsx verändern
+❌ NIEMALS andere Dateien als die unten genannten anfassen
+✅ NUR client/src/labs/pages/LabsHostCockpit.tsx ändern
+✅ Bestehende API-Endpunkte und Speicherlogik bleiben unverändert
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HINTERGRUND — WIE ES AKTUELL FUNKTIONIERT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LabsHostCockpit.tsx importiert aktuell:
+  import RatingFlow from "@/labs/components/RatingFlow";
+
+Das ist die ALTE Komponente mit dem RatingDial.
+
+LabsLive.tsx importiert:
+  import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+
+Das ist die NEUE Komponente mit Slider + Phasen-Signaturen.
+
+RatingFlowV2 hat folgende Props:
+  whisky: { name?: string; region?: string; cask?: string; blind?: boolean }
+  initialData?: RatingData
+  onDone: (data: RatingData) => void
+  onBack: () => void
+
+RatingData hat folgende Struktur:
+  {
+    scores: { nose: number; palate: number; finish: number; overall: number }
+    tags:   { nose: string[]; palate: string[]; finish: string[]; overall: string[] }
+    notes:  { nose: string; palate: string; finish: string; overall: string }
+  }
+
+Die Speicherlogik im Cockpit (debouncedSave, handleScoreChange etc.) bleibt
+vollständig unverändert. Nur das UI-Component wird getauscht.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIE EINZIGE DATEI: client/src/labs/pages/LabsHostCockpit.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── SCHRITT 1: Import tauschen ──
+
+VORHER (diese Zeile suchen):
+  import RatingFlow from "@/labs/components/RatingFlow";
+
+NACHHER (ersetzen durch):
+  import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+  import type { RatingData } from "@/labs/components/rating/types";
+
+Falls RatingData bereits importiert ist: nur den RatingFlow-Import tauschen,
+den RatingData-Import nicht doppelt setzen.
+
+── SCHRITT 2: RatingFlow-Nutzung ersetzen ──
+
+Im JSX des Cockpits den bestehenden <RatingFlow ... /> Block suchen.
+Er hat viele Props: scale, scores, onScoreChange, overall, onOverallChange,
+overrideActive, onOverrideToggle, onResetOverride, chips, onChipToggle,
+notes, onNotesChange, onSave, whiskyName, flavorProfileId, isBlind.
+
+Diesen gesamten Block ersetzen durch:
+
+  {currentRatingWhisky ? (
+    <RatingFlowV2
+      whisky={{
+        name:   isBlind
+                  ? `Dram ${blindLabel(hostRatingIdx)}`
+                  : (currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`),
+        region: (currentRatingWhisky as any).region || undefined,
+        cask:   (currentRatingWhisky as any).caskInfluence || undefined,
+        blind:  isBlind,
+      }}
+      initialData={(() => {
+        const wId = currentRatingWhisky.id;
+        const sc   = getScores(wId);
+        const ch   = hostChips[wId] || emptyChips;
+        const nt   = hostNotes[wId] || "";
+        return {
+          scores: {
+            nose:    sc.nose    ?? 75,
+            palate:  sc.taste   ?? 75,
+            finish:  sc.finish  ?? 75,
+            overall: getOverall(wId) ?? 75,
+          },
+          tags: {
+            nose:    ch.nose    || [],
+            palate:  ch.taste   || [],
+            finish:  ch.finish  || [],
+            overall: [],
+          },
+          notes: {
+            nose:    nt,
+            palate:  nt,
+            finish:  nt,
+            overall: nt,
+          },
+        };
+      })()}
+      onDone={(data: RatingData) => {
+        const wId = currentRatingWhisky.id;
+
+        // Scores zurückschreiben
+        handleScoreChange(wId, "nose",   data.scores.nose);
+        handleScoreChange(wId, "taste",  data.scores.palate);
+        handleScoreChange(wId, "finish", data.scores.finish);
+        handleOverallChange(wId, data.scores.overall);
+
+        // Tags zurückschreiben
+        const newChips = {
+          nose:  data.tags.nose   || [],
+          taste: data.tags.palate || [],
+          finish:data.tags.finish || [],
+        };
+        setHostChips(prev => ({ ...prev, [wId]: newChips }));
+
+        // Notizen zurückschreiben (alle Phasen zusammenführen)
+        const combinedNotes = [
+          data.notes.nose,
+          data.notes.palate,
+          data.notes.finish,
+          data.notes.overall,
+        ].filter(Boolean).join(" · ");
+        setHostNotes(prev => ({ ...prev, [wId]: combinedNotes }));
+
+        // Speichern auslösen
+        debouncedSave(wId, {
+          nose:   data.scores.nose,
+          taste:  data.scores.palate,
+          finish: data.scores.finish,
+        }, data.scores.overall, combinedNotes);
+      }}
+      onBack={() => {
+        // Im Cockpit gibt es kein "Zurück" — nichts tun oder zum Cockpit bleiben
+      }}
+    />
+  ) : (
+    <div style={{
+      padding: 16,
+      textAlign: "center",
+      color: "var(--labs-text-muted)",
+      fontSize: 13,
+    }}>
+      No whiskies to rate yet.
+    </div>
+  )}
+
+── SCHRITT 3: Nicht mehr benötigte Imports entfernen ──
+
+Falls nach der Änderung folgende Imports nirgendwo mehr im Cockpit genutzt
+werden, können sie entfernt werden:
+
+  import RatingFlow from "@/labs/components/RatingFlow";
+  (nur wenn vollständig ersetzt)
+
+NICHT entfernen — diese werden weiterhin genutzt:
+  buildScale, getScores, getOverall, handleScoreChange, handleOverallChange
+  hostChips, hostNotes, setHostChips, setHostNotes, debouncedSave
+  emptyChips, blindLabel, isBlind, currentRatingWhisky, hostRatingIdx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRÜFUNG NACH IMPLEMENTIERUNG — ALLE PUNKTE MÜSSEN ERFÜLLT SEIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Visuell:
+  [ ] Cockpit "MY RATING"-Panel zeigt jetzt Phasen-Tabs (Nase/Gaumen/Abgang/Gesamt)
+  [ ] Kein kreisförmiger Dial mehr sichtbar
+  [ ] Kein −1/−0.5/+0.5/+1 Button-Set mehr sichtbar
+  [ ] Slider mit Quick-Picks (70/75/80/85/90) sichtbar
+  [ ] Flavor-Tags sichtbar
+
+Funktional:
+  [ ] Bewertungen werden weiterhin korrekt gespeichert (debouncedSave)
+  [ ] Wechsel zwischen Whiskies (Tabs A/B/C...) funktioniert
+  [ ] Bereits gespeicherte Scores werden beim Wechsel korrekt vorgeladen
+  [ ] Blind-Modus: "Dram A", "Dram B" statt Whisky-Namen
+  [ ] Kein TypeScript-Fehler in der Konsole
+
+Stabilität:
+  [ ] /labs/host/:id noch erreichbar und vollständig funktionsfähig
+  [ ] Linke und mittlere Spalte des Cockpits unverändert
+  [ ] /labs/live/:id unverändert
+  [ ] /labs/tastings unverändert
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════

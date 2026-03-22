@@ -1,0 +1,226 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — RATING: SAVE-ANIMATION + SCHRIFTART NOTIZFELD
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN, KEIN KOMPROMISS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS package.json verändern
+❌ NIEMALS andere Dateien als die unten genannten verändern
+❌ NIEMALS bestehende CSS-Klassen oder Keyframes löschen oder umbenennen
+❌ NIEMALS die Bewertungs-Logik (Scores, Tags, Autosave, API-Calls) anfassen
+✅ NUR die vier genannten Dateien ändern — ausschließlich append oder
+   str_replace an den exakt beschriebenen Stellen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WAS GEBAUT WIRD — ZWEI ÄNDERUNGEN, VIER DATEIEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÄNDERUNG A: 300ms Save-Flash-Animation
+  Wenn der Nutzer auf "Nase speichern → Gaumen" tippt:
+  Kurzer Check-Icon-Blitz erscheint zentriert über dem Content (300ms),
+  dann wechselt die Ansicht zur nächsten Phase.
+
+ÄNDERUNG B: Cormorant Garamond für alle Notizfelder
+  Die <textarea> Elemente für Nase/Gaumen/Abgang/Gesamt bekommen
+  fontFamily: 'Cormorant Garamond', Georgia, serif
+  fontSize: 16px (statt 14px — Cormorant braucht etwas mehr Größe)
+  fontStyle: italic
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 1: client/src/labs/labs-theme.css
+ÄNDERUNG: Keyframe + CSS-Klasse anhängen (append-only, ans Ende der Datei)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ans Ende der Datei anhängen — NICHTS anderes verändern:
+
+@keyframes labsSaveFlash {
+  0%   { opacity: 0; transform: scale(0.5); }
+  40%  { opacity: 1; transform: scale(1.15); }
+  70%  { transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.labs-save-flash {
+  animation: labsSaveFlash 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-save-flash { animation: none; opacity: 1; transform: none; }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 2: client/src/labs/components/rating/GuidedRating.tsx
+ÄNDERUNG A: Save-Flash State + Overlay hinzufügen
+ÄNDERUNG B: Textarea fontFamily auf Cormorant Garamond setzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── SCHRITT 1: State ergänzen ──
+
+Den bestehenden State-Block suchen. Direkt nach den bestehenden useState-
+Aufrufen (saveError, notes, tags etc.) diese Zeile hinzufügen:
+
+  const [showSaveFlash, setShowSaveFlash] = useState(false);
+
+── SCHRITT 2: handleNext anpassen ──
+
+Die bestehende handleNext-Funktion (oder advance-Funktion) suchen.
+Das ist die Funktion die beim Klick auf den CTA-Button aufgerufen wird
+und die Phase weiterschaltet (phaseIndex++).
+
+VORHER — die Stelle wo phaseIndex erhöht wird, z.B.:
+  setPhaseIndex(prev => prev + 1);
+  oder: goTo(phaseIndex + 1);
+
+NACHHER — denselben Block mit Flash umhüllen:
+
+  setShowSaveFlash(true);
+  setTimeout(() => {
+    setShowSaveFlash(false);
+    // hier der bisherige Code der die Phase wechselt:
+    setPhaseIndex(prev => prev + 1);
+    // (oder goTo(phaseIndex + 1) — was auch immer vorher da stand)
+  }, 300);
+
+WICHTIG: Wenn es sich um die letzte Phase handelt (phaseIndex === 3) und
+onDone() aufgerufen wird, ebenfalls mit 300ms Verzögerung:
+
+  setShowSaveFlash(true);
+  setTimeout(() => {
+    setShowSaveFlash(false);
+    onDone({ scores, tags, notes });
+  }, 300);
+
+── SCHRITT 3: Flash-Overlay im JSX ergänzen ──
+
+Im return-Block, direkt als erstes Kind des äußersten <div>-Containers,
+vor allem anderen Inhalt einfügen:
+
+  {showSaveFlash && (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        className="labs-save-flash"
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: "50%",
+          background: `linear-gradient(135deg, var(--labs-accent),
+            color-mix(in srgb, var(--labs-accent) 70%, white))`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 0 40px color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+        }}
+      >
+        <Check style={{ width: 40, height: 40, color: "#1a1714" }} />
+      </div>
+    </div>
+  )}
+
+Check ist bereits importiert (Lucide). Falls nicht: import { Check } from "lucide-react";
+
+── SCHRITT 4: Textarea-Schriftart ändern ──
+
+Die <textarea> die für die Notiz-Eingabe zuständig ist suchen.
+Erkennbar am data-testid="phase-notes-${currentPhase}" oder ähnlichem.
+
+Den style-Prop der textarea finden und diese Eigenschaften ändern/ergänzen:
+
+  VORHER:
+    fontFamily: FONT.body,   // oder fontFamily: "inherit"
+    fontSize: 14,
+
+  NACHHER:
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: 16,
+    fontStyle: "italic",
+
+Alle anderen style-Eigenschaften der textarea bleiben unverändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 3: client/src/labs/components/rating/CompactRating.tsx
+ÄNDERUNG: Nur Textarea-Schriftart (kein Flash nötig — Compact speichert anders)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alle <textarea> Elemente in dieser Datei suchen (es gibt eine pro Phase).
+Bei jedem den style-Prop anpassen:
+
+  VORHER:
+    fontFamily: FONT.body,   // oder fontFamily: "inherit"
+    fontSize: 14,
+
+  NACHHER:
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: 16,
+    fontStyle: "italic",
+
+Alles andere bleibt unverändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 4: client/src/labs/components/RatingFlow.tsx
+ÄNDERUNG: Textarea-Schriftart (der ältere RatingFlow-Wrapper)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Diese Datei enthält eine <textarea> mit data-testid="rating-flow-notes".
+Den style-Prop dieser textarea finden und ändern:
+
+  VORHER:
+    fontFamily: "inherit",
+    (oder kein fontFamily-Eintrag)
+
+  NACHHER:
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: 16,
+    fontStyle: "italic",
+
+Alles andere bleibt unverändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRÜFUNG NACH IMPLEMENTIERUNG — ALLE PUNKTE MÜSSEN ERFÜLLT SEIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Save-Animation:
+  [ ] Nach Klick auf "Nase speichern → Gaumen": goldener Kreis mit
+      Check-Icon erscheint kurz zentriert im Bild (ca. 300ms)
+  [ ] Dann wechselt die Ansicht zur nächsten Phase
+  [ ] Animation funktioniert für alle 4 Phasen (Nase → Gaumen → Abgang → Gesamt)
+  [ ] Bei der letzten Phase (Gesamt): Flash erscheint, dann onDone()
+  [ ] Bei prefers-reduced-motion: kein Flash, direkter Phasenwechsel
+  [ ] Bewertungs-Logik (Scores, Tags, Autosave) unverändert funktionsfähig
+
+Schriftart:
+  [ ] Notizfelder in GuidedRating zeigen Cormorant Garamond (kursiv)
+  [ ] Notizfelder in CompactRating zeigen Cormorant Garamond (kursiv)
+  [ ] Notizfeld in RatingFlow zeigt Cormorant Garamond (kursiv)
+  [ ] Schrift ist sichtbar größer als vorher (16px statt 14px)
+  [ ] Alle anderen UI-Texte (Labels, Buttons) behalten DM Sans
+
+Stabilität:
+  [ ] /labs/tastings noch erreichbar
+  [ ] /labs/live/:id noch erreichbar
+  [ ] /labs/solo noch erreichbar
+  [ ] Kein Konsolenfehler beim Öffnen des Rating-Panels
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════
