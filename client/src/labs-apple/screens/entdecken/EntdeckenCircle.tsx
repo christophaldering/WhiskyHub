@@ -303,7 +303,7 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
 }
 
 // ── EntdeckenHub ──────────────────────────────────────────────────────────
-const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; onNav: (s: string) => void }> = ({ th, t, onNav }) => {
+const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onNav: (s: string) => void }> = ({ th, t, lang, onNav }) => {
   const items = [
     { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,    label: t.entExplore,   sub: t.entExploreSub,   phase: 'palate'  as const },
     { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,    label: t.entLexikon,   sub: t.entLexikonSub,   phase: 'nose'    as const },
@@ -358,7 +358,7 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   if (sub === 'research')  return <Research th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'makingof')  return <MakingOf th={th} t={t} participantId={participantId} onBack={goBack} />
 
-  return <div style={{ minHeight: '100%', background: th.bg }}><EntdeckenHub th={th} t={t} onNav={setSub} /></div>
+  return <div style={{ minHeight: '100%', background: th.bg }}><EntdeckenHub th={th} t={t} lang={lang} onNav={setSub} /></div>
 }
 
 // ── Circle: Leaderboard ────────────────────────────────────────────────────
