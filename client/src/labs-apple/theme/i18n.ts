@@ -113,6 +113,7 @@ export interface Translations {
   mwRecoTitle: string; mwRecoSub: string; mwRecoLocked: string
   mwJournalTitle: string; mwJournalSub: string; mwJournalSearch: string; mwJournalEmpty: string
   mwCalendarTitle: string; mwCalendarSub: string; mwCalendarAll: string; mwCalendarMine: string; mwCalendarFriends: string
+  mwSectionProfile: string; mwSectionAnalysis: string; mwSectionAI: string; mwSectionCollection: string
   mwProfileEdit: string; mwProfilePhoto: string; mwProfileName: string; mwProfileEmail: string; mwProfileSave: string
   mwInsightCard: string
   // Entdecken Phase 8
@@ -270,6 +271,7 @@ const DE: Translations = {
   mwRecoTitle: 'Empfehlungen', mwRecoSub: 'Basierend auf deinem Geschmacksprofil', mwRecoLocked: 'Erst ab 10 bewerteten Whiskies verfügbar',
   mwJournalTitle: 'Journal', mwJournalSub: 'Alle deine Drams', mwJournalSearch: 'Suche...', mwJournalEmpty: 'Noch keine Drams im Journal.',
   mwCalendarTitle: 'Kalender', mwCalendarSub: 'Deine Tasting-Geschichte', mwCalendarAll: 'Alle', mwCalendarMine: 'Meine', mwCalendarFriends: 'Freunde',
+  mwSectionProfile: 'Mein Profil', mwSectionAnalysis: 'Analyse & Vergleich', mwSectionAI: 'KI & Empfehlungen', mwSectionCollection: 'Sammlung',
   mwProfileEdit: 'Profil bearbeiten', mwProfilePhoto: 'Foto ändern', mwProfileName: 'Name', mwProfileEmail: 'E-Mail', mwProfileSave: 'Speichern',
   mwInsightCard: 'KI-Einschätzung',
   entTitle: 'Entdecken', entSub: 'Whiskies · Wissen · Welt',
@@ -442,6 +444,7 @@ const EN: Translations = {
   mwRecoTitle: 'Recommendations', mwRecoSub: 'Based on your taste profile', mwRecoLocked: 'Available after 10 rated whiskies',
   mwJournalTitle: 'Journal', mwJournalSub: 'All your drams', mwJournalSearch: 'Search...', mwJournalEmpty: 'No drams in journal yet.',
   mwCalendarTitle: 'Calendar', mwCalendarSub: 'Your tasting history', mwCalendarAll: 'All', mwCalendarMine: 'Mine', mwCalendarFriends: 'Friends',
+  mwSectionProfile: 'My Profile', mwSectionAnalysis: 'Analysis & Comparison', mwSectionAI: 'AI & Recommendations', mwSectionCollection: 'Collection',
   mwProfileEdit: 'Edit profile', mwProfilePhoto: 'Change photo', mwProfileName: 'Name', mwProfileEmail: 'Email', mwProfileSave: 'Save',
   mwInsightCard: 'AI insight',
   entTitle: 'Discover', entSub: 'Whiskies · Knowledge · World',

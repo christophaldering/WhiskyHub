@@ -466,19 +466,38 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
 
   const ratingCount = profile?.ratingCount || 0
 
-  // Bereinigt — keine Duplikate
-  const navItems = [
-    { id: 'profile',     icon: <Icon.Profile color={th.phases.nose.accent} size={28} />,     label: t.mwProfileTitle,     phase: 'nose'    as const },
-    { id: 'analytics',   icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,  label: t.mwAnalyticsTitle,   phase: 'palate'  as const },
-    { id: 'wheel',       icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.mwWheelTitle,       phase: 'finish'  as const },
-    { id: 'journal',     icon: <Icon.Journal color={th.phases.overall.accent} size={28} />,    label: t.mwJournalTitle,     phase: 'overall' as const },
-    { id: 'compare',     icon: <Icon.Compare color={th.phases.nose.accent} size={28} />,       label: t.mwCompareTitle,     phase: 'nose'    as const },
-    { id: 'reco',        icon: <Icon.Star color={th.phases.palate.accent} size={28} />,        label: t.mwRecoTitle,        phase: 'palate'  as const },
-    { id: 'connoisseur', icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: 'Connoisseur Report', phase: 'finish'  as const },
-    { id: 'curation',    icon: <Icon.Insight color={th.phases.overall.accent} size={28} />,    label: 'KI-Kuration',        phase: 'overall' as const },
-    { id: 'benchmark',   icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,      label: 'Benchmark',          phase: 'nose'    as const },
-    { id: 'collection',  icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,   label: 'Collection',         phase: 'palate'  as const },
-    { id: 'calendar',    icon: <Icon.Calendar color={th.phases.finish.accent} size={28} />,    label: t.mwCalendarTitle,    phase: 'finish'  as const },
+  const navGroups = [
+    {
+      label: t.mwSectionProfile,
+      items: [
+        { id: 'profile',   icon: <Icon.Profile color={th.phases.nose.accent} size={28} />,    label: t.mwProfileTitle,  phase: 'nose'    as const },
+        { id: 'journal',   icon: <Icon.Journal color={th.phases.overall.accent} size={28} />,  label: t.mwJournalTitle,  phase: 'overall' as const },
+        { id: 'calendar',  icon: <Icon.Calendar color={th.phases.finish.accent} size={28} />,  label: t.mwCalendarTitle, phase: 'finish'  as const },
+      ],
+    },
+    {
+      label: t.mwSectionAnalysis,
+      items: [
+        { id: 'analytics', icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />, label: t.mwAnalyticsTitle, phase: 'palate' as const },
+        { id: 'wheel',     icon: <Icon.Report color={th.phases.finish.accent} size={28} />,    label: t.mwWheelTitle,     phase: 'finish' as const },
+        { id: 'compare',   icon: <Icon.Compare color={th.phases.nose.accent} size={28} />,     label: t.mwCompareTitle,   phase: 'nose'   as const },
+      ],
+    },
+    {
+      label: t.mwSectionAI,
+      items: [
+        { id: 'reco',        icon: <Icon.Star color={th.phases.palate.accent} size={28} />,    label: t.mwRecoTitle,        phase: 'palate'  as const },
+        { id: 'curation',    icon: <Icon.Insight color={th.phases.overall.accent} size={28} />,label: 'KI-Kuration',        phase: 'overall' as const },
+        { id: 'connoisseur', icon: <Icon.Report color={th.phases.finish.accent} size={28} />,  label: 'Connoisseur Report', phase: 'finish'  as const },
+      ],
+    },
+    {
+      label: t.mwSectionCollection,
+      items: [
+        { id: 'benchmark',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,   label: 'Benchmark',   phase: 'nose'   as const },
+        { id: 'collection', icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,label: 'Collection',  phase: 'palate' as const },
+      ],
+    },
   ]
 
   return (
@@ -520,18 +539,35 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
         </div>
       )}
 
-      {/* Nav-Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
-        {navItems.map(item => (
-          <button key={item.id} onClick={() => onNav(item.id)}
-            style={{ height: 88, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 150ms' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = th.phases[item.phase].dim; (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = th.bgCard; (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
-            {item.icon}
-            <span style={{ fontSize: 12, color: th.muted, fontFamily: 'DM Sans, sans-serif' }}>{item.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Grouped Nav */}
+      {navGroups.map((group, gi) => {
+        const [hero, ...rest] = group.items
+        return (
+          <div key={gi} style={{ marginBottom: SP.lg }}>
+            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 13, fontWeight: 500, color: th.faint, letterSpacing: 0.5, textTransform: 'uppercase', margin: `0 0 ${SP.sm}px 2px` }} data-testid={`text-section-${gi}`}>{group.label}</p>
+            <button onClick={() => onNav(hero.id)} data-testid={`button-hero-${hero.id}`}
+              style={{ width: '100%', height: 80, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, transition: 'all 150ms', marginBottom: rest.length ? SP.sm : 0 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = th.phases[hero.phase].dim; (e.currentTarget as HTMLElement).style.borderColor = th.phases[hero.phase].accent }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = th.bgCard; (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
+              {hero.icon}
+              <span style={{ fontSize: 14, fontWeight: 600, color: th.muted, fontFamily: 'DM Sans, sans-serif' }}>{hero.label}</span>
+            </button>
+            {rest.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
+                {rest.map(item => (
+                  <button key={item.id} onClick={() => onNav(item.id)} data-testid={`button-nav-${item.id}`}
+                    style={{ height: 88, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 150ms' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = th.phases[item.phase].dim; (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = th.bgCard; (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
+                    {item.icon}
+                    <span style={{ fontSize: 12, color: th.muted, fontFamily: 'DM Sans, sans-serif' }}>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
