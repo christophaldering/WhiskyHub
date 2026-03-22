@@ -1,5 +1,5 @@
 // CaskSense Apple — AdminScreen (Phase F)
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Fragment } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
@@ -46,13 +46,17 @@ interface AdminOverview {
 
 interface Props { th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }
 
-type AppleAdminTab = 'overview' | 'participants' | 'tastings' | 'cleanup'
+type AppleAdminTab = 'overview' | 'participants' | 'tastings' | 'cleanup' | 'online' | 'activity' | 'sessions' | 'analytics'
 
 const TAB_LABELS: Record<AppleAdminTab, string> = {
   overview: 'Übersicht',
   participants: 'Nutzer',
   tastings: 'Tastings',
   cleanup: 'Cleanup',
+  online: 'Online',
+  activity: 'Aktivität',
+  sessions: 'Sessions',
+  analytics: 'Analytics',
 }
 
 const dangerColor = '#e04040'
@@ -63,6 +67,34 @@ const selectBase = (th: ThemeTokens): React.CSSProperties => ({
   background: th.inputBg, color: th.text, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
   outline: 'none',
 })
+
+const formatRelative = (ts: string | null | undefined): string => {
+  if (!ts) return '–'
+  const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000)
+  if (diffMin < 1) return 'gerade eben'
+  if (diffMin < 60) return `${diffMin}m`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH}h`
+  return `${Math.floor(diffH / 24)}d`
+}
+
+const formatDuration = (min: number): string => {
+  if (min < 1) return '<1m'
+  if (min < 60) return `${min}m`
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+const formatDate = (ts: string | null): string => {
+  if (!ts) return '–'
+  return new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
+const formatTime = (ts: string | null): string => {
+  if (!ts) return '–'
+  return new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+}
 
 export const AdminScreen: React.FC<Props> = ({ th, t, participantId, onBack }) => {
   const [tab, setTab] = useState<AppleAdminTab>('overview')
@@ -92,24 +124,24 @@ export const AdminScreen: React.FC<Props> = ({ th, t, participantId, onBack }) =
       </div>
 
       <div style={{ padding: SP.md }}>
-        <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.lg, overflowX: 'auto' }} data-testid="admin-tabs">
+        <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.lg, overflowX: 'auto', flexWrap: 'wrap' }} data-testid="admin-tabs">
           {(Object.keys(TAB_LABELS) as AppleAdminTab[]).map(id => (
             <button key={id} onClick={() => setTab(id)} data-testid={`admin-tab-${id}`} style={{
-              flex: 1, minWidth: 70, height: 40, borderRadius: 20, border: 'none', cursor: 'pointer',
+              flex: '1 1 auto', minWidth: 60, height: 36, borderRadius: 18, border: 'none', cursor: 'pointer',
               background: tab === id ? th.gold : th.bgCard,
               color: tab === id ? '#1a0f00' : th.muted,
-              fontSize: 13, fontWeight: tab === id ? 700 : 400, whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 12, fontWeight: tab === id ? 700 : 400, whiteSpace: 'nowrap', flexShrink: 0, padding: '0 10px',
             }}>{TAB_LABELS[id]}</button>
           ))}
         </div>
 
-        {loading && (
+        {loading && (tab === 'overview' || tab === 'participants' || tab === 'tastings' || tab === 'cleanup') && (
           <div style={{ textAlign: 'center', padding: SP.xxl }}>
             <Icon.Spinner color={th.gold} size={28} />
           </div>
         )}
 
-        {!loading && error && (
+        {!loading && error && (tab === 'overview' || tab === 'participants' || tab === 'tastings' || tab === 'cleanup') && (
           <div style={{ textAlign: 'center', padding: SP.xxl }}>
             <Icon.AlertTriangle color={dangerColor} size={32} />
             <div style={{ fontSize: 14, fontWeight: 600, marginTop: SP.sm }}>Fehler beim Laden</div>
@@ -125,6 +157,11 @@ export const AdminScreen: React.FC<Props> = ({ th, t, participantId, onBack }) =
         {!loading && !error && data && tab === 'participants' && <ParticipantsTab th={th} data={data} participantId={participantId} onRefresh={fetchData} />}
         {!loading && !error && data && tab === 'tastings' && <TastingsTab th={th} data={data} participantId={participantId} onRefresh={fetchData} />}
         {!loading && !error && data && tab === 'cleanup' && <CleanupTab th={th} data={data} participantId={participantId} onRefresh={fetchData} />}
+
+        {tab === 'online' && <OnlineTab th={th} participantId={participantId} />}
+        {tab === 'activity' && <ActivityTab th={th} participantId={participantId} />}
+        {tab === 'sessions' && <SessionsTab th={th} participantId={participantId} />}
+        {tab === 'analytics' && <AnalyticsTab th={th} participantId={participantId} />}
       </div>
     </div>
   )
@@ -471,6 +508,521 @@ function CleanupTab({ th, data, participantId, onRefresh }: { th: ThemeTokens; d
           {selectedIds.size} löschen
         </button>
       </div>
+    </div>
+  )
+}
+
+function OnlineTab({ th, participantId }: { th: ThemeTokens; participantId: string }) {
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchOnline = () => {
+    fetch('/api/admin/online-users?minutes=10', { headers: { 'x-participant-id': participantId } })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(() => { setUsers([]); setLoading(false) })
+  }
+
+  useEffect(() => {
+    fetchOnline()
+    const interval = setInterval(fetchOnline, 15000)
+    return () => clearInterval(interval)
+  }, [participantId])
+
+  const cardStyle_: React.CSSProperties = {
+    background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: `${SP.sm}px ${SP.md}px`
+  }
+
+  return (
+    <div data-testid="admin-online-tab">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: SP.md }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon.Live color={th.green} size={16} />
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Online Nutzer</span>
+          <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: th.bgCard, color: th.muted }}>{users.length}</span>
+        </div>
+        <span style={{ fontSize: 11, color: th.faint }}>Auto-Refresh 15s</span>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px 0' }}><Icon.Spinner color={th.gold} size={24} /></div>
+      ) : users.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', fontSize: 14, color: th.faint }}>Keine Nutzer online.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SP.sm }}>
+          {users.map((u: any) => (
+            <div key={u.id} data-testid={`admin-online-user-${u.id}`} style={cardStyle_}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 18, background: th.phases.nose.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: th.phases.nose.accent }}>
+                    {(u.name || '?')[0].toUpperCase()}
+                  </div>
+                  <div style={{
+                    position: 'absolute', bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5,
+                    border: `2px solid ${th.bg}`,
+                    background: (Date.now() - new Date(u.lastSeenAt).getTime()) < 120000 ? th.green : th.gold
+                  }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{u.name || '—'}</span>
+                    {u.role === 'admin' && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 5, background: `${th.gold}20`, color: th.gold, fontWeight: 700 }}>Admin</span>}
+                    {u.role === 'host' && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 5, background: `${th.phases.nose.dim}`, color: th.phases.nose.accent, fontWeight: 700 }}>Host</span>}
+                  </div>
+                  {u.email && <div style={{ fontSize: 11, color: th.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>}
+                </div>
+                <span style={{ fontSize: 11, color: th.faint, flexShrink: 0 }}>{formatRelative(u.lastSeenAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ActivityTab({ th, participantId }: { th: ThemeTokens; participantId: string }) {
+  const [hours, setHours] = useState(24)
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const timeOpts = [
+    { hours: 1, label: '1h' }, { hours: 6, label: '6h' }, { hours: 12, label: '12h' },
+    { hours: 24, label: '24h' }, { hours: 168, label: '7d' }, { hours: 720, label: '30d' },
+    { hours: 0, label: 'Alle' },
+  ]
+
+  useEffect(() => {
+    setLoading(true)
+    const params = new URLSearchParams({ hours: String(hours) })
+    if (roleFilter !== 'all') params.set('role', roleFilter)
+    fetch(`/api/admin/user-activity?${params}`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(() => { setUsers([]); setLoading(false) })
+  }, [hours, roleFilter, participantId])
+
+  const filtered = users.filter((u: any) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+  })
+
+  const pillStyle = (active: boolean): React.CSSProperties => ({
+    height: 32, borderRadius: 16, border: `1px solid ${active ? th.gold : th.border}`,
+    background: active ? `${th.gold}15` : th.bgCard, color: active ? th.gold : th.muted,
+    fontSize: 12, fontWeight: active ? 700 : 400, cursor: 'pointer', padding: '0 12px',
+  })
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', minHeight: 40, borderRadius: 12, border: `1px solid ${th.border}`,
+    background: th.inputBg, color: th.text, fontSize: 14, padding: '8px 12px',
+    outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box'
+  }
+
+  return (
+    <div data-testid="admin-activity-tab">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: SP.md }}>
+        <Icon.Globe color={th.gold} size={16} />
+        <span style={{ fontSize: 15, fontWeight: 600 }}>Nutzer-Aktivität</span>
+        <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: th.bgCard, color: th.muted }}>{filtered.length}</span>
+      </div>
+
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: SP.sm }}>
+        {timeOpts.map(opt => (
+          <button key={opt.hours} data-testid={`admin-activity-time-${opt.hours}`} onClick={() => setHours(opt.hours)} style={pillStyle(hours === opt.hours)}>{opt.label}</button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: SP.sm, marginBottom: SP.md }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Name oder E-Mail…"
+          data-testid="admin-activity-search"
+          style={{ ...inputStyle, flex: 1 }} />
+        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+          data-testid="admin-activity-role-filter"
+          style={{ ...inputStyle, width: 'auto', minWidth: 90, flex: 'none' }}>
+          <option value="all">Alle</option>
+          <option value="admin">Admin</option>
+          <option value="host">Host</option>
+          <option value="user">User</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px 0' }}><Icon.Spinner color={th.gold} size={24} /></div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', fontSize: 14, color: th.faint }}>Keine Nutzer im gewählten Zeitraum.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SP.sm }}>
+          {filtered.map((u: any) => (
+            <div key={u.id} data-testid={`admin-activity-user-${u.id}`} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{u.name || '—'}</span>
+                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 5, background: th.bgHover, color: th.faint, textTransform: 'uppercase', fontWeight: 700 }}>{u.role || ''}</span>
+                  </div>
+                  {u.email && <div style={{ fontSize: 11, color: th.faint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>}
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{formatRelative(u.lastSeenAt)}</div>
+                  <div style={{ fontSize: 10, color: th.faint }}>zuletzt</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${th.border}` }}>
+                <span style={{ fontSize: 12, color: th.muted }}>
+                  <Icon.Whisky color={th.faint} size={12} /> {u.tastingCount ?? 0} Tastings
+                </span>
+                <span style={{ fontSize: 12, color: th.muted }}>
+                  <Icon.Overall color={th.faint} size={12} /> {u.ratingCount ?? 0} Ratings
+                </span>
+                <span style={{ fontSize: 12, color: th.muted }}>
+                  <Icon.Edit color={th.faint} size={12} /> {u.journalCount ?? 0} Drams
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SessionsTab({ th, participantId }: { th: ThemeTokens; participantId: string }) {
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [userSearch, setUserSearch] = useState('')
+  const [summary, setSummary] = useState<any>(null)
+  const [summaryLoading, setSummaryLoading] = useState(true)
+  const [userSessions, setUserSessions] = useState<any[]>([])
+  const [userSessionsLoading, setUserSessionsLoading] = useState(false)
+
+  const getFromDate = () => {
+    if (timeRange === 'all') return undefined
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
+    return new Date(Date.now() - days * 86400000).toISOString()
+  }
+
+  useEffect(() => {
+    setSummaryLoading(true)
+    const params = new URLSearchParams({ participantId })
+    const from = getFromDate()
+    if (from) params.set('from', from)
+    fetch(`/api/admin/activity-summary?${params}`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setSummary(d); setSummaryLoading(false) })
+      .catch(() => { setSummary(null); setSummaryLoading(false) })
+  }, [participantId, timeRange])
+
+  useEffect(() => {
+    if (!selectedUser) { setUserSessions([]); return }
+    setUserSessionsLoading(true)
+    const params = new URLSearchParams({ requesterId: participantId })
+    const from = getFromDate()
+    if (from) params.set('from', from)
+    fetch(`/api/admin/activity-sessions/${selectedUser}?${params}`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setUserSessions(Array.isArray(d) ? d : []); setUserSessionsLoading(false) })
+      .catch(() => { setUserSessions([]); setUserSessionsLoading(false) })
+  }, [selectedUser, participantId, timeRange])
+
+  const rangeOpts: { value: typeof timeRange; label: string }[] = [
+    { value: '7d', label: '7 Tage' },
+    { value: '30d', label: '30 Tage' },
+    { value: '90d', label: '90 Tage' },
+    { value: 'all', label: 'Gesamt' },
+  ]
+
+  const filteredUsers = (summary?.topUsers || []).filter((u: any) => {
+    if (!userSearch) return true
+    const q = userSearch.toLowerCase()
+    return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+  })
+
+  const heatmapData = (): number[][] => {
+    const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
+    const sessions = summary?.byHour || []
+    for (const s of sessions) {
+      for (let day = 0; day < 7; day++) {
+        grid[day][s.hour] = (grid[day][s.hour] || 0) + Math.round(s.sessions / 7)
+      }
+    }
+    return grid
+  }
+
+  const heatmapMax = (): number => {
+    const grid = heatmapData()
+    let max = 1
+    for (const row of grid) for (const v of row) if (v > max) max = v
+    return max
+  }
+
+  const dayLabels = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+
+  const cardStyle_: React.CSSProperties = {
+    background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, textAlign: 'center'
+  }
+
+  const pillStyle = (active: boolean): React.CSSProperties => ({
+    height: 30, borderRadius: 15, border: `1px solid ${active ? th.gold : th.border}`,
+    background: active ? `${th.gold}15` : th.bgCard, color: active ? th.gold : th.muted,
+    fontSize: 12, fontWeight: active ? 700 : 400, cursor: 'pointer', padding: '0 10px',
+  })
+
+  if (selectedUser) {
+    const userData = (summary?.topUsers || []).find((u: any) => u.id === selectedUser)
+    return (
+      <div data-testid="admin-sessions-user-detail">
+        <button onClick={() => setSelectedUser(null)} data-testid="admin-sessions-back"
+          style={{ background: 'none', border: 'none', color: th.gold, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4, padding: 0, marginBottom: SP.md }}>
+          <Icon.Back color={th.gold} size={16} /> Zurück
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: SP.md }}>
+          <div style={{ width: 32, height: 32, borderRadius: 16, background: th.phases.nose.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: th.phases.nose.accent }}>
+            {(userData?.name || '?')[0].toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{userData?.name || 'User'}</div>
+            {userData?.email && <div style={{ fontSize: 11, color: th.faint }}>{userData.email}</div>}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
+          <div style={cardStyle_}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: th.gold }}>{userData?.sessions || 0}</div>
+            <div style={{ fontSize: 10, color: th.faint, marginTop: 2 }}>Sessions</div>
+          </div>
+          <div style={cardStyle_}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: th.gold }}>{formatDuration(userData?.totalMinutes || 0)}</div>
+            <div style={{ fontSize: 10, color: th.faint, marginTop: 2 }}>Gesamt</div>
+          </div>
+          <div style={cardStyle_}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: th.gold }}>{formatDuration(userData?.sessions ? Math.round((userData.totalMinutes || 0) / userData.sessions) : 0)}</div>
+            <div style={{ fontSize: 10, color: th.faint, marginTop: 2 }}>Ø Dauer</div>
+          </div>
+        </div>
+
+        {userSessionsLoading ? (
+          <div style={{ textAlign: 'center', padding: '48px 0' }}><Icon.Spinner color={th.gold} size={24} /></div>
+        ) : userSessions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 0', fontSize: 14, color: th.faint }}>Keine Sessions gefunden.</div>
+        ) : (
+          <div>
+            <div style={{ fontSize: 11, color: th.faint, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: SP.sm }}>Session Timeline</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {userSessions.map((s: any) => (
+                <div key={s.id} data-testid={`admin-session-entry-${s.id}`} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 12, padding: `${SP.sm}px ${SP.md}px`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: s.durationMinutes > 0 ? th.gold : th.faint, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{formatDate(s.startedAt)}</span>
+                      <span style={{ fontSize: 12, color: th.muted }}>{formatTime(s.startedAt)} – {formatTime(s.endedAt)}</span>
+                    </div>
+                    {s.pageContext && <div style={{ fontSize: 11, color: th.faint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.pageContext}</div>}
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: th.gold, flexShrink: 0 }}>{formatDuration(s.durationMinutes)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div data-testid="admin-sessions-tab">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: SP.md }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon.Live color={th.gold} size={16} />
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Session Tracking</span>
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {rangeOpts.map(opt => (
+            <button key={opt.value} data-testid={`admin-sessions-range-${opt.value}`} onClick={() => setTimeRange(opt.value)} style={pillStyle(timeRange === opt.value)}>{opt.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {summaryLoading ? (
+        <div style={{ textAlign: 'center', padding: '48px 0' }}><Icon.Spinner color={th.gold} size={24} /></div>
+      ) : !summary ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', fontSize: 14, color: th.faint }}>Keine Daten verfügbar.</div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
+            {[
+              { label: 'Sessions', value: summary.totalSessions ?? 0 },
+              { label: 'Aktive Nutzer', value: summary.uniqueUsers ?? summary.activeUsers ?? 0 },
+              { label: 'Ø Dauer', value: formatDuration(summary.avgDurationMinutes ?? Math.round((summary.avgDuration || 0) / 60)) },
+              { label: 'Gesamtzeit', value: formatDuration(summary.totalMinutes ?? Math.round((summary.totalTime || 0) / 60)) },
+            ].map((s, i) => (
+              <div key={i} data-testid={`admin-sessions-stat-${i}`} style={cardStyle_}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: th.gold, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: th.faint, marginTop: 4 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {(summary.byHour || []).length > 0 && (
+            <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, marginBottom: SP.lg }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: th.muted, marginBottom: SP.sm }}>Aktivität nach Stunde</div>
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '32px repeat(24, 1fr)', gap: 2 }}>
+                  <div />
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <div key={i} style={{ textAlign: 'center', fontSize: 8, color: th.faint }}>{i}</div>
+                  ))}
+                  {heatmapData().map((row, dayIdx) => (
+                    <Fragment key={dayIdx}>
+                      <div style={{ fontSize: 9, color: th.faint, display: 'flex', alignItems: 'center' }}>{dayLabels[dayIdx]}</div>
+                      {row.map((val, hourIdx) => {
+                        const intensity = val / heatmapMax()
+                        return (
+                          <div
+                            key={`${dayIdx}-${hourIdx}`}
+                            data-testid={`admin-heatmap-${dayIdx}-${hourIdx}`}
+                            style={{
+                              aspectRatio: '1', borderRadius: 2, minWidth: 6,
+                              background: val === 0
+                                ? th.bgHover
+                                : `rgba(${th.gold === '#d4a847' ? '212,168,71' : '184,137,42'}, ${0.15 + intensity * 0.85})`
+                            }}
+                            title={`${dayLabels[dayIdx]} ${hourIdx}:00 – ${val} Sessions`}
+                          />
+                        )
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(summary.byDay || []).length > 0 && (
+            <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, marginBottom: SP.lg }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: th.muted, marginBottom: SP.sm }}>Tägliche Aktivität</div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 80 }}>
+                {summary.byDay.map((d: any) => {
+                  const maxS = Math.max(...summary.byDay.map((x: any) => x.sessions), 1)
+                  const pct = (d.sessions / maxS) * 100
+                  return (
+                    <div
+                      key={d.date}
+                      data-testid={`admin-daily-bar-${d.date}`}
+                      style={{
+                        flex: 1, borderRadius: '3px 3px 0 0', minWidth: 3,
+                        height: `${Math.max(pct, 4)}%`,
+                        background: th.gold,
+                        opacity: 0.7 + (pct / 100) * 0.3
+                      }}
+                      title={`${d.date}: ${d.sessions} Sessions, ${d.uniqueUsers} Nutzer`}
+                    />
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                <span style={{ fontSize: 9, color: th.faint }}>{summary.byDay[0]?.date}</span>
+                <span style={{ fontSize: 9, color: th.faint }}>{summary.byDay[summary.byDay.length - 1]?.date}</span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: SP.sm }}>
+              <Icon.TabWorld color={th.muted} size={14} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: th.muted }}>Nutzer ({filteredUsers.length})</span>
+            </div>
+            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Nutzer suchen…"
+              data-testid="admin-sessions-user-search"
+              style={{
+                width: '100%', minHeight: 40, borderRadius: 12, border: `1px solid ${th.border}`,
+                background: th.inputBg, color: th.text, fontSize: 14, padding: '8px 12px',
+                outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm
+              }} />
+            {filteredUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 14, color: th.faint }}>Keine Nutzer gefunden.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {filteredUsers.map((u: any) => (
+                  <button key={u.id} data-testid={`admin-sessions-user-${u.id}`}
+                    onClick={() => setSelectedUser(u.id)}
+                    style={{
+                      background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 12,
+                      padding: `${SP.sm}px ${SP.md}px`, cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
+                      fontFamily: 'DM Sans, sans-serif', color: th.text
+                    }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{u.name}</div>
+                      {u.email && <div style={{ fontSize: 11, color: th.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>}
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: th.gold }}>{u.sessions} Sessions</div>
+                      <div style={{ fontSize: 11, color: th.faint }}>{formatDuration(u.totalMinutes)} gesamt</div>
+                      <div style={{ fontSize: 10, color: th.faint }}>{formatRelative(u.lastActive)}</div>
+                    </div>
+                    <Icon.ChevronRight color={th.faint} size={16} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AnalyticsTab({ th, participantId }: { th: ThemeTokens; participantId: string }) {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/admin/analytics?requesterId=${participantId}`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => { setData(null); setLoading(false) })
+  }, [participantId])
+
+  const cardStyle_: React.CSSProperties = {
+    background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, textAlign: 'center'
+  }
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '48px 0' }}><Icon.Spinner color={th.gold} size={24} /></div>
+  if (!data) return <div style={{ textAlign: 'center', padding: '48px 0', fontSize: 14, color: th.faint }}>Keine Analytics-Daten verfügbar.</div>
+
+  return (
+    <div data-testid="admin-analytics-tab">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
+        {[
+          { label: 'Bewertungen', value: data.totalRatings || 0, color: th.gold },
+          { label: 'Whiskies', value: data.totalWhiskies || 0, color: th.phases.nose.accent },
+          { label: 'Tastings', value: data.totalTastings || 0, color: th.phases.palate.accent },
+          { label: 'Teilnehmer', value: data.totalParticipants || 0, color: th.green },
+        ].map(s => (
+          <div key={s.label} data-testid={`admin-analytics-${s.label.toLowerCase()}`} style={cardStyle_}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: th.faint, marginTop: 4 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {data.topWhiskies?.length > 0 && (
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: SP.sm }}>Top Whiskies</div>
+          {data.topWhiskies.slice(0, 10).map((w: any, i: number) => (
+            <div key={w.id || i} data-testid={`admin-analytics-whisky-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${th.border}` }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{i + 1}. {w.name || '—'}</span>
+                {w.distillery && <span style={{ fontSize: 11, color: th.faint, marginLeft: 6 }}>{w.distillery}</span>}
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: th.gold, fontFamily: 'Playfair Display, serif' }}>{Number(w.avgScore).toFixed(1)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
