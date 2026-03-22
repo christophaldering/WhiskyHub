@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
+import { collectionApi } from '@/lib/api'
+import { distilleries } from '@/data/distilleries'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI CURATION
@@ -186,15 +188,35 @@ export const Benchmark: React.FC<BenchmarkProps> = ({ th, t, participantId, onBa
 // ─────────────────────────────────────────────────────────────────────────────
 // COLLECTION ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
+
+const _distilleryRegionMap = new Map<string, string>()
+for (const d of distilleries) {
+  _distilleryRegionMap.set(d.name.toLowerCase(), d.region)
+}
+
+function deriveRegion(distillery: string | null): string {
+  if (!distillery) return 'Unknown'
+  const lower = distillery.toLowerCase().trim()
+  let found = 'Other'
+  _distilleryRegionMap.forEach((region, name) => {
+    if (lower.includes(name) || name.includes(lower)) found = region
+  })
+  return found
+}
+
 interface CollProps { th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }
 
 export const CollectionAnalysis: React.FC<CollProps> = ({ th, t, participantId, onBack }) => {
-  const [data, setData]   = useState<any>(null)
+  const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/participants/${participantId}/collection-analysis`, { headers: { 'x-participant-id': participantId } })
-      .then(r => r.json()).then(setData).catch(() => setData(null))
+    setLoading(true)
+    setError(false)
+    collectionApi.getAll(participantId)
+      .then((data: any) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => { setItems([]); setError(true) })
       .finally(() => setLoading(false))
   }, [participantId])
 
@@ -212,15 +234,63 @@ export const CollectionAnalysis: React.FC<CollProps> = ({ th, t, participantId, 
 
   if (loading) return <div style={{ padding: SP.md, display: 'flex', justifyContent: 'center', paddingTop: 60 }}><Icon.Spinner color={th.gold} size={28} /></div>
 
-  const demo = !data ? {
-    totalBottles: 24, regions: { 'Speyside': 8, 'Highland': 6, 'Islay': 4, 'Islands': 3, 'Ireland': 3 },
-    casks: { 'Ex-Bourbon': 10, 'Sherry': 7, 'Port': 4, 'Peated': 3 },
-    ageGroups: { '8-12y': 8, '12-18y': 10, '18+y': 6 },
-    avgRating: 82, topRated: [{ name: 'Glenfarclas 15', score: 91 }, { name: 'Springbank 10', score: 88 }]
-  } : data
+  if (error) return (
+    <div style={{ padding: SP.md, paddingBottom: 80 }}>
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}>
+        <Icon.Back color={th.muted} size={18} />{t.back}
+      </button>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.lg, textAlign: 'center' }}>
+        <p style={{ fontSize: 15, color: th.muted }}>Sammlung konnte nicht geladen werden.</p>
+      </div>
+    </div>
+  )
 
-  const maxRegion = Math.max(...Object.values(demo.regions || {})) as number
-  const maxCask   = Math.max(...Object.values(demo.casks || {})) as number
+  if (items.length === 0) return (
+    <div style={{ padding: SP.md, paddingBottom: 80 }}>
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}>
+        <Icon.Back color={th.muted} size={18} />{t.back}
+      </button>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.lg, textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 8 }}>📦</div>
+        <p style={{ fontSize: 16, fontWeight: 600, color: th.text, margin: '0 0 6px' }}>Noch keine Sammlung</p>
+        <p style={{ fontSize: 13, color: th.muted, margin: 0 }}>Importiere deine Whiskybase-Sammlung, um detaillierte Analysen freizuschalten.</p>
+      </div>
+    </div>
+  )
+
+  const regionCounts = new Map<string, number>()
+  const caskCounts = new Map<string, number>()
+  let ratingSum = 0
+  let ratingCount = 0
+  const topRated: { name: string; score: number }[] = []
+
+  for (const item of items) {
+    const region = deriveRegion(item.distillery)
+    regionCounts.set(region, (regionCounts.get(region) || 0) + 1)
+
+    if (item.caskType) {
+      const ct = item.caskType.trim()
+      if (ct) caskCounts.set(ct, (caskCounts.get(ct) || 0) + 1)
+    }
+
+    if (item.personalRating != null && item.personalRating > 0) {
+      ratingSum += item.personalRating
+      ratingCount++
+      topRated.push({ name: item.name, score: item.personalRating })
+    } else if (item.communityRating != null && item.communityRating > 0) {
+      ratingSum += item.communityRating
+      ratingCount++
+      topRated.push({ name: item.name, score: item.communityRating })
+    }
+  }
+
+  const avgRating = ratingCount > 0 ? Math.round(ratingSum / ratingCount) : 0
+  const sortedTopRated = topRated.sort((a, b) => b.score - a.score).slice(0, 10)
+  const regions = Object.fromEntries(Array.from(regionCounts.entries()).sort((a, b) => b[1] - a[1]))
+  const casks = Object.fromEntries(Array.from(caskCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10))
+
+  const maxRegion = Math.max(...Object.values(regions)) as number
+  const maxCask = Object.keys(casks).length > 0 ? Math.max(...Object.values(casks)) as number : 1
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
@@ -230,9 +300,8 @@ export const CollectionAnalysis: React.FC<CollProps> = ({ th, t, participantId, 
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>Collection Analysis</h1>
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.lg}px` }}>Tiefenanalyse deiner Whisky-Sammlung.</p>
 
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
-        {[{ label: 'Flaschen', value: demo.totalBottles }, { label: 'Ø Bewertung', value: demo.avgRating }].map((s, i) => (
+        {[{ label: 'Flaschen', value: items.length }, { label: 'Ø Bewertung', value: avgRating > 0 ? avgRating : '–' }].map((s, i) => (
           <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, textAlign: 'center' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: th.gold }}>{s.value}</div>
             <div style={{ fontSize: 11, color: th.faint }}>{s.label}</div>
@@ -240,23 +309,24 @@ export const CollectionAnalysis: React.FC<CollProps> = ({ th, t, participantId, 
         ))}
       </div>
 
-      {/* Regions */}
-      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.md }}>
-        <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Regionen</div>
-        {Object.entries(demo.regions || {}).map(([region, count]) => <HBar key={region} label={region} count={count as number} max={maxRegion} color={th.phases.palate.accent} />)}
-      </div>
+      {Object.keys(regions).length > 0 && (
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.md }}>
+          <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Regionen</div>
+          {Object.entries(regions).map(([region, count]) => <HBar key={region} label={region} count={count as number} max={maxRegion} color={th.phases.palate.accent} />)}
+        </div>
+      )}
 
-      {/* Casks */}
-      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.md }}>
-        <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Fasstypen</div>
-        {Object.entries(demo.casks || {}).map(([cask, count]) => <HBar key={cask} label={cask} count={count as number} max={maxCask} color={th.phases.finish.accent} />)}
-      </div>
+      {Object.keys(casks).length > 0 && (
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.md }}>
+          <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Fasstypen</div>
+          {Object.entries(casks).map(([cask, count]) => <HBar key={cask} label={cask} count={count as number} max={maxCask} color={th.phases.finish.accent} />)}
+        </div>
+      )}
 
-      {/* Top rated */}
-      {(demo.topRated || []).length > 0 && (
+      {sortedTopRated.length > 0 && (
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
           <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Top bewertet</div>
-          {(demo.topRated || []).map((w: any, i: number) => (
+          {sortedTopRated.map((w, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${th.border}` }}>
               <span style={{ fontSize: 14, color: th.text }}>{w.name}</span>
               <span style={{ fontSize: 16, fontWeight: 700, color: th.gold }}>{w.score}</span>
