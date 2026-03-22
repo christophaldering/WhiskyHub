@@ -121,6 +121,7 @@ export interface Translations {
   entGuide: string; entGuideSub: string
   entDest: string; entDestSub: string
   entBottlers: string; entBottlersSub: string
+  entVocab: string; entResearch: string; entMakingOf: string
   entHistory: string; entHistorySub: string
   entTemplates: string; entTemplatesSub: string
   entSearch: string; entFilterRegion: string; entFilterAll: string

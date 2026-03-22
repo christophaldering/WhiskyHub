@@ -1,5 +1,5 @@
 // CaskSense Apple — AuthScreen
-// Login · Registrieren · Gast-Modus
+// Login / Registrieren / Gast-Modus
 // APIs: POST /api/participants/login, POST /api/participants
 import React, { useState } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
@@ -62,7 +62,7 @@ const LoginView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{tx.authLoginSub}</p>
       {error && <ErrorBanner msg={error} th={th} />}
       <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} autoFocus />
-      <Field label={tx.authPassword} type="password" value={pass} onChange={setPass} placeholder="••••••••" th={th} />
+      <Field label={tx.authPassword} type="password" value={pass} onChange={setPass} placeholder="********" th={th} />
       <button data-testid="button-login" onClick={submit} disabled={loading || !email || !pass} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: loading ? 'default' : 'pointer', background: !email || !pass ? th.bgCard : `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: !email || !pass ? th.faint : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 150ms' }}>
         {loading ? <Icon.Spinner color={th.faint} size={20} /> : tx.authLoginBtn}
       </button>
@@ -236,7 +236,7 @@ export const AuthScreen: React.FC<Props> = ({ th, t, onLogin }) => {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: SP.xl, fontSize: 11, color: th.faint }}>
-        CaskSense · Dein Gaumen. Deine Geschichte.
+        CaskSense - Dein Gaumen. Deine Geschichte.
       </div>
     </div>
   )

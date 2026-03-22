@@ -79,7 +79,7 @@ export const BottlersScreen: React.FC<Props> = ({ th, t, lang, onBack }) => {
           {expanded === b.name && (
             <div style={{ paddingBottom: SP.md, paddingLeft: 56 }}>
               {/* Specialty */}
-              <div style={{ fontSize: 14, color: th.muted, lineHeight: 1.6, marginBottom: SP.sm, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{b.specialty}</div>
+              <div style={{ fontSize: 16, color: th.muted, lineHeight: 1.6, marginBottom: SP.sm, fontFamily: 'Cormorant Garamond, serif' }}>{b.specialty}</div>
 
               {/* Notable releases */}
               {b.notable.length > 0 && (

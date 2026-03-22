@@ -56,7 +56,28 @@ const SoloCaptureScreen: React.FC<{ th: ThemeTokens; t: Translations; onCapture:
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
         {[
           { icon: <Icon.Edit color={th.phases.palate.accent} size={24} />, label: t.soloManual, desc: t.soloManualDesc, action: () => onCapture({ blind: false }) },
-          { icon: <Icon.Barcode color={th.phases.finish.accent} size={24} />, label: t.soloBarcode, desc: t.soloBarcodeDesc, action: () => onCapture({ blind: false }) },
+          { icon: <Icon.Barcode color={th.phases.finish.accent} size={24} />, label: t.soloBarcode, desc: t.soloBarcodeDesc, action: async () => {
+            try {
+              // Try html5-qrcode for barcode scanning
+              const { Html5QrcodeScanner } = await import('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js' as any).catch(() => ({ Html5QrcodeScanner: null }))
+              if (!Html5QrcodeScanner) { onCapture({ blind: false }); return }
+              // Open native camera for barcode (fallback to gallery)
+              const input = document.createElement('input')
+              input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment'
+              input.onchange = async (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0]
+                if (!file) return
+                // Use API to lookup barcode
+                const fd = new FormData(); fd.append('file', file); fd.append('type', 'barcode')
+                try {
+                  const res = await fetch('/api/identify-bottle', { method: 'POST', body: fd })
+                  if (res.ok) { const data = await res.json(); onCapture({ ...data, blind: false }) }
+                  else onCapture({ blind: false })
+                } catch { onCapture({ blind: false }) }
+              }
+              input.click()
+            } catch { onCapture({ blind: false }) }
+          } },
         ].map((item, i) => (
           <button key={i} onClick={item.action} style={{
             height: 88, borderRadius: 16, border: `1px solid ${th.border}`, background: th.bgCard,
@@ -121,7 +142,7 @@ const SoloWhiskyForm: React.FC<{ th: ThemeTokens; t: Translations; initial: Whis
 }
 
 // ── SoloDoneScreen ──────────────────────────────────────────────────────────
-const SoloDoneScreen: React.FC<{ th: ThemeTokens; t: Translations; whisky: WhiskyData; score: number; onAnother: () => void; onBack: () => void }> = ({ th, t, whisky, score, onAnother, onBack }) => (
+const SoloDoneScreen: React.FC<{ th: ThemeTokens; t: Translations; whisky: WhiskyData; score: number; entryId?: string; participantId?: string; onAnother: () => void; onBack: () => void }> = ({ th, t, whisky, score, onAnother, onBack }) => (
   <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: SP.lg, paddingBottom: 100 }}>
     <div style={{ width: 80, height: 80, borderRadius: 40, background: `${th.green}20`, border: `2px solid ${th.green}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: SP.md }}>
       <Icon.Check color={th.green} size={36} />

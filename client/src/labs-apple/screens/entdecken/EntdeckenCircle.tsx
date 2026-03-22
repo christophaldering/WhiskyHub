@@ -6,6 +6,10 @@ import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
 import { BottlersScreen } from './Bottlers'
+import { VocabularyScreen } from './Vocabulary'
+import { ResearchScreen } from './Research'
+import { MakingOf } from './MakingOf'
+import { Vocabulary, Research, MakingOf } from '../misc/MiscScreens'
 
 // ── Tasting Guide ─────────────────────────────────────────────────────────
 const GUIDE_SECTIONS = [
@@ -29,7 +33,7 @@ const TastingGuide: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
         <div style={{ width: 40, height: 40, borderRadius: 20, background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#1a0f00', flexShrink: 0 }}>{s.icon}</div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{s.title}</div>
-          <div style={{ fontSize: 14, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{lang === 'de' ? s.de : s.en}</div>
+          <div style={{ fontSize: 16, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif' }}>{lang === 'de' ? s.de : s.en}</div>
         </div>
       </div>
     ))}
@@ -82,7 +86,7 @@ const Distilleries: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
             <Icon.ChevronDown color={th.faint} size={16} />
           </button>
           {expanded === d.name && (
-            <div style={{ padding: `0 0 ${SP.md}px ${50}px`, fontSize: 14, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>
+            <div style={{ padding: `0 0 ${SP.md}px ${50}px`, fontSize: 16, color: th.muted, lineHeight: 1.6, fontFamily: 'Cormorant Garamond, serif' }}>
               {d.desc}
             </div>
           )}
@@ -308,7 +312,13 @@ const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; onNav: (s: stri
     { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,    label: t.entLexikon,   sub: t.entLexikonSub,   phase: 'nose'    as const },
     { id: 'guide',    icon: <Icon.Report color={th.phases.finish.accent} size={28} />,    label: t.entGuide,     sub: t.entGuideSub,     phase: 'finish'  as const },
     { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />,label: t.entDest,     sub: t.entDestSub,      phase: 'overall' as const },
-    { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,   label: t.entHistory,   sub: t.entHistorySub,   phase: 'palate'  as const },
+    { id: 'vocab',    icon: <Icon.BookOpen color={th.phases.palate.accent} size={28} />,    label: lang === 'de' ? 'Vokabular' : 'Vocabulary',  sub: lang === 'de' ? 'Vorlagen & Tipps' : 'Templates & tips',   phase: 'palate'  as const },
+    { id: 'making-of', icon: <Icon.History color={th.phases.overall.accent} size={28} />,    label: 'Making Of',  sub: 'Die Geschichte von CaskSense',    phase: 'overall' as const },
+    { id: 'research', icon: <Icon.Analytics color={th.phases.finish.accent} size={28} />,   label: lang === 'de' ? 'Wissenschaft' : 'Science',   sub: lang === 'de' ? 'Forschung & Rabbit Hole' : 'Research & rabbit hole', phase: 'finish'  as const },
+        { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,   label: t.entHistory,   sub: t.entHistorySub,   phase: 'palate'  as const },
+    { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,         label: t.entVocab,   sub: 'Copy-Paste Tasting-Notizen', phase: 'finish' as const },
+    { id: 'research', icon: <Icon.BookOpen color={th.phases.overall.accent} size={28} />,    label: t.entResearch,  sub: 'Deep Dives & Wissenschaft',  phase: 'overall' as const },
+    { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,        label: t.entMakingOf, sub: 'Die Geschichte von CaskSense',phase: 'nose'   as const },
     { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,       label: t.entBottlers,  sub: t.entBottlersSub,  phase: 'nose'    as const },
   ]
   return (
@@ -340,9 +350,16 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   if (sub === 'explore') return <ExploreWhiskies th={th} t={t} participantId={participantId} onBottle={id => setBottleId(id)} onBack={goBack} />
   if (sub === 'lexikon') return <Lexikon th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'guide')   return <TastingGuide th={th} t={t} lang={lang} onBack={goBack} />
-  if (sub === 'dest')    return <Distilleries th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'dest') return (
+    <div>
+      <Distilleries th={th} t={t} lang={lang} onBack={goBack} />
+    </div>
+  )
   if (sub === 'history') return <HistoricalArchive th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'bottlers') return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'bottlers')  return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'vocab')     return <Vocabulary th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'research')  return <Research th={th} t={t} lang={lang} onBack={goBack} />
+  if (sub === 'makingof')  return <MakingOf th={th} t={t} participantId={participantId} onBack={goBack} />
 
   return <div style={{ minHeight: '100%', background: th.bg }}><EntdeckenHub th={th} t={t} onNav={setSub} /></div>
 }
@@ -380,7 +397,7 @@ const Leaderboard: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
         const name     = isMe ? `${entry.name} (Du)` : isFriend ? entry.name : hashAlias(entry.participantId || String(i))
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid ${th.border}` }}>
-            <span style={{ fontSize: 14, color: th.faint, width: 24, textAlign: 'center', fontWeight: i < 3 ? 700 : 400, color: i === 0 ? th.gold : i === 1 ? th.muted : i === 2 ? th.amber : th.faint }}>{i + 1}</span>
+            <span style={{ fontSize: 14, width: 24, textAlign: 'center', fontWeight: i < 3 ? 700 : 400, color: i === 0 ? th.gold : i === 1 ? th.muted : i === 2 ? th.amber : th.faint }}>{i + 1}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: isMe ? 700 : 400, color: isMe ? th.gold : th.text }}>{name}</div>
               {isFriend && <span style={{ fontSize: 10, color: th.green, background: `${th.green}15`, padding: '1px 6px', borderRadius: 8 }}>{t.circleFriend}</span>}

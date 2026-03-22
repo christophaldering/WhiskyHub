@@ -9,6 +9,14 @@ import { TastingsHub, JoinFlow } from './screens/tastings/TastingsHub'
 import { SoloFlow } from './screens/solo/SoloFlow'
 import { HostWizard } from './screens/host/HostWizard'
 import { HostDashboard } from './screens/host/HostDashboard'
+import { HostCockpit } from './screens/host/HostCockpit'
+import { PrintableSheets } from './screens/host/PrintableSheets'
+import { PaperScan } from './screens/host/PaperScan'
+import { TastingDetail } from './screens/tastings/TastingDetail'
+import { TastingRecap } from './screens/results/TastingRecap'
+import { SessionNarrative } from './screens/results/SessionNarrative'
+import { AdminScreen } from './screens/admin/AdminScreen'
+import { MakingOf } from './screens/entdecken/MakingOf'
 import { LiveTasting } from './screens/live/LiveTasting'
 import { ResultsScreen } from './screens/results/ResultsScreen'
 import { MeineWeltScreen } from './screens/meinewelt/MeineWeltScreen'
@@ -17,7 +25,7 @@ import './theme/animations.css'
 import { LabsErrorBoundary } from './LabsErrorBoundary'
 
 type TabId = 'tastings' | 'entdecken' | 'meinewelt' | 'circle'
-type SubScreen = null | 'join' | 'solo' | 'host' | 'host-dashboard' | 'live' | 'results'
+type SubScreen = null | 'join' | 'solo' | 'host' | 'host-dashboard' | 'live' | 'results' | 'tasting-detail' | 'host-cockpit' | 'print-sheets' | 'paper-scan' | 'recap' | 'narrative' | 'admin' | 'making-of' | 'tasting-detail' | 'paper-scan' | 'cockpit' | 'print-sheets' | 'recap' | 'admin'
 
 const SESSION_KEY = 'casksense_apple_session'
 
@@ -30,9 +38,13 @@ export const LabsAppleApp: React.FC = () => {
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTastingId, setActiveTastingId]         = useState<string | null>(null)
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null)
+  const [activeIsHost, setActiveIsHost]               = useState(false)
+  const [isHostForActive, setIsHostForActive]         = useState(false)
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const th = THEMES[themeKey]
+  // Expose nav for layout admin link
+  React.useEffect(() => { (window as any).__casksenseNav = (screen: string) => setSubScreen(screen as any) }, [setSubScreen])
   const t  = I18N[lang]
 
   useEffect(() => {
@@ -85,8 +97,11 @@ export const LabsAppleApp: React.FC = () => {
   }
 
   const goBack = () => setSubScreen(null)
-  const enterLive = (tastingId: string, participantId: string) => {
-    setActiveTastingId(tastingId); setActiveParticipantId(participantId); setSubScreen('live')
+  const enterLive = (tastingId: string, participantId: string, isHost = false) => {
+    setActiveTastingId(tastingId); setActiveParticipantId(participantId); setIsHostForActive(isHost); setSubScreen('live')
+  }
+  const openDetail = (tastingId: string, isHost = false) => {
+    setActiveTastingId(tastingId); setIsHostForActive(isHost); setSubScreen('tasting-detail')
   }
 
   // Loading splash
@@ -109,6 +124,26 @@ export const LabsAppleApp: React.FC = () => {
   const renderContent = () => {
     if (subScreen === 'join')           return <JoinFlow th={th} t={t} onEnterLive={enterLive} onBack={goBack} />
     if (subScreen === 'solo')           return <SoloFlow th={th} t={t} participantId={session?.id || 'solo'} onBack={goBack} />
+    if (subScreen === 'tasting-detail' && activeTastingId) return (
+      <TastingDetail th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || ''} isHost={activeIsHost} onBack={goBack} onEnterLive={() => setSubScreen('live')} />
+    )
+    if (subScreen === 'host-cockpit' && activeTastingId) return (
+      <HostCockpit th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onClose={goBack} />
+    )
+    if (subScreen === 'print-sheets' && activeTastingId) return (
+      <PrintableSheets th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'paper-scan' && activeTastingId) return (
+      <PaperScan th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'recap' && activeTastingId) return (
+      <TastingRecap th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'narrative' && activeTastingId) return (
+      <SessionNarrative th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} isHost={activeIsHost} lang={lang} onBack={goBack} />
+    )
+    if (subScreen === 'admin') return <AdminScreen th={th} t={t} participantId={session?.id || ''} onBack={goBack} />
+    if (subScreen === 'making-of') return <MakingOf th={th} t={t} participantId={session?.id || ''} onBack={goBack} />
     if (subScreen === 'host')           return <HostWizard th={th} t={t} participantId={session?.id || ''} onBack={goBack} onDone={() => { setSubScreen(null); setActiveTab('tastings') }} />
     if (subScreen === 'host-dashboard') return <HostDashboard th={th} t={t} participantId={session?.id || ''} onBack={goBack} />
     if (subScreen === 'live' && activeTastingId) return (
@@ -117,8 +152,35 @@ export const LabsAppleApp: React.FC = () => {
     if (subScreen === 'results' && activeTastingId) return (
       <ResultsScreen th={th} t={t} tastingId={activeTastingId} participantId={activeParticipantId || session?.id || 'guest'} isHost={session?.isHost || false} />
     )
+    if (subScreen === 'tasting-detail' && activeTastingId) return (
+      <TastingDetail th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} isHost={isHostForActive} onBack={goBack} onEnterLive={() => { setSubScreen('live') }} />
+    )
+    if (subScreen === 'paper-scan' && activeTastingId) return (
+      <PaperScan th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'cockpit' && activeTastingId) return (
+      <HostCockpit th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onClose={goBack} />
+    )
+    if (subScreen === 'print-sheets' && activeTastingId) return (
+      <PrintableSheets th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'recap' && activeTastingId) return (
+      <TastingRecap th={th} t={t} tastingId={activeTastingId} participantId={session?.id || ''} onBack={goBack} />
+    )
+    if (subScreen === 'admin') return (
+      <AdminScreen th={th} t={t} participantId={session?.id || ''} onBack={goBack} />
+    )
     switch (activeTab) {
-      case 'tastings':  return <TastingsHub th={th} t={t} session={session} onJoin={() => setSubScreen('join')} onSolo={() => setSubScreen('solo')} onHost={() => setSubScreen('host')} onHostDashboard={() => setSubScreen('host-dashboard')} />
+      case 'tastings':  return <TastingsHub th={th} t={t} session={session}
+        onJoin={() => setSubScreen('join')}
+        onSolo={() => setSubScreen('solo')}
+        onHost={() => setSubScreen('host')}
+        onHostDashboard={() => setSubScreen('host-dashboard')}
+        onTastingDetail={(id, isHost) => { setActiveTastingId(id); setActiveIsHost(isHost); setSubScreen('tasting-detail') }}
+        onCockpit={(id) => { setActiveTastingId(id); setSubScreen('host-cockpit') }}
+        onPrintSheets={(id) => { setActiveTastingId(id); setSubScreen('print-sheets') }}
+        onPaperScan={(id) => { setActiveTastingId(id); setSubScreen('paper-scan') }}
+      />
       case 'entdecken': return <EntdeckenScreen th={th} t={t} participantId={session?.id || ''} lang={lang} />
       case 'meinewelt': return <MeineWeltScreen th={th} t={t} participantId={session?.id || ''} lang={lang} />
       case 'circle':    return <CircleScreen th={th} t={t} participantId={session?.id || ''} />

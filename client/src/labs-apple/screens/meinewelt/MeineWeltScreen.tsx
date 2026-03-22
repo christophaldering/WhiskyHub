@@ -7,7 +7,12 @@ import { TasteAnalytics } from './TasteAnalytics'
 import { FlavourWheel } from './FlavourWheel'
 import { WhiskyCompare } from './WhiskyCompare'
 import { Recommendations } from './Recommendations'
+import { ConnoisseurReport } from '../results/ConnoisseurReport'
+import { AICuration } from './AICuration'
+import { CollectionSync } from '../solo/CollectionSync'
 import * as Icon from '../../icons/Icons'
+import { ConnoisseurReport } from './ConnoisseurReport'
+import { AICuration, Benchmark, CollectionAnalysis } from './AIFeatures'
 
 // ── TasteProfile mit SVG-Radar ────────────────────────────────────────────
 const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; lang: 'de' | 'en'; onBack: () => void }> = ({ th, t, participantId, lang, onBack }) => {
@@ -345,7 +350,14 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
     { id: 'wheel',      icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.mwWheelTitle,     phase: 'finish'  as const },
     { id: 'journal',    icon: <Icon.Journal color={th.phases.overall.accent} size={28} />,    label: t.mwJournalTitle,   phase: 'overall' as const },
     { id: 'compare',    icon: <Icon.Compare color={th.phases.nose.accent} size={28} />,       label: t.mwCompareTitle,   phase: 'nose'    as const },
+    { id: 'connoisseur', icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: 'Connoisseur Report', phase: 'finish'  as const },
+    { id: 'ai-curation', icon: <Icon.Insight color={th.phases.nose.accent} size={28} />,     label: 'KI-Kuration',        phase: 'nose'    as const },
     { id: 'reco',       icon: <Icon.Star color={th.phases.palate.accent} size={28} />,        label: t.mwRecoTitle,      phase: 'palate'  as const },
+    { id: 'connoisseur',icon: <Icon.Report color={th.phases.finish.accent} size={28} />,     label: 'Connoisseur Report',phase: 'finish' as const },
+    { id: 'curation',   icon: <Icon.Insight color={th.phases.overall.accent} size={28} />,   label: 'KI-Kuration',      phase: 'overall' as const },
+    { id: 'benchmark',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,     label: 'Benchmark',        phase: 'nose'    as const },
+    { id: 'collection', icon: <Icon.Analytics color={th.phases.palate.accent} size={28} />,  label: 'Collection',       phase: 'palate'  as const },
+    { id: 'collection', icon: <Icon.Whisky color={th.phases.overall.accent} size={28} />,    label: 'Collection Sync', phase: 'overall' as const },
     { id: 'calendar',   icon: <Icon.Calendar color={th.phases.finish.accent} size={28} />,    label: t.mwCalendarTitle,  phase: 'finish'  as const },
   ]
 
@@ -413,11 +425,17 @@ export const MeineWeltScreen: React.FC<Props> = ({ th, t, participantId, lang })
   if (sub === 'profile')   return <TasteProfile th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
   if (sub === 'analytics') return <TasteAnalytics th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'wheel')     return <FlavourWheel th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  if (sub === 'connoisseur') return <ConnoisseurReport th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  if (sub === 'ai-curation') return <AICuration th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'compare')   return <WhiskyCompare th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'reco')      return <Recommendations th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'journal')   return <JournalList th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'calendar')  return <TastingCalendar th={th} t={t} participantId={participantId} onBack={goBack} />
-  if (sub === 'edit')      return <ProfileEdit th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'edit')       return <ProfileEdit th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'connoisseur') return <ConnoisseurReport th={th} t={t} participantId={participantId} lang={lang} onBack={goBack} />
+  if (sub === 'curation')  return <AICuration th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'benchmark') return <Benchmark th={th} t={t} participantId={participantId} onBack={goBack} />
+  if (sub === 'collection')return <CollectionAnalysis th={th} t={t} participantId={participantId} onBack={goBack} />
 
   return (
     <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif' }}>

@@ -177,11 +177,19 @@ interface HubProps {
   th: ThemeTokens; t: Translations
   onJoin: () => void; onSolo: () => void; onHost: () => void
   onHostDashboard?: () => void
+  onTastingDetail?: (id: string, isHost: boolean) => void
+  onCockpit?: (id: string) => void
+  onPrintSheets?: (id: string) => void
+  onPaperScan?: (id: string) => void
   session: any
 }
 
-export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, session }) => {
+export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, onTastingDetail, onCockpit, onPrintSheets, onPaperScan, session }) => {
   const [recentTastings, setRecent] = useState<any[]>([])
+  const [detailId, setDetailId]   = useState<string | null>(null)
+  const [recapId, setRecapId]     = useState<string | null>(null)
+  const [paperScanId, setPaperScanId] = useState<string | null>(null)
+  const [printId, setPrintId]     = useState<string | null>(null)
 
   useEffect(() => {
     if (!session?.id) return

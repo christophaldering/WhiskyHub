@@ -101,7 +101,7 @@ export const TasteAnalytics: React.FC<Props> = ({ th, t, participantId, onBack }
             <div style={{ fontSize: 11, color: th.phases.palate.accent, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
               KI-Analyse · {insight.type || 'Insight'}
             </div>
-            <div style={{ fontSize: 14, color: th.muted, lineHeight: 1.5, fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic' }}>{insight.message}</div>
+            <div style={{ fontSize: 16, color: th.muted, lineHeight: 1.5, fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic' }}>{insight.message}</div>
           </div>
         </div>
       )}
