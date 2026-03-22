@@ -13,6 +13,8 @@ import {
 import type { DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import RatingFlow from "@/labs/components/RatingFlow";
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
@@ -1744,28 +1746,72 @@ export default function LabsSolo() {
   }
 
   if (soloView === "ratingFlow") {
-    const displayName = whiskyName || distillery || t("soloQuick.untitled", "Untitled dram");
-    const selectedChips = detailChips.nose || [];
-    const handleFlowChipToggle = (chip: string) => {
-      setDetailChips((prev) => {
-        const cur = prev.nose || [];
-        return { ...prev, nose: cur.includes(chip) ? cur.filter((t) => t !== chip) : [...cur, chip] };
-      });
-    };
-    const handleFlowSave = async () => {
-      const hasDimScore = detailedScores.nose > 0 || detailedScores.taste > 0 || detailedScores.finish > 0;
-      if (!hasDimScore) throw new Error("No scores");
-      const effectiveScore = score > 0 ? score : Math.max(1, calcOverall(detailedScores));
-      if (score !== effectiveScore) setScore(effectiveScore);
+    const buildV2Body = (data: RatingData) => {
+      const effectiveScore = data.scores.overall > 0
+        ? data.scores.overall
+        : Math.max(1, calcOverall({ nose: data.scores.nose, taste: data.scores.palate, finish: data.scores.finish }));
       const normalizedScore = ratingScale.normalize(effectiveScore);
+
+      const scoresBlock = `\n[SCORES] Nose:${data.scores.nose} Taste:${data.scores.palate} Finish:${data.scores.finish} [/SCORES]`;
+      const dimParts: string[] = [];
+      for (const [phase, dim] of [["nose", "NOSE"], ["palate", "TASTE"], ["finish", "FINISH"]] as const) {
+        const chipStr = (data.tags[phase] || []).join(", ");
+        const textStr = (data.notes[phase] || "").trim();
+        if (chipStr || textStr) {
+          dimParts.push(`[${dim}] ${[chipStr, textStr].filter(Boolean).join(" \u2014 ")} [/${dim}]`);
+        }
+      }
+      const allNotes = (["nose", "palate", "finish", "overall"] as const)
+        .map((p) => data.notes[p]?.trim())
+        .filter(Boolean)
+        .join(" | ");
+
+      const body: Record<string, any> = {
+        title: whiskyName.trim(),
+        whiskyName: whiskyName.trim(),
+        distillery: distillery.trim() || undefined,
+        personalScore: normalizedScore,
+        noseNotes: (allNotes + scoresBlock + (dimParts.length ? "\n" + dimParts.join("\n") : "")).trim() || undefined,
+        source: "casksense",
+        imageUrl: photoUrl || undefined,
+        status: "final",
+      };
+      if (unknownAge.trim()) body.age = unknownAge.trim();
+      if (unknownAbv.trim()) body.abv = unknownAbv.trim();
+      if (unknownCask.trim()) body.caskType = unknownCask.trim();
+      if (unknownRegion.trim()) body.region = unknownRegion.trim();
+      if (unknownCountry.trim()) body.country = unknownCountry.trim();
+      if (unknownPeatLevel.trim()) body.peatLevel = unknownPeatLevel.trim();
+      if (unknownVintage.trim()) body.vintage = unknownVintage.trim();
+      if (unknownBottler.trim()) body.bottler = unknownBottler.trim();
+      if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
+      if (unknownPrice.trim()) body.price = unknownPrice.trim();
+      if (soloVoiceMemo) {
+        if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
+        if (soloVoiceMemo.transcript) body.voiceMemoTranscript = soloVoiceMemo.transcript;
+        if (soloVoiceMemo.durationSeconds) body.voiceMemoDuration = soloVoiceMemo.durationSeconds;
+      }
+      return body;
+    };
+
+    const handleV2Done = async (data: RatingData) => {
+      setDetailedScores({ nose: data.scores.nose, taste: data.scores.palate, finish: data.scores.finish });
+      setDetailChips({ nose: data.tags.nose, taste: data.tags.palate, finish: data.tags.finish });
+      setDetailTexts({ nose: data.notes.nose, taste: data.notes.palate, finish: data.notes.finish });
+      setDetailTouched(true);
+      const effectiveScore = data.scores.overall > 0
+        ? data.scores.overall
+        : Math.max(1, calcOverall({ nose: data.scores.nose, taste: data.scores.palate, finish: data.scores.finish }));
+      setScore(effectiveScore);
+
       if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
-      if (!unlocked || !pid) { persistLocal(); setSaved(true); return; }
+
+      const body = buildV2Body(data);
+
+      if (!unlocked || !pid) { persistLocal(); setSaved(true); handleReset(true); return; }
       setSaving(true);
       setError("");
       try {
-        const body = buildDraftBody();
-        body.status = "final";
-        body.personalScore = normalizedScore;
         if (draftEntryId) {
           const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
             method: "PATCH",
@@ -1788,15 +1834,14 @@ export default function LabsSolo() {
         setInterruptedFlowDraft(null);
         if (pid) checkConnoisseurAutoTrigger(pid);
         try { localStorage.removeItem(SOLO_DRAFT_KEY); } catch {}
+        handleReset(true);
       } catch {
-        persistLocal();
         if (pid) {
-          const body = buildDraftBody();
-          body.status = "final";
-          body.personalScore = normalizedScore;
           addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
           setOfflineCount(getOfflineQueue().length);
         }
+        persistLocal();
+        handleReset(true);
       } finally {
         setSaving(false);
       }
@@ -1804,72 +1849,15 @@ export default function LabsSolo() {
 
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-rating-flow">
-        <button
-          onClick={() => { handleReset(true); }}
-          className="labs-btn-ghost"
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 8, justifyContent: "flex-start" }}
-          data-testid="button-ratingflow-back"
-        >
-          <ChevronLeft style={{ width: 16, height: 16 }} />
-          {t("m2.common.back", "Back")}
-        </button>
-
-        {error && (
-          <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(200,169,126,0.12)", border: "1px solid rgba(200,169,126,0.25)", color: "var(--labs-accent)", fontSize: 13, marginBottom: 12 }} data-testid="text-ratingflow-error">
-            {error}
-          </div>
-        )}
-
-        {photoUrl && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-            <img src={photoUrl} alt={displayName} style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", border: "1px solid var(--labs-border)" }} data-testid="img-ratingflow-photo" />
-          </div>
-        )}
-
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }} data-testid="text-ratingflow-name">
-          {displayName}
-        </h2>
-        {distillery && whiskyName && distillery !== whiskyName && (
-          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: "0 0 4px" }}>{distillery}</p>
-        )}
-        {(unknownAge || unknownAbv) && (
-          <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", textAlign: "center", margin: "0 0 12px" }}>
-            {[unknownAge && `${unknownAge} yo`, unknownAbv && `${unknownAbv}%`].filter(Boolean).join(" · ")}
-          </p>
-        )}
-
-        <div style={{ flex: 1 }}>
-          <RatingFlow
-            scale={ratingScale}
-            scores={detailedScores}
-            onScoreChange={handleDetailScoreChange}
-            overall={score}
-            onOverallChange={handleScoreChange}
-            overrideActive={overrideActive}
-            onOverrideToggle={() => setOverrideActive(true)}
-            onResetOverride={resetOverride}
-            chips={selectedChips}
-            onChipToggle={handleFlowChipToggle}
-            notes={notes}
-            onNotesChange={setNotes}
-            onSave={handleFlowSave}
-            whiskyName={displayName}
-            initialStep={ratingFlowStep}
-            onStepChange={(s) => setRatingFlowStep(s)}
-            onAfterSaveCorrect={() => {
-              setRatingFlowStep(3);
-            }}
-            onAfterSaveNewDram={() => {
-              handleReset();
-              setError("");
-              setCaptureSource("hub");
-              setSoloView("capture");
-            }}
-            onAfterSaveOverview={() => {
-              handleReset(true);
-            }}
-          />
-        </div>
+        <RatingFlowV2
+          whisky={{
+            name: whiskyName || distillery || t("soloQuick.untitled", "Untitled dram"),
+            region: unknownRegion || undefined,
+            cask: unknownCask || undefined,
+          }}
+          onDone={handleV2Done}
+          onBack={() => { handleReset(true); }}
+        />
       </div>
     );
   }
