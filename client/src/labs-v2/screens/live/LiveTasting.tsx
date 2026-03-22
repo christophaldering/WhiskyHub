@@ -10,6 +10,7 @@ import LiveLobby from "./LiveLobby";
 import RevealSequence from "./RevealSequence";
 import LiveVoiceMemo from "./LiveVoiceMemo";
 import LiveAmbient from "./LiveAmbient";
+import AccountUpgradePromptV2 from "../../components/AccountUpgradePromptV2";
 
 interface WhiskyItem {
   id: string;
@@ -429,6 +430,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
           </div>
         )}
 
+        <AccountUpgradePromptV2 th={th} t={t} participantId={participantId.current} />
+
         <button
           onClick={onBack}
           style={{
@@ -443,6 +446,7 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
             borderRadius: RADIUS.full,
             cursor: "pointer",
             minHeight: TOUCH_MIN,
+            marginTop: SP.md,
           }}
           data-testid="live-to-results"
         >

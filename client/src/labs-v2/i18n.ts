@@ -448,6 +448,15 @@ export interface Translations {
   circleDram: string;
   circleTasting: string;
   circleSearchPlaceholder: string;
+  upgradeKeepSafe: string;
+  upgradeDesc: string;
+  upgradeEmailPH: string;
+  upgradePasswordPH: string;
+  upgradeSave: string;
+  upgradeSaving: string;
+  upgradeMaybeLater: string;
+  upgradeEmailErr: string;
+  upgradePasswordErr: string;
 }
 
 const de: Translations = {
@@ -898,6 +907,15 @@ const de: Translations = {
   circleDram: "Dram erfasst",
   circleTasting: "Tasting abgeschlossen",
   circleSearchPlaceholder: "Name eingeben\u2026",
+  upgradeKeepSafe: "Ergebnisse sichern",
+  upgradeDesc: "Hinterlege eine E-Mail und ein Passwort, um deine Bewertungen dauerhaft zu speichern.",
+  upgradeEmailPH: "E-Mail-Adresse",
+  upgradePasswordPH: "Passwort (mind. 4 Zeichen)",
+  upgradeSave: "Sichern",
+  upgradeSaving: "Wird gespeichert\u2026",
+  upgradeMaybeLater: "Vielleicht sp\u00e4ter",
+  upgradeEmailErr: "E-Mail konnte nicht gespeichert werden",
+  upgradePasswordErr: "Passwort konnte nicht gespeichert werden",
 };
 
 const en: Translations = {
@@ -1348,6 +1366,15 @@ const en: Translations = {
   circleDram: "Dram logged",
   circleTasting: "Tasting completed",
   circleSearchPlaceholder: "Enter name\u2026",
+  upgradeKeepSafe: "Save your results",
+  upgradeDesc: "Add an email and password to keep your ratings safe.",
+  upgradeEmailPH: "Email address",
+  upgradePasswordPH: "Password (min. 4 characters)",
+  upgradeSave: "Save",
+  upgradeSaving: "Saving\u2026",
+  upgradeMaybeLater: "Maybe later",
+  upgradeEmailErr: "Could not save email",
+  upgradePasswordErr: "Could not save password",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };

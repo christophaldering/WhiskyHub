@@ -4,6 +4,7 @@ import type { Translations } from "../../i18n";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
 import { Check, ChevronDown } from "../../icons";
 import SoloVoiceMemo from "./SoloVoiceMemo";
+import AccountUpgradePromptV2 from "../../components/AccountUpgradePromptV2";
 
 interface Props {
   th: ThemeTokens;
@@ -151,6 +152,8 @@ export default function SoloDoneScreen({ th, t, whiskyName, score, participantId
           {t.soloToHub}
         </button>
       </div>
+
+      <AccountUpgradePromptV2 th={th} t={t} participantId={participantId} />
     </div>
   );
 }
