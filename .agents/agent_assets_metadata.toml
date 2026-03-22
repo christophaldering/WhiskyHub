@@ -24,3 +24,9 @@ id = "LUGBqQq87bcGe84WXo-ax"
 uri = "file://CaskSense_Whisky_Import_Template.xlsx"
 type = "table"
 title = "CaskSense Whisky Import Template"
+
+[[outputs]]
+id = "uw2_PBa2ZaJZM6uFoK6HN"
+uri = "file://labs-apple.zip"
+type = "unspecified"
+title = "labs-apple Verzeichnis (ZIP)"
