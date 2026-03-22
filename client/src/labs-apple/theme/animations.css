@@ -38,6 +38,11 @@
   50%       { opacity: 0; }
 }
 
+/* Profile dialog — native top-layer, no backdrop (we paint our own) */
+dialog[data-testid="profile-overlay"]::backdrop {
+  background: transparent;
+}
+
 /* Respects system preference */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
