@@ -9,6 +9,7 @@ import { TastingConfig, WhiskyEntry, TastingData } from '../../types/host'
 import * as Icon from '../../icons/Icons'
 import { friendsApi, inviteApi } from '@/lib/api'
 import type { WhiskyFriend } from '@shared/schema'
+import { HostCockpit } from './HostCockpit'
 
 const inputStyle = (th: ThemeTokens) => ({ width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, fontFamily: 'DM Sans, sans-serif', outline: 'none', boxSizing: 'border-box' as const })
 const labelStyle = (th: ThemeTokens) => ({ fontSize: 11, color: th.muted, marginBottom: 4, display: 'block', textTransform: 'uppercase' as const, letterSpacing: '0.08em' })
@@ -386,6 +387,13 @@ export const HostWizard: React.FC<Props> = ({ th, t, participantId, onBack, onDo
   const [tastingCode, setCode]    = useState<string | null>(null)
   const [whiskies, setWhiskies]   = useState<WhiskyEntry[]>([])
 
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900)
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 900)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   const stepLabels = [t.hostStep1, t.hostStep2, t.hostStep3, t.hostStep4]
 
   return (
@@ -439,8 +447,12 @@ export const HostWizard: React.FC<Props> = ({ th, t, participantId, onBack, onDo
           setStep(4)
         }} />
       )}
-      {step === 4 && tastingId && tastingCode && (
-        <HostStep4 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onEnd={onDone} />
+      {step === 4 && tastingId && (
+        isDesktop ? (
+          <HostCockpit th={th} t={t} tastingId={tastingId} participantId={participantId} onClose={onDone} />
+        ) : tastingCode ? (
+          <HostStep4 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onEnd={onDone} />
+        ) : null
       )}
     </div>
   )

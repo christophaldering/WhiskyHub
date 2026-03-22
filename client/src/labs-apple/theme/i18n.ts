@@ -167,6 +167,22 @@ export interface Translations {
   authPrivacyConsent: string; authPrivacyConsentRequired: string
   authNewsletterOptIn: string; authNewsletterHint: string
   authInvalidEmail: string; authLoginPrivacyNotice: string; authPrivacyLink: string
+  cockpitClose: string; cockpitControls: string; cockpitStartTasting: string; cockpitAdvanced: string
+  cockpitEndTasting: string; cockpitEndConfirmYes: string; cockpitCancel: string; cockpitContinue: string
+  cockpitRestart: string; cockpitRestartOptions: string; cockpitResumKeepRatings: string; cockpitClearRestart: string
+  cockpitClearWarning: string; cockpitClearConfirm: string
+  cockpitStatus: string; cockpitFormat: string; cockpitBlind: string; cockpitOpen: string
+  cockpitRatings: string; cockpitProgress: string; cockpitCurrentDram: string; cockpitRated: string
+  cockpitRevealSteps: string; cockpitPreset: string; cockpitVisible: string; cockpitNext: string; cockpitHidden: string
+  cockpitTabLive: string; cockpitTabLineup: string; cockpitTabGuests: string; cockpitTabRating: string
+  cockpitNoWhiskies: string; cockpitNotStartedYet: string; cockpitNetworkError: string; cockpitError: string
+  cockpitTastingStarted: string; cockpitTastingEnded: string; cockpitTastingRestarted: string; cockpitTastingResumed: string
+  cockpitAdvanceTo: string; cockpitLastDramDone: string; cockpitNotRatedYet: string
+  cockpitHostRating: string; cockpitNotes: string; cockpitNotesPH: string; cockpitAutoCalc: string; cockpitResetAuto: string
+  cockpitAllRevealed: string; cockpitFirstDram: string; cockpitNextDram: string; cockpitRevealPrefix: string; cockpitNextStep: string
+  cockpitPresetClassic: string; cockpitPresetNameFirst: string; cockpitPresetPhotoFirst: string; cockpitPresetCustom: string
+  cockpitGuestsAll: string; cockpitGuestsPartial: string; cockpitGuestsNone: string
+  cockpitAnonymous: string; cockpitPaper: string; cockpitApp: string; cockpitDraft: string; cockpitEnded: string; cockpitReveal: string
 }
 
 const DE: Translations = {
@@ -340,6 +356,22 @@ const DE: Translations = {
   authInvalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
   authLoginPrivacyNotice: 'Mit der Anmeldung stimmst du unserer Datenschutzrichtlinie zu.',
   authPrivacyLink: 'Datenschutzrichtlinie',
+  cockpitClose: 'Schließen', cockpitControls: 'Steuerung', cockpitStartTasting: 'Tasting starten', cockpitAdvanced: 'Fortgeschritten',
+  cockpitEndTasting: 'Tasting beenden', cockpitEndConfirmYes: 'Ja, beenden', cockpitCancel: 'Abbrechen', cockpitContinue: 'Weiter',
+  cockpitRestart: 'Tasting neu starten', cockpitRestartOptions: 'Neustart-Optionen', cockpitResumKeepRatings: 'Fortsetzen (Bewertungen behalten)', cockpitClearRestart: 'Komplett neu (Bewertungen löschen)',
+  cockpitClearWarning: 'Alle Bewertungen werden gelöscht!', cockpitClearConfirm: 'Ja, alles löschen & neu starten',
+  cockpitStatus: 'Status', cockpitFormat: 'Format', cockpitBlind: 'Blind', cockpitOpen: 'Offen',
+  cockpitRatings: 'Bewertungen', cockpitProgress: 'Fortschritt', cockpitCurrentDram: 'Aktueller Dram', cockpitRated: 'bewertet',
+  cockpitRevealSteps: 'Enthüllungs-Schritte', cockpitPreset: 'Preset', cockpitVisible: 'Sichtbar', cockpitNext: 'Nächster', cockpitHidden: 'Verborgen',
+  cockpitTabLive: 'Live', cockpitTabLineup: 'Lineup', cockpitTabGuests: 'Gäste', cockpitTabRating: 'Bewertung',
+  cockpitNoWhiskies: 'Noch keine Whiskies hinzugefügt.', cockpitNotStartedYet: 'Tasting noch nicht gestartet', cockpitNetworkError: 'Netzwerkfehler', cockpitError: 'Fehler',
+  cockpitTastingStarted: 'Tasting gestartet', cockpitTastingEnded: 'Tasting beendet', cockpitTastingRestarted: 'Tasting neu gestartet (Bewertungen gelöscht)', cockpitTastingResumed: 'Tasting fortgesetzt',
+  cockpitAdvanceTo: 'Weiter zu Dram', cockpitLastDramDone: 'Letzter Dram beendet?', cockpitNotRatedYet: 'Teilnehmer haben noch nicht bewertet',
+  cockpitHostRating: 'Host-Bewertung', cockpitNotes: 'Notizen', cockpitNotesPH: 'Eigene Notizen...', cockpitAutoCalc: 'Automatisch (Ø Nase + Gaumen + Abgang)', cockpitResetAuto: 'Auto-Berechnung wiederherstellen',
+  cockpitAllRevealed: 'Alle aufgedeckt', cockpitFirstDram: 'Ersten Dram starten', cockpitNextDram: 'Nächster Dram →', cockpitRevealPrefix: 'Aufdecken', cockpitNextStep: 'Nächster Schritt',
+  cockpitPresetClassic: 'Klassisch', cockpitPresetNameFirst: 'Name zuerst', cockpitPresetPhotoFirst: 'Foto zuerst', cockpitPresetCustom: 'Einzeln',
+  cockpitGuestsAll: 'Alle bewertet', cockpitGuestsPartial: 'Am Bewerten', cockpitGuestsNone: 'Noch nicht gestartet',
+  cockpitAnonymous: 'Anonym', cockpitPaper: 'Papier', cockpitApp: 'App', cockpitDraft: 'Entwurf', cockpitEnded: 'Beendet', cockpitReveal: 'Enthüllung',
 }
 
 const EN: Translations = {
@@ -513,6 +545,22 @@ const EN: Translations = {
   authInvalidEmail: 'Please enter a valid email address.',
   authLoginPrivacyNotice: 'By signing in, you agree to our privacy policy.',
   authPrivacyLink: 'Privacy Policy',
+  cockpitClose: 'Close', cockpitControls: 'Controls', cockpitStartTasting: 'Start tasting', cockpitAdvanced: 'Advanced',
+  cockpitEndTasting: 'End tasting', cockpitEndConfirmYes: 'Yes, end it', cockpitCancel: 'Cancel', cockpitContinue: 'Continue',
+  cockpitRestart: 'Restart tasting', cockpitRestartOptions: 'Restart options', cockpitResumKeepRatings: 'Resume (keep ratings)', cockpitClearRestart: 'Full reset (clear ratings)',
+  cockpitClearWarning: 'All ratings will be deleted!', cockpitClearConfirm: 'Yes, clear all & restart',
+  cockpitStatus: 'Status', cockpitFormat: 'Format', cockpitBlind: 'Blind', cockpitOpen: 'Open',
+  cockpitRatings: 'Ratings', cockpitProgress: 'Progress', cockpitCurrentDram: 'Current dram', cockpitRated: 'rated',
+  cockpitRevealSteps: 'Reveal steps', cockpitPreset: 'Preset', cockpitVisible: 'Visible', cockpitNext: 'Next', cockpitHidden: 'Hidden',
+  cockpitTabLive: 'Live', cockpitTabLineup: 'Lineup', cockpitTabGuests: 'Guests', cockpitTabRating: 'Rating',
+  cockpitNoWhiskies: 'No whiskies added yet.', cockpitNotStartedYet: 'Tasting not started yet', cockpitNetworkError: 'Network error', cockpitError: 'Error',
+  cockpitTastingStarted: 'Tasting started', cockpitTastingEnded: 'Tasting ended', cockpitTastingRestarted: 'Tasting restarted (ratings cleared)', cockpitTastingResumed: 'Tasting resumed',
+  cockpitAdvanceTo: 'Advance to dram', cockpitLastDramDone: 'Last dram finished?', cockpitNotRatedYet: 'participants have not rated yet',
+  cockpitHostRating: 'Host rating', cockpitNotes: 'Notes', cockpitNotesPH: 'Your notes...', cockpitAutoCalc: 'Auto (avg Nose + Palate + Finish)', cockpitResetAuto: 'Reset to auto',
+  cockpitAllRevealed: 'All revealed', cockpitFirstDram: 'Start first dram', cockpitNextDram: 'Next dram →', cockpitRevealPrefix: 'Reveal', cockpitNextStep: 'Next step',
+  cockpitPresetClassic: 'Classic', cockpitPresetNameFirst: 'Name first', cockpitPresetPhotoFirst: 'Photo first', cockpitPresetCustom: 'One by one',
+  cockpitGuestsAll: 'All rated', cockpitGuestsPartial: 'Rating in progress', cockpitGuestsNone: 'Not started yet',
+  cockpitAnonymous: 'Anonymous', cockpitPaper: 'Paper', cockpitApp: 'App', cockpitDraft: 'Draft', cockpitEnded: 'Ended', cockpitReveal: 'Reveal',
 }
 
 export const I18N: Record<'de' | 'en', Translations> = { de: DE, en: EN }
