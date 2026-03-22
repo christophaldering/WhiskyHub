@@ -380,36 +380,6 @@ function HeroSection() {
 
           <JoinCodeInput />
 
-          <Link
-            href="/labs-v2"
-            data-testid="cta-hero-v2"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 32px",
-              background: "transparent",
-              color: ACCENT,
-              fontFamily: font.body,
-              fontSize: 14,
-              fontWeight: 500,
-              borderRadius: 50,
-              textDecoration: "none",
-              border: `1px solid ${ACCENT}40`,
-              transition: "border-color 0.2s, background 0.2s",
-              letterSpacing: "0.01em",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = ACCENT;
-              (e.currentTarget as HTMLElement).style.background = `${ACCENT}10`;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = `${ACCENT}40`;
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
-          >
-            {t("landing.hero.newExperience")}
-          </Link>
         </div>
       </FadeUp>
 

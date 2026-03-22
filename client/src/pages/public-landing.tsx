@@ -239,23 +239,6 @@ function HeroSection() {
           }}>
             Guided Tour
           </Link>
-          <Link href="/landing-v2" data-testid="link-hero-landing-v2" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "14px 36px",
-            background: "transparent",
-            color: v.mutedLight,
-            fontFamily: font.body,
-            fontSize: 14,
-            fontWeight: 500,
-            borderRadius: 50,
-            textDecoration: "none",
-            border: `1px solid ${v.border}`,
-            transition: "border-color 0.2s",
-          }}>
-            Interactive Version
-          </Link>
           <Link href="/m2" data-testid="link-hero-module2" style={{
             display: "inline-flex",
             alignItems: "center",
