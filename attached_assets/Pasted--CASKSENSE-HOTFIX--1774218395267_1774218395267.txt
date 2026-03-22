@@ -1,0 +1,66 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HOTFIX: ROUTING /labs → /labs/home
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Aktuell leitet /labs direkt zu /labs/tastings weiter.
+Damit wird der Intent-Screen (/labs/home) niemals angezeigt —
+obwohl er bereits vollständig implementiert ist.
+
+Die Empfehlung der UX-Experten lautet: Nutzer zuerst fragen was sie
+vorhaben, bevor die App etwas zeigt. Der /labs/home Screen tut genau das.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push/migrate ausführen
+❌ NIEMALS andere Routen in App.tsx verändern
+❌ NIEMALS bestehende Seiten löschen oder umbenennen
+✅ NUR die eine genannte Zeile ändern
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIE EINZIGE ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/App.tsx
+
+VORHER (diese Zeile suchen):
+  <Route path="/labs">{() => <Redirect to="/labs/tastings" />}</Route>
+
+NACHHER (ersetzen durch):
+  <Route path="/labs">{() => <Redirect to="/labs/home" />}</Route>
+
+Das ist die einzige Änderung. Nichts sonst anfassen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HINTERGRUND (nicht ändern, nur verstehen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/labs/home (LabsHome) ist bereits vollständig implementiert und zeigt:
+  - Wenn NICHT eingeloggt: Login/Register/Gast-Optionen
+  - Wenn eingeloggt: die drei Aktionskarten
+    "Tasting beitreten" / "Dram erfassen" / "Tasting veranstalten"
+    plus letzte Bewertungen
+
+/labs/tastings (LabsTastings) bleibt erreichbar — nur nicht mehr der
+Standard-Einstieg. Nutzer kommen über die Hub-Karten dorthin.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRÜFUNG NACH DER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ casksense.com/labs → landet auf /labs/home (Intent-Screen)
+✅ casksense.com/labs/tastings → noch direkt erreichbar
+✅ casksense.com/labs/join → noch direkt erreichbar
+✅ Alle anderen /labs/* Routen unverändert
+✅ /labs-v2 und /labs-apple unverändert
