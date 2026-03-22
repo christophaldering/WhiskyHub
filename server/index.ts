@@ -320,6 +320,25 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       }
     })();
 
+    (async () => {
+      if (process.env.NODE_ENV !== "production") return;
+      try {
+        const marker = await storage.getAppSetting("whisky_friends_purged_2026_03_22");
+        if (marker) return;
+        const { db } = await import("./db");
+        const { whiskyFriends } = await import("@shared/schema");
+        const { count } = await import("drizzle-orm");
+        const [{ cnt }] = await db.select({ cnt: count() }).from(whiskyFriends);
+        if (Number(cnt) > 0) {
+          await db.delete(whiskyFriends);
+          log(`Purged ${Number(cnt)} whisky_friends entries (one-time cleanup)`, "startup");
+        }
+        await storage.setAppSetting("whisky_friends_purged_2026_03_22", "true");
+      } catch (e: any) {
+        log(`whisky_friends cleanup skipped: ${e.message}`, "startup");
+      }
+    })();
+
     warmupGmailToken();
 
     seedProductionData()
