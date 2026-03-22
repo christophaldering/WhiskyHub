@@ -148,6 +148,7 @@ export interface Translations {
   circleFriend: string; circleAddFriend: string; circlePending: string; circleAccept: string; circleDecline: string
   circleFeedEmpty: string; circleOnline: string; circleSearchFriend: string
   historyGated: string; historyJoin: string
+  historyShowAll: string; historyOwnTitle: string; historyOwnSub: string; historySearchPH: string; historyStatusAll: string; historyStatusOpen: string; historyStatusClosed: string
   // Auth
   authWelcomeSub: string; authLoginTitle: string; authLoginSub: string; authLoginBtn: string
   authToRegister: string; authToLogin: string; authGuestLink: string
@@ -327,6 +328,7 @@ const DE: Translations = {
   circleFriend: 'Freund', circleAddFriend: 'Hinzufügen', circlePending: 'Ausstehend', circleAccept: 'Annehmen', circleDecline: 'Ablehnen',
   circleFeedEmpty: 'Noch keine Aktivitäten von Freunden.', circleOnline: 'Online', circleSearchFriend: 'Freund suchen...',
   historyGated: 'Nur für Community-Mitglieder', historyJoin: 'Community beitreten',
+  historyShowAll: 'Alle anzeigen', historyOwnTitle: 'Meine Tastings', historyOwnSub: 'Alle Tastings, an denen du teilgenommen hast', historySearchPH: 'Tasting suchen...', historyStatusAll: 'Alle', historyStatusOpen: 'Offen', historyStatusClosed: 'Beendet',
   authWelcomeSub: 'Dein Gaumen. Deine Geschichte.',
   authLoginTitle: 'Willkommen zurück', authLoginSub: 'Melde dich an, um fortzufahren.',
   authLoginBtn: 'Anmelden', authToRegister: 'Noch kein Konto?', authToLogin: 'Bereits registriert?',
@@ -524,6 +526,7 @@ const EN: Translations = {
   circleFriend: 'Friend', circleAddFriend: 'Add', circlePending: 'Pending', circleAccept: 'Accept', circleDecline: 'Decline',
   circleFeedEmpty: 'No activity from friends yet.', circleOnline: 'Online', circleSearchFriend: 'Search friend...',
   historyGated: 'Community members only', historyJoin: 'Join community',
+  historyShowAll: 'Show all', historyOwnTitle: 'My Tastings', historyOwnSub: 'All tastings you participated in', historySearchPH: 'Search tastings...', historyStatusAll: 'All', historyStatusOpen: 'Open', historyStatusClosed: 'Closed',
   authWelcomeSub: 'Your palate. Your story.',
   authLoginTitle: 'Welcome back', authLoginSub: 'Sign in to continue.',
   authLoginBtn: 'Sign in', authToRegister: 'No account yet?', authToLogin: 'Already registered?',

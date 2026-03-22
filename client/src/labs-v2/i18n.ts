@@ -233,6 +233,13 @@ export interface Translations {
   entHistSmoky: string;
   historyGated: string;
   historyJoin: string;
+  historyShowAll: string;
+  historyOwnTitle: string;
+  historyOwnSub: string;
+  historySearchPH: string;
+  historyStatusAll: string;
+  historyStatusOpen: string;
+  historyStatusClosed: string;
   mwTitle: string;
   mwSub: string;
   circleTitle: string;
@@ -662,6 +669,13 @@ const de: Translations = {
   entHistSmoky: "Rauchig",
   historyGated: "Nur f\u00fcr Community-Mitglieder",
   historyJoin: "Community beitreten",
+  historyShowAll: "Alle anzeigen",
+  historyOwnTitle: "Meine Tastings",
+  historyOwnSub: "Alle Tastings, an denen du teilgenommen hast",
+  historySearchPH: "Tasting suchen...",
+  historyStatusAll: "Alle",
+  historyStatusOpen: "Offen",
+  historyStatusClosed: "Beendet",
   mwTitle: "Meine Welt",
   mwSub: "Deine pers\u00f6nliche Whisky-Reise",
   circleTitle: "Circle",
@@ -1091,6 +1105,13 @@ const en: Translations = {
   entHistSmoky: "Smoky",
   historyGated: "Community members only",
   historyJoin: "Join community",
+  historyShowAll: "Show all",
+  historyOwnTitle: "My Tastings",
+  historyOwnSub: "All tastings you participated in",
+  historySearchPH: "Search tastings...",
+  historyStatusAll: "All",
+  historyStatusOpen: "Open",
+  historyStatusClosed: "Closed",
   mwTitle: "My World",
   mwSub: "Your personal whisky journey",
   circleTitle: "Circle",

@@ -43,19 +43,45 @@ const TastingGuide: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
 // ── HistoricalArchive ──────────────────────────────────────────────────────
 const HistoricalArchive: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
   const [tastings, setTastings] = useState<any[]>([])
+  const [ownTastings, setOwnTastings] = useState<any[]>([])
   const [insights, setInsights] = useState<any>(null)
   const [search, setSearch]     = useState('')
   const [isMember, setMember]   = useState<boolean | null>(null)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
+    const headers = { 'x-participant-id': participantId }
     Promise.all([
-      fetch('/api/historical-tastings', { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
-      fetch('/api/historical-tastings/insights', { headers: { 'x-participant-id': participantId } }).then(r => r.json()),
-    ]).then(([t, i]) => { setTastings(t || []); setInsights(i); setMember(true) })
-      .catch(() => setMember(false))
+      fetch('/api/tastings', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/historical-tastings', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/historical-tastings/insights', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/historical/tastings?includeOwn=true&limit=200', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([own, hist, ins, unified]) => {
+      if (unified?.ownTastings) {
+        setOwnTastings(unified.ownTastings)
+      } else {
+        setOwnTastings(own || [])
+      }
+      if (hist) {
+        setTastings(hist || [])
+        setInsights(ins)
+        setMember(true)
+      } else {
+        setMember(false)
+      }
+      setLoading(false)
+    }).catch(() => { setMember(false); setLoading(false) })
   }, [participantId])
 
-  if (isMember === false) return (
+  const hasOwnTastings = ownTastings.length > 0
+
+  if (loading) return (
+    <div style={{ padding: SP.md, paddingBottom: 80 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: SP.xl }}><Icon.Spinner color={th.gold} size={28} /></div>
+    </div>
+  )
+
+  if (isMember === false && !hasOwnTastings) return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <div style={{ textAlign: 'center', padding: SP.xl }}>
@@ -66,36 +92,59 @@ const HistoricalArchive: React.FC<{ th: ThemeTokens; t: Translations; participan
     </div>
   )
 
-  const filtered = tastings.filter(t2 => !search || (t2.name || '').toLowerCase().includes(search.toLowerCase()))
+  const filteredOwn = ownTastings.filter(t2 => !search || (t2.name || t2.title || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime())
+  const filteredHist = tastings.filter(t2 => !search || (t2.name || '').toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
-      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.entHistory}</h1>
-      {insights && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.md }}>
-          {[
-            { label: 'Tastings', value: insights.totalTastings || tastings.length },
-            { label: 'Whiskies', value: insights.totalWhiskies || '—' },
-          ].map((s, i) => (
-            <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 12, padding: SP.md, textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: th.gold }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: th.faint }}>{s.label}</div>
+      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{hasOwnTastings && !isMember ? t.historyOwnTitle : t.entHistory}</h1>
+
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.historySearchPH} data-testid="input-apple-history-search" style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.md }} />
+
+      {hasOwnTastings && (
+        <div style={{ marginBottom: SP.lg }}>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', color: th.faint, marginBottom: SP.sm }}>{t.historyOwnTitle} ({filteredOwn.length})</div>
+          {filteredOwn.map((tasting, i) => (
+            <div key={tasting.id || i} data-testid={`own-tasting-card-${tasting.id}`} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${th.border}`, gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{tasting.name || tasting.title}</div>
+                <div style={{ fontSize: 12, color: th.faint }}>{tasting.date ? new Date(tasting.date).toLocaleDateString('de') : ''}{tasting.location ? ` · ${tasting.location}` : ''}</div>
+              </div>
+              <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: tasting.status === 'open' ? `${th.green}20` : th.bgCard, color: tasting.status === 'open' ? th.green : th.faint }}>{tasting.status}</span>
             </div>
           ))}
         </div>
       )}
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.entHistSearch} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.md }} />
-      {filtered.map((tasting, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${th.border}`, gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{tasting.name}</div>
-            <div style={{ fontSize: 12, color: th.faint }}>{tasting.date ? new Date(tasting.date).toLocaleDateString('de') : ''}{tasting.location ? ` · ${tasting.location}` : ''}</div>
-          </div>
-          {tasting.avgScore && <span style={{ fontSize: 16, fontWeight: 700, color: th.gold }}>{Math.round(tasting.avgScore)}</span>}
+
+      {isMember && (
+        <div>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', color: th.faint, marginBottom: SP.sm }}>{t.entHistory} ({filteredHist.length})</div>
+          {insights && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.md }}>
+              {[
+                { label: 'Tastings', value: insights.totalTastings || tastings.length },
+                { label: 'Whiskies', value: insights.totalWhiskies || '—' },
+              ].map((s, i) => (
+                <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 12, padding: SP.md, textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: th.gold }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: th.faint }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {filteredHist.map((tasting, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${th.border}`, gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{tasting.name}</div>
+                <div style={{ fontSize: 12, color: th.faint }}>{tasting.date ? new Date(tasting.date).toLocaleDateString('de') : ''}{tasting.location ? ` · ${tasting.location}` : ''}</div>
+              </div>
+              {tasting.avgScore && <span style={{ fontSize: 16, fontWeight: 700, color: th.gold }}>{Math.round(tasting.avgScore)}</span>}
+            </div>
+          ))}
         </div>
-      ))}
-      {isMember === null && <div style={{ display: 'flex', justifyContent: 'center', padding: SP.xl }}><Icon.Spinner color={th.gold} size={28} /></div>}
+      )}
     </div>
   )
 }

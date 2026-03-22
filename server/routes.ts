@@ -12353,21 +12353,30 @@ Important rules:
 
   app.get("/api/historical/tastings", async (req: Request, res: Response) => {
     try {
-      const { isAdmin, communityIds } = await getRequesterInfo(req);
+      const { isAdmin, communityIds, participantId } = await getRequesterInfo(req);
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       const search = req.query.search as string | undefined;
       const enriched = req.query.enriched === "true";
+      const includeOwn = req.query.includeOwn === "true";
 
       const accessible = await storage.getAccessibleHistoricalTastingIds(communityIds, isAdmin);
       const tastingIds = accessible === "all" ? undefined : accessible;
 
+      let ownTastings: any[] | undefined;
+      if (includeOwn && participantId) {
+        const userTastings = await storage.getTastingsForParticipant(participantId);
+        ownTastings = userTastings
+          .filter((t: any) => !t.isTestData)
+          .sort((a: any, b: any) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+      }
+
       if (enriched) {
         const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search, tastingIds });
-        return res.json(result);
+        return res.json({ ...result, ...(ownTastings !== undefined ? { ownTastings } : {}) });
       }
       const result = await storage.getHistoricalTastings({ limit, offset, search, tastingIds });
-      res.json(result);
+      res.json({ ...result, ...(ownTastings !== undefined ? { ownTastings } : {}) });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

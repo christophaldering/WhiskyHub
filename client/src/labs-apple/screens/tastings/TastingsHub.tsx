@@ -185,8 +185,108 @@ interface HubProps {
   session: any
 }
 
+const TastingHistoryView: React.FC<{ th: ThemeTokens; t: Translations; tastings: any[]; onBack: () => void; session: any; onResults?: (id: string) => void; onTastingDetail?: (id: string, isHost: boolean) => void }> = ({ th, t, tastings, onBack, session, onResults, onTastingDetail }) => {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+
+  const filtered = tastings.filter(tasting => {
+    if (search) {
+      const name = (tasting.name || tasting.title || '').toLowerCase()
+      if (!name.includes(search.toLowerCase())) return false
+    }
+    if (statusFilter === 'open' && tasting.status !== 'open') return false
+    if (statusFilter === 'closed' && !['closed', 'reveal', 'archived'].includes(tasting.status)) return false
+    return true
+  }).sort((a, b) => {
+    const da = new Date(a.date || a.createdAt || 0).getTime()
+    const db = new Date(b.date || b.createdAt || 0).getTime()
+    return db - da
+  })
+
+  const filters = [
+    { id: 'all' as const, label: t.historyStatusAll },
+    { id: 'open' as const, label: t.historyStatusOpen },
+    { id: 'closed' as const, label: t.historyStatusClosed },
+  ]
+
+  return (
+    <div style={{ padding: SP.md, paddingBottom: 80 }}>
+      <button onClick={onBack} data-testid="button-back-history" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}>
+        <Icon.Back color={th.muted} size={18} />{t.back}
+      </button>
+      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }} data-testid="text-history-title">{t.historyOwnTitle}</h1>
+      <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.md}px` }}>{t.historyOwnSub}</p>
+
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={t.historySearchPH}
+        data-testid="input-history-search"
+        style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }}
+      />
+
+      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md }}>
+        {filters.map(f => (
+          <button key={f.id} onClick={() => setStatusFilter(f.id)} data-testid={`filter-status-${f.id}`} style={{
+            height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer',
+            background: statusFilter === f.id ? th.gold : th.bgCard,
+            color: statusFilter === f.id ? '#1a0f00' : th.muted,
+            fontSize: 12, fontWeight: statusFilter === f.id ? 700 : 400,
+          }}>{f.label}</button>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 12, color: th.muted, marginBottom: SP.sm }}>{filtered.length} Tastings</div>
+
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: SP.xl }} data-testid="text-history-empty">
+          <Icon.History color={th.faint} size={36} />
+          <div style={{ fontSize: 14, color: th.muted, marginTop: SP.sm }}>
+            {search ? 'Keine Ergebnisse.' : 'Noch keine Tastings.'}
+          </div>
+        </div>
+      ) : (
+        filtered.map((tasting, i) => {
+          const isHost = tasting.hostId === session?.id
+          const canViewResults = ['closed', 'archived', 'reveal'].includes(tasting.status)
+          const isOpen = tasting.status === 'open'
+          const isClickable = canViewResults || isOpen
+          const handleClick = () => {
+            if (canViewResults && onResults) onResults(tasting.id)
+            else if (isOpen && onTastingDetail) onTastingDetail(tasting.id, isHost)
+          }
+          return (
+            <button key={tasting.id || i} data-testid={`history-card-${tasting.id}`} onClick={isClickable ? handleClick : undefined} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${th.border}`, gap: 10, width: '100%', background: 'none', border: 'none', borderBottomStyle: 'solid', borderBottomWidth: 1, borderBottomColor: th.border, cursor: isClickable ? 'pointer' : 'default', textAlign: 'left', color: th.text }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{tasting.name || tasting.title}</div>
+                <div style={{ fontSize: 12, color: th.faint }}>
+                  {tasting.date ? new Date(tasting.date).toLocaleDateString('de') : ''}
+                  {tasting.location ? ` · ${tasting.location}` : ''}
+                  {isHost ? ' · Host' : ''}
+                </div>
+              </div>
+              {canViewResults ? (
+                <span style={{ fontSize: 12, color: th.gold, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {t.resultsTitle} <Icon.ChevronRight color={th.gold} size={14} />
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 10,
+                  background: tasting.status === 'open' ? `${th.green}20` : th.bgCard,
+                  color: tasting.status === 'open' ? th.green : th.faint,
+                }}>{tasting.status}</span>
+              )}
+            </button>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
 export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost, onHostDashboard, onTastingDetail, onCockpit, onPrintSheets, onPaperScan, onResults, session }) => {
-  const [recentTastings, setRecent] = useState<any[]>([])
+  const [allTastings, setAllTastings] = useState<any[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const [detailId, setDetailId]   = useState<string | null>(null)
   const [recapId, setRecapId]     = useState<string | null>(null)
   const [paperScanId, setPaperScanId] = useState<string | null>(null)
@@ -195,8 +295,10 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
   useEffect(() => {
     if (!session?.id) return
     fetch('/api/tastings', { headers: { 'x-participant-id': session.id } })
-      .then(r => r.json()).then(data => setRecent((data || []).slice(0, 3))).catch(() => {})
+      .then(r => r.json()).then(data => setAllTastings(data || [])).catch(() => {})
   }, [session?.id])
+
+  const recentTastings = allTastings.slice(0, 3)
 
   const greeting = (() => {
     const h = new Date().getHours()
@@ -210,6 +312,10 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
     { id: 'solo', icon: <Icon.Solo color={th.phases.palate.accent} size={32} />, label: t.hubSolo, desc: t.hubSoloDesc, phaseId: 'palate' as const, action: onSolo },
     { id: 'host', icon: <Icon.Host color={th.phases.finish.accent} size={32} />, label: t.hubHost, desc: t.hubHostDesc, phaseId: 'finish' as const, action: onHost },
   ]
+
+  if (showHistory) {
+    return <TastingHistoryView th={th} t={t} tastings={allTastings} onBack={() => setShowHistory(false)} session={session} onResults={onResults} onTastingDetail={onTastingDetail} />
+  }
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
@@ -249,7 +355,14 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
         {/* Recent */}
         {recentTastings.length > 0 && (
           <div>
-            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', color: th.faint, marginBottom: SP.sm }}>{t.hubRecent}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: SP.sm }}>
+              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', color: th.faint }}>{t.hubRecent}</div>
+              {allTastings.length > 3 && (
+                <button onClick={() => setShowHistory(true)} data-testid="button-show-all-tastings" style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: th.gold, fontSize: 13, fontWeight: 600, padding: 0, fontFamily: 'DM Sans, sans-serif',
+                }}>{t.historyShowAll} ({allTastings.length})</button>
+              )}
+            </div>
             {recentTastings.map((tasting, i) => {
               const canViewResults = ['closed', 'archived', 'reveal'].includes(tasting.status)
               const isOpen = tasting.status === 'open'
@@ -284,6 +397,12 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
                 </button>
               )
             })}
+            {allTastings.length > 3 && (
+              <button onClick={() => setShowHistory(true)} data-testid="button-show-all-tastings-bottom" style={{
+                width: '100%', marginTop: SP.sm, padding: '10px 0', background: 'none', border: `1px solid ${th.border}`, borderRadius: 12, cursor: 'pointer',
+                color: th.gold, fontSize: 14, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+              }}>{t.historyShowAll}</button>
+            )}
           </div>
         )}
       </div>
