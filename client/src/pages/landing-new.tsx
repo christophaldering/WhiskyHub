@@ -380,6 +380,30 @@ function HeroSection() {
 
           <JoinCodeInput />
 
+          <Link
+            href="/labs-apple"
+            data-testid="cta-hero-apple"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 24px",
+              background: "transparent",
+              color: v.muted,
+              fontFamily: font.body,
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: 50,
+              textDecoration: "none",
+              border: `1px solid ${v.border}`,
+              transition: "color 0.2s, border-color 0.2s",
+              letterSpacing: "0.01em",
+            }}
+          >
+            Apple Variante
+            <ChevronRight style={{ width: 14, height: 14 }} />
+          </Link>
+
         </div>
       </FadeUp>
 
@@ -1153,6 +1177,30 @@ function CTASection() {
             </Link>
 
             <JoinCodeInput />
+
+            <Link
+              href="/labs-apple"
+              data-testid="cta-final-apple"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 24px",
+                background: "transparent",
+                color: v.muted,
+                fontFamily: font.body,
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 50,
+                textDecoration: "none",
+                border: `1px solid ${v.border}`,
+                transition: "color 0.2s, border-color 0.2s",
+                letterSpacing: "0.01em",
+              }}
+            >
+              Apple Variante
+              <ChevronRight style={{ width: 14, height: 14 }} />
+            </Link>
           </div>
         </FadeUp>
       </div>
