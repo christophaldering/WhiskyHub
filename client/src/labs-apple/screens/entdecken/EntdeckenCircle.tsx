@@ -6,9 +6,6 @@ import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import * as Icon from '../../icons/Icons'
 import { BottlersScreen } from './Bottlers'
-import { VocabularyScreen } from './Vocabulary'
-import { ResearchScreen } from './Research'
-import { MakingOf } from './MakingOf'
 import { Vocabulary, Research, MakingOf } from '../misc/MiscScreens'
 
 // ── Tasting Guide ─────────────────────────────────────────────────────────
