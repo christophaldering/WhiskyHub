@@ -1,0 +1,464 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — SOLO FLOW: NEUER CAPTURE-SCREEN
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Der aktuelle SoloCaptureScreen zeigt 4 gleichwertige Optionen auf einmal:
+  Foto · Manuell · Barcode · Direkt zur Bewertung
+
+Das überfordert Nutzer. Außerdem fehlt die naheliegendste Option komplett:
+"Aus meiner Sammlung wählen" — obwohl Journal und Whiskybase-Collection
+bereits als vollständige API-Endpunkte vorhanden sind.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN, KEIN KOMPROMISS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS bestehende Dateien in client/src/labs/ löschen oder verändern
+❌ NIEMALS SoloFlow.tsx, SoloWhiskyForm.tsx, SoloDoneScreen.tsx verändern
+❌ NIEMALS RatingFlow.tsx verändern
+❌ NIEMALS package.json Dependencies hinzufügen
+❌ NIEMALS Emojis verwenden — ausschließlich SVG-Icons aus der Icon-Library
+✅ NUR client/src/labs/pages/LabsSolo.tsx ersetzen (capture-Ansicht)
+✅ NUR neue i18n-Keys ergänzen (append-only, niemals bestehende ändern)
+✅ Alle bestehenden API-Endpunkte per fetch() nutzen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN-STANDARDS — ALLE UNUMGÄNGLICH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • KEINE Emojis — Lucide Icons (bereits importiert in LabsSolo.tsx)
+  • Alle Touch-Targets: minHeight 44px — ausnahmslos
+  • Primär-Button: volle Breite, padding 24px vertikal
+  • Sekundär-Button: volle Breite, padding 14px vertikal
+  • Text-Links: 13px, var(--labs-text-muted), kein Button-Styling
+  • Playfair Display für Seitentitel
+  • DM Sans für alle UI-Texte
+  • Cormorant Garamond für Whisky-Namen in der Suchliste
+  • Abstände: ausschließlich Vielfache von 8px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WAS GEBAUT WIRD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Der capture-View in LabsSolo.tsx wird neu strukturiert.
+Der Rest des Solo-Flows (Editor, RatingFlow, Done) bleibt vollständig
+unverändert. Nur der erste Screen ändert sich.
+
+NEUE STRUKTUR — 3 EBENEN:
+
+  EBENE 1: PRIMÄRE OPTION (ein großer Block, volle Breite)
+  ──────────────────────────────────────────────────────
+  "Aus meiner Sammlung" → öffnet CollectionPicker (siehe unten)
+  Icon: Library (Lucide)
+  Subtext: "Journal & Whiskybase-Sammlung durchsuchen"
+  Style: var(--labs-accent-muted) Hintergrund,
+         1px solid var(--labs-accent) Border,
+         borderRadius: var(--labs-radius-lg)
+         color: var(--labs-accent)
+         fontFamily: 'Playfair Display', 17px, fontWeight 600
+
+  EBENE 2: SEKUNDÄRE OPTION (ein mittelgroßer Block, volle Breite)
+  ──────────────────────────────────────────────────────────────────
+  "Flasche fotografieren" → bestehende Kamera-Logik (UNVERÄNDERT)
+  Icon: Camera (Lucide)
+  Subtext: "KI erkennt Whisky automatisch"
+  Style: var(--labs-surface) Hintergrund,
+         1px solid var(--labs-border) Border,
+         borderRadius: var(--labs-radius-lg)
+         color: var(--labs-text)
+         padding: 16px 20px
+
+  EBENE 3: TEXT-LINKS (zentriert, klein, untereinander)
+  ──────────────────────────────────────────────────────
+  "Manuell eingeben" → bestehende Manual-Logik (UNVERÄNDERT)
+  "Direkt zur Bewertung" → bestehende Skip-Logik (UNVERÄNDERT)
+  "Barcode scannen" → bestehende Barcode-Logik (UNVERÄNDERT)
+  Style: 13px, var(--labs-text-muted), keine Border, kein Hintergrund
+         Jeder Link: minHeight 44px, display flex, alignItems center,
+         justifyContent center — für ausreichendes Touch-Target
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 1 (NEU): CollectionPicker-Komponente
+Speicherort: client/src/labs/components/CollectionPicker.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Props:
+  participantId: string
+  onSelect: (whisky: SelectedWhisky) => void
+  onClose: () => void
+
+Interface SelectedWhisky:
+  name: string
+  distillery: string | null
+  region: string | null
+  cask: string | null       (caskType aus Collection, cask aus Journal)
+  age: string | null
+  abv: string | null
+  source: 'journal' | 'collection'
+
+STATE:
+  search: string            — Suchbegriff
+  results: SelectedWhisky[] — kombinierte Ergebnisse
+  loading: boolean
+  error: string | null
+
+DATENQUELLEN (beide gleichzeitig laden beim Mount):
+
+  Quelle A — Journal:
+    GET /api/journal/${participantId}
+    Header: x-participant-id: ${participantId}
+    Response: Array von JournalEntry
+    Mapping:
+      name:       entry.whiskyName
+      distillery: entry.distillery
+      region:     entry.region
+      cask:       entry.caskType
+      age:        entry.age
+      abv:        entry.abv
+      source:     'journal'
+
+  Quelle B — Whiskybase-Sammlung:
+    GET /api/collection/${participantId}
+    Header: x-participant-id: ${participantId}
+    Response: Array von CollectionEntry
+    Mapping:
+      name:       entry.name
+      distillery: entry.distillery || entry.brand
+      region:     null   (Collection hat keine Region)
+      cask:       entry.caskType
+      age:        entry.statedAge
+      abv:        entry.abv
+      source:     'collection'
+
+DEDUPLIZIERUNG:
+  Nach name.toLowerCase().trim() deduplizieren.
+  Bei Duplikat: Journal-Eintrag bevorzugen (hat mehr Metadaten).
+  Alphabetisch nach name sortieren.
+
+FILTER:
+  useMemo auf alle Einträge:
+  Wenn search leer: alle anzeigen (max. 50)
+  Wenn search >= 2 Zeichen:
+    Filter: entry.name.toLowerCase().includes(search.toLowerCase())
+         || entry.distillery?.toLowerCase().includes(search.toLowerCase())
+
+LAYOUT:
+
+  [Overlay: position fixed, inset 0, background rgba(0,0,0,0.6),
+   zIndex 100, onClick → onClose()]
+
+  [Sheet: position fixed, bottom 0, left 0, right 0,
+   background var(--labs-bg), borderRadius 20px 20px 0 0,
+   maxHeight 80vh, display flex, flexDirection column]
+
+    [Header: padding 16px 20px 12px, display flex,
+             alignItems center, justifyContent space-between]
+      Titel: "Meine Sammlung" (16px, Playfair Display, fontWeight 600)
+      Schließen-Button: X Icon, 44×44px Touch-Target
+
+    [Suchfeld: margin 0 16px 12px, position relative]
+      Search-Icon links innen (var(--labs-text-muted), 16px)
+      Input: "Whisky suchen...", 44px height, 16px paddingLeft für Icon,
+             background var(--labs-surface),
+             border 1px solid var(--labs-border),
+             borderRadius var(--labs-radius),
+             fontSize 15px, fontFamily DM Sans
+             autoFocus
+
+    [Trennlinie: 1px solid var(--labs-border)]
+
+    [Liste: flex 1, overflowY auto, padding 0 0 32px]
+
+      Wenn loading:
+        Zentrierter Loader-Spinner (32px, var(--labs-text-muted))
+        Text: "Sammlung wird geladen..." (13px, muted)
+
+      Wenn error:
+        Text: "Sammlung konnte nicht geladen werden." (13px, muted, zentriert)
+
+      Wenn results.length === 0 && !loading:
+        Text: search.length >= 2
+          ? "Keine Treffer für "${search}""
+          : "Noch keine Whiskys in deiner Sammlung."
+        (13px, muted, zentriert, padding 32px)
+
+      Für jeden Eintrag in results:
+        <button onClick={() => onSelect(entry)}
+          style: width 100%, minHeight 64px, padding 12px 20px,
+                 display flex, alignItems center, gap 12px,
+                 background none, border none, cursor pointer,
+                 borderBottom 1px solid var(--labs-border),
+                 textAlign left
+          hover: background var(--labs-surface)>
+
+          Icon-Box: 40×40px, borderRadius 10px,
+            Journal-Einträge: background var(--labs-accent-muted)
+            Collection-Einträge: background var(--labs-surface-elevated)
+            Inhalt: Wine-Icon (Lucide, 18px, var(--labs-accent))
+
+          Textblock:
+            Whisky-Name: 15px, Cormorant Garamond, fontWeight 600,
+                         color var(--labs-text), lineHeight 1.2
+            Zeile 2: Destillerie + Region (wenn vorhanden)
+                     12px, DM Sans, var(--labs-text-muted)
+            Zeile 3: kleines Badge
+              Journal: "Journal" — background var(--labs-accent-muted),
+                       color var(--labs-accent), 10px, padding 1px 6px,
+                       borderRadius 4px
+              Collection: "Sammlung" — background var(--labs-surface-elevated),
+                          color var(--labs-text-muted), 10px,
+                          padding 1px 6px, borderRadius 4px
+
+          ChevronRight-Icon rechts: 16px, var(--labs-text-muted)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 2 (ÄNDERN): client/src/labs/pages/LabsSolo.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR der capture-View wird verändert. Alle anderen Views (ratingFlow, done,
+form, barcode, describe) bleiben byte-identisch.
+
+NEUE IMPORTS ergänzen (append-only):
+  import { CollectionPicker } from "@/labs/components/CollectionPicker";
+  import { Library } from "lucide-react";
+
+NEUER STATE ergänzen:
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+
+CAPTURE-VIEW KOMPLETT ERSETZEN durch folgende Struktur:
+
+  <div style={{ padding: "32px 20px 80px", maxWidth: 440, margin: "0 auto" }}>
+
+    {/* Back */}
+    <button onClick={goBack} style={{ display: "flex", alignItems: "center",
+      gap: 4, background: "none", border: "none", cursor: "pointer",
+      color: "var(--labs-text-muted)", fontSize: 14, minHeight: 44,
+      padding: "0 0 8px", marginLeft: -4 }}>
+      <ChevronLeft size={18} /> {t("common.back", "Zurück")}
+    </button>
+
+    {/* Titel */}
+    <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700,
+      color: "var(--labs-text)", marginBottom: 8 }}>
+      {t("m2.solo.title", "Neuen Dram erfassen")}
+    </h1>
+    <p style={{ fontSize: 14, color: "var(--labs-text-muted)",
+      marginBottom: 32, lineHeight: 1.5 }}>
+      {t("m2.solo.captureSubtitle2", "Wie möchtest du den Whisky erfassen?")}
+    </p>
+
+    {/* EBENE 1: Aus Sammlung */}
+    <button
+      onClick={() => setShowCollectionPicker(true)}
+      data-testid="button-capture-collection"
+      style={{
+        width: "100%", padding: "20px", marginBottom: 12,
+        borderRadius: "var(--labs-radius-lg)",
+        background: "var(--labs-accent-muted)",
+        border: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+        cursor: "pointer", display: "flex", alignItems: "center",
+        gap: 16, textAlign: "left",
+      }}>
+      <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+        background: "color-mix(in srgb, var(--labs-accent) 20%, transparent)",
+        display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Library size={22} color="var(--labs-accent)" />
+      </div>
+      <div>
+        <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', serif",
+          color: "var(--labs-accent)", marginBottom: 3 }}>
+          {t("m2.solo.captureCollection", "Aus meiner Sammlung")}
+        </div>
+        <div style={{ fontSize: 12, color: "var(--labs-accent)", opacity: 0.7 }}>
+          {t("m2.solo.captureCollectionSub", "Journal & Whiskybase-Sammlung durchsuchen")}
+        </div>
+      </div>
+    </button>
+
+    {/* EBENE 2: Flasche fotografieren */}
+    <input ref={cameraInputRef} type="file" accept="image/*"
+      capture="environment" style={{ display: "none" }}
+      onChange={handleCameraCapture}
+      data-testid="input-camera" />
+    <button
+      onClick={() => cameraInputRef.current?.click()}
+      data-testid="button-capture-photo"
+      style={{
+        width: "100%", padding: "16px 20px", marginBottom: 24,
+        borderRadius: "var(--labs-radius-lg)",
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
+        cursor: "pointer", display: "flex", alignItems: "center",
+        gap: 16, textAlign: "left",
+      }}>
+      <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+        background: "var(--labs-surface-elevated)",
+        display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Camera size={22} color="var(--labs-text-muted)" />
+      </div>
+      <div>
+        <div style={{ fontSize: 15, fontWeight: 600,
+          color: "var(--labs-text)", marginBottom: 3 }}>
+          {t("m2.solo.capturePhotoTitle", "Flasche fotografieren")}
+        </div>
+        <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+          {t("m2.solo.capturePhotoDesc", "KI erkennt Whisky automatisch")}
+        </div>
+      </div>
+    </button>
+
+    {/* EBENE 3: Text-Links */}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+      <button onClick={handleManualEntry}
+        data-testid="button-capture-manual"
+        style={{ background: "none", border: "none", cursor: "pointer",
+          color: "var(--labs-text-muted)", fontSize: 13,
+          minHeight: 44, display: "flex", alignItems: "center",
+          justifyContent: "center", width: "100%" }}>
+        {t("m2.solo.captureManual", "Manuell eingeben")}
+      </button>
+      <button onClick={handleSkip}
+        data-testid="button-capture-skip"
+        style={{ background: "none", border: "none", cursor: "pointer",
+          color: "var(--labs-text-muted)", fontSize: 13,
+          minHeight: 44, display: "flex", alignItems: "center",
+          justifyContent: "center", width: "100%" }}>
+        {t("m2.solo.captureSkip", "Direkt zur Bewertung")}
+      </button>
+      <button
+        onClick={() => { setSoloView("ratingFlow"); setSheetView("barcode"); }}
+        data-testid="button-capture-barcode"
+        style={{ background: "none", border: "none", cursor: "pointer",
+          color: "var(--labs-text-muted)", fontSize: 13,
+          minHeight: 44, display: "flex", alignItems: "center",
+          justifyContent: "center", width: "100%", opacity: 0.6 }}>
+        {t("m2.solo.captureBarcode", "Barcode scannen")}
+      </button>
+    </div>
+
+    {/* CollectionPicker Overlay */}
+    {showCollectionPicker && (
+      <CollectionPicker
+        participantId={pid || ""}
+        onSelect={(whisky) => {
+          setShowCollectionPicker(false);
+          // Whisky-Daten in den bestehenden Editor-Flow übertragen:
+          setIdentifiedWhisky({
+            whiskyName: whisky.name,
+            distillery: whisky.distillery || "",
+            region: whisky.region || "",
+            caskInfluence: whisky.cask || "",
+            age: whisky.age || "",
+            abv: whisky.abv || "",
+          });
+          setRatingFlowStep(0);
+          setSoloView("ratingFlow");
+          setSheetView("describe");  // öffnet den Editor mit vorausgefüllten Feldern
+        }}
+        onClose={() => setShowCollectionPicker(false)}
+      />
+    )}
+
+  </div>
+
+WICHTIG: Alle bestehenden Handler (handleCameraCapture, handleManualEntry,
+handleSkip, handleSkipToRating etc.) bleiben exakt wie sie sind.
+Nur der JSX-Return des capture-Views wird wie oben beschrieben ersetzt.
+Kein Handler wird gelöscht oder verändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only in client/src/lib/i18n.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (im en-Block ergänzen):
+  "m2.solo.captureSubtitle2":       "How would you like to log this dram?"
+  "m2.solo.captureCollection":      "From my collection"
+  "m2.solo.captureCollectionSub":   "Search journal & Whiskybase collection"
+  "m2.solo.captureManual":          "Enter manually"
+  "m2.solo.captureSkip":            "Go straight to rating"
+  "collection.title":               "My Collection"
+  "collection.search":              "Search whisky..."
+  "collection.loading":             "Loading collection..."
+  "collection.error":               "Collection could not be loaded."
+  "collection.empty":               "No whiskies in your collection yet."
+  "collection.noResults":           "No results for \"{search}\""
+  "collection.badgeJournal":        "Journal"
+  "collection.badgeCollection":     "Collection"
+
+DE (im de-Block ergänzen):
+  "m2.solo.captureSubtitle2":       "Wie möchtest du diesen Dram erfassen?"
+  "m2.solo.captureCollection":      "Aus meiner Sammlung"
+  "m2.solo.captureCollectionSub":   "Journal & Whiskybase-Sammlung durchsuchen"
+  "m2.solo.captureManual":          "Manuell eingeben"
+  "m2.solo.captureSkip":            "Direkt zur Bewertung"
+  "collection.title":               "Meine Sammlung"
+  "collection.search":              "Whisky suchen..."
+  "collection.loading":             "Sammlung wird geladen..."
+  "collection.error":               "Sammlung konnte nicht geladen werden."
+  "collection.empty":               "Noch keine Whiskys in deiner Sammlung."
+  "collection.noResults":           "Keine Treffer für \"{search}\""
+  "collection.badgeJournal":        "Journal"
+  "collection.badgeCollection":     "Sammlung"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API-ENDPUNKTE (bereits vorhanden — NICHT neu bauen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/journal/${participantId}
+  Header: x-participant-id: ${participantId}
+  → Array von Journal-Einträgen
+
+GET /api/collection/${participantId}
+  Header: x-participant-id: ${participantId}
+  → Array von Whiskybase-Collection-Einträgen
+
+Beide Endpunkte sind produktiv in Betrieb. Kein neuer Server-Code nötig.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRÜFUNG NACH IMPLEMENTIERUNG — ALLE PUNKTE MÜSSEN ERFÜLLT SEIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Capture-Screen:
+  [ ] Genau 2 Haupt-Optionen sichtbar (Sammlung + Foto)
+  [ ] Genau 3 Text-Links sichtbar (Manuell / Direkt / Barcode)
+  [ ] Kein einziges Emoji
+  [ ] Alle Touch-Targets mindestens 44px Höhe
+  [ ] Kein Barcode-Button als Karte/Button — nur als Text-Link
+
+CollectionPicker:
+  [ ] Öffnet als Bottom-Sheet über Overlay
+  [ ] Lädt Journal UND Collection parallel beim Mount
+  [ ] Dedupliziert nach Name (Journal bevorzugt)
+  [ ] Suchfeld filtert live ab 2 Zeichen
+  [ ] Leerer Zustand zeigt sinnvollen Text
+  [ ] Auswahl füllt bestehenden Editor-Flow vor
+  [ ] Schließen per X-Button UND per Overlay-Tap
+  [ ] Kein einziges Emoji
+
+Flow-Integrität (KRITISCH):
+  [ ] Kamera-Logik funktioniert exakt wie vorher
+  [ ] Manuell-Eingabe funktioniert exakt wie vorher
+  [ ] Barcode-Scan funktioniert exakt wie vorher
+  [ ] Direkt-zur-Bewertung funktioniert exakt wie vorher
+  [ ] RatingFlow unverändert
+  [ ] Journal-Speicherung nach Bewertung unverändert
+  [ ] /labs/tastings und alle anderen Labs-Routen noch erreichbar
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════
