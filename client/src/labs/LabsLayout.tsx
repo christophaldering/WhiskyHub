@@ -536,6 +536,30 @@ function isPublicLabsRoute(path: string): boolean {
   );
 }
 
+function LabsProfileAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => { setImgFailed(false); }, [photoUrl]);
+
+  if (photoUrl && !imgFailed) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name}
+        onError={() => setImgFailed(true)}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: '50%',
+          objectFit: 'cover',
+        }}
+      />
+    );
+  }
+
+  return <>{name.charAt(0).toUpperCase()}</>;
+}
+
 function LabsAuthDialog() {
   const { authDialogOpen, closeAuthDialog } = useAppStore();
   return (
@@ -558,7 +582,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   ], [t, i18n.language]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, openAuthDialog } = useAppStore();
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
@@ -739,31 +763,35 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               EN
             </button>
           </div>
-          {currentParticipant && (
-            <button
-              onClick={() => setProfileOpen(true)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(196,160,80,0.2)',
-                border: '1.5px solid rgba(196,160,80,0.5)',
-                color: '#C4A050',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                flexShrink: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginLeft: 8,
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-              data-testid="labs-profile-btn"
-            >
-              {currentParticipant.name.charAt(0).toUpperCase()}
-            </button>
-          )}
+          <button
+            onClick={() => currentParticipant ? setProfileOpen(true) : openAuthDialog()}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'rgba(196,160,80,0.2)',
+              border: '1.5px solid rgba(196,160,80,0.5)',
+              color: '#C4A050',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginLeft: 8,
+              fontFamily: 'DM Sans, sans-serif',
+              overflow: 'hidden',
+              padding: 0,
+            }}
+            data-testid="labs-profile-btn"
+          >
+            {currentParticipant ? (
+              <LabsProfileAvatar name={currentParticipant.name} photoUrl={currentParticipant.photoUrl} />
+            ) : (
+              <User className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </header>
 
