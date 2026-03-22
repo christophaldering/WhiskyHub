@@ -48,6 +48,7 @@ const SoloCaptureScreen: React.FC<{
   const [collectionError, setCollectionError] = useState(false)
   const [collectionSearch, setCollectionSearch] = useState('')
   const [collectionStatusFilter, setCollectionStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+  const [pendingCollectionItem, setPendingCollectionItem] = useState<CollectionItem | null>(null)
 
   const handleFile = async (file: File) => {
     setIdentifying(true); setIdentifyError(false)
@@ -142,6 +143,7 @@ const SoloCaptureScreen: React.FC<{
 
   const openCollection = async () => {
     setOverlay('collection')
+    setPendingCollectionItem(null)
     setCollectionSearch(''); setCollectionStatusFilter('all'); setCollectionError(false)
     setCollectionLoading(true)
     try {
@@ -153,6 +155,12 @@ const SoloCaptureScreen: React.FC<{
   }
 
   const handleSelectCollectionItem = (item: CollectionItem) => {
+    setPendingCollectionItem(item)
+  }
+
+  const handleConfirmCollectionItem = () => {
+    if (!pendingCollectionItem) return
+    const item = pendingCollectionItem
     const fullName = item.brand && item.brand !== item.name ? `${item.brand} ${item.name}` : (item.name || '')
     onCapture({
       name: fullName, distillery: item.distillery || '',
@@ -161,7 +169,12 @@ const SoloCaptureScreen: React.FC<{
       abv: item.abv ? Number(item.abv) : undefined,
       blind: false,
     })
+    setPendingCollectionItem(null)
     setOverlay('none')
+  }
+
+  const handleCancelCollectionItem = () => {
+    setPendingCollectionItem(null)
   }
 
   const filteredCollectionItems = collectionItems.filter(item => {
@@ -372,6 +385,58 @@ const SoloCaptureScreen: React.FC<{
             </div>
           )}
         </div>
+      )}
+
+      {overlay === 'collection' && pendingCollectionItem && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 51 }} onClick={handleCancelCollectionItem} />
+          <div style={{ ...sheetStyle, zIndex: 52, maxHeight: '60dvh', padding: `20px ${SP.md}px 40px` }}>
+            <div style={sheetHandle} />
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: th.text, margin: '0 0 16px', textAlign: 'center' }} data-testid="text-collection-confirm-title">{t.soloCollectionConfirmTitle}</h3>
+
+            <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: th.text, marginBottom: 4, fontFamily: 'Cormorant Garamond, serif' }} data-testid="text-collection-confirm-name">
+                {pendingCollectionItem.brand && pendingCollectionItem.brand !== pendingCollectionItem.name ? `${pendingCollectionItem.brand} ${pendingCollectionItem.name}` : pendingCollectionItem.name}
+              </div>
+              {pendingCollectionItem.distillery && (
+                <div style={{ fontSize: 13, color: th.muted, marginBottom: 8 }} data-testid="text-collection-confirm-distillery">{pendingCollectionItem.distillery}</div>
+              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                {pendingCollectionItem.statedAge && (
+                  <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 8, background: `${th.gold}15`, color: th.gold, fontWeight: 500 }} data-testid="text-collection-confirm-age">
+                    {t.soloCollectionConfirmAge}: {pendingCollectionItem.statedAge}y
+                  </span>
+                )}
+                {pendingCollectionItem.abv && (
+                  <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 8, background: `${th.gold}15`, color: th.gold, fontWeight: 500 }} data-testid="text-collection-confirm-abv">
+                    ABV: {pendingCollectionItem.abv}%
+                  </span>
+                )}
+                {pendingCollectionItem.status && (
+                  <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 8, background: pendingCollectionItem.status === 'open' ? `${th.green}20` : `${th.muted}20`, color: pendingCollectionItem.status === 'open' ? th.green : th.muted, fontWeight: 500 }} data-testid="text-collection-confirm-status">
+                    {t.soloCollectionConfirmStatus}: {pendingCollectionItem.status === 'open' ? t.soloCollectionOpen : t.soloCollectionClosed}
+                  </span>
+                )}
+                {pendingCollectionItem.caskType && (
+                  <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 8, background: `${th.gold}15`, color: th.gold, fontWeight: 500 }} data-testid="text-collection-confirm-cask">
+                    {pendingCollectionItem.caskType}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button data-testid="button-collection-confirm-cancel" onClick={handleCancelCollectionItem}
+                style={{ flex: 1, height: 48, borderRadius: 14, border: `1px solid ${th.border}`, background: 'none', color: th.muted, fontSize: 15, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+                {t.soloCollectionConfirmCancel}
+              </button>
+              <button data-testid="button-collection-confirm-apply" onClick={handleConfirmCollectionItem}
+                style={{ flex: 1, height: 48, borderRadius: 14, border: 'none', background: th.gold, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+                {t.soloCollectionConfirmApply}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

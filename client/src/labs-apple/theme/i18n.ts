@@ -46,6 +46,8 @@ export interface Translations {
   soloCollectionSearch: string; soloCollectionAll: string; soloCollectionOpen: string; soloCollectionClosed: string
   soloCollectionLoading: string; soloCollectionEmpty: string; soloCollectionError: string
   soloCollectionBottles: string; soloCollectionNoResults: string
+  soloCollectionConfirmTitle: string; soloCollectionConfirmApply: string; soloCollectionConfirmCancel: string
+  soloCollectionConfirmAge: string; soloCollectionConfirmStatus: string
   soloName: string; soloNamePH: string
   soloRegion: string; soloRegionPH: string
   soloCask: string; soloCaskPH: string
@@ -233,6 +235,8 @@ const DE: Translations = {
   soloCollectionSearch: 'Sammlung durchsuchen...', soloCollectionAll: 'Alle', soloCollectionOpen: 'Offen', soloCollectionClosed: 'Getrunken',
   soloCollectionLoading: 'Sammlung wird geladen...', soloCollectionEmpty: 'Keine Flaschen in der Sammlung.', soloCollectionError: 'Sammlung konnte nicht geladen werden.',
   soloCollectionBottles: 'Flaschen', soloCollectionNoResults: 'Keine Treffer.',
+  soloCollectionConfirmTitle: 'Whisky übernehmen?', soloCollectionConfirmApply: 'Übernehmen', soloCollectionConfirmCancel: 'Abbrechen',
+  soloCollectionConfirmAge: 'Alter', soloCollectionConfirmStatus: 'Status',
   soloName: 'Whisky-Name', soloNamePH: 'z.B. Glenfarclas 15',
   soloRegion: 'Region', soloRegionPH: 'z.B. Speyside',
   soloCask: 'Fasslagerung', soloCaskPH: 'z.B. Sherry',
@@ -431,6 +435,8 @@ const EN: Translations = {
   soloCollectionSearch: 'Search collection...', soloCollectionAll: 'All', soloCollectionOpen: 'Open', soloCollectionClosed: 'Closed',
   soloCollectionLoading: 'Loading collection...', soloCollectionEmpty: 'No bottles in your collection.', soloCollectionError: 'Failed to load collection.',
   soloCollectionBottles: 'bottles', soloCollectionNoResults: 'No matches found.',
+  soloCollectionConfirmTitle: 'Use this whisky?', soloCollectionConfirmApply: 'Apply', soloCollectionConfirmCancel: 'Cancel',
+  soloCollectionConfirmAge: 'Age', soloCollectionConfirmStatus: 'Status',
   soloName: 'Whisky name', soloNamePH: 'e.g. Glenfarclas 15',
   soloRegion: 'Region', soloRegionPH: 'e.g. Speyside',
   soloCask: 'Cask type', soloCaskPH: 'e.g. Sherry',
