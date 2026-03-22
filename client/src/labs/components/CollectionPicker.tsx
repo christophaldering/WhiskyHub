@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { journalApi, collectionApi } from "@/lib/api";
-import { Search, X, Wine, ChevronRight, Loader2 } from "lucide-react";
+import { Search, X, Wine, ChevronRight, Loader2, LogIn } from "lucide-react";
 import type { JournalEntry, WhiskybaseCollectionItem } from "@shared/schema";
 
 export interface SelectedWhisky {
@@ -27,7 +27,14 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isAuthenticated = Boolean(participantId);
+
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
@@ -96,7 +103,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
 
     load();
     return () => { cancelled = true; };
-  }, [participantId, t]);
+  }, [participantId, isAuthenticated, t]);
 
   const results = useMemo(() => {
     if (search.length < 2) return allItems.slice(0, 50);
@@ -175,6 +182,55 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
           </button>
         </div>
 
+        {!isAuthenticated ? (
+          <div
+            style={{
+              padding: "40px 20px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+            }}
+            data-testid="collection-picker-unauthenticated"
+          >
+            <LogIn
+              size={32}
+              style={{ color: "var(--labs-text-muted)" }}
+            />
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--labs-text-muted)",
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              {t("collection.pickerSignInPrompt", "Sign in to see your collection.")}
+            </p>
+            <button
+              onClick={() => {
+                onClose();
+                window.location.href = "/labs/onboarding";
+              }}
+              style={{
+                padding: "10px 24px",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "'DM Sans', sans-serif",
+                background: "var(--labs-accent)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "var(--labs-radius)",
+                cursor: "pointer",
+              }}
+              data-testid="button-collection-picker-sign-in"
+            >
+              {t("collection.pickerSignInButton", "Sign in")}
+            </button>
+          </div>
+        ) : (
+          <>
         <div style={{ margin: "0 16px 12px", position: "relative" }}>
           <Search
             style={{
@@ -372,6 +428,8 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
             ))
           )}
         </div>
+          </>
+        )}
       </div>
     </>
   );
