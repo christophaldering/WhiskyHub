@@ -185,6 +185,34 @@ async function backfillNormalizedScores() {
   }
 }
 
+async function seedDistilleries() {
+  try {
+    const count = await storage.getDistilleryCount();
+    if (count > 0) {
+      log(`Distillery seed: ${count} distilleries already present, skipping`, "seed");
+      return;
+    }
+
+    const { distilleries: staticData } = await import("../client/src/data/distilleries");
+    const seedData = staticData.map((d: { name: string; region: string; country: string; founded: number; description: string; feature: string; status?: string; lat: number; lng: number }) => ({
+      name: d.name,
+      region: d.region,
+      country: d.country,
+      founded: d.founded ?? null,
+      description: d.description ?? null,
+      feature: d.feature ?? null,
+      status: d.status ?? "active",
+      lat: d.lat ?? null,
+      lng: d.lng ?? null,
+    }));
+
+    await storage.createDistilleries(seedData);
+    log(`Distillery seed: inserted ${seedData.length} distilleries`, "seed");
+  } catch (e) {
+    log(`Distillery seed failed: ${(e as Error).message}`, "seed");
+  }
+}
+
 const LOADING_HTML =
   "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
   "<meta http-equiv='refresh' content='2'></head>" +
@@ -347,6 +375,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       .catch((e) => log(`Demo seed error: ${(e as Error).message}`, "seed"))
       .then(() => import("./seed-labs-pilot").then(m => m.seedLabsPilotData()))
       .catch((e) => log(`Labs pilot seed error: ${(e as Error).message}`, "seed"))
+      .then(() => seedDistilleries())
+      .catch((e) => log(`Distillery seed error: ${(e as Error).message}`, "seed"))
       .finally(() =>
         backfillNormalizedScores().catch((e) =>
           log(`Backfill error: ${(e as Error).message}`, "seed"),

@@ -13724,5 +13724,124 @@ Rules:
     }
   });
 
+  // ===== DISTILLERIES (Discover + Admin CRUD) =====
+
+  app.get("/api/labs/discover/distilleries", async (_req: Request, res: Response) => {
+    try {
+      const all = await storage.getAllDistilleries();
+      res.json(all);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/distilleries", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const all = await storage.getAllDistilleries();
+      res.json(all);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/distilleries", async (req: Request, res: Response) => {
+    try {
+      const { participantId, name, region, country, founded, description, feature, status, lat, lng } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      if (!name || !region || !country) {
+        return res.status(400).json({ message: "name, region, and country are required" });
+      }
+      const validStatuses = ["active", "closed", "silent"];
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Use: ${validStatuses.join(", ")}` });
+      }
+      const parsedFounded = founded != null ? Number(founded) : null;
+      const parsedLat = lat != null ? Number(lat) : null;
+      const parsedLng = lng != null ? Number(lng) : null;
+      if (parsedFounded !== null && (isNaN(parsedFounded) || parsedFounded < 1000 || parsedFounded > new Date().getFullYear())) {
+        return res.status(400).json({ message: "Founded must be a valid year" });
+      }
+      if (parsedLat !== null && (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90)) {
+        return res.status(400).json({ message: "Latitude must be between -90 and 90" });
+      }
+      if (parsedLng !== null && (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180)) {
+        return res.status(400).json({ message: "Longitude must be between -180 and 180" });
+      }
+      const distillery = await storage.createDistillery({
+        name, region, country,
+        founded: parsedFounded,
+        description: description || null,
+        feature: feature || null,
+        status: status || "active",
+        lat: parsedLat,
+        lng: parsedLng,
+      });
+      res.status(201).json(distillery);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/admin/distilleries/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, name, region, country, founded, description, feature, status, lat, lng } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const validStatuses = ["active", "closed", "silent"];
+      if (status !== undefined && !validStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Use: ${validStatuses.join(", ")}` });
+      }
+      const updates: Partial<{ name: string; region: string; country: string; founded: number | null; description: string | null; feature: string | null; status: string; lat: number | null; lng: number | null }> = {};
+      if (name !== undefined) updates.name = name;
+      if (region !== undefined) updates.region = region;
+      if (country !== undefined) updates.country = country;
+      if (founded !== undefined) {
+        const f = founded != null ? Number(founded) : null;
+        if (f !== null && (isNaN(f) || f < 1000 || f > new Date().getFullYear())) return res.status(400).json({ message: "Founded must be a valid year" });
+        updates.founded = f;
+      }
+      if (description !== undefined) updates.description = description || null;
+      if (feature !== undefined) updates.feature = feature || null;
+      if (status !== undefined) updates.status = status;
+      if (lat !== undefined) {
+        const v = lat != null ? Number(lat) : null;
+        if (v !== null && (isNaN(v) || v < -90 || v > 90)) return res.status(400).json({ message: "Latitude must be between -90 and 90" });
+        updates.lat = v;
+      }
+      if (lng !== undefined) {
+        const v = lng != null ? Number(lng) : null;
+        if (v !== null && (isNaN(v) || v < -180 || v > 180)) return res.status(400).json({ message: "Longitude must be between -180 and 180" });
+        updates.lng = v;
+      }
+      const result = await storage.updateDistillery(req.params.id, updates);
+      if (!result) return res.status(404).json({ message: "Distillery not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/distilleries/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string || req.body?.participantId;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const existing = await storage.getDistillery(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Distillery not found" });
+      await storage.deleteDistillery(req.params.id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

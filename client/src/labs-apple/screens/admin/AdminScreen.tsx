@@ -46,7 +46,7 @@ interface AdminOverview {
 
 interface Props { th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }
 
-type AppleAdminTab = 'overview' | 'participants' | 'tastings' | 'cleanup' | 'online' | 'activity' | 'sessions' | 'analytics' | 'ai' | 'newsletter' | 'changelog' | 'settings' | 'communities' | 'aromas' | 'feedback' | 'historical' | 'makingof'
+type AppleAdminTab = 'overview' | 'participants' | 'tastings' | 'cleanup' | 'online' | 'activity' | 'sessions' | 'analytics' | 'ai' | 'newsletter' | 'changelog' | 'settings' | 'communities' | 'aromas' | 'distilleries' | 'feedback' | 'historical' | 'makingof'
 
 const TAB_CONFIG: { id: AppleAdminTab; label: string }[] = [
   { id: 'overview', label: 'Übersicht' },
@@ -63,6 +63,7 @@ const TAB_CONFIG: { id: AppleAdminTab; label: string }[] = [
   { id: 'settings', label: 'Settings' },
   { id: 'communities', label: 'Communities' },
   { id: 'aromas', label: 'Aromas' },
+  { id: 'distilleries', label: 'Destillerien' },
   { id: 'feedback', label: 'Feedback' },
   { id: 'historical', label: 'Historical' },
   { id: 'makingof', label: 'Making-Of' },
@@ -248,6 +249,7 @@ export const AdminScreen: React.FC<Props> = ({ th, t, participantId, onBack }) =
         {tab === 'settings' && <SettingsTab th={th} pid={participantId} />}
         {tab === 'communities' && <CommunitiesTab th={th} pid={participantId} participants={parts} />}
         {tab === 'aromas' && <AromasTab th={th} pid={participantId} />}
+        {tab === 'distilleries' && <DistilleriesTab th={th} pid={participantId} />}
         {tab === 'feedback' && <FeedbackTab th={th} pid={participantId} />}
         {tab === 'historical' && <HistoricalTab th={th} pid={participantId} />}
         {tab === 'makingof' && <MakingOfTab th={th} pid={participantId} participants={parts} />}
@@ -2338,6 +2340,160 @@ function MakingOfTab({ th, pid, participants: initialParticipants }: { th: Theme
           })}
         </div>
       </div>
+    </div>
+  )
+}
+
+interface AdminDistillery {
+  id: string; name: string; region: string; country: string;
+  founded: number | null; description: string | null; feature: string | null;
+  status: string; lat: number | null; lng: number | null;
+}
+
+function DistilleriesTab({ th, pid }: { th: ThemeTokens; pid: string }) {
+  const [items, setItems] = useState<AdminDistillery[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState<AdminDistillery | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<Record<string, string>>({})
+  const [msg, setMsg] = useState('')
+
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/admin/distilleries?participantId=${pid}`)
+      if (res.ok) setItems(await res.json())
+    } catch {}
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 2000) }
+
+  const filtered = items.filter(d =>
+    !search ||
+    d.name.toLowerCase().includes(search.toLowerCase()) ||
+    d.region.toLowerCase().includes(search.toLowerCase()) ||
+    d.country.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const resetForm = () => ({
+    name: '', region: '', country: '', founded: '', description: '', feature: '', status: 'active', lat: '', lng: ''
+  })
+
+  const fillForm = (d: AdminDistillery) => ({
+    name: d.name, region: d.region, country: d.country,
+    founded: d.founded != null ? String(d.founded) : '',
+    description: d.description || '', feature: d.feature || '',
+    status: d.status || 'active',
+    lat: d.lat != null ? String(d.lat) : '', lng: d.lng != null ? String(d.lng) : '',
+  })
+
+  const handleSave = async () => {
+    if (!form.name || !form.region || !form.country) { flash('Name, Region und Land sind Pflichtfelder'); return }
+    const body = {
+      participantId: pid,
+      name: form.name, region: form.region, country: form.country,
+      founded: form.founded ? Number(form.founded) : null,
+      description: form.description || null, feature: form.feature || null,
+      status: form.status || 'active',
+      lat: form.lat ? Number(form.lat) : null, lng: form.lng ? Number(form.lng) : null,
+    }
+    try {
+      if (editing) {
+        await safeFetch(`/api/admin/distilleries/${editing.id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        })
+        flash('Aktualisiert')
+      } else {
+        await safeFetch('/api/admin/distilleries', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        })
+        flash('Erstellt')
+      }
+      setEditing(null); setAdding(false); setForm({}); load()
+    } catch { flash('Fehler') }
+  }
+
+  const handleDelete = async (d: AdminDistillery) => {
+    if (!confirm(`"${d.name}" löschen?`)) return
+    try {
+      await safeFetch(`/api/admin/distilleries/${d.id}?participantId=${pid}`, { method: 'DELETE' })
+      flash('Gelöscht'); load()
+    } catch { flash('Fehler') }
+  }
+
+  if (loading) return <LoadingSpinner th={th} />
+
+  const formFields = (
+    <div data-testid="admin-distillery-form" style={{ ...cardStyle(th), display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{editing ? 'Destillerie bearbeiten' : 'Neue Destillerie'}</div>
+      <input data-testid="input-distillery-name" placeholder="Name *" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle(th)} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input data-testid="input-distillery-region" placeholder="Region *" value={form.region || ''} onChange={e => setForm({ ...form, region: e.target.value })} style={{ ...inputStyle(th), flex: 1 }} />
+        <input data-testid="input-distillery-country" placeholder="Country *" value={form.country || ''} onChange={e => setForm({ ...form, country: e.target.value })} style={{ ...inputStyle(th), flex: 1 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input data-testid="input-distillery-founded" placeholder="Founded" type="number" value={form.founded || ''} onChange={e => setForm({ ...form, founded: e.target.value })} style={{ ...inputStyle(th), flex: 1 }} />
+        <select data-testid="select-distillery-status" value={form.status || 'active'} onChange={e => setForm({ ...form, status: e.target.value })} style={{ ...selectBase(th), flex: 1, minHeight: 44 }}>
+          <option value="active">Active</option>
+          <option value="closed">Closed</option>
+          <option value="silent">Silent</option>
+        </select>
+      </div>
+      <textarea data-testid="input-distillery-description" placeholder="Description" value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} style={{ ...inputStyle(th), resize: 'vertical' as const }} />
+      <textarea data-testid="input-distillery-feature" placeholder="Feature / Fun Fact" value={form.feature || ''} onChange={e => setForm({ ...form, feature: e.target.value })} rows={2} style={{ ...inputStyle(th), resize: 'vertical' as const }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input data-testid="input-distillery-lat" placeholder="Latitude" type="number" step="any" value={form.lat || ''} onChange={e => setForm({ ...form, lat: e.target.value })} style={{ ...inputStyle(th), flex: 1 }} />
+        <input data-testid="input-distillery-lng" placeholder="Longitude" type="number" step="any" value={form.lng || ''} onChange={e => setForm({ ...form, lng: e.target.value })} style={{ ...inputStyle(th), flex: 1 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button data-testid="button-distillery-cancel" onClick={() => { setEditing(null); setAdding(false); setForm({}) }} style={btnSecondary(th)}>Abbrechen</button>
+        <button data-testid="button-distillery-save" onClick={handleSave} style={btnPrimary(th)}>Speichern</button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div data-testid="admin-distilleries-tab">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SP.md }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Destillerien</span>
+          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: th.bgHover, color: th.muted }}>{items.length}</span>
+        </div>
+        <button data-testid="button-distillery-add" onClick={() => { setAdding(true); setEditing(null); setForm(resetForm()) }} style={btnPrimary(th)}>+ Neu</button>
+      </div>
+      {msg && <div style={{ fontSize: 11, color: th.gold, marginBottom: 8 }}>{msg}</div>}
+
+      {(adding || editing) && formFields}
+
+      <div style={{ position: 'relative', marginBottom: SP.md }}>
+        <Icon.Search color={th.faint} size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        <input data-testid="input-distillery-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Suche..." style={{ ...inputStyle(th), paddingLeft: 36 }} />
+      </div>
+
+      {filtered.map(d => (
+        <div key={d.id} data-testid={`card-distillery-${d.id}`} style={{ ...cardStyle(th), display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{d.name}</div>
+            <div style={{ fontSize: 12, color: th.faint, marginTop: 2 }}>
+              {[d.region, d.country].join(' · ')}
+              {d.founded ? ` · ${d.founded}` : ''}
+              {d.status !== 'active' && <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 6, background: d.status === 'closed' ? `${dangerColor}20` : `${infoColor}20`, color: d.status === 'closed' ? dangerColor : infoColor }}>{d.status}</span>}
+            </div>
+            {d.description && <div style={{ fontSize: 11, color: th.muted, marginTop: 4, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{d.description}</div>}
+          </div>
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            <button data-testid={`button-distillery-edit-${d.id}`} onClick={() => { setEditing(d); setAdding(false); setForm(fillForm(d)) }} style={{ ...btnSecondary(th), fontSize: 11, padding: '0 8px', height: 30 }}>Edit</button>
+            <button data-testid={`button-distillery-delete-${d.id}`} onClick={() => handleDelete(d)} style={{ ...btnSecondary(th), fontSize: 11, padding: '0 8px', height: 30, color: dangerColor, borderColor: `${dangerColor}40` }}>Del</button>
+          </div>
+        </div>
+      ))}
+
+      {filtered.length === 0 && !adding && (
+        <div style={{ textAlign: 'center', padding: SP.xl, color: th.faint, fontSize: 13 }}>Keine Destillerien gefunden.</div>
+      )}
     </div>
   )
 }

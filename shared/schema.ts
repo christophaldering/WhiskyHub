@@ -791,6 +791,24 @@ export const insertFlavourDescriptorSchema = createInsertSchema(flavourDescripto
 export type InsertFlavourDescriptor = z.infer<typeof insertFlavourDescriptorSchema>;
 export type FlavourDescriptor = typeof flavourDescriptors.$inferSelect;
 
+// --- Distilleries (encyclopedia of whisky distilleries) ---
+export const distilleries = pgTable("distilleries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  region: text("region").notNull(),
+  country: text("country").notNull(),
+  founded: integer("founded"),
+  description: text("description"),
+  feature: text("feature"),
+  status: text("status").notNull().default("active"),
+  lat: real("lat"),
+  lng: real("lng"),
+});
+
+export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id: true });
+export type InsertDistillery = z.infer<typeof insertDistillerySchema>;
+export type Distillery = typeof distilleries.$inferSelect;
+
 // --- User Activity Sessions (admin tracking) ---
 export const userActivitySessions = pgTable("user_activity_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -55,6 +55,8 @@ import {
   flavourDescriptors,
   type InsertFlavourCategory, type FlavourCategory,
   type InsertFlavourDescriptor, type FlavourDescriptor,
+  distilleries,
+  type InsertDistillery, type Distillery,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -417,6 +419,15 @@ export interface IStorage {
   createFlavourDescriptor(data: InsertFlavourDescriptor): Promise<FlavourDescriptor>;
   updateFlavourDescriptor(id: string, data: Partial<Omit<InsertFlavourDescriptor, "id">>): Promise<FlavourDescriptor | undefined>;
   deleteFlavourDescriptor(id: string): Promise<void>;
+
+  // Distilleries
+  getAllDistilleries(): Promise<Distillery[]>;
+  getDistillery(id: string): Promise<Distillery | undefined>;
+  createDistillery(data: InsertDistillery): Promise<Distillery>;
+  updateDistillery(id: string, data: Partial<InsertDistillery>): Promise<Distillery | undefined>;
+  deleteDistillery(id: string): Promise<void>;
+  getDistilleryCount(): Promise<number>;
+  createDistilleries(data: InsertDistillery[]): Promise<Distillery[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2624,6 +2635,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFlavourDescriptor(id: string): Promise<void> {
     await db.delete(flavourDescriptors).where(eq(flavourDescriptors.id, id));
+  }
+
+  // --- Distilleries ---
+  async getAllDistilleries(): Promise<Distillery[]> {
+    return db.select().from(distilleries).orderBy(asc(distilleries.name));
+  }
+
+  async getDistillery(id: string): Promise<Distillery | undefined> {
+    const [result] = await db.select().from(distilleries).where(eq(distilleries.id, id));
+    return result;
+  }
+
+  async createDistillery(data: InsertDistillery): Promise<Distillery> {
+    const [result] = await db.insert(distilleries).values(data).returning();
+    return result;
+  }
+
+  async updateDistillery(id: string, data: Partial<InsertDistillery>): Promise<Distillery | undefined> {
+    const [result] = await db.update(distilleries).set(data).where(eq(distilleries.id, id)).returning();
+    return result;
+  }
+
+  async deleteDistillery(id: string): Promise<void> {
+    await db.delete(distilleries).where(eq(distilleries.id, id));
+  }
+
+  async getDistilleryCount(): Promise<number> {
+    const [{ cnt }] = await db.select({ cnt: sql`count(*)::int` }).from(distilleries);
+    return Number(cnt);
+  }
+
+  async createDistilleries(data: InsertDistillery[]): Promise<Distillery[]> {
+    if (data.length === 0) return [];
+    return db.insert(distilleries).values(data).returning();
   }
 }
 
