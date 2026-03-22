@@ -2,7 +2,7 @@
 // Fix: Duplikate in navItems + if-Blöcken bereinigt
 // Ablage: client/src/labs-apple/screens/meinewelt/MeineWeltScreen.tsx
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import { TasteAnalytics } from './TasteAnalytics'
@@ -94,6 +94,43 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
   )
 }
 
+// ── Filter types & constants ─────────────────────────────────────────────
+type SourceFilter = 'all' | 'solo' | 'tasting' | 'drafts'
+type DatePeriod = 'all' | '7d' | '30d' | '3m' | '1y'
+type ScoreRange = 'all' | '90+' | '80-89' | '70-79' | '<70'
+
+const SOURCE_FILTERS: { key: SourceFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'solo', label: 'Solo' },
+  { key: 'tasting', label: 'Tasting' },
+  { key: 'drafts', label: 'Drafts' },
+]
+
+const DATE_PERIODS: { key: DatePeriod; label: string; days: number }[] = [
+  { key: 'all', label: 'All time', days: 0 },
+  { key: '7d', label: '7 Tage', days: 7 },
+  { key: '30d', label: '30 Tage', days: 30 },
+  { key: '3m', label: '3 Monate', days: 90 },
+  { key: '1y', label: '1 Jahr', days: 365 },
+]
+
+const SCORE_RANGES: ScoreRange[] = ['all', '90+', '80-89', '70-79', '<70']
+
+const AppleFilterDropdown: React.FC<{ th: ThemeTokens; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; testId: string }> = ({ th, value, onChange, options, placeholder, testId }) => {
+  const isActive = value !== 'all'
+  return (
+    <div style={{ position: 'relative', flex: '1 1 0', minWidth: 100 }}>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', padding: '7px 28px 7px 10px', fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? th.gold : th.muted, background: isActive ? `${th.gold}15` : th.bgCard, border: `1px solid ${isActive ? th.gold : th.border}`, borderRadius: 10, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', outline: 'none' }}
+        data-testid={testId}>
+        <option value="all">{placeholder}</option>
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+      <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', lineHeight: 0 }}><Icon.ChevronDown color={isActive ? th.gold : th.muted} size={14} /></div>
+    </div>
+  )
+}
+
 // ── JournalList ───────────────────────────────────────────────────────────
 const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onBack: () => void }> = ({ th, t, participantId, onBack }) => {
   const [entries, setEntries]   = useState<any[]>([])
@@ -101,6 +138,12 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
   const [sort, setSort]         = useState<'date' | 'score' | 'name'>('date')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [offset, setOffset]     = useState(0)
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [datePeriod, setDatePeriod] = useState<DatePeriod>('all')
+  const [scoreRange, setScoreRange] = useState<ScoreRange>('all')
+  const [filterDistillery, setFilterDistillery] = useState('all')
+  const [filterRegion, setFilterRegion] = useState('all')
+  const [filterCaskType, setFilterCaskType] = useState('all')
 
   const load = (off: number) => {
     fetch(`/api/journal?limit=20&offset=${off}`, { headers: { 'x-participant-id': participantId } })
@@ -111,25 +154,116 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
   }
   useEffect(() => { load(0) }, [participantId])
 
-  const filtered = entries
-    .filter(e => !search || (e.whiskeyName || '').toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
+  const uniqueDistilleries = useMemo(() => Array.from(new Set(entries.map((e: any) => e.distillery).filter(Boolean))).sort() as string[], [entries])
+  const uniqueRegions = useMemo(() => Array.from(new Set(entries.map((e: any) => e.region).filter(Boolean))).sort() as string[], [entries])
+  const uniqueCaskTypes = useMemo(() => Array.from(new Set(entries.map((e: any) => e.caskType).filter(Boolean))).sort() as string[], [entries])
+
+  const hasAnyFilter = sourceFilter !== 'all' || datePeriod !== 'all' || scoreRange !== 'all' || filterDistillery !== 'all' || filterRegion !== 'all' || filterCaskType !== 'all' || search.trim() !== '' || sort !== 'date'
+
+  const resetAllFilters = () => {
+    setSourceFilter('all'); setDatePeriod('all'); setScoreRange('all')
+    setFilterDistillery('all'); setFilterRegion('all'); setFilterCaskType('all')
+    setSearch(''); setSort('date')
+  }
+
+  const filtered = useMemo(() => {
+    let items = [...entries]
+    if (sourceFilter === 'drafts') {
+      items = items.filter(e => e.status === 'draft')
+    } else if (sourceFilter === 'solo') {
+      items = items.filter(e => e.source !== 'tasting')
+    } else if (sourceFilter === 'tasting') {
+      items = items.filter(e => e.source === 'tasting')
+    }
+    if (search) {
+      const q = search.toLowerCase()
+      items = items.filter(e => (e.whiskeyName || '').toLowerCase().includes(q) || (e.distillery || '').toLowerCase().includes(q))
+    }
+    if (datePeriod !== 'all') {
+      const days = DATE_PERIODS.find(p => p.key === datePeriod)?.days || 0
+      if (days > 0) {
+        const cutoff = Date.now() - days * 86400000
+        items = items.filter(e => e.createdAt && new Date(e.createdAt).getTime() >= cutoff)
+      }
+    }
+    if (scoreRange !== 'all') {
+      items = items.filter(e => {
+        const s = e.scores?.overall || e.overallScore || 0
+        if (!s) return false
+        if (scoreRange === '90+') return s >= 90
+        if (scoreRange === '80-89') return s >= 80 && s < 90
+        if (scoreRange === '70-79') return s >= 70 && s < 80
+        return s < 70
+      })
+    }
+    if (filterDistillery !== 'all') items = items.filter(e => e.distillery === filterDistillery)
+    if (filterRegion !== 'all') items = items.filter(e => e.region === filterRegion)
+    if (filterCaskType !== 'all') items = items.filter(e => e.caskType === filterCaskType)
+    items.sort((a, b) => {
       if (sort === 'score') return (b.scores?.overall || 0) - (a.scores?.overall || 0)
-      if (sort === 'name')  return (a.whiskeyName || '').localeCompare(b.whiskeyName || '')
+      if (sort === 'name') return (a.whiskeyName || '').localeCompare(b.whiskeyName || '')
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     })
+    return items
+  }, [entries, search, sort, sourceFilter, datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType])
+
+  const pillStyle = (active: boolean): React.CSSProperties => ({
+    height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer',
+    background: active ? th.gold : th.bgCard, color: active ? '#1a0f00' : th.muted,
+    fontSize: 12, fontWeight: active ? 700 : 400, whiteSpace: 'nowrap', transition: 'all 150ms',
+  })
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.mwJournalTitle}</h1>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.mwJournalSearch}
-        style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
-      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md }}>
-        {([['date', 'Datum'], ['score', 'Score'], ['name', 'Name']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setSort(id)} style={{ height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer', background: sort === id ? th.gold : th.bgCard, color: sort === id ? '#1a0f00' : th.muted, fontSize: 12, fontWeight: sort === id ? 700 : 400 }}>{label}</button>
+
+      {/* Source filter — segmented control */}
+      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.sm, background: th.bgCard, borderRadius: 20, padding: 3 }} data-testid="filter-source-control">
+        {SOURCE_FILTERS.map(f => (
+          <button key={f.key} onClick={() => setSourceFilter(f.key)} style={{ ...pillStyle(sourceFilter === f.key), flex: 1, height: 34, borderRadius: 17 }} data-testid={`filter-source-${f.key}`}>{f.label}</button>
         ))}
       </div>
+
+      {/* Search */}
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.mwJournalSearch}
+        style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} data-testid="input-journal-search" />
+
+      {/* Date period chips */}
+      <div style={{ display: 'flex', gap: SP.xs, overflowX: 'auto', marginBottom: SP.sm, WebkitOverflowScrolling: 'touch', paddingBottom: 2 }} data-testid="filter-date-period">
+        {DATE_PERIODS.map(p => (
+          <button key={p.key} onClick={() => setDatePeriod(p.key)} style={pillStyle(datePeriod === p.key)} data-testid={`filter-period-${p.key}`}>{p.label}</button>
+        ))}
+      </div>
+
+      {/* Score range chips */}
+      <div style={{ display: 'flex', gap: SP.xs, overflowX: 'auto', marginBottom: SP.sm, WebkitOverflowScrolling: 'touch', paddingBottom: 2 }} data-testid="filter-score-range">
+        {SCORE_RANGES.map(sr => (
+          <button key={sr} onClick={() => setScoreRange(sr)} style={pillStyle(scoreRange === sr)} data-testid={`filter-score-${sr}`}>{sr === 'all' ? 'Score' : sr}</button>
+        ))}
+      </div>
+
+      {/* Sort chips */}
+      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.sm }}>
+        {([['date', 'Datum'], ['score', 'Score'], ['name', 'Name']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setSort(id)} style={pillStyle(sort === id)} data-testid={`sort-${id}`}>{label}</button>
+        ))}
+      </div>
+
+      {/* Dropdown filters */}
+      <div style={{ display: 'flex', gap: SP.sm, marginBottom: SP.sm, flexWrap: 'wrap' }}>
+        {uniqueDistilleries.length > 0 && <AppleFilterDropdown th={th} value={filterDistillery} onChange={setFilterDistillery} options={uniqueDistilleries} placeholder="Distillery" testId="filter-distillery" />}
+        {uniqueRegions.length > 0 && <AppleFilterDropdown th={th} value={filterRegion} onChange={setFilterRegion} options={uniqueRegions} placeholder="Region" testId="filter-region" />}
+        {uniqueCaskTypes.length > 0 && <AppleFilterDropdown th={th} value={filterCaskType} onChange={setFilterCaskType} options={uniqueCaskTypes} placeholder="Cask Type" testId="filter-cask-type" />}
+      </div>
+
+      {/* Reset filters */}
+      {hasAnyFilter && (
+        <button onClick={resetAllFilters} style={{ ...pillStyle(true), display: 'flex', alignItems: 'center', gap: 6, marginBottom: SP.sm, height: 32, fontSize: 12 }} data-testid="button-reset-filters">
+          ↺ Reset filters
+        </button>
+      )}
+
       {filtered.length === 0 && <div style={{ textAlign: 'center', padding: SP.xl, color: th.faint, fontStyle: 'italic', fontFamily: 'Cormorant Garamond, serif', fontSize: 16 }}>{t.mwJournalEmpty}</div>}
       {filtered.map(entry => {
         const score = entry.scores?.overall || entry.overallScore || 0
