@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ThemeTokens, SP } from './theme/tokens'
 import { Translations } from './theme/i18n'
 import * as Icon from './icons/Icons'
@@ -150,7 +151,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
         </div>
       )}
 
-      {profileOpen && (
+      {profileOpen && createPortal(
         <div
           data-testid="profile-overlay"
           onClick={(e) => { if (e.target === e.currentTarget) closeProfile() }}
@@ -158,10 +159,11 @@ export const LabsAppleLayout: React.FC<Props> = ({
             position: 'fixed',
             inset: 0,
             background: 'rgba(0,0,0,0.5)',
-            zIndex: 200,
+            zIndex: 999999,
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
+            fontFamily: 'DM Sans, sans-serif',
           }}
         >
           <div
@@ -252,7 +254,8 @@ export const LabsAppleLayout: React.FC<Props> = ({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
