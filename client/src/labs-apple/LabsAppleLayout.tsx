@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { ThemeTokens, SP } from './theme/tokens'
 import { Translations } from './theme/i18n'
 import * as Icon from './icons/Icons'
@@ -28,6 +27,95 @@ const TABS: { id: TabId; labelKey: keyof Translations; icon: (active: boolean, t
   { id: 'circle',    labelKey: 'tabCircle',    icon: (a, th) => <Icon.TabCircle   color={a ? th.gold : th.faint} size={24} /> },
 ]
 
+const MENU_BUILD = 'v5'
+
+function showVanillaMenu(opts: {
+  th: ThemeTokens, lang: 'de'|'en', session: any, photoUrl: string|null,
+  isGuest: boolean, isAdmin: boolean,
+  onClose: () => void, onProfile: () => void, onPhoto: () => void,
+  onAdmin: () => void, onLogout: (() => void) | undefined,
+}) {
+  const existing = document.getElementById('casksense-profile-overlay')
+  if (existing) existing.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'casksense-profile-overlay'
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;background:rgba(0,0,0,0.3);font-family:DM Sans,sans-serif;'
+  overlay.addEventListener('click', () => { overlay.remove(); opts.onClose() })
+
+  const rightOffset = Math.max(16, (window.innerWidth - 480) / 2 + 16)
+  const card = document.createElement('div')
+  card.style.cssText = `position:absolute;top:56px;right:${rightOffset}px;width:220px;max-width:calc(100vw - 32px);background:${opts.th.bgCard};border:1px solid ${opts.th.border};border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.35);overflow:hidden;color:${opts.th.text};`
+  card.addEventListener('click', (e) => e.stopPropagation())
+
+  const initial = opts.session?.name?.[0]?.toUpperCase() || '?'
+  const nameText = opts.session?.name || ''
+  const emailText = opts.isGuest ? (opts.lang === 'de' ? 'Gast' : 'Guest') : (opts.session?.email || '')
+
+  const avatarBg = opts.photoUrl
+    ? `background:transparent;`
+    : `background:linear-gradient(135deg, ${opts.th.phases.nose.dim}, ${opts.th.phases.palate.dim});`
+  const avatarContent = opts.photoUrl
+    ? `<img src="${opts.photoUrl}" alt="${nameText}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : `<span style="font-size:18px;font-weight:700;color:${opts.th.gold};">${initial}</span>`
+
+  card.innerHTML = `
+    <div style="padding:16px;border-bottom:1px solid ${opts.th.border};display:flex;align-items:center;gap:10px;">
+      <div style="width:44px;height:44px;border-radius:22px;border:2px solid ${opts.th.gold}44;${avatarBg}display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+        ${avatarContent}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:${opts.th.text};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nameText}</div>
+        <div style="font-size:11px;color:${opts.th.faint};margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${emailText}</div>
+      </div>
+    </div>
+  `
+
+  function addBtn(label: string, iconColor: string, textColor: string, hasBorder: boolean, onClick: () => void, iconSvg: string) {
+    const btn = document.createElement('button')
+    btn.style.cssText = `width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;background:none;border:none;${hasBorder ? `border-bottom:1px solid ${opts.th.border};` : ''}cursor:pointer;color:${textColor};font-size:14px;font-family:DM Sans,sans-serif;`
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>${label}`
+    btn.addEventListener('click', () => { overlay.remove(); opts.onClose(); onClick() })
+    card.appendChild(btn)
+  }
+
+  addBtn(
+    opts.lang === 'de' ? 'Profil bearbeiten' : 'Edit profile',
+    opts.th.muted, opts.th.text, true, opts.onProfile,
+    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
+  )
+
+  addBtn(
+    opts.lang === 'de' ? 'Profilfoto ändern' : 'Change photo',
+    opts.th.muted, opts.th.text, true, opts.onPhoto,
+    '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
+  )
+
+  if (opts.isAdmin) {
+    addBtn(
+      'Admin', opts.th.gold, opts.th.gold, true, opts.onAdmin,
+      '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
+    )
+  }
+
+  if (opts.onLogout) {
+    const logoutFn = opts.onLogout
+    addBtn(
+      opts.lang === 'de' ? 'Abmelden' : 'Logout',
+      '#e06060', '#e06060', false, () => logoutFn(),
+      '<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>'
+    )
+  }
+
+  overlay.appendChild(card)
+  document.body.appendChild(overlay)
+}
+
+function hideVanillaMenu() {
+  const el = document.getElementById('casksense-profile-overlay')
+  if (el) el.remove()
+}
+
 export const LabsAppleLayout: React.FC<Props> = ({
   th, t, themeKey, lang, activeTab, subScreen,
   session, onTabChange, onToggleTheme, onToggleLang, onLogout, children
@@ -42,15 +130,33 @@ export const LabsAppleLayout: React.FC<Props> = ({
   const isGuest = !session?.email
   const isAdmin = session?.isAdmin || session?.role === 'admin'
 
-  const openMenu = useCallback(() => setProfileOpen(true), [])
-  const closeMenu = useCallback(() => setProfileOpen(false), [])
+  const openMenu = useCallback(() => {
+    setProfileOpen(true)
+    showVanillaMenu({
+      th, lang, session, photoUrl, isGuest, isAdmin,
+      onClose: () => setProfileOpen(false),
+      onProfile: () => onTabChange('meinewelt'),
+      onPhoto: () => fileInputRef.current?.click(),
+      onAdmin: () => (window as any).__casksenseNav?.('admin'),
+      onLogout,
+    })
+  }, [th, lang, session, photoUrl, isGuest, isAdmin, onTabChange, onLogout])
+
+  const closeMenu = useCallback(() => {
+    setProfileOpen(false)
+    hideVanillaMenu()
+  }, [])
 
   useEffect(() => {
     if (!profileOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setProfileOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenu() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [profileOpen])
+  }, [profileOpen, closeMenu])
+
+  useEffect(() => {
+    return () => hideVanillaMenu()
+  }, [])
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -73,110 +179,6 @@ export const LabsAppleLayout: React.FC<Props> = ({
     }
   }
 
-  const profileOverlay = profileOpen ? createPortal(
-    <div
-      data-testid="profile-overlay"
-      onClick={closeMenu}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 2147483647,
-        background: 'rgba(0,0,0,0.25)',
-        fontFamily: 'DM Sans, sans-serif',
-      }}
-    >
-      <div
-        data-testid="profile-menu"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: 'absolute',
-          top: 56,
-          right: Math.max(16, (window.innerWidth - 480) / 2 + 16),
-          width: 220,
-          maxWidth: 'calc(100vw - 32px)',
-          background: th.bgCard,
-          border: `1px solid ${th.border}`,
-          borderRadius: 16,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-          overflow: 'hidden',
-          color: th.text,
-        }}
-      >
-        <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 22, border: `2px solid ${th.gold}44`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: th.gold, overflow: 'hidden' }}>
-              {photoUrl
-                ? <img src={photoUrl} alt={session?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : initial
-              }
-            </div>
-            <button
-              data-testid="button-photo-upload-mini"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={photoUploading}
-              style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, background: th.gold, border: `2px solid ${th.bgCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-            >
-              {photoUploading
-                ? <Icon.Spinner color="#1a0f00" size={10} />
-                : <Icon.Camera color="#1a0f00" size={10} />
-              }
-            </button>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.name}</div>
-            <div style={{ fontSize: 11, color: th.faint, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {isGuest ? (lang === 'de' ? 'Gast' : 'Guest') : session?.email}
-            </div>
-          </div>
-        </div>
-
-        <button
-          data-testid="button-edit-profile"
-          onClick={() => { closeMenu(); onTabChange('meinewelt') }}
-          style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-        >
-          <Icon.Profile color={th.muted} size={16} />
-          {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
-        </button>
-
-        <button
-          data-testid="button-change-photo"
-          onClick={() => { closeMenu(); fileInputRef.current?.click() }}
-          style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-        >
-          <Icon.Camera color={th.muted} size={16} />
-          {lang === 'de' ? 'Profilfoto ändern' : 'Change photo'}
-        </button>
-
-        {isAdmin && (
-          <button
-            data-testid="button-admin"
-            onClick={() => { closeMenu(); (window as any).__casksenseNav?.('admin') }}
-            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-          >
-            <Icon.Settings color={th.gold} size={16} />
-            Admin
-          </button>
-        )}
-
-        {onLogout && (
-          <button
-            data-testid="button-logout"
-            onClick={() => { closeMenu(); onLogout() }}
-            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-          >
-            <Icon.Back color="#e06060" size={16} />
-            {t.authLogout}
-          </button>
-        )}
-      </div>
-    </div>,
-    document.body
-  ) : null
-
   return (
     <div style={{ minHeight: '100dvh', background: th.bg, color: th.text, position: 'relative', maxWidth: 480, margin: '0 auto' }}>
 
@@ -189,9 +191,12 @@ export const LabsAppleLayout: React.FC<Props> = ({
       />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 10, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
-        <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
-          {t.appName}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
+            {t.appName}
+          </span>
+          <span data-testid="text-build-marker" style={{ fontSize: 9, color: th.faint, opacity: 0.5, fontFamily: 'DM Sans, sans-serif' }}>{MENU_BUILD}</span>
+        </div>
 
         <div style={{ display: 'flex', gap: SP.sm, alignItems: 'center' }}>
           <button data-testid="button-toggle-lang" onClick={onToggleLang} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
@@ -237,8 +242,6 @@ export const LabsAppleLayout: React.FC<Props> = ({
           })}
         </div>
       )}
-
-      {profileOverlay}
     </div>
   )
 }

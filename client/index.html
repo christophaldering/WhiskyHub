@@ -25,20 +25,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&family=Inter:wght@300..600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <script>try{var d=JSON.parse(localStorage.getItem('casksense-app')||'{}');if(d.state&&d.state.theme==='light')document.documentElement.classList.add('light');}catch(e){}</script>
+    <script>
+      try{var d=JSON.parse(localStorage.getItem('casksense-app')||'{}');if(d.state&&d.state.theme==='light')document.documentElement.classList.add('light');}catch(e){}
+    </script>
+    <script>
+      (function(){
+        var V='csk_v5';
+        if('serviceWorker' in navigator){
+          navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})});
+        }
+        if(typeof caches!=='undefined'){
+          caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});
+        }
+        var prev=localStorage.getItem('casksense_build');
+        if(prev&&prev!==V){
+          localStorage.setItem('casksense_build',V);
+          location.reload();
+        } else {
+          localStorage.setItem('casksense_build',V);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
-        });
-        if (typeof caches !== 'undefined') {
-          caches.keys().then(function(keys) {
-            keys.forEach(function(k) { caches.delete(k); });
-          });
-        }
-      }
-    </script>
   </body>
 </html>
