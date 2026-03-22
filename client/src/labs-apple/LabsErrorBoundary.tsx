@@ -14,6 +14,19 @@ export class LabsErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[CaskSense Apple] Render error:', error, info)
+    try {
+      fetch('/api/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          componentStack: info.componentStack,
+          url: window.location.href,
+          ts: new Date().toISOString()
+        })
+      }).catch(() => {})
+    } catch {}
   }
 
   render() {

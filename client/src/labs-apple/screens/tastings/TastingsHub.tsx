@@ -25,7 +25,7 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
 
   // Load session
   useEffect(() => {
-    try { const s = localStorage.getItem('casksense_session'); if (s) { const p = JSON.parse(s); if (p?.id) setSession(p) } } catch {}
+    try { const s = localStorage.getItem('casksense_apple_session'); if (s) { const p = JSON.parse(s); if (p?.id) setSession(p) } } catch {}
   }, [])
 
   // SSE in lobby
