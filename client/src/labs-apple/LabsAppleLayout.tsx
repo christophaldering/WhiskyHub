@@ -27,17 +27,14 @@ const TABS: { id: TabId; labelKey: keyof Translations; icon: (active: boolean, t
   { id: 'circle',    labelKey: 'tabCircle',    icon: (a, th) => <Icon.TabCircle   color={a ? th.gold : th.faint} size={24} /> },
 ]
 
-const MENU_BUILD = 'v6'
-
 function showVanillaMenu(opts: {
   th: ThemeTokens, lang: 'de'|'en', session: any, photoUrl: string|null,
   isGuest: boolean, isAdmin: boolean,
   onClose: () => void, onProfile: () => void, onPhoto: () => void,
   onAdmin: () => void, onLogout: (() => void) | undefined,
 }) {
-  console.log('[CSK-DEBUG] showVanillaMenu CALLED')
   const existing = document.getElementById('casksense-profile-overlay')
-  if (existing) { console.log('[CSK-DEBUG] removing existing overlay'); existing.remove() }
+  if (existing) existing.remove()
 
   let styleTag = document.getElementById('casksense-overlay-style') as HTMLStyleElement | null
   if (!styleTag) {
@@ -52,7 +49,7 @@ function showVanillaMenu(opts: {
         height: 100vh !important;
         height: 100dvh !important;
         z-index: 2147483647 !important;
-        background: rgba(255, 0, 0, 0.5) !important;
+        background: rgba(0, 0, 0, 0.4) !important;
         font-family: 'DM Sans', sans-serif !important;
         display: block !important;
         opacity: 1 !important;
@@ -71,7 +68,6 @@ function showVanillaMenu(opts: {
   const overlay = document.createElement('div')
   overlay.id = 'casksense-profile-overlay'
   overlay.addEventListener('click', () => { overlay.remove(); opts.onClose() })
-  console.log('[CSK-DEBUG] overlay element created')
 
   const rightOffset = Math.max(16, (window.innerWidth - 480) / 2 + 16)
   const card = document.createElement('div')
@@ -140,9 +136,6 @@ function showVanillaMenu(opts: {
 
   overlay.appendChild(card)
   document.body.appendChild(overlay)
-  console.log('[CSK-DEBUG] overlay appended to body, parentNode:', overlay.parentNode?.nodeName, 'children:', overlay.childNodes.length)
-  console.log('[CSK-DEBUG] overlay computed z-index:', window.getComputedStyle(overlay).zIndex, 'position:', window.getComputedStyle(overlay).position, 'bg:', window.getComputedStyle(overlay).background)
-  console.log('[CSK-DEBUG] body children count:', document.body.children.length, 'overlay is last child:', document.body.lastElementChild === overlay)
 }
 
 function hideVanillaMenu() {
@@ -229,7 +222,6 @@ export const LabsAppleLayout: React.FC<Props> = ({
           <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
             {t.appName}
           </span>
-          <span data-testid="text-build-marker" style={{ fontSize: 9, color: th.faint, opacity: 0.5, fontFamily: 'DM Sans, sans-serif' }}>{MENU_BUILD}</span>
         </div>
 
         <div style={{ display: 'flex', gap: SP.sm, alignItems: 'center' }}>
