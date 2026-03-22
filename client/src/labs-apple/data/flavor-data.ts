@@ -195,6 +195,48 @@ export const JOURNEY_CATEGORY_ORDER = [
   'nutty', 'woody', 'spicy', 'earthy', 'mineral', 'maritime', 'smoky',
 ]
 
+export type FlavorProfileKey = 'peated-maritime' | 'sherried-rich' | 'speyside-fruity' | 'highland-elegant' | 'bourbon-classic' | 'generic'
+
+export const FLAVOR_PROFILE_LABELS: Record<FlavorProfileKey, { de: string; en: string }> = {
+  'peated-maritime':  { de: 'Islay / Küste',   en: 'Islay / Coastal'  },
+  'sherried-rich':    { de: 'Sherry-Fass',      en: 'Sherried Rich'    },
+  'speyside-fruity':  { de: 'Speyside Fruchtig', en: 'Speyside Fruity' },
+  'highland-elegant': { de: 'Highland Elegant',  en: 'Highland Elegant' },
+  'bourbon-classic':  { de: 'Bourbon-Fass',      en: 'Bourbon Classic'  },
+  'generic':          { de: 'Generisch',         en: 'Generic'          },
+}
+
+export function detectFlavorProfile(region?: string, cask?: string): FlavorProfileKey {
+  const r = (region || '').toLowerCase()
+  const c = (cask || '').toLowerCase()
+  if (r.includes('islay') || r.includes('island'))         return 'peated-maritime'
+  if (c.includes('sherry') || c.includes('px'))            return 'sherried-rich'
+  if (r.includes('speyside'))                              return 'speyside-fruity'
+  if (r.includes('highland'))                              return 'highland-elegant'
+  if (c.includes('bourbon'))                               return 'bourbon-classic'
+  return 'generic'
+}
+
+export function resolveFlavorProfile(hostProfile?: string, region?: string, cask?: string): FlavorProfileKey {
+  if (hostProfile && hostProfile !== 'auto' && hostProfile in FLAVOR_PROFILES) {
+    return hostProfile as FlavorProfileKey
+  }
+  return detectFlavorProfile(region, cask)
+}
+
+export function sortCategoriesByProfile<T extends { key: string }>(categories: T[], profile: FlavorProfileKey): T[] {
+  const order = FLAVOR_PROFILES[profile] || FLAVOR_PROFILES.generic
+  const sorted = [...categories]
+  sorted.sort((a, b) => {
+    const ai = order.indexOf(a.key)
+    const bi = order.indexOf(b.key)
+    const aIdx = ai >= 0 ? ai : order.length
+    const bIdx = bi >= 0 ? bi : order.length
+    return aIdx - bIdx
+  })
+  return sorted
+}
+
 export function getTagsForProfile(profile: string, phase: string, lang: 'de' | 'en'): string[] {
   const order = FLAVOR_PROFILES[profile] || FLAVOR_PROFILES.generic
   const result: string[] = []

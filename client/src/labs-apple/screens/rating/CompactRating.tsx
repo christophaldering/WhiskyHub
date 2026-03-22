@@ -124,7 +124,7 @@ export const CompactRating: React.FC<Props> = ({ th, t, whisky, tastingId, dramI
                   <ScoreInput value={scores[p.id]} onChange={v => setScores(s => ({ ...s, [p.id]: v }))} phaseId={p.id} th={th} t={t} />
                   {p.id !== 'overall' && (
                     <div style={{ marginTop: SP.md }}>
-                      <FlavorTags phaseId={p.id} whiskyRegion={whisky.region} whiskyCask={whisky.cask} blind={whisky.blind} selected={tags[p.id]} onToggle={tag => toggleTag(p.id, tag)} th={th} t={t} />
+                      <FlavorTags phaseId={p.id} whiskyRegion={whisky.region} whiskyCask={whisky.cask} flavorProfile={whisky.flavorProfile} blind={whisky.blind} selected={tags[p.id]} onToggle={tag => toggleTag(p.id, tag)} th={th} t={t} />
                     </div>
                   )}
                 </div>

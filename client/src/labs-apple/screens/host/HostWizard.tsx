@@ -103,13 +103,59 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
 // ── Step 2: Whiskies ────────────────────────────────────────────────────────
 const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string; format: string; whiskies: WhiskyEntry[]; onChange: (w: WhiskyEntry[]) => void; onNext: () => void; onBack: () => void }> = ({ th, t, tastingId, format, whiskies, onChange, onNext, onBack }) => {
   const [importing, setImporting] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [importPreview, setImportPreview] = useState<WhiskyEntry[] | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const addWhisky = () => onChange([...whiskies, { name: '' }])
-  const removeWhisky = (i: number) => onChange(whiskies.filter((_, idx) => idx !== i))
+  const removeWhisky = (i: number) => {
+    const w = whiskies[i]
+    if (w.id) {
+      fetch(`/api/whiskies/${w.id}`, { method: 'DELETE' }).catch(() => {})
+    }
+    onChange(whiskies.filter((_, idx) => idx !== i))
+  }
   const updateWhisky = (i: number, field: keyof WhiskyEntry, value: string) => {
-    const updated = [...whiskies];(updated[i] as any)[field] = value; onChange(updated)
+    const updated = [...whiskies]
+    const entry: Record<string, unknown> = { ...updated[i] }
+    entry[field] = value
+    updated[i] = entry as WhiskyEntry
+    onChange(updated)
+  }
+
+  const saveAndContinue = async () => {
+    setSaving(true)
+    const saved: WhiskyEntry[] = []
+    for (const w of whiskies) {
+      if (!w.name.trim()) continue
+      if (w.id) {
+        await fetch(`/api/whiskies/${w.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: w.name, region: w.region || null, caskInfluence: w.cask || null, flavorProfile: w.flavorProfile || null }),
+        }).catch(() => {})
+        saved.push(w)
+      } else {
+        try {
+          const res = await fetch('/api/whiskies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tastingId, name: w.name, region: w.region || undefined, caskInfluence: w.cask || undefined, flavorProfile: w.flavorProfile || undefined }),
+          })
+          if (res.ok) {
+            const created = await res.json()
+            saved.push({ ...w, id: created.id })
+          } else {
+            saved.push(w)
+          }
+        } catch {
+          saved.push(w)
+        }
+      }
+    }
+    onChange(saved)
+    setSaving(false)
+    onNext()
   }
 
   const handleImport = async (file: File) => {
@@ -158,6 +204,19 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
             <input value={w.name} onChange={e => updateWhisky(i, 'name', e.target.value)} placeholder={t.hostWhiskyNamePH} style={{ ...inputStyle(th), gridColumn: '1 / -1', fontSize: 14 }} />
             <input value={w.region || ''} onChange={e => updateWhisky(i, 'region', e.target.value)} placeholder={t.hostWhiskyRegionPH} style={{ ...inputStyle(th), fontSize: 13 }} />
             <input value={w.cask || ''} onChange={e => updateWhisky(i, 'cask', e.target.value)} placeholder={t.hostWhiskyCaskPH} style={{ ...inputStyle(th), fontSize: 13 }} />
+            <select
+              data-testid={`select-flavor-profile-${i}`}
+              value={w.flavorProfile || 'auto'}
+              onChange={e => updateWhisky(i, 'flavorProfile', e.target.value === 'auto' ? '' : e.target.value)}
+              style={{ ...inputStyle(th), fontSize: 13, gridColumn: '1 / -1' }}
+            >
+              <option value="auto">{t.hostFlavorProfileAuto || 'Flavor-Profil: Automatisch'}</option>
+              <option value="peated-maritime">{t.hostFlavorProfilePeated || 'Islay / Küste'}</option>
+              <option value="sherried-rich">{t.hostFlavorProfileSherried || 'Sherry-Fass'}</option>
+              <option value="speyside-fruity">{t.hostFlavorProfileSpeyside || 'Speyside Fruchtig'}</option>
+              <option value="highland-elegant">{t.hostFlavorProfileHighland || 'Highland Elegant'}</option>
+              <option value="bourbon-classic">{t.hostFlavorProfileBourbon || 'Bourbon-Fass'}</option>
+            </select>
           </div>
         </div>
       ))}
@@ -167,7 +226,10 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
       </button>
 
       <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
-        <button onClick={onNext} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>{t.hostNext}</button>
+        <button onClick={saveAndContinue} disabled={saving} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? th.bgCard : `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: saving ? th.muted : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {saving && <Icon.Spinner color={th.muted} size={18} />}
+          {saving ? (t.hostSaving || 'Speichern...') : t.hostNext}
+        </button>
       </div>
     </div>
   )

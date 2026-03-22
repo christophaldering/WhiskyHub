@@ -1,9 +1,10 @@
 // CaskSense Apple — FlavourStudio
 // 3 Modi: Guide (hierarchisch), Journey (3 Phasen), Describe (Freitext)
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { ThemeTokens, SP } from '../theme/tokens'
 import { Translations } from '../theme/i18n'
 import * as Icon from '../icons/Icons'
+import { resolveFlavorProfile, sortCategoriesByProfile, type FlavorProfileKey } from '../data/flavor-data'
 
 // ── Flavor Data ────────────────────────────────────────────────────────────
 interface Descriptor { de: string; en: string; key: string }
@@ -128,7 +129,7 @@ const CATEGORIES: Category[] = [
 ]
 
 // ── GuideView (hierarchisches Drill-Down) ────────────────────────────────
-const GuideView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string[]; onToggle: (key: string) => void }> = ({ th, lang, selected, onToggle }) => {
+const GuideView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string[]; onToggle: (key: string) => void; categories: Category[] }> = ({ th, lang, selected, onToggle, categories }) => {
   const [level, setLevel]   = useState<'categories' | 'subgroups' | 'descriptors'>('categories')
   const [activeCat, setActiveCat] = useState<Category | null>(null)
   const [activeSub, setActiveSub] = useState<SubGroup | null>(null)
@@ -156,7 +157,7 @@ const GuideView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string
     <div>
       <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md }}>Wähle eine Kategorie zum Vertiefen</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
-        {CATEGORIES.map(cat => {
+        {categories.map(cat => {
           const count = catSelectedCount(cat)
           const active = count > 0
           return (
@@ -173,7 +174,7 @@ const GuideView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string
           <div style={{ fontSize: 11, color: th.faint, marginBottom: SP.sm, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ausgewählt ({selected.length})</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: SP.xs }}>
             {selected.map(key => {
-              const desc = CATEGORIES.flatMap(c => allDescriptors(c)).find(d => d.key === key)
+              const desc = categories.flatMap(c => allDescriptors(c)).find(d => d.key === key)
               return desc ? <span key={key} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 12, background: `${th.gold}20`, color: th.gold }}>{lang === 'de' ? desc.de : desc.en}</span> : null
             })}
           </div>
@@ -222,13 +223,13 @@ const GuideView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string
 }
 
 // ── JourneyView (3-Phasen) ──────────────────────────────────────────────
-const JourneyView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string[]; onToggle: (key: string) => void }> = ({ th, lang, selected, onToggle }) => {
+const JourneyView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: string[]; onToggle: (key: string) => void; categories: Category[] }> = ({ th, lang, selected, onToggle, categories }) => {
   const [phase, setPhase] = useState(0) // 0=sweep, 1=drill, 2=summary
   const [votes, setVotes] = useState<Record<string, 'yes' | 'maybe' | 'no'>>({})
   const [sweepIdx, setSweepIdx] = useState(0)
   const [drillIdx, setDrillIdx] = useState(0)
 
-  const sweepCats = CATEGORIES
+  const sweepCats = categories
   const current = sweepCats[sweepIdx]
   const yesKeys  = Object.entries(votes).filter(([,v]) => v === 'yes').map(([k]) => k)
   const maybeKeys = Object.entries(votes).filter(([,v]) => v === 'maybe').map(([k]) => k)
@@ -261,7 +262,7 @@ const JourneyView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: stri
   )
 
   if (phase === 1) {
-    const drillCat = CATEGORIES.find(c => c.key === drillList[drillIdx])
+    const drillCat = categories.find(c => c.key === drillList[drillIdx])
     if (!drillCat || drillIdx >= drillList.length) { setPhase(2); return null }
     const descriptors = allDescriptors(drillCat)
     return (
@@ -289,7 +290,7 @@ const JourneyView: React.FC<{ th: ThemeTokens; lang: 'de' | 'en'; selected: stri
   return (
     <div>
       <div style={{ fontSize: 11, color: th.gold, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: SP.lg }}>Phase 3 · Profil</div>
-      {CATEGORIES.filter(c => allDescriptors(c).some(d => selected.includes(d.key))).map(cat => {
+      {categories.filter(c => allDescriptors(c).some(d => selected.includes(d.key))).map(cat => {
         const found = allDescriptors(cat).filter(d => selected.includes(d.key))
         return (
           <div key={cat.key} style={{ marginBottom: SP.md, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md }}>
@@ -316,27 +317,34 @@ const DescribeView: React.FC<{ th: ThemeTokens; note: string; onChange: (v: stri
 
 // ── FlavourStudio ──────────────────────────────────────────────────────────
 interface Props {
-  th:        ThemeTokens
-  lang:      'de' | 'en'
-  selected:  string[]
-  note:      string
-  onToggle:  (key: string) => void
-  onNote:    (v: string) => void
+  th:             ThemeTokens
+  lang:           'de' | 'en'
+  selected:       string[]
+  note:           string
+  onToggle:       (key: string) => void
+  onNote:         (v: string) => void
+  whiskyRegion?:  string
+  whiskyCask?:    string
+  flavorProfile?: string
+  blind?:         boolean
 }
 
 type StudioMode = 'guide' | 'journey' | 'describe'
 
-export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onToggle, onNote }) => {
+export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onToggle, onNote, whiskyRegion, whiskyCask, flavorProfile, blind }) => {
   const [mode, setMode] = useState<StudioMode>('guide')
   const [apiCategories, setApiCategories] = React.useState<Category[] | null>(null)
 
-  // Fetch categories from API, fall back to hardcoded CATEGORIES
+  const profile: FlavorProfileKey = useMemo(() => {
+    if (blind) return 'generic'
+    return resolveFlavorProfile(flavorProfile, whiskyRegion, whiskyCask)
+  }, [blind, flavorProfile, whiskyRegion, whiskyCask])
+
   React.useEffect(() => {
     fetch('/api/flavour-categories')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.length) return
-        // Map API format to internal Category format
         const mapped: Category[] = data.map((cat: any) => ({
           key: cat.id || cat.key || cat.en?.toLowerCase().replace(/\s+/g, '-'),
           de: cat.de || cat.name || cat.en,
@@ -352,7 +360,8 @@ export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onTog
       .catch(() => { /* use hardcoded */ })
   }, [])
 
-  const activeCategories = apiCategories || CATEGORIES
+  const baseCategories = apiCategories || CATEGORIES
+  const activeCategories = useMemo(() => sortCategoriesByProfile(baseCategories, profile), [baseCategories, profile])
 
   const modes: { id: StudioMode; label: string }[] = [
     { id: 'guide',   label: lang === 'de' ? 'Geführt' : 'Guide'    },
@@ -371,8 +380,8 @@ export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onTog
         ))}
       </div>
 
-      {mode === 'guide'   && <GuideView th={th} lang={lang} selected={selected} onToggle={onToggle} />}
-      {mode === 'journey' && <JourneyView th={th} lang={lang} selected={selected} onToggle={onToggle} />}
+      {mode === 'guide'   && <GuideView th={th} lang={lang} selected={selected} onToggle={onToggle} categories={activeCategories} />}
+      {mode === 'journey' && <JourneyView th={th} lang={lang} selected={selected} onToggle={onToggle} categories={activeCategories} />}
       {mode === 'describe'&& <DescribeView th={th} note={note} onChange={onNote} />}
     </div>
   )

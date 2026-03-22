@@ -129,7 +129,7 @@ export const GuidedRating: React.FC<Props> = ({ th, t, whisky, tastingId, dramId
             </button>
             {studioOpen && (
               <div style={{ background: th.bgCard, border: `1px solid ${phaseTokens.accent}`, borderTop: 'none', borderRadius: '0 0 16px 16px', padding: SP.md }}>
-                <FlavourStudio th={th} lang={lang} selected={tags[phase.id]} note={notes[phase.id]} onToggle={toggleTag} onNote={v => setNotes(n => ({ ...n, [phase.id]: v }))} />
+                <FlavourStudio th={th} lang={lang} selected={tags[phase.id]} note={notes[phase.id]} onToggle={toggleTag} onNote={v => setNotes(n => ({ ...n, [phase.id]: v }))} whiskyRegion={whisky.region} whiskyCask={whisky.cask} flavorProfile={whisky.flavorProfile} blind={whisky.blind} />
               </div>
             )}
           </div>

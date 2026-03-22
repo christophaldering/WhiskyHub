@@ -72,6 +72,7 @@ export interface Translations {
   hostWhiskyName: string; hostWhiskyNamePH: string
   hostWhiskyRegion: string; hostWhiskyRegionPH: string
   hostWhiskyCask: string; hostWhiskyCaskPH: string
+  hostFlavorProfileAuto: string; hostFlavorProfilePeated: string; hostFlavorProfileSherried: string; hostFlavorProfileSpeyside: string; hostFlavorProfileHighland: string; hostFlavorProfileBourbon: string
   hostWhiskyAge: string; hostWhiskyAgePH: string
   hostWhiskyDelete: string
   hostInviteTitle: string; hostInviteDesc: string
@@ -260,6 +261,7 @@ const DE: Translations = {
   hostWhiskyName: 'Name', hostWhiskyNamePH: 'z.B. Talisker 10',
   hostWhiskyRegion: 'Region', hostWhiskyRegionPH: 'z.B. Islands',
   hostWhiskyCask: 'Fass', hostWhiskyCaskPH: 'z.B. Bourbon',
+  hostFlavorProfileAuto: 'Flavor-Profil: Automatisch', hostFlavorProfilePeated: 'Islay / Küste', hostFlavorProfileSherried: 'Sherry-Fass', hostFlavorProfileSpeyside: 'Speyside Fruchtig', hostFlavorProfileHighland: 'Highland Elegant', hostFlavorProfileBourbon: 'Bourbon-Fass',
   hostWhiskyAge: 'Alter', hostWhiskyAgePH: '10',
   hostWhiskyDelete: 'Entfernen',
   hostInviteTitle: 'Einladungen versenden', hostInviteDesc: 'Teile den Code oder Link mit deinen Gästen.',
@@ -460,6 +462,7 @@ const EN: Translations = {
   hostWhiskyName: 'Name', hostWhiskyNamePH: 'e.g. Talisker 10',
   hostWhiskyRegion: 'Region', hostWhiskyRegionPH: 'e.g. Islands',
   hostWhiskyCask: 'Cask', hostWhiskyCaskPH: 'e.g. Bourbon',
+  hostFlavorProfileAuto: 'Flavor Profile: Automatic', hostFlavorProfilePeated: 'Islay / Coastal', hostFlavorProfileSherried: 'Sherried Rich', hostFlavorProfileSpeyside: 'Speyside Fruity', hostFlavorProfileHighland: 'Highland Elegant', hostFlavorProfileBourbon: 'Bourbon Classic',
   hostWhiskyAge: 'Age', hostWhiskyAgePH: '10',
   hostWhiskyDelete: 'Remove',
   hostInviteTitle: 'Send invitations', hostInviteDesc: 'Share the code or link with your guests.',

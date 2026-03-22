@@ -3,30 +3,21 @@ import React, { useState, useEffect } from 'react'
 import { ThemeTokens } from '../theme/tokens'
 import { Translations } from '../theme/i18n'
 import * as Icon from '../icons/Icons'
+import { resolveFlavorProfile, type FlavorProfileKey } from '../data/flavor-data'
 
 interface Props {
-  phaseId:       'nose' | 'palate' | 'finish' | 'overall'
-  whiskyRegion?: string
-  whiskyCask?:   string
-  blind:         boolean
-  selected:      string[]
-  onToggle:      (tag: string) => void
-  th:            ThemeTokens
-  t:             Translations
+  phaseId:        'nose' | 'palate' | 'finish' | 'overall'
+  whiskyRegion?:  string
+  whiskyCask?:    string
+  flavorProfile?: string
+  blind:          boolean
+  selected:       string[]
+  onToggle:       (tag: string) => void
+  th:             ThemeTokens
+  t:              Translations
 }
 
-type Profile = 'peated-maritime' | 'sherried-rich' | 'speyside-fruity' | 'highland-elegant' | 'bourbon-classic' | 'generic'
-
-function detectProfile(region?: string, cask?: string): Profile {
-  const r = (region || '').toLowerCase()
-  const c = (cask || '').toLowerCase()
-  if (r.includes('islay') || r.includes('island'))         return 'peated-maritime'
-  if (c.includes('sherry') || c.includes('px'))            return 'sherried-rich'
-  if (r.includes('speyside'))                              return 'speyside-fruity'
-  if (r.includes('highland'))                              return 'highland-elegant'
-  if (c.includes('bourbon'))                               return 'bourbon-classic'
-  return 'generic'
-}
+type Profile = FlavorProfileKey
 
 const FALLBACK_TAGS: Record<string, Record<string, string[]>> = {
   'peated-maritime': {
@@ -67,17 +58,16 @@ const FALLBACK_TAGS: Record<string, Record<string, string[]>> = {
   },
 }
 
-export const FlavorTags: React.FC<Props> = ({ phaseId, whiskyRegion, whiskyCask, blind, selected, onToggle, th, t }) => {
+export const FlavorTags: React.FC<Props> = ({ phaseId, whiskyRegion, whiskyCask, flavorProfile: hostProfile, blind, selected, onToggle, th, t }) => {
   const [tags, setTags] = useState<string[]>([])
 
+  const resolvedProfile: Profile = blind ? 'generic' : resolveFlavorProfile(hostProfile, whiskyRegion, whiskyCask)
+
   useEffect(() => {
-    const profile = blind ? 'generic' : detectProfile(whiskyRegion, whiskyCask)
-    // Try API first
     fetch('/api/flavour-categories')
       .then(r => r.json())
       .then((cats: any[]) => {
         if (!cats || cats.length === 0) throw new Error('empty')
-        // Find best matching category for this phase
         const phaseMap: Record<string, string[]> = { nose: [], palate: [], finish: [], overall: [] }
         cats.forEach((cat: any) => {
           const descriptors: string[] = (cat.descriptors || []).map((d: any) => d.de || d.en || d.name || '').filter(Boolean)
@@ -90,12 +80,11 @@ export const FlavorTags: React.FC<Props> = ({ phaseId, whiskyRegion, whiskyCask,
         setTags(available.slice(0, 6))
       })
       .catch(() => {
-        const profile = blind ? 'generic' : detectProfile(whiskyRegion, whiskyCask)
-        setTags((FALLBACK_TAGS[profile]?.[phaseId] || FALLBACK_TAGS.generic[phaseId] || []).slice(0, 6))
+        setTags((FALLBACK_TAGS[resolvedProfile]?.[phaseId] || FALLBACK_TAGS.generic[phaseId] || []).slice(0, 6))
       })
-  }, [phaseId, whiskyRegion, whiskyCask, blind])
+  }, [phaseId, whiskyRegion, whiskyCask, blind, hostProfile, resolvedProfile])
 
-  const profile = blind ? null : detectProfile(whiskyRegion, whiskyCask)
+  const profile = blind ? null : resolvedProfile
   const profileLabel = profile === 'peated-maritime' ? 'Islay / Küste' : profile === 'sherried-rich' ? 'Sherry-Fass' : profile === 'speyside-fruity' ? 'Speyside' : profile === 'highland-elegant' ? 'Highland' : profile === 'bourbon-classic' ? 'Bourbon-Fass' : ''
   const phase = th.phases[phaseId]
 
