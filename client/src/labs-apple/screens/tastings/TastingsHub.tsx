@@ -216,7 +216,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
       {/* Glow background */}
       <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, height: 400, background: `radial-gradient(ellipse at 50% 100%, ${th.phases.palate.glow}, transparent 70%)`, pointerEvents: 'none', zIndex: -1 }} />
 
-      <div style={{ position: 'relative' }}>
+      <div>
         <div style={{ padding: `${SP.lg}px 0 ${SP.xl}px` }}>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 32, fontWeight: 600, margin: 0 }}>{session?.name ? `${greeting.replace('.', ',')} ${session.name}.` : greeting}</h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontStyle: 'italic', color: th.muted, margin: `${SP.xs}px 0 0` }}>{t.hubSub}</p>
@@ -229,7 +229,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
               display: 'flex', alignItems: 'center', gap: SP.md, padding: SP.lg,
               background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, cursor: 'pointer',
               textAlign: 'left', transition: 'all 200ms',
-              animation: `fadeUp 300ms ease both`, animationDelay: `${i * 80}ms`,
+              animation: `fadeUp 300ms ease forwards`, animationDelay: `${i * 80}ms`,
             }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = th.phases[action.phaseId].accent; (e.currentTarget as HTMLElement).style.background = th.phases[action.phaseId].dim }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = th.border; (e.currentTarget as HTMLElement).style.background = th.bgCard }}

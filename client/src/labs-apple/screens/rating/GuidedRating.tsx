@@ -96,7 +96,7 @@ export const GuidedRating: React.FC<Props> = ({ th, t, whisky, tastingId, dramId
         </div>
       </div>
 
-      <div style={{ padding: SP.md, paddingBottom: 130, opacity: visible ? 1 : 0, transition: 'opacity 150ms', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: SP.md, paddingBottom: 130, opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
         {!whisky.blind && whisky.name && (
           <div style={{ marginBottom: SP.md }}>
             <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontStyle: 'italic' }}>{t.ratingDram} {dramIdx} · {whisky.name}</div>

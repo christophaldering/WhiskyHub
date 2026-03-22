@@ -44,11 +44,17 @@ export const LabsAppleLayout: React.FC<Props> = ({
 
   const openMenu = useCallback(() => {
     setProfileOpen(true)
-    dialogRef.current?.showModal()
+    requestAnimationFrame(() => {
+      if (dialogRef.current && !dialogRef.current.open) {
+        dialogRef.current.showModal()
+      }
+    })
   }, [])
 
   const closeMenu = useCallback(() => {
-    dialogRef.current?.close()
+    if (dialogRef.current?.open) {
+      dialogRef.current.close()
+    }
     setProfileOpen(false)
   }, [])
 
@@ -92,7 +98,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
         onChange={handlePhotoUpload}
       />
 
-      <div style={{ position: 'sticky', top: 0, zIndex: 100, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, height: 52, background: th.headerBg, backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${SP.md}px`, borderBottom: `1px solid ${th.border}` }}>
         <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
           {t.appName}
         </span>
@@ -126,7 +132,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
       </div>
 
       {!hideTabBar && (
-        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, height: 72, background: th.tabBg, backdropFilter: 'blur(16px)', borderTop: `1px solid ${th.border}`, display: 'flex', zIndex: 20 }}>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', maxWidth: 480, height: 72, margin: '0 auto', background: th.tabBg, backdropFilter: 'blur(16px)', borderTop: `1px solid ${th.border}`, display: 'flex', zIndex: 10 }}>
           {TABS.map(tab => {
             const active = activeTab === tab.id
             return (
@@ -149,23 +155,24 @@ export const LabsAppleLayout: React.FC<Props> = ({
         style={{
           position: 'fixed',
           inset: 0,
-          width: '100vw',
-          height: '100dvh',
-          maxWidth: '100vw',
-          maxHeight: '100dvh',
-          margin: 0,
+          width: '100%',
+          height: '100%',
+          maxWidth: 480,
+          maxHeight: 'none',
+          margin: '0 auto',
           padding: 0,
           border: 'none',
           background: 'transparent',
           fontFamily: 'DM Sans, sans-serif',
+          overflow: 'visible',
         }}
       >
         <div
           data-testid="profile-menu"
           style={{
-            marginTop: 56,
-            marginRight: 16,
-            marginLeft: 'auto',
+            position: 'absolute',
+            top: 56,
+            right: 16,
             width: 220,
             maxWidth: 'calc(100vw - 32px)',
             background: th.bgCard,

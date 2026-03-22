@@ -15,7 +15,7 @@ export function serveStatic(app: Express) {
       maxAge: "1y",
       immutable: true,
       setHeaders(res, filePath) {
-        if (filePath.endsWith(".html")) {
+        if (filePath.endsWith(".html") || filePath.endsWith("sw.js") || filePath.endsWith("manifest.json")) {
           res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         }
       },
