@@ -362,7 +362,7 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const laneY = [cy - 14, cy, cy + 14];
-  const labels = ["Flow", "Focus", "Journal"];
+  const labels = ["Flow", "Focus", "Diary"];
   doc.setFillColor(...rgb(ACCENT));
   doc.circle(cx - 35, cy, 2, "F");
   laneY.forEach((ly, i) => {
@@ -389,7 +389,7 @@ function drawTastingEngineFeatures(doc: jsPDF) {
       }
     }
   });
-  drawFeatureRight(doc, TEXT_X, y, "Session Modes", "Three ways to experience a tasting: free Flow navigation, locked Focus on one dram, or guided Journal note-taking.", "Flow. Focus. Journal.");
+  drawFeatureRight(doc, TEXT_X, y, "Session Modes", "Three ways to experience a tasting: free Flow navigation, locked Focus on one dram, or guided Diary note-taking.", "Flow. Focus. Diary.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
@@ -921,7 +921,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
   drawText(doc, "15.03", cx + 12, cy + 4, 6, ACCENT_DIM, "normal", "center");
   doc.setFillColor(...rgb(ACCENT));
   doc.roundedRect(cx + 18, cy - 16, 2, 10, 1, 1, "F");
-  drawFeatureRight(doc, TEXT_X, y, "Personal Whisky Journal", "Every dram you taste — solo or in a group — is automatically logged with notes, scores, and metadata.", "Every dram remembered.");
+  drawFeatureRight(doc, TEXT_X, y, "Personal Whisky Diary", "Every dram you taste — solo or in a group — is automatically logged with notes, scores, and metadata.", "Every dram remembered.");
 
   // ─── Page: Features 22–24 ───
   newFeaturePage(doc);
@@ -1617,7 +1617,7 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
     }
     drawText(doc, ci.text, ix + 8, iy + 4, 5, ci.checked ? MUTED_DIM : TEXT, ci.checked ? "normal" : "normal");
   });
-  drawFeatureRight(doc, TEXT_X, y, "Wishlist", "Track bottles you want to find. Integrated with your collection and journal for a complete whisky inventory.", "Track the next bottle.");
+  drawFeatureRight(doc, TEXT_X, y, "Wishlist", "Track bottles you want to find. Integrated with your collection and diary for a complete whisky inventory.", "Track the next bottle.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 

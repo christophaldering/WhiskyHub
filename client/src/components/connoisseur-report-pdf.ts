@@ -310,7 +310,7 @@ export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOption
     const metricLabels: Record<string, Record<string, string>> = {
       totalRatings: { en: "Total Ratings", de: "Bewertungen gesamt" },
       totalTastings: { en: "Total Tastings", de: "Tastings gesamt" },
-      totalJournalEntries: { en: "Journal Entries", de: "Tagebucheinträge" },
+      totalJournalEntries: { en: "Diary Entries", de: "Diary-Einträge" },
       topRegion: { en: "Top Region", de: "Top-Region" },
       collectionSize: { en: "Collection Size", de: "Sammlungsgröße" },
       smokeAffinityIndex: { en: "Smoke Affinity", de: "Rauch-Affinität" },

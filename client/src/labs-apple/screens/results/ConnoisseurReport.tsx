@@ -87,7 +87,7 @@ export const ConnoisseurReport: React.FC<Props> = ({ th, t, participantId, lang,
 
       <div style={{ padding: SP.md }}>
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>Dein Geschmacksprofil</h1>
-        <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.lg}px` }}>KI-generierter Bericht basierend auf deinen Bewertungen und deinem Journal.</p>
+        <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.lg}px` }}>KI-generierter Bericht basierend auf deinen Bewertungen und deinem Diary.</p>
 
         {/* Generate button */}
         <button onClick={generate} disabled={generating} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: generating ? 'default' : 'pointer', background: generating ? th.bgCard : `linear-gradient(135deg, ${th.gold}, #c47a3a)`, color: generating ? th.faint : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', marginBottom: SP.sm, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

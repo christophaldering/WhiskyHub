@@ -267,7 +267,7 @@ const chapA: Feature[] = [
   { title: "Tasting Setup", desc: "Create with title, date, location. Configure everything before inviting.", quote: "Set the stage." },
   { title: "Rating Scales", desc: "Choose 5, 10, 20, or 100-point professional scales.", quote: "Precision, your way." },
   { title: "Guided Mode", desc: "Everyone moves together. Pace synchronized in real time.", quote: "One pace. One moment." },
-  { title: "Session Modes", desc: "Three ways: free Flow, locked Focus, or guided Journal.", quote: "Flow. Focus. Journal." },
+  { title: "Session Modes", desc: "Three ways: free Flow, locked Focus, or guided Diary.", quote: "Flow. Focus. Diary." },
   { title: "QR Code & Join", desc: "Join via QR scan or 6-digit code. No app download needed.", quote: "Scan or type. Instantly in." },
   { title: "Blind Mode", desc: "Four-stage reveal: number, ABV, age, then the full name.", quote: "Mystery, unveiled in acts." },
   { title: "Live Rating", desc: "Rate nose, taste, finish, balance. Select flavor chips. Voice notes.", quote: "Every sense, captured live." },
@@ -287,7 +287,7 @@ const chapB: Feature[] = [
   { title: "Taste Evolution", desc: "Trend line showing how your ratings develop over months.", quote: "Taste evolves over time." },
   { title: "Consistency Score", desc: "Standard deviation, range, spread. How steady is your palate?", quote: "How steady is your palate?" },
   { title: "Palate DNA", desc: "Your favorite region and cask combination from highest scores.", quote: "Your flavor fingerprint." },
-  { title: "Whisky Journal", desc: "Every dram logged with notes, scores, and metadata.", quote: "Every dram remembered." },
+  { title: "Whisky Diary", desc: "Every dram logged with notes, scores, and metadata.", quote: "Every dram remembered." },
   { title: "Recommendations", desc: "Factor-based engine weighing region, cask, peat, ratings.", quote: "Recommendations with reasons." },
   { title: "Side-by-Side", desc: "Overlay up to 3 whiskies on a single radar chart.", quote: "Three drams, one glance." },
   { title: "Collection Analysis", desc: "Value, region, age, ABV spectrum, vintage timeline.", quote: "Know your cellar's story." },
@@ -316,7 +316,7 @@ const chapE: Feature[] = [
   { title: "Whiskybase Integration", desc: "Lookup by ID, CSV import, deep links, auto image fetching.", quote: "Connected to whisky knowledge." },
   { title: "Collection Sync", desc: "CSV re-upload. Auto-detects new, removed, changed items.", quote: "Reupload. Auto-sync." },
   { title: "Knowledge Hub", desc: "Lexicon, distillery map, bottler database, tasting guide.", quote: "Learn the whole world." },
-  { title: "Wishlist", desc: "Track bottles to find. Integrated with collection and journal.", quote: "Track the next bottle." },
+  { title: "Wishlist", desc: "Track bottles to find. Integrated with collection and diary.", quote: "Track the next bottle." },
   { title: "Historical Tastings", desc: "Searchable archive with cross-tasting analytics and trends.", quote: "Past tastings, new insights." },
 ];
 

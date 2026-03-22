@@ -125,11 +125,11 @@ const guideSections: GuideSection[] = [
     titleEn: "Keeping Notes",
     contentDe: [
       "Halte deine Eindrücke sofort fest \u2014 Aromen verblassen schnell aus dem Gedächtnis.",
-      "Nutze die CaskSense Notiz-Funktion oder führe ein physisches Tasting-Journal. Vergleiche über Zeit, wie sich dein Gaumen entwickelt.",
+      "Nutze die CaskSense Notiz-Funktion oder führe ein physisches Tasting-Diary. Vergleiche über Zeit, wie sich dein Gaumen entwickelt.",
     ],
     contentEn: [
       "Record your impressions immediately \u2014 aromas fade quickly from memory.",
-      "Use the CaskSense notes feature or keep a physical tasting journal. Compare over time how your palate develops.",
+      "Use the CaskSense notes feature or keep a physical tasting diary. Compare over time how your palate develops.",
     ],
   },
 ];

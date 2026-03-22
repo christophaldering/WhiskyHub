@@ -38,7 +38,7 @@ const IDENTIFY_TESTS: CheckItem[] = [
 const UNKNOWN_PATH: CheckItem[] = [
   { label: "U1. Create Unknown", route: "/log-simple", description: "Identify → sheet → 'Create as Unknown'" },
   { label: "U2. Fill Unknown Fields", route: "/log-simple", description: "Name (required), distillery, age, abv, cask, wbId, price" },
-  { label: "U3. Save Unknown", route: "/log-simple", description: "Saves to journal or localStorage fallback" },
+  { label: "U3. Save Unknown", route: "/log-simple", description: "Saves to diary or localStorage fallback" },
   { label: "U4. Copy/Download JSON", route: "/log-simple", description: "Copy JSON + Download JSON buttons on success" },
 ];
 

@@ -157,7 +157,7 @@ export const Benchmark: React.FC<BenchmarkProps> = ({ th, t, participantId, onBa
               {s.distillery && <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.sm }}>{s.distillery}{s.region ? ` · ${s.region}` : ''}</div>}
               <div style={{ display: 'flex', gap: SP.sm }}>
                 <button onClick={() => saveEntry(s, 'wishlist')} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${th.phases.palate.accent}44`, background: th.phases.palate.dim, color: th.phases.palate.accent, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>→ Wishlist</button>
-                <button onClick={() => saveEntry(s, 'journal')} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${th.phases.nose.accent}44`, background: th.phases.nose.dim, color: th.phases.nose.accent, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>→ Journal</button>
+                <button onClick={() => saveEntry(s, 'journal')} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${th.phases.nose.accent}44`, background: th.phases.nose.dim, color: th.phases.nose.accent, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>→ Diary</button>
               </div>
             </div>
           ))}
@@ -168,7 +168,7 @@ export const Benchmark: React.FC<BenchmarkProps> = ({ th, t, participantId, onBa
       <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md }}>
         {(['all', 'wishlist', 'journal'] as const).map(tb => (
           <button key={tb} onClick={() => setTab(tb)} style={{ flex: 1, height: 40, borderRadius: 20, border: 'none', cursor: 'pointer', background: tab === tb ? th.gold : th.bgCard, color: tab === tb ? '#1a0f00' : th.muted, fontSize: 13, fontWeight: tab === tb ? 700 : 400 }}>
-            {tb === 'all' ? 'Alle' : tb === 'wishlist' ? 'Wishlist' : 'Journal'}
+            {tb === 'all' ? 'Alle' : tb === 'wishlist' ? 'Wishlist' : 'Diary'}
           </button>
         ))}
       </div>

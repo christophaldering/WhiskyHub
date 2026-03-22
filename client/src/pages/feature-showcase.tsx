@@ -552,7 +552,7 @@ function Demo_Achievements() {
     { icon: Wine, label: "10 Tastings" },
     { icon: Trophy, label: "Host Pro" },
     { icon: Radar, label: "Flavour Expert" },
-    { icon: BookOpen, label: "Journaler" },
+    { icon: BookOpen, label: "Diarist" },
     { icon: Users, label: "Taste Twin" },
   ];
 

@@ -333,7 +333,7 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
               value={customNotes}
               onChange={(e) => setCustomNotes(e.target.value)}
               rows={2}
-              placeholder="e.g. Focus on the new journal feature..."
+              placeholder="e.g. Focus on the new diary feature..."
               data-testid="input-newsletter-notes"
             />
           </div>
@@ -922,7 +922,7 @@ export default function AdminPanel() {
               <span className="flex items-center gap-2"><Eye className="w-4 h-4" /> Session Details</span>
             </SelectItem>
             <SelectItem value="journals">
-              <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> All Journals</span>
+              <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> All Diaries</span>
             </SelectItem>
             <SelectItem value="analytics">
               <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Analytics</span>
@@ -1482,7 +1482,7 @@ export default function AdminPanel() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search journals by participant, title, whisky..."
+                placeholder="Search diary entries by participant, title, whisky..."
                 value={searchJournals}
                 onChange={(e) => setSearchJournals(e.target.value)}
                 className="pl-9"
@@ -1500,7 +1500,7 @@ export default function AdminPanel() {
           ) : (
             <div className="space-y-2" data-testid="journals-list">
               {filteredJournals.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No journal entries found</p>
+                <p className="text-center text-muted-foreground py-8">No diary entries found</p>
               ) : (
                 filteredJournals.map((journal, i) => (
                   <motion.div
