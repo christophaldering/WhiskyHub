@@ -1,4 +1,7 @@
 // CaskSense Apple — HostWizard (Phase 4)
+// Fix: Weiter-Button nur noch von Name abhängig (nicht Datum/Zeit)
+// Ablage: client/src/labs-apple/screens/host/HostWizard.tsx
+
 import React, { useState, useRef } from 'react'
 import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
@@ -18,14 +21,21 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xl}px` }}>{t.hostStep1}</h1>
       <div style={{ display: 'flex', flexDirection: 'column', gap: SP.md }}>
-        <div><label style={labelStyle(th)}>{t.hostName} *</label><input value={form.name} onChange={e => set('name')(e.target.value)} placeholder={t.hostNamePH} style={{ ...inputStyle(th), fontFamily: 'Cormorant Garamond, serif', fontSize: 18 }} /></div>
+        <div>
+          <label style={labelStyle(th)}>{t.hostName} *</label>
+          <input value={form.name} onChange={e => set('name')(e.target.value)} placeholder={t.hostNamePH} style={{ ...inputStyle(th), fontFamily: 'Cormorant Garamond, serif', fontSize: 18 }} />
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
           <div><label style={labelStyle(th)}>{t.hostDate}</label><input type="date" value={form.date} onChange={e => set('date')(e.target.value)} style={inputStyle(th)} /></div>
           <div><label style={labelStyle(th)}>{t.hostTime}</label><input type="time" value={form.time} onChange={e => set('time')(e.target.value)} style={inputStyle(th)} /></div>
         </div>
-        <div><label style={labelStyle(th)}>{t.hostLoc}</label><input value={form.location} onChange={e => set('location')(e.target.value)} placeholder={t.hostLocPH} style={inputStyle(th)} /></div>
+        <div>
+          <label style={labelStyle(th)}>{t.hostLoc}</label>
+          <input value={form.location} onChange={e => set('location')(e.target.value)} placeholder={t.hostLocPH} style={inputStyle(th)} />
+        </div>
 
-        <div><label style={labelStyle(th)}>{t.hostFormat}</label>
+        <div>
+          <label style={labelStyle(th)}>{t.hostFormat}</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
             {(['blind', 'open'] as const).map(f => {
               const active = form.format === f
@@ -42,29 +52,46 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
         </div>
 
         {form.format === 'blind' && (
-          <div><label style={labelStyle(th)}>{t.hostRevealOrder}</label>
+          <div>
+            <label style={labelStyle(th)}>{t.hostRevealOrder}</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: SP.xs }}>
               {(['classic', 'photo-first', 'details-first', 'one-by-one'] as const).map(r => {
                 const labelMap = { 'classic': t.hostRevealClassic, 'photo-first': t.hostRevealPhoto, 'details-first': t.hostRevealDetails, 'one-by-one': t.hostRevealOne }
                 const active = form.revealOrder === r
-                return <button key={r} onClick={() => set('revealOrder')(r)} style={{ minHeight: 44, borderRadius: 12, border: `1px solid ${active ? th.gold : th.border}`, background: active ? `${th.gold}12` : th.bgCard, color: active ? th.gold : th.muted, cursor: 'pointer', fontSize: 14, textAlign: 'left', padding: '0 16px', transition: 'all 150ms' }}>{labelMap[r]}</button>
+                return (
+                  <button key={r} onClick={() => set('revealOrder')(r)} style={{ minHeight: 44, borderRadius: 12, border: `1px solid ${active ? th.gold : th.border}`, background: active ? `${th.gold}12` : th.bgCard, color: active ? th.gold : th.muted, cursor: 'pointer', fontSize: 14, textAlign: 'left', padding: '0 16px', transition: 'all 150ms' }}>
+                    {labelMap[r]}
+                  </button>
+                )
               })}
             </div>
           </div>
         )}
 
-        <div><label style={labelStyle(th)}>{t.hostScale}</label>
+        <div>
+          <label style={labelStyle(th)}>{t.hostScale}</label>
           <div style={{ display: 'flex', gap: SP.sm }}>
             {(['100', '20', '10'] as const).map(s => {
               const active = form.scale === s
               const labels = { '100': t.hostScale100, '20': t.hostScale20, '10': t.hostScale10 }
-              return <button key={s} onClick={() => set('scale')(s)} style={{ flex: 1, height: 44, borderRadius: 12, border: `1px solid ${active ? th.gold : th.border}`, background: active ? `${th.gold}12` : th.bgCard, color: active ? th.gold : th.muted, cursor: 'pointer', fontSize: 13, transition: 'all 150ms' }}>{labels[s]}</button>
+              return (
+                <button key={s} onClick={() => set('scale')(s)} style={{ flex: 1, height: 44, borderRadius: 12, border: `1px solid ${active ? th.gold : th.border}`, background: active ? `${th.gold}12` : th.bgCard, color: active ? th.gold : th.muted, cursor: 'pointer', fontSize: 13, transition: 'all 150ms' }}>
+                  {labels[s]}
+                </button>
+              )
             })}
           </div>
         </div>
       </div>
+
       <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
-        <button disabled={!form.name.trim() || !form.date || !form.time} onClick={() => onNext(form)} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', opacity: form.name.trim() && form.date && form.time ? 1 : 0.4 }}>{t.hostNext}</button>
+        <button
+          disabled={!form.name.trim()}
+          onClick={() => onNext(form)}
+          style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: form.name.trim() ? 'pointer' : 'not-allowed', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', opacity: form.name.trim() ? 1 : 0.4 }}
+        >
+          {t.hostNext}
+        </button>
       </div>
     </div>
   )
@@ -79,7 +106,7 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
   const addWhisky = () => onChange([...whiskies, { name: '' }])
   const removeWhisky = (i: number) => onChange(whiskies.filter((_, idx) => idx !== i))
   const updateWhisky = (i: number, field: keyof WhiskyEntry, value: string) => {
-    const updated = [...whiskies]; (updated[i] as any)[field] = value; onChange(updated)
+    const updated = [...whiskies];(updated[i] as any)[field] = value; onChange(updated)
   }
 
   const handleImport = async (file: File) => {
@@ -89,8 +116,7 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
       const res = await fetch('/api/tastings/ai-import', { method: 'POST', body: fd, headers: { 'x-participant-id': 'host' } })
       if (!res.ok) throw new Error()
       setImportPreview(await res.json())
-    } catch { /* show error */ }
-    finally { setImporting(false) }
+    } catch { } finally { setImporting(false) }
   }
 
   const confirmImport = () => {
@@ -102,7 +128,6 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.hostStep2}</h1>
 
-      {/* AI Import */}
       <input ref={fileRef} type="file" accept=".xlsx,.csv,.pdf,image/*" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && handleImport(e.target.files[0])} />
       <button onClick={() => fileRef.current?.click()} style={{ width: '100%', minHeight: 60, borderRadius: 16, border: `1px dashed ${th.gold}66`, background: `${th.gold}08`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginBottom: SP.md }}>
         {importing ? <Icon.Spinner color={th.gold} size={20} /> : <Icon.Upload color={th.gold} size={20} />}
@@ -120,7 +145,6 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         </div>
       )}
 
-      {/* Whisky list */}
       {whiskies.map((w, i) => (
         <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, marginBottom: SP.sm }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SP.sm }}>
@@ -148,9 +172,9 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 
 // ── Step 3: Invitations ─────────────────────────────────────────────────────
 const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string; tastingCode: string; onNext: () => void; onBack: () => void }> = ({ th, t, tastingId, tastingCode, onNext, onBack }) => {
-  const [copied, setCopied] = useState(false)
-  const [email, setEmail]   = useState('')
-  const [note, setNote]     = useState('')
+  const [copied, setCopied]     = useState(false)
+  const [email, setEmail]       = useState('')
+  const [note, setNote]         = useState('')
   const [emailSent, setEmailSent] = useState(false)
 
   const copyCode = () => {
@@ -162,7 +186,7 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
     try {
       await fetch(`/api/tastings/${tastingId}/invite`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': 'host' }, body: JSON.stringify({ emails: email.split('\n').filter(Boolean), note }) })
       setEmailSent(true)
-    } catch { /* show error */ }
+    } catch { }
   }
 
   return (
@@ -170,7 +194,6 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.lg}px` }}>{t.hostStep3}</h1>
 
-      {/* Code card */}
       <div style={{ background: `${th.gold}10`, border: `1px solid ${th.gold}44`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg, textAlign: 'center' }}>
         <div style={{ fontSize: 11, color: th.gold, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: SP.sm }}>{t.hostCode}</div>
         <div style={{ fontSize: 38, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.18em', color: th.text, marginBottom: SP.md }}>{tastingCode}</div>
@@ -180,7 +203,6 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         </button>
       </div>
 
-      {/* Email section */}
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: SP.md }}>
           <Icon.Mail color={th.gold} size={18} />
@@ -206,20 +228,23 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 
 // ── Step 4: Live ────────────────────────────────────────────────────────────
 const HostStep4: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string; tastingCode: string; onEnd: () => void }> = ({ th, t, tastingId, tastingCode, onEnd }) => {
-  const [tasting, setTasting] = useState<any>(null)
+  const [tasting, setTasting]         = useState<any>(null)
   const [participants, setParticipants] = useState<any[]>([])
-  const [confirmEnd, setConfirmEnd] = useState(false)
+  const [confirmEnd, setConfirmEnd]   = useState(false)
 
   React.useEffect(() => {
     const load = async () => {
-      const [tRes, pRes] = await Promise.all([fetch(`/api/tastings/${tastingId}`, { headers: { 'x-participant-id': 'host' } }), fetch(`/api/tastings/${tastingId}/participants`, { headers: { 'x-participant-id': 'host' } })])
+      const [tRes, pRes] = await Promise.all([
+        fetch(`/api/tastings/${tastingId}`, { headers: { 'x-participant-id': 'host' } }),
+        fetch(`/api/tastings/${tastingId}/participants`, { headers: { 'x-participant-id': 'host' } }),
+      ])
       if (tRes.ok) setTasting(await tRes.json())
       if (pRes.ok) setParticipants(await pRes.json())
     }
     load(); const id = setInterval(load, 5000); return () => clearInterval(id)
   }, [tastingId])
 
-  const advance = () => fetch(`/api/tastings/${tastingId}/guided-advance`, { method: 'POST', headers: { 'x-participant-id': 'host' } }).then(() => {})
+  const advance   = () => fetch(`/api/tastings/${tastingId}/guided-advance`, { method: 'POST', headers: { 'x-participant-id': 'host' } }).then(() => {})
   const endTasting = async () => { await fetch(`/api/tastings/${tastingId}/close`, { method: 'POST', headers: { 'x-participant-id': 'host' } }); onEnd() }
 
   return (
@@ -234,7 +259,6 @@ const HostStep4: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 22, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{tasting.name}</h1>
       )}
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: SP.sm, marginBottom: SP.lg }}>
         <button onClick={advance} style={{ flex: 1, height: 52, borderRadius: 14, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Icon.Play color="#1a0f00" size={18} />{t.hostNextDram}
@@ -244,7 +268,6 @@ const HostStep4: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         </button>
       </div>
 
-      {/* Participants */}
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
         <div style={{ fontSize: 12, color: th.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: SP.sm }}>{t.hostParticipants}</div>
         {participants.map(p => (
@@ -256,7 +279,6 @@ const HostStep4: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         ))}
       </div>
 
-      {/* Confirm end dialog */}
       {confirmEnd && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: th.bg, border: `1px solid ${th.border}`, borderRadius: 24, padding: SP.xl, margin: SP.md, textAlign: 'center' }}>
@@ -295,21 +317,41 @@ export const HostWizard: React.FC<Props> = ({ th, t, participantId, onBack, onDo
         </div>
         <div style={{ display: 'flex', gap: SP.md }}>
           {stepLabels.map((lbl, i) => (
-            <span key={i} style={{ flex: 1, fontSize: 10, textAlign: 'center', color: i + 1 < step ? th.green : i + 1 === step ? th.gold : th.faint, fontWeight: i + 1 === step ? 700 : 400 }}>{i + 1 < step ? '✓' : ''} {lbl}</span>
+            <span key={i} style={{ flex: 1, fontSize: 10, textAlign: 'center', color: i + 1 < step ? th.green : i + 1 === step ? th.gold : th.faint, fontWeight: i + 1 === step ? 700 : 400 }}>
+              {i + 1 < step ? '✓ ' : ''}{lbl}
+            </span>
           ))}
         </div>
       </div>
 
-      {step === 1 && <HostStep1 th={th} t={t} onBack={onBack} onNext={async (cfg) => {
-        setConfig(cfg)
-        try {
-          const res = await fetch('/api/tastings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-participant-id': participantId }, body: JSON.stringify({ name: cfg.name, date: cfg.date, time: cfg.time, location: cfg.location, format: cfg.format, ratingScale: parseInt(cfg.scale), revealOrder: cfg.revealOrder }) })
-          const data = await res.json(); setTastingId(data.id); setCode(data.code); setStep(2)
-        } catch { /* handle */ }
-      }} />}
-      {step === 2 && tastingId && <HostStep2 th={th} t={t} tastingId={tastingId} format={config?.format || 'blind'} whiskies={whiskies} onChange={setWhiskies} onBack={() => setStep(1)} onNext={() => setStep(3)} />}
-      {step === 3 && tastingId && tastingCode && <HostStep3 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onBack={() => setStep(2)} onNext={async () => { await fetch(`/api/tastings/${tastingId}/start`, { method: 'POST', headers: { 'x-participant-id': participantId } }); setStep(4) }} />}
-      {step === 4 && tastingId && tastingCode && <HostStep4 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onEnd={onDone} />}
+      {step === 1 && (
+        <HostStep1 th={th} t={t} onBack={onBack} onNext={async (cfg) => {
+          setConfig(cfg)
+          try {
+            const res = await fetch('/api/tastings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-participant-id': participantId },
+              body: JSON.stringify({ name: cfg.name, date: cfg.date, time: cfg.time, location: cfg.location, format: cfg.format, ratingScale: parseInt(cfg.scale), revealOrder: cfg.revealOrder })
+            })
+            const data = await res.json()
+            setTastingId(data.id)
+            setCode(data.code)
+            setStep(2)
+          } catch { }
+        }} />
+      )}
+      {step === 2 && tastingId && (
+        <HostStep2 th={th} t={t} tastingId={tastingId} format={config?.format || 'blind'} whiskies={whiskies} onChange={setWhiskies} onBack={() => setStep(1)} onNext={() => setStep(3)} />
+      )}
+      {step === 3 && tastingId && tastingCode && (
+        <HostStep3 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onBack={() => setStep(2)} onNext={async () => {
+          await fetch(`/api/tastings/${tastingId}/start`, { method: 'POST', headers: { 'x-participant-id': participantId } })
+          setStep(4)
+        }} />
+      )}
+      {step === 4 && tastingId && tastingCode && (
+        <HostStep4 th={th} t={t} tastingId={tastingId} tastingCode={tastingCode} onEnd={onDone} />
+      )}
     </div>
   )
 }
