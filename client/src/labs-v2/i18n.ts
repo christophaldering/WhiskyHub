@@ -385,6 +385,20 @@ export interface Translations {
   mwDelta: string;
   mwRecommendations: string;
   mwMatchScore: string;
+  mwCollection: string;
+  mwCollectionDesc: string;
+  mwCollectionBottles: string;
+  mwCollectionDiversity: string;
+  mwCollectionRegionDist: string;
+  mwCollectionAgeDist: string;
+  mwCollectionTopDistilleries: string;
+  mwCollectionCaskTypes: string;
+  mwCollectionTopRated: string;
+  mwCollectionEmpty: string;
+  mwCollectionEmptyHint: string;
+  mwCollectionError: string;
+  ratingDistribution: string;
+  ratingDistributionHint: string;
   mwRegion: string;
   mwCask: string;
   mwPeat: string;
@@ -821,6 +835,20 @@ const de: Translations = {
   mwDelta: "Abweichung",
   mwRecommendations: "Empfehlungen",
   mwMatchScore: "Match",
+  mwCollection: "Sammlung",
+  mwCollectionDesc: "Analyse deiner Whisky-Sammlung",
+  mwCollectionBottles: "Flaschen",
+  mwCollectionDiversity: "Diversität",
+  mwCollectionRegionDist: "Regionenverteilung",
+  mwCollectionAgeDist: "Altersverteilung",
+  mwCollectionTopDistilleries: "Top Brennereien",
+  mwCollectionCaskTypes: "Fasstypen",
+  mwCollectionTopRated: "Bestbewertet",
+  mwCollectionEmpty: "Noch keine Sammlung",
+  mwCollectionEmptyHint: "Importiere deine Whiskybase-Sammlung für detaillierte Analysen.",
+  mwCollectionError: "Sammlung konnte nicht geladen werden.",
+  ratingDistribution: "Bewertungsverteilung",
+  ratingDistributionHint: "3+ Bewertungen für Verteilungskurve nötig",
   mwRegion: "Region",
   mwCask: "Fass",
   mwPeat: "Torf",
@@ -1257,6 +1285,20 @@ const en: Translations = {
   mwDelta: "Delta",
   mwRecommendations: "Recommendations",
   mwMatchScore: "Match",
+  mwCollection: "Collection",
+  mwCollectionDesc: "Analyze your whisky collection",
+  mwCollectionBottles: "Bottles",
+  mwCollectionDiversity: "Diversity",
+  mwCollectionRegionDist: "Region Distribution",
+  mwCollectionAgeDist: "Age Distribution",
+  mwCollectionTopDistilleries: "Top Distilleries",
+  mwCollectionCaskTypes: "Cask Types",
+  mwCollectionTopRated: "Top Rated",
+  mwCollectionEmpty: "No collection yet",
+  mwCollectionEmptyHint: "Import your Whiskybase collection to unlock detailed analytics.",
+  mwCollectionError: "Collection could not be loaded.",
+  ratingDistribution: "Rating Distribution",
+  ratingDistributionHint: "Need 3+ ratings for distribution curve",
   mwRegion: "Region",
   mwCask: "Cask",
   mwPeat: "Peat",

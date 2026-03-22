@@ -9,6 +9,7 @@ import Recommendations from "./Recommendations";
 import JournalList from "./JournalList";
 import TastingCalendar from "./TastingCalendar";
 import ProfileEdit from "./ProfileEdit";
+import CollectionAnalysis from "./CollectionAnalysis";
 
 export type MeineWeltSub =
   | null
@@ -19,7 +20,8 @@ export type MeineWeltSub =
   | "compare"
   | "calendar"
   | "tasteprofile"
-  | "recommendations";
+  | "recommendations"
+  | "collection";
 
 function getParticipantId(): string {
   try {
@@ -49,6 +51,7 @@ export default function MeineWeltScreen() {
   if (sub === "calendar") return <TastingCalendar th={th} t={t} participantId={participantId} onBack={goBack} />;
   if (sub === "tasteprofile") return <TasteProfile th={th} t={t} participantId={participantId} onBack={goBack} />;
   if (sub === "recommendations") return <Recommendations th={th} t={t} participantId={participantId} onBack={goBack} />;
+  if (sub === "collection") return <CollectionAnalysis th={th} t={t} participantId={participantId} onBack={goBack} />;
 
   return (
     <MeineWeltHub

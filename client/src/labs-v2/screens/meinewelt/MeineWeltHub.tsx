@@ -70,6 +70,7 @@ export default function MeineWeltHub({ th, t, participantId, onNavigate }: Props
     { key: "calendar", icon: "\ud83d\udcc5", label: t.mwCalendar, desc: t.mwCalendarDesc },
     { key: "tasteprofile", icon: "\ud83c\udf1f", label: t.mwTasteProfile, desc: t.mwStyleSnapshot },
     { key: "recommendations", icon: "\ud83d\udca1", label: t.mwRecommendations, desc: t.mwMatchScore },
+    { key: "collection", icon: "\ud83d\udce6", label: t.mwCollection, desc: t.mwCollectionDesc },
   ];
 
   const whiskyCount = stats.totalRatings;

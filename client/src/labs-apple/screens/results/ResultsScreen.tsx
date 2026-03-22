@@ -66,6 +66,29 @@ const InsightsTab: React.FC<{
   const delta      = Math.round((myOverall - allOverall) * 10) / 10
   const tabs       = [t.resultsOverview, t.resultsVsGroup, t.resultsPriceSurp, t.resultsCaskProfile]
 
+  const mostDebated = (() => {
+    const whiskyStdDevs = whiskies.map(w => {
+      const wRatings = ratings.filter(r => r.whiskeyId === w.id && r.dimension === 'overall').map(r => r.score)
+      if (wRatings.length < 2) return null
+      const wAvg = avg(wRatings)
+      const stdDev = Math.sqrt(wRatings.reduce((acc, v) => acc + (v - wAvg) ** 2, 0) / wRatings.length)
+      return { name: w.name || `Sample`, stdDev }
+    }).filter(Boolean) as { name: string; stdDev: number }[]
+    return whiskyStdDevs.sort((a, b) => b.stdDev - a.stdDev)[0] || null
+  })()
+
+  const surprise = (() => {
+    const whiskyScores = whiskies.map(w => {
+      const othersScores = ratings.filter(r => r.whiskeyId === w.id && r.dimension === 'overall' && r.participantId !== participantId).map(r => r.score)
+      const groupAvg = othersScores.length > 0 ? avg(othersScores) : 0
+      const myScore = myRatings.filter(r => r.whiskeyId === w.id && r.dimension === 'overall').map(r => r.score)
+      const myAvg = myScore.length > 0 ? avg(myScore) : null
+      return { name: w.name || 'Sample', groupAvg, myAvg }
+    }).filter(w => w.myAvg !== null && w.groupAvg > 0 && (w.myAvg! - w.groupAvg) > 0)
+    const sorted = whiskyScores.sort((a, b) => ((b.myAvg ?? 0) - b.groupAvg) - ((a.myAvg ?? 0) - a.groupAvg))
+    return sorted.length > 0 ? sorted[0] : null
+  })()
+
   return (
     <div>
       <div style={{ display: 'flex', gap: SP.xs, padding: `${SP.sm}px ${SP.md}px`, overflowX: 'auto' }}>
@@ -85,11 +108,20 @@ const InsightsTab: React.FC<{
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
             {[
               { icon: <Icon.Star color={th.gold} size={20} />, label: t.resultsFavorite,
-                value: myRatings.length > 0 ? whiskies.find(w => w.id === [...myRatings].filter(r => r.dimension === 'overall').sort((a, b) => b.score - a.score)[0]?.whiskeyId)?.name || '—' : '—' },
+                value: myRatings.length > 0 ? whiskies.find(w => w.id === [...myRatings].filter(r => r.dimension === 'overall').sort((a, b) => b.score - a.score)[0]?.whiskeyId)?.name || '\u2014' : '\u2014' },
               { icon: <Icon.Trophy color={th.gold} size={20} />, label: t.resultsGroupWinner,
-                value: allOverall > 0 ? `Ø ${Math.round(allOverall)}` : '—' },
-              { icon: <Icon.Users color={th.muted} size={20} />, label: t.resultsMostDebated, value: '—' },
-              { icon: <Icon.TrendUp color={th.green} size={20} />, label: t.resultsSurprise, value: '—' },
+                value: (() => {
+                  const whiskyAvgs = whiskies.map(w => {
+                    const scores = ratings.filter(r => r.whiskeyId === w.id && r.dimension === 'overall').map(r => r.score);
+                    return { name: w.name || 'Sample', avg: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0 };
+                  }).filter(w => w.avg > 0);
+                  const top = whiskyAvgs.sort((a, b) => b.avg - a.avg)[0];
+                  return top ? top.name : '\u2014';
+                })() },
+              { icon: <Icon.Users color={th.muted} size={20} />, label: t.resultsMostDebated,
+                value: mostDebated ? mostDebated.name : '\u2014' },
+              { icon: <Icon.TrendUp color={th.green} size={20} />, label: t.resultsSurprise,
+                value: surprise ? surprise.name : '\u2014' },
             ].map((card, i) => (
               <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
                 {card.icon}

@@ -5329,6 +5329,15 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
     }
   });
 
+  app.get("/api/distilleries", async (_req: Request, res: Response) => {
+    try {
+      const all = await storage.getAllDistilleries();
+      res.json(all.map(d => ({ name: d.name, region: d.region, country: d.country })));
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // --- Whiskybase Collection ---
   
   app.get("/api/collection/:participantId", async (req: Request, res: Response) => {
@@ -13623,7 +13632,7 @@ Rules:
   app.get("/api/labs/explore/whiskies/:id", async (req, res) => {
     try {
       const whiskyId = req.params.id;
-      const requesterId = req.query.participantId as string | undefined;
+      const requesterId = (req.query.participantId as string | undefined) || (req.headers["x-participant-id"] as string | undefined);
       const requester = requesterId ? await storage.getParticipant(requesterId) : null;
       const isAuthenticated = !!requester;
 
@@ -13646,6 +13655,19 @@ Rules:
         const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
         const minMax = (arr: number[]) => arr.length > 0 ? { min: Math.min(...arr), max: Math.max(...arr) } : null;
 
+        const scoreDistribution = new Array(10).fill(0);
+        for (const s of overallScores) {
+          const bucket = Math.min(Math.max(Math.ceil(s / 10) - 1, 0), 9);
+          scoreDistribution[bucket]++;
+        }
+
+        const dimensionAvg: Record<string, number | null> = {
+          nose: avg(noseScores),
+          palate: avg(tasteScores),
+          finish: avg(finishScores),
+          overall: avg(overallScores),
+        };
+
         const sameNameWhiskies = allWhiskies.filter(w =>
           w.id !== whiskyId &&
           (w.name || "").toLowerCase() === (whisky.name || "").toLowerCase() &&
@@ -13664,10 +13686,10 @@ Rules:
             ? whiskyRatings.map(r => ({
                 id: r.id,
                 participantId: r.participantId,
-                nose: r.nose,
-                taste: r.taste,
-                finish: r.finish,
-                overall: r.overall,
+                nose: r.normalizedNose ?? r.nose * exploreNorm(r),
+                taste: r.normalizedTaste ?? r.taste * exploreNorm(r),
+                finish: r.normalizedFinish ?? r.finish * exploreNorm(r),
+                overall: r.normalizedScore ?? r.overall * exploreNorm(r),
               }))
             : [],
           aggregated: {
@@ -13678,6 +13700,8 @@ Rules:
             ratingCount: whiskyRatings.length,
             overallRange: minMax(overallScores),
           },
+          scoreDistribution,
+          dimensionAvg,
           tastingContext: isAuthenticated && tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
           relatedTastings: isAuthenticated ? relatedTastings : [],
           hasNonStandardScale,

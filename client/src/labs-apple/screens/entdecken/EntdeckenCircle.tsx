@@ -150,6 +150,111 @@ const HistoricalArchive: React.FC<{ th: ThemeTokens; t: Translations; participan
 }
 
 // ── BottleDetail ──────────────────────────────────────────────────────────
+function bdComputeStats(sorted: number[]) {
+  const n = sorted.length
+  const sum = sorted.reduce((a, b) => a + b, 0)
+  const mean = sum / n
+  const variance = sorted.reduce((acc, v) => acc + (v - mean) ** 2, 0) / n
+  const stdDev = Math.sqrt(variance)
+  const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)]
+  const q1Idx = (n - 1) * 0.25
+  const q3Idx = (n - 1) * 0.75
+  const q1 = sorted[Math.floor(q1Idx)] + (q1Idx % 1) * ((sorted[Math.ceil(q1Idx)] ?? sorted[Math.floor(q1Idx)]) - sorted[Math.floor(q1Idx)])
+  const q3 = sorted[Math.floor(q3Idx)] + (q3Idx % 1) * ((sorted[Math.ceil(q3Idx)] ?? sorted[Math.floor(q3Idx)]) - sorted[Math.floor(q3Idx)])
+  return { mean, median, stdDev, min: sorted[0], max: sorted[n - 1], count: n, q1, q3, iqr: q3 - q1 }
+}
+
+function bdGaussianPdf(x: number, mean: number, stdDev: number) {
+  if (stdDev === 0) return x === mean ? 1 : 0
+  const exp = -0.5 * ((x - mean) / stdDev) ** 2
+  return (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(exp)
+}
+
+const AppleDistributionChart: React.FC<{ values: number[]; th: ThemeTokens }> = ({ values, th }) => {
+  const [showStats, setShowStats] = useState(false)
+
+  if (values.length < 3) {
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 40 }}>
+          {Array.from({ length: 10 }, (_, i) => {
+            const count = values.filter(v => Math.min(Math.max(Math.ceil(v / 10) - 1, 0), 9) === i).length
+            const max = Math.max(...Array.from({ length: 10 }, (_, j) => values.filter(v => Math.min(Math.max(Math.ceil(v / 10) - 1, 0), 9) === j).length), 1)
+            return <div key={i} style={{ flex: 1, background: th.gold, borderRadius: '2px 2px 0 0', height: `${(count / max) * 100}%`, opacity: 0.6 + i * 0.04, minHeight: count > 0 ? 2 : 0 }} />
+          })}
+        </div>
+        <p style={{ fontSize: 11, color: th.faint, textAlign: 'center', marginTop: 6 }}>3+ ratings needed for curve</p>
+      </div>
+    )
+  }
+
+  const stats = bdComputeStats(values)
+  const { mean, stdDev } = stats
+  const W = 300, H = 100, PAD = { l: 4, r: 4, t: 8, b: 20 }
+  const plotW = W - PAD.l - PAD.r, plotH = H - PAD.t - PAD.b
+  const effectiveStdDev = stdDev < 0.5 ? 2 : stdDev
+
+  const points: [number, number][] = []
+  let peakY = 0
+  for (let i = 0; i <= 100; i++) {
+    const y = bdGaussianPdf(i, mean, effectiveStdDev)
+    if (y > peakY) peakY = y
+    points.push([i, y])
+  }
+
+  const toX = (x: number) => PAD.l + (x / 100) * plotW
+  const toY = (y: number) => PAD.t + plotH - (y / peakY) * plotH
+
+  const pathD = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${toX(x).toFixed(1)},${toY(y).toFixed(1)}`).join(' ')
+  const fillD = `${pathD} L${toX(100).toFixed(1)},${(PAD.t + plotH).toFixed(1)} L${toX(0).toFixed(1)},${(PAD.t + plotH).toFixed(1)} Z`
+
+  return (
+    <div>
+      <div onClick={() => setShowStats(!showStats)} style={{ cursor: 'pointer' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="appleCurveFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={th.gold} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={th.gold} stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+          <line x1={PAD.l} y1={PAD.t + plotH} x2={PAD.l + plotW} y2={PAD.t + plotH} stroke={th.border} strokeWidth="0.5" />
+          <rect x={toX(stats.q1)} y={PAD.t} width={toX(stats.q3) - toX(stats.q1)} height={plotH} fill={th.gold} opacity="0.06" rx="2" />
+          <path d={fillD} fill="url(#appleCurveFill)" />
+          <path d={pathD} fill="none" stroke={th.gold} strokeWidth="1.5" strokeLinejoin="round" />
+          <line x1={toX(mean)} y1={PAD.t} x2={toX(mean)} y2={PAD.t + plotH} stroke={th.gold} strokeWidth="1" strokeDasharray="3 2" opacity="0.7" />
+          <text x={toX(mean)} y={PAD.t - 1} textAnchor="middle" fill={th.gold} fontSize="8" fontWeight="600">{`\u03BC ${mean.toFixed(1)}`}</text>
+          {[0, 25, 50, 75, 100].map(v => (
+            <text key={v} x={toX(v)} y={H - 4} textAnchor="middle" fill={th.faint} fontSize="7">{v}</text>
+          ))}
+        </svg>
+        <div style={{ textAlign: 'center', marginTop: 4 }}>
+          <span style={{ fontSize: 10, color: th.faint }}>{showStats ? 'Hide stats' : 'Tap for stats'} {showStats ? '\u25B2' : '\u25BC'}</span>
+        </div>
+      </div>
+      {showStats && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginTop: SP.sm, borderTop: `1px solid ${th.border}`, paddingTop: SP.sm }}>
+          {[
+            { l: 'Mean', v: stats.mean.toFixed(1) },
+            { l: 'Median', v: stats.median.toFixed(1) },
+            { l: 'StdDev', v: stats.stdDev.toFixed(2) },
+            { l: 'IQR', v: stats.iqr.toFixed(1) },
+            { l: 'Q1', v: stats.q1.toFixed(1) },
+            { l: 'Q3', v: stats.q3.toFixed(1) },
+            { l: 'Min', v: stats.min.toFixed(1) },
+            { l: 'Max', v: stats.max.toFixed(1) },
+          ].map(s => (
+            <div key={s.l} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: th.faint }}>{s.l}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: th.text }}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: string; participantId: string; onBack: () => void }> = ({ th, t, bottleId, participantId, onBack }) => {
   const [bottle, setBottle] = useState<any>(null)
 
@@ -162,6 +267,13 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
 
   const dims = ['nose', 'palate', 'finish', 'overall'] as const
   const dimLabels = { nose: t.ratingNose, palate: t.ratingPalate, finish: t.ratingFinish, overall: t.ratingOverall }
+  const avgOverall = bottle.aggregated?.avgOverall ?? bottle.avgScore ?? null
+  const ratingCount = bottle.aggregated?.ratingCount ?? 0
+
+  const overallValues = (bottle.ratings || [])
+    .map((r: any) => r.overall)
+    .filter((v: any) => v != null && v > 0)
+    .sort((a: number, b: number) => a - b)
 
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
@@ -176,18 +288,19 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
         <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.md, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.entBottleRatings}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: SP.lg, marginBottom: SP.md }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, fontWeight: 700, color: th.gold, lineHeight: 1 }}>{bottle.avgScore ? Math.round(bottle.avgScore) : '—'}</div>
-            <div style={{ fontSize: 11, color: th.faint }}>Ø Score</div>
+            <div style={{ fontSize: 40, fontWeight: 700, color: th.gold, lineHeight: 1 }}>{avgOverall ? Math.round(avgOverall) : '\u2014'}</div>
+            <div style={{ fontSize: 11, color: th.faint }}>{ratingCount} ratings</div>
           </div>
           <div style={{ flex: 1 }}>
             {dims.map(d => {
-              const score = bottle.dimensionAvg?.[d] || bottle.avgScore || 0
-              const pct = ((score - 60) / 40) * 100
+              const dimKey = d === 'palate' ? 'palate' : d
+              const score = bottle.dimensionAvg?.[dimKey] ?? bottle.aggregated?.[`avg${d === 'palate' ? 'Taste' : d.charAt(0).toUpperCase() + d.slice(1)}`] ?? 0
+              const pct = score > 0 ? Math.max(0, ((score - 60) / 40) * 100) : 0
               return (
                 <div key={d} style={{ marginBottom: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                     <span style={{ fontSize: 11, color: th.faint }}>{dimLabels[d]}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: th.phases[d].accent }}>{score ? Math.round(score) : '—'}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: th.phases[d].accent }}>{score ? Math.round(score) : '\u2014'}</span>
                   </div>
                   <div style={{ height: 4, borderRadius: 2, background: th.border, overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: th.phases[d].accent }} />
@@ -197,7 +310,10 @@ const BottleDetail: React.FC<{ th: ThemeTokens; t: Translations; bottleId: strin
             })}
           </div>
         </div>
-        {bottle.scoreDistribution && (
+        {overallValues.length > 0 && (
+          <AppleDistributionChart values={overallValues} th={th} />
+        )}
+        {overallValues.length === 0 && bottle.scoreDistribution && (
           <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 40 }}>
             {bottle.scoreDistribution.map((count: number, i: number) => (
               <div key={i} style={{ flex: 1, background: th.gold, borderRadius: '2px 2px 0 0', height: `${(count / Math.max(...bottle.scoreDistribution, 1)) * 100}%`, opacity: 0.6 + i * 0.04 }} />
