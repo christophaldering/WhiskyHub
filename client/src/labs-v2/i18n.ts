@@ -181,6 +181,9 @@ export interface Translations {
   hostEmailSent: string;
   hostEmailQueued: string;
   hostStartTasting: string;
+  hostInviteStatusTitle: string;
+  hostInviteStatusInvited: string;
+  hostInviteStatusJoined: string;
   hostLiveStatus: string;
   hostLiveRunning: string;
   hostCurrentDram: string;
@@ -607,6 +610,9 @@ const de: Translations = {
   hostEmailSent: "Gesendet",
   hostEmailQueued: "Warteschlange",
   hostStartTasting: "Tasting starten →",
+  hostInviteStatusTitle: "Einladungen",
+  hostInviteStatusInvited: "Eingeladen",
+  hostInviteStatusJoined: "Beigetreten",
   hostLiveStatus: "Status",
   hostLiveRunning: "Tasting läuft",
   hostCurrentDram: "Aktueller Dram",
@@ -1033,6 +1039,9 @@ const en: Translations = {
   hostEmailSent: "Sent",
   hostEmailQueued: "Queued",
   hostStartTasting: "Start tasting →",
+  hostInviteStatusTitle: "Invitations",
+  hostInviteStatusInvited: "Invited",
+  hostInviteStatusJoined: "Joined",
   hostLiveStatus: "Status",
   hostLiveRunning: "Tasting in progress",
   hostCurrentDram: "Current dram",

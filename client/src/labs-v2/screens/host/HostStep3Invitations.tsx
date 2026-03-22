@@ -18,6 +18,13 @@ interface EmailResult {
   emailSent: boolean;
 }
 
+interface ExistingInvite {
+  id: string;
+  email: string;
+  status: string;
+  token: string;
+}
+
 export default function HostStep3Invitations({ th, t, tastingId, tastingCode, hostId, onDone }: Props) {
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -26,7 +33,22 @@ export default function HostStep3Invitations({ th, t, tastingId, tastingCode, ho
   const [personalNote, setPersonalNote] = useState("");
   const [sending, setSending] = useState(false);
   const [emailResults, setEmailResults] = useState<EmailResult[]>([]);
+  const [existingInvites, setExistingInvites] = useState<ExistingInvite[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const fetchInvites = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/invites`);
+      if (res.ok) {
+        const data = await res.json();
+        setExistingInvites(data);
+      }
+    } catch {}
+  }, [tastingId]);
+
+  useEffect(() => {
+    fetchInvites();
+  }, [fetchInvites]);
 
   useEffect(() => {
     const generateQR = async () => {
@@ -80,10 +102,11 @@ export default function HostStep3Invitations({ th, t, tastingId, tastingCode, ho
         const data = await res.json();
         setEmailResults(data.invites || []);
         setEmailText("");
+        fetchInvites();
       }
     } catch {}
     setSending(false);
-  }, [emailText, personalNote, tastingId, hostId]);
+  }, [emailText, personalNote, tastingId, hostId, fetchInvites]);
 
   const [startError, setStartError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -324,6 +347,77 @@ export default function HostStep3Invitations({ th, t, tastingId, tastingCode, ho
           </div>
         )}
       </div>
+
+      {existingInvites.length > 0 && (
+        <div
+          data-testid="host-invite-tracking"
+          style={{
+            background: th.bgCard,
+            border: `1px solid ${th.border}`,
+            borderRadius: RADIUS.lg,
+            padding: SP.lg,
+            display: "flex",
+            flexDirection: "column",
+            gap: SP.sm,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: th.muted,
+              fontFamily: FONT.body,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+            }}
+          >
+            {t.hostInviteStatusTitle}
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: SP.xs }}>
+            {existingInvites.map((inv) => (
+              <div
+                key={inv.id}
+                data-testid={`host-invite-row-${inv.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: `${SP.xs}px ${SP.sm}px`,
+                  background: th.bgHover,
+                  borderRadius: RADIUS.md,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontFamily: FONT.body,
+                    color: th.text,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    flex: 1,
+                    marginRight: SP.sm,
+                  }}
+                >
+                  {inv.email}
+                </span>
+                <span
+                  data-testid={`host-invite-status-${inv.id}`}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: FONT.body,
+                    color: inv.status === "joined" ? th.green : th.muted,
+                    flexShrink: 0,
+                  }}
+                >
+                  {inv.status === "joined" ? t.hostInviteStatusJoined : t.hostInviteStatusInvited}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {startError && (
         <div
