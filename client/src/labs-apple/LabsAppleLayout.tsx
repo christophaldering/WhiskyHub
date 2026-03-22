@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { ThemeTokens, SP } from './theme/tokens'
 import { Translations } from './theme/i18n'
 import * as Icon from './icons/Icons'
@@ -35,36 +36,21 @@ export const LabsAppleLayout: React.FC<Props> = ({
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(session?.profilePhotoUrl || null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const hideTabBar = subScreen !== null
 
   const initial = session?.name?.[0]?.toUpperCase() || '?'
   const isGuest = !session?.email
   const isAdmin = session?.isAdmin || session?.role === 'admin'
 
-  const openMenu = useCallback(() => {
-    setProfileOpen(true)
-    requestAnimationFrame(() => {
-      if (dialogRef.current && !dialogRef.current.open) {
-        dialogRef.current.showModal()
-      }
-    })
-  }, [])
-
-  const closeMenu = useCallback(() => {
-    if (dialogRef.current?.open) {
-      dialogRef.current.close()
-    }
-    setProfileOpen(false)
-  }, [])
+  const openMenu = useCallback(() => setProfileOpen(true), [])
+  const closeMenu = useCallback(() => setProfileOpen(false), [])
 
   useEffect(() => {
-    const d = dialogRef.current
-    if (!d) return
-    const onClose = () => setProfileOpen(false)
-    d.addEventListener('close', onClose)
-    return () => d.removeEventListener('close', onClose)
-  }, [])
+    if (!profileOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setProfileOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [profileOpen])
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -86,6 +72,110 @@ export const LabsAppleLayout: React.FC<Props> = ({
       setPhotoUploading(false)
     }
   }
+
+  const profileOverlay = profileOpen ? createPortal(
+    <div
+      data-testid="profile-overlay"
+      onClick={closeMenu}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2147483647,
+        background: 'rgba(0,0,0,0.25)',
+        fontFamily: 'DM Sans, sans-serif',
+      }}
+    >
+      <div
+        data-testid="profile-menu"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute',
+          top: 56,
+          right: Math.max(16, (window.innerWidth - 480) / 2 + 16),
+          width: 220,
+          maxWidth: 'calc(100vw - 32px)',
+          background: th.bgCard,
+          border: `1px solid ${th.border}`,
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          overflow: 'hidden',
+          color: th.text,
+        }}
+      >
+        <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 22, border: `2px solid ${th.gold}44`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: th.gold, overflow: 'hidden' }}>
+              {photoUrl
+                ? <img src={photoUrl} alt={session?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : initial
+              }
+            </div>
+            <button
+              data-testid="button-photo-upload-mini"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={photoUploading}
+              style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, background: th.gold, border: `2px solid ${th.bgCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+            >
+              {photoUploading
+                ? <Icon.Spinner color="#1a0f00" size={10} />
+                : <Icon.Camera color="#1a0f00" size={10} />
+              }
+            </button>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.name}</div>
+            <div style={{ fontSize: 11, color: th.faint, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {isGuest ? (lang === 'de' ? 'Gast' : 'Guest') : session?.email}
+            </div>
+          </div>
+        </div>
+
+        <button
+          data-testid="button-edit-profile"
+          onClick={() => { closeMenu(); onTabChange('meinewelt') }}
+          style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+        >
+          <Icon.Profile color={th.muted} size={16} />
+          {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
+        </button>
+
+        <button
+          data-testid="button-change-photo"
+          onClick={() => { closeMenu(); fileInputRef.current?.click() }}
+          style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+        >
+          <Icon.Camera color={th.muted} size={16} />
+          {lang === 'de' ? 'Profilfoto ändern' : 'Change photo'}
+        </button>
+
+        {isAdmin && (
+          <button
+            data-testid="button-admin"
+            onClick={() => { closeMenu(); (window as any).__casksenseNav?.('admin') }}
+            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+          >
+            <Icon.Settings color={th.gold} size={16} />
+            Admin
+          </button>
+        )}
+
+        {onLogout && (
+          <button
+            data-testid="button-logout"
+            onClick={() => { closeMenu(); onLogout() }}
+            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+          >
+            <Icon.Back color="#e06060" size={16} />
+            {t.authLogout}
+          </button>
+        )}
+      </div>
+    </div>,
+    document.body
+  ) : null
 
   return (
     <div style={{ minHeight: '100dvh', background: th.bg, color: th.text, position: 'relative', maxWidth: 480, margin: '0 auto' }}>
@@ -148,120 +238,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
         </div>
       )}
 
-      <dialog
-        ref={dialogRef}
-        data-testid="profile-dialog"
-        onClick={(e) => { if (e.target === dialogRef.current) closeMenu() }}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          maxWidth: 480,
-          maxHeight: 'none',
-          margin: '0 auto',
-          padding: 0,
-          border: 'none',
-          background: 'transparent',
-          fontFamily: 'DM Sans, sans-serif',
-          overflow: 'visible',
-        }}
-      >
-        <div
-          data-testid="profile-menu"
-          style={{
-            position: 'absolute',
-            top: 56,
-            right: 16,
-            width: 220,
-            maxWidth: 'calc(100vw - 32px)',
-            background: th.bgCard,
-            border: `1px solid ${th.border}`,
-            borderRadius: 16,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 22, border: `2px solid ${th.gold}44`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: th.gold, overflow: 'hidden' }}>
-                {photoUrl
-                  ? <img src={photoUrl} alt={session?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : initial
-                }
-              </div>
-              <button
-                data-testid="button-photo-upload-mini"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={photoUploading}
-                style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, background: th.gold, border: `2px solid ${th.bgCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-              >
-                {photoUploading
-                  ? <Icon.Spinner color="#1a0f00" size={10} />
-                  : <Icon.Camera color="#1a0f00" size={10} />
-                }
-              </button>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.name}</div>
-              <div style={{ fontSize: 11, color: th.faint, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {isGuest ? (lang === 'de' ? 'Gast' : 'Guest') : session?.email}
-              </div>
-            </div>
-          </div>
-
-          <button
-            data-testid="button-edit-profile"
-            onClick={() => { closeMenu(); onTabChange('meinewelt') }}
-            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-          >
-            <Icon.Profile color={th.muted} size={16} />
-            {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
-          </button>
-
-          <button
-            data-testid="button-change-photo"
-            onClick={() => { closeMenu(); fileInputRef.current?.click() }}
-            style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-          >
-            <Icon.Camera color={th.muted} size={16} />
-            {lang === 'de' ? 'Profilfoto ändern' : 'Change photo'}
-          </button>
-
-          {isAdmin && (
-            <button
-              data-testid="button-admin"
-              onClick={() => { closeMenu(); (window as any).__casksenseNav?.('admin') }}
-              style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-            >
-              <Icon.Settings color={th.gold} size={16} />
-              Admin
-            </button>
-          )}
-
-          {onLogout && (
-            <button
-              data-testid="button-logout"
-              onClick={() => { closeMenu(); onLogout() }}
-              style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-            >
-              <Icon.Back color="#e06060" size={16} />
-              {t.authLogout}
-            </button>
-          )}
-        </div>
-      </dialog>
-
-      <style>{`
-        dialog[data-testid="profile-dialog"]::backdrop {
-          background: rgba(0,0,0,0.3);
-        }
-        dialog[data-testid="profile-dialog"][open] {
-          display: flex;
-          align-items: flex-start;
-          justify-content: flex-end;
-        }
-      `}</style>
+      {profileOverlay}
     </div>
   )
 }
