@@ -35,9 +35,17 @@ export interface Translations {
   // Solo Phase 3
   soloTitle: string; soloCaptureSub: string
   soloPhoto: string; soloPhotoDesc: string
+  soloGallery: string; soloGalleryDesc: string
   soloManual: string; soloManualDesc: string
   soloBarcode: string; soloBarcodeDesc: string
-  soloSkip: string
+  soloBarcodeInput: string; soloBarcodeInputPH: string; soloBarcodeSubmit: string
+  soloDescribe: string; soloDescribeDesc: string
+  soloDescribePH: string; soloDescribeSubmit: string; soloDescribeSearching: string
+  soloImport: string; soloImportDesc: string; soloImportAnalyzing: string; soloImportFail: string
+  soloCollection: string; soloCollectionDesc: string
+  soloCollectionSearch: string; soloCollectionAll: string; soloCollectionOpen: string; soloCollectionClosed: string
+  soloCollectionLoading: string; soloCollectionEmpty: string; soloCollectionError: string
+  soloCollectionBottles: string; soloCollectionNoResults: string
   soloName: string; soloNamePH: string
   soloRegion: string; soloRegionPH: string
   soloCask: string; soloCaskPH: string
@@ -213,9 +221,17 @@ const DE: Translations = {
   band90: 'Außergewöhnlich', band85: 'Exzellent', band80: 'Hervorragend', band75: 'Sehr gut', band70: 'Gut', band0: 'Okay',
   soloTitle: 'Neuen Dram erfassen', soloCaptureSub: 'Flasche erfassen oder direkt bewerten.',
   soloPhoto: 'Flasche fotografieren', soloPhotoDesc: 'KI erkennt Whisky automatisch',
-  soloManual: 'Manuell eingeben', soloManualDesc: 'Name, Region und Fass eingeben',
-  soloBarcode: 'Barcode scannen', soloBarcodeDesc: 'Whiskybase-ID automatisch befüllen',
-  soloSkip: 'Direkt zur Bewertung',
+  soloGallery: 'Galerie', soloGalleryDesc: 'Bild aus Fotogalerie wählen',
+  soloManual: 'Manuell', soloManualDesc: 'Name & Details eingeben',
+  soloBarcode: 'Barcode', soloBarcodeDesc: 'Whiskybase-ID eingeben',
+  soloBarcodeInput: 'Barcode / Whiskybase-ID', soloBarcodeInputPH: 'z.B. 12345', soloBarcodeSubmit: 'Suchen',
+  soloDescribe: 'Beschreiben', soloDescribeDesc: 'KI identifiziert per Text',
+  soloDescribePH: 'z.B. Glenfarclas 15 aus Speyside...', soloDescribeSubmit: 'Identifizieren', soloDescribeSearching: 'KI sucht...',
+  soloImport: 'Import', soloImportDesc: 'Excel, CSV oder PDF', soloImportAnalyzing: 'Wird analysiert...', soloImportFail: 'Import fehlgeschlagen',
+  soloCollection: 'Sammlung', soloCollectionDesc: 'Aus Whiskybase-Collection',
+  soloCollectionSearch: 'Sammlung durchsuchen...', soloCollectionAll: 'Alle', soloCollectionOpen: 'Offen', soloCollectionClosed: 'Getrunken',
+  soloCollectionLoading: 'Sammlung wird geladen...', soloCollectionEmpty: 'Keine Flaschen in der Sammlung.', soloCollectionError: 'Sammlung konnte nicht geladen werden.',
+  soloCollectionBottles: 'Flaschen', soloCollectionNoResults: 'Keine Treffer.',
   soloName: 'Whisky-Name', soloNamePH: 'z.B. Glenfarclas 15',
   soloRegion: 'Region', soloRegionPH: 'z.B. Speyside',
   soloCask: 'Fasslagerung', soloCaskPH: 'z.B. Sherry',
@@ -402,9 +418,17 @@ const EN: Translations = {
   band90: 'Extraordinary', band85: 'Excellent', band80: 'Outstanding', band75: 'Very good', band70: 'Good', band0: 'Okay',
   soloTitle: 'Log a new dram', soloCaptureSub: 'Capture the bottle or go straight to rating.',
   soloPhoto: 'Photograph bottle', soloPhotoDesc: 'AI identifies the whisky automatically',
-  soloManual: 'Enter manually', soloManualDesc: 'Enter name, region and cask',
-  soloBarcode: 'Scan barcode', soloBarcodeDesc: 'Auto-fill from Whiskybase ID',
-  soloSkip: 'Go straight to rating',
+  soloGallery: 'Gallery', soloGalleryDesc: 'Choose photo from gallery',
+  soloManual: 'Manual', soloManualDesc: 'Enter name & details',
+  soloBarcode: 'Barcode', soloBarcodeDesc: 'Enter Whiskybase ID',
+  soloBarcodeInput: 'Barcode / Whiskybase ID', soloBarcodeInputPH: 'e.g. 12345', soloBarcodeSubmit: 'Search',
+  soloDescribe: 'Describe', soloDescribeDesc: 'AI identifies via text',
+  soloDescribePH: 'e.g. Glenfarclas 15 from Speyside...', soloDescribeSubmit: 'Identify', soloDescribeSearching: 'AI is searching...',
+  soloImport: 'Import', soloImportDesc: 'Excel, CSV or PDF', soloImportAnalyzing: 'Analyzing...', soloImportFail: 'Import failed',
+  soloCollection: 'Collection', soloCollectionDesc: 'From Whiskybase collection',
+  soloCollectionSearch: 'Search collection...', soloCollectionAll: 'All', soloCollectionOpen: 'Open', soloCollectionClosed: 'Closed',
+  soloCollectionLoading: 'Loading collection...', soloCollectionEmpty: 'No bottles in your collection.', soloCollectionError: 'Failed to load collection.',
+  soloCollectionBottles: 'bottles', soloCollectionNoResults: 'No matches found.',
   soloName: 'Whisky name', soloNamePH: 'e.g. Glenfarclas 15',
   soloRegion: 'Region', soloRegionPH: 'e.g. Speyside',
   soloCask: 'Cask type', soloCaskPH: 'e.g. Sherry',

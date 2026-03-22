@@ -57,7 +57,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(session?.profilePhotoUrl || null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const hideTabBar = subScreen !== null
+  const hideTabBar = subScreen !== null && subScreen !== 'solo'
 
   const initial = session?.name?.[0]?.toUpperCase() || '?'
   const isGuest = !session?.email
