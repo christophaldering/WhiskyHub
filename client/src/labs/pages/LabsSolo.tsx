@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
-import { participantApi, collectionApi } from "@/lib/api";
+import { participantApi } from "@/lib/api";
+import { CollectionPicker } from "@/labs/components/CollectionPicker";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -17,7 +18,6 @@ import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
-import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 const VOICE_MEMOS_ENABLED = false;
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
@@ -132,7 +132,7 @@ function confidenceLabel(conf: number, t?: (key: string, fallback: string) => st
   return { text: tr("m2.solo.confidenceLow", "Low"), color: "var(--labs-danger)" };
 }
 
-type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing" | "collectionPicker";
+type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function LabsSolo() {
   const { t, i18n } = useTranslation();
@@ -189,6 +189,7 @@ export default function LabsSolo() {
   const [hubScoreRange, setHubScoreRange] = useState<"all" | "90+" | "80-89" | "70-79" | "<70">("all");
 
   const [showManual, setShowManual] = useState(false);
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
   const [unknownCask, setUnknownCask] = useState("");
@@ -203,12 +204,6 @@ export default function LabsSolo() {
   const [wbLookupResult, setWbLookupResult] = useState("");
   const [autofillLoading, setAutofillLoading] = useState(false);
   const [autofillResult, setAutofillResult] = useState("");
-
-  const [collectionItems, setCollectionItems] = useState<WhiskybaseCollectionItem[]>([]);
-  const [collectionLoading, setCollectionLoading] = useState(false);
-  const [collectionError, setCollectionError] = useState(false);
-  const [collectionSearch, setCollectionSearch] = useState("");
-  const [collectionStatusFilter, setCollectionStatusFilter] = useState<"all" | "open" | "closed">("all");
 
   const [detailedScores, setDetailedScores] = useState({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
   const [detailTouched, setDetailTouched] = useState(false);
@@ -962,60 +957,6 @@ export default function LabsSolo() {
     setSelectedCandidate(null);
   };
 
-  const openCollectionPicker = async () => {
-    setSheetView("collectionPicker");
-    setCollectionSearch("");
-    setCollectionStatusFilter("all");
-    setCollectionError(false);
-    if (pid) {
-      setCollectionLoading(true);
-      try {
-        const items = await collectionApi.getAll(pid);
-        setCollectionItems(items);
-        setCollectionError(false);
-      } catch {
-        setCollectionItems([]);
-        setCollectionError(true);
-      } finally {
-        setCollectionLoading(false);
-      }
-    }
-  };
-
-  const handleSelectCollectionItem = (item: WhiskybaseCollectionItem) => {
-    const fullName = item.brand && item.brand !== item.name ? `${item.brand} ${item.name}` : (item.name || "");
-    setWhiskyName(fullName);
-    setDistillery(item.distillery || "");
-    setUnknownAge(item.statedAge || "");
-    setUnknownAbv(item.abv || "");
-    setUnknownCask(item.caskType || "");
-    setUnknownRegion("");
-    setUnknownCountry("");
-    setUnknownPeatLevel("");
-    setUnknownVintage(item.vintage || "");
-    setUnknownBottler("");
-    setUnknownWbId(item.whiskybaseId || "");
-    setUnknownPrice(item.pricePaid != null ? String(item.pricePaid) : "");
-    setSelectedCandidate(null);
-    setSheetView("none");
-    setRatingFlowStep(0);
-    setSoloView("ratingFlow");
-    setShowManual(true);
-    setAcceptedBanner(true);
-    setTimeout(() => setAcceptedBanner(false), 3500);
-    setTimeout(() => { ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
-    if (pid && fullName) fetchPreviousRatings("", fullName);
-  };
-
-  const filteredCollectionItems = collectionItems.filter((item) => {
-    if (collectionStatusFilter !== "all" && item.status !== collectionStatusFilter) return false;
-    if (collectionSearch) {
-      const q = collectionSearch.toLowerCase();
-      return (item.name?.toLowerCase().includes(q) || item.brand?.toLowerCase().includes(q) || item.distillery?.toLowerCase().includes(q) || item.caskType?.toLowerCase().includes(q));
-    }
-    return true;
-  });
-
   const handleRetake = () => {
     setCaptureSource("editor");
     setSoloView("capture");
@@ -1456,15 +1397,20 @@ export default function LabsSolo() {
 
   if (soloView === "capture") {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="labs-solo-capture">
+      <div className="labs-fade-in" style={{ padding: "32px 20px 80px", maxWidth: 440, margin: "0 auto" }} data-testid="labs-solo-capture">
         {hiddenFileInputs}
+
         <button
           onClick={() => setSoloView(captureSource)}
-          className="labs-btn-ghost"
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 12, justifyContent: "flex-start" }}
+          style={{
+            display: "flex", alignItems: "center", gap: 4,
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--labs-text-muted)", fontSize: 14,
+            minHeight: 44, padding: "0 0 8px", marginLeft: -4,
+          }}
           data-testid="button-capture-back"
         >
-          <ChevronLeft style={{ width: 16, height: 16 }} />
+          <ChevronLeft size={18} />
           {t("m2.common.back", "Back")}
         </button>
 
@@ -1472,18 +1418,12 @@ export default function LabsSolo() {
           <div
             onClick={() => setError("")}
             style={{
-              padding: '12px 16px',
-              borderRadius: '10px',
-              border: '0.5px solid var(--labs-text-muted)',
-              fontSize: '13px',
-              marginBottom: '1rem',
-              fontFamily: 'var(--font-ui, Inter, sans-serif)',
-              lineHeight: 1.5,
-              color: 'var(--labs-text-secondary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
+              padding: "12px 16px", borderRadius: 10,
+              border: "0.5px solid var(--labs-text-muted)",
+              fontSize: 13, marginBottom: 16,
+              fontFamily: "var(--font-ui, Inter, sans-serif)",
+              lineHeight: 1.5, color: "var(--labs-text-secondary)",
+              cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8,
             }}
             data-testid="text-capture-error"
           >
@@ -1492,72 +1432,143 @@ export default function LabsSolo() {
           </div>
         )}
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 400, width: "100%", margin: "0 auto" }}>
-          <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 6px", textAlign: "center" }}>
-            {t("m2.solo.captureTitle", "What are you tasting?")}
-          </h1>
-          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 8, textAlign: "center", lineHeight: 1.5 }}>
-            {t("m2.solo.captureSubtitle", "Start with a photo — or choose another method.")}
-          </p>
-          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center", opacity: 0.75 }} data-testid="text-photo-rights-hint-solo">
-            {t("common.uploadRightsHint")}
-          </p>
+        <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", marginBottom: 8 }}>
+          {t("m2.solo.captureTitle", "What are you tasting?")}
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 32, lineHeight: 1.5 }}>
+          {t("m2.solo.captureSubtitle2", "How would you like to log this dram?")}
+        </p>
 
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            style={{
-              width: "100%", padding: "28px 20px", borderRadius: "var(--labs-radius-lg)",
-              background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, black))",
-              border: "none", cursor: "pointer", display: "flex", flexDirection: "column",
-              alignItems: "center", gap: 10, marginBottom: 20,
-              boxShadow: "0 4px 20px color-mix(in srgb, var(--labs-accent) 25%, transparent)",
-            }}
-            data-testid="button-capture-photo"
-          >
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Camera style={{ width: 28, height: 28, color: "var(--labs-on-accent)" }} />
+        <button
+          onClick={() => setShowCollectionPicker(true)}
+          data-testid="button-capture-collection"
+          style={{
+            width: "100%", padding: 20, marginBottom: 12,
+            borderRadius: "var(--labs-radius-lg)",
+            background: "var(--labs-accent-muted)",
+            border: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+            cursor: "pointer", display: "flex", alignItems: "center",
+            gap: 16, textAlign: "left",
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: "color-mix(in srgb, var(--labs-accent) 20%, transparent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Library size={22} color="var(--labs-accent)" />
+          </div>
+          <div>
+            <div style={{
+              fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', serif",
+              color: "var(--labs-accent)", marginBottom: 3,
+            }}>
+              {t("m2.solo.captureCollection", "From my collection")}
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-on-accent)", letterSpacing: "0.02em" }}>
+            <div style={{ fontSize: 12, color: "var(--labs-accent)", opacity: 0.7 }}>
+              {t("m2.solo.captureCollectionSub", "Search journal & Whiskybase collection")}
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => cameraInputRef.current?.click()}
+          data-testid="button-capture-photo"
+          style={{
+            width: "100%", padding: "16px 20px", marginBottom: 24,
+            borderRadius: "var(--labs-radius-lg)",
+            background: "var(--labs-surface)",
+            border: "1px solid var(--labs-border)",
+            cursor: "pointer", display: "flex", alignItems: "center",
+            gap: 16, textAlign: "left",
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: "var(--labs-surface-elevated, var(--labs-surface))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Camera size={22} color="var(--labs-text-muted)" />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 3 }}>
               {t("m2.solo.capturePhotoTitle", "Take Photo")}
             </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
+            <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
               {t("m2.solo.capturePhotoDesc", "AI identifies the whisky automatically")}
             </div>
+          </div>
+        </button>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+          <button
+            onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); setShowManual(true); }}
+            data-testid="button-capture-manual"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--labs-text-muted)", fontSize: 13,
+              minHeight: 44, display: "flex", alignItems: "center",
+              justifyContent: "center", width: "100%",
+            }}
+          >
+            {t("m2.solo.captureManual", "Enter manually")}
           </button>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
-            {[
-              { onClick: () => uploadInputRef.current?.click(), icon: <Upload style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureGallery", "Gallery"), testId: "button-capture-gallery" },
-              { onClick: () => { setRatingFlowStep(0); setSoloView("ratingFlow"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }, icon: <Barcode style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureBarcode", "Barcode"), testId: "button-capture-barcode" },
-              { onClick: () => { setRatingFlowStep(0); setSoloView("ratingFlow"); setSheetView("describe"); setDescribeQuery(""); }, icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureDescribe", "Describe"), testId: "button-capture-describe" },
-              { onClick: () => fileInputRef.current?.click(), icon: <FileText style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureImport", "Import"), testId: "button-capture-file" },
-              ...(pid ? [{ onClick: () => openCollectionPicker(), icon: <Library style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />, label: t("m2.solo.captureCollection", "Collection"), testId: "button-capture-collection" }] : []),
-            ].map((item) => (
-              <button
-                key={item.testId}
-                onClick={item.onClick}
-                className="labs-card labs-card-interactive"
-                style={{ padding: "18px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
-                data-testid={item.testId}
-              >
-                {item.icon}
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{item.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <button
-              onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); setShowManual(true); }}
-              className="labs-btn-ghost"
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
-              data-testid="button-capture-skip"
-            >
-              {t("m2.solo.captureSkip", "Continue without scan")}
-              <ChevronLeft style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
-            </button>
-          </div>
+          <button
+            onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); setShowManual(true); }}
+            data-testid="button-capture-skip"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--labs-text-muted)", fontSize: 13,
+              minHeight: 44, display: "flex", alignItems: "center",
+              justifyContent: "center", width: "100%",
+            }}
+          >
+            {t("m2.solo.captureSkip", "Go straight to rating")}
+          </button>
+          <button
+            onClick={() => { setRatingFlowStep(0); setSoloView("ratingFlow"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }}
+            data-testid="button-capture-barcode"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--labs-text-muted)", fontSize: 13,
+              minHeight: 44, display: "flex", alignItems: "center",
+              justifyContent: "center", width: "100%", opacity: 0.6,
+            }}
+          >
+            {t("m2.solo.captureBarcode", "Barcode scannen")}
+          </button>
         </div>
+
+        {showCollectionPicker && (
+          <CollectionPicker
+            participantId={pid || ""}
+            onSelect={(whisky) => {
+              setShowCollectionPicker(false);
+              setWhiskyName(whisky.name);
+              setDistillery(whisky.distillery || "");
+              setUnknownAge(whisky.age || "");
+              setUnknownAbv(whisky.abv || "");
+              setUnknownCask(whisky.cask || "");
+              setUnknownRegion(whisky.region || "");
+              setUnknownCountry("");
+              setUnknownPeatLevel("");
+              setUnknownVintage("");
+              setUnknownBottler("");
+              setUnknownWbId("");
+              setUnknownPrice("");
+              setSelectedCandidate(null);
+              setSheetView("none");
+              setRatingFlowStep(0);
+              setSoloView("ratingFlow");
+              setShowManual(true);
+              setAcceptedBanner(true);
+              setTimeout(() => setAcceptedBanner(false), 3500);
+              setTimeout(() => { ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
+              if (pid && whisky.name) fetchPreviousRatings("", whisky.name);
+            }}
+            onClose={() => setShowCollectionPicker(false)}
+          />
+        )}
 
         {sheetBackdrop}
         {sheetView === "identifying" && renderIdentifyingSheet}
@@ -1600,147 +1611,6 @@ export default function LabsSolo() {
           </div>
         )}
         {sheetView === "onlineSearch" && renderOnlineSearchSheet}
-        {sheetView === "collectionPicker" && (
-          <div style={{
-            position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--labs-surface)",
-            borderTop: "1px solid var(--labs-border)", borderRadius: "16px 16px 0 0",
-            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: "var(--z-overlay)", maxHeight: "85dvh", overflowY: "auto",
-          }}>
-            <div style={{ width: 40, height: 4, background: "var(--labs-border)", borderRadius: 2, margin: "0 auto 16px" }} />
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-collection-picker-title">
-              {t("m2.solo.collectionPickerTitle", "From Collection")}
-            </h3>
-            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
-              {t("m2.solo.collectionPickerSubtitle", "Select a whisky from your collection")}
-            </p>
-
-            <div style={{ position: "relative", marginBottom: 10 }}>
-              <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
-              <input
-                type="text"
-                value={collectionSearch}
-                onChange={(e) => setCollectionSearch(e.target.value)}
-                placeholder={t("m2.solo.collectionSearchPlaceholder", "Search collection...")}
-                style={{ width: "100%", padding: "10px 12px 10px 34px", background: "var(--labs-bg)", border: "1px solid var(--labs-border)", borderRadius: 10, fontSize: 14, color: "var(--labs-text)", outline: "none", boxSizing: "border-box" }}
-                data-testid="input-collection-picker-search"
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-              {(["all", "open", "closed"] as const).map(sf => (
-                <button
-                  key={sf}
-                  onClick={() => setCollectionStatusFilter(sf)}
-                  style={{
-                    padding: "4px 12px", fontSize: 11, fontWeight: collectionStatusFilter === sf ? 600 : 400,
-                    color: collectionStatusFilter === sf ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                    background: collectionStatusFilter === sf ? "var(--labs-accent-muted)" : "transparent",
-                    border: `1px solid ${collectionStatusFilter === sf ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    borderRadius: 16, cursor: "pointer",
-                  }}
-                  data-testid={`button-collection-filter-${sf}`}
-                >
-                  {sf === "all" ? t("m2.solo.collectionFilterAll", "All") : sf === "open" ? t("m2.solo.collectionFilterOpen", "Open") : t("m2.solo.collectionFilterClosed", "Closed")}
-                </button>
-              ))}
-            </div>
-
-            {collectionLoading ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 8 }}>
-                <Loader2 style={{ width: 24, height: 24, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
-                <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("m2.solo.collectionLoading", "Loading collection...")}</span>
-              </div>
-            ) : collectionError ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 10 }} data-testid="collection-picker-error">
-                <X style={{ width: 32, height: 32, color: "var(--labs-danger)" }} />
-                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-                  {t("m2.solo.collectionLoadError", "Failed to load collection")}
-                </p>
-                <button
-                  onClick={() => openCollectionPicker()}
-                  className="labs-btn-secondary"
-                  style={{ marginTop: 4, fontSize: 13 }}
-                  data-testid="button-collection-picker-retry"
-                >
-                  {t("m2.solo.tryAgain", "Try again")}
-                </button>
-              </div>
-            ) : collectionItems.length === 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 10 }} data-testid="collection-picker-empty">
-                <Archive style={{ width: 32, height: 32, color: "var(--labs-text-muted)" }} />
-                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-                  {t("m2.solo.collectionEmpty", "No bottles in your collection")}
-                </p>
-                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", maxWidth: 260, lineHeight: 1.5 }}>
-                  {t("m2.solo.collectionEmptyHint", "Import your Whiskybase collection first to select from here.")}
-                </p>
-                <button
-                  onClick={() => { setSheetView("none"); navigate("/labs/taste/collection"); }}
-                  className="labs-btn-primary"
-                  style={{ marginTop: 4, fontSize: 13 }}
-                  data-testid="button-collection-picker-import"
-                >
-                  {t("m2.solo.collectionGoImport", "Import Collection")}
-                </button>
-              </div>
-            ) : filteredCollectionItems.length === 0 ? (
-              <div style={{ padding: "24px 0", textAlign: "center" }}>
-                <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("m2.solo.collectionNoResults", "No matches found")}</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 4 }}>
-                  {filteredCollectionItems.length} {t("m2.solo.collectionBottles", "bottles")}
-                </div>
-                {filteredCollectionItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSelectCollectionItem(item)}
-                    className="labs-card labs-card-interactive"
-                    style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", cursor: "pointer" }}
-                    data-testid={`button-collection-item-${item.id}`}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 3, fontSize: 12, color: "var(--labs-text-muted)" }}>
-                        {item.distillery && <span>{item.distillery}</span>}
-                        {item.statedAge && <span>{item.statedAge}</span>}
-                        {item.abv && <span>{item.abv}</span>}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      {item.status && (
-                        <span style={{
-                          fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999,
-                          color: item.status === "open" ? "var(--labs-success)" : "var(--labs-info)",
-                          border: `1px solid ${item.status === "open" ? "var(--labs-success)" : "var(--labs-info)"}`,
-                        }}>
-                          {item.status === "open" ? t("m2.solo.collectionFilterOpen", "Open") : t("m2.solo.collectionFilterClosed", "Closed")}
-                        </span>
-                      )}
-                      {item.communityRating && (
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 2 }}>
-                          <Star style={{ width: 12, height: 12 }} />{item.communityRating.toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <button
-              onClick={() => setSheetView("none")}
-              className="labs-btn-secondary"
-              style={{ width: "100%", marginTop: 12 }}
-              data-testid="button-collection-picker-close"
-            >
-              {t("m2.solo.cancel", "Cancel")}
-            </button>
-          </div>
-        )}
       </div>
     );
   }
