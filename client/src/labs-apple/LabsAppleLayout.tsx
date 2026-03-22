@@ -27,6 +27,38 @@ const TABS: { id: TabId; labelKey: keyof Translations; icon: (active: boolean, t
   { id: 'circle',    labelKey: 'tabCircle',    icon: (a, th) => <Icon.TabCircle   color={a ? th.gold : th.faint} size={24} /> },
 ]
 
+const MENU_BUILD = 'v8'
+
+function injectOverlayStyles() {
+  if (document.getElementById('casksense-overlay-style')) return
+  const s = document.createElement('style')
+  s.id = 'casksense-overlay-style'
+  s.textContent = [
+    '#casksense-profile-overlay{',
+    'position:fixed!important;',
+    'top:0!important;',
+    'left:0!important;',
+    'right:0!important;',
+    'bottom:0!important;',
+    'width:100%!important;',
+    'height:100%!important;',
+    'z-index:2147483647!important;',
+    'background:rgba(0,0,0,0.4)!important;',
+    'display:block!important;',
+    'opacity:1!important;',
+    'visibility:visible!important;',
+    'pointer-events:auto!important;',
+    'transform:none!important;',
+    '-webkit-transform:none!important;',
+    '}',
+    '#casksense-profile-card{',
+    'position:absolute!important;',
+    'z-index:2147483647!important;',
+    '}',
+  ].join('')
+  document.head.appendChild(s)
+}
+
 function showVanillaMenu(opts: {
   th: ThemeTokens, lang: 'de'|'en', session: any, photoUrl: string|null,
   isGuest: boolean, isAdmin: boolean,
@@ -36,37 +68,12 @@ function showVanillaMenu(opts: {
   const existing = document.getElementById('casksense-profile-overlay')
   if (existing) existing.remove()
 
-  let styleTag = document.getElementById('casksense-overlay-style') as HTMLStyleElement | null
-  if (!styleTag) {
-    styleTag = document.createElement('style')
-    styleTag.id = 'casksense-overlay-style'
-    styleTag.textContent = `
-      #casksense-profile-overlay {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        z-index: 2147483647 !important;
-        background: rgba(0, 0, 0, 0.4) !important;
-        font-family: 'DM Sans', sans-serif !important;
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        transform: none !important;
-      }
-      #casksense-profile-card {
-        position: absolute !important;
-        z-index: 2147483647 !important;
-      }
-    `
-    document.head.appendChild(styleTag)
-  }
+  injectOverlayStyles()
 
   const overlay = document.createElement('div')
   overlay.id = 'casksense-profile-overlay'
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.4);display:block;opacity:1;visibility:visible;pointer-events:auto;transform:none;-webkit-transform:none;'
+  overlay.setAttribute('style', overlay.style.cssText)
   overlay.addEventListener('click', () => { overlay.remove(); opts.onClose() })
 
   const rightOffset = Math.max(16, (window.innerWidth - 480) / 2 + 16)
@@ -222,6 +229,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
           <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 600, color: th.gold, letterSpacing: '0.04em' }}>
             {t.appName}
           </span>
+          <span data-testid="text-build-marker" style={{ fontSize: 9, color: th.faint, opacity: 0.5, fontFamily: 'DM Sans, sans-serif' }}>{MENU_BUILD}</span>
         </div>
 
         <div style={{ display: 'flex', gap: SP.sm, alignItems: 'center' }}>
