@@ -328,16 +328,24 @@ export const HostWizard: React.FC<Props> = ({ th, t, participantId, onBack, onDo
         <HostStep1 th={th} t={t} onBack={onBack} onNext={async (cfg) => {
           setConfig(cfg)
           try {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase()
             const res = await fetch('/api/tastings', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-participant-id': participantId },
-              body: JSON.stringify({ name: cfg.name, date: cfg.date, time: cfg.time, location: cfg.location, format: cfg.format, ratingScale: parseInt(cfg.scale), revealOrder: cfg.revealOrder })
+              body: JSON.stringify({ title: cfg.name, date: cfg.date || new Date().toISOString().split('T')[0], time: cfg.time, location: cfg.location || 'TBD', format: cfg.format, ratingScale: parseInt(cfg.scale), revealOrder: cfg.revealOrder, hostId: participantId, code })
             })
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({ message: 'Tasting konnte nicht erstellt werden.' }))
+              alert(err.message || 'Tasting konnte nicht erstellt werden.')
+              return
+            }
             const data = await res.json()
             setTastingId(data.id)
             setCode(data.code)
             setStep(2)
-          } catch { }
+          } catch (e) {
+            alert(e instanceof Error ? e.message : 'Netzwerkfehler – bitte erneut versuchen.')
+          }
         }} />
       )}
       {step === 2 && tastingId && (
