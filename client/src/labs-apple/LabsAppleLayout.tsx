@@ -27,7 +27,7 @@ const TABS: { id: TabId; labelKey: keyof Translations; icon: (active: boolean, t
   { id: 'circle',    labelKey: 'tabCircle',    icon: (a, th) => <Icon.TabCircle   color={a ? th.gold : th.faint} size={24} /> },
 ]
 
-const MENU_BUILD = 'v5'
+const MENU_BUILD = 'v6'
 
 function showVanillaMenu(opts: {
   th: ThemeTokens, lang: 'de'|'en', session: any, photoUrl: string|null,
@@ -35,16 +35,47 @@ function showVanillaMenu(opts: {
   onClose: () => void, onProfile: () => void, onPhoto: () => void,
   onAdmin: () => void, onLogout: (() => void) | undefined,
 }) {
+  console.log('[CSK-DEBUG] showVanillaMenu CALLED')
   const existing = document.getElementById('casksense-profile-overlay')
-  if (existing) existing.remove()
+  if (existing) { console.log('[CSK-DEBUG] removing existing overlay'); existing.remove() }
+
+  let styleTag = document.getElementById('casksense-overlay-style') as HTMLStyleElement | null
+  if (!styleTag) {
+    styleTag = document.createElement('style')
+    styleTag.id = 'casksense-overlay-style'
+    styleTag.textContent = `
+      #casksense-profile-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 2147483647 !important;
+        background: rgba(255, 0, 0, 0.5) !important;
+        font-family: 'DM Sans', sans-serif !important;
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+      }
+      #casksense-profile-card {
+        position: absolute !important;
+        z-index: 2147483647 !important;
+      }
+    `
+    document.head.appendChild(styleTag)
+  }
 
   const overlay = document.createElement('div')
   overlay.id = 'casksense-profile-overlay'
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;background:rgba(0,0,0,0.3);font-family:DM Sans,sans-serif;'
   overlay.addEventListener('click', () => { overlay.remove(); opts.onClose() })
+  console.log('[CSK-DEBUG] overlay element created')
 
   const rightOffset = Math.max(16, (window.innerWidth - 480) / 2 + 16)
   const card = document.createElement('div')
+  card.id = 'casksense-profile-card'
   card.style.cssText = `position:absolute;top:56px;right:${rightOffset}px;width:220px;max-width:calc(100vw - 32px);background:${opts.th.bgCard};border:1px solid ${opts.th.border};border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.35);overflow:hidden;color:${opts.th.text};`
   card.addEventListener('click', (e) => e.stopPropagation())
 
@@ -109,6 +140,9 @@ function showVanillaMenu(opts: {
 
   overlay.appendChild(card)
   document.body.appendChild(overlay)
+  console.log('[CSK-DEBUG] overlay appended to body, parentNode:', overlay.parentNode?.nodeName, 'children:', overlay.childNodes.length)
+  console.log('[CSK-DEBUG] overlay computed z-index:', window.getComputedStyle(overlay).zIndex, 'position:', window.getComputedStyle(overlay).position, 'bg:', window.getComputedStyle(overlay).background)
+  console.log('[CSK-DEBUG] body children count:', document.body.children.length, 'overlay is last child:', document.body.lastElementChild === overlay)
 }
 
 function hideVanillaMenu() {
