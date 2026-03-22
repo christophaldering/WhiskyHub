@@ -428,14 +428,14 @@ function TwoWaysSection() {
       icon: <Wine style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.solo.title"),
       desc: t("landing.twoways.solo.text"),
-      href: "/labs/solo",
+      href: "/labs-apple",
       testId: "card-solo",
     },
     {
       icon: <Users style={{ width: 28, height: 28 }} />,
       title: t("landing.twoways.together.title"),
       desc: t("landing.twoways.together.text"),
-      href: "/labs/onboarding",
+      href: "/labs-apple",
       testId: "card-together",
     },
   ];
