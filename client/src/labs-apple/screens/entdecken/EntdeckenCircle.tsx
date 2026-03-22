@@ -247,33 +247,53 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
 
 // ── EntdeckenHub ──────────────────────────────────────────────────────────
 const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onNav: (s: string) => void }> = ({ th, t, lang, onNav }) => {
-  const items = [
-    { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,      label: t.entExplore,  sub: t.entExploreSub,  phase: 'palate'  as const },
-    { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,      label: t.entLexikon,  sub: t.entLexikonSub,  phase: 'nose'    as const },
-    { id: 'guide',    icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.entGuide,    sub: t.entGuideSub,    phase: 'finish'  as const },
-    { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />, label: t.entDest,     sub: t.entDestSub,     phase: 'overall' as const },
-    { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,         label: t.entBottlers, sub: t.entBottlersSub, phase: 'nose'    as const },
-    { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,     label: t.entHistory,  sub: t.entHistorySub,  phase: 'palate'  as const },
-    { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,        label: t.entVocab,    sub: lang === 'de' ? 'Copy-Paste Tasting-Notizen' : 'Copy-paste tasting notes', phase: 'finish' as const },
-    { id: 'research', icon: <Icon.Analytics color={th.phases.overall.accent} size={28} />, label: t.entResearch, sub: lang === 'de' ? 'Deep Dives & Wissenschaft' : 'Deep dives & science', phase: 'overall' as const },
-    { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,       label: t.entMakingOf, sub: lang === 'de' ? 'Die Geschichte von CaskSense' : 'The story of CaskSense', phase: 'nose' as const },
+  const sections = [
+    {
+      title: t.entSectionExplore,
+      items: [
+        { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,      label: t.entExplore,  sub: t.entExploreSub,  phase: 'palate'  as const },
+        { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />, label: t.entDest,     sub: t.entDestSub,     phase: 'overall' as const },
+        { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,         label: t.entBottlers, sub: t.entBottlersSub, phase: 'nose'    as const },
+      ],
+    },
+    {
+      title: t.entSectionLearn,
+      items: [
+        { id: 'guide',    icon: <Icon.Report color={th.phases.finish.accent} size={28} />,      label: t.entGuide,    sub: t.entGuideSub,    phase: 'finish'  as const },
+        { id: 'lexikon',  icon: <Icon.BookOpen color={th.phases.nose.accent} size={28} />,      label: t.entLexikon,  sub: t.entLexikonSub,  phase: 'nose'    as const },
+        { id: 'research', icon: <Icon.Analytics color={th.phases.overall.accent} size={28} />, label: t.entResearch, sub: lang === 'de' ? 'Deep Dives & Wissenschaft' : 'Deep dives & science', phase: 'overall' as const },
+      ],
+    },
+    {
+      title: t.entSectionTools,
+      items: [
+        { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,        label: t.entVocab,    sub: lang === 'de' ? 'Copy-Paste Tasting-Notizen' : 'Copy-paste tasting notes', phase: 'finish' as const },
+        { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,     label: t.entHistory,  sub: t.entHistorySub,  phase: 'palate'  as const },
+        { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,       label: t.entMakingOf, sub: lang === 'de' ? 'Die Geschichte von CaskSense' : 'The story of CaskSense', phase: 'nose' as const },
+      ],
+    },
   ]
   return (
     <div style={{ padding: SP.md, paddingBottom: 80 }}>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{t.entTitle}</h1>
       <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic', color: th.muted, margin: `0 0 ${SP.lg}px` }}>{t.entSub}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
-        {items.map(item => (
-          <button key={item.id} onClick={() => onNav(item.id)}
-            style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, textAlign: 'left', transition: 'all 150ms' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
-            {item.icon}
-            <span style={{ fontSize: 14, fontWeight: 700, color: th.text }}>{item.label}</span>
-            <span style={{ fontSize: 11, color: th.faint, lineHeight: 1.4 }}>{item.sub}</span>
-          </button>
-        ))}
-      </div>
+      {sections.map(section => (
+        <div key={section.title} style={{ marginBottom: SP.lg }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', fontWeight: 400, color: th.muted, margin: `0 0 ${SP.sm}px`, letterSpacing: 0.3 }}>{section.title}</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm }}>
+            {section.items.map(item => (
+              <button key={item.id} onClick={() => onNav(item.id)} data-testid={`tile-${item.id}`}
+                style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, textAlign: 'left', transition: 'all 150ms' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = th.phases[item.phase].accent }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = th.border }}>
+                {item.icon}
+                <span style={{ fontSize: 14, fontWeight: 700, color: th.text }}>{item.label}</span>
+                <span style={{ fontSize: 11, color: th.faint, lineHeight: 1.4 }}>{item.sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

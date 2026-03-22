@@ -124,6 +124,7 @@ export interface Translations {
   entBottlers: string; entBottlersSub: string
   entVocab: string; entResearch: string; entMakingOf: string
   entHistory: string; entHistorySub: string
+  entSectionExplore: string; entSectionLearn: string; entSectionTools: string
   entTemplates: string; entTemplatesSub: string
   entSearch: string; entFilterRegion: string; entFilterAll: string
   entSortAvg: string; entSortMost: string; entSortAlpha: string
@@ -278,6 +279,7 @@ const DE: Translations = {
   entDest: 'Destillerien', entDestSub: 'Weltkarte der Brennereien',
   entBottlers: 'Abfüller', entBottlersSub: 'Unabhängige Abfüller',
   entHistory: 'Historische Tastings', entHistorySub: 'Tasting-Archiv der Community',
+  entSectionExplore: 'Erkunden', entSectionLearn: 'Lernen', entSectionTools: 'Werkzeuge & Archiv',
   entTemplates: 'Vokabular', entTemplatesSub: 'Beschreibungs-Vorlagen nach Stil',
   entSearch: 'Suche...', entFilterRegion: 'Region', entFilterAll: 'Alle',
   entSortAvg: 'Ø Score', entSortMost: 'Meist bewertet', entSortAlpha: 'A–Z',
@@ -449,6 +451,7 @@ const EN: Translations = {
   entDest: 'Distilleries', entDestSub: 'World map of distilleries',
   entBottlers: 'Bottlers', entBottlersSub: 'Independent bottlers',
   entHistory: 'Historical tastings', entHistorySub: 'Community tasting archive',
+  entSectionExplore: 'Explore', entSectionLearn: 'Learn', entSectionTools: 'Tools & Archive',
   entTemplates: 'Vocabulary', entTemplatesSub: 'Description templates by style',
   entSearch: 'Search...', entFilterRegion: 'Region', entFilterAll: 'All',
   entSortAvg: 'Avg score', entSortMost: 'Most rated', entSortAlpha: 'A–Z',
