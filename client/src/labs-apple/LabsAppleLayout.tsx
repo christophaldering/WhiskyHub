@@ -1,8 +1,8 @@
 // CaskSense Apple — LabsAppleLayout
 import React from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from './theme/tokens'
+import { Translations } from './theme/i18n'
+import * as Icon from './icons/Icons'
 
 type TabId = 'tastings' | 'entdecken' | 'meinewelt' | 'circle'
 

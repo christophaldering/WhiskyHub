@@ -1,8 +1,8 @@
 // CaskSense Apple — EntdeckenScreen + CircleScreen (Phase 8)
 import React, { useState, useEffect } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import * as Icon from '../../icons/Icons'
 
 // ── EntdeckenHub ──────────────────────────────────────────────────────────
 const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; onNav: (s: string) => void }> = ({ th, t, onNav }) => {

@@ -1,10 +1,10 @@
 // CaskSense Apple — SoloFlow (Phase 3)
 import React, { useState, useRef } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { WhiskyData, RatingData } from '../types/rating'
-import { RatingFlow } from '../screens/rating/RatingFlow'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { WhiskyData, RatingData } from '../../types/rating'
+import { RatingFlow } from '../rating/RatingFlow'
+import * as Icon from '../../icons/Icons'
 
 // ── SoloCaptureScreen ──────────────────────────────────────────────────────
 const SoloCaptureScreen: React.FC<{ th: ThemeTokens; t: Translations; onCapture: (w: WhiskyData) => void; onSkip: () => void; onBack: () => void }> = ({ th, t, onCapture, onSkip, onBack }) => {

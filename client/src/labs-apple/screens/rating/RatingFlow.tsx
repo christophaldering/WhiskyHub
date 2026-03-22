@@ -1,13 +1,13 @@
 // CaskSense Apple — RatingSummary + RatingFlow
 import React, { useState } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { WhiskyData, RatingData } from '../types/rating'
-import { PhaseSignature } from '../components/PhaseSignature'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { WhiskyData, RatingData } from '../../types/rating'
+import { PhaseSignature } from '../../components/PhaseSignature'
 import { RatingModeSelect } from './RatingModeSelect'
 import { GuidedRating } from './GuidedRating'
 import { CompactRating } from './CompactRating'
-import * as Icon from '../icons/Icons'
+import * as Icon from '../../icons/Icons'
 
 // ── RatingSummary ─────────────────────────────────────────────────────────────
 interface SummaryProps {

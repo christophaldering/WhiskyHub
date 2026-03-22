@@ -1,8 +1,8 @@
 // CaskSense Apple — ResultsScreen (Phase 6)
 import React, { useState, useEffect } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import * as Icon from '../../icons/Icons'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function avg(arr: number[]) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0 }

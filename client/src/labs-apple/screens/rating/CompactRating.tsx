@@ -1,12 +1,12 @@
 // CaskSense Apple — CompactRating
 import React, { useState, useRef, useEffect } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { WhiskyData, RatingData, PhaseId } from '../types/rating'
-import { ScoreInput } from '../components/ScoreInput'
-import { FlavorTags } from '../components/FlavorTags'
-import { PhaseSignature } from '../components/PhaseSignature'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { WhiskyData, RatingData, PhaseId } from '../../types/rating'
+import { ScoreInput } from '../../components/ScoreInput'
+import { FlavorTags } from '../../components/FlavorTags'
+import { PhaseSignature } from '../../components/PhaseSignature'
+import * as Icon from '../../icons/Icons'
 
 interface Props {
   th: ThemeTokens; t: Translations

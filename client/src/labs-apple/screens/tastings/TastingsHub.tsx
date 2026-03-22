@@ -1,8 +1,8 @@
 // CaskSense Apple — TastingsHub + JoinFlow
 import React, { useState, useEffect, useRef } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import * as Icon from '../../icons/Icons'
 
 // ── JoinFlow ─────────────────────────────────────────────────────────────
 interface JoinProps {

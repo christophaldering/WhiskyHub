@@ -1,8 +1,8 @@
 // CaskSense Apple — MeineWeltScreen (Phase 7)
 import React, { useState, useEffect } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import * as Icon from '../../icons/Icons'
 
 // ── MeineWeltHub ──────────────────────────────────────────────────────────
 const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; onNav: (screen: string) => void }> = ({ th, t, participantId, onNav }) => {

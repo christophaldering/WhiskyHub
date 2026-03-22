@@ -1,10 +1,10 @@
 // CaskSense Apple — RatingModeSelect
 import React from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { WhiskyData } from '../types/rating'
-import { PhaseSignature } from '../components/PhaseSignature'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { WhiskyData } from '../../types/rating'
+import { PhaseSignature } from '../../components/PhaseSignature'
+import * as Icon from '../../icons/Icons'
 
 interface Props {
   th:        ThemeTokens

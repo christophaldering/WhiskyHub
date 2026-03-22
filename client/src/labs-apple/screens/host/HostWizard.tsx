@@ -1,9 +1,9 @@
 // CaskSense Apple — HostWizard (Phase 4)
 import React, { useState, useRef } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { TastingConfig, WhiskyEntry, TastingData } from '../types/host'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { TastingConfig, WhiskyEntry, TastingData } from '../../types/host'
+import * as Icon from '../../icons/Icons'
 
 const inputStyle = (th: ThemeTokens) => ({ width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, fontFamily: 'DM Sans, sans-serif', outline: 'none', boxSizing: 'border-box' as const })
 const labelStyle = (th: ThemeTokens) => ({ fontSize: 11, color: th.muted, marginBottom: 4, display: 'block', textTransform: 'uppercase' as const, letterSpacing: '0.08em' })

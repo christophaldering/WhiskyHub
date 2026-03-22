@@ -1,10 +1,10 @@
 // CaskSense Apple — LiveTasting (Phase 5)
 import React, { useState, useEffect, useRef } from 'react'
-import { ThemeTokens, SP } from '../theme/tokens'
-import { Translations } from '../theme/i18n'
-import { WhiskyData, RatingData } from '../types/rating'
-import { RatingFlow } from '../screens/rating/RatingFlow'
-import * as Icon from '../icons/Icons'
+import { ThemeTokens, SP } from '../../theme/tokens'
+import { Translations } from '../../theme/i18n'
+import { WhiskyData, RatingData } from '../../types/rating'
+import { RatingFlow } from '../rating/RatingFlow'
+import * as Icon from '../../icons/Icons'
 
 // ── RevealSequence ─────────────────────────────────────────────────────────
 const RevealSequence: React.FC<{ th: ThemeTokens; t: Translations; whisky: WhiskyData; revealedFields: Set<string> }> = ({ th, t, whisky, revealedFields }) => {
