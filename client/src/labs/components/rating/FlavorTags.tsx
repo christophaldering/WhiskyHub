@@ -113,39 +113,39 @@ export default function FlavorTags({ phaseId, whiskyRegion, whiskyCask, blind, s
         {labels.aromenSub}
       </div>
 
-      <div
-        data-testid={`flavor-profile-badge-${phaseId}`}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: SP.sm,
-          padding: `${SP.sm}px ${SP.md}px`,
-          background: blind ? th.bgCard : `${th.gold}0F`,
-          border: `1px solid ${blind ? th.border : `${th.gold}38`}`,
-          borderRadius: 12,
-          marginBottom: SP.md,
-        }}
-      >
-        <GlobeIcon color={blind ? th.faint : th.gold} size={16} />
-        <span style={{
-          fontSize: 13,
-          fontFamily: FONT.body,
-          color: blind ? th.muted : th.gold,
-          fontWeight: 500,
-        }}>
-          {blind
-            ? labels.blindLabel
-            : profile
-              ? `${labels.profileLabel} ${profile.label}`
-              : labels.blindLabel
-          }
-        </span>
-        {!blind && whiskyRegion && (
-          <span style={{ fontSize: 12, color: th.faint, marginLeft: "auto", fontFamily: FONT.body }}>
-            {whiskyRegion}
+      {(blind || profile) && (
+        <div
+          data-testid={`flavor-profile-badge-${phaseId}`}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: SP.sm,
+            padding: `${SP.sm}px ${SP.md}px`,
+            background: blind ? th.bgCard : `${th.gold}0F`,
+            border: `1px solid ${blind ? th.border : `${th.gold}38`}`,
+            borderRadius: 12,
+            marginBottom: SP.md,
+          }}
+        >
+          <GlobeIcon color={blind ? th.faint : th.gold} size={16} />
+          <span style={{
+            fontSize: 13,
+            fontFamily: FONT.body,
+            color: blind ? th.muted : th.gold,
+            fontWeight: 500,
+          }}>
+            {blind
+              ? labels.blindLabel
+              : `${labels.profileLabel} ${profile!.label}`
+            }
           </span>
-        )}
-      </div>
+          {!blind && whiskyRegion && (
+            <span style={{ fontSize: 12, color: th.faint, marginLeft: "auto", fontFamily: FONT.body }}>
+              {whiskyRegion}
+            </span>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
         {tags.map((tag, i) => {
