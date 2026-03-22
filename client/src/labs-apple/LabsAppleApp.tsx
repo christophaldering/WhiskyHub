@@ -191,7 +191,7 @@ export const LabsAppleApp: React.FC = () => {
 
   return (
     <LabsErrorBoundary th={th}>
-    <LabsAppleLayout th={th} t={t} themeKey={themeKey} lang={lang} activeTab={activeTab} subScreen={subScreen} session={session} onTabChange={setActiveTab} onToggleTheme={toggleTheme} onToggleLang={toggleLang} onLogout={handleLogout}>
+    <LabsAppleLayout th={th} t={t} themeKey={themeKey} lang={lang} activeTab={activeTab} subScreen={subScreen} session={session} onTabChange={(tab) => { setSubScreen(null); setActiveTab(tab); }} onToggleTheme={toggleTheme} onToggleLang={toggleLang} onLogout={handleLogout}>
       {showVerify && <VerificationBanner th={th} t={t} email={session.email} />}
       {renderContent()}
     </LabsAppleLayout>
