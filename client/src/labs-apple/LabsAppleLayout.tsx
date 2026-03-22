@@ -40,9 +40,9 @@ export const LabsAppleLayout: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hideTabBar = subScreen !== null
 
-  const initial  = session?.name?.[0]?.toUpperCase() || '?'
-  const isGuest  = !session?.email
-  const isAdmin  = session?.isAdmin || session?.role === 'admin'
+  const initial = session?.name?.[0]?.toUpperCase() || '?'
+  const isGuest = !session?.email
+  const isAdmin = session?.isAdmin || session?.role === 'admin'
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -63,11 +63,6 @@ export const LabsAppleLayout: React.FC<Props> = ({
     } catch { } finally {
       setPhotoUploading(false)
     }
-  }
-
-  const navTo = (screen: string) => {
-    setProfileOpen(false);
-    (window as any).__casksenseNav?.(screen)
   }
 
   return (
@@ -102,7 +97,10 @@ export const LabsAppleLayout: React.FC<Props> = ({
           {/* Profile Avatar */}
           {session && (
             <div style={{ position: 'relative' }}>
-              <button onClick={() => setProfileOpen(o => !o)} style={{ width: 34, height: 34, borderRadius: 17, border: `2px solid ${profileOpen ? th.gold : th.border}`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: th.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 150ms', overflow: 'hidden', padding: 0 }}>
+              <button
+                onClick={() => setProfileOpen(o => !o)}
+                style={{ width: 34, height: 34, borderRadius: 17, border: `2px solid ${profileOpen ? th.gold : th.border}`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: th.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 150ms', overflow: 'hidden', padding: 0 }}
+              >
                 {photoUrl
                   ? <img src={photoUrl} alt={session.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                   : initial
@@ -142,16 +140,16 @@ export const LabsAppleLayout: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* Profil bearbeiten */}
+                  {/* Profil bearbeiten → navigiert zu Meine Welt */}
                   <button
-                    onClick={() => { navTo('meinewelt-edit') }}
+                    onClick={() => { setProfileOpen(false); onTabChange('meinewelt') }}
                     style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
                   >
                     <Icon.Profile color={th.muted} size={16} />
                     {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
                   </button>
 
-                  {/* Foto hochladen (expliziter Button) */}
+                  {/* Foto hochladen */}
                   <button
                     onClick={() => { setProfileOpen(false); fileInputRef.current?.click() }}
                     style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
@@ -163,7 +161,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
                   {/* Admin */}
                   {isAdmin && (
                     <button
-                      onClick={() => navTo('admin')}
+                      onClick={() => { setProfileOpen(false); (window as any).__casksenseNav?.('admin') }}
                       style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
                     >
                       <Icon.Settings color={th.gold} size={16} />
