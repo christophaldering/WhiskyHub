@@ -103,6 +103,17 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
   }, [saveError]);
 
   const handleNext = useCallback(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      if (phaseIndex < 3) {
+        setPhaseIndex((p) => p + 1);
+      } else {
+        onDone({ scores, tags, notes });
+      }
+      return;
+    }
+
     setShowFlash(true);
     setTimeout(() => {
       setShowFlash(false);
@@ -326,8 +337,9 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             style={{
               width: "100%",
               padding: SP.md,
-              fontFamily: FONT.body,
-              fontSize: 14,
+              fontFamily: FONT.serif,
+              fontStyle: "italic",
+              fontSize: 16,
               color: th.text,
               background: th.inputBg,
               border: `1px solid ${th.border}`,

@@ -22,7 +22,7 @@ export default function SaveConfirm({ show, color }: SaveConfirmProps) {
       }}
     >
       <div
-        className="labs-fade-in"
+        className="labs-save-flash"
         style={{
           width: 80,
           height: 80,
@@ -32,7 +32,6 @@ export default function SaveConfirm({ show, color }: SaveConfirmProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          animation: "labsFadeIn 300ms ease both",
         }}
       >
         <CheckIcon color={color} size={32} />

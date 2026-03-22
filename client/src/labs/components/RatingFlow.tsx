@@ -461,7 +461,7 @@ export default function RatingFlow({
           style={{
             width: "100%",
             padding: "12px 16px",
-            fontSize: 14,
+            fontSize: 16,
             borderRadius: 12,
             background: "rgba(255,255,255,0.035)",
             border: "1px solid rgba(255,255,255,0.1)",
@@ -469,7 +469,8 @@ export default function RatingFlow({
             outline: "none",
             resize: "vertical",
             boxSizing: "border-box",
-            fontFamily: "inherit",
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontStyle: "italic",
           }}
           data-testid="rating-flow-notes"
         />
