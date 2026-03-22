@@ -39,6 +39,7 @@ interface CompactRatingProps {
     cask?: string;
     blind: boolean;
   };
+  initialData?: RatingData;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
@@ -60,10 +61,10 @@ function getBandColor(score: number): string {
   return "rgba(200,180,160,0.5)";
 }
 
-export default function CompactRating({ th, labels, whisky, onDone, onBack }: CompactRatingProps) {
-  const [scores, setScores] = useState<PhaseScores>({ nose: 75, palate: 75, finish: 75, overall: 75 });
-  const [tags, setTags] = useState<PhaseTags>({ nose: [], palate: [], finish: [], overall: [] });
-  const [notes, setNotes] = useState<PhaseNotes>({ nose: "", palate: "", finish: "", overall: "" });
+export default function CompactRating({ th, labels, whisky, initialData, onDone, onBack }: CompactRatingProps) {
+  const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
+  const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
+  const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [openPhase, setOpenPhase] = useState<PhaseId | null>("nose");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

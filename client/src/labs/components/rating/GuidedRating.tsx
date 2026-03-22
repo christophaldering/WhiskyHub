@@ -50,6 +50,7 @@ interface GuidedRatingProps {
     cask?: string;
     blind: boolean;
   };
+  initialData?: RatingData;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
@@ -77,11 +78,11 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
   return map[id];
 }
 
-export default function GuidedRating({ th, labels, whisky, onDone, onBack }: GuidedRatingProps) {
+export default function GuidedRating({ th, labels, whisky, initialData, onDone, onBack }: GuidedRatingProps) {
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [scores, setScores] = useState<PhaseScores>({ nose: 75, palate: 75, finish: 75, overall: 75 });
-  const [tags, setTags] = useState<PhaseTags>({ nose: [], palate: [], finish: [], overall: [] });
-  const [notes, setNotes] = useState<PhaseNotes>({ nose: "", palate: "", finish: "", overall: "" });
+  const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
+  const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
+  const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [showFlash, setShowFlash] = useState(false);
   const [visibleContent, setVisibleContent] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);

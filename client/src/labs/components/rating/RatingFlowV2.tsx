@@ -11,14 +11,16 @@ interface RatingFlowV2Props {
     name?: string;
     region?: string;
     cask?: string;
+    blind?: boolean;
   };
+  initialData?: RatingData;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, onDone, onBack }: RatingFlowV2Props) {
+export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: RatingFlowV2Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"guided" | "compact" | null>(null);
   const [step, setStep] = useState<Step>("mode");
@@ -100,7 +102,8 @@ export default function RatingFlowV2({ whisky, onDone, onBack }: RatingFlowV2Pro
       <GuidedRating
         th={th}
         labels={guidedLabels}
-        whisky={{ ...whisky, blind: false }}
+        whisky={{ ...whisky, blind: whisky.blind ?? false }}
+        initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
       />
@@ -112,7 +115,8 @@ export default function RatingFlowV2({ whisky, onDone, onBack }: RatingFlowV2Pro
       <CompactRating
         th={th}
         labels={compactLabels}
-        whisky={{ ...whisky, blind: false }}
+        whisky={{ ...whisky, blind: whisky.blind ?? false }}
+        initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
       />

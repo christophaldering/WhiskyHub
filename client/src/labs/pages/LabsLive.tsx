@@ -17,7 +17,8 @@ import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
-import RatingFlow from "@/labs/components/RatingFlow";
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingData } from "@/labs/components/rating/types";
 import DramCarousel from "@/labs/components/DramCarousel";
 import { ResumeOrSkipBanner } from "@/labs/components/ResumeRatingBanner";
 import ScaleBadge from "@/labs/components/ScaleBadge";
@@ -138,10 +139,7 @@ function GuidedStepView({
   const revealMomentActiveRef = useRef(false);
   const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
   const [flowSaved, setFlowSaved] = useState(false);
-  const [flowChips, setFlowChips] = useState<string[]>([]);
-  const [flowInitialStep, setFlowInitialStep] = useState(0);
   const [dramTransitionKey, setDramTransitionKey] = useState(0);
-  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevWhiskyIndexRef = useRef(whiskyIndex);
 
   useEffect(() => {
@@ -157,14 +155,12 @@ function GuidedStepView({
       const myRatingForCurrent = guidedMyRatings.find(
         (r: any) => r.whiskyId === allWhiskies[prevIdx]?.id
       );
-      const currentHasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
 
-      if (!myRatingForCurrent && currentHasScores && localIndex === prevIdx) {
+      if (!myRatingForCurrent && !flowSaved && localIndex === prevIdx) {
         setInterruptBanner({ fromIndex: prevIdx, toIndex: whiskyIndex });
       } else {
         setLocalIndex(whiskyIndex);
         setFlowSaved(false);
-        setFlowInitialStep(0);
         setDramTransitionKey(k => k + 1);
       }
     }
@@ -200,14 +196,7 @@ function GuidedStepView({
   const isFullyRevealed = revealStep >= stepGroups.length;
   const isNameRevealed = revealedFields.has("name") || isFullyRevealed;
   const isBlindStep = tasting.blindMode && !isNameRevealed;
-  const mid = Math.round(maxScore / 2);
 
-  const [dimScores, setDimScores] = useState<Record<DimKey, number>>({ nose: mid, taste: mid, finish: mid });
-  const [overall, setOverall] = useState(mid);
-  const [overrideActive, setOverrideActive] = useState(false);
-  const [notes, setNotes] = useState("");
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [revealMoment, setRevealMoment] = useState<{
     whiskyName: string; distillery?: string; age?: string; region?: string; imageUrl?: string; stepLabel?: string;
     caskInfluence?: string; abv?: string; category?: string; bottler?: string; vintage?: string; peatLevel?: string; country?: string; ppm?: string; price?: string;
@@ -264,33 +253,11 @@ function GuidedStepView({
 
   useEffect(() => {
     if (myRating) {
-      const n = myRating.nose ?? mid;
-      const ta = myRating.taste ?? mid;
-      const f = myRating.finish ?? mid;
-      const o = myRating.overall ?? mid;
-      setDimScores({ nose: n, taste: ta, finish: f });
-      setOverall(o);
-      const rawNotes = myRating.notes || "";
-      const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
-      if (flavourMatch) {
-        setFlowChips(flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean));
-        setNotes(rawNotes.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim());
-      } else {
-        setFlowChips([]);
-        setNotes(rawNotes);
-      }
-      const auto = Math.round((n + ta + f) / 3);
-      setOverrideActive(o !== auto);
       setFlowSaved(true);
     } else {
-      setDimScores({ nose: mid, taste: mid, finish: mid });
-      setOverall(mid);
-      setNotes("");
-      setFlowChips([]);
-      setOverrideActive(false);
       setFlowSaved(false);
     }
-  }, [myRating, activeWhisky?.id, mid]);
+  }, [myRating, activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -307,114 +274,9 @@ function GuidedStepView({
     },
   });
 
-  const tastingStatusRef = useRef(tasting?.status);
-  useEffect(() => { tastingStatusRef.current = tasting?.status; }, [tasting?.status]);
-
   useEffect(() => {
     setSaveError(null);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
   }, [activeWhisky?.id]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    };
-  }, []);
-
-  const doSave = useCallback(
-    (scores: Record<DimKey, number>, ov: number, n: string) => {
-      if (!currentParticipant || !activeWhisky || !tasting) return;
-      const s = tastingStatusRef.current;
-      if (s !== "open" && s !== "draft") return;
-      rateMutation.mutate({
-        tastingId,
-        whiskyId: activeWhisky.id,
-        participantId: currentParticipant.id,
-        ...scores,
-        overall: ov,
-        notes: n,
-      });
-    },
-    [currentParticipant, activeWhisky, tasting, tastingId, rateMutation]
-  );
-
-  const debouncedSave = useCallback(
-    (scores: Record<DimKey, number>, ov: number, n: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => doSave(scores, ov, n), 800);
-    },
-    [doSave]
-  );
-
-  useEffect(() => {
-    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    if (!currentParticipant || !activeWhisky) return;
-    autoSaveRef.current = setInterval(() => {
-      const hasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
-      if (hasScores) {
-        let combined = notes;
-        if (flowChips.length > 0) {
-          combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
-        }
-        doSave(dimScores, overall, combined);
-      }
-    }, 30000);
-    return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
-  }, [currentParticipant?.id, activeWhisky?.id, dimScores, overall, notes, flowChips, mid, doSave]);
-
-  const computeAutoOverall = (s: Record<DimKey, number>) =>
-    Math.round((s.nose + s.taste + s.finish) / 3);
-
-  const handleScoreChange = (dim: DimKey, value: number) => {
-    const newScores = { ...dimScores, [dim]: value };
-    setDimScores(newScores);
-    let newOverall = overall;
-    if (!overrideActive) {
-      newOverall = computeAutoOverall(newScores);
-      setOverall(newOverall);
-    }
-    debouncedSave(newScores, newOverall, notes);
-  };
-
-  const handleOverallChange = (value: number) => {
-    const auto = computeAutoOverall(dimScores);
-    if (value !== auto) setOverrideActive(true);
-    setOverall(value);
-    debouncedSave(dimScores, value, notes);
-  };
-
-  const resetOverride = () => {
-    setOverrideActive(false);
-    const auto = computeAutoOverall(dimScores);
-    setOverall(auto);
-    debouncedSave(dimScores, auto, notes);
-  };
-
-  const buildFlowNotes = useCallback(() => {
-    let combined = notes;
-    if (flowChips.length > 0) {
-      combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
-    }
-    return combined;
-  }, [notes, flowChips]);
-
-  const handleFlowSave = useCallback(async () => {
-    if (!currentParticipant || !activeWhisky) throw new Error("No participant/whisky");
-    const hasScores = dimScores.nose !== mid || dimScores.taste !== mid || dimScores.finish !== mid;
-    if (!hasScores) throw new Error("No scores");
-    const eff = overall > 0 ? overall : Math.max(1, computeAutoOverall(dimScores));
-    const combinedNotes = buildFlowNotes();
-    await rateMutation.mutateAsync({
-      tastingId,
-      whiskyId: activeWhisky.id,
-      participantId: currentParticipant.id,
-      ...dimScores,
-      overall: eff,
-      notes: combinedNotes,
-    });
-    setFlowSaved(true);
-  }, [currentParticipant, activeWhisky, dimScores, overall, notes, mid, buildFlowNotes, tastingId, rateMutation]);
 
   const getDramName = useCallback((idx: number) => {
     const w = allWhiskies[idx];
@@ -530,11 +392,6 @@ function GuidedStepView({
           if (idx <= hostMaxIndex) {
             const rating = guidedMyRatings.find((r: any) => r.whiskyId === allWhiskies[idx]?.id);
             setLocalIndex(idx);
-            if (rating) {
-              setFlowInitialStep(3);
-            } else {
-              setFlowInitialStep(0);
-            }
             setFlowSaved(false);
             setDramTransitionKey(k => k + 1);
           }
@@ -545,34 +402,20 @@ function GuidedStepView({
 
       {interruptBanner && (
         <ResumeOrSkipBanner
-          onSave={async () => {
-            let combined = notes;
-            if (flowChips.length > 0) {
-              combined = combined ? `${combined}\n[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${flowChips.join(", ")} [/FLAVOURS]`;
-            }
-            try {
-              if (currentParticipant && activeWhisky) {
-                await rateMutation.mutateAsync({
-                  tastingId,
-                  whiskyId: activeWhisky.id,
-                  participantId: currentParticipant.id,
-                  ...dimScores,
-                  overall,
-                  notes: combined,
-                });
-              }
-            } catch {}
+          title={t("m2.taste.rating.interruptTitle", "Incomplete rating")}
+          hint={t("m2.taste.rating.interruptAdvanced", "Host moved to the next dram")}
+          saveLabel={t("m2.taste.rating.interruptContinue", "Continue")}
+          skipLabel={t("m2.taste.rating.interruptSkip", "Skip")}
+          onSave={() => {
             setInterruptBanner(null);
             setLocalIndex(interruptBanner.toIndex);
             setFlowSaved(false);
-            setFlowInitialStep(0);
             setDramTransitionKey(k => k + 1);
           }}
           onSkip={() => {
             setInterruptBanner(null);
             setLocalIndex(interruptBanner.toIndex);
             setFlowSaved(false);
-            setFlowInitialStep(0);
             setDramTransitionKey(k => k + 1);
           }}
         />
@@ -580,31 +423,84 @@ function GuidedStepView({
 
       {canRate && !revealMoment ? (
         <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
-          <RatingFlow
-            scale={liveScale}
-            scores={dimScores}
-            onScoreChange={handleScoreChange}
-            overall={overall}
-            onOverallChange={handleOverallChange}
-            overrideActive={overrideActive}
-            onOverrideToggle={() => setOverrideActive(!overrideActive)}
-            onResetOverride={resetOverride}
-            chips={flowChips}
-            onChipToggle={(chip) => {
-              setFlowChips(prev => prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]);
+          <RatingFlowV2
+            whisky={{
+              name: displayName,
+              region: activeWhisky?.region || undefined,
+              cask: activeWhisky?.caskInfluence || undefined,
+              blind: isBlindStep,
             }}
-            notes={notes}
-            onNotesChange={(val) => setNotes(val)}
-            onSave={handleFlowSave}
-            whiskyName={displayName}
-            isBlind={isBlindStep}
-            disabled={tasting?.status !== "open"}
-            initialStep={flowInitialStep}
-            onAfterSaveCorrect={() => { setFlowSaved(false); setFlowInitialStep(0); }}
-            waitingMessage={flowSaved && viewingHostDram ? t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Waiting for host for Dram ${nextDramIdx + 1}` }) : null}
-            externalSavedOverlay={flowSaved && viewingHostDram}
-            onExternalSavedDismiss={() => setFlowSaved(false)}
+            initialData={myRating ? (() => {
+              const rawNotes = myRating.notes || "";
+              const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
+              const chips = flavourMatch ? flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+              const cleanNotes = flavourMatch ? rawNotes.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim() : rawNotes;
+              return {
+                scores: {
+                  nose: myRating.nose ?? 75,
+                  palate: myRating.taste ?? 75,
+                  finish: myRating.finish ?? 75,
+                  overall: myRating.overall ?? 75,
+                },
+                tags: { nose: chips, palate: [], finish: [], overall: [] },
+                notes: { nose: cleanNotes, palate: "", finish: "", overall: "" },
+              };
+            })() : undefined}
+            onDone={async (data: RatingData) => {
+              if (!currentParticipant || !activeWhisky) return;
+              const computeOv = (s: { nose: number; palate: number; finish: number }) =>
+                Math.round((s.nose + s.palate + s.finish) / 3);
+              const eff = data.scores.overall > 0
+                ? data.scores.overall
+                : Math.max(1, computeOv(data.scores));
+
+              const allNotes = (["nose", "palate", "finish", "overall"] as const)
+                .map((p) => data.notes[p]?.trim())
+                .filter(Boolean)
+                .join(" | ");
+              const chipStr = [...data.tags.nose, ...data.tags.palate, ...data.tags.finish, ...data.tags.overall]
+                .filter(Boolean);
+              let combined = allNotes;
+              if (chipStr.length > 0) {
+                combined = combined
+                  ? `${combined}\n[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`
+                  : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
+              }
+
+              try {
+                await rateMutation.mutateAsync({
+                  tastingId,
+                  whiskyId: activeWhisky.id,
+                  participantId: currentParticipant.id,
+                  nose: data.scores.nose,
+                  taste: data.scores.palate,
+                  finish: data.scores.finish,
+                  overall: eff,
+                  notes: combined,
+                });
+                setFlowSaved(true);
+              } catch (err: any) {
+                setSaveError(err?.message || "Save failed");
+              }
+            }}
+            onBack={() => {
+              setFlowSaved(false);
+              setDramTransitionKey(k => k + 1);
+            }}
           />
+
+          {flowSaved && viewingHostDram && (
+            <div
+              className="labs-card p-4 text-center mt-4"
+              style={{ background: "var(--labs-success-muted)", border: "1px solid var(--labs-success)", borderRadius: "var(--labs-radius-sm)" }}
+              data-testid="guided-waiting-host"
+            >
+              <p className="text-sm font-medium" style={{ color: "var(--labs-success)" }}>
+                <Check className="w-4 h-4 inline mr-1.5" />
+                {t("m2.taste.rating.waitingHost", { n: nextDramIdx + 1, defaultValue: `Saved -- waiting for host for Dram ${nextDramIdx + 1}` })}
+              </p>
+            </div>
+          )}
 
           {saveError && (
             <div
