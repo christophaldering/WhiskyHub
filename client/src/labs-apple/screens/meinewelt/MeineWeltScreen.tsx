@@ -36,7 +36,7 @@ const MeineWeltHub: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 600, margin: 0 }}>{t.mwTitle}</h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontStyle: 'italic', color: th.muted, margin: `${SP.xs}px 0 0` }}>{t.mwSub}</p>
         </div>
-        <button onClick={() => onNav('edit')} style={{ background: 'none', border: `1px solid ${th.border}`, borderRadius: 10, padding: '8px 14px', cursor: 'pointer', color: th.muted, fontSize: 13 }}>{t.mwProfileEdit}</button>
+        {participantId && <button onClick={() => onNav('edit')} style={{ background: 'none', border: `1px solid ${th.border}`, borderRadius: 10, padding: '8px 14px', cursor: 'pointer', color: th.muted, fontSize: 13 }}>{t.mwProfileEdit}</button>}
       </div>
 
       {/* Stats 2×2 */}
@@ -178,14 +178,14 @@ const ProfileEdit: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
   }
 
   return (
-    <div style={{ padding: SP.md, paddingBottom: 120 }}>
+    <div style={{ padding: SP.md, paddingBottom: SP.xl }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.lg}px` }}>{t.mwProfileEdit}</h1>
       <div style={{ marginBottom: SP.md }}>
         <label style={{ fontSize: 11, color: th.muted, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.mwProfileName}</label>
         <input value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 16, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box' }} />
       </div>
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ marginTop: SP.xl }}>
         <button onClick={save} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: saved ? th.bgCard : `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: saved ? th.green : '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           {saved ? <><Icon.Check color={th.green} size={20} />{t.ratingDone}</> : t.mwProfileSave}
         </button>

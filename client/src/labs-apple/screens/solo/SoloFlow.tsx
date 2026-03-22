@@ -88,14 +88,14 @@ const SoloWhiskyForm: React.FC<{ th: ThemeTokens; t: Translations; initial: Whis
   const labelStyle = { fontSize: 12, color: th.muted, marginBottom: 4, display: 'block', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }
 
   return (
-    <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', padding: SP.md, paddingBottom: 120 }}>
+    <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', padding: SP.md, paddingBottom: SP.xl }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 12px' }}>
         <Icon.Back color={th.muted} size={18} />{t.back}
       </button>
 
       {initial.name && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 12, background: th.phases.overall.dim, border: `1px solid ${th.phases.overall.accent}44`, marginBottom: SP.md }}>
-          <Icon.Check color={th.green} size={16} /><span style={{ fontSize: 13 }}>Erkannt — bitte prüfen</span>
+          <Icon.Check color={th.green} size={16} /><span style={{ fontSize: 13 }}>Erkannt — bitte pruefen</span>
         </div>
       )}
 
@@ -110,7 +110,7 @@ const SoloWhiskyForm: React.FC<{ th: ThemeTokens; t: Translations; initial: Whis
         </div>
       </div>
 
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ marginTop: SP.xl }}>
         <button disabled={!form.name.trim()} onClick={() => onSubmit({ ...initial, name: form.name, distillery: form.distillery, region: form.region, cask: form.cask, age: form.age ? parseFloat(form.age) : undefined, abv: form.abv ? parseFloat(form.abv) : undefined, blind: false })}
           style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: form.name.trim() ? 'pointer' : 'not-allowed', background: form.name.trim() ? `linear-gradient(135deg, ${th.gold}, ${th.amber})` : th.bgCard, color: form.name.trim() ? '#1a0f00' : th.faint, fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
           {t.soloToRating}
@@ -122,14 +122,14 @@ const SoloWhiskyForm: React.FC<{ th: ThemeTokens; t: Translations; initial: Whis
 
 // ── SoloDoneScreen ──────────────────────────────────────────────────────────
 const SoloDoneScreen: React.FC<{ th: ThemeTokens; t: Translations; whisky: WhiskyData; score: number; onAnother: () => void; onBack: () => void }> = ({ th, t, whisky, score, onAnother, onBack }) => (
-  <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: SP.lg, paddingBottom: 100 }}>
+  <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: SP.lg, paddingBottom: SP.xl }}>
     <div style={{ width: 80, height: 80, borderRadius: 40, background: `${th.green}20`, border: `2px solid ${th.green}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: SP.md }}>
       <Icon.Check color={th.green} size={36} />
     </div>
     <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, textAlign: 'center', margin: `0 0 ${SP.xs}px` }}>{whisky.name || 'Dram'}</h1>
     <div style={{ fontSize: 32, fontWeight: 700, color: '#d4a847', marginBottom: 4 }}>{score}</div>
     <div style={{ fontSize: 14, color: th.muted, marginBottom: SP.xl }}>{t.soloSaved}</div>
-    <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px`, display: 'flex', flexDirection: 'column', gap: SP.sm }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: SP.sm }}>
       <button onClick={onAnother} style={{ height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 16, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>{t.soloAnother}</button>
       <button onClick={onBack} style={{ height: 44, borderRadius: 14, background: 'none', border: `1px solid ${th.border}`, color: th.muted, fontSize: 15, cursor: 'pointer' }}>{t.soloToHub}</button>
     </div>

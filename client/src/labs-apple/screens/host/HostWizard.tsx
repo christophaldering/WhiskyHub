@@ -14,7 +14,7 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
   const set = (k: keyof TastingConfig) => (v: string) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ padding: SP.md, paddingBottom: 120, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ padding: SP.md, paddingBottom: SP.xl, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xl}px` }}>{t.hostStep1}</h1>
       <div style={{ display: 'flex', flexDirection: 'column', gap: SP.md }}>
@@ -63,7 +63,7 @@ const HostStep1: React.FC<{ th: ThemeTokens; t: Translations; onNext: (cfg: Tast
           </div>
         </div>
       </div>
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ marginTop: SP.xl }}>
         <button disabled={!form.name.trim() || !form.date || !form.time} onClick={() => onNext(form)} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', opacity: form.name.trim() && form.date && form.time ? 1 : 0.4 }}>{t.hostNext}</button>
       </div>
     </div>
@@ -98,7 +98,7 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
   }
 
   return (
-    <div style={{ padding: SP.md, paddingBottom: 120, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ padding: SP.md, paddingBottom: SP.xl, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.md}px` }}>{t.hostStep2}</h1>
 
@@ -139,7 +139,7 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         <Icon.Add color={th.gold} size={20} />{t.hostAddManual}
       </button>
 
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ marginTop: SP.xl }}>
         <button onClick={onNext} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>{t.hostNext}</button>
       </div>
     </div>
@@ -166,7 +166,7 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
   }
 
   return (
-    <div style={{ padding: SP.md, paddingBottom: 120, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ padding: SP.md, paddingBottom: SP.xl, background: th.bg, minHeight: '100%', color: th.text, fontFamily: 'DM Sans, sans-serif' }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}><Icon.Back color={th.muted} size={18} />{t.back}</button>
       <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.lg}px` }}>{t.hostStep3}</h1>
 
@@ -197,7 +197,7 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
         )}
       </div>
 
-      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px` }}>
+      <div style={{ marginTop: SP.xl }}>
         <button onClick={onNext} style={{ width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>{t.hostStart}</button>
       </div>
     </div>
