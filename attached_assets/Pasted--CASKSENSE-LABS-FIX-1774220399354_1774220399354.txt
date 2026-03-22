@@ -1,0 +1,155 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — FIX: PROFIL-FOTO IM HEADER
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS andere Dateien als die unten genannten verändern
+✅ NUR client/src/labs/LabsLayout.tsx und
+   client/src/labs/pages/LabsTasteSettings.tsx ändern
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Der Avatar-Button oben rechts in der Header-Leiste zeigt nur den ersten
+Buchstaben des Namens (Initial). Das hochgeladene Profilbild wird nicht
+angezeigt, obwohl es in der DB unter profile.photoUrl gespeichert ist.
+
+Das Profilbild liegt unter GET /api/profiles/:participantId → data.photoUrl
+und wird beim Login sogar im Session-Response mitgeliefert (photoUrl).
+Es wird schlicht nie in LabsLayout.tsx geladen oder angezeigt.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 1: client/src/labs/LabsLayout.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── SCHRITT 1: State für Profilbild ergänzen ──
+
+Nach den bestehenden useState-Aufrufen am Anfang der Komponente ergänzen:
+
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+
+── SCHRITT 2: Profilbild laden beim Mount ──
+
+Nach den bestehenden useEffect-Aufrufen ergänzen:
+
+  useEffect(() => {
+    const pid = getParticipantId();
+    if (!pid) return;
+    fetch(`/api/profiles/${pid}`, {
+      headers: { "x-participant-id": pid },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.photoUrl) setProfilePhotoUrl(data.photoUrl);
+      })
+      .catch(() => {});
+  }, [currentParticipant?.id]);
+
+── SCHRITT 3: Event-Listener für Foto-Updates ──
+
+Direkt darunter einen weiteren useEffect ergänzen:
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const url = (e as CustomEvent).detail?.photoUrl;
+      if (url) setProfilePhotoUrl(url);
+    };
+    window.addEventListener("casksense:photo-updated", handler);
+    return () => window.removeEventListener("casksense:photo-updated", handler);
+  }, []);
+
+── SCHRITT 4: Avatar-Button anpassen ──
+
+Den bestehenden Avatar-Button im Header suchen.
+Er ist erkennbar an: onClick={() => setProfileOpen(true)} und zeigt {initial}.
+
+Den style-Prop und Inhalt ersetzen:
+
+  VORHER (ungefähr):
+    <button
+      onClick={() => setProfileOpen(true)}
+      style={{ width: 34, height: 34, borderRadius: "50%",
+               background: "var(--labs-accent-muted)", ... }}
+    >
+      {initial}
+    </button>
+
+  NACHHER:
+    <button
+      onClick={() => setProfileOpen(true)}
+      data-testid="labs-header-avatar"
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: "50%",
+        border: `2px solid ${profileOpen
+          ? "var(--labs-accent)"
+          : "var(--labs-border)"}`,
+        background: profilePhotoUrl
+          ? `url(${profilePhotoUrl}) center/cover no-repeat`
+          : "var(--labs-accent-muted)",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        fontSize: 14,
+        fontWeight: 700,
+        color: "var(--labs-accent)",
+        transition: "border-color 150ms ease",
+        flexShrink: 0,
+        padding: 0,
+      }}
+    >
+      {!profilePhotoUrl && initial}
+    </button>
+
+WICHTIG: Alle anderen Eigenschaften des Buttons (onClick, data-testid etc.)
+bleiben erhalten. Nur style und Inhalt werden wie oben beschrieben geändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATEI 2: client/src/labs/pages/LabsTasteSettings.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── SCHRITT 5: CustomEvent nach Foto-Upload feuern ──
+
+In LabsTasteSettings.tsx die Stelle suchen, wo nach erfolgreichem Foto-Upload
+setCurrentPhotoUrl oder setPhotoPreview aufgerufen wird.
+
+Direkt danach folgende Zeile ergänzen:
+
+  window.dispatchEvent(
+    new CustomEvent("casksense:photo-updated", {
+      detail: { photoUrl: newPhotoUrl }
+    })
+  );
+
+Dabei ist newPhotoUrl die Variable die die neue Photo-URL enthält
+(je nach Code: data.photoUrl, uploadedUrl, preview, o.ä. — die Variable
+nehmen die auch für setCurrentPhotoUrl verwendet wird).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRÜFUNG NACH IMPLEMENTIERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Avatar-Button zeigt das hochgeladene Foto (kein Initial mehr)
+  [ ] Wenn kein Foto hochgeladen: Initial wird wie bisher angezeigt
+  [ ] Nach Upload in den Einstellungen: Header aktualisiert sich sofort
+  [ ] Kein 404, kein CORS-Fehler in der Konsole
+  [ ] /labs/tastings, /labs/home noch erreichbar
+  [ ] Kein TypeScript-Fehler
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════
