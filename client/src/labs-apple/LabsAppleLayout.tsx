@@ -2,6 +2,7 @@
 // Ablage: client/src/labs-apple/LabsAppleLayout.tsx
 
 import React, { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ThemeTokens, SP } from './theme/tokens'
 import { Translations } from './theme/i18n'
 import * as Icon from './icons/Icons'
@@ -107,88 +108,81 @@ export const LabsAppleLayout: React.FC<Props> = ({
                 }
               </button>
 
-              {/* Dropdown — fixed to viewport to escape sticky stacking context */}
-              {profileOpen && (
-                <div style={{ position: 'fixed', top: 56, right: 'max(16px, calc((100vw - 480px) / 2 + 16px))', width: 220, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', zIndex: 9999, overflow: 'hidden' }}>
-
-                  {/* Header mit Foto */}
-                  <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 22, border: `2px solid ${th.gold}44`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: th.gold, overflow: 'hidden' }}>
-                        {photoUrl
-                          ? <img src={photoUrl} alt={session.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : initial
-                        }
-                      </div>
-                      {/* Foto-Upload Overlay */}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={photoUploading}
-                        style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, background: th.gold, border: `2px solid ${th.bgCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-                      >
-                        {photoUploading
-                          ? <Icon.Spinner color="#1a0f00" size={10} />
-                          : <Icon.Camera color="#1a0f00" size={10} />
-                        }
-                      </button>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name}</div>
-                      <div style={{ fontSize: 11, color: th.faint, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {isGuest ? (lang === 'de' ? 'Gast' : 'Guest') : session.email}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Profil bearbeiten → navigiert zu Meine Welt */}
-                  <button
-                    onClick={() => { setProfileOpen(false); onTabChange('meinewelt') }}
-                    style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-                  >
-                    <Icon.Profile color={th.muted} size={16} />
-                    {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
-                  </button>
-
-                  {/* Foto hochladen */}
-                  <button
-                    onClick={() => { setProfileOpen(false); fileInputRef.current?.click() }}
-                    style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-                  >
-                    <Icon.Camera color={th.muted} size={16} />
-                    {lang === 'de' ? 'Profilfoto ändern' : 'Change photo'}
-                  </button>
-
-                  {/* Admin */}
-                  {isAdmin && (
-                    <button
-                      onClick={() => { setProfileOpen(false); (window as any).__casksenseNav?.('admin') }}
-                      style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-                    >
-                      <Icon.Settings color={th.gold} size={16} />
-                      Admin
-                    </button>
-                  )}
-
-                  {/* Logout */}
-                  {onLogout && (
-                    <button
-                      onClick={() => { setProfileOpen(false); onLogout() }}
-                      style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
-                    >
-                      <Icon.Back color="#e06060" size={16} />
-                      {t.authLogout}
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Backdrop */}
-      {profileOpen && (
-        <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
+      {profileOpen && createPortal(
+        <>
+          <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
+          <div style={{ position: 'fixed', top: 56, right: 'max(16px, calc((100vw - 480px) / 2 + 16px))', width: 220, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', zIndex: 9999, overflow: 'hidden', fontFamily: 'DM Sans, sans-serif' }}>
+
+            <div style={{ padding: SP.md, borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 22, border: `2px solid ${th.gold}44`, background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: th.gold, overflow: 'hidden' }}>
+                  {photoUrl
+                    ? <img src={photoUrl} alt={session!.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : initial
+                  }
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photoUploading}
+                  style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, background: th.gold, border: `2px solid ${th.bgCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                >
+                  {photoUploading
+                    ? <Icon.Spinner color="#1a0f00" size={10} />
+                    : <Icon.Camera color="#1a0f00" size={10} />
+                  }
+                </button>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session!.name}</div>
+                <div style={{ fontSize: 11, color: th.faint, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {isGuest ? (lang === 'de' ? 'Gast' : 'Guest') : session!.email}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setProfileOpen(false); onTabChange('meinewelt') }}
+              style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+            >
+              <Icon.Profile color={th.muted} size={16} />
+              {lang === 'de' ? 'Profil bearbeiten' : 'Edit profile'}
+            </button>
+
+            <button
+              onClick={() => { setProfileOpen(false); fileInputRef.current?.click() }}
+              style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.text, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+            >
+              <Icon.Camera color={th.muted} size={16} />
+              {lang === 'de' ? 'Profilfoto ändern' : 'Change photo'}
+            </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => { setProfileOpen(false); (window as any).__casksenseNav?.('admin') }}
+                style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', borderBottom: `1px solid ${th.border}`, cursor: 'pointer', color: th.gold, fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+              >
+                <Icon.Settings color={th.gold} size={16} />
+                Admin
+              </button>
+            )}
+
+            {onLogout && (
+              <button
+                onClick={() => { setProfileOpen(false); onLogout() }}
+                style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${SP.md}px`, background: 'none', border: 'none', cursor: 'pointer', color: '#e06060', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}
+              >
+                <Icon.Back color="#e06060" size={16} />
+                {t.authLogout}
+              </button>
+            )}
+          </div>
+        </>,
+        document.body
       )}
 
       {/* Content */}
