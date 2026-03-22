@@ -739,29 +739,31 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               EN
             </button>
           </div>
-          <button
-            onClick={() => setProfileOpen(true)}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'rgba(196,160,80,0.2)',
-              border: '1.5px solid rgba(196,160,80,0.5)',
-              color: '#C4A050',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginLeft: 8,
-              fontFamily: 'DM Sans, sans-serif',
-            }}
-            data-testid="labs-profile-btn"
-          >
-            {(currentParticipant?.name ?? 'C').charAt(0).toUpperCase()}
-          </button>
+          {currentParticipant && (
+            <button
+              onClick={() => setProfileOpen(true)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(196,160,80,0.2)',
+                border: '1.5px solid rgba(196,160,80,0.5)',
+                color: '#C4A050',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginLeft: 8,
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              data-testid="labs-profile-btn"
+            >
+              {currentParticipant.name.charAt(0).toUpperCase()}
+            </button>
+          )}
         </div>
       </header>
 
