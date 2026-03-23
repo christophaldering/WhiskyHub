@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
+import { setSessionAndSync } from "@/lib/session";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff } from "lucide-react";
@@ -17,7 +18,7 @@ interface LoginDialogProps {
 
 export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const { t } = useTranslation();
-  const { setParticipant, authDialogTab } = useAppStore();
+  const { authDialogTab } = useAppStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
@@ -38,7 +39,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const [consentGate, setConsentGate] = useState(false);
-  const [pendingLoginParticipant, setPendingLoginParticipant] = useState<{ id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null>(null);
+  const [pendingLoginParticipant, setPendingLoginParticipant] = useState<{ id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; photoUrl?: string } | null>(null);
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
@@ -91,7 +92,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setConsentGate(true);
           setPrivacyConsent(false);
         } else {
-          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+          setSessionAndSync("log", participant.name, participant.id, participant.role, participant.photoUrl);
+          try { localStorage.setItem("casksense_participant_id", participant.id); } catch {}
+          window.dispatchEvent(new Event("session-change"));
           onClose();
         }
       } catch (e: any) {
@@ -133,7 +136,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setVerifyError("");
         } else {
           localStorage.setItem(`casksense_level_chosen_${participant.id}`, "true");
-          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+          setSessionAndSync("log", participant.name, participant.id, participant.role, participant.photoUrl);
+          try { localStorage.setItem("casksense_participant_id", participant.id); } catch {}
+          window.dispatchEvent(new Event("session-change"));
           onClose();
         }
       } catch (e: any) {
@@ -154,7 +159,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setVerifyError("");
     try {
       const verified = await participantApi.verify(pendingParticipant.id, verifyCode.trim());
-      setParticipant({ id: verified.id, name: verified.name, role: verified.role, canAccessWhiskyDb: verified.canAccessWhiskyDb });
+      setSessionAndSync("log", verified.name, verified.id, verified.role, verified.photoUrl);
+      try { localStorage.setItem("casksense_participant_id", verified.id); } catch {}
+      window.dispatchEvent(new Event("session-change"));
       setVerifyMode(false);
       setPendingParticipant(null);
       onClose();
@@ -329,7 +336,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       try {
         sessionStorage.setItem("session_pid", pendingLoginParticipant.id);
         await participantApi.acceptPrivacyConsent(pendingLoginParticipant.id);
-        setParticipant({ id: pendingLoginParticipant.id, name: pendingLoginParticipant.name, role: pendingLoginParticipant.role, canAccessWhiskyDb: pendingLoginParticipant.canAccessWhiskyDb });
+        setSessionAndSync("log", pendingLoginParticipant.name, pendingLoginParticipant.id, pendingLoginParticipant.role, pendingLoginParticipant.photoUrl);
+        try { localStorage.setItem("casksense_participant_id", pendingLoginParticipant.id); } catch {}
+        window.dispatchEvent(new Event("session-change"));
         setConsentGate(false);
         setPendingLoginParticipant(null);
         onClose();
