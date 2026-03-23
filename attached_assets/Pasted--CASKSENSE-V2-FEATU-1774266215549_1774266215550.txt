@@ -1,0 +1,315 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — FEATURE C: KI KORREKTUR-LOOP (FLASCHENERKENNUNG)
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CaskSense V2 läuft vollständig. Die GPT-4o Flaschenerkennung ist bereits
+in der App integriert — sie scannt ein Foto und gibt strukturierte
+Whisky-Daten zurück (Name, Destillerie, Region, Age, ABV, Cask).
+
+Das Problem: Wenn die KI falsch liegt, hat der Nutzer keine Möglichkeit
+zu korrigieren. Korrekturen gehen verloren. Die Erkennungsqualität
+verbessert sich nicht.
+
+Dieses Feature ergänzt direkt nach der GPT-4o-Antwort einen
+Feedback-Schritt: Nutzer bestätigt, korrigiert oder lehnt ab.
+Korrekturen werden gespeichert und können die KI-Qualität verbessern.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS bestehende KI-Logik (GPT-4o-Aufruf) verändern
+❌ NIEMALS bestehende Dateien in client/src/labs/ anfassen
+❌ NIEMALS bestehende Dateien in client/src/labs-v2/ löschen
+
+✅ Neue Datei client/src/labs-v2/components/BottleRecognitionFeedback.tsx anlegen
+✅ server/routes.ts: NUR einen neuen Endpunkt append-only ergänzen
+✅ Bestehende Scan-Komponente: NUR State + Rendering ergänzen (kein Refactor)
+✅ i18n Keys append-only
+✅ Feedback-Endpunkt ist optional — Komponente funktioniert auch ohne ihn
+   (graceful fallback: Korrekturen in localStorage)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  recognitionTitle:     "Flasche erkannt"
+  recognitionConfidence:"Sicherheit"
+  recognitionLowConf:   "Geringe Sicherheit — bitte Daten prüfen."
+  recognitionConfirm:   "Korrekt"
+  recognitionEdit:      "Korrigieren"
+  recognitionReject:    "Falsch"
+  recognitionSave:      "Korrektur speichern"
+  recognitionRejected:  "Verstanden — Erkennung übersprungen."
+  recognitionEditHint:  "Korrigiere die Felder. Deine Eingabe hilft die Erkennung zu verbessern."
+  labelDistillery:      "Destillerie"
+  labelRegion:          "Region"
+  labelAge:             "Alter (Jahre)"
+  labelABV:             "ABV %"
+  labelCask:            "Cask-Typ"
+  labelName:            "Name"
+
+EN:
+  recognitionTitle:     "Bottle recognised"
+  recognitionConfidence:"Confidence"
+  recognitionLowConf:   "Low confidence — please verify the details."
+  recognitionConfirm:   "Correct"
+  recognitionEdit:      "Edit"
+  recognitionReject:    "Wrong"
+  recognitionSave:      "Save correction"
+  recognitionRejected:  "Understood — recognition skipped."
+  recognitionEditHint:  "Correct the fields. Your input helps improve recognition."
+  labelDistillery:      "Distillery"
+  labelRegion:          "Region"
+  labelAge:             "Age (years)"
+  labelABV:             "ABV %"
+  labelCask:            "Cask type"
+  labelName:            "Name"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 1: SERVER FEEDBACK-ENDPUNKT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In server/routes.ts — NUR diesen einen neuen Endpunkt ergänzen:
+
+POST /api/bottle-recognition/feedback
+  Header: x-participant-id (optional, für Logging)
+  Body:
+    {
+      original:      BottleRecognitionResult,
+      corrected?:    BottleRecognitionResult,   // nur bei action='corrected'
+      action:        'confirmed' | 'corrected' | 'rejected',
+      participantId: string | null,
+      timestamp:     string (ISO)
+    }
+
+  Verarbeitung:
+    - Body in JSON parsen und in eine In-Memory Liste pushen
+      (server-seitige Variable: const feedbackLog: any[] = [])
+    - action='corrected': console.log mit original vs corrected für spätere Auswertung
+    - 200 { ok: true } zurückgeben
+
+  WICHTIG: Dieser Endpunkt ist bewusst minimal. Kein DB-Write, kein Schema.
+  Die Logs können später manuell ausgewertet oder in eine DB migriert werden.
+  Der Endpunkt MUSS funktionieren bevor die Komponente eingebunden wird —
+  aber die Komponente fällt auch ohne ihn nicht aus (localStorage-Fallback).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 2: KOMPONENTE BottleRecognitionFeedback
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/src/labs-v2/components/BottleRecognitionFeedback.tsx
+
+Interface BottleRecognitionResult:
+  {
+    name:       string
+    distillery: string
+    region:     string
+    age:        number | null
+    abv:        number | null
+    caskType:   string
+    confidence: number    // 0–1
+    rawLabel:   string    // was GPT-4o als Label gesehen hat
+  }
+
+Props der Komponente:
+  {
+    th:            ThemeTokens
+    t:             Translations
+    recognition:   BottleRecognitionResult
+    participantId: string | null
+    onConfirm:     (data: BottleRecognitionResult) => void
+    onDismiss:     () => void
+  }
+
+Interner State:
+  mode: 'review' | 'editing' | 'confirmed' | 'rejected'
+  edited: BottleRecognitionResult  (Kopie von recognition als Startwert)
+  saving: boolean
+  showFlash: boolean
+
+──────────────────────────────────────────────────────────────────────────────
+DARSTELLUNG — MODUS 'review'
+──────────────────────────────────────────────────────────────────────────────
+
+Karte mit border, borderRadius 16px, background th.bgCard.
+
+HEADER (Trennlinie darunter):
+  Links: Gold-getönter Box (36×36px) mit Kamera-SVG-Icon (18px, stroke #c9a227)
+  Mitte: Titel "Flasche erkannt" (DM Sans 13px 600) +
+         "Sicherheit: {confidencePct}%" in Farbe je nach Wert:
+           ≥85%: #3db87a (grün)
+           ≥60%: #c9a227 (gold)
+           <60%: #e05a3a (rot)
+  Rechts: Horizontale Fortschrittsleiste 48×4px
+    Füllstand: confidence * 100%, Farbe identisch mit Confidence-Farbe
+
+ERKANNTE FELDER (Card innerhalb, background rgba(255,255,255,0.03)):
+  Whisky-Name: Playfair Display, 18px, fontWeight 600
+  Darunter je eine Zeile mit borderTop für:
+    Destillerie / Region / Alter / ABV / Cask-Typ
+  Label links: DM Sans 12px textMuted
+  Wert rechts: DM Sans 13px 500 th.text
+  Fehlende Werte als '–'
+
+HINWEIS-BOX wenn confidence < 0.70:
+  Background rgba(201,162,39,0.08), border rgba(201,162,39,0.2), borderRadius 8px
+  Text: t.recognitionLowConf, Farbe #c9a227, DM Sans 13px
+
+DREI BUTTONS (nebeneinander, minHeight 44px):
+  "Falsch"       → handleReject(), flex: 1, transparent, border th.border
+  "Korrigieren"  → mode = 'editing', flex: 1, gold-Rand
+  "Korrekt"      → handleConfirm(), flex: 2, Gradient grün
+
+──────────────────────────────────────────────────────────────────────────────
+DARSTELLUNG — MODUS 'editing'
+──────────────────────────────────────────────────────────────────────────────
+
+Hinweis-Text: t.recognitionEditHint (DM Sans 13px textMuted)
+
+Text-Inputs für: Name / Destillerie / Region / Cask-Typ
+  Label über Input: DM Sans 11px uppercase letterSpacing 0.06em textMuted
+  Input: minHeight 44px, background rgba(255,255,255,0.06),
+         border th.border, borderRadius 8px, DM Sans 14px
+
+Zahlen-Inputs nebeneinander: Alter | ABV
+  type="number", gleicher Style
+
+Zwei Buttons (minHeight 44px):
+  "Abbrechen" → mode = 'review', flex: 1, transparent
+  "Korrektur speichern" → handleSaveEdit(), flex: 2, Gold-Gradient
+
+──────────────────────────────────────────────────────────────────────────────
+DARSTELLUNG — MODUS 'rejected'
+──────────────────────────────────────────────────────────────────────────────
+
+Zentrierter Text: t.recognitionRejected (DM Sans 14px textMuted)
+Nach 800ms: onDismiss() aufrufen
+
+──────────────────────────────────────────────────────────────────────────────
+SAVE FLASH (overlay, alle Modi)
+──────────────────────────────────────────────────────────────────────────────
+
+Wenn showFlash=true: Absoluter Overlay über der ganzen Karte
+  background rgba(14,11,5,0.7), backdropFilter blur(4px)
+  Zentriert: grüner Kreis (44px) mit Check-SVG-Icon
+  CSS-Animation 'cs-flash': opacity 0→1→0 in 300ms
+  pointerEvents: none
+
+
+──────────────────────────────────────────────────────────────────────────────
+FEEDBACK ABSENDEN (intern)
+──────────────────────────────────────────────────────────────────────────────
+
+handleConfirm():
+  1. saving = true
+  2. POST /api/bottle-recognition/feedback mit { original, action: 'confirmed', ... }
+     Bei Netzwerkfehler: localStorage 'cs-recognition-feedback' als JSON-Array ergänzen
+  3. saving = false
+  4. showFlash = true → nach 300ms: onConfirm(recognition)
+
+handleSaveEdit():
+  1. saving = true
+  2. POST mit { original, corrected: edited, action: 'corrected', ... }
+     Bei Fehler: localStorage-Fallback
+  3. saving = false
+  4. showFlash = true → nach 300ms: onConfirm(edited)
+
+handleReject():
+  1. POST mit { original, action: 'rejected', ... }
+     Bei Fehler: localStorage-Fallback
+  2. mode = 'rejected'
+
+Header x-participant-id immer mitsenden wenn participantId vorhanden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 3: INTEGRATION IN SCAN-FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die bestehende Komponente die GPT-4o für Flaschenerkennung aufruft
+(suche nach: fetch('/api/recognize') oder fetch('/api/bottle') oder
+ähnlichen Aufrufen mit einem Foto/Bild-Upload in labs-v2):
+
+NUR ergänzen — keine bestehende Logik verändern:
+
+  // Import ergänzen:
+  import { BottleRecognitionFeedback, BottleRecognitionResult }
+    from '../components/BottleRecognitionFeedback'
+
+  // State ergänzen (neben bestehenden States):
+  const [recognition, setRecognition] = useState<BottleRecognitionResult | null>(null)
+
+  // Nach dem GPT-4o-Aufruf — in den bestehenden success-Handler ergänzen:
+  // (GPT-Antwort in BottleRecognitionResult mappen)
+  setRecognition({
+    name:       gptResult.name       ?? '',
+    distillery: gptResult.distillery ?? '',
+    region:     gptResult.region     ?? '',
+    age:        typeof gptResult.age === 'number' ? gptResult.age : null,
+    abv:        typeof gptResult.abv === 'number' ? gptResult.abv : null,
+    caskType:   gptResult.caskType   ?? gptResult.cask ?? '',
+    confidence: typeof gptResult.confidence === 'number' ? gptResult.confidence : 0.5,
+    rawLabel:   gptResult.rawLabel   ?? gptResult.label ?? '',
+  })
+
+  // Im JSX — NACH dem bestehenden Scan-UI, als bedingtes Element:
+  {recognition && (
+    <BottleRecognitionFeedback
+      th={th} t={t}
+      recognition={recognition}
+      participantId={participantId}
+      onConfirm={(data) => {
+        // Hier die bestehende Logik aufrufen die einen Whisky anlegt/auswählt
+        // (z.B. applyRecognizedBottle(data) oder setWhiskyData(data))
+        // Die genaue Funktion hängt vom bestehenden Code ab — den passenden
+        // Aufruf aus dem vorhandenen success-Handler übernehmen.
+        setRecognition(null)
+      }}
+      onDismiss={() => setRecognition(null)}
+    />
+  )}
+
+WICHTIG: Falls die GPT-4o-Antwort andere Feldnamen hat als hier angenommen,
+die Mapping-Logik (setRecognition-Aufruf) entsprechend anpassen.
+Niemals die GPT-4o-Aufruf-Logik selbst verändern.
+
+Falls keine Scan-Komponente in labs-v2 gefunden wird:
+  BottleRecognitionFeedback trotzdem anlegen.
+  Integration-Schritt überspringen und in der Commit-Message dokumentieren
+  dass die Integration manuell nachgezogen werden muss.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE FEATURE C
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] POST /api/bottle-recognition/feedback gibt 200 zurück
+  [ ] Nach GPT-Scan erscheint BottleRecognitionFeedback-Karte
+  [ ] Confidence-Farbe korrekt (grün/gold/rot je nach Wert)
+  [ ] "Korrekt" → 300ms Flash → onConfirm() wird aufgerufen
+  [ ] "Korrigieren" → Edit-Modus mit vorausgefüllten Feldern
+  [ ] "Korrektur speichern" → Feedback an API → onConfirm(edited)
+  [ ] "Falsch" → rejected-State → nach 800ms onDismiss()
+  [ ] Bei Netzwerkfehler: localStorage 'cs-recognition-feedback' befüllt
+  [ ] Alle Inputs: minHeight 44px
+  [ ] Kein einziges Emoji — Kamera-Icon als SVG inline
+  [ ] DE/EN Keys vollständig
+  [ ] Bestehende GPT-4o-Logik unverändert
+  [ ] /labs und /labs-v2 noch vollständig erreichbar
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE FEATURE C PROMPT
+═══════════════════════════════════════════════════════════════════════════════
