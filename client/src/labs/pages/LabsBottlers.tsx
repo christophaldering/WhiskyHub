@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink, ChevronLeft } from "lucide-react";
+
+const MiniMap = lazy(() => import("@/labs/components/MiniMap"));
 
 interface Bottler {
   id: string;
@@ -17,6 +19,8 @@ interface Bottler {
   website: string | null;
   notableReleases: string[] | null;
   status: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 function Card({ b }: { b: Bottler }) {
@@ -57,6 +61,11 @@ function Card({ b }: { b: Bottler }) {
                 {b.notableReleases.map((r) => <span key={r} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>{r}</span>)}
               </div>
             </div>
+          )}
+          {b.lat != null && b.lng != null && (
+            <Suspense fallback={<div style={{ width: "100%", height: 200, borderRadius: 10, marginTop: 10, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} />}>
+              <MiniMap lat={b.lat} lng={b.lng} />
+            </Suspense>
           )}
         </div>
       )}

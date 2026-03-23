@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -890,6 +890,8 @@ export const bottlers = pgTable("bottlers", {
   website: text("website"),
   notableReleases: text("notable_releases").array(),
   status: text("status").notNull().default("active"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
 });
 
 export const insertBottlerSchema = createInsertSchema(bottlers).omit({ id: true });

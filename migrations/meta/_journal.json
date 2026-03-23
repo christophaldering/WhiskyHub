@@ -64,6 +64,13 @@
       "when": 1774208301455,
       "tag": "0008_shallow_shiva",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774295244674,
+      "tag": "0009_faulty_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

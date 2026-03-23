@@ -218,11 +218,12 @@ async function seedBottlers() {
     const count = await storage.getBottlerCount();
     if (count > 0) {
       log(`Bottler seed: ${count} bottlers already present, skipping`, "seed");
+      await backfillBottlerCoordinates();
       return;
     }
 
     const { bottlers: staticData } = await import("../client/src/data/bottlers");
-    const seedData = staticData.map((b: { name: string; country: string; region: string; founded: number; description: string; specialty: string; website?: string; notableReleases?: string[] }) => ({
+    const seedData = staticData.map((b: { name: string; country: string; region: string; founded: number; description: string; specialty: string; website?: string; notableReleases?: string[]; lat?: number; lng?: number }) => ({
       name: b.name,
       country: b.country,
       region: b.region,
@@ -232,12 +233,43 @@ async function seedBottlers() {
       website: b.website ?? null,
       notableReleases: b.notableReleases ?? null,
       status: "active",
+      lat: b.lat ?? null,
+      lng: b.lng ?? null,
     }));
 
     await storage.createBottlers(seedData);
     log(`Bottler seed: inserted ${seedData.length} bottlers`, "seed");
   } catch (e) {
     log(`Bottler seed failed: ${(e as Error).message}`, "seed");
+  }
+}
+
+async function backfillBottlerCoordinates() {
+  try {
+    const { bottlers: staticData } = await import("../client/src/data/bottlers");
+    const allBottlers = await storage.getAllBottlers();
+    const coordMap = new Map(
+      staticData
+        .filter((b: { lat?: number; lng?: number }) => b.lat != null && b.lng != null)
+        .map((b: { name: string; lat?: number; lng?: number }) => [b.name, { lat: b.lat!, lng: b.lng! }])
+    );
+
+    let updated = 0;
+    for (const b of allBottlers) {
+      if (b.lat == null || b.lng == null) {
+        const coords = coordMap.get(b.name);
+        if (coords) {
+          await storage.updateBottler(b.id, { lat: coords.lat, lng: coords.lng });
+          updated++;
+        }
+      }
+    }
+
+    if (updated > 0) {
+      log(`Bottler backfill: updated ${updated} bottlers with coordinates`, "seed");
+    }
+  } catch (e) {
+    log(`Bottler coordinate backfill failed: ${(e as Error).message}`, "seed");
   }
 }
 

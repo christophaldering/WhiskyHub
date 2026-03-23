@@ -7,6 +7,7 @@ import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon, ExternalLink } from "lucide-react";
 
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
+const MiniMap = lazy(() => import("@/labs/components/MiniMap"));
 
 interface Distillery {
   id: string;
@@ -56,6 +57,11 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>{t("discover.keyFact", "Key Fact")}</span>
               <p style={{ fontSize: 11, lineHeight: 1.5, color: "var(--labs-text-muted)", margin: "4px 0 0" }}>{d.feature}</p>
             </div>
+          )}
+          {d.lat != null && d.lng != null && (
+            <Suspense fallback={<div style={{ width: "100%", height: 200, borderRadius: 10, marginTop: 10, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} />}>
+              <MiniMap lat={d.lat} lng={d.lng} />
+            </Suspense>
           )}
         </div>
       )}
