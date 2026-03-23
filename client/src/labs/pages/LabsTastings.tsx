@@ -1,22 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, ChevronLeft, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, Archive } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, ChevronLeft, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, getParticipantId } from "@/lib/api";
+import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 type FilterTab = "all" | "hosting" | "joined";
-type TimeFilter = "upcoming" | "live" | "past";
+type TimeFilter = "upcoming" | "live";
 
 const STATUS_CONFIG: Record<string, { label: string; cssClass: string }> = {
   draft: { label: "Setting up", cssClass: "labs-badge-info" },
   open: { label: "Live", cssClass: "labs-badge-success" },
-  closed: { label: "Closed", cssClass: "labs-badge-accent" },
-  reveal: { label: "Reveal", cssClass: "labs-badge-accent" },
-  archived: { label: "Completed", cssClass: "labs-badge-info" },
 };
 
 function formatTastingDate(dateStr: string | null | undefined): string {
@@ -53,47 +50,11 @@ export default function LabsTastings() {
   const queryClient = useQueryClient();
 
   const isAdmin = currentParticipant?.role === "admin";
-  const pid = getParticipantId();
 
   const { data: tastings, isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
-  });
-
-  const { data: myHistoricalParticipations } = useQuery<{ participations: Array<{ historicalTastingId: string }> }>({
-    queryKey: ["historical-my-participations", pid],
-    queryFn: async () => {
-      if (!pid) return { participations: [] };
-      const res = await fetch("/api/historical/my-participations", { headers: { "x-participant-id": pid } });
-      if (!res.ok) return { participations: [] };
-      return res.json();
-    },
-    enabled: !!pid,
-  });
-
-  const claimedHistoricalIds = myHistoricalParticipations?.participations?.map(p => p.historicalTastingId) ?? [];
-
-  const { data: claimedHistoricalDetails } = useQuery<Record<string, { id: string; tastingNumber: number; titleDe: string | null; titleEn: string | null; tastingDate: string | null; whiskyCount: number }>>({
-    queryKey: ["historical-tastings-details", claimedHistoricalIds.join(",")],
-    queryFn: async () => {
-      if (claimedHistoricalIds.length === 0) return {};
-      const results: Record<string, any> = {};
-      const fetches = claimedHistoricalIds.map(async (id) => {
-        try {
-          const res = await fetch(`/api/historical/tastings/${id}`, {
-            headers: pid ? { "x-participant-id": pid } : {},
-          });
-          if (res.ok) {
-            const data = await res.json();
-            results[id] = data;
-          }
-        } catch {}
-      });
-      await Promise.all(fetches);
-      return results;
-    },
-    enabled: claimedHistoricalIds.length > 0,
   });
 
   const handleAcceptInvite = async (tasting: any) => {
@@ -115,86 +76,58 @@ export default function LabsTastings() {
     }
   };
 
-  const historicalAsPast = useMemo(() => {
-    if (!claimedHistoricalIds.length || !claimedHistoricalDetails) return [];
-    const lang = navigator.language?.startsWith("de") ? "de" : "en";
-    return claimedHistoricalIds
-      .filter(id => claimedHistoricalDetails[id])
-      .map(id => {
-        const ht = claimedHistoricalDetails[id];
-        return {
-          id: `historical-${ht.id}`,
-          historicalId: ht.id,
-          title: (lang === "de" ? ht.titleDe : ht.titleEn) || ht.titleDe || `Tasting #${ht.tastingNumber}`,
-          date: ht.tastingDate || "",
-          location: "",
-          status: "archived",
-          hostId: null,
-          hostName: null,
-          isHistorical: true,
-          tastingNumber: ht.tastingNumber,
-          whiskyCount: ht.whiskyCount,
-        };
-      });
-  }, [claimedHistoricalIds, claimedHistoricalDetails]);
-
-  const filtered = useMemo(() => {
-    if (!tastings) return [];
+  const { invitations, filtered } = useMemo(() => {
+    if (!tastings) return { invitations: [], filtered: [] };
     let list = [...tastings].filter((t: any) => !t.isTestData);
 
+    const activeOnly = list.filter((t: any) => t.status === "open" || t.status === "draft");
+
+    let invites = activeOnly.filter((t: any) => t.invitePending === true);
+
+    let result = activeOnly.filter((t: any) => !t.invitePending);
+
     if (filterTab === "hosting") {
-      list = list.filter((t: any) => t.hostId === currentParticipant?.id);
+      result = result.filter((t: any) => t.hostId === currentParticipant?.id);
     } else if (filterTab === "joined") {
-      list = list.filter((t: any) => t.hostId !== currentParticipant?.id || t.invitePending);
+      result = result.filter((t: any) => t.hostId !== currentParticipant?.id);
     }
 
     if (timeFilter === "live") {
-      list = list.filter((t: any) => t.status === "open");
+      result = result.filter((t: any) => t.status === "open");
     } else if (timeFilter === "upcoming") {
-      list = list.filter((t: any) => t.status === "draft");
-    } else if (timeFilter === "past") {
-      list = list.filter((t: any) => t.status === "archived" || t.status === "reveal" || t.status === "closed");
-      if (filterTab !== "hosting") {
-        list = [...list, ...historicalAsPast];
-      }
-    }
-
-    if (timeFilter === null && filterTab !== "hosting") {
-      list = [...list, ...historicalAsPast];
+      result = result.filter((t: any) => t.status === "draft");
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (t: any) =>
-          t.title?.toLowerCase().includes(q) ||
-          t.location?.toLowerCase().includes(q) ||
-          t.hostName?.toLowerCase().includes(q)
-      );
+      const matchesSearch = (t: any) =>
+        t.title?.toLowerCase().includes(q) ||
+        t.location?.toLowerCase().includes(q) ||
+        t.hostName?.toLowerCase().includes(q);
+      result = result.filter(matchesSearch);
+      invites = invites.filter(matchesSearch);
     }
 
-    list.sort((a: any, b: any) => {
-      if (a.invitePending && !b.invitePending) return -1;
-      if (!a.invitePending && b.invitePending) return 1;
-      const statusOrder: Record<string, number> = { open: 0, draft: 1, reveal: 2, closed: 3, archived: 4, historical: 5 };
-      const orderA = a.isHistorical ? 5 : (statusOrder[a.status] ?? 5);
-      const orderB = b.isHistorical ? 5 : (statusOrder[b.status] ?? 5);
+    result.sort((a: any, b: any) => {
+      const statusOrder: Record<string, number> = { open: 0, draft: 1 };
+      const orderA = statusOrder[a.status] ?? 2;
+      const orderB = statusOrder[b.status] ?? 2;
       if (orderA !== orderB) return orderA - orderB;
       return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
     });
 
-    return list;
-  }, [tastings, filterTab, timeFilter, searchQuery, currentParticipant?.id, historicalAsPast]);
+    return { invitations: invites, filtered: result };
+  }, [tastings, filterTab, timeFilter, searchQuery, currentParticipant?.id]);
 
   const counts = useMemo(() => {
-    if (!tastings) return { live: 0, upcoming: 0, past: 0 };
+    if (!tastings) return { live: 0, upcoming: 0 };
     const real = tastings.filter((t: any) => !t.isTestData);
+    const active = real.filter((t: any) => t.status === "open" || t.status === "draft");
     return {
-      live: real.filter((t: any) => t.status === "open").length,
-      upcoming: real.filter((t: any) => t.status === "draft").length,
-      past: real.filter((t: any) => ["archived", "reveal", "closed"].includes(t.status)).length + historicalAsPast.length,
+      live: active.filter((t: any) => t.status === "open").length,
+      upcoming: active.filter((t: any) => t.status === "draft").length,
     };
-  }, [tastings, historicalAsPast]);
+  }, [tastings]);
 
   if (!currentParticipant) {
     return (
@@ -285,7 +218,7 @@ export default function LabsTastings() {
         </div>
 
         <div className="labs-tastings-time-chips">
-          {(["live", "upcoming", "past"] as const).map((tf) => {
+          {(["live", "upcoming"] as const).map((tf) => {
             const isActive = timeFilter === tf;
             const count = counts[tf];
             return (
@@ -324,7 +257,7 @@ export default function LabsTastings() {
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w45" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w70 labs-skeleton--mt8" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && invitations.length === 0 ? (
         <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
           <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
             <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
@@ -341,7 +274,7 @@ export default function LabsTastings() {
             {searchQuery
               ? "Versuche einen anderen Suchbegriff."
               : timeFilter
-              ? "Kein Tasting passt zu diesem Filter."
+              ? `Keine ${timeFilter === "live" ? "Live" : "geplanten"} Tastings gefunden.`
               : "Starte ein eigenes Tasting oder tritt einem bei — allein oder mit Freunden."}
           </p>
           {!searchQuery && !timeFilter && (
@@ -351,181 +284,176 @@ export default function LabsTastings() {
           )}
         </div>
       ) : (
-        <div className="labs-grouped-list labs-fade-in labs-stagger-3">
-          {filtered.map((tasting: any) => {
-            const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
-            const isHost = tasting.hostId === currentParticipant?.id;
-            const isLive = tasting.status === "open";
-            const formattedDate = formatTastingDate(tasting.date);
-            const isInvited = tasting.invitePending === true;
-            const isAccepting = acceptingInvite === tasting.id;
-
-            const cardContent = (
-              <div
-                className="labs-list-row"
-                data-testid={`labs-tasting-card-${tasting.id}`}
-              >
-                <div
-                  className={`labs-tasting-card-icon ${
-                    tasting.isHistorical
-                      ? "labs-tasting-card-icon--live"
-                      : isInvited
-                        ? "labs-tasting-card-icon--invited"
-                        : isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
-                  }`}
-                >
-                  {tasting.isHistorical ? (
-                    <Archive className="labs-tasting-card-icon-sm labs-icon-success" />
-                  ) : isInvited ? (
-                    <Mail className="labs-tasting-card-icon-sm labs-icon-warning" />
-                  ) : (
-                    <Wine className={`labs-tasting-card-icon-sm ${isLive ? "labs-icon-success" : "labs-icon-accent"}`} />
-                  )}
-                </div>
-
-                <div className="labs-tasting-card-body">
-                  <div className="labs-tasting-card-title-row">
-                    <span
-                      className="labs-tasting-card-title"
-                      data-testid={`labs-tasting-title-${tasting.id}`}
-                    >
-                      {String(tasting.title ?? "")}
-                    </span>
-                    <div className="labs-tasting-card-badges">
-                      {isInvited && (
-                        <span
-                          className="labs-tasting-badge labs-tasting-badge--invite"
-                          data-testid={`labs-tasting-invite-badge-${tasting.id}`}
-                        >
-                          Eingeladen
-                        </span>
-                      )}
-                      {tasting.isHistorical && (
-                        <span
-                          className="labs-tasting-badge labs-tasting-badge--historical"
-                          data-testid={`labs-tasting-historical-badge-${tasting.id}`}
-                        >
-                          Archiv
-                        </span>
-                      )}
-                      {isHost && !isInvited && !tasting.isHistorical && (
-                        <span
-                          className="labs-tasting-badge labs-tasting-badge--host"
-                          data-testid={`labs-tasting-host-badge-${tasting.id}`}
-                        >
-                          Host
-                        </span>
-                      )}
-                      {!tasting.isHistorical && (
-                        <span
-                          className={`labs-badge ${status.cssClass} labs-tasting-status-badge`}
-                          data-testid={`labs-tasting-status-${tasting.id}`}
-                        >
-                          {isLive && (
-                            <span className="labs-tasting-live-dot animate-pulse" />
-                          )}
-                          {status.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {tasting.hostName && (isAdmin || !isHost) && (
-                    <div
-                      className="labs-tasting-card-host"
-                      data-testid={`labs-tasting-hostname-${tasting.id}`}
-                    >
-                      <Crown className="labs-tasting-card-host-icon" />
-                      <span className="labs-tasting-card-host-name">
-                        {stripGuestSuffix(tasting.hostName)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="labs-tasting-card-meta">
-                    {formattedDate && (
-                      <span className="labs-tasting-card-meta-item">
-                        <Calendar className="labs-tasting-card-meta-icon" />
-                        {formattedDate}
-                      </span>
-                    )}
-                    {tasting.location && (
-                      <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
-                        <MapPin className="labs-tasting-card-meta-icon" />
-                        <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
-                      </span>
-                    )}
-                  </div>
-
-                </div>
-
-                <div className="labs-tasting-card-actions">
-                  {tasting.code && !isInvited && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const link = `${window.location.origin}/labs/join?code=${tasting.code}`;
-                        navigator.clipboard.writeText(link).then(() => {
-                          setCopiedShareId(tasting.id);
-                          setTimeout(() => setCopiedShareId(null), 2000);
-                        });
-                      }}
-                      className="labs-btn-ghost labs-tasting-action-btn"
-                      data-testid={`labs-tasting-share-${tasting.id}`}
-                    >
-                      {copiedShareId === tasting.id ? (
-                        <Check className="labs-tasting-action-icon labs-icon-success" />
-                      ) : (
-                        <Share2 className="labs-tasting-action-icon" />
-                      )}
-                    </button>
-                  )}
-                  {isHost && !isInvited && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        navigate(`/labs/host/${tasting.id}`);
-                      }}
-                      className="labs-btn-ghost labs-tasting-action-btn"
-                      data-testid={`labs-tasting-settings-${tasting.id}`}
-                    >
-                      <Settings className="labs-tasting-action-icon" />
-                    </button>
-                  )}
-                  <ChevronRight className="labs-tasting-chevron" />
-                </div>
+        <>
+          {invitations.length > 0 && (
+            <div className="labs-invitations-section labs-fade-in labs-stagger-3" data-testid="labs-invitations-section">
+              <div className="labs-invitations-header">
+                <Mail className="w-5 h-5 labs-icon-warning" />
+                <h2 className="labs-invitations-title">Einladungen</h2>
+                <span className="labs-invitations-count">{invitations.length}</span>
               </div>
-            );
+              <div className="labs-invitations-list">
+                {invitations.map((tasting: any) => {
+                  const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
+                  const isLive = tasting.status === "open";
+                  const formattedDate = formatTastingDate(tasting.date);
+                  const isAccepting = acceptingInvite === tasting.id;
 
-            if (isInvited) {
-              return (
-                <div
-                  key={tasting.id}
-                  onClick={() => !isAccepting && handleAcceptInvite(tasting)}
-                  className={`labs-tasting-invite-wrapper ${isAccepting ? "labs-tasting-invite-wrapper--loading" : ""}`}
-                  data-testid={`labs-tasting-accept-invite-${tasting.id}`}
-                >
-                  {cardContent}
-                </div>
-              );
-            }
+                  return (
+                    <div
+                      key={tasting.id}
+                      onClick={() => !isAccepting && handleAcceptInvite(tasting)}
+                      className={`labs-invitation-card ${isAccepting ? "labs-invitation-card--loading" : ""}`}
+                      data-testid={`labs-tasting-accept-invite-${tasting.id}`}
+                    >
+                      <div className="labs-list-row" data-testid={`labs-tasting-card-${tasting.id}`}>
+                        <div className="labs-tasting-card-icon labs-tasting-card-icon--invited">
+                          <Mail className="labs-tasting-card-icon-sm labs-icon-warning" />
+                        </div>
+                        <div className="labs-tasting-card-body">
+                          <div className="labs-tasting-card-title-row">
+                            <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
+                              {String(tasting.title ?? "")}
+                            </span>
+                            <div className="labs-tasting-card-badges">
+                              <span className="labs-tasting-badge labs-tasting-badge--invite" data-testid={`labs-tasting-invite-badge-${tasting.id}`}>
+                                Eingeladen
+                              </span>
+                              <span className={`labs-badge ${status.cssClass} labs-tasting-status-badge`} data-testid={`labs-tasting-status-${tasting.id}`}>
+                                {isLive && <span className="labs-tasting-live-dot animate-pulse" />}
+                                {status.label}
+                              </span>
+                            </div>
+                          </div>
+                          {tasting.hostName && (
+                            <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
+                              <Crown className="labs-tasting-card-host-icon" />
+                              <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                            </div>
+                          )}
+                          <div className="labs-tasting-card-meta">
+                            {formattedDate && (
+                              <span className="labs-tasting-card-meta-item">
+                                <Calendar className="labs-tasting-card-meta-icon" />
+                                {formattedDate}
+                              </span>
+                            )}
+                            {tasting.location && (
+                              <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                                <MapPin className="labs-tasting-card-meta-icon" />
+                                <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="labs-tasting-card-actions">
+                          <span className="labs-invitation-accept-hint">Annehmen</span>
+                          <ChevronRight className="labs-tasting-chevron" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-            if (tasting.isHistorical) {
-              return (
-                <Link key={tasting.id} href={`/labs/history/${tasting.historicalId}`}>
-                  {cardContent}
-                </Link>
-              );
-            }
+          {filtered.length > 0 && (
+            <div className="labs-grouped-list labs-fade-in labs-stagger-3">
+              {filtered.map((tasting: any) => {
+                const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
+                const isHost = tasting.hostId === currentParticipant?.id;
+                const isLive = tasting.status === "open";
+                const formattedDate = formatTastingDate(tasting.date);
 
-            return (
-              <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
-                {cardContent}
-              </Link>
-            );
-          })}
-        </div>
+                return (
+                  <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
+                    <div className="labs-list-row" data-testid={`labs-tasting-card-${tasting.id}`}>
+                      <div className={`labs-tasting-card-icon ${isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"}`}>
+                        <Wine className={`labs-tasting-card-icon-sm ${isLive ? "labs-icon-success" : "labs-icon-accent"}`} />
+                      </div>
+                      <div className="labs-tasting-card-body">
+                        <div className="labs-tasting-card-title-row">
+                          <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
+                            {String(tasting.title ?? "")}
+                          </span>
+                          <div className="labs-tasting-card-badges">
+                            {isHost && (
+                              <span className="labs-tasting-badge labs-tasting-badge--host" data-testid={`labs-tasting-host-badge-${tasting.id}`}>
+                                Host
+                              </span>
+                            )}
+                            <span className={`labs-badge ${status.cssClass} labs-tasting-status-badge`} data-testid={`labs-tasting-status-${tasting.id}`}>
+                              {isLive && <span className="labs-tasting-live-dot animate-pulse" />}
+                              {status.label}
+                            </span>
+                          </div>
+                        </div>
+                        {tasting.hostName && (isAdmin || !isHost) && (
+                          <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
+                            <Crown className="labs-tasting-card-host-icon" />
+                            <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                          </div>
+                        )}
+                        <div className="labs-tasting-card-meta">
+                          {formattedDate && (
+                            <span className="labs-tasting-card-meta-item">
+                              <Calendar className="labs-tasting-card-meta-icon" />
+                              {formattedDate}
+                            </span>
+                          )}
+                          {tasting.location && (
+                            <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                              <MapPin className="labs-tasting-card-meta-icon" />
+                              <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="labs-tasting-card-actions">
+                        {tasting.code && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const link = `${window.location.origin}/labs/join?code=${tasting.code}`;
+                              navigator.clipboard.writeText(link).then(() => {
+                                setCopiedShareId(tasting.id);
+                                setTimeout(() => setCopiedShareId(null), 2000);
+                              });
+                            }}
+                            className="labs-btn-ghost labs-tasting-action-btn"
+                            data-testid={`labs-tasting-share-${tasting.id}`}
+                          >
+                            {copiedShareId === tasting.id ? (
+                              <Check className="labs-tasting-action-icon labs-icon-success" />
+                            ) : (
+                              <Share2 className="labs-tasting-action-icon" />
+                            )}
+                          </button>
+                        )}
+                        {isHost && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              navigate(`/labs/host/${tasting.id}`);
+                            }}
+                            className="labs-btn-ghost labs-tasting-action-btn"
+                            data-testid={`labs-tasting-settings-${tasting.id}`}
+                          >
+                            <Settings className="labs-tasting-action-icon" />
+                          </button>
+                        )}
+                        <ChevronRight className="labs-tasting-chevron" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
