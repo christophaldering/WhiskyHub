@@ -10,6 +10,13 @@ import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
+const scrollInputIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
+  const el = e.currentTarget;
+  setTimeout(() => {
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 350);
+};
+
 
 interface LoginDialogProps {
   open: boolean;
@@ -419,6 +426,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 autoFocus
                 data-testid="input-verify-code"
                 onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+                autoComplete="one-time-code"
+                enterKeyHint="done"
+                onFocus={scrollInputIntoView}
               />
               <p className="text-xs text-muted-foreground">{t('verify.codeHint')}</p>
             </div>
@@ -438,7 +448,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               <button
                 type="button"
                 onClick={handleBackToLogin}
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors min-h-[44px]"
                 data-testid="button-back-to-login"
               >
                 <ArrowLeft className="w-3 h-3" />
@@ -448,7 +458,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 type="button"
                 onClick={handleResend}
                 disabled={resendLoading}
-                className="text-xs text-muted-foreground hover:text-primary underline transition-colors disabled:opacity-50"
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors disabled:opacity-50 min-h-[44px]"
                 data-testid="button-resend-code"
               >
                 {resendLoading ? t('verify.resending') : resendSuccess ? t('verify.resent') : t('verify.resend')}
@@ -487,6 +497,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                     data-testid="input-reset-email"
                     autoFocus
                     onKeyDown={(e) => e.key === "Enter" && handleForgotPinRequest()}
+                    autoComplete="email"
+                    enterKeyHint="send"
+                    onFocus={scrollInputIntoView}
                   />
                 </div>
 
@@ -516,6 +529,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                     inputMode="numeric"
                     autoFocus
                     data-testid="input-reset-code"
+                    autoComplete="one-time-code"
+                    enterKeyHint="next"
+                    onFocus={scrollInputIntoView}
                   />
                 </div>
                 <div className="space-y-2">
@@ -530,11 +546,14 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                       className="bg-secondary/20 pr-10 password-input"
                       data-testid="input-new-pin"
                       onKeyDown={(e) => e.key === "Enter" && handleForgotPinVerify()}
+                      autoComplete="new-password"
+                      enterKeyHint="done"
+                      onFocus={scrollInputIntoView}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPin(!showNewPin)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       data-testid="button-toggle-new-pin-visibility"
                       aria-label={showNewPin ? "PIN verbergen" : "PIN anzeigen"}
                       aria-pressed={showNewPin}
@@ -568,7 +587,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               <button
                 type="button"
                 onClick={handleBackFromForgot}
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors min-h-[44px]"
                 data-testid="button-back-from-forgot"
               >
                 <ArrowLeft className="w-3 h-3" />
@@ -620,6 +639,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 placeholder={t('login.namePlaceholder')}
                 className="bg-secondary/20"
                 data-testid="input-name"
+                autoComplete="name"
+                enterKeyHint="next"
+                onFocus={scrollInputIntoView}
               />
             </div>
           )}
@@ -634,6 +656,9 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               className="bg-secondary/20"
               data-testid="input-email"
               autoFocus={isReturning}
+              autoComplete="email"
+              enterKeyHint="next"
+              onFocus={scrollInputIntoView}
             />
           </div>
 
@@ -671,11 +696,14 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 className="bg-secondary/20 pr-10 password-input"
                 data-testid="input-pin"
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                autoComplete={isReturning ? "current-password" : "new-password"}
+                enterKeyHint="done"
+                onFocus={scrollInputIntoView}
               />
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 data-testid="button-toggle-pin-visibility"
                 aria-label={showPin ? "PIN verbergen" : "PIN anzeigen"}
                 aria-pressed={showPin}
@@ -690,7 +718,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               <button
                 type="button"
                 onClick={() => setForgotPinMode(true)}
-                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors min-h-[44px]"
                 data-testid="button-forgot-pin"
               >
                 {t('forgotPin.link')}
