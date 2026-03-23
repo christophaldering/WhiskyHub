@@ -1,4 +1,3 @@
-import type { ThemeTokens } from "./theme";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import { BackIcon } from "./icons";
 import PhaseSignature from "./PhaseSignature";
@@ -19,13 +18,12 @@ interface RatingLabels {
 }
 
 interface RatingModeSelectProps {
-  th: ThemeTokens;
   labels: RatingLabels;
   onSelect: (mode: "guided" | "compact" | "quick") => void;
   onBack: () => void;
 }
 
-export default function RatingModeSelect({ th, labels, onSelect, onBack }: RatingModeSelectProps) {
+export default function RatingModeSelect({ labels, onSelect, onBack }: RatingModeSelectProps) {
   const cards: Array<{
     mode: "guided" | "compact" | "quick";
     title: string;
@@ -50,7 +48,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
           minHeight: TOUCH_MIN,
           background: "none",
           border: "none",
-          color: th.text,
+          color: "var(--labs-text)",
           cursor: "pointer",
           padding: 0,
           fontFamily: FONT.body,
@@ -58,7 +56,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
           marginBottom: SP.lg,
         }}
       >
-        <BackIcon color={th.text} size={20} />
+        <BackIcon color="var(--labs-text)" size={20} />
         <span>{labels.back}</span>
       </button>
 
@@ -68,7 +66,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
           fontFamily: FONT.display,
           fontSize: 28,
           fontWeight: 600,
-          color: th.text,
+          color: "var(--labs-text)",
           marginBottom: SP.sm,
         }}
       >
@@ -78,7 +76,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
       <p style={{
         fontFamily: FONT.body,
         fontSize: 14,
-        color: th.muted,
+        color: "var(--labs-text-muted)",
         marginBottom: SP.xl,
         lineHeight: 1.5,
       }}>
@@ -87,7 +85,8 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
 
       <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
         {cards.map(({ mode, title, desc, hint, phaseId }) => {
-          const phase = th.phases[phaseId];
+          const accentVar = `var(--labs-phase-${phaseId})`;
+          const dimVar = `var(--labs-phase-${phaseId}-dim)`;
           return (
             <button
               key={mode}
@@ -97,8 +96,8 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
                 display: "flex",
                 gap: SP.md,
                 padding: SP.lg,
-                background: th.bgCard,
-                border: `1px solid ${th.border}`,
+                background: "var(--labs-surface)",
+                border: "1px solid var(--labs-border)",
                 borderRadius: RADIUS.lg,
                 cursor: "pointer",
                 textAlign: "left",
@@ -106,21 +105,21 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
                 minHeight: TOUCH_MIN,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${phase.accent}66`;
-                e.currentTarget.style.background = phase.dim;
+                e.currentTarget.style.borderColor = `color-mix(in srgb, ${accentVar} 40%, transparent)`;
+                e.currentTarget.style.background = dimVar;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = th.border;
-                e.currentTarget.style.background = th.bgCard;
+                e.currentTarget.style.borderColor = "var(--labs-border)";
+                e.currentTarget.style.background = "var(--labs-surface)";
               }}
             >
-              <PhaseSignature phaseId={phaseId} th={th} size="large" />
+              <PhaseSignature phaseId={phaseId} size="large" />
               <div style={{ flex: 1 }}>
                 <div style={{
                   fontFamily: FONT.display,
                   fontSize: 20,
                   fontWeight: 600,
-                  color: th.text,
+                  color: "var(--labs-text)",
                   marginBottom: SP.xs,
                 }}>
                   {title}
@@ -128,7 +127,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
                 <div style={{
                   fontFamily: FONT.body,
                   fontSize: 14,
-                  color: th.muted,
+                  color: "var(--labs-text-muted)",
                   marginBottom: SP.sm,
                   lineHeight: 1.5,
                 }}>
@@ -138,7 +137,7 @@ export default function RatingModeSelect({ th, labels, onSelect, onBack }: Ratin
                   fontFamily: FONT.serif,
                   fontSize: 13,
                   fontStyle: "italic",
-                  color: th.faint,
+                  color: "var(--labs-text-secondary)",
                 }}>
                   {hint}
                 </div>

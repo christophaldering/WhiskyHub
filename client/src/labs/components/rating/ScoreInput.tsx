@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { ThemeTokens } from "./theme";
 import { SP, FONT } from "./theme";
 import type { PhaseId } from "./types";
 
@@ -35,20 +34,20 @@ interface ScoreInputProps {
   value: number;
   onChange: (v: number) => void;
   phaseId: PhaseId;
-  th: ThemeTokens;
   labels: RatingLabels;
 }
 
 const TICKS = [60, 65, 70, 75, 80, 85, 90, 95, 100];
 const QUICK_PICKS = [70, 75, 80, 85, 90];
 
-export default function ScoreInput({ value, onChange, phaseId, th, labels }: ScoreInputProps) {
+export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreInputProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
   const dragging = useRef(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  const phase = th.phases[phaseId];
+  const accent = `var(--labs-phase-${phaseId})`;
+  const dim = `var(--labs-phase-${phaseId}-dim)`;
   const bandColor = getBandColor(value);
   const pct = ((value - 60) / 40) * 100;
 
@@ -91,7 +90,7 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
     <div data-testid={`score-input-${phaseId}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: SP.md }}>
         <div>
-          <div style={{ fontSize: 12, color: th.faint, marginBottom: SP.xs, fontFamily: FONT.body }}>
+          <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginBottom: SP.xs, fontFamily: FONT.body }}>
             {labels.tapEdit}
           </div>
           {editing ? (
@@ -141,7 +140,7 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
           <div style={{ fontSize: 15, fontWeight: 700, color: bandColor, fontFamily: FONT.body }}>
             {getBandLabel(value, labels)}
           </div>
-          <div style={{ fontSize: 12, color: th.faint, fontFamily: FONT.body }}>
+          <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>
             {labels.of} 100
           </div>
         </div>
@@ -169,7 +168,7 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
           transform: "translateY(-50%)",
           height: 6,
           borderRadius: 3,
-          background: th.border,
+          background: "var(--labs-border)",
         }} />
         <div style={{
           position: "absolute",
@@ -179,7 +178,7 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
           height: 6,
           borderRadius: 3,
           width: `${pct}%`,
-          background: phase.accent,
+          background: accent,
         }} />
         <div
           data-testid={`score-thumb-${phaseId}`}
@@ -197,8 +196,8 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
             width: 24,
             height: 24,
             borderRadius: 12,
-            background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
-            boxShadow: `0 0 12px ${th.gold}60`,
+            background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+            boxShadow: "0 0 12px color-mix(in srgb, var(--labs-gold) 38%, transparent)",
           }} />
         </div>
       </div>
@@ -216,7 +215,7 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
             style={{
               fontSize: 10,
               fontFamily: FONT.body,
-              color: tick === value ? bandColor : th.faint,
+              color: tick === value ? bandColor : "var(--labs-text-secondary)",
               fontWeight: tick === value ? 700 : 400,
               minWidth: 20,
               textAlign: "center",
@@ -242,10 +241,10 @@ export default function ScoreInput({ value, onChange, phaseId, th, labels }: Sco
               fontWeight: 600,
               cursor: "pointer",
               border: qp === value
-                ? `1.5px solid ${phase.accent}`
-                : `1px solid ${th.border}`,
-              background: qp === value ? phase.dim : th.bgCard,
-              color: qp === value ? phase.accent : th.muted,
+                ? `1.5px solid ${accent}`
+                : "1px solid var(--labs-border)",
+              background: qp === value ? dim : "var(--labs-surface)",
+              color: qp === value ? accent : "var(--labs-text-muted)",
               transition: "all 0.15s",
             }}
           >

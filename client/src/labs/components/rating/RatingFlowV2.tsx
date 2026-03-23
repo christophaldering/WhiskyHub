@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { LABS_THEME } from "./theme";
 import type { RatingData } from "./types";
 import RatingModeSelect from "./RatingModeSelect";
 import GuidedRating from "./GuidedRating";
@@ -26,8 +25,6 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   const { t } = useTranslation();
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const [step, setStep] = useState<Step>("mode");
-
-  const th = LABS_THEME;
 
   const modeLabels = useMemo(() => ({
     modeQ: t("v2.ratingModeQ", "Wie moechtest du bewerten?"),
@@ -111,7 +108,6 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   if (step === "mode") {
     return (
       <RatingModeSelect
-        th={th}
         labels={modeLabels}
         onSelect={handleModeSelect}
         onBack={onBack}
@@ -122,7 +118,6 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   if (step === "rating" && mode === "guided") {
     return (
       <GuidedRating
-        th={th}
         labels={guidedLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
@@ -135,7 +130,6 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   if (step === "rating" && mode === "compact") {
     return (
       <CompactRating
-        th={th}
         labels={compactLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
@@ -148,7 +142,6 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   if (step === "rating" && mode === "quick") {
     return (
       <QuickRating
-        th={th}
         labels={quickLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false }}
         onDone={handleRatingDone}

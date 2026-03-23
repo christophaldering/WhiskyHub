@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import type { ThemeTokens } from "./theme";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
 import ScoreInput from "./ScoreInput";
@@ -31,7 +30,6 @@ interface CompactLabels {
 }
 
 interface CompactRatingProps {
-  th: ThemeTokens;
   labels: CompactLabels;
   whisky: {
     name?: string;
@@ -62,7 +60,7 @@ function getBandColor(score: number): string {
   return "rgba(200,180,160,0.5)";
 }
 
-export default function CompactRating({ th, labels, whisky, initialData, onDone, onBack }: CompactRatingProps) {
+export default function CompactRating({ labels, whisky, initialData, onDone, onBack }: CompactRatingProps) {
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
@@ -102,12 +100,12 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: SP.lg }}>
         <div>
           {!whisky.blind && whisky.name && (
-            <div style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: 600, color: th.text }}>
+            <div style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: 600, color: "var(--labs-text)" }}>
               {whisky.name}
             </div>
           )}
           {!whisky.blind && whisky.region && (
-            <div style={{ fontSize: 13, color: th.muted, fontFamily: FONT.body }}>{whisky.region}</div>
+            <div style={{ fontSize: 13, color: "var(--labs-text-muted)", fontFamily: FONT.body }}>{whisky.region}</div>
           )}
         </div>
         <div style={{ textAlign: "right" }}>
@@ -123,12 +121,13 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
           >
             {overallAvg}
           </div>
-          <div style={{ fontSize: 11, color: th.faint, fontFamily: FONT.body }}>avg</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>avg</div>
         </div>
       </div>
 
       {PHASES.map((pid) => {
-        const pPhase = th.phases[pid];
+        const pAccent = `var(--labs-phase-${pid})`;
+        const pDim = `var(--labs-phase-${pid}-dim)`;
         const isOpen = openPhase === pid;
         const pct = ((scores[pid] - 60) / 40) * 100;
         const tagCount = tags[pid].length;
@@ -138,8 +137,8 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
             key={pid}
             data-testid={`compact-card-${pid}`}
             style={{
-              background: th.bgCard,
-              border: `1px solid ${th.border}`,
+              background: "var(--labs-surface)",
+              border: "1px solid var(--labs-border)",
               borderRadius: 18,
               marginBottom: SP.sm + 4,
               overflow: "hidden",
@@ -160,29 +159,29 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
                 minHeight: TOUCH_MIN,
               }}
             >
-              <PhaseSignature phaseId={pid} th={th} size="normal" />
-              <span style={{ fontSize: 14, fontWeight: 600, color: th.text, fontFamily: FONT.body }}>
+              <PhaseSignature phaseId={pid} size="normal" />
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", fontFamily: FONT.body }}>
                 {phaseLbl(pid, labels)}
               </span>
-              <div style={{ flex: 1, height: 4, borderRadius: 2, background: th.border, marginLeft: SP.sm, marginRight: SP.sm }}>
-                <div style={{ height: "100%", borderRadius: 2, background: pPhase.accent, width: `${pct}%`, transition: "width 0.2s" }} />
+              <div style={{ flex: 1, height: 4, borderRadius: 2, background: "var(--labs-border)", marginLeft: SP.sm, marginRight: SP.sm }}>
+                <div style={{ height: "100%", borderRadius: 2, background: pAccent, width: `${pct}%`, transition: "width 0.2s" }} />
               </div>
               <span style={{ fontSize: 28, fontWeight: 700, color: getBandColor(scores[pid]), fontFamily: FONT.body, minWidth: 36, textAlign: "right" }}>
                 {scores[pid]}
               </span>
               {tagCount > 0 && (
-                <span style={{ fontSize: 10, color: th.faint, fontFamily: FONT.body }}>{tagCount}</span>
+                <span style={{ fontSize: 10, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>{tagCount}</span>
               )}
               <ChevronDownIcon
-                color={th.faint}
+                color="var(--labs-text-secondary)"
                 size={18}
                 style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}
               />
             </button>
 
             {isOpen && (
-              <div style={{ borderTop: `1px solid ${th.border}`, padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
-                <ScoreInput value={scores[pid]} onChange={(v) => setScores((p) => ({ ...p, [pid]: v }))} phaseId={pid} th={th} labels={scoreLabels} />
+              <div style={{ borderTop: "1px solid var(--labs-border)", padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
+                <ScoreInput value={scores[pid]} onChange={(v) => setScores((p) => ({ ...p, [pid]: v }))} phaseId={pid} labels={scoreLabels} />
                 {pid !== "overall" && (
                   <FlavorTags
                     phaseId={pid}
@@ -198,7 +197,6 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
                         return { ...prev, [pid]: next };
                       });
                     }}
-                    th={th}
                     labels={flavorLabels}
                   />
                 )}
@@ -209,16 +207,16 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
       })}
 
       <div style={{
-        background: th.bgCard,
-        border: `1px solid ${th.border}`,
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
         borderRadius: RADIUS.lg,
         padding: SP.md,
         marginTop: SP.md,
       }}>
         {PHASES.map((pid) => (
           <div key={pid} style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
-            <PhaseSignature phaseId={pid} th={th} size="normal" />
-            <span style={{ fontSize: 13, color: th.text, fontFamily: FONT.body, flex: 1 }}>
+            <PhaseSignature phaseId={pid} size="normal" />
+            <span style={{ fontSize: 13, color: "var(--labs-text)", fontFamily: FONT.body, flex: 1 }}>
               {phaseLbl(pid, labels)}
             </span>
             <span style={{ fontSize: 15, fontWeight: 600, color: getBandColor(scores[pid]), fontFamily: FONT.body }}>
@@ -235,8 +233,8 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
                   fontSize: 11,
                   padding: `2px ${SP.sm}px`,
                   borderRadius: 10,
-                  background: th.phases[pid].dim,
-                  color: th.phases[pid].accent,
+                  background: `var(--labs-phase-${pid}-dim)`,
+                  color: `var(--labs-phase-${pid})`,
                   fontFamily: FONT.body,
                 }}
               >
@@ -253,16 +251,16 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
           style={{
             marginTop: SP.md,
             padding: `${SP.sm}px ${SP.md}px`,
-            background: `${th.amber}18`,
-            border: `1px solid ${th.amber}44`,
+            background: "color-mix(in srgb, var(--labs-amber) 9%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--labs-amber) 27%, transparent)",
             borderRadius: RADIUS.md,
             display: "flex",
             alignItems: "center",
             gap: SP.sm,
           }}
         >
-          <AlertTriangleIcon color={th.amber} size={18} />
-          <span style={{ fontSize: 13, color: th.amber, fontFamily: FONT.body }}>{saveError}</span>
+          <AlertTriangleIcon color="var(--labs-amber)" size={18} />
+          <span style={{ fontSize: 13, color: "var(--labs-amber)", fontFamily: FONT.body }}>{saveError}</span>
         </div>
       )}
 
@@ -282,9 +280,9 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
               paddingLeft: 20,
               paddingRight: 20,
               borderRadius: RADIUS.full,
-              border: `1px solid ${th.border}`,
-              background: th.bgCard,
-              color: th.text,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface)",
+              color: "var(--labs-text)",
               fontFamily: FONT.body,
               fontSize: 15,
               cursor: "pointer",
@@ -300,10 +298,10 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
               flex: 1,
               height: 56,
               background: saving
-                ? `${th.green}22`
-                : `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
-              color: saving ? th.green : "#0e0b05",
-              border: saving ? `1px solid ${th.green}44` : "none",
+                ? "color-mix(in srgb, var(--labs-success) 13%, transparent)"
+                : "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+              color: saving ? "var(--labs-success)" : "var(--labs-accent-dark)",
+              border: saving ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)" : "none",
               borderRadius: RADIUS.full,
               fontSize: 17,
               fontWeight: 700,
@@ -317,7 +315,7 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
           >
             {saving ? (
               <>
-                <CheckIcon color={th.green} size={20} />
+                <CheckIcon color="var(--labs-success)" size={20} />
                 {labels.done}
               </>
             ) : (

@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, lazy, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { ThemeTokens } from "./theme";
 import { SP, FONT, RADIUS } from "./theme";
 import type { PhaseId } from "./types";
 import { GlobeIcon, ChevronDownIcon } from "./icons";
@@ -36,7 +35,6 @@ interface FlavorTagsProps {
   blind: boolean;
   selected: string[];
   onToggle: (tag: string) => void;
-  th: ThemeTokens;
   labels: {
     aromen: string;
     aromenSub: string;
@@ -61,7 +59,6 @@ function CollapsiblePanel({
   subtitle,
   isOpen,
   onToggle,
-  th,
   badge,
   children,
   testId,
@@ -70,7 +67,6 @@ function CollapsiblePanel({
   subtitle?: string;
   isOpen: boolean;
   onToggle: () => void;
-  th: ThemeTokens;
   badge?: number;
   children: ReactNode;
   testId: string;
@@ -80,10 +76,10 @@ function CollapsiblePanel({
       data-testid={testId}
       style={{
         marginBottom: SP.sm,
-        border: `1px solid ${th.border}`,
+        border: "1px solid var(--labs-border)",
         borderRadius: RADIUS.lg,
         overflow: "hidden",
-        background: th.bgCard,
+        background: "var(--labs-surface)",
         transition: "all 0.2s ease",
       }}
     >
@@ -104,9 +100,9 @@ function CollapsiblePanel({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: th.text }}>{title}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{title}</span>
           {subtitle && !isOpen && (
-            <span style={{ fontSize: 12, color: th.muted }}>{subtitle}</span>
+            <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{subtitle}</span>
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
@@ -115,8 +111,8 @@ function CollapsiblePanel({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: th.gold,
-                background: `${th.gold}18`,
+                color: "var(--labs-gold)",
+                background: "color-mix(in srgb, var(--labs-gold) 9%, transparent)",
                 borderRadius: RADIUS.full,
                 padding: "2px 8px",
                 minWidth: 20,
@@ -127,7 +123,7 @@ function CollapsiblePanel({
             </span>
           )}
           <ChevronDownIcon
-            color={th.muted}
+            color="var(--labs-text-muted)"
             size={18}
             style={{
               transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -159,7 +155,6 @@ export default function FlavorTags({
   blind,
   selected,
   onToggle,
-  th,
   labels,
 }: FlavorTagsProps) {
   const { t } = useTranslation();
@@ -167,7 +162,8 @@ export default function FlavorTags({
   const [panel2Open, setPanel2Open] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioInitialView, setStudioInitialView] = useState<StudioView>("wheel");
-  const phase = th.phases[phaseId];
+  const accent = `var(--labs-phase-${phaseId})`;
+  const dim = `var(--labs-phase-${phaseId}-dim)`;
 
   const profile = useMemo(() => {
     if (blind) return null;
@@ -273,9 +269,9 @@ export default function FlavorTags({
           fontSize: 13,
           fontWeight: isActive ? 600 : 400,
           cursor: isMaxed ? "not-allowed" : "pointer",
-          border: isActive ? `1.5px solid ${phase.accent}` : `1px solid ${th.border}`,
-          background: isActive ? phase.dim : "transparent",
-          color: isActive ? phase.accent : th.muted,
+          border: isActive ? `1.5px solid ${accent}` : "1px solid var(--labs-border)",
+          background: isActive ? dim : "transparent",
+          color: isActive ? accent : "var(--labs-text-muted)",
           opacity: isMaxed ? 0.45 : 1,
           transition: "all 0.15s ease",
           whiteSpace: "nowrap" as const,
@@ -301,7 +297,7 @@ export default function FlavorTags({
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: 11, fontWeight: 600, color: th.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
             {cat.en}
           </span>
           {count > 0 && (
@@ -309,8 +305,8 @@ export default function FlavorTags({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: th.gold,
-                background: `${th.gold}18`,
+                color: "var(--labs-gold)",
+                background: "color-mix(in srgb, var(--labs-gold) 9%, transparent)",
                 borderRadius: RADIUS.full,
                 padding: "1px 7px",
                 minWidth: 18,
@@ -330,10 +326,10 @@ export default function FlavorTags({
 
   return (
     <div data-testid={`flavor-tags-${phaseId}`} style={{ marginTop: SP.lg }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: th.text, marginBottom: SP.xs, fontFamily: FONT.body }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: SP.xs, fontFamily: FONT.body }}>
         {labels.aromen}
       </div>
-      <div style={{ fontSize: 14, color: th.muted, marginBottom: SP.md, fontFamily: FONT.body }}>
+      <div style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: SP.md, fontFamily: FONT.body }}>
         {labels.aromenSub}
       </div>
 
@@ -344,17 +340,17 @@ export default function FlavorTags({
           alignItems: "center",
           gap: SP.sm,
           padding: `${SP.sm}px ${SP.md}px`,
-          background: blind ? th.bgCard : `${th.gold}0F`,
-          border: `1px solid ${blind ? th.border : `${th.gold}38`}`,
+          background: blind ? "var(--labs-surface)" : "color-mix(in srgb, var(--labs-gold) 6%, transparent)",
+          border: blind ? "1px solid var(--labs-border)" : "1px solid color-mix(in srgb, var(--labs-gold) 22%, transparent)",
           borderRadius: 12,
           marginBottom: SP.md,
         }}
       >
-        <GlobeIcon color={blind ? th.faint : th.gold} size={16} />
+        <GlobeIcon color={blind ? "var(--labs-text-secondary)" : "var(--labs-gold)"} size={16} />
         <span style={{
           fontSize: 13,
           fontFamily: FONT.body,
-          color: blind ? th.muted : th.gold,
+          color: blind ? "var(--labs-text-muted)" : "var(--labs-gold)",
           fontWeight: 500,
         }}>
           {blind
@@ -365,7 +361,7 @@ export default function FlavorTags({
           }
         </span>
         {!blind && whiskyRegion && (
-          <span style={{ fontSize: 12, color: th.faint, marginLeft: "auto", fontFamily: FONT.body }}>
+          <span style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginLeft: "auto", fontFamily: FONT.body }}>
             {whiskyRegion}
           </span>
         )}
@@ -394,8 +390,8 @@ export default function FlavorTags({
                 fontWeight: 600,
                 cursor: "pointer",
                 border: "none",
-                background: phase.accent,
-                color: th.bg,
+                background: accent,
+                color: "var(--labs-bg)",
                 display: "flex",
                 alignItems: "center",
                 gap: 4,
@@ -414,7 +410,6 @@ export default function FlavorTags({
         subtitle={labels.aromenSub}
         isOpen={panel1Open}
         onToggle={() => { setPanel1Open((p) => !p); triggerHaptic("light"); }}
-        th={th}
         badge={primaryCount}
         testId={`flavor-panel-primary-${phaseId}`}
       >
@@ -426,7 +421,6 @@ export default function FlavorTags({
         subtitle={t("v2.ratingMoreAromenSub", "Alle Kategorien und Expert-Tools")}
         isOpen={panel2Open}
         onToggle={() => { setPanel2Open((p) => !p); triggerHaptic("light"); }}
-        th={th}
         badge={secondaryCount}
         testId={`flavor-panel-secondary-${phaseId}`}
       >
@@ -434,7 +428,7 @@ export default function FlavorTags({
 
         <div
           style={{
-            borderTop: `1px solid ${th.border}`,
+            borderTop: "1px solid var(--labs-border)",
             marginTop: SP.md,
             paddingTop: SP.md,
           }}
@@ -442,7 +436,7 @@ export default function FlavorTags({
           <div style={{
             fontSize: 11,
             fontWeight: 600,
-            color: th.muted,
+            color: "var(--labs-text-muted)",
             textTransform: "uppercase" as const,
             letterSpacing: "0.05em",
             marginBottom: SP.sm,
@@ -461,9 +455,9 @@ export default function FlavorTags({
                   gap: 5,
                   padding: "8px 14px",
                   borderRadius: RADIUS.full,
-                  border: `1px solid ${th.border}`,
-                  background: th.bgCard,
-                  color: th.muted,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text-muted)",
                   fontSize: 12,
                   fontWeight: 500,
                   fontFamily: FONT.body,

@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { ThemeTokens } from "./theme";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
 import ScoreInput from "./ScoreInput";
@@ -42,7 +41,6 @@ interface GuidedLabels {
 }
 
 interface GuidedRatingProps {
-  th: ThemeTokens;
   labels: GuidedLabels;
   whisky: {
     name?: string;
@@ -79,7 +77,7 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
   return map[id];
 }
 
-export default function GuidedRating({ th, labels, whisky, initialData, onDone, onBack }: GuidedRatingProps) {
+export default function GuidedRating({ labels, whisky, initialData, onDone, onBack }: GuidedRatingProps) {
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
@@ -90,7 +88,8 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentPhase = PHASES[phaseIndex];
-  const phase = th.phases[currentPhase];
+  const accent = `var(--labs-phase-${currentPhase})`;
+  const glow = `var(--labs-phase-${currentPhase}-glow)`;
 
   useEffect(() => {
     setSaveError(null);
@@ -183,26 +182,27 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
           left: 0,
           right: 0,
           height: 200,
-          background: `radial-gradient(ellipse at center bottom, ${phase.glow}, transparent 70%)`,
+          background: `radial-gradient(ellipse at center bottom, ${glow}, transparent 70%)`,
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
 
-      <SaveConfirm show={showFlash} color={phase.accent} />
+      <SaveConfirm show={showFlash} color={accent} />
 
       <div style={{
         position: "sticky",
         top: 52,
         zIndex: 10,
-        background: th.headerBg,
+        background: "var(--labs-header-bg)",
         backdropFilter: "blur(24px)",
         padding: `${SP.sm}px ${SP.md}px`,
-        borderBottom: `1px solid ${th.border}`,
+        borderBottom: "1px solid var(--labs-border)",
       }}>
         <div style={{ display: "flex", gap: SP.xs }}>
           {PHASES.map((pid, i) => {
-            const pPhase = th.phases[pid];
+            const pAccent = `var(--labs-phase-${pid})`;
+            const pDim = `var(--labs-phase-${pid}-dim)`;
             const isActive = i === phaseIndex;
             const isDone = i < phaseIndex;
             return (
@@ -217,27 +217,27 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
                   alignItems: "center",
                   gap: 2,
                   padding: `${SP.sm}px ${SP.xs}px`,
-                  background: isActive ? pPhase.dim : "transparent",
-                  border: isActive ? `1px solid ${pPhase.accent}44` : "1px solid transparent",
+                  background: isActive ? pDim : "transparent",
+                  border: isActive ? `1px solid color-mix(in srgb, ${pAccent} 27%, transparent)` : "1px solid transparent",
                   borderRadius: RADIUS.md,
                   cursor: "pointer",
                   minHeight: TOUCH_MIN,
                   transition: "all 0.2s",
                 }}
               >
-                <PhaseSignature phaseId={pid} th={th} size="normal" />
+                <PhaseSignature phaseId={pid} size="normal" />
                 <span style={{
                   fontSize: 10,
                   fontFamily: FONT.body,
-                  color: isActive ? pPhase.accent : th.faint,
+                  color: isActive ? pAccent : "var(--labs-text-secondary)",
                   fontWeight: isActive ? 600 : 400,
                 }}>
                   {phaseLabel(pid, labels)}
                 </span>
                 {isDone && (
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <CheckIcon color={pPhase.accent} size={10} />
-                    <span style={{ fontSize: 10, color: pPhase.accent, fontWeight: 600 }}>
+                    <CheckIcon color={pAccent} size={10} />
+                    <span style={{ fontSize: 10, color: pAccent, fontWeight: 600 }}>
                       {scores[pid]}
                     </span>
                   </div>
@@ -257,12 +257,12 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.sm }}>
-          <PhaseSignature phaseId={currentPhase} th={th} size="large" />
+          <PhaseSignature phaseId={currentPhase} size="large" />
           <span style={{
             fontSize: 11,
             fontFamily: FONT.body,
             fontWeight: 600,
-            color: phase.accent,
+            color: accent,
             textTransform: "uppercase",
             letterSpacing: "0.08em",
           }}>
@@ -276,7 +276,7 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             fontFamily: FONT.display,
             fontSize: 24,
             fontWeight: 600,
-            color: th.text,
+            color: "var(--labs-text)",
             marginBottom: SP.xs,
           }}
         >
@@ -287,15 +287,15 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
           fontFamily: FONT.serif,
           fontSize: 15,
           fontStyle: "italic",
-          color: th.muted,
+          color: "var(--labs-text-muted)",
           marginBottom: SP.lg,
         }}>
           {phaseHint(currentPhase, labels)}
         </p>
 
         <div style={{
-          background: th.bgCard,
-          border: `1px solid ${th.border}`,
+          background: "var(--labs-surface)",
+          border: "1px solid var(--labs-border)",
           borderRadius: RADIUS.lg,
           padding: SP.lg,
           marginBottom: SP.lg,
@@ -304,7 +304,6 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             value={scores[currentPhase]}
             onChange={handleScoreChange}
             phaseId={currentPhase}
-            th={th}
             labels={scoreLabels}
           />
         </div>
@@ -318,16 +317,15 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             blind={whisky.blind}
             selected={tags[currentPhase]}
             onToggle={handleTagToggle}
-            th={th}
             labels={flavorLabels}
           />
         )}
 
         <div style={{ marginTop: SP.lg }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: th.text, marginBottom: SP.xs, fontFamily: FONT.body }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: SP.xs, fontFamily: FONT.body }}>
             {labels.note}
           </div>
-          <div style={{ fontSize: 14, color: th.muted, marginBottom: SP.sm, fontFamily: FONT.body }}>
+          <div style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: SP.sm, fontFamily: FONT.body }}>
             {labels.noteSub}
           </div>
           <textarea
@@ -342,9 +340,9 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
               fontFamily: FONT.serif,
               fontStyle: "italic",
               fontSize: 16,
-              color: th.text,
-              background: th.inputBg,
-              border: `1px solid ${th.border}`,
+              color: "var(--labs-text)",
+              background: "var(--labs-input-bg)",
+              border: "1px solid var(--labs-border)",
               borderRadius: RADIUS.md,
               outline: "none",
               resize: "vertical",
@@ -364,8 +362,8 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             left: SP.md,
             right: SP.md,
             padding: `${SP.sm}px ${SP.md}px`,
-            background: `${th.amber}18`,
-            border: `1px solid ${th.amber}44`,
+            background: "color-mix(in srgb, var(--labs-amber) 9%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--labs-amber) 27%, transparent)",
             borderRadius: RADIUS.md,
             display: "flex",
             alignItems: "center",
@@ -373,8 +371,8 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             zIndex: 20,
           }}
         >
-          <AlertTriangleIcon color={th.amber} size={18} />
-          <span style={{ fontSize: 13, color: th.amber, fontFamily: FONT.body }}>{saveError}</span>
+          <AlertTriangleIcon color="var(--labs-amber)" size={18} />
+          <span style={{ fontSize: 13, color: "var(--labs-amber)", fontFamily: FONT.body }}>{saveError}</span>
         </div>
       )}
 
@@ -397,15 +395,15 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
               paddingLeft: 20,
               paddingRight: 20,
               borderRadius: RADIUS.full,
-              border: `1px solid ${th.border}`,
-              background: th.bgCard,
-              color: th.text,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface)",
+              color: "var(--labs-text)",
               fontFamily: FONT.body,
               fontSize: 15,
               cursor: "pointer",
             }}
           >
-            {phaseIndex > 0 ? phaseLabel(PHASES[phaseIndex - 1], labels) : labels.save === labels.save ? "\u2190" : "\u2190"}
+            {phaseIndex > 0 ? phaseLabel(PHASES[phaseIndex - 1], labels) : "\u2190"}
           </button>
           <button
             data-testid="rating-next-btn"
@@ -413,8 +411,8 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             style={{
               flex: 1,
               height: 56,
-              background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
-              color: "#0e0b05",
+              background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+              color: "var(--labs-accent-dark)",
               border: "none",
               borderRadius: RADIUS.full,
               fontSize: 17,

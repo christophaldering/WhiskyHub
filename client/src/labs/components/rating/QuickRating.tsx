@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { ThemeTokens } from "./theme";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { RatingData } from "./types";
 import { BackIcon } from "./icons";
@@ -24,7 +23,6 @@ interface QuickLabels {
 }
 
 interface QuickRatingProps {
-  th: ThemeTokens;
   labels: QuickLabels;
   whisky: {
     name?: string;
@@ -36,7 +34,7 @@ interface QuickRatingProps {
   onBack: () => void;
 }
 
-export default function QuickRating({ th, labels, whisky, onDone, onBack }: QuickRatingProps) {
+export default function QuickRating({ labels, whisky, onDone, onBack }: QuickRatingProps) {
   const [score, setScore] = useState(75);
   const [note, setNote] = useState("");
 
@@ -49,7 +47,7 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
     });
   };
 
-  const phase = th.phases.overall;
+  const accent = "var(--labs-phase-overall)";
 
   return (
     <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px`, paddingBottom: 130 }}>
@@ -63,7 +61,7 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
           minHeight: TOUCH_MIN,
           background: "none",
           border: "none",
-          color: th.text,
+          color: "var(--labs-text)",
           cursor: "pointer",
           padding: 0,
           fontFamily: FONT.body,
@@ -71,17 +69,17 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
           marginBottom: SP.lg,
         }}
       >
-        <BackIcon color={th.text} size={20} />
+        <BackIcon color="var(--labs-text)" size={20} />
         <span>{labels.back}</span>
       </button>
 
       {!whisky.blind && whisky.name && (
         <div style={{ marginBottom: SP.md }}>
-          <div style={{ fontFamily: FONT.serif, fontSize: 18, fontStyle: "italic", color: th.text }}>
+          <div style={{ fontFamily: FONT.serif, fontSize: 18, fontStyle: "italic", color: "var(--labs-text)" }}>
             {whisky.name}
           </div>
           {whisky.region && (
-            <div style={{ fontSize: 12, color: th.faint }}>
+            <div style={{ fontSize: 12, color: "var(--labs-text-secondary)" }}>
               {whisky.region}{whisky.cask ? ` · ${whisky.cask}` : ""}
             </div>
           )}
@@ -89,20 +87,20 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
-        <PhaseSignature phaseId="overall" th={th} size="large" />
+        <PhaseSignature phaseId="overall" size="large" />
         <div>
-          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: phase.accent, fontWeight: 600 }}>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: accent, fontWeight: 600 }}>
             {labels.quick}
           </div>
-          <div style={{ fontSize: 13, color: th.muted }}>
+          <div style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>
             {labels.quickD}
           </div>
         </div>
       </div>
 
       <div style={{
-        background: th.bgCard,
-        border: `1px solid ${th.border}`,
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
         borderRadius: RADIUS.xl,
         padding: SP.lg,
         marginBottom: SP.lg,
@@ -111,13 +109,12 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
           value={score}
           onChange={setScore}
           phaseId="overall"
-          th={th}
           labels={labels}
         />
       </div>
 
       <div style={{ marginBottom: SP.lg }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: th.text, marginBottom: 4, fontFamily: FONT.body }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4, fontFamily: FONT.body }}>
           {labels.note}
         </div>
         <input
@@ -130,9 +127,9 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
             width: "100%",
             height: 48,
             borderRadius: RADIUS.lg,
-            border: `1px solid ${th.border}`,
-            background: th.inputBg,
-            color: th.text,
+            border: "1px solid var(--labs-border)",
+            background: "var(--labs-input-bg)",
+            color: "var(--labs-text)",
             fontSize: 15,
             fontFamily: FONT.serif,
             fontStyle: "italic",
@@ -152,8 +149,8 @@ export default function QuickRating({ th, labels, whisky, onDone, onBack }: Quic
           borderRadius: RADIUS.lg,
           border: "none",
           cursor: "pointer",
-          background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
-          color: "#1a0f00",
+          background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+          color: "var(--labs-accent-dark)",
           fontSize: 17,
           fontWeight: 700,
           fontFamily: FONT.body,

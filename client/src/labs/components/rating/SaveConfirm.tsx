@@ -27,7 +27,7 @@ export default function SaveConfirm({ show, color }: SaveConfirmProps) {
           width: 80,
           height: 80,
           borderRadius: "50%",
-          background: `${color}38`,
+          background: `color-mix(in srgb, ${color} 22%, transparent)`,
           border: `2px solid ${color}`,
           display: "flex",
           alignItems: "center",
