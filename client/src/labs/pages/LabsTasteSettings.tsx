@@ -94,10 +94,14 @@ export default function LabsTasteSettings() {
       if (removePhoto && !photoFile) {
         await profileApi.deletePhoto(currentParticipant.id);
         updateSessionPhotoUrl(null);
+        window.dispatchEvent(new CustomEvent("casksense:photo-updated", { detail: { photoUrl: null } }));
       }
       if (photoFile) {
         const photoResult = await profileApi.uploadPhoto(currentParticipant.id, photoFile);
-        if (photoResult?.photoUrl) updateSessionPhotoUrl(photoResult.photoUrl);
+        if (photoResult?.photoUrl) {
+          updateSessionPhotoUrl(photoResult.photoUrl);
+          window.dispatchEvent(new CustomEvent("casksense:photo-updated", { detail: { photoUrl: photoResult.photoUrl } }));
+        }
       }
       await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, openaiApiKey: openaiApiKey.trim() || null, friendNotificationsEnabled });
       const participantUpdates: any = {};

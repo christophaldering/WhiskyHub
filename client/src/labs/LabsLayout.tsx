@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { User, Bell, Download, X, Search, AlertTriangle, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { participantApi, pidHeaders } from "@/lib/api";
+import { participantApi, pidHeaders, profileApi } from "@/lib/api";
 import { getSession, tryAutoResume, syncStoreParticipant } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
@@ -582,6 +582,43 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { currentParticipant, setParticipant, openAuthDialog } = useAppStore();
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!currentParticipant?.id) {
+      setProfilePhotoUrl(null);
+      return;
+    }
+    profileApi.get(currentParticipant.id).then((profile) => {
+      if (profile?.photoUrl) {
+        const img = new Image();
+        img.onload = () => setProfilePhotoUrl(profile.photoUrl);
+        img.onerror = () => setProfilePhotoUrl(null);
+        img.src = profile.photoUrl;
+      } else {
+        setProfilePhotoUrl(null);
+      }
+    }).catch(() => {});
+  }, [currentParticipant?.id]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.photoUrl !== undefined) {
+        const url = detail.photoUrl || null;
+        if (url) {
+          const img = new Image();
+          img.onload = () => setProfilePhotoUrl(url);
+          img.onerror = () => setProfilePhotoUrl(null);
+          img.src = url;
+        } else {
+          setProfilePhotoUrl(null);
+        }
+      }
+    };
+    window.addEventListener("casksense:photo-updated", handler);
+    return () => window.removeEventListener("casksense:photo-updated", handler);
+  }, []);
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
@@ -787,8 +824,10 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               width: 32,
               height: 32,
               borderRadius: '50%',
-              background: 'rgba(196,160,80,0.2)',
-              border: '1.5px solid rgba(196,160,80,0.5)',
+              background: profilePhotoUrl
+                ? `url(${profilePhotoUrl}) center/cover no-repeat`
+                : 'rgba(196,160,80,0.2)',
+              border: `1.5px solid ${profileOpen ? 'var(--labs-accent)' : 'rgba(196,160,80,0.5)'}`,
               color: '#C4A050',
               fontSize: 13,
               fontWeight: 600,
@@ -805,7 +844,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             data-testid="labs-profile-btn"
           >
             {currentParticipant ? (
-              <LabsProfileAvatar name={currentParticipant.name} photoUrl={currentParticipant.photoUrl} />
+              profilePhotoUrl ? null : <LabsProfileAvatar name={currentParticipant.name} photoUrl={null} />
             ) : (
               <User className="w-4 h-4" />
             )}
