@@ -542,11 +542,9 @@ function Router() {
           </LabsLayout>
         </Route>
 
-        {/* ── Legacy V2/Apple routes redirect to Labs ── */}
+        {/* ── Legacy V2 routes redirect to Labs ── */}
         <Route path="/labs-v2/:rest*"><SmartRedirectToLabs /></Route>
         <Route path="/labs-v2"><SmartRedirectToLabs /></Route>
-        <Route path="/labs-apple/:rest*"><SmartRedirectToLabs /></Route>
-        <Route path="/labs-apple"><SmartRedirectToLabs /></Route>
 
         {/* ── Catch-all: redirect all remaining old routes to Labs ── */}
         <Route>
