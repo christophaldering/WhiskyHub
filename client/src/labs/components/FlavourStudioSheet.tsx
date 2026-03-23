@@ -2086,7 +2086,7 @@ export default function FlavourStudioSheet({
         data-testid="flavour-studio-sheet"
       >
         <DrawerTitle className="sr-only">Flavour Studio</DrawerTitle>
-        <div style={{ padding: "var(--labs-space-sm) var(--labs-space-md) 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="max-w-2xl mx-auto w-full" style={{ padding: "var(--labs-space-sm) var(--labs-space-md) 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}>
             <span className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
               Flavour Studio
@@ -2113,7 +2113,7 @@ export default function FlavourStudioSheet({
           </div>
         </div>
 
-        <div style={{ padding: "var(--labs-space-sm) var(--labs-space-md)", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
+        <div className="max-w-2xl mx-auto w-full" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
           <SegmentedControl value={view} onChange={setView} />
 
           {view === "guide" && <GuidedView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
@@ -2124,7 +2124,7 @@ export default function FlavourStudioSheet({
           {view === "describe" && <DescribeView selected={selectedTerms} onToggle={toggleTerm} section={section} categories={categories} />}
         </div>
 
-        <div style={{
+        <div className="max-w-2xl mx-auto w-full" style={{
           padding: "var(--labs-space-sm) var(--labs-space-md) var(--labs-space-md)", borderTop: "1px solid var(--labs-border-subtle)",
           background: "var(--labs-bg)",
         }}>
