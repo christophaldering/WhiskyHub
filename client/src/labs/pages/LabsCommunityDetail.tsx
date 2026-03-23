@@ -38,7 +38,7 @@ export default function LabsCommunityDetail() {
     enabled: !!communityId && !!pid,
   });
 
-  const { data: friendsData } = useQuery({
+  const { data: friendsData, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
     enabled: !!pid && showInvite && inviteTab === "friends",
@@ -166,10 +166,10 @@ export default function LabsCommunityDetail() {
 
   const friends = Array.isArray(friendsData) ? friendsData : [];
   const memberIds = new Set(members.map((m: any) => m.participantId));
-  const invitableFriends = friends.filter((f: any) => {
-    if (f.matchedParticipantId && memberIds.has(f.matchedParticipantId)) return false;
-    return true;
-  });
+  const allFriendsWithStatus = friends.map((f: any) => ({
+    ...f,
+    isAlreadyMember: !!(f.matchedParticipantId && memberIds.has(f.matchedParticipantId)),
+  }));
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="community-detail-page">
@@ -320,16 +320,22 @@ export default function LabsCommunityDetail() {
 
               {inviteTab === "friends" && (
                 <div>
-                  {invitableFriends.length === 0 ? (
-                    <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }}>
-                      All friends are already members or no friends found.
+                  {friendsLoading ? (
+                    <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }} data-testid="text-friends-loading">
+                      Loading friends…
+                    </p>
+                  ) : allFriendsWithStatus.length === 0 ? (
+                    <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }} data-testid="text-no-friends">
+                      No friends found.
                     </p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {invitableFriends.map((f: any, idx: number) => {
+                      {allFriendsWithStatus.map((f: any, idx: number) => {
                         const fPid = f.matchedParticipantId;
                         const friendKey = fPid || f.email || `friend-${idx}`;
+                        const isAlreadyMember = f.isAlreadyMember;
                         const handleInvite = async () => {
+                          if (isAlreadyMember) return;
                           if (fPid) {
                             handleInviteFriend(fPid);
                           } else if (f.email) {
@@ -350,18 +356,29 @@ export default function LabsCommunityDetail() {
                           }
                         };
                         return (
-                          <div key={friendKey} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[var(--labs-surface)]">
-                            <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                              {stripGuestSuffix(f.name || f.firstName + " " + (f.lastName || ""))}
-                            </span>
+                          <div key={friendKey} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[var(--labs-surface)]" style={isAlreadyMember ? { opacity: 0.6 } : undefined}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm" style={{ color: "var(--labs-text)" }}>
+                                {stripGuestSuffix(f.name || f.firstName + " " + (f.lastName || ""))}
+                              </span>
+                              {isAlreadyMember && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: "var(--labs-surface)", color: "var(--labs-text-muted)" }} data-testid={`badge-already-member-${friendKey}`}>
+                                  already member
+                                </span>
+                              )}
+                            </div>
                             <button
                               onClick={handleInvite}
-                              disabled={inviting}
+                              disabled={inviting || isAlreadyMember}
                               className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                              style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", cursor: "pointer" }}
+                              style={{
+                                background: isAlreadyMember ? "var(--labs-surface)" : "var(--labs-accent-muted)",
+                                color: isAlreadyMember ? "var(--labs-text-muted)" : "var(--labs-accent)",
+                                cursor: isAlreadyMember ? "not-allowed" : "pointer",
+                              }}
                               data-testid={`btn-invite-friend-${friendKey}`}
                             >
-                              Invite
+                              {isAlreadyMember ? "Member" : "Invite"}
                             </button>
                           </div>
                         );
