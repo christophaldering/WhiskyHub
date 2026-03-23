@@ -205,6 +205,7 @@ export default function CompactRating({
                     phaseId={pid}
                     whiskyRegion={whisky.region}
                     whiskyCask={whisky.cask}
+                    whiskyFlavorProfile={whisky.flavorProfile}
                     blind={whisky.blind}
                     selected={tags[pid]}
                     onToggle={(tag) => {

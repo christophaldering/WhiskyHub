@@ -60,6 +60,15 @@ export interface Translations {
   ratingHint_overall: string;
   ratingAromen: string;
   ratingAromenS: string;
+  ratingMoreAromen: string;
+  ratingMoreAromenSub: string;
+  ratingStudioGuide: string;
+  ratingStudioJourney: string;
+  ratingStudioWheel: string;
+  ratingStudioCompass: string;
+  ratingStudioRadar: string;
+  ratingStudioDescribe: string;
+  ratingStudioModels: string;
   ratingNote: string;
   ratingNoteSub: string;
   ratingNotePH: string;
@@ -519,6 +528,15 @@ const de: Translations = {
   ratingHint_overall: "Vertrau deiner Intuition.",
   ratingAromen: "Aromen w\u00e4hlen",
   ratingAromenS: "Tippe an was du erkennst \u2014 oder lass es weg.",
+  ratingMoreAromen: "Weitere Aromen & Bewertungsmodelle",
+  ratingMoreAromenSub: "Alle Kategorien und erweiterte Tools",
+  ratingStudioGuide: "Guide",
+  ratingStudioJourney: "Journey",
+  ratingStudioWheel: "Wheel",
+  ratingStudioCompass: "Compass",
+  ratingStudioRadar: "Radar",
+  ratingStudioDescribe: "Freitext",
+  ratingStudioModels: "Bewertungsmodelle",
   ratingNote: "Notiz",
   ratingNoteSub: "Optional \u2014 deine eigenen Worte.",
   ratingNotePH: "Was f\u00e4llt dir auf...",
@@ -978,6 +996,15 @@ const en: Translations = {
   ratingHint_overall: "Trust your instinct.",
   ratingAromen: "Choose aromas",
   ratingAromenS: "Tap what you recognise \u2014 or skip.",
+  ratingMoreAromen: "More aromas & rating models",
+  ratingMoreAromenSub: "All categories and advanced tools",
+  ratingStudioGuide: "Guide",
+  ratingStudioJourney: "Journey",
+  ratingStudioWheel: "Wheel",
+  ratingStudioCompass: "Compass",
+  ratingStudioRadar: "Radar",
+  ratingStudioDescribe: "Describe",
+  ratingStudioModels: "Rating models",
   ratingNote: "Note",
   ratingNoteSub: "Optional \u2014 your own words.",
   ratingNotePH: "What stands out...",

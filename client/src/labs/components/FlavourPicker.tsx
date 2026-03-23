@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   FLAVOR_CATEGORIES,
   getSortedCategories,
@@ -128,6 +128,97 @@ function useFlavorCategoriesFromAPI(): FlavorCategory[] {
 
 const VISIBLE_COUNT = 3;
 
+function CollapsiblePickerPanel({
+  title,
+  subtitle,
+  isOpen,
+  onToggle,
+  disabled,
+  badge,
+  children,
+  testId,
+}: {
+  title: string;
+  subtitle?: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  badge?: number;
+  children: React.ReactNode;
+  testId: string;
+}) {
+  return (
+    <div
+      data-testid={testId}
+      style={{
+        marginBottom: 8,
+        border: "1px solid var(--labs-border)",
+        borderRadius: 12,
+        overflow: "hidden",
+        background: "rgba(255,255,255,0.03)",
+        transition: "all 0.2s ease",
+      }}
+    >
+      <button
+        data-testid={`${testId}-toggle`}
+        onClick={onToggle}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 14px",
+          background: "none",
+          border: "none",
+          cursor: disabled ? "default" : "pointer",
+          fontFamily: "inherit",
+          minHeight: 44,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{title}</span>
+          {subtitle && !isOpen && (
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{subtitle}</span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {badge !== undefined && badge > 0 && (
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: GOLD,
+              background: "rgba(200,134,26,0.12)",
+              borderRadius: 9999,
+              padding: "2px 7px",
+              minWidth: 18,
+              textAlign: "center",
+            }}>
+              {badge}
+            </span>
+          )}
+          <ChevronDown style={{
+            width: 14,
+            height: 14,
+            transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            color: "var(--labs-text-muted)",
+          }} />
+        </div>
+      </button>
+      <div style={{
+        maxHeight: isOpen ? 2000 : 0,
+        overflow: "hidden",
+        transition: "max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}>
+        <div style={{ padding: "0 14px 12px" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FlavourPicker({
   activeChips,
   onToggle,
@@ -139,7 +230,6 @@ export default function FlavourPicker({
 }: FlavourPickerProps) {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
-  const [expanded, setExpanded] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioInitialView, setStudioInitialView] = useState<StudioView>("wheel");
   const apiCategories = useFlavorCategoriesFromAPI();
@@ -311,58 +401,97 @@ export default function FlavourPicker({
     );
   };
 
+  const [panel1Open, setPanel1Open] = useState(false);
+  const [panel2Open, setPanel2Open] = useState(false);
+
+  const visibleActiveCount = visibleGroups.reduce((sum, grp) => sum + countActive(grp), 0);
+  const hiddenActiveCount = hiddenGroups.reduce((sum, grp) => sum + countActive(grp), 0);
+
+  const studioTools: { id: StudioView; label: string; icon: string }[] = [
+    { id: "guide", label: t("m2.taste.rating.toolGuide", "Guide"), icon: "📋" },
+    { id: "journey", label: t("m2.taste.rating.toolJourney", "Journey"), icon: "🔄" },
+    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+    { id: "radar", label: "Radar", icon: "⬡" },
+    { id: "describe", label: t("m2.taste.rating.toolDescribe", "Describe"), icon: "✏️" },
+  ];
+
   return (
     <div data-testid="flavour-picker" style={{ opacity: disabled ? 0.5 : 1, transition: "opacity 0.2s" }}>
-      {visibleGroups.map(renderGroup)}
+      <CollapsiblePickerPanel
+        title={t("m2.taste.rating.chooseAromas", "Choose aromas ▾")}
+        subtitle={t("m2.taste.rating.chooseAromasSub", "Tap what you recognise")}
+        isOpen={panel1Open}
+        onToggle={() => { setPanel1Open(p => !p); triggerHaptic("light"); }}
+        disabled={disabled}
+        badge={visibleActiveCount}
+        testId="flavour-panel-primary"
+      >
+        {visibleGroups.map(renderGroup)}
+      </CollapsiblePickerPanel>
 
-      {hiddenGroups.length > 0 && (
-        <>
-          <button
-            onClick={() => { setExpanded((p) => !p); triggerHaptic("light"); }}
-            disabled={disabled}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "8px 0",
-              background: "none",
-              border: "none",
-              cursor: disabled ? "default" : "pointer",
-              fontFamily: "inherit",
-              fontSize: 12,
-              fontWeight: 500,
-              color: "var(--labs-text-muted)",
-              width: "100%",
-            }}
-            data-testid="flavour-more-toggle"
-          >
-            {expanded
-              ? t("m2.taste.rating.flavourLess", "Fewer aromas")
-              : t("m2.taste.rating.flavourMore", "More aromas")}
-            <ChevronDown
-              style={{
-                width: 14,
-                height: 14,
-                transition: "transform 200ms",
-                transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
+      <CollapsiblePickerPanel
+        title={t("m2.taste.rating.moreAromasModels", "More aromas & rating models ▾")}
+        subtitle={t("m2.taste.rating.moreAromasModelsSub", "All categories and advanced tools")}
+        isOpen={panel2Open}
+        onToggle={() => { setPanel2Open(p => !p); triggerHaptic("light"); }}
+        disabled={disabled}
+        badge={hiddenActiveCount}
+        testId="flavour-panel-secondary"
+      >
+        {hiddenGroups.map(renderGroup)}
 
-          {expanded && (
-            <div style={{ animation: "labsFadeIn 200ms ease both" }}>
-              {hiddenGroups.map(renderGroup)}
-            </div>
-          )}
-        </>
-      )}
-
-      {scale.max >= 20 && (
-        <ExpertToolsCollapsible
-          disabled={disabled}
-          onToolClick={dimension ? handleExpertToolClick : undefined}
-        />
-      )}
+        <div style={{
+          borderTop: "1px solid var(--labs-border)",
+          marginTop: 8,
+          paddingTop: 8,
+        }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: "var(--labs-text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            marginBottom: 6,
+          }}>
+            {t("m2.taste.rating.ratingModels", "Rating models")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {studioTools.map((tool) => {
+              const isClickable = !!dimension && !!handleExpertToolClick;
+              return (
+                <button
+                  key={tool.id}
+                  onClick={() => {
+                    if (isClickable) handleExpertToolClick(tool.id);
+                  }}
+                  disabled={disabled || !isClickable}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "6px 12px",
+                    borderRadius: 9999,
+                    border: "1px solid var(--labs-border)",
+                    background: "var(--labs-surface, transparent)",
+                    color: "var(--labs-text-muted)",
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontFamily: "inherit",
+                    cursor: isClickable && !disabled ? "pointer" : "default",
+                    opacity: isClickable ? 1 : 0.5,
+                    transition: "all 150ms",
+                  }}
+                  data-testid={`studio-view-btn-${tool.id}`}
+                >
+                  <span style={{ fontSize: 12 }}>{tool.icon}</span>
+                  {tool.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </CollapsiblePickerPanel>
 
       {dimension && (
         <Suspense fallback={null}>
@@ -381,102 +510,3 @@ export default function FlavourPicker({
   );
 }
 
-function ExpertToolsCollapsible({ disabled, onToolClick }: {
-  disabled?: boolean;
-  onToolClick?: (view: StudioView) => void;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const tools: { id: string; view: StudioView | null; label: string; icon: string; comingSoon?: boolean }[] = [
-    { id: "wheel", view: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-    { id: "compass", view: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-    { id: "regions", view: null, label: t("m2.taste.rating.toolRegions", "Regions"), icon: "🌍", comingSoon: true },
-  ];
-
-  return (
-    <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 6, paddingTop: 6 }}>
-      <button
-        onClick={() => setOpen(p => !p)}
-        disabled={disabled}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          padding: "4px 0",
-          background: "none",
-          border: "none",
-          cursor: disabled ? "default" : "pointer",
-          fontFamily: "inherit",
-          fontSize: 10,
-          fontWeight: 600,
-          color: "var(--labs-text-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          width: "100%",
-        }}
-        data-testid="expert-tools-toggle"
-      >
-        {t("m2.taste.rating.expertTools", "Expert Tools")}
-        <ChevronRight style={{
-          width: 12,
-          height: 12,
-          transition: "transform 200ms",
-          transform: open ? "rotate(90deg)" : "rotate(0deg)",
-        }} />
-      </button>
-      {open && (
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            paddingTop: 6,
-            animation: "labsFadeIn 200ms ease both",
-          }}
-          data-testid="flavour-expert-tools"
-        >
-          {tools.map((tool) => {
-            const isClickable = !tool.comingSoon && !!onToolClick && !!tool.view;
-            return (
-              <button
-                key={tool.id}
-                onClick={() => {
-                  if (isClickable && tool.view) {
-                    onToolClick(tool.view);
-                  }
-                }}
-                disabled={disabled || tool.comingSoon || !isClickable}
-                title={tool.comingSoon ? t("m2.taste.rating.comingSoon", "Coming soon") : undefined}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 3,
-                  padding: "4px 10px",
-                  borderRadius: 9999,
-                  border: "1px solid var(--labs-border)",
-                  background: "var(--labs-surface)",
-                  color: "var(--labs-text-muted)",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  fontFamily: "inherit",
-                  cursor: isClickable ? "pointer" : "default",
-                  opacity: tool.comingSoon ? 0.4 : (isClickable ? 1 : 0.6),
-                  transition: "all 150ms",
-                }}
-                data-testid={`expert-tool-${tool.id}`}
-              >
-                <span style={{ fontSize: 11 }}>{tool.icon}</span>
-                {tool.label}
-                {tool.comingSoon && (
-                  <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 2 }}>
-                    ({t("m2.taste.rating.comingSoon", "Coming soon")})
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}

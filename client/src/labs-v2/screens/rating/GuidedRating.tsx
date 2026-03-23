@@ -321,6 +321,7 @@ export default function GuidedRating({
             phaseId={currentPhase}
             whiskyRegion={whisky.region}
             whiskyCask={whisky.cask}
+            whiskyFlavorProfile={whisky.flavorProfile}
             blind={whisky.blind}
             selected={tags[currentPhase]}
             onToggle={handleTagToggle}
