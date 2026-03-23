@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Share2 } from "lucide-react";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
 import { tastingHistoryApi } from "@/lib/api";
 import { useMemo } from "react";
@@ -72,6 +72,14 @@ function HubPage() {
       sub: t("hub.hostSub"),
       href: "/labs/host",
       colorClass: "labs-hub-icon-host",
+    },
+    {
+      key: "bottle-sharing",
+      icon: Share2,
+      label: t("hub.bottleSharing"),
+      sub: t("hub.bottleSharingSub"),
+      href: "/labs/bottle-sharing",
+      colorClass: "labs-hub-icon-solo",
     },
   ];
 

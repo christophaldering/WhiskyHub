@@ -14697,5 +14697,170 @@ Rules:
     }
   });
 
+  // ===== BOTTLE-SHARING API =====
+
+  async function checkSharingAccess(tasting: any, participantId: string): Promise<'allowed' | 'denied'> {
+    if (!tasting || tasting.tastingType !== 'bottle-sharing') return 'denied';
+    if (tasting.visibility === 'public') return 'allowed';
+    if (tasting.hostId === participantId) return 'allowed';
+    const existing = await storage.getSharingParticipant(tasting.id, participantId);
+    if (existing) return 'allowed';
+    if (tasting.visibility === 'group' && tasting.targetCommunityIds) {
+      try {
+        const targetIds = JSON.parse(tasting.targetCommunityIds) as string[];
+        const userCommunities = await storage.getParticipantCommunities(participantId);
+        const userCommunityIds = userCommunities.map(c => c.id);
+        if (targetIds.some(id => userCommunityIds.includes(id))) return 'allowed';
+      } catch {}
+    }
+    return 'denied';
+  }
+
+  app.get("/api/bottle-sharings/public", async (_req: Request, res: Response) => {
+    try {
+      const sharings = await storage.getPublicBottleSharings();
+      const enriched = await Promise.all(sharings.map(async (s) => {
+        const whiskiesArr = await storage.getWhiskiesForTasting(s.id);
+        const sharingParts = await storage.getSharingParticipants(s.id);
+        const host = await storage.getParticipant(s.hostId);
+        return {
+          ...s,
+          whiskyCount: whiskiesArr.length,
+          confirmedCount: sharingParts.filter(p => p.status === 'confirmed').length,
+          interestedCount: sharingParts.filter(p => p.status === 'interested').length,
+          hostName: host?.name || 'Unknown',
+        };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/bottle-sharings/mine", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const sharings = await storage.getBottleSharingsForParticipant(participantId);
+      const enriched = await Promise.all(sharings.map(async (s) => {
+        const whiskiesArr = await storage.getWhiskiesForTasting(s.id);
+        const sharingParts = await storage.getSharingParticipants(s.id);
+        const host = await storage.getParticipant(s.hostId);
+        return {
+          ...s,
+          whiskyCount: whiskiesArr.length,
+          confirmedCount: sharingParts.filter(p => p.status === 'confirmed').length,
+          interestedCount: sharingParts.filter(p => p.status === 'interested').length,
+          hostName: host?.name || 'Unknown',
+        };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/bottle-sharings/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting || tasting.tastingType !== 'bottle-sharing') {
+        return res.status(404).json({ message: "Sharing not found" });
+      }
+      const access = await checkSharingAccess(tasting, participantId);
+      if (access === 'denied') return res.status(403).json({ message: "Access denied" });
+      const whiskiesArr = await storage.getWhiskiesForTasting(tasting.id);
+      const sharingParts = await storage.getSharingParticipants(tasting.id);
+      const host = await storage.getParticipant(tasting.hostId);
+      const ratings = await storage.getRatingsForTasting(tasting.id);
+      res.json({
+        ...tasting,
+        whiskies: whiskiesArr,
+        sharingParticipants: sharingParts.map(sp => ({
+          id: sp.id,
+          participantId: sp.participantId,
+          participantName: sp.participant.name,
+          status: sp.status,
+          confirmedAt: sp.confirmedAt,
+        })),
+        hostName: host?.name || 'Unknown',
+        ratings,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-sharings/:id/join", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting || tasting.tastingType !== 'bottle-sharing') {
+        return res.status(404).json({ message: "Sharing not found" });
+      }
+      const access = await checkSharingAccess(tasting, participantId);
+      if (access === 'denied') return res.status(403).json({ message: "You are not eligible to join this sharing" });
+      const existing = await storage.getSharingParticipant(tasting.id, participantId);
+      if (existing) return res.json(existing);
+      const sp = await storage.addSharingParticipant({
+        tastingId: tasting.id,
+        participantId,
+        status: 'interested',
+      });
+      res.status(201).json(sp);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/bottle-sharings/:id/participation", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const { status } = req.body;
+      if (!['interested', 'confirmed', 'declined'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const result = await storage.updateSharingParticipantStatus(req.params.id, participantId, status);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-sharings/:id/start", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting || tasting.tastingType !== 'bottle-sharing') {
+        return res.status(404).json({ message: "Sharing not found" });
+      }
+      if (tasting.hostId !== participantId) {
+        return res.status(403).json({ message: "Only the host can start the tasting" });
+      }
+      const updated = await storage.updateTastingStatus(tasting.id, 'open');
+      const confirmedParts = await storage.getSharingParticipants(tasting.id);
+      for (const sp of confirmedParts) {
+        if (sp.status === 'confirmed') {
+          const isAlready = await storage.isParticipantInTasting(tasting.id, sp.participantId);
+          if (!isAlready) {
+            await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: sp.participantId });
+          }
+        }
+      }
+      const hostInTasting = await storage.isParticipantInTasting(tasting.id, participantId);
+      if (!hostInTasting) {
+        await storage.addParticipantToTasting({ tastingId: tasting.id, participantId });
+      }
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

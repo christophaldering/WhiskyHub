@@ -1,12 +1,13 @@
 import { eq, ne, and, asc, desc, sql, inArray, gte } from "drizzle-orm";
 import { db } from "./db";
 import {
-  participants, tastings, tastingParticipants, whiskies, ratings,
+  participants, tastings, tastingParticipants, sharingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
+  type InsertSharingParticipant, type SharingParticipant,
   type InsertWhisky, type Whisky,
   type InsertRating, type Rating,
   type InsertProfile, type Profile,
@@ -123,6 +124,14 @@ export interface IStorage {
   getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant })[]>;
   addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant>;
   isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean>;
+
+  // Sharing Participants (Bottle-Sharing)
+  getSharingParticipants(tastingId: string): Promise<(SharingParticipant & { participant: Participant })[]>;
+  addSharingParticipant(data: InsertSharingParticipant): Promise<SharingParticipant>;
+  updateSharingParticipantStatus(tastingId: string, participantId: string, status: string): Promise<SharingParticipant | undefined>;
+  getSharingParticipant(tastingId: string, participantId: string): Promise<SharingParticipant | undefined>;
+  getPublicBottleSharings(): Promise<Tasting[]>;
+  getBottleSharingsForParticipant(participantId: string): Promise<Tasting[]>;
 
   // Whiskies
   getWhiskiesForTasting(tastingId: string): Promise<Whisky[]>;
@@ -692,6 +701,68 @@ export class DatabaseStorage implements IStorage {
       .from(tastingParticipants)
       .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
     return !!result;
+  }
+
+  // --- Sharing Participants (Bottle-Sharing) ---
+  async getSharingParticipants(tastingId: string): Promise<(SharingParticipant & { participant: Participant })[]> {
+    const rows = await db.select().from(sharingParticipants).where(eq(sharingParticipants.tastingId, tastingId));
+    const result: (SharingParticipant & { participant: Participant })[] = [];
+    for (const row of rows) {
+      const [p] = await db.select().from(participants).where(eq(participants.id, row.participantId));
+      if (p) result.push({ ...row, participant: p });
+    }
+    return result;
+  }
+
+  async addSharingParticipant(data: InsertSharingParticipant): Promise<SharingParticipant> {
+    const [result] = await db.insert(sharingParticipants).values(data).returning();
+    return result;
+  }
+
+  async updateSharingParticipantStatus(tastingId: string, participantId: string, status: string): Promise<SharingParticipant | undefined> {
+    const updates: Record<string, any> = { status };
+    if (status === 'confirmed') updates.confirmedAt = new Date();
+    const [result] = await db.update(sharingParticipants)
+      .set(updates)
+      .where(and(eq(sharingParticipants.tastingId, tastingId), eq(sharingParticipants.participantId, participantId)))
+      .returning();
+    return result;
+  }
+
+  async getSharingParticipant(tastingId: string, participantId: string): Promise<SharingParticipant | undefined> {
+    const [result] = await db.select().from(sharingParticipants)
+      .where(and(eq(sharingParticipants.tastingId, tastingId), eq(sharingParticipants.participantId, participantId)));
+    return result;
+  }
+
+  async getPublicBottleSharings(): Promise<Tasting[]> {
+    return db.select().from(tastings)
+      .where(and(
+        eq(tastings.tastingType, 'bottle-sharing'),
+        eq(tastings.visibility, 'public'),
+      ))
+      .orderBy(desc(tastings.createdAt));
+  }
+
+  async getBottleSharingsForParticipant(participantId: string): Promise<Tasting[]> {
+    const hosted = await db.select().from(tastings)
+      .where(and(eq(tastings.tastingType, 'bottle-sharing'), eq(tastings.hostId, participantId)))
+      .orderBy(desc(tastings.createdAt));
+    const participatingRows = await db.select().from(sharingParticipants)
+      .where(eq(sharingParticipants.participantId, participantId));
+    const participatingIds = participatingRows.map(r => r.tastingId);
+    let participating: Tasting[] = [];
+    if (participatingIds.length > 0) {
+      participating = await db.select().from(tastings)
+        .where(and(eq(tastings.tastingType, 'bottle-sharing'), inArray(tastings.id, participatingIds)))
+        .orderBy(desc(tastings.createdAt));
+    }
+    const seen = new Set<string>();
+    const result: Tasting[] = [];
+    for (const t of [...hosted, ...participating]) {
+      if (!seen.has(t.id)) { seen.add(t.id); result.push(t); }
+    }
+    return result;
   }
 
   // --- Whiskies ---

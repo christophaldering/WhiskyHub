@@ -76,6 +76,10 @@ export const tastings = pgTable("tastings", {
   showReveal: boolean("show_reveal").default(true),
   isTestData: boolean("is_test_data").default(false),
   sharedPrintMaterials: text("shared_print_materials"),
+  tastingType: text("tasting_type").default("standard"), // standard | bottle-sharing
+  visibility: text("visibility").default("private"), // public | private | group
+  sharingMessage: text("sharing_message"),
+  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),
@@ -98,6 +102,20 @@ export const tastingParticipants = pgTable("tasting_participants", {
 export const insertTastingParticipantSchema = createInsertSchema(tastingParticipants).omit({ id: true, joinedAt: true });
 export type InsertTastingParticipant = z.infer<typeof insertTastingParticipantSchema>;
 export type TastingParticipant = typeof tastingParticipants.$inferSelect;
+
+// --- Sharing Participants (bottle-sharing participation requests/confirmations) ---
+export const sharingParticipants = pgTable("sharing_participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  status: text("status").notNull().default("interested"), // interested | confirmed | declined
+  createdAt: timestamp("created_at").defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
+});
+
+export const insertSharingParticipantSchema = createInsertSchema(sharingParticipants).omit({ id: true, createdAt: true, confirmedAt: true });
+export type InsertSharingParticipant = z.infer<typeof insertSharingParticipantSchema>;
+export type SharingParticipant = typeof sharingParticipants.$inferSelect;
 
 // --- Whiskies (items in a tasting flight) ---
 export const whiskies = pgTable("whiskies", {
