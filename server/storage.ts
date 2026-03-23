@@ -1362,6 +1362,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hardDeleteTasting(id: string): Promise<void> {
+    await db.delete(voiceMemos).where(eq(voiceMemos.tastingId, id));
+    await db.delete(tastingPhotos).where(eq(tastingPhotos.tastingId, id));
+    await db.delete(sharingParticipants).where(eq(sharingParticipants.tastingId, id));
+    await db.delete(sessionPresence).where(eq(sessionPresence.tastingId, id));
+    await db.delete(tastingReminders).where(eq(tastingReminders.tastingId, id));
+    await db.delete(notifications).where(eq(notifications.tastingId, id));
     await db.delete(ratings).where(eq(ratings.tastingId, id));
     await db.delete(discussionEntries).where(eq(discussionEntries.tastingId, id));
     await db.delete(reflectionEntries).where(eq(reflectionEntries.tastingId, id));
