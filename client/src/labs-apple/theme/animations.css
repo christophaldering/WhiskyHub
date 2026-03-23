@@ -38,6 +38,11 @@
   50%       { opacity: 0; }
 }
 
+@keyframes themeIconIn {
+  0%   { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  100% { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+
 /* Profile dialog — native top-layer, no backdrop (we paint our own) */
 dialog[data-testid="profile-overlay"]::backdrop {
   background: transparent;

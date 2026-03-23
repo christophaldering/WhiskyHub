@@ -127,8 +127,10 @@ export const LabsAppleLayout: React.FC<Props> = ({
             {lang === 'de' ? 'EN' : 'DE'}
           </button>
 
-          <button data-testid="button-toggle-theme" onClick={onToggleTheme} style={{ height: 32, padding: '0 10px', borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
-            {themeKey === 'dark' ? t.lightMode : t.darkMode}
+          <button data-testid="button-toggle-theme" onClick={onToggleTheme} aria-label={themeKey === 'dark' ? t.lightMode : t.darkMode} style={{ width: 32, height: 32, padding: 0, borderRadius: 8, border: `1px solid ${th.border}`, background: 'none', color: th.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+            <span key={themeKey} style={{ display: 'inline-flex', animation: 'themeIconIn 0.3s ease' }}>
+              {themeKey === 'dark' ? <Icon.Sun size={18} /> : <Icon.Moon size={18} />}
+            </span>
           </button>
 
           {session && (
