@@ -11423,6 +11423,24 @@ Important rules:
 - wbScore should be a number 0-100
 - If you find tasting notes (nose/palate/finish descriptions), combine them into hostSummary
 - Set null for any field you cannot determine
+
+PERSONAL RATINGS EXTRACTION:
+If you detect personal scores, ratings, or evaluations written by the user (e.g. handwritten scores, personal assessments), extract them into these additional fields per whisky:
+  "personalRating": {
+    "overall": 85,
+    "nose": 80,
+    "taste": 88,
+    "finish": 82,
+    "notes": "Personal tasting notes if present"
+  }
+- "overall" is required if any personal rating is detected. Use numbers 0-100.
+- "nose", "taste", "finish" are optional — only include if explicitly present in the source.
+- "notes" is free-text personal commentary, if any.
+- If the source shows a single score per whisky (e.g. "85 pts" or "4/5"), convert it to a 0-100 scale for "overall".
+- If scores use a different scale (e.g. 1-10, 1-5, 1-6), convert to 0-100 scale proportionally.
+- Do NOT confuse Whiskybase scores (wbScore) or other reference scores with personal ratings — personal ratings are the user's own assessments.
+- If no personal ratings are present at all, omit the "personalRating" field entirely.
+
 - The output must be valid JSON only, no markdown or explanation`;
 
       const userContent: any[] = [];
@@ -11474,13 +11492,14 @@ Important rules:
 
   app.post("/api/tastings/create-from-import", async (req: any, res: any) => {
     try {
-      const { hostId, title, date, location, blindMode, whiskies: whiskyData } = req.body;
+      const { hostId, title, date, location, blindMode, whiskies: whiskyData, includeRatings } = req.body;
       if (!hostId) return res.status(400).json({ message: "hostId required" });
       if (!title) return res.status(400).json({ message: "title required" });
       if (!whiskyData || !Array.isArray(whiskyData) || whiskyData.length === 0) {
         return res.status(400).json({ message: "At least one whisky required" });
       }
 
+      const hasRatings = includeRatings && whiskyData.some((w: any) => w.personalRating?.overall != null);
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
       const tasting = await storage.createTasting({
         title: title.trim(),
@@ -11488,9 +11507,13 @@ Important rules:
         location: location || "Online",
         hostId,
         code,
-        status: "draft",
+        status: hasRatings ? "archived" : "draft",
         blindMode: blindMode ?? false,
       });
+
+      if (hasRatings) {
+        await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: hostId });
+      }
 
       const createdWhiskies = [];
       for (let i = 0; i < whiskyData.length; i++) {
@@ -11526,9 +11549,25 @@ Important rules:
           }
         }
         createdWhiskies.push(whisky);
+
+        if (hasRatings && w.personalRating?.overall != null) {
+          const clamp = (v: number) => Math.max(0, Math.min(100, v));
+          const overallVal = parseFloat(String(w.personalRating.overall));
+          await storage.upsertRating({
+            tastingId: tasting.id,
+            whiskyId: whisky.id,
+            participantId: hostId,
+            overall: clamp(isNaN(overallVal) ? 50 : overallVal),
+            nose: w.personalRating.nose != null ? clamp(parseFloat(String(w.personalRating.nose))) : undefined,
+            taste: w.personalRating.taste != null ? clamp(parseFloat(String(w.personalRating.taste))) : undefined,
+            finish: w.personalRating.finish != null ? clamp(parseFloat(String(w.personalRating.finish))) : undefined,
+            notes: w.personalRating.notes || "",
+            source: "import",
+          });
+        }
       }
 
-      res.status(201).json({ tasting, whiskies: createdWhiskies });
+      res.status(201).json({ tasting, whiskies: createdWhiskies, hasRatings });
     } catch (e: any) {
       console.error("Create from import error:", e);
       res.status(500).json({ message: e.message || "Failed to create tasting" });

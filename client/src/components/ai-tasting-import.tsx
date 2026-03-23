@@ -9,9 +9,17 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 import {
   Upload, FileSpreadsheet, Image, MessageSquare, Sparkles, Loader2,
-  Check, X, Trash2, Edit3, ChevronDown, ChevronUp, Wine, ExternalLink
+  Check, X, Trash2, Edit3, ChevronDown, ChevronUp, Wine, ExternalLink, Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface PersonalRating {
+  overall: number | null;
+  nose: number | null;
+  taste: number | null;
+  finish: number | null;
+  notes: string | null;
+}
 
 interface ImportedWhisky {
   name: string;
@@ -32,6 +40,7 @@ interface ImportedWhisky {
   hostNotes: string | null;
   hostSummary: string | null;
   sortOrder: number;
+  personalRating?: PersonalRating;
 }
 
 interface ImportResult {
@@ -168,6 +177,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
   const [importConsent, setImportConsent] = useState(false);
+  const [includeRatings, setIncludeRatings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasUnsavedData = files.length > 0 || pastedText.trim().length > 0 || editingWhiskies.length > 0 || tastingTitle.trim().length > 0;
@@ -180,10 +190,13 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
     },
     onSuccess: (data: ImportResult) => {
       setResult(data);
-      setEditingWhiskies(data.whiskies.map((w, i) => ({ ...w, sortOrder: i })));
+      const whiskies = data.whiskies.map((w, i) => ({ ...w, sortOrder: i }));
+      setEditingWhiskies(whiskies);
       setTastingTitle(data.tastingMeta.title || "");
       setTastingDate(data.tastingMeta.dateISO || data.tastingMeta.date || new Date().toISOString().split("T")[0]);
       setTastingLocation(data.tastingMeta.location || "");
+      const hasPersonalRatings = whiskies.some(w => w.personalRating?.overall != null);
+      setIncludeRatings(hasPersonalRatings);
       setStep("preview");
       setError(null);
     },
@@ -208,13 +221,18 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
         location: tastingLocation.trim() || "Online",
         blindMode,
         whiskies: editingWhiskies,
+        includeRatings,
       });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
       onOpenChange(false);
       resetState();
-      navigate(`/tasting/${data.tasting.id}`);
+      if (data.hasRatings) {
+        navigate(`/tasting-results/${data.tasting.id}`);
+      } else {
+        navigate(`/tasting/${data.tasting.id}`);
+      }
     },
     onError: (err: Error) => {
       setError(err.message);
@@ -236,6 +254,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
     setGuestName("");
     setGuestPin("");
     setImportConsent(false);
+    setIncludeRatings(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -470,6 +489,44 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               </div>
 
+              {editingWhiskies.some(w => w.personalRating?.overall != null) && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, background: `${c.accent}15`, border: `1px solid ${c.accent}40`, borderRadius: 8 }} data-testid="toggle-include-ratings">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Star size={16} color={c.accent} />
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{t("aiImport.includeRatings")}</span>
+                      <p style={{ fontSize: 11, color: c.muted, margin: 0 }}>{t("aiImport.includeRatingsHint")}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIncludeRatings(!includeRatings)}
+                    style={{
+                      width: 44,
+                      height: 24,
+                      borderRadius: 12,
+                      border: "none",
+                      background: includeRatings ? c.accent : c.border,
+                      position: "relative",
+                      cursor: "pointer",
+                      transition: "background 0.2s",
+                      flexShrink: 0,
+                    }}
+                    data-testid="switch-include-ratings"
+                  >
+                    <span style={{
+                      position: "absolute",
+                      top: 2,
+                      left: includeRatings ? 22 : 2,
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: c.text,
+                      transition: "left 0.2s",
+                    }} />
+                  </button>
+                </div>
+              )}
+
               <div style={{ borderTop: `1px solid ${c.border}30`, paddingTop: 16 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                   <Wine size={14} />
@@ -489,6 +546,11 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                             {[w.distillery, w.bottler, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
                           </p>
                         </div>
+                        {includeRatings && w.personalRating?.overall != null && (
+                          <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: c.success, display: "inline-flex", alignItems: "center", gap: 2 }} data-testid={`text-rating-score-${idx}`}>
+                            <Star size={10} fill={c.success} color={c.success} />{w.personalRating.overall}
+                          </span>
+                        )}
                         {w.wbScore && (
                           <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: c.accent }}>{w.wbScore}</span>
                         )}
@@ -572,6 +634,80 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                                 <div>
                                   <label style={smallLabelStyle}>{t("whisky.hostSummary")}</label>
                                   <textarea style={{ ...smallInputStyle, minHeight: 60, resize: "none" as const, height: "auto" }} value={w.hostSummary} onChange={(e) => updateWhisky(idx, "hostSummary", e.target.value || null)} />
+                                </div>
+                              )}
+                              {includeRatings && (
+                                <div style={{ borderTop: `1px solid ${c.border}20`, paddingTop: 8, marginTop: 4 }}>
+                                  <label style={{ ...smallLabelStyle, display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                                    <Star size={10} color={c.accent} />
+                                    {t("aiImport.myRatings")}
+                                  </label>
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+                                    <div>
+                                      <label style={smallLabelStyle}>{t("aiImport.ratingOverall")}</label>
+                                      <input
+                                        style={{ ...smallInputStyle, borderColor: w.personalRating?.overall != null ? c.success : undefined }}
+                                        type="number" min="0" max="100" step="1"
+                                        value={w.personalRating?.overall ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateWhisky(idx, "personalRating", { ...w.personalRating, overall: val });
+                                        }}
+                                        data-testid={`input-rating-overall-${idx}`}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={smallLabelStyle}>{t("aiImport.ratingNose")}</label>
+                                      <input
+                                        style={smallInputStyle}
+                                        type="number" min="0" max="100" step="1"
+                                        value={w.personalRating?.nose ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateWhisky(idx, "personalRating", { ...w.personalRating, nose: val });
+                                        }}
+                                        data-testid={`input-rating-nose-${idx}`}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={smallLabelStyle}>{t("aiImport.ratingTaste")}</label>
+                                      <input
+                                        style={smallInputStyle}
+                                        type="number" min="0" max="100" step="1"
+                                        value={w.personalRating?.taste ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateWhisky(idx, "personalRating", { ...w.personalRating, taste: val });
+                                        }}
+                                        data-testid={`input-rating-taste-${idx}`}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={smallLabelStyle}>{t("aiImport.ratingFinish")}</label>
+                                      <input
+                                        style={smallInputStyle}
+                                        type="number" min="0" max="100" step="1"
+                                        value={w.personalRating?.finish ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateWhisky(idx, "personalRating", { ...w.personalRating, finish: val });
+                                        }}
+                                        data-testid={`input-rating-finish-${idx}`}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: 6 }}>
+                                    <label style={smallLabelStyle}>{t("aiImport.ratingNotes")}</label>
+                                    <input
+                                      style={smallInputStyle}
+                                      value={w.personalRating?.notes || ""}
+                                      onChange={(e) => {
+                                        updateWhisky(idx, "personalRating", { ...w.personalRating, notes: e.target.value || null });
+                                      }}
+                                      placeholder={t("aiImport.ratingNotesPlaceholder")}
+                                      data-testid={`input-rating-notes-${idx}`}
+                                    />
+                                  </div>
                                 </div>
                               )}
                             </div>
