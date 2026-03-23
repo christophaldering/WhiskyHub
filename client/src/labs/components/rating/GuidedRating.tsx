@@ -379,11 +379,14 @@ export default function GuidedRating({ labels, whisky, initialData, onDone, onBa
       <div style={{
         position: "fixed",
         bottom: "calc(72px + env(safe-area-inset-bottom, 8px))",
-        left: SP.md,
-        right: SP.md,
+        left: 0,
+        right: 0,
         zIndex: 15,
+        display: "flex",
+        justifyContent: "center",
+        padding: `0 ${SP.md}px`,
       }}>
-        <div style={{ display: "flex", gap: SP.sm }}>
+        <div style={{ display: "flex", gap: SP.sm, width: "100%", maxWidth: 672 }}>
           <button
             data-testid="rating-back-btn"
             onClick={() => {
@@ -411,8 +414,8 @@ export default function GuidedRating({ labels, whisky, initialData, onDone, onBa
             style={{
               flex: 1,
               height: 56,
-              background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
-              color: "var(--labs-accent-dark)",
+              background: accent,
+              color: "#1a1a1a",
               border: "none",
               borderRadius: RADIUS.full,
               fontSize: 17,
