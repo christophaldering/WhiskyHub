@@ -208,6 +208,21 @@ export default function LabsTastings() {
             <span style={{ fontSize: 11, color: "var(--labs-text-secondary)", marginTop: -2 }}>Create session</span>
           </div>
         </Link>
+        <Link href="/labs/bottle-sharing">
+          <div className="labs-action-item" data-testid="labs-action-bottle-sharing">
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--labs-accent-muted)",
+              }}
+            >
+              <Share2 className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Share</span>
+            <span style={{ fontSize: 11, color: "var(--labs-text-secondary)", marginTop: -2 }}>Bottle sharing</span>
+          </div>
+        </Link>
       </div>
 
       <div className="relative labs-fade-in labs-stagger-1" style={{ marginBottom: 16 }}>
