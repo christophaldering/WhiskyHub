@@ -138,7 +138,15 @@ export interface Translations {
   entBottlers: string; entBottlersSub: string
   entVocab: string; entResearch: string; entMakingOf: string
   entHistory: string; entHistorySub: string
-  entSectionExplore: string; entSectionLearn: string; entSectionTools: string
+  entSectionWhiskysTastings: string; entSectionLearn: string; entSectionTools: string
+  entTabWhiskys: string; entTabTastings: string; entTabInsights: string
+  entWhiskysTastingsSub: string
+  entTastingCardWhiskies: string; entTastingCardAvg: string
+  entInsightsTrends: string; entInsightsTopWhiskys: string; entInsightsTopRegions: string; entInsightsTastingFreq: string; entInsightsCommunityStats: string
+  entInsightsTotalTastings: string; entInsightsTotalWhiskies: string; entInsightsRegions: string; entInsightsSmoky: string
+  entInsightsParticipants: string; entInsightsAvgScore: string
+  entCrossLinkTastings: string; entCrossLinkWhiskys: string
+  entParticipantsOnly: string; entAggregatedResults: string
   entTemplates: string; entTemplatesSub: string
   entSearch: string; entFilterRegion: string; entFilterAll: string
   entSortAvg: string; entSortMost: string; entSortAlpha: string
@@ -324,7 +332,15 @@ const DE: Translations = {
   entDest: 'Destillerien', entDestSub: 'Weltkarte der Brennereien',
   entBottlers: 'Abfüller', entBottlersSub: 'Unabhängige Abfüller',
   entHistory: 'Historische Tastings', entHistorySub: 'Tasting-Archiv der Community',
-  entSectionExplore: 'Erkunden', entSectionLearn: 'Lernen', entSectionTools: 'Werkzeuge & Archiv',
+  entSectionWhiskysTastings: 'Whiskys & Tastings', entSectionLearn: 'Lernen', entSectionTools: 'Werkzeuge',
+  entTabWhiskys: 'Whiskys', entTabTastings: 'Tastings', entTabInsights: 'Insights',
+  entWhiskysTastingsSub: 'Entdecke Whiskys, Tastings und Community-Insights',
+  entTastingCardWhiskies: 'Whiskies', entTastingCardAvg: 'Ø Score',
+  entInsightsTrends: 'Trends', entInsightsTopWhiskys: 'Top Whiskys', entInsightsTopRegions: 'Beliebteste Regionen', entInsightsTastingFreq: 'Tasting-Frequenz', entInsightsCommunityStats: 'Community-Statistiken',
+  entInsightsTotalTastings: 'Tastings gesamt', entInsightsTotalWhiskies: 'Whiskies gesamt', entInsightsRegions: 'Regionen', entInsightsSmoky: 'Rauchig',
+  entInsightsParticipants: 'Teilnehmer', entInsightsAvgScore: 'Ø Gesamtscore',
+  entCrossLinkTastings: 'In diesen Tastings', entCrossLinkWhiskys: 'Whiskys in diesem Tasting',
+  entParticipantsOnly: 'Nur für Teilnehmer', entAggregatedResults: 'Aggregierte Ergebnisse',
   entTemplates: 'Vokabular', entTemplatesSub: 'Beschreibungs-Vorlagen nach Stil',
   entSearch: 'Suche...', entFilterRegion: 'Region', entFilterAll: 'Alle',
   entSortAvg: 'Ø Score', entSortMost: 'Meist bewertet', entSortAlpha: 'A–Z',
@@ -527,7 +543,15 @@ const EN: Translations = {
   entDest: 'Distilleries', entDestSub: 'World map of distilleries',
   entBottlers: 'Bottlers', entBottlersSub: 'Independent bottlers',
   entHistory: 'Historical tastings', entHistorySub: 'Community tasting archive',
-  entSectionExplore: 'Explore', entSectionLearn: 'Learn', entSectionTools: 'Tools & Archive',
+  entSectionWhiskysTastings: 'Whiskys & Tastings', entSectionLearn: 'Learn', entSectionTools: 'Tools',
+  entTabWhiskys: 'Whiskys', entTabTastings: 'Tastings', entTabInsights: 'Insights',
+  entWhiskysTastingsSub: 'Explore whiskys, tastings and community insights',
+  entTastingCardWhiskies: 'Whiskies', entTastingCardAvg: 'Avg score',
+  entInsightsTrends: 'Trends', entInsightsTopWhiskys: 'Top whiskys', entInsightsTopRegions: 'Top regions', entInsightsTastingFreq: 'Tasting frequency', entInsightsCommunityStats: 'Community stats',
+  entInsightsTotalTastings: 'Total tastings', entInsightsTotalWhiskies: 'Total whiskies', entInsightsRegions: 'Regions', entInsightsSmoky: 'Smoky',
+  entInsightsParticipants: 'Participants', entInsightsAvgScore: 'Avg overall score',
+  entCrossLinkTastings: 'Featured in tastings', entCrossLinkWhiskys: 'Whiskys in this tasting',
+  entParticipantsOnly: 'Participants only', entAggregatedResults: 'Aggregated results',
   entTemplates: 'Vocabulary', entTemplatesSub: 'Description templates by style',
   entSearch: 'Search...', entFilterRegion: 'Region', entFilterAll: 'All',
   entSortAvg: 'Avg score', entSortMost: 'Most rated', entSortAlpha: 'A–Z',

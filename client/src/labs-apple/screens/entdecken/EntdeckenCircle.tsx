@@ -411,15 +411,288 @@ const ExploreWhiskies: React.FC<{ th: ThemeTokens; t: Translations; participantI
   )
 }
 
+// ── UnifiedDiscovery (Whiskys & Tastings) ────────────────────────────────
+const UnifiedDiscovery: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; participantId: string; onBack: () => void; onBottle: (id: string) => void }> = ({ th, t, lang, participantId, onBack, onBottle }) => {
+  const [activeTab, setActiveTab] = useState<'whiskys' | 'tastings' | 'insights'>('whiskys')
+  const [whiskies, setWhiskies] = useState<any[]>([])
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('avg')
+  const [tastings, setTastings] = useState<any[]>([])
+  const [ownTastings, setOwnTastings] = useState<any[]>([])
+  const [insights, setInsights] = useState<any>(null)
+  const [isMember, setMember] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const headers = { 'x-participant-id': participantId }
+    Promise.all([
+      fetch('/api/tastings', { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/historical-tastings', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/historical-tastings/insights', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/historical/tastings?includeOwn=true&limit=200', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([own, hist, ins, unified]) => {
+      if (unified?.ownTastings) setOwnTastings(unified.ownTastings)
+      else setOwnTastings(own || [])
+      if (hist) { setTastings(hist || []); setInsights(ins); setMember(true) }
+      else setMember(false)
+      setLoading(false)
+    }).catch(() => { setMember(false); setLoading(false) })
+  }, [participantId])
+
+  useEffect(() => {
+    fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: { 'x-participant-id': participantId } })
+      .then(r => r.json()).then(data => setWhiskies(data || [])).catch(() => {})
+  }, [search, sort, participantId])
+
+  const allTastings = [...ownTastings.map(t2 => ({ ...t2, _source: 'own' as const })), ...tastings.map(t2 => ({ ...t2, _source: 'archive' as const }))]
+  const filteredTastings = allTastings.filter(t2 => {
+    const name = (t2.name || t2.title || '').toLowerCase()
+    if (search && !name.includes(search.toLowerCase())) return false
+    return true
+  }).sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime())
+
+  const regions = insights?.regionBreakdown ? Object.keys(insights.regionBreakdown) : []
+  const totalTastings = insights?.totalTastings || tastings.length
+  const totalWhiskies = insights?.totalWhiskies || 0
+  const regionCount = regions.length
+  const smokyPct = insights && insights.totalWhiskies > 0 ? Math.round(((insights.smokyBreakdown?.smoky || 0) / insights.totalWhiskies) * 100) : 0
+
+  const tabs: { id: typeof activeTab; label: string }[] = [
+    { id: 'whiskys', label: t.entTabWhiskys },
+    { id: 'tastings', label: t.entTabTastings },
+    { id: 'insights', label: t.entTabInsights },
+  ]
+
+  return (
+    <div style={{ padding: SP.md, paddingBottom: 80 }}>
+      <button onClick={onBack} data-testid="button-back-discovery" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, padding: '0 0 8px' }}>
+        <Icon.Back color={th.muted} size={18} />{t.back}
+      </button>
+      <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, margin: `0 0 ${SP.xs}px` }} data-testid="text-discovery-title">{t.entSectionWhiskysTastings}</h1>
+      <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 14, fontStyle: 'italic', color: th.muted, margin: `0 0 ${SP.md}px` }}>{t.entWhiskysTastingsSub}</p>
+
+      <div style={{ position: 'sticky', top: 52, zIndex: 5, background: th.bg, paddingBottom: SP.sm, marginBottom: SP.sm }}>
+        <div style={{ display: 'flex', gap: 0, background: th.bgCard, borderRadius: 12, border: `1px solid ${th.border}`, overflow: 'hidden' }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSearch('') }} data-testid={`tab-discovery-${tab.id}`}
+              style={{ flex: 1, height: 44, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: activeTab === tab.id ? 700 : 400, fontFamily: 'DM Sans, sans-serif', background: activeTab === tab.id ? th.gold : 'transparent', color: activeTab === tab.id ? '#1a0f00' : th.muted, transition: 'all 150ms' }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === 'whiskys' && (
+        <div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.entSearch} data-testid="input-discovery-whisky-search"
+            style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
+          <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.md }}>
+            {[['avg', t.entSortAvg], ['most', t.entSortMost], ['alpha', t.entSortAlpha]].map(([id, label]) => (
+              <button key={id} onClick={() => setSort(id as string)} data-testid={`sort-${id}`}
+                style={{ height: 36, padding: '0 14px', borderRadius: 18, border: 'none', cursor: 'pointer', background: sort === id ? th.gold : th.bgCard, color: sort === id ? '#1a0f00' : th.muted, fontSize: 12, fontWeight: sort === id ? 700 : 400 }}>{label}</button>
+            ))}
+          </div>
+          {whiskies.map((w, i) => (
+            <button key={i} onClick={() => w.id && onBottle(w.id)} data-testid={`whisky-card-${w.id || i}`}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${th.border}`, background: 'none', border: 'none', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: th.border, cursor: 'pointer', textAlign: 'left', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: th.text }}>{w.name || w.whiskeyName}</div>
+                <div style={{ fontSize: 12, color: th.faint }}>{w.distillery}{w.region ? ` · ${w.region}` : ''}</div>
+                {w.tastingCount > 0 && (
+                  <div style={{ fontSize: 11, color: th.phases.palate.accent, marginTop: 2 }}>
+                    {t.entCrossLinkTastings}: {w.tastingCount}
+                  </div>
+                )}
+              </div>
+              {w.avgScore && <span style={{ fontSize: 18, fontWeight: 700, color: th.gold }}>{Math.round(w.avgScore)}</span>}
+              <Icon.ChevronRight color={th.faint} size={14} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'tastings' && (
+        <div>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: SP.xl }}><Icon.Spinner color={th.gold} size={28} /></div>
+          ) : (
+            <>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.historySearchPH} data-testid="input-discovery-tasting-search"
+                style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 15, padding: '10px 14px', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box', marginBottom: SP.sm }} />
+              <div style={{ fontSize: 12, color: th.muted, marginBottom: SP.sm }}>{filteredTastings.length} Tastings</div>
+              {filteredTastings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: SP.xl }}>
+                  <Icon.History color={th.faint} size={36} />
+                  <div style={{ fontSize: 14, color: th.muted, marginTop: SP.sm }}>{search ? (lang === 'de' ? 'Keine Ergebnisse.' : 'No results found.') : (lang === 'de' ? 'Noch keine Tastings.' : 'No tastings yet.')}</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: SP.sm }}>
+                  {filteredTastings.map((tasting, i) => {
+                    const isOwn = tasting._source === 'own'
+                    const isParticipant = isOwn || isMember
+                    return (
+                      <div key={tasting.id || i} data-testid={`tasting-card-${tasting.id || i}`}
+                        style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                          {tasting.tastingNumber && (
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: th.phases.palate.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: th.gold }}>#{tasting.tastingNumber}</span>
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {tasting.name || tasting.title || `Tasting #${tasting.tastingNumber || ''}`}
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12, color: th.muted, marginTop: 3 }}>
+                              {tasting.date && <span>{new Date(tasting.date).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { year: 'numeric', month: 'short' })}</span>}
+                              {tasting.whiskyCount > 0 && <span>{tasting.whiskyCount} {t.entTastingCardWhiskies}</span>}
+                              {tasting.avgScore != null && <span>{t.entTastingCardAvg}: {Math.round(tasting.avgScore)}</span>}
+                            </div>
+                          </div>
+                          {isOwn && (
+                            <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: tasting.status === 'open' ? `${th.green}20` : th.bgCard, color: tasting.status === 'open' ? th.green : th.faint, flexShrink: 0 }}>{tasting.status}</span>
+                          )}
+                        </div>
+                        {!isParticipant && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '6px 10px', background: `${th.gold}10`, borderRadius: 8 }}>
+                            <Icon.Lock color={th.gold} size={12} />
+                            <span style={{ fontSize: 11, color: th.gold, fontWeight: 600 }}>{t.entParticipantsOnly}</span>
+                            <span style={{ fontSize: 11, color: th.muted, marginLeft: 'auto' }}>{t.entAggregatedResults}</span>
+                          </div>
+                        )}
+                        {tasting.whiskies && tasting.whiskies.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <div style={{ fontSize: 11, color: th.faint, marginBottom: 4 }}>{t.entCrossLinkWhiskys}:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {tasting.whiskies.slice(0, 4).map((w: any, wi: number) => (
+                                <button key={wi} onClick={() => w.id && onBottle(w.id)} data-testid={`crosslink-whisky-${w.id || wi}`}
+                                  style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: th.phases.palate.dim, color: th.phases.palate.accent, border: 'none', cursor: w.id ? 'pointer' : 'default' }}>
+                                  {w.name || w.whiskeyName}
+                                </button>
+                              ))}
+                              {tasting.whiskies.length > 4 && <span style={{ fontSize: 11, color: th.faint, padding: '2px 4px' }}>+{tasting.whiskies.length - 4}</span>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'insights' && (
+        <div>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: SP.xl }}><Icon.Spinner color={th.gold} size={28} /></div>
+          ) : !isMember ? (
+            <div style={{ textAlign: 'center', padding: SP.xl }}>
+              <Icon.Lock color={th.faint} size={36} />
+              <div style={{ fontSize: 16, color: th.muted, margin: `${SP.md}px 0` }}>{t.historyGated}</div>
+            </div>
+          ) : (
+            <>
+              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', fontWeight: 400, color: th.muted, margin: `0 0 ${SP.sm}px` }}>{t.entInsightsCommunityStats}</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SP.sm, marginBottom: SP.lg }}>
+                {[
+                  { label: t.entInsightsTotalTastings, value: totalTastings, icon: <Icon.History color={th.gold} size={20} /> },
+                  { label: t.entInsightsTotalWhiskies, value: totalWhiskies || '—', icon: <Icon.Whisky color={th.phases.palate.accent} size={20} /> },
+                  { label: t.entInsightsRegions, value: regionCount || '—', icon: <Icon.Globe color={th.phases.nose.accent} size={20} /> },
+                  { label: t.entInsightsSmoky, value: `${smokyPct}%`, icon: <Icon.Flame color={th.phases.finish.accent} size={20} /> },
+                ].map((s, i) => (
+                  <div key={i} data-testid={`insight-stat-${i}`} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    {s.icon}
+                    <div style={{ fontSize: 24, fontWeight: 700, color: th.gold }}>{s.value}</div>
+                    <div style={{ fontSize: 11, color: th.faint, textAlign: 'center' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {regions.length > 0 && (
+                <div style={{ marginBottom: SP.lg }}>
+                  <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', fontWeight: 400, color: th.muted, margin: `0 0 ${SP.sm}px` }}>{t.entInsightsTopRegions}</h2>
+                  <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
+                    {regions.sort((a, b) => (insights.regionBreakdown[b] || 0) - (insights.regionBreakdown[a] || 0)).slice(0, 8).map((region, i) => {
+                      const count = insights.regionBreakdown[region] || 0
+                      const maxCount = Math.max(...Object.values(insights.regionBreakdown) as number[], 1)
+                      const pct = (count / maxCount) * 100
+                      return (
+                        <div key={region} data-testid={`insight-region-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < Math.min(regions.length, 8) - 1 ? `1px solid ${th.border}` : 'none' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: th.text, width: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{region}</span>
+                          <div style={{ flex: 1, height: 6, borderRadius: 3, background: th.border, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${th.gold}, ${th.amber})` }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: th.gold, minWidth: 28, textAlign: 'right' }}>{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {insights?.topWhiskies && insights.topWhiskies.length > 0 && (
+                <div style={{ marginBottom: SP.lg }}>
+                  <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', fontWeight: 400, color: th.muted, margin: `0 0 ${SP.sm}px` }}>{t.entInsightsTopWhiskys}</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SP.xs }}>
+                    {insights.topWhiskies.slice(0, 5).map((w: any, i: number) => (
+                      <button key={i} onClick={() => w.id && onBottle(w.id)} data-testid={`insight-top-whisky-${i}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 12, padding: '10px 14px', cursor: w.id ? 'pointer' : 'default', textAlign: 'left' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 14, background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#1a0f00', flexShrink: 0 }}>{i + 1}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                          <div style={{ fontSize: 11, color: th.faint }}>{w.distillery}{w.region ? ` · ${w.region}` : ''}</div>
+                        </div>
+                        {w.avgScore && <span style={{ fontSize: 16, fontWeight: 700, color: th.gold }}>{Math.round(w.avgScore)}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginBottom: SP.lg }}>
+                <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontStyle: 'italic', fontWeight: 400, color: th.muted, margin: `0 0 ${SP.sm}px` }}>{t.entInsightsTastingFreq}</h2>
+                <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 60 }}>
+                    {Array.from({ length: 12 }, (_, month) => {
+                      const monthTastings = tastings.filter(t2 => {
+                        const d = new Date(t2.date || t2.createdAt || 0)
+                        return d.getMonth() === month
+                      }).length
+                      const maxM = Math.max(...Array.from({ length: 12 }, (_, m) => tastings.filter(t2 => new Date(t2.date || t2.createdAt || 0).getMonth() === m).length), 1)
+                      return (
+                        <div key={month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <div style={{ width: '100%', background: monthTastings > 0 ? th.gold : th.border, borderRadius: '2px 2px 0 0', height: `${Math.max((monthTastings / maxM) * 100, monthTastings > 0 ? 8 : 2)}%`, minHeight: monthTastings > 0 ? 4 : 1, opacity: monthTastings > 0 ? 0.8 : 0.3 }} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
+                    {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => (
+                      <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: th.faint }}>{m}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── EntdeckenHub ──────────────────────────────────────────────────────────
 const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'en'; onNav: (s: string) => void }> = ({ th, t, lang, onNav }) => {
   const sections = [
     {
-      title: t.entSectionExplore,
+      title: t.entSectionWhiskysTastings,
       items: [
-        { id: 'explore',  icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,      label: t.entExplore,  sub: t.entExploreSub,  phase: 'palate'  as const },
-        { id: 'dest',     icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />, label: t.entDest,     sub: t.entDestSub,     phase: 'overall' as const },
-        { id: 'bottlers', icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,         label: t.entBottlers, sub: t.entBottlersSub, phase: 'nose'    as const },
+        { id: 'discovery', icon: <Icon.Whisky color={th.phases.palate.accent} size={28} />,       label: t.entSectionWhiskysTastings, sub: t.entWhiskysTastingsSub, phase: 'palate' as const },
+        { id: 'dest',      icon: <Icon.Distillery color={th.phases.overall.accent} size={28} />,  label: t.entDest,     sub: t.entDestSub,     phase: 'overall' as const },
+        { id: 'bottlers',  icon: <Icon.Globe color={th.phases.nose.accent} size={28} />,          label: t.entBottlers, sub: t.entBottlersSub, phase: 'nose'    as const },
       ],
     },
     {
@@ -434,7 +707,6 @@ const EntdeckenHub: React.FC<{ th: ThemeTokens; t: Translations; lang: 'de' | 'e
       title: t.entSectionTools,
       items: [
         { id: 'vocab',    icon: <Icon.Edit color={th.phases.finish.accent} size={28} />,        label: t.entVocab,    sub: lang === 'de' ? 'Copy-Paste Tasting-Notizen' : 'Copy-paste tasting notes', phase: 'finish' as const },
-        { id: 'history',  icon: <Icon.History color={th.phases.palate.accent} size={28} />,     label: t.entHistory,  sub: t.entHistorySub,  phase: 'palate'  as const },
         { id: 'makingof', icon: <Icon.History color={th.phases.nose.accent} size={28} />,       label: t.entMakingOf, sub: lang === 'de' ? 'Die Geschichte von CaskSense' : 'The story of CaskSense', phase: 'nose' as const },
       ],
     },
@@ -470,12 +742,13 @@ export const EntdeckenScreen: React.FC<{ th: ThemeTokens; t: Translations; parti
   const [bottleId, setBottleId] = useState<string | null>(null)
   const goBack = () => { setSub(null); setBottleId(null) }
 
+  if (sub === 'discovery' && bottleId) return <BottleDetail th={th} t={t} bottleId={bottleId} participantId={participantId} onBack={() => setBottleId(null)} />
+  if (sub === 'discovery') return <UnifiedDiscovery th={th} t={t} lang={lang} participantId={participantId} onBack={goBack} onBottle={id => setBottleId(id)} />
   if (sub === 'explore' && bottleId) return <BottleDetail th={th} t={t} bottleId={bottleId} participantId={participantId} onBack={() => setBottleId(null)} />
   if (sub === 'explore') return <ExploreWhiskies th={th} t={t} participantId={participantId} onBottle={id => setBottleId(id)} onBack={goBack} />
   if (sub === 'lexikon') return <Lexikon th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'guide')   return <TastingGuide th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'dest')    return <Distilleries th={th} t={t} participantId={participantId} />
-  if (sub === 'history') return <HistoricalArchive th={th} t={t} participantId={participantId} onBack={goBack} />
   if (sub === 'bottlers')  return <BottlersScreen th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'vocab')     return <Vocabulary th={th} t={t} lang={lang} onBack={goBack} />
   if (sub === 'research')  return <DeepDiveHub th={th} t={t} lang={lang} onBack={goBack} />
