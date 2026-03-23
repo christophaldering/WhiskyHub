@@ -74,7 +74,6 @@ export default function LabsOnboarding() {
   const [code, setCode] = useState("");
 
   const completeOnboarding = useCallback((dest: string) => {
-    localStorage.setItem("casksense_onboarded", "true");
     navigate(dest);
   }, [navigate]);
 

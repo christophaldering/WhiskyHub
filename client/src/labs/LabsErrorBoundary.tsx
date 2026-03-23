@@ -128,7 +128,7 @@ export default class LabsErrorBoundary extends Component<Props, State> {
               </button>
             ) : (
               <a
-                href="/labs"
+                href="/labs/tastings"
                 className="labs-btn-ghost"
                 data-testid="labs-error-boundary-home"
               >

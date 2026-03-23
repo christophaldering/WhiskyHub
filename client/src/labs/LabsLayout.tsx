@@ -692,14 +692,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       return;
     }
 
-    const isJoinLink = location.startsWith("/labs/join/") || location === "/labs/join";
-    if (!localStorage.getItem("casksense_onboarded")) {
-      if (isJoinLink) {
-        localStorage.setItem("casksense_onboarded", "true");
-      } else if (location !== "/labs/onboarding") {
-        window.location.replace("/labs/onboarding");
-      }
-    }
   }, [location, needsAuthRedirect]);
 
   const handleButtonHaptic = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -741,7 +733,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           borderBottom: "1px solid var(--labs-border-subtle)",
         }}
       >
-        <Link href="/labs">
+        <Link href="/labs/tastings">
           <span
             className="labs-h3 tracking-tight cursor-pointer"
             style={{ color: "var(--labs-accent)" }}
