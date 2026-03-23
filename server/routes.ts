@@ -16344,5 +16344,239 @@ Rules:
     }
   });
 
+  // ===== HISTORICAL PERSONAL RATINGS =====
+
+  app.get("/api/historical/tastings/:tastingId/personal-ratings", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const ratings = await storage.getHistoricalPersonalRatingsForTasting(participantId, req.params.tastingId);
+      res.json({ ratings });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/entries/:entryId/personal-rating", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const rating = await storage.getHistoricalPersonalRating(req.params.entryId, participantId);
+      res.json({ rating: rating || null });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/historical/entries/:entryId/personal-rating", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const { nose, taste, finish, overall, notes } = req.body;
+      const clampScore = (v: any): number | null => {
+        if (v == null) return null;
+        const n = Number(v);
+        if (!isFinite(n)) return null;
+        return Math.max(0, Math.min(100, Math.round(n)));
+      };
+
+      const rating = await storage.upsertHistoricalPersonalRating({
+        participantId,
+        historicalTastingEntryId: req.params.entryId,
+        nose: clampScore(nose),
+        taste: clampScore(taste),
+        finish: clampScore(finish),
+        overall: clampScore(overall),
+        notes: typeof notes === "string" ? notes.slice(0, 2000) : null,
+      });
+      res.json({ rating });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/historical/entries/personal-ratings/bulk", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const { ratings } = req.body;
+      if (!Array.isArray(ratings) || ratings.length > 50) return res.status(400).json({ message: "ratings must be an array (max 50)" });
+
+      const clampScore = (v: any): number | null => {
+        if (v == null) return null;
+        const n = Number(v);
+        if (!isFinite(n)) return null;
+        return Math.max(0, Math.min(100, Math.round(n)));
+      };
+
+      const results = [];
+      for (const r of ratings) {
+        if (!r.entryId || typeof r.entryId !== "string") continue;
+        const rating = await storage.upsertHistoricalPersonalRating({
+          participantId,
+          historicalTastingEntryId: r.entryId,
+          nose: clampScore(r.nose),
+          taste: clampScore(r.taste),
+          finish: clampScore(r.finish),
+          overall: clampScore(r.overall),
+          notes: typeof r.notes === "string" ? r.notes.slice(0, 2000) : null,
+        });
+        results.push(rating);
+      }
+      res.json({ ratings: results, saved: results.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== RATING CARD SCAN (AI Vision) =====
+
+  app.post("/api/historical/tastings/:tastingId/scan-rating-card", memUpload.single("image"), async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const file = (req as any).file;
+      if (!file) return res.status(400).json({ message: "No image uploaded" });
+
+      const tastingId = req.params.tastingId;
+      const tasting = await storage.getHistoricalTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Historical tasting not found" });
+
+      const entries = tasting.entries || [];
+      const knownWhiskies = entries.map((e, i) => ({
+        position: i + 1,
+        entryId: e.id,
+        distillery: e.distilleryRaw || "",
+        name: e.whiskyNameRaw || "",
+        region: e.regionRaw || "",
+        age: e.ageRaw || "",
+      }));
+
+      const { client, error: aiError } = await getAIClient(participantId, "rating-card-scan");
+      if (!client) {
+        return res.status(aiError === "AI_LIMIT_EXCEEDED" ? 429 : 503).json({
+          message: aiError === "AI_LIMIT_EXCEEDED" ? "AI usage limit exceeded" : "AI service unavailable",
+          code: aiError,
+        });
+      }
+
+      let imageBuffer = file.buffer;
+      const mime = file.mimetype?.toLowerCase() || "";
+      if (mime.includes("heic") || mime.includes("heif") || (file.originalname || "").toLowerCase().endsWith(".heic")) {
+        try {
+          imageBuffer = await sharp(file.buffer).jpeg({ quality: 85 }).toBuffer();
+        } catch {
+          return res.status(400).json({ message: "Could not convert HEIC image" });
+        }
+      }
+
+      const base64 = imageBuffer.toString("base64");
+      const imgMime = mime.includes("png") ? "image/png" : "image/jpeg";
+      const dataUri = `data:${imgMime};base64,${base64}`;
+
+      const whiskiesContext = knownWhiskies.map(w =>
+        `#${w.position}: ${[w.distillery, w.name].filter(Boolean).join(" — ") || "Unknown"} (${[w.region, w.age ? w.age + "y" : ""].filter(Boolean).join(", ")})`
+      ).join("\n");
+
+      const systemPrompt = `You are an expert at reading handwritten whisky tasting rating cards.
+The user photographed a standardized printed rating card with handwritten scores and notes from a whisky tasting session.
+
+The tasting had these whiskies in the lineup:
+${whiskiesContext}
+
+Your task: Extract the ratings from the card. For each whisky on the card, extract:
+- "position": the whisky number/position on the card (integer)
+- "nose": nose score (number 0-100, or null if not readable)
+- "taste": taste/palate score (number 0-100, or null if not readable)
+- "finish": finish score (number 0-100, or null if not readable)
+- "overall": overall score (number 0-100, or null if not readable)
+- "notes": any handwritten notes for that whisky (string, or "" if none)
+- "matchedEntryId": try to match to one of the known whiskies above by position number. Use the entryId from the list.
+- "whiskyLabel": what you can read as the whisky name/number from the card
+
+IMPORTANT SCORING RULES:
+- The rating card may use different scales (e.g. 1-10, 1-5, 1-100). Detect the scale and normalize all scores to 0-100.
+- If the card uses a 10-point scale, multiply by 10. If 5-point, multiply by 20.
+- If scores appear as decimals like 7.5 on a 10-point scale, that becomes 75.
+- The card may have category abbreviations like N (Nose), T (Taste/Tongue), F (Finish), G (Gesamt/Overall).
+
+Return a JSON object with:
+{
+  "whiskies": [ ... array of extracted ratings ... ],
+  "detectedScale": "10" | "5" | "100" | "20" | "other",
+  "confidence": "high" | "medium" | "low",
+  "cardNotes": "any general notes visible on the card"
+}
+
+Be accurate. If you cannot read a value, use null. Match whiskies to the known lineup by position number.`;
+
+      const response = await client.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: 2000,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract all ratings from this tasting rating card." },
+              { type: "image_url", image_url: { url: dataUri, detail: "high" } },
+            ],
+          },
+        ],
+      });
+
+      const raw = response.choices?.[0]?.message?.content || "{}";
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return res.status(500).json({ message: "AI returned invalid response" });
+      }
+
+      const extractedWhiskies = (parsed.whiskies || []).map((w: any) => {
+        let matchedEntry = null;
+        if (w.matchedEntryId) {
+          matchedEntry = entries.find(e => e.id === w.matchedEntryId);
+        }
+        if (!matchedEntry && w.position) {
+          const idx = Number(w.position) - 1;
+          if (idx >= 0 && idx < entries.length) {
+            matchedEntry = entries[idx];
+          }
+        }
+
+        return {
+          position: w.position || null,
+          whiskyLabel: w.whiskyLabel || "",
+          nose: w.nose != null ? Math.round(Number(w.nose)) : null,
+          taste: w.taste != null ? Math.round(Number(w.taste)) : null,
+          finish: w.finish != null ? Math.round(Number(w.finish)) : null,
+          overall: w.overall != null ? Math.round(Number(w.overall)) : null,
+          notes: w.notes || "",
+          matchedEntryId: matchedEntry?.id || null,
+          matchedDistillery: matchedEntry?.distilleryRaw || null,
+          matchedName: matchedEntry?.whiskyNameRaw || null,
+        };
+      });
+
+      console.log(`[RATING-CARD-SCAN] extracted ${extractedWhiskies.length} ratings for tasting ${tastingId} (confidence: ${parsed.confidence})`);
+
+      res.json({
+        whiskies: extractedWhiskies,
+        detectedScale: parsed.detectedScale || "unknown",
+        confidence: parsed.confidence || "low",
+        cardNotes: parsed.cardNotes || "",
+        tastingId,
+      });
+    } catch (e: any) {
+      console.error("[RATING-CARD-SCAN] error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

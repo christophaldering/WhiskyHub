@@ -72,6 +72,8 @@ import {
   bottleSplitClaims,
   type InsertBottleSplit, type BottleSplit,
   type InsertBottleSplitClaim, type BottleSplitClaim,
+  historicalPersonalRatings,
+  type InsertHistoricalPersonalRating, type HistoricalPersonalRating,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -464,6 +466,7 @@ export interface IStorage {
   // Historical Personal Ratings
   upsertHistoricalPersonalRating(data: InsertHistoricalPersonalRating): Promise<HistoricalPersonalRating>;
   getHistoricalPersonalRatings(historicalTastingId: string, participantId: string): Promise<HistoricalPersonalRating[]>;
+  getHistoricalPersonalRatingsForTasting(participantId: string, tastingId: string): Promise<HistoricalPersonalRating[]>;
   getHistoricalPersonalRating(entryId: string, participantId: string): Promise<HistoricalPersonalRating | undefined>;
 
   // Connoisseur Reports
@@ -3341,6 +3344,19 @@ export class DatabaseStorage implements IStorage {
         sql`${historicalPersonalRatings.historicalTastingEntryId} IN (
           SELECT id FROM historical_tasting_entries WHERE historical_tasting_id = ${historicalTastingId}
         )`
+      ));
+  }
+
+  async getHistoricalPersonalRatingsForTasting(participantId: string, tastingId: string): Promise<HistoricalPersonalRating[]> {
+    const entries = await db.select({ id: historicalTastingEntries.id })
+      .from(historicalTastingEntries)
+      .where(eq(historicalTastingEntries.historicalTastingId, tastingId));
+    if (entries.length === 0) return [];
+    const entryIds = entries.map(e => e.id);
+    return db.select().from(historicalPersonalRatings)
+      .where(and(
+        eq(historicalPersonalRatings.participantId, participantId),
+        inArray(historicalPersonalRatings.historicalTastingEntryId, entryIds),
       ));
   }
 

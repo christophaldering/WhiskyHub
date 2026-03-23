@@ -6,9 +6,10 @@ import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
   Trophy, Wine, Calendar, Flame,
-  Sparkles, BarChart3, RefreshCw, Lock, ChevronLeft,
+  Sparkles, BarChart3, RefreshCw, Lock, ChevronLeft, Camera,
   UserCheck, Users, Star, Save, Check,
 } from "lucide-react";
+import LabsRatingCardScan from "./LabsRatingCardScan";
 
 interface HistoricalEntry {
   id: string;
@@ -356,6 +357,7 @@ export default function LabsHistoricalDetail() {
   const pid = getParticipantId();
   const queryClient = useQueryClient();
   const [showRatings, setShowRatings] = useState<Set<string>>(new Set());
+  const [showScanner, setShowScanner] = useState(false);
 
   const toggleRating = useCallback((entryId: string) => {
     setShowRatings(prev => {
@@ -443,6 +445,19 @@ export default function LabsHistoricalDetail() {
   Object.entries(rankCounts).forEach(([rank, count]) => {
     if (count > 1) tiedRanks.add(Number(rank));
   });
+
+  if (showScanner && tastingId && pid) {
+    return (
+      <LabsRatingCardScan
+        tastingId={tastingId}
+        participantId={pid}
+        onClose={() => setShowScanner(false)}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["historical-personal-ratings", tastingId] });
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }} data-testid="labs-historical-detail">
@@ -618,10 +633,21 @@ export default function LabsHistoricalDetail() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <Sparkles size={14} style={{ color: "var(--labs-accent)" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", flex: 1 }}>
               {t("m2.historicalDetail.lineup", "Lineup")}
+              <span style={{ fontSize: 12, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 6 }}>({sorted.length})</span>
             </span>
-            <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>({sorted.length})</span>
+            {pid && (
+              <button
+                onClick={() => setShowScanner(true)}
+                className="labs-btn-secondary"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12 }}
+                data-testid="button-scan-rating-card"
+              >
+                <Camera size={14} />
+                {t("m2.ratingCard.scanButton", "Scan Card")}
+              </button>
+            )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
