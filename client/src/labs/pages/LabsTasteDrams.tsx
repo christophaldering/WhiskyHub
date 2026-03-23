@@ -12,6 +12,7 @@ import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
+  ArrowUp, ArrowDown,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 
@@ -20,6 +21,7 @@ type ViewState = "list" | "detail" | "edit";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 type SortBy = "date" | "score" | "name" | "saved";
+type SortDirection = "asc" | "desc";
 
 const FILTERS: { key: FilterValue; label: string }[] = [
   { key: "all", label: "All" },
@@ -79,7 +81,9 @@ export default function LabsTasteDrams() {
   const [filterRegion, setFilterRegion] = useState("all");
   const [filterCaskType, setFilterCaskType] = useState("all");
   const [scoreRange, setScoreRange] = useState<ScoreRange>("all");
-  const [sortBy, setSortBy] = useState<SortBy>("date");
+  const [sortBy, setSortBy] = useState<SortBy>("saved");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -135,11 +139,11 @@ export default function LabsTasteDrams() {
   const uniqueCaskTypes = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.caskType).filter(Boolean))).sort(), [allItems]);
 
   const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all";
-  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "date";
+  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "saved" || sortDirection !== "desc";
 
   const resetAllFilters = () => {
     setActiveFilter("all"); setDatePeriod("all"); setSearch("");
-    setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("date");
+    setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
   };
 
   const filteredEntries = useMemo(() => {
@@ -174,6 +178,7 @@ export default function LabsTasteDrams() {
         return s < 70;
       });
     }
+    const dir = sortDirection === "asc" ? 1 : -1;
     items.sort((a: any, b: any) => {
       const da = a.status === "draft" ? 0 : 1;
       const db = b.status === "draft" ? 0 : 1;
@@ -181,22 +186,22 @@ export default function LabsTasteDrams() {
       if (sortBy === "score") {
         const sa = a.personalScore ?? -1;
         const sb = b.personalScore ?? -1;
-        return sb - sa;
+        return (sa - sb) * dir;
       }
       if (sortBy === "name") {
         const na = (a.whiskyName || a.title || "").toLowerCase();
         const nb = (b.whiskyName || b.title || "").toLowerCase();
-        return na.localeCompare(nb);
+        return na.localeCompare(nb) * dir;
       }
       if (sortBy === "saved") {
         const sa = a.source === "tasting" ? (a.savedAt ? new Date(a.savedAt).getTime() : 0) : (a.updatedAt ? new Date(a.updatedAt).getTime() : a.createdAt ? new Date(a.createdAt).getTime() : 0);
         const sb = b.source === "tasting" ? (b.savedAt ? new Date(b.savedAt).getTime() : 0) : (b.updatedAt ? new Date(b.updatedAt).getTime() : b.createdAt ? new Date(b.createdAt).getTime() : 0);
-        return sb - sa;
+        return (sa - sb) * dir;
       }
-      return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      return ((a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0)) * dir;
     });
     return items;
-  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy]);
+  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy, sortDirection]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
@@ -525,19 +530,65 @@ export default function LabsTasteDrams() {
             ))}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 10, WebkitOverflowScrolling: "touch" }}>
-            {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
-              <button key={sr} onClick={() => setScoreRange(sr)}
-                className={`labs-chip ${scoreRange === sr ? "labs-chip-active" : ""}`}
-                style={{ fontSize: 12, padding: "5px 12px" }}
-                data-testid={`labs-score-${sr}`}>{sr === "all" ? "Score" : sr}</button>
-            ))}
-            {(["date", "score", "name", "saved"] as SortBy[]).map(sk => (
-              <button key={sk} onClick={() => setSortBy(sk)}
-                className={`labs-chip ${sortBy === sk ? "labs-chip-active" : ""}`}
-                style={{ fontSize: 12, padding: "5px 12px" }}
-                data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : sk === "name" ? "Name" : "Saved"}</button>
-            ))}
+          <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Score</span>
+            <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
+              {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
+                <button key={sr} onClick={() => setScoreRange(sr)}
+                  className={`labs-chip ${scoreRange === sr ? "labs-chip-active" : ""}`}
+                  style={{ fontSize: 12, padding: "5px 12px" }}
+                  data-testid={`labs-score-${sr}`}>{sr === "all" ? "All" : sr}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
+            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Sort</span>
+            <div className="relative" style={{ flex: "0 0 auto" }}>
+              <button
+                onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                className="labs-chip labs-chip-active flex items-center gap-1.5"
+                style={{ fontSize: 12, padding: "5px 12px", minWidth: 120 }}
+                data-testid="button-sort-dropdown"
+              >
+                {sortBy === "saved" ? "Last saved" : sortBy === "date" ? "Date created" : sortBy === "score" ? "Score" : "Name"}
+                <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto", transition: "transform 0.2s", transform: sortDropdownOpen ? "rotate(180deg)" : "rotate(0)" }} />
+              </button>
+              {sortDropdownOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 50, minWidth: 160, background: "var(--labs-card-bg, #1a1a2e)", border: "1px solid var(--labs-border, #2a2a4a)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
+                    {([
+                      { key: "saved" as SortBy, label: "Last saved" },
+                      { key: "date" as SortBy, label: "Date created" },
+                      { key: "score" as SortBy, label: "Score" },
+                      { key: "name" as SortBy, label: "Name" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => { setSortBy(opt.key); setSortDropdownOpen(false); }}
+                        className="w-full text-left flex items-center gap-2"
+                        style={{ fontSize: 13, padding: "8px 12px", borderRadius: 8, color: sortBy === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortBy === opt.key ? "rgba(245,158,11,0.1)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+                        data-testid={`sort-option-${opt.key}`}
+                      >
+                        {sortBy === opt.key && <Check className="w-3.5 h-3.5" />}
+                        <span style={{ marginLeft: sortBy === opt.key ? 0 : 18 }}>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={() => setSortDirection(d => d === "desc" ? "asc" : "desc")}
+              className="labs-chip flex items-center gap-1"
+              style={{ fontSize: 12, padding: "5px 10px" }}
+              title={sortDirection === "desc" ? "Descending — click to switch" : "Ascending — click to switch"}
+              data-testid="button-sort-direction"
+            >
+              {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
+              <span style={{ fontSize: 11 }}>{sortDirection === "desc" ? "DESC" : "ASC"}</span>
+            </button>
           </div>
 
           <div className="flex gap-2 mb-3 flex-wrap">
