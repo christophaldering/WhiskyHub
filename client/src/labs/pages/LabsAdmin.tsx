@@ -42,6 +42,13 @@ const ADMIN_GROUPS = [
     tabs: [
       { id: "tastings",     label: "Tastings" },
       { id: "historical",   label: "Archiv-Import" },
+    ],
+  },
+  {
+    id: "communities-group",
+    label: "Communities",
+    icon: Globe,
+    tabs: [
       { id: "communities",  label: "Communities" },
     ],
   },
@@ -1632,6 +1639,13 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
   const [memberSelectedId, setMemberSelectedId] = useState<string | null>(null);
   const [memberRole, setMemberRole] = useState("member");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [editDescriptionValue, setEditDescriptionValue] = useState("");
 
   const { data: communities = [], isLoading } = useQuery<Array<Record<string, unknown>>>({
     queryKey: ["/admin/communities", pid],
@@ -1647,7 +1661,14 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => { const res = await fetch(`/api/admin/communities/${id}`, { method: "PUT", headers: { "x-participant-id": pid, "Content-Type": "application/json" }, body: JSON.stringify(updates) }); if (!res.ok) throw new Error(await res.text()); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); toast({ title: "Community updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setEditingName(false); setEditingDescription(false); toast({ title: "Community updated" }); },
+    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async ({ name, description }: { name: string; description: string }) => { const res = await fetch("/api/admin/communities", { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" }, body: JSON.stringify({ name, description: description || undefined }) }); if (!res.ok) { const err = await res.json().catch(() => ({ message: "Failed" })); throw new Error(err.message); } return res.json(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setShowCreateForm(false); setCreateName(""); setCreateDescription(""); toast({ title: "Community created" }); },
+    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
   const addMemberMutation = useMutation({
@@ -1675,8 +1696,38 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
           <ChevronRight className="w-3.5 h-3.5" style={{ transform: "rotate(180deg)" }} /> Back to Communities
         </button>
         <div className="labs-card p-4 mb-3">
-          <div className="flex items-center gap-2 mb-3"><Globe className="w-5 h-5" style={{ color: "var(--labs-accent)" }} /><div><div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{String(detail.name ?? "")}</div><div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{String(detail.slug ?? "")}</div></div></div>
-          {detail.description && <div className="text-xs mb-3" style={{ color: "var(--labs-text-secondary)" }}>{String(detail.description)}</div>}
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            <div className="flex-1 min-w-0">
+              {editingName ? (
+                <div className="flex items-center gap-1.5">
+                  <input type="text" value={editNameValue} onChange={e => setEditNameValue(e.target.value)} autoFocus style={{ ...labsInput, fontSize: 14, fontWeight: 700, padding: "2px 6px" }} data-testid="labs-admin-edit-community-name-input" onKeyDown={e => { if (e.key === "Enter" && editNameValue.trim()) updateMutation.mutate({ id: detail.id as string, updates: { name: editNameValue.trim() } }); if (e.key === "Escape") setEditingName(false); }} />
+                  <button onClick={() => { if (editNameValue.trim()) updateMutation.mutate({ id: detail.id as string, updates: { name: editNameValue.trim() } }); }} disabled={!editNameValue.trim() || updateMutation.isPending} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-save-community-name"><CheckCircle className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /></button>
+                  <button onClick={() => setEditingName(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-cancel-community-name"><X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /></button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{String(detail.name ?? "")}</div>
+                  <button onClick={() => { setEditNameValue(String(detail.name ?? "")); setEditingName(true); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-edit-community-name"><Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /></button>
+                </div>
+              )}
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{String(detail.slug ?? "")}</div>
+            </div>
+          </div>
+          {editingDescription ? (
+            <div className="flex items-start gap-1.5">
+              <textarea value={editDescriptionValue} onChange={e => setEditDescriptionValue(e.target.value)} autoFocus rows={3} style={{ ...labsInput, fontSize: 12, padding: "4px 8px", resize: "vertical", flex: 1 }} data-testid="labs-admin-edit-community-description-input" onKeyDown={e => { if (e.key === "Escape") setEditingDescription(false); }} />
+              <div className="flex flex-col gap-1">
+                <button onClick={() => updateMutation.mutate({ id: detail.id as string, updates: { description: editDescriptionValue.trim() } })} disabled={updateMutation.isPending} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-save-community-description"><CheckCircle className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /></button>
+                <button onClick={() => setEditingDescription(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-cancel-community-description"><X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <div className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>{detail.description ? String(detail.description) : <span style={{ fontStyle: "italic", color: "var(--labs-text-muted)" }}>Keine Beschreibung</span>}</div>
+              <button onClick={() => { setEditDescriptionValue(String(detail.description ?? "")); setEditingDescription(true); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-edit-community-description"><Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /></button>
+            </div>
+          )}
         </div>
         <div className="labs-card p-4 mb-3">
           <div className="flex items-center gap-1.5 mb-3"><Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Members</span><span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>({members.length})</span></div>
@@ -1733,17 +1784,40 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
     <div data-testid="labs-admin-communities-tab">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2"><Globe className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Communities</span><span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({communities.length})</span></div>
-        <button onClick={() => { if (confirm("Run community seed?")) seedMutation.mutate(); }} disabled={seedMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)", cursor: seedMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-seed-communities">
-          {seedMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />} Seed
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-create-community-btn">
+            <Plus className="w-3 h-3" /> Neue Community
+          </button>
+          <button onClick={() => { if (confirm("Run community seed?")) seedMutation.mutate(); }} disabled={seedMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)", cursor: seedMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-seed-communities">
+            {seedMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />} Seed
+          </button>
+        </div>
       </div>
-      {communities.length === 0 ? (
+      {showCreateForm && (
+        <div className="labs-card p-4 mb-4" data-testid="labs-admin-create-community-form">
+          <div className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Neue Community anlegen</div>
+          <div className="space-y-2 mb-3">
+            <input type="text" value={createName} onChange={e => setCreateName(e.target.value)} placeholder="Community-Name" style={{ ...labsInput, fontSize: 12 }} data-testid="labs-admin-create-community-name" />
+            {createName.trim() && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Slug: {createName.trim().toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}</div>}
+            <textarea value={createDescription} onChange={e => setCreateDescription(e.target.value)} placeholder="Beschreibung (optional)" rows={2} style={{ ...labsInput, fontSize: 12, resize: "vertical" }} data-testid="labs-admin-create-community-description" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { if (createName.trim()) createMutation.mutate({ name: createName.trim(), description: createDescription.trim() }); }} disabled={!createName.trim() || createMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: !createName.trim() ? "not-allowed" : "pointer", opacity: !createName.trim() ? 0.5 : 1 }} data-testid="labs-admin-create-community-submit">
+              {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Anlegen
+            </button>
+            <button onClick={() => { setShowCreateForm(false); setCreateName(""); setCreateDescription(""); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)", cursor: "pointer" }} data-testid="labs-admin-create-community-cancel">
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+      {communities.length === 0 && !showCreateForm ? (
         <div className="text-center py-12" style={{ color: "var(--labs-text-muted)" }}>
           <Globe className="w-8 h-8 mx-auto mb-3 opacity-30" />
           <div className="text-sm font-medium mb-1">No communities yet</div>
-          <div className="text-xs">Use the Seed button to create the initial community.</div>
+          <div className="text-xs">Use the "Neue Community" button or Seed to get started.</div>
         </div>
-      ) : (
+      ) : communities.length > 0 ? (
         <div className="space-y-2">
           {communities.map((c) => (
             <button key={c.id as string} onClick={() => setSelectedId(c.id as string)} className="w-full labs-card p-3.5 flex items-center justify-between text-left" style={{ cursor: "pointer" }} data-testid={`labs-admin-community-${c.id}`}>
@@ -1758,7 +1832,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
             </button>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

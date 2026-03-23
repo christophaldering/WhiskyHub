@@ -13051,6 +13051,39 @@ Important rules:
     }
   });
 
+  app.post("/api/admin/communities", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const createSchema = z.object({
+        name: z.string().trim().min(1).max(100),
+        description: z.string().trim().max(500).optional(),
+      });
+      const parsed = createSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      const slug = parsed.data.name.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (!slug) return res.status(400).json({ message: "Name must contain at least one alphanumeric character" });
+      const existing = await storage.getCommunityBySlug(slug);
+      if (existing) return res.status(409).json({ message: "A community with a similar name already exists" });
+
+      const community = await storage.createCommunity({
+        name: parsed.data.name,
+        description: parsed.data.description || null,
+        slug,
+        archiveVisibility: "community_only",
+        publicAggregatedEnabled: true,
+      });
+
+      res.json(community);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== COMMUNITY SEED (T003) =====
 
   app.post("/api/admin/communities/seed", async (req: Request, res: Response) => {
