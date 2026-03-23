@@ -167,8 +167,8 @@ export default function LabsCommunityDetail() {
   const friends = Array.isArray(friendsData) ? friendsData : [];
   const memberIds = new Set(members.map((m: any) => m.participantId));
   const invitableFriends = friends.filter((f: any) => {
-    const fPid = f.participantId || f.friendParticipantId;
-    return fPid && !memberIds.has(fPid);
+    if (f.matchedParticipantId && memberIds.has(f.matchedParticipantId)) return false;
+    return true;
   });
 
   return (
@@ -326,19 +326,40 @@ export default function LabsCommunityDetail() {
                     </p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {invitableFriends.map((f: any) => {
-                        const fPid = f.participantId || f.friendParticipantId;
+                      {invitableFriends.map((f: any, idx: number) => {
+                        const fPid = f.matchedParticipantId;
+                        const friendKey = fPid || f.email || `friend-${idx}`;
+                        const handleInvite = async () => {
+                          if (fPid) {
+                            handleInviteFriend(fPid);
+                          } else if (f.email) {
+                            setInviting(true);
+                            setInviteError("");
+                            setInviteSuccess("");
+                            try {
+                              await communityApi.invite(communityId!, {
+                                email: f.email,
+                                personalNote: inviteNote.trim() || undefined,
+                              });
+                              setInviteSuccess("Invitation sent!");
+                            } catch (e: any) {
+                              setInviteError(e.message || "Failed to send invite");
+                            } finally {
+                              setInviting(false);
+                            }
+                          }
+                        };
                         return (
-                          <div key={fPid} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[var(--labs-surface)]">
+                          <div key={friendKey} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[var(--labs-surface)]">
                             <span className="text-sm" style={{ color: "var(--labs-text)" }}>
                               {stripGuestSuffix(f.name || f.firstName + " " + (f.lastName || ""))}
                             </span>
                             <button
-                              onClick={() => handleInviteFriend(fPid)}
+                              onClick={handleInvite}
                               disabled={inviting}
                               className="text-xs px-2.5 py-1 rounded-full font-semibold"
                               style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", cursor: "pointer" }}
-                              data-testid={`btn-invite-friend-${fPid}`}
+                              data-testid={`btn-invite-friend-${friendKey}`}
                             >
                               Invite
                             </button>
