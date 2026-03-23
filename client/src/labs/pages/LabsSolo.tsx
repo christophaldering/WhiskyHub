@@ -89,6 +89,8 @@ export default function LabsSolo() {
   const [participantError, setParticipantError] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [initToken, setInitToken] = useState(0);
+  const [fromCollection, setFromCollection] = useState(false);
+  const [addToCollection, setAddToCollection] = useState(true);
 
   const initParticipant = useCallback(() => {
     const token = Date.now();
@@ -119,21 +121,28 @@ export default function LabsSolo() {
 
   const handleCaptured = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
+    setFromCollection(false);
+    setAddToCollection(true);
     setStep("form");
   }, []);
 
   const handleManual = useCallback(() => {
     setWhisky(null);
+    setFromCollection(false);
+    setAddToCollection(true);
     setStep("form");
   }, []);
 
   const handleBarcode = useCallback((barcode: string) => {
     setWhisky({ name: barcode, distillery: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode });
+    setFromCollection(false);
+    setAddToCollection(true);
     setStep("form");
   }, []);
 
   const handleCollectionSelect = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
+    setFromCollection(true);
     setStep("rating");
   }, []);
 
@@ -199,12 +208,40 @@ export default function LabsSolo() {
     }
   }, [ratingResult, handleRatingDone]);
 
+  const saveToCollectionIfNeeded = useCallback(() => {
+    if (addToCollection && !fromCollection && isUserAuthenticated() && whisky?.name && participantId) {
+      fetch(`/api/collection/${participantId}/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-participant-id": participantId,
+        },
+        body: JSON.stringify({
+          name: whisky.name,
+          distillery: whisky.distillery || "",
+          statedAge: whisky.age || "",
+          abv: whisky.abv || "",
+          caskType: whisky.cask || "",
+          status: "open",
+        }),
+      }).catch(() => {});
+    }
+  }, [addToCollection, fromCollection, whisky, participantId]);
+
   const handleAnother = useCallback(() => {
+    saveToCollectionIfNeeded();
     setWhisky(null);
     setRatingResult(null);
     setSaveError(false);
+    setFromCollection(false);
+    setAddToCollection(true);
     setStep("capture");
-  }, []);
+  }, [saveToCollectionIfNeeded]);
+
+  const handleHub = useCallback(() => {
+    saveToCollectionIfNeeded();
+    goBack();
+  }, [saveToCollectionIfNeeded, goBack]);
 
   let content: React.ReactNode = null;
 
@@ -308,12 +345,16 @@ export default function LabsSolo() {
       </div>
     );
   } else if (step === "done" && ratingResult) {
+    const authenticated = isUserAuthenticated();
     content = (
       <SoloDoneScreen
         whiskyName={whisky?.name || t("v2.ratingDram", "Dram")}
         score={ratingResult.scores.overall}
         onAnother={handleAnother}
-        onHub={goBack}
+        onHub={handleHub}
+        showAddToCollection={authenticated && !fromCollection}
+        addToCollection={addToCollection}
+        onToggleAddToCollection={setAddToCollection}
       />
     );
   }

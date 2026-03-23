@@ -6,9 +6,12 @@ interface Props {
   score: number;
   onAnother: () => void;
   onHub: () => void;
+  showAddToCollection?: boolean;
+  addToCollection?: boolean;
+  onToggleAddToCollection?: (val: boolean) => void;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, addToCollection, onToggleAddToCollection }: Props) {
   const { t } = useTranslation();
 
   const scoreBand =
@@ -65,6 +68,59 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub }: 
         }} data-testid="solo-done-saved">
           {t("v2.solo.saved", "Saved to diary")}
         </p>
+
+        {showAddToCollection && (
+          <div
+            data-testid="solo-add-to-collection-toggle"
+            onClick={() => onToggleAddToCollection?.(!addToCollection)}
+            role="switch"
+            aria-checked={addToCollection}
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onToggleAddToCollection?.(!addToCollection); } }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "12px 0",
+              borderTop: "0.5px solid var(--labs-border, rgba(255,255,255,0.1))",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            <span style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 14,
+              color: "var(--labs-text)",
+            }}>
+              {t("v2.solo.addToCollection", "Add to my collection")}
+            </span>
+            <div
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                background: addToCollection ? "var(--labs-accent)" : "var(--labs-surface-alt, rgba(255,255,255,0.15))",
+                position: "relative",
+                transition: "background 0.2s ease",
+                flexShrink: 0,
+              }}
+            >
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                background: "#fff",
+                position: "absolute",
+                top: 2,
+                left: addToCollection ? 22 : 2,
+                transition: "left 0.2s ease",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
