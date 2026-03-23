@@ -1089,7 +1089,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       <OfflineBanner />
 
-      <main ref={mainRef} className="pb-20 min-h-[calc(100dvh-52px)]">
+      <main ref={mainRef} className="pb-24 min-h-[calc(100dvh-52px)]">
         <LabsErrorBoundary>
           {children}
         </LabsErrorBoundary>
@@ -1103,8 +1103,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             borderTop: "0.5px solid var(--labs-border, rgba(255,255,255,0.1))",
-            paddingTop: 4,
-            paddingBottom: "env(safe-area-inset-bottom, 8px)",
+            paddingTop: 8,
+            paddingBottom: "max(12px, env(safe-area-inset-bottom))",
           }}
         >
           {navItems.map((item) => {
@@ -1169,7 +1169,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                   </div>
                   <span
                     style={{
-                      fontSize: "10px",
+                      fontSize: "11px",
                       fontWeight: isActive ? 500 : 400,
                       letterSpacing: "0.02em",
                       lineHeight: 1,
