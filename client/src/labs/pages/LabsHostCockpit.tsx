@@ -16,6 +16,7 @@ import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel"
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
+import { signalRatingQueued } from "@/labs/components/OfflineBanner";
 import { useToast } from "@/hooks/use-toast";
 
 const POLL_FAST = 15000;
@@ -316,7 +317,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const ratingUpsertMut = useMutation({
     mutationFn: (data: Record<string, unknown>) => ratingApi.upsert(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] }),
+    onSuccess: (result: Record<string, unknown>) => {
+      if (result && typeof result === "object" && "queued" in result && result.queued) signalRatingQueued();
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+    },
   });
 
   useTastingEvents({

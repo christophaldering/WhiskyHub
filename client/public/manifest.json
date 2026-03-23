@@ -2,7 +2,7 @@
   "name": "CaskSense",
   "short_name": "CaskSense",
   "description": "Strukturierte Whisky-Tastings — überall, auch offline.",
-  "start_url": "/labs-v2",
+  "start_url": "/labs",
   "display": "standalone",
   "background_color": "#0e0b05",
   "theme_color": "#0e0b05",

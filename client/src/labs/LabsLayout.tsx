@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/ProfileMenu";
 import { LoginDialog } from "@/components/login-dialog";
 import LabsErrorBoundary from "./LabsErrorBoundary";
+import OfflineBanner from "./components/OfflineBanner";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
 import { saveScrollPosition, getScrollPosition, consumeBackNavigation, markBackNavigation } from "@/lib/navStack";
@@ -997,6 +998,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           </div>
         </div>
       )}
+
+      <OfflineBanner />
 
       <main ref={mainRef} className="pb-20 min-h-[calc(100dvh-52px)]">
         <LabsErrorBoundary>

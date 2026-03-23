@@ -1,6 +1,6 @@
-const SHELL_CACHE = 'casksense-v2-shell-v1';
+const SHELL_CACHE = 'casksense-shell-v2';
 const OFFLINE_QUEUE = 'casksense-offline-queue';
-const SHELL_URLS = ['/', '/labs-v2', '/manifest.json'];
+const SHELL_URLS = ['/', '/labs', '/labs-v2', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -25,7 +25,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (request.method === 'POST' && url.pathname === '/api/ratings') {
+  if ((request.method === 'POST' || request.method === 'PATCH') && (
+    url.pathname === '/api/ratings' ||
+    url.pathname.match(/^\/api\/journal\/[^/]+$/) ||
+    url.pathname.match(/^\/api\/journal\/[^/]+\/[^/]+$/) ||
+    url.pathname.match(/^\/api\/tastings\/[^/]+\/ratings$/)
+  )) {
     event.respondWith(handleRatingPost(request));
     return;
   }
@@ -54,6 +59,7 @@ async function handleRatingPost(request) {
       headers: {
         'Content-Type': 'application/json',
         'X-Original-URL': request.url,
+        'X-Original-Method': request.method,
         'X-Participant-Id': participantId,
         'X-Queued-At': new Date().toISOString(),
       },
@@ -92,6 +98,7 @@ async function flushQueue() {
     if (!cached) continue;
     const body = await cached.text();
     const originalURL = cached.headers.get('X-Original-URL') || '/api/ratings';
+    const originalMethod = cached.headers.get('X-Original-Method') || 'POST';
     const participantId = cached.headers.get('X-Participant-Id') || '';
     const headers = { 'Content-Type': 'application/json' };
     if (participantId) {
@@ -99,7 +106,7 @@ async function flushQueue() {
     }
     try {
       const res = await fetch(originalURL, {
-        method: 'POST',
+        method: originalMethod,
         headers,
         body,
       });

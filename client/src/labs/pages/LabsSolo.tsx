@@ -17,6 +17,9 @@ import RatingFlow from "@/labs/components/RatingFlow";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
+import BottleRecognitionFeedback from "@/labs/components/BottleRecognitionFeedback";
+import type { BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
+import { signalRatingQueued } from "@/labs/components/OfflineBanner";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 const VOICE_MEMOS_ENABLED = false;
@@ -173,7 +176,9 @@ export default function LabsSolo() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
-  const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "ratingFlow" | "editor">("hub");
+  const [soloView, setSoloView] = useState<"hub" | "capture" | "quickRate" | "ratingFlow" | "editor" | "feedback">("hub");
+  const [pendingFeedbackResult, setPendingFeedbackResult] = useState<BottleRecognitionResult | null>(null);
+  const [pendingFeedbackCandidate, setPendingFeedbackCandidate] = useState<Candidate | null>(null);
   const [ratingFlowStep, setRatingFlowStep] = useState(0);
   const [interruptedFlowDraft, setInterruptedFlowDraft] = useState<any>(null);
   const [captureSource, setCaptureSource] = useState<"hub" | "editor">("hub");
@@ -874,9 +879,19 @@ export default function LabsSolo() {
       setLastResult(bestResult);
       setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
       if (cands.length === 1 && cands[0].confidence >= 0.78) {
-        handleSelectCandidate(cands[0]);
-        setRatingFlowStep(0);
-        setSoloView("ratingFlow");
+        const c = cands[0];
+        setPendingFeedbackResult({
+          whiskyName: c.name,
+          distillery: c.distillery,
+          region: c.region || "",
+          caskType: c.caskType || "",
+          age: c.age || "",
+          abv: c.abv || "",
+          confidence: Math.round((c.confidence || 0) * 100),
+        });
+        setPendingFeedbackCandidate(c);
+        setSheetView("none");
+        setSoloView("feedback");
       } else {
         setSheetView("candidates");
       }
@@ -976,9 +991,19 @@ export default function LabsSolo() {
       setLastResult(data);
       setOnlineQuery(data.debug?.ocrText || query);
       if (cands2.length === 1 && cands2[0].confidence >= 0.78) {
-        handleSelectCandidate(cands2[0]);
-        setRatingFlowStep(0);
-        setSoloView("ratingFlow");
+        const c2 = cands2[0];
+        setPendingFeedbackResult({
+          whiskyName: c2.name,
+          distillery: c2.distillery,
+          region: c2.region || "",
+          caskType: c2.caskType || "",
+          age: c2.age || "",
+          abv: c2.abv || "",
+          confidence: Math.round((c2.confidence || 0) * 100),
+        });
+        setPendingFeedbackCandidate(c2);
+        setSheetView("none");
+        setSoloView("feedback");
       } else {
         setSheetView("candidates");
       }
@@ -1476,6 +1501,41 @@ export default function LabsSolo() {
     </div>
   );
 
+  if (soloView === "feedback" && pendingFeedbackResult) {
+    return (
+      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-solo-feedback">
+        <BottleRecognitionFeedback
+          result={pendingFeedbackResult}
+          participantId={pid || ""}
+          onConfirm={(data) => {
+            const cand = pendingFeedbackCandidate;
+            if (cand) {
+              const updatedCand: Candidate = {
+                ...cand,
+                name: data.whiskyName || cand.name,
+                distillery: data.distillery || cand.distillery,
+                region: data.region || cand.region,
+                caskType: data.caskType || cand.caskType,
+                age: data.age || cand.age,
+                abv: data.abv || cand.abv,
+              };
+              handleSelectCandidate(updatedCand);
+            }
+            setPendingFeedbackResult(null);
+            setPendingFeedbackCandidate(null);
+            setRatingFlowStep(0);
+            setSoloView("ratingFlow");
+          }}
+          onDismiss={() => {
+            setPendingFeedbackResult(null);
+            setPendingFeedbackCandidate(null);
+            setSoloView("capture");
+          }}
+        />
+      </div>
+    );
+  }
+
   if (soloView === "capture") {
     return (
       <div className="labs-fade-in" style={{ padding: "32px 20px 80px", maxWidth: 440, margin: "0 auto" }} data-testid="labs-solo-capture">
@@ -1771,6 +1831,8 @@ export default function LabsSolo() {
             body: JSON.stringify(body),
           });
           if (!res.ok) throw new Error("Save failed");
+          const resData = await res.json().catch(() => ({}));
+          if (resData.queued) signalRatingQueued();
         } else {
           const res = await fetch(`/api/journal/${pid}`, {
             method: "POST",
@@ -1779,7 +1841,8 @@ export default function LabsSolo() {
           });
           if (!res.ok) throw new Error("Save failed");
           const created = await res.json();
-          setDraftEntryId(created.id);
+          if (created.queued) signalRatingQueued();
+          else setDraftEntryId(created.id);
         }
         queryClient.invalidateQueries({ queryKey: ["journal"] });
         setDraftStatus("finalized");
