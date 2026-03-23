@@ -198,10 +198,10 @@ export default function LabsCommunityDetail() {
               data-testid="input-edit-description"
             />
             <div className="flex gap-2">
-              <button onClick={saveEdits} className="labs-btn flex items-center gap-1 text-xs" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)" }} data-testid="btn-save-edit">
-                <Save className="w-3 h-3" /> Save
+              <button onClick={saveEdits} className="labs-btn-primary flex items-center gap-1" data-testid="btn-save-edit">
+                <Save className="w-4 h-4" /> Save
               </button>
-              <button onClick={() => setEditing(false)} className="labs-btn-ghost text-xs" data-testid="btn-cancel-edit">Cancel</button>
+              <button onClick={() => setEditing(false)} className="labs-btn-ghost" data-testid="btn-cancel-edit">Cancel</button>
             </div>
           </div>
         ) : (
