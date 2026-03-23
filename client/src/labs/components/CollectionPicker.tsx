@@ -330,7 +330,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
               }}
               data-testid="collection-picker-no-results"
             >
-              {t("collection.noResults", 'No results for "{{search}}"', { search })}
+              {t("collection.pickerNoResults", 'No results for "{{search}}"', { search })}
             </div>
           ) : (
             results.map((item, i) => (

@@ -396,7 +396,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
         )}
       </div>
 
-      {selectedTasting && (
+      {selectedTasting && (<>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
@@ -583,12 +583,12 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
               })}
             </div>
           </div>
-        ) : selectedTasting && (
+        ) : (
           <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic", marginTop: 8 }} data-testid="no-invitations-hint">
             No invitations sent yet for this tasting.
           </p>
         )}
-      )}
+      </>)}
     </div>
   );
 }
