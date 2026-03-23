@@ -639,11 +639,14 @@ export const historicalTastings = pgTable("historical_tastings", {
   whiskyCount: integer("whisky_count").default(0),
   communityId: varchar("community_id"),
   visibilityLevel: text("visibility_level").notNull().default("community_only"),
+  originType: text("origin_type").notNull().default("imported"),
+  originTastingId: varchar("origin_tasting_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_historical_tastings_tasting_number").on(table.tastingNumber),
   index("idx_historical_tastings_community").on(table.communityId),
+  index("idx_historical_tastings_origin_tasting").on(table.originTastingId),
 ]);
 
 export const insertHistoricalTastingSchema = createInsertSchema(historicalTastings).omit({ id: true, createdAt: true, updatedAt: true });

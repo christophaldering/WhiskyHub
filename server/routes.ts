@@ -1535,6 +1535,18 @@ export async function registerRoutes(
     console.log(`[LABS] Session status: ${tasting.status} → ${finalStatus} | tasting=${req.params.id} "${tasting.title}"`);
     broadcastToTasting(req.params.id, { type: "status_changed", data: { status: finalStatus, previousStatus: tasting.status } });
 
+    if (finalStatus === "archived") {
+      try {
+        const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+        const tastingRatings = await storage.getRatingsForTasting(req.params.id);
+        const { createArchiveSnapshot } = await import("./archive-lifecycle");
+        const snapshotResult = await createArchiveSnapshot(updated, tastingWhiskies, tastingRatings);
+        console.log(`[ARCHIVE] Snapshot result: historical=${snapshotResult.historicalTastingId} entries=${snapshotResult.entriesCreated} alreadyExists=${snapshotResult.alreadyExists}`);
+      } catch (archiveErr: any) {
+        console.error(`[ARCHIVE] Failed to create snapshot for tasting=${req.params.id}:`, archiveErr.message || archiveErr);
+      }
+    }
+
     if (finalStatus === "reveal") {
       try {
         const tps = await storage.getTastingParticipants(req.params.id);
@@ -13614,6 +13626,30 @@ Rules:
         }, scores, [], [], [], false);
       }
 
+      try {
+        const allHistEntries = await storage.getAllHistoricalTastingEntries();
+        for (const he of allHistEntries) {
+          if (!he.whiskyNameRaw && !he.distilleryRaw) continue;
+          const name = he.whiskyNameRaw || he.distilleryRaw || "";
+          const dist = he.distilleryRaw || "";
+          const key = `${name.toLowerCase()}::${dist.toLowerCase()}`;
+          const scores = he.normalizedTotal != null ? [he.normalizedTotal] : (he.totalScore != null ? [he.totalScore * 10] : []);
+          const nScores = he.normalizedNose != null ? [he.normalizedNose] : [];
+          const tScores = he.normalizedTaste != null ? [he.normalizedTaste] : [];
+          const fScores = he.normalizedFinish != null ? [he.normalizedFinish] : [];
+          mergeIntoMap(key, {
+            id: `hist-${he.id}`, name, distillery: dist, region: he.normalizedRegion || he.regionRaw,
+            country: he.normalizedCountry || he.countryRaw, category: he.normalizedType || he.typeRaw,
+            age: he.ageRaw, abv: he.alcoholRaw,
+            caskType: he.normalizedCask || he.caskRaw,
+            peatLevel: he.normalizedIsSmoky != null ? (he.normalizedIsSmoky ? "Heavy" : "None") : null,
+            price: he.normalizedPrice,
+          }, scores, nScores, tScores, fScores, true);
+        }
+      } catch (histErr) {
+        console.error("Labs explore: failed to load historical entries", histErr);
+      }
+
       let results = Array.from(whiskyMap.values()).map(entry => {
         let computedVariance: number | null = null;
         if (entry._allScores.length >= 2) {
@@ -13920,6 +13956,377 @@ Rules:
       if (!existing) return res.status(404).json({ message: "Distillery not found" });
       await storage.deleteDistillery(req.params.id);
       res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // --- Unified Archive API ---
+
+  app.patch("/api/archive/tastings/:id/visibility", async (req, res) => {
+    try {
+      const { hostId, visibilityLevel } = req.body;
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      const validLevels = ["community_only", "public_aggregated", "public_full"];
+      if (!visibilityLevel || !validLevels.includes(visibilityLevel)) {
+        return res.status(400).json({ message: `Invalid visibilityLevel. Use: ${validLevels.join(", ")}` });
+      }
+
+      const historicalTasting = await storage.getHistoricalTasting(req.params.id);
+      if (!historicalTasting) return res.status(404).json({ message: "Historical tasting not found" });
+
+      const requester = await storage.getParticipant(hostId);
+      const isAdmin = requester?.role === "admin";
+
+      let isHost = false;
+      if (historicalTasting.originTastingId) {
+        const liveTasting = await storage.getTasting(historicalTasting.originTastingId);
+        if (liveTasting && liveTasting.hostId === hostId) isHost = true;
+      }
+
+      if (!isHost && !isAdmin) {
+        return res.status(403).json({ message: "Only the original host or an admin can change visibility" });
+      }
+
+      const { historicalTastings: htTable } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const { db: dbConn } = await import("./db");
+      await dbConn.update(htTable).set({ visibilityLevel, updatedAt: new Date() }).where(eq(htTable.id, req.params.id));
+
+      res.json({ id: req.params.id, visibilityLevel });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/archive/tastings", async (req, res) => {
+    try {
+      const participantId = (req.query.participantId as string) || (req.headers["x-participant-id"] as string) || null;
+      const search = (req.query.search as string || "").toLowerCase().trim();
+      const region = (req.query.region as string || "").toLowerCase().trim();
+      const smoky = req.query.smoky as string | undefined;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const sortBy = (req.query.sortBy as string) || "date";
+      const sortDir = (req.query.sortDir as string) === "asc" ? "asc" : "desc";
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const offset = (page - 1) * limit;
+
+      const { determineAccessLevel } = await import("./archive-lifecycle");
+      const { historicalTastings: htTable, historicalTastingEntries: hteTable, tastingParticipants: tpTable, communityMemberships: cmTable } = await import("@shared/schema");
+      const { db: dbConn } = await import("./db");
+      const { eq: eqOp, inArray: inArrayOp } = await import("drizzle-orm");
+
+      const requester = participantId ? await storage.getParticipant(participantId) : null;
+      const isAdmin = requester?.role === "admin";
+
+      let participantCommunityIds: string[] = [];
+      let participantTastingIds: string[] = [];
+      if (participantId) {
+        const communities = await storage.getParticipantCommunities(participantId);
+        participantCommunityIds = communities.map(c => c.id);
+
+        const tps = await dbConn
+          .select({ tastingId: tpTable.tastingId })
+          .from(tpTable)
+          .where(eqOp(tpTable.participantId, participantId));
+        participantTastingIds = tps.map(tp => tp.tastingId);
+      }
+
+      const allResult = await storage.getHistoricalTastingsEnriched({ limit: 10000, offset: 0, search: search || undefined });
+      let tastings = allResult.tastings;
+
+      const entriesByTasting = new Map<string, any[]>();
+      const allIds = tastings.map(t => t.id);
+      if (allIds.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < allIds.length; i += batchSize) {
+          const batch = allIds.slice(i, i + batchSize);
+          const entries = await storage.getAllHistoricalTastingEntries(batch);
+          for (const e of entries) {
+            const arr = entriesByTasting.get(e.historicalTastingId) || [];
+            arr.push(e);
+            entriesByTasting.set(e.historicalTastingId, arr);
+          }
+        }
+      }
+
+      if (region) {
+        const matching = new Set<string>();
+        for (const [tid, entries] of entriesByTasting) {
+          if (entries.some((e: any) => (e.normalizedRegion || e.regionRaw || "").toLowerCase().includes(region))) {
+            matching.add(tid);
+          }
+        }
+        tastings = tastings.filter(t => matching.has(t.id));
+      }
+
+      if (smoky === "true" || smoky === "false") {
+        const wantSmoky = smoky === "true";
+        const matching = new Set<string>();
+        for (const [tid, entries] of entriesByTasting) {
+          if (entries.some((e: any) => e.normalizedIsSmoky === wantSmoky)) {
+            matching.add(tid);
+          }
+        }
+        tastings = tastings.filter(t => matching.has(t.id));
+      }
+
+      if (dateFrom) {
+        tastings = tastings.filter(t => t.tastingDate && t.tastingDate >= dateFrom);
+      }
+      if (dateTo) {
+        tastings = tastings.filter(t => t.tastingDate && t.tastingDate <= dateTo);
+      }
+
+      tastings.sort((a, b) => {
+        let cmp = 0;
+        if (sortBy === "date") {
+          cmp = (a.tastingDate || "").localeCompare(b.tastingDate || "");
+        } else if (sortBy === "score") {
+          cmp = (a.avgTotalScore ?? 0) - (b.avgTotalScore ?? 0);
+        } else if (sortBy === "title") {
+          cmp = (a.titleDe || a.titleEn || "").localeCompare(b.titleDe || b.titleEn || "");
+        } else if (sortBy === "whiskyCount") {
+          cmp = (a.whiskyCount ?? 0) - (b.whiskyCount ?? 0);
+        }
+        return sortDir === "desc" ? -cmp : cmp;
+      });
+
+      const total = tastings.length;
+      const paginated = tastings.slice(offset, offset + limit);
+
+      const liveOriginIds = paginated
+        .filter(t => t.originTastingId)
+        .map(t => t.originTastingId!);
+      const hostMap = new Map<string, string>();
+      for (const originId of liveOriginIds) {
+        const lt = await storage.getTasting(originId);
+        if (lt) hostMap.set(originId, lt.hostId);
+      }
+
+      const results = paginated.map(t => {
+        let isHost = false;
+        let isParticipant = false;
+        let isCommunityMember = false;
+
+        if (t.originTastingId && participantId) {
+          isParticipant = participantTastingIds.includes(t.originTastingId);
+          const hostId = hostMap.get(t.originTastingId);
+          if (hostId === participantId) isHost = true;
+        }
+
+        if (t.communityId && participantCommunityIds.includes(t.communityId)) {
+          isCommunityMember = true;
+        }
+
+        const accessLevel = determineAccessLevel(
+          {
+            hostId: undefined,
+            visibilityLevel: t.visibilityLevel,
+            originType: t.originType ?? "imported",
+            originTastingId: t.originTastingId ?? null,
+            communityId: t.communityId,
+          },
+          participantId,
+          isHost,
+          isParticipant,
+          isCommunityMember,
+          isAdmin,
+        );
+
+        const entries = entriesByTasting.get(t.id) || [];
+
+        const baseData: any = {
+          id: t.id,
+          sourceKey: t.sourceKey,
+          tastingNumber: t.tastingNumber,
+          titleDe: t.titleDe,
+          titleEn: t.titleEn,
+          tastingDate: t.tastingDate,
+          whiskyCount: t.whiskyCount,
+          originType: t.originType ?? "imported",
+          originTastingId: t.originTastingId ?? null,
+          communityId: t.communityId,
+          visibilityLevel: t.visibilityLevel,
+          avgTotalScore: t.avgTotalScore,
+          winnerDistillery: t.winnerDistillery,
+          winnerName: t.winnerName,
+          winnerScore: t.winnerScore,
+          accessLevel,
+        };
+
+        if (accessLevel === "full") {
+          baseData.entries = entries.map((e: any) => ({
+            id: e.id,
+            distillery: e.distilleryRaw,
+            whiskyName: e.whiskyNameRaw,
+            age: e.ageRaw,
+            alcohol: e.alcoholRaw,
+            price: e.priceRaw,
+            country: e.countryRaw,
+            region: e.regionRaw,
+            type: e.typeRaw,
+            smoky: e.smokyRaw,
+            cask: e.caskRaw,
+            noseScore: e.noseScore,
+            tasteScore: e.tasteScore,
+            finishScore: e.finishScore,
+            totalScore: e.totalScore,
+            noseRank: e.noseRank,
+            tasteRank: e.tasteRank,
+            finishRank: e.finishRank,
+            totalRank: e.totalRank,
+          }));
+        } else if (accessLevel === "aggregated") {
+          baseData.entries = entries.map((e: any) => ({
+            id: e.id,
+            distillery: e.distilleryRaw,
+            whiskyName: e.whiskyNameRaw,
+            age: e.ageRaw,
+            region: e.regionRaw,
+            country: e.countryRaw,
+            type: e.typeRaw,
+            totalScore: e.totalScore,
+            totalRank: e.totalRank,
+          }));
+        } else if (accessLevel === "lineup_only") {
+          baseData.entries = entries.map((e: any) => ({
+            id: e.id,
+            distillery: e.distilleryRaw,
+            whiskyName: e.whiskyNameRaw,
+          }));
+        } else {
+          baseData.entries = [];
+        }
+
+        return baseData;
+      });
+
+      res.json({
+        tastings: results,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      });
+    } catch (e: any) {
+      console.error("Archive tastings error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/archive/tastings/:id", async (req, res) => {
+    try {
+      const participantId = (req.query.participantId as string) || (req.headers["x-participant-id"] as string) || null;
+      const { determineAccessLevel } = await import("./archive-lifecycle");
+
+      const ht = await storage.getHistoricalTasting(req.params.id);
+      if (!ht) return res.status(404).json({ message: "Not found" });
+
+      const requester = participantId ? await storage.getParticipant(participantId) : null;
+      const isAdmin = requester?.role === "admin";
+
+      let isHost = false;
+      let isParticipant = false;
+      let isCommunityMember = false;
+      let participantCommunityIds: string[] = [];
+
+      if (participantId) {
+        const communities = await storage.getParticipantCommunities(participantId);
+        participantCommunityIds = communities.map(c => c.id);
+
+        if (ht.originTastingId) {
+          const liveTasting = await storage.getTasting(ht.originTastingId);
+          if (liveTasting) {
+            isHost = liveTasting.hostId === participantId;
+            isParticipant = await storage.isParticipantInTasting(ht.originTastingId, participantId);
+          }
+        }
+
+        if (ht.communityId && participantCommunityIds.includes(ht.communityId)) {
+          isCommunityMember = true;
+        }
+      }
+
+      const accessLevel = determineAccessLevel(
+        {
+          hostId: undefined,
+          visibilityLevel: ht.visibilityLevel,
+          originType: ht.originType ?? "imported",
+          originTastingId: ht.originTastingId ?? null,
+          communityId: ht.communityId,
+        },
+        participantId,
+        isHost,
+        isParticipant,
+        isCommunityMember,
+        isAdmin,
+      );
+
+      if (accessLevel === "none") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const baseData: any = {
+        id: ht.id,
+        sourceKey: ht.sourceKey,
+        tastingNumber: ht.tastingNumber,
+        titleDe: ht.titleDe,
+        titleEn: ht.titleEn,
+        tastingDate: ht.tastingDate,
+        whiskyCount: ht.whiskyCount,
+        originType: ht.originType ?? "imported",
+        originTastingId: ht.originTastingId ?? null,
+        communityId: ht.communityId,
+        visibilityLevel: ht.visibilityLevel,
+        accessLevel,
+      };
+
+      if (accessLevel === "full") {
+        baseData.entries = ht.entries.map((e: any) => ({
+          id: e.id,
+          distillery: e.distilleryRaw,
+          whiskyName: e.whiskyNameRaw,
+          age: e.ageRaw,
+          alcohol: e.alcoholRaw,
+          price: e.priceRaw,
+          country: e.countryRaw,
+          region: e.regionRaw,
+          type: e.typeRaw,
+          smoky: e.smokyRaw,
+          cask: e.caskRaw,
+          noseScore: e.noseScore,
+          tasteScore: e.tasteScore,
+          finishScore: e.finishScore,
+          totalScore: e.totalScore,
+          noseRank: e.noseRank,
+          tasteRank: e.tasteRank,
+          finishRank: e.finishRank,
+          totalRank: e.totalRank,
+        }));
+      } else if (accessLevel === "aggregated") {
+        baseData.entries = ht.entries.map((e: any) => ({
+          id: e.id,
+          distillery: e.distilleryRaw,
+          whiskyName: e.whiskyNameRaw,
+          age: e.ageRaw,
+          region: e.regionRaw,
+          country: e.countryRaw,
+          type: e.typeRaw,
+          totalScore: e.totalScore,
+          totalRank: e.totalRank,
+        }));
+      } else {
+        baseData.entries = ht.entries.map((e: any) => ({
+          id: e.id,
+          distillery: e.distilleryRaw,
+          whiskyName: e.whiskyNameRaw,
+        }));
+      }
+
+      res.json(baseData);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
