@@ -3,12 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
-  Wine, Calendar, ChevronRight, BookOpen,
+  Wine, Calendar, ChevronRight, ChevronLeft, BookOpen,
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
   Download, Brain, Utensils, Library, Info, Star,
   Archive, Heart, Trophy,
 } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
@@ -524,6 +525,11 @@ export default function LabsTaste() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
+      <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-taste">
+          <ChevronLeft className="w-4 h-4" /> Home
+        </button>
+      </BackLink>
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
         {t("myTastePage.title", "My Whisky")}
       </h1>

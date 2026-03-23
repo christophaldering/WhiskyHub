@@ -2,7 +2,8 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Share2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Share2 } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
 import { tastingHistoryApi } from "@/lib/api";
 import { useMemo } from "react";
@@ -85,6 +86,11 @@ function HubPage() {
 
   return (
     <div className="labs-hub-container labs-fade-in" data-testid="labs-hub">
+      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-home">
+          <ChevronLeft className="w-4 h-4" /> Tastings
+        </button>
+      </BackLink>
       <div className="labs-hub-greeting">
         <span className="labs-hub-greeting-time" data-testid="hub-time-greeting">
           {t(timeKey)}

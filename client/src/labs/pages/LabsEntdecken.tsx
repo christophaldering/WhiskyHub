@@ -6,12 +6,13 @@ import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
 import CommunityInsights from "@/labs/components/CommunityInsights";
 import {
-  Search, ChevronRight, Wine, Lock, Calendar,
+  Search, ChevronRight, ChevronLeft, Wine, Lock, Calendar,
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, Sparkles, BarChart3,
   Info, Heart, Flame, Globe, History, Archive,
   X, ChevronDown, Check,
 } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 
 type DiscoveryTab = "whiskys" | "tastings" | "insights";
 type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
@@ -195,6 +196,11 @@ export default function LabsEntdecken() {
 
   return (
     <div className="px-5 py-6 pb-24 max-w-2xl mx-auto" data-testid="labs-entdecken-page">
+      <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-entdecken">
+          <ChevronLeft className="w-4 h-4" /> Home
+        </button>
+      </BackLink>
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
         {t("discoverHub.title", "Entdecken")}
       </h1>

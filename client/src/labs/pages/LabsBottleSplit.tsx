@@ -3,8 +3,9 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import {
-  Scissors, Plus, ArrowLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound
+  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound
 } from "lucide-react";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
 type WizardStep = "bottles" | "pricing" | "visibility" | "review";
@@ -52,6 +53,7 @@ export default function LabsBottleSplit() {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBackToHome = useBackNavigation("/labs/home");
 
   const [publicSplits, setPublicSplits] = useState<any[]>([]);
   const [mySplits, setMySplits] = useState<any[]>([]);
@@ -210,8 +212,8 @@ export default function LabsBottleSplit() {
   if (showWizard) {
     return (
       <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
-        <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-back-link" data-testid="button-split-back" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
-          <ArrowLeft size={16} />Zurück
+        <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-split-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+          <ChevronLeft className="w-4 h-4" />Zurück
         </button>
         <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }} data-testid="text-split-create-title">Flaschenteilung erstellen</h1>
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-lg)" }}>Teile eine Flasche mit der Community</p>
@@ -433,8 +435,8 @@ export default function LabsBottleSplit() {
 
   return (
     <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
-      <button onClick={() => navigate("/labs/home")} className="labs-back-link" data-testid="button-splits-home" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
-        <ArrowLeft size={16} />Labs
+      <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-splits-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+        <ChevronLeft className="w-4 h-4" />Home
       </button>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--labs-space-md)" }}>

@@ -5,10 +5,11 @@ import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
 import {
-  Share2, Plus, Users, ChevronRight, ArrowLeft, Eye, EyeOff, Lock, Globe,
+  Share2, Plus, Users, ChevronRight, ChevronLeft, Eye, EyeOff, Lock, Globe,
   UsersRound, Trash2, Sparkles, Wand2, Edit3, Upload, Loader2, ChevronDown,
   ChevronUp, FileSpreadsheet, Image, MessageSquare, Wine, Check, X
 } from "lucide-react";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { friendsApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
@@ -50,6 +51,7 @@ export default function LabsBottleSharing() {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBackToHome = useBackNavigation("/labs/home");
 
   const [publicSharings, setPublicSharings] = useState<any[]>([]);
   const [mySharings, setMySharings] = useState<any[]>([]);
@@ -297,8 +299,8 @@ export default function LabsBottleSharing() {
   if (showWizard) {
     return (
       <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
-        <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-back-link" data-testid="button-sharing-back" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
-          <ArrowLeft size={16} />{t("bottleSharing.back")}
+        <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-sharing-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+          <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
         </button>
         <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }} data-testid="text-sharing-title">{t("bottleSharing.title")}</h1>
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-lg)" }}>{t("bottleSharing.subtitle")}</p>
@@ -783,8 +785,8 @@ export default function LabsBottleSharing() {
 
   return (
     <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
-      <button onClick={() => navigate("/labs/home")} className="labs-back-link" data-testid="button-bs-back-home" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
-        <ArrowLeft size={16} />{t("bottleSharing.back")}
+      <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-bs-back-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+        <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
       </button>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--labs-space-lg)" }}>

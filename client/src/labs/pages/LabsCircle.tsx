@@ -3,10 +3,11 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
-  Users, Wine, ChevronRight, Activity, Star, UserPlus,
+  Users, Wine, ChevronRight, ChevronLeft, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
   Globe, Mail, Send,
 } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
@@ -314,6 +315,11 @@ export default function LabsCircle() {
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-circle">
+          <ChevronLeft className="w-4 h-4" /> Tastings
+        </button>
+      </BackLink>
       <div style={{ marginBottom: 20 }}>
         <div className="flex items-center justify-between">
           <h1

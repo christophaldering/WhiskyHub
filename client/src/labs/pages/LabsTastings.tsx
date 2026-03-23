@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, Archive } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, ChevronLeft, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, Archive } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, getParticipantId } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -206,6 +207,11 @@ export default function LabsTastings() {
 
   return (
     <div className="labs-page-wide labs-fade-in">
+      <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-tastings">
+          <ChevronLeft className="w-4 h-4" /> Home
+        </button>
+      </BackLink>
       <div className="labs-tastings-header">
         <div className="flex items-center justify-between">
           <h1
