@@ -130,7 +130,7 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string | null; visibility: string }>): Promise<Tasting | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
@@ -665,7 +665,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null }>): Promise<Tasting | undefined> {
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string | null; visibility: string }>): Promise<Tasting | undefined> {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
@@ -689,6 +689,8 @@ export class DatabaseStorage implements IStorage {
     if (data.showReveal !== undefined) updateData.showReveal = data.showReveal;
     if ((data as any).revealOrder !== undefined) updateData.revealOrder = (data as any).revealOrder;
     if ((data as any).lockedDrams !== undefined) updateData.lockedDrams = (data as any).lockedDrams;
+    if (data.targetCommunityIds !== undefined) updateData.targetCommunityIds = data.targetCommunityIds;
+    if (data.visibility !== undefined) updateData.visibility = data.visibility;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;

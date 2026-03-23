@@ -1732,6 +1732,26 @@ export async function registerRoutes(
           return res.status(400).json({ message: "Invalid revealOrder JSON" });
         }
       }
+      if (details.targetCommunityIds !== undefined && details.targetCommunityIds !== null) {
+        let parsedCommunityIds: string[];
+        try {
+          parsedCommunityIds = JSON.parse(details.targetCommunityIds);
+          if (!Array.isArray(parsedCommunityIds) || !parsedCommunityIds.every((id: any) => typeof id === "string")) {
+            return res.status(400).json({ message: "Invalid targetCommunityIds format" });
+          }
+        } catch {
+          return res.status(400).json({ message: "Invalid targetCommunityIds JSON" });
+        }
+        for (const cid of parsedCommunityIds) {
+          const role = await storage.getCommunityMemberRole(cid, hostId);
+          if (!role) {
+            return res.status(403).json({ message: `Not a member of community ${cid}` });
+          }
+        }
+      }
+      if (details.visibility !== undefined && !["private", "public", "group"].includes(details.visibility)) {
+        return res.status(400).json({ message: "Invalid visibility value" });
+      }
       const updated = await storage.updateTastingDetails(req.params.id, details);
       res.json(updated);
     } catch (e: any) {

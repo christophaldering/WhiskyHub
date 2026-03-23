@@ -7,7 +7,7 @@ import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Users, ChevronLeft, UserPlus, Shield, Crown, Eye, Trash2, Mail, ChevronDown, Edit2, Save, X,
-  Wine, Calendar, User, GlassWater,
+  Wine, Calendar, User, GlassWater, Plus, Loader2,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -33,6 +33,10 @@ export default function LabsCommunityDetail() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [roleMenuOpen, setRoleMenuOpen] = useState<string | null>(null);
+  const [showAssignTasting, setShowAssignTasting] = useState(false);
+  const [myTastings, setMyTastings] = useState<any[]>([]);
+  const [myTastingsLoading, setMyTastingsLoading] = useState(false);
+  const [assigningTastingId, setAssigningTastingId] = useState<string | null>(null);
 
   const { data: community, isLoading } = useQuery({
     queryKey: ["community-detail", communityId],
@@ -76,6 +80,65 @@ export default function LabsCommunityDetail() {
   });
 
   const isAdmin = community?.myRole === "admin";
+
+  const fetchMyTastings = async () => {
+    if (!pid) return;
+    setMyTastingsLoading(true);
+    try {
+      const res = await fetch(`/api/tastings?participantId=${pid}`);
+      if (!res.ok) throw new Error();
+      const all = await res.json();
+      const existingIds = new Set([
+        ...(tastingsData?.upcoming || []).map((t: any) => t.id),
+        ...(tastingsData?.past || []).map((t: any) => t.id),
+      ]);
+      const filtered = (Array.isArray(all) ? all : []).filter((t: any) => {
+        if (t.hostId !== pid) return false;
+        if (existingIds.has(t.id)) return false;
+        if (!t.targetCommunityIds) return true;
+        try {
+          const assigned = JSON.parse(t.targetCommunityIds);
+          if (!Array.isArray(assigned) || assigned.length === 0) return true;
+          return false;
+        } catch { return true; }
+      });
+      setMyTastings(filtered);
+    } catch {
+      setMyTastings([]);
+    } finally {
+      setMyTastingsLoading(false);
+    }
+  };
+
+  const assignTastingToCommunity = async (tastingId: string) => {
+    if (!pid || !communityId) return;
+    setAssigningTastingId(tastingId);
+    try {
+      const tasting = myTastings.find((t: any) => t.id === tastingId);
+      let existingIds: string[] = [];
+      try {
+        existingIds = tasting?.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
+        if (!Array.isArray(existingIds)) existingIds = [];
+      } catch { existingIds = []; }
+      const newIds = Array.from(new Set([...existingIds, communityId]));
+      const currentVisibility = tasting?.visibility;
+      const res = await fetch(`/api/tastings/${tastingId}/details`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId: pid,
+          targetCommunityIds: JSON.stringify(newIds),
+          visibility: currentVisibility === "public" ? "public" : "group",
+        }),
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: ["community-tastings", communityId] });
+      setMyTastings(prev => prev.filter(t => t.id !== tastingId));
+    } catch {} finally {
+      setAssigningTastingId(null);
+    }
+  };
+
   const ONLINE_THRESHOLD = 2.5 * 60 * 1000;
   const isOnline = (lastSeenAt: string | null | undefined) => {
     if (!lastSeenAt) return false;
@@ -509,9 +572,58 @@ export default function LabsCommunityDetail() {
       </div>
 
       <div className="mt-6" data-testid="community-tastings-section">
-        <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)" }}>
-          <Wine className="w-3 h-3 inline mr-1" /> Tastings
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>
+            <Wine className="w-3 h-3 inline mr-1" /> Tastings
+          </h3>
+          {isAdmin && (
+            <button
+              className="labs-btn-ghost text-xs flex items-center gap-1"
+              onClick={() => { setShowAssignTasting(true); fetchMyTastings(); }}
+              data-testid="btn-assign-tasting"
+            >
+              <Plus className="w-3 h-3" /> Tasting zuordnen
+            </button>
+          )}
+        </div>
+
+        {showAssignTasting && (
+          <div className="labs-card p-4 mb-4 space-y-3" data-testid="assign-tasting-panel">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Tasting dieser Community zuordnen</span>
+              <button className="labs-btn-ghost p-1" onClick={() => setShowAssignTasting(false)} data-testid="btn-close-assign-tasting">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {myTastingsLoading ? (
+              <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }}>Loading...</p>
+            ) : myTastings.length === 0 ? (
+              <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }} data-testid="text-no-assignable-tastings">
+                Keine weiteren eigenen Tastings verfügbar
+              </p>
+            ) : (
+              <div className="space-y-1 max-h-60 overflow-y-auto">
+                {myTastings.map((t: any) => (
+                  <div key={t.id} className="flex items-center justify-between p-2 rounded" style={{ background: "var(--labs-bg-secondary)" }} data-testid={`assignable-tasting-${t.id}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{t.title}</p>
+                      <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{t.date} · {t.status}</p>
+                    </div>
+                    <button
+                      className="labs-btn-primary text-xs px-3 py-1 flex items-center gap-1 flex-shrink-0"
+                      onClick={() => assignTastingToCommunity(t.id)}
+                      disabled={assigningTastingId === t.id}
+                      data-testid={`btn-assign-${t.id}`}
+                    >
+                      {assigningTastingId === t.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                      Zuordnen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {tastingsLoading ? (
           <p className="text-sm text-center py-6" style={{ color: "var(--labs-text-muted)" }} data-testid="text-tastings-loading">Loading tastings...</p>

@@ -4349,6 +4349,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [showEditTasting, setShowEditTasting] = useState(false);
   const [editTastingFields, setEditTastingFields] = useState<Record<string, string>>({});
   const editTastingInitialRef = useRef<Record<string, string>>({});
+  const [editCommunityIds, setEditCommunityIds] = useState<Set<string>>(new Set());
+  const editCommunityIdsInitialRef = useRef<Set<string>>(new Set());
+  const [editMyCommunities, setEditMyCommunities] = useState<any[]>([]);
   const [editTastingSaving, setEditTastingSaving] = useState(false);
   const [editTastingAutoSaved, setEditTastingAutoSaved] = useState(false);
   const editTastingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4726,6 +4729,23 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const [editTastingError, setEditTastingError] = useState("");
 
+  useEffect(() => {
+    if (currentParticipant?.id && showEditTasting) {
+      fetch("/api/communities/mine", { headers: { "x-participant-id": currentParticipant.id } })
+        .then(r => r.ok ? r.json() : { communities: [] })
+        .then(d => setEditMyCommunities(d.communities || []))
+        .catch(() => {});
+    }
+  }, [currentParticipant?.id, showEditTasting]);
+
+  const toggleEditCommunity = (id: string) => {
+    setEditCommunityIds(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
   const doEditTastingSave = useCallback(async (fields: Record<string, string>, silent = false) => {
     const body: Record<string, unknown> = { hostId: currentParticipant?.id };
     if (fields.title) body.title = fields.title;
@@ -4733,6 +4753,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     if (fields.time !== undefined) body.time = fields.time || null;
     if (fields.location !== undefined) body.location = fields.location;
     if (fields.description !== undefined) body.description = fields.description;
+    if (!silent) {
+      const initialIds = editCommunityIdsInitialRef.current;
+      const currentIds = editCommunityIds;
+      const communityChanged = initialIds.size !== currentIds.size || [...currentIds].some(id => !initialIds.has(id));
+      if (communityChanged) {
+        body.targetCommunityIds = currentIds.size > 0 ? JSON.stringify(Array.from(currentIds)) : null;
+        if (currentIds.size > 0 && tasting?.visibility !== "public") {
+          body.visibility = "group";
+        } else if (currentIds.size === 0 && tasting?.visibility === "group") {
+          body.visibility = "private";
+        }
+      }
+    }
     setEditTastingError("");
     if (!silent) setEditTastingSaving(true);
     try {
@@ -4758,7 +4791,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     } finally {
       if (!silent) setEditTastingSaving(false);
     }
-  }, [tastingId, currentParticipant?.id, queryClient]);
+  }, [tastingId, currentParticipant?.id, queryClient, editCommunityIds]);
 
   const handleEditTastingSave = async () => {
     const ok = await doEditTastingSave(editTastingFields);
@@ -5037,6 +5070,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 };
                 setEditTastingFields(initial);
                 editTastingInitialRef.current = initial;
+                try {
+                  const ids = tasting.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
+                  const idSet = new Set<string>(Array.isArray(ids) ? ids : []);
+                  setEditCommunityIds(idSet);
+                  editCommunityIdsInitialRef.current = new Set(idSet);
+                } catch {
+                  setEditCommunityIds(new Set());
+                  editCommunityIdsInitialRef.current = new Set();
+                }
                 setShowEditTasting(!showEditTasting);
               }}
               data-testid="labs-host-edit-tasting"
@@ -5130,6 +5172,26 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             style={{ resize: "vertical" }}
             data-testid="labs-edit-tasting-description"
           />
+          {editMyCommunities.length > 0 && (
+            <div>
+              <label className="labs-section-label flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                Target Communities (optional)
+              </label>
+              <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                Share this tasting with specific communities
+              </p>
+              <div className="labs-card" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)" }}>
+                {editMyCommunities.map((c: any) => (
+                  <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }} data-testid={`edit-tasting-community-${c.id}`}>
+                    <input type="checkbox" checked={editCommunityIds.has(c.id)} onChange={() => toggleEditCommunity(c.id)} data-testid={`edit-checkbox-tasting-community-${c.id}`} />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)" }}>{c.name}</span>
+                    {c.memberCount != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>({c.memberCount})</span>}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           {editTastingError && (
             <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-edit-tasting-error">{editTastingError}</p>
           )}
