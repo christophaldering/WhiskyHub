@@ -38,6 +38,20 @@ const DATE_PERIODS: { key: DatePeriod; label: string; days: number }[] = [
   { key: "1y", label: "1 year", days: 365 },
 ];
 
+function isJsonScoreString(value: string): boolean {
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === "object" && parsed !== null && ("noseScore" in parsed || "tasteScore" in parsed || "finishScore" in parsed);
+  } catch {
+    return false;
+  }
+}
+
+function cleanTasteNotes(value: string): string {
+  if (!value) return "";
+  return isJsonScoreString(value) ? "" : value;
+}
+
 function parseNoseNotes(raw: string) {
   let cleanText = raw;
   let scores: { nose?: number; taste?: number; finish?: number } = {};
@@ -257,7 +271,7 @@ export default function LabsTasteDrams() {
         dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" } },
       });
     } else { setEditStructured(null); }
-    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv || "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: entry.tasteNotes || "", finishNotes: entry.finishNotes || "", body: entry.body || "" });
+    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv || "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", body: entry.body || "" });
     setViewState("edit");
   };
 
@@ -393,7 +407,7 @@ export default function LabsTasteDrams() {
               ? <ParsedNotesSection raw={selectedEntry.noseNotes} />
               : <NoteSection label="Nose" value={selectedEntry.noseNotes} />
           )}
-          {selectedEntry.tasteNotes && <NoteSection label="Taste" value={selectedEntry.tasteNotes} />}
+          {selectedEntry.tasteNotes && !isJsonScoreString(selectedEntry.tasteNotes) && <NoteSection label="Taste" value={selectedEntry.tasteNotes} />}
           {selectedEntry.finishNotes && <NoteSection label="Finish" value={selectedEntry.finishNotes} />}
           {selectedEntry.body && <NoteSection label="Notes" value={selectedEntry.body} />}
 
