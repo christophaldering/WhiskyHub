@@ -93,7 +93,8 @@ export default function LabsBottleSplit() {
   const stepIdx = steps.indexOf(step);
   const validBottles = bottles.filter(b => b.name.trim());
   const canProceed = step === "bottles" ? validBottles.length > 0 :
-    step === "pricing" ? validBottles.every(b => b.totalVolumeMl > 0 && b.sampleOptions.length > 0) : true;
+    step === "pricing" ? validBottles.every(b => b.totalVolumeMl > 0 && b.sampleOptions.length > 0) :
+    step === "visibility" && visibility === "group" ? selectedCommunityIds.size > 0 : true;
 
   const addBottle = () => setBottles([...bottles, {
     name: "", totalVolumeMl: 700, ownerKeepMl: 50,
@@ -354,6 +355,14 @@ export default function LabsBottleSplit() {
                     <span style={{ fontSize: 13, fontWeight: selectedCommunityIds.has(c.id) ? 600 : 400 }}>{c.name}</span>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {visibility === "group" && communities.length === 0 && (
+              <div className="labs-card" data-testid="empty-communities" style={{ padding: "var(--labs-space-md)", textAlign: "center" }}>
+                <UsersRound size={32} style={{ color: "var(--labs-text-muted)", margin: "0 auto 8px" }} />
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>{t("bottleSharing.noCommunities")}</p>
+                <button data-testid="button-go-to-circle" onClick={() => navigate("/labs/circle")} className="labs-btn-primary" style={{ fontSize: 13 }}>{t("bottleSharing.goToCircle")}</button>
               </div>
             )}
 

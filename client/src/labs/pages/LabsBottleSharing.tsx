@@ -102,7 +102,8 @@ export default function LabsBottleSharing() {
   const friendsWithEmail = friends.filter((f: any) => f.email && f.status === "accepted");
   const steps: WizardStep[] = ["bottles", "visibility", "review"];
   const stepIdx = steps.indexOf(step);
-  const canProceed = step === "bottles" ? validBottles.length > 0 : true;
+  const canProceed = step === "bottles" ? validBottles.length > 0 :
+    step === "visibility" && visibility === "group" ? selectedCommunityIds.size > 0 : true;
 
   const addBottle = () => setBottles([...bottles, { name: "" }]);
   const removeBottle = (i: number) => setBottles(bottles.filter((_, idx) => idx !== i));
@@ -706,6 +707,14 @@ export default function LabsBottleSharing() {
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
                   </label>
                 ))}
+              </div>
+            )}
+
+            {visibility === "group" && communities.length === 0 && (
+              <div className="labs-card" data-testid="empty-communities" style={{ padding: "var(--labs-space-md)", textAlign: "center" }}>
+                <UsersRound size={32} style={{ color: "var(--labs-text-muted)", margin: "0 auto 8px" }} />
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>{t("bottleSharing.noCommunities")}</p>
+                <button data-testid="button-go-to-circle" onClick={() => navigate("/labs/circle")} className="labs-btn-primary" style={{ fontSize: 13 }}>{t("bottleSharing.goToCircle")}</button>
               </div>
             )}
 
