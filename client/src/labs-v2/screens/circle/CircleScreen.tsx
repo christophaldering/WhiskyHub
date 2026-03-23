@@ -3,12 +3,13 @@ import { useV2Theme, useV2Lang } from "../../LabsV2Layout";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
 import { TabCircle } from "../../icons";
 import FriendsTab from "./FriendsTab";
+import GroupsTab from "./GroupsTab";
 import Leaderboard from "./Leaderboard";
 import SessionsBoard from "./SessionsBoard";
 import ActivityFeed from "./ActivityFeed";
 import { getParticipantId } from "@/lib/api";
 
-type CircleTab = "friends" | "board" | "sessions" | "feed";
+type CircleTab = "friends" | "groups" | "board" | "sessions" | "feed";
 
 export default function CircleScreen() {
   const { th } = useV2Theme();
@@ -20,6 +21,7 @@ export default function CircleScreen() {
 
   const tabs: { key: CircleTab; label: string }[] = [
     { key: "friends", label: t.circleFriends },
+    { key: "groups", label: t.circleGroups },
     { key: "board", label: t.circleBoard },
     { key: "sessions", label: t.circleSessions },
     { key: "feed", label: t.circleFeed },
@@ -83,6 +85,9 @@ export default function CircleScreen() {
 
       {activeTab === "friends" && (
         <FriendsTab th={th} t={t} participantId={participantId} />
+      )}
+      {activeTab === "groups" && (
+        <GroupsTab th={th} t={t} participantId={participantId} />
       )}
       {activeTab === "board" && (
         <Leaderboard th={th} t={t} participantId={participantId} />

@@ -3652,6 +3652,117 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  // ===== WHISKY GROUPS (Clubs) =====
+
+  app.get("/api/participants/:id/groups", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const groups = await storage.getWhiskyGroups(req.params.id);
+      res.json(groups);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:id/groups", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const { name, description, temporary } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      const group = await storage.createWhiskyGroup({
+        name: name.trim(),
+        description: description?.trim() || null,
+        ownerId: req.params.id,
+        temporary: temporary ?? false,
+      });
+      res.status(201).json(group);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/participants/:participantId/groups/:groupId", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const { name, description, temporary } = req.body;
+      const update: Record<string, any> = {};
+      if (name !== undefined) {
+        if (!name.trim()) return res.status(400).json({ message: "Name cannot be empty" });
+        update.name = name.trim();
+      }
+      if (description !== undefined) update.description = description?.trim() || null;
+      if (temporary !== undefined) update.temporary = temporary;
+      const group = await storage.updateWhiskyGroup(req.params.groupId, req.params.participantId, update);
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      res.json(group);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/participants/:participantId/groups/:groupId", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      await storage.deleteWhiskyGroup(req.params.groupId, req.params.participantId);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:participantId/groups/:groupId/members", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const group = await storage.getWhiskyGroup(req.params.groupId);
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      if (group.ownerId !== req.params.participantId) return res.status(403).json({ message: "Not your group" });
+      const members = await storage.getWhiskyGroupMembers(req.params.groupId);
+      res.json(members);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:participantId/groups/:groupId/members", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const { friendId } = req.body;
+      if (!friendId) return res.status(400).json({ message: "friendId is required" });
+      const group = await storage.getWhiskyGroup(req.params.groupId);
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      if (group.ownerId !== req.params.participantId) return res.status(403).json({ message: "Not your group" });
+      const ownerFriends = await storage.getWhiskyFriends(req.params.participantId);
+      const validFriend = ownerFriends.find(f => f.id === friendId && f.status === "accepted");
+      if (!validFriend) return res.status(400).json({ message: "friendId must be an accepted friend" });
+      const existingMembers = await storage.getWhiskyGroupMembers(req.params.groupId);
+      if (existingMembers.some(m => m.friendId === friendId)) return res.status(409).json({ message: "Already a member" });
+      const member = await storage.addWhiskyGroupMember({ groupId: req.params.groupId, friendId });
+      res.status(201).json(member);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/participants/:participantId/groups/:groupId/members/:friendId", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const group = await storage.getWhiskyGroup(req.params.groupId);
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      if (group.ownerId !== req.params.participantId) return res.status(403).json({ message: "Not your group" });
+      await storage.removeWhiskyGroupMember(req.params.groupId, req.params.friendId);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== MY INVITES (open invitations for logged-in user) =====
 
   app.get("/api/my-invites", async (req, res) => {

@@ -320,6 +320,23 @@ export const friendsApi = {
     fetchJSON(`/participants/${participantId}/friends/${friendId}/decline`, { method: "POST" }),
 };
 
+// ===== Whisky Groups (Clubs) =====
+export const groupsApi = {
+  getAll: (participantId: string) => fetchJSON(`/participants/${participantId}/groups`),
+  create: (participantId: string, data: { name: string; description?: string; temporary?: boolean }) =>
+    fetchJSON(`/participants/${participantId}/groups`, { method: "POST", body: JSON.stringify(data) }),
+  update: (participantId: string, groupId: string, data: { name?: string; description?: string | null; temporary?: boolean }) =>
+    fetchJSON(`/participants/${participantId}/groups/${groupId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (participantId: string, groupId: string) =>
+    fetchJSON(`/participants/${participantId}/groups/${groupId}`, { method: "DELETE" }),
+  getMembers: (participantId: string, groupId: string) =>
+    fetchJSON(`/participants/${participantId}/groups/${groupId}/members`),
+  addMember: (participantId: string, groupId: string, friendId: string) =>
+    fetchJSON(`/participants/${participantId}/groups/${groupId}/members`, { method: "POST", body: JSON.stringify({ friendId }) }),
+  removeMember: (participantId: string, groupId: string, friendId: string) =>
+    fetchJSON(`/participants/${participantId}/groups/${groupId}/members/${friendId}`, { method: "DELETE" }),
+};
+
 // ===== Journal =====
 export const journalApi = {
   getAll: (participantId: string) => fetchJSON(`/journal/${participantId}`),

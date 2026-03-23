@@ -220,6 +220,32 @@ export const insertWhiskyFriendSchema = createInsertSchema(whiskyFriends).omit({
 export type InsertWhiskyFriend = z.infer<typeof insertWhiskyFriendSchema>;
 export type WhiskyFriend = typeof whiskyFriends.$inferSelect;
 
+// --- Whisky Groups (Clubs) ---
+export const whiskyGroups = pgTable("whisky_groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: varchar("owner_id").notNull(),
+  temporary: boolean("temporary").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWhiskyGroupSchema = createInsertSchema(whiskyGroups).omit({ id: true, createdAt: true });
+export type InsertWhiskyGroup = z.infer<typeof insertWhiskyGroupSchema>;
+export type WhiskyGroup = typeof whiskyGroups.$inferSelect;
+
+export const whiskyGroupMembers = pgTable("whisky_group_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  groupId: varchar("group_id").notNull(),
+  friendId: varchar("friend_id").notNull(),
+  role: text("role").notNull().default("member"),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export const insertWhiskyGroupMemberSchema = createInsertSchema(whiskyGroupMembers).omit({ id: true, addedAt: true });
+export type InsertWhiskyGroupMember = z.infer<typeof insertWhiskyGroupMemberSchema>;
+export type WhiskyGroupMember = typeof whiskyGroupMembers.$inferSelect;
+
 // --- Ratings (evaluations) ---
 export const ratings = pgTable("ratings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

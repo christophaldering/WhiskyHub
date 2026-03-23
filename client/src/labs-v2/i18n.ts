@@ -460,6 +460,23 @@ export interface Translations {
   circleDram: string;
   circleTasting: string;
   circleSearchPlaceholder: string;
+  circleGroups: string;
+  circleGroupCreate: string;
+  circleGroupName: string;
+  circleGroupNamePH: string;
+  circleGroupDesc: string;
+  circleGroupDescPH: string;
+  circleGroupTemporary: string;
+  circleGroupPermanent: string;
+  circleGroupMembers: string;
+  circleGroupAddMember: string;
+  circleGroupRemoveMember: string;
+  circleGroupDelete: string;
+  circleGroupDeleteConfirm: string;
+  circleGroupEmpty: string;
+  circleGroupNoMembers: string;
+  circleGroupSave: string;
+  circleGroupInvite: string;
   upgradeKeepSafe: string;
   upgradeDesc: string;
   upgradeEmailPH: string;
@@ -984,6 +1001,23 @@ const de: Translations = {
   circleDram: "Dram erfasst",
   circleTasting: "Tasting abgeschlossen",
   circleSearchPlaceholder: "Name eingeben\u2026",
+  circleGroups: "Gruppen",
+  circleGroupCreate: "Gruppe erstellen",
+  circleGroupName: "Gruppenname",
+  circleGroupNamePH: "z.B. Whisky Club Hannover",
+  circleGroupDesc: "Beschreibung",
+  circleGroupDescPH: "Optionale Beschreibung\u2026",
+  circleGroupTemporary: "Tempor\u00e4r",
+  circleGroupPermanent: "Dauerhaft",
+  circleGroupMembers: "Mitglieder",
+  circleGroupAddMember: "Hinzuf\u00fcgen",
+  circleGroupRemoveMember: "Entfernen",
+  circleGroupDelete: "Gruppe l\u00f6schen",
+  circleGroupDeleteConfirm: "Gruppe wirklich l\u00f6schen?",
+  circleGroupEmpty: "Noch keine Gruppen erstellt.",
+  circleGroupNoMembers: "Noch keine Mitglieder.",
+  circleGroupSave: "Speichern",
+  circleGroupInvite: "Gruppe einladen",
   upgradeKeepSafe: "Ergebnisse sichern",
   upgradeDesc: "Hinterlege eine E-Mail und ein Passwort, um deine Bewertungen dauerhaft zu speichern.",
   upgradeEmailPH: "E-Mail-Adresse",
@@ -1508,6 +1542,23 @@ const en: Translations = {
   circleDram: "Dram logged",
   circleTasting: "Tasting completed",
   circleSearchPlaceholder: "Enter name\u2026",
+  circleGroups: "Groups",
+  circleGroupCreate: "Create group",
+  circleGroupName: "Group name",
+  circleGroupNamePH: "e.g. Whisky Club Berlin",
+  circleGroupDesc: "Description",
+  circleGroupDescPH: "Optional description\u2026",
+  circleGroupTemporary: "Temporary",
+  circleGroupPermanent: "Permanent",
+  circleGroupMembers: "Members",
+  circleGroupAddMember: "Add",
+  circleGroupRemoveMember: "Remove",
+  circleGroupDelete: "Delete group",
+  circleGroupDeleteConfirm: "Really delete this group?",
+  circleGroupEmpty: "No groups created yet.",
+  circleGroupNoMembers: "No members yet.",
+  circleGroupSave: "Save",
+  circleGroupInvite: "Invite group",
   upgradeKeepSafe: "Save your results",
   upgradeDesc: "Add an email and password to keep your ratings safe.",
   upgradeEmailPH: "Email address",

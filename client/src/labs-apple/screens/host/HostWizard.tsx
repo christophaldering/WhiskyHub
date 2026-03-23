@@ -7,7 +7,7 @@ import { ThemeTokens, SP } from '../../theme/tokens'
 import { Translations } from '../../theme/i18n'
 import { TastingConfig, WhiskyEntry, TastingData } from '../../types/host'
 import * as Icon from '../../icons/Icons'
-import { friendsApi, inviteApi } from '@/lib/api'
+import { friendsApi, inviteApi, groupsApi } from '@/lib/api'
 import type { WhiskyFriend } from '@shared/schema'
 import { HostCockpit } from './HostCockpit'
 
@@ -236,6 +236,9 @@ const HostStep2: React.FC<{ th: ThemeTokens; t: Translations; tastingId: string;
 }
 
 // ── Step 3: Invitations ─────────────────────────────────────────────────────
+interface WGroup { id: string; name: string; description: string | null; temporary: boolean }
+interface WGroupMember { id: string; groupId: string; friendId: string }
+
 const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; participantId: string; tastingId: string; tastingCode: string; onNext: () => void; onBack: () => void }> = ({ th, t, participantId, tastingId, tastingCode, onNext, onBack }) => {
   const [copied, setCopied]     = useState(false)
   const [email, setEmail]       = useState('')
@@ -245,10 +248,21 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; participantId: str
   const [existingInvites, setExistingInvites] = useState<{ email: string }[]>([])
   const [selectedFriendEmails, setSelectedFriendEmails] = useState<Set<string>>(new Set())
   const [friendsExpanded, setFriendsExpanded] = useState(true)
+  const [groups, setGroups] = useState<WGroup[]>([])
+  const [groupsExpanded, setGroupsExpanded] = useState(true)
+  const [groupMembers, setGroupMembers] = useState<Record<string, WGroupMember[]>>({})
 
   useEffect(() => {
     if (participantId) {
       friendsApi.getAll(participantId).then(setFriends).catch(() => {})
+      groupsApi.getAll(participantId).then((g: WGroup[]) => {
+        setGroups(Array.isArray(g) ? g : [])
+        for (const group of (Array.isArray(g) ? g : [])) {
+          groupsApi.getMembers(participantId, group.id).then((m: WGroupMember[]) => {
+            setGroupMembers(prev => ({ ...prev, [group.id]: Array.isArray(m) ? m : [] }))
+          }).catch(() => {})
+        }
+      }).catch(() => {})
     }
   }, [participantId])
 
@@ -276,6 +290,20 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; participantId: str
   const copyCode = () => {
     navigator.clipboard.writeText(`${window.location.origin}/labs-apple?code=${tastingCode}`)
     setCopied(true); setTimeout(() => setCopied(false), 1500)
+  }
+
+  const inviteGroup = (groupId: string) => {
+    const members = groupMembers[groupId] || []
+    const friendsById = new Map(friends.map(f => [f.id, f]))
+    for (const m of members) {
+      const friend = friendsById.get(m.friendId)
+      if (friend?.email && friend.status === 'accepted') {
+        const lower = friend.email.toLowerCase()
+        if (!alreadyInvitedEmails.has(lower)) {
+          setSelectedFriendEmails(prev => new Set([...prev, lower]))
+        }
+      }
+    }
   }
 
   const sendInvite = async () => {
@@ -343,6 +371,35 @@ const HostStep3: React.FC<{ th: ThemeTokens; t: Translations; participantId: str
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {groups.length > 0 && (
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, marginBottom: SP.lg }} data-testid="groups-quick-select">
+          <button onClick={() => setGroupsExpanded(!groupsExpanded)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%', marginBottom: groupsExpanded ? SP.md : 0 }} data-testid="button-toggle-groups">
+            <Icon.Users color={th.gold} size={18} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: th.text, flex: 1, textAlign: 'left' }}>{t.hostGroupsTitle}</span>
+            <span style={{ fontSize: 12, color: th.muted }}>{groupsExpanded ? '▲' : '▼'}</span>
+          </button>
+
+          {groupsExpanded && (
+            <div style={{ borderRadius: 12, border: `1px solid ${th.border}` }}>
+              {groups.map(group => {
+                const memberCount = (groupMembers[group.id] || []).length
+                return (
+                  <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${th.border}` }} data-testid={`group-row-${group.id}`}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</div>
+                      <div style={{ fontSize: 12, color: th.muted }}>{memberCount} {memberCount === 1 ? t.hostGroupMember : t.hostGroupMembers}</div>
+                    </div>
+                    <button onClick={() => inviteGroup(group.id)} style={{ height: 36, padding: '0 14px', borderRadius: 10, border: `1px solid ${th.gold}44`, background: 'none', color: th.gold, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }} data-testid={`button-invite-group-${group.id}`}>
+                      {t.hostGroupInvite}
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

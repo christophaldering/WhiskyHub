@@ -2,7 +2,7 @@ import { eq, ne, and, asc, desc, sql, inArray, gte } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
+  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
@@ -14,6 +14,8 @@ import {
   type InsertDiscussionEntry, type DiscussionEntry,
   type InsertReflectionEntry, type ReflectionEntry,
   type InsertWhiskyFriend, type WhiskyFriend,
+  type InsertWhiskyGroup, type WhiskyGroup,
+  type InsertWhiskyGroupMember, type WhiskyGroupMember,
   type InsertJournalEntry, type JournalEntry,
   type InsertBenchmarkEntry, type BenchmarkEntry,
   type InsertWishlistEntry, type WishlistEntry,
@@ -173,6 +175,16 @@ export interface IStorage {
   declineFriendRequest(id: string, participantId: string): Promise<void>;
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
+
+  // Whisky Groups
+  getWhiskyGroups(ownerId: string): Promise<WhiskyGroup[]>;
+  getWhiskyGroup(id: string): Promise<WhiskyGroup | undefined>;
+  createWhiskyGroup(data: InsertWhiskyGroup): Promise<WhiskyGroup>;
+  updateWhiskyGroup(id: string, ownerId: string, data: Partial<{ name: string; description: string | null; temporary: boolean }>): Promise<WhiskyGroup | undefined>;
+  deleteWhiskyGroup(id: string, ownerId: string): Promise<void>;
+  getWhiskyGroupMembers(groupId: string): Promise<WhiskyGroupMember[]>;
+  addWhiskyGroupMember(data: InsertWhiskyGroupMember): Promise<WhiskyGroupMember>;
+  removeWhiskyGroupMember(groupId: string, friendId: string): Promise<void>;
 
   // Rating Notes
   getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null; overall: number | null; normalizedScore: number | null; createdAt: Date | null }>>;
@@ -924,6 +936,46 @@ export class DatabaseStorage implements IStorage {
   async updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined> {
     const [result] = await db.update(whiskyFriends).set(data).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId))).returning();
     return result;
+  }
+
+  // --- Whisky Groups ---
+  async getWhiskyGroups(ownerId: string): Promise<WhiskyGroup[]> {
+    return db.select().from(whiskyGroups).where(eq(whiskyGroups.ownerId, ownerId)).orderBy(desc(whiskyGroups.createdAt));
+  }
+
+  async getWhiskyGroup(id: string): Promise<WhiskyGroup | undefined> {
+    const [result] = await db.select().from(whiskyGroups).where(eq(whiskyGroups.id, id));
+    return result;
+  }
+
+  async createWhiskyGroup(data: InsertWhiskyGroup): Promise<WhiskyGroup> {
+    const [result] = await db.insert(whiskyGroups).values(data).returning();
+    return result;
+  }
+
+  async updateWhiskyGroup(id: string, ownerId: string, data: Partial<{ name: string; description: string | null; temporary: boolean }>): Promise<WhiskyGroup | undefined> {
+    const [result] = await db.update(whiskyGroups).set(data).where(and(eq(whiskyGroups.id, id), eq(whiskyGroups.ownerId, ownerId))).returning();
+    return result;
+  }
+
+  async deleteWhiskyGroup(id: string, ownerId: string): Promise<void> {
+    const [group] = await db.select().from(whiskyGroups).where(and(eq(whiskyGroups.id, id), eq(whiskyGroups.ownerId, ownerId)));
+    if (!group) return;
+    await db.delete(whiskyGroupMembers).where(eq(whiskyGroupMembers.groupId, id));
+    await db.delete(whiskyGroups).where(eq(whiskyGroups.id, id));
+  }
+
+  async getWhiskyGroupMembers(groupId: string): Promise<WhiskyGroupMember[]> {
+    return db.select().from(whiskyGroupMembers).where(eq(whiskyGroupMembers.groupId, groupId));
+  }
+
+  async addWhiskyGroupMember(data: InsertWhiskyGroupMember): Promise<WhiskyGroupMember> {
+    const [result] = await db.insert(whiskyGroupMembers).values(data).returning();
+    return result;
+  }
+
+  async removeWhiskyGroupMember(groupId: string, friendId: string): Promise<void> {
+    await db.delete(whiskyGroupMembers).where(and(eq(whiskyGroupMembers.groupId, groupId), eq(whiskyGroupMembers.friendId, friendId)));
   }
 
   // --- Rating Notes ---
