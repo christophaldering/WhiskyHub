@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useAppStore } from "@/lib/store";
+import { queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
@@ -196,6 +197,7 @@ export default function LabsSolo() {
         return;
       }
 
+      queryClient.invalidateQueries({ queryKey: ["journal"] });
       setStep("done");
     } catch {
       setSaveError(true);
