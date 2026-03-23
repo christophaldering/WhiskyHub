@@ -1340,7 +1340,7 @@ export default function LabsSolo() {
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           width: "100%", padding: "12px 14px",
-          background: i === 0 ? "var(--labs-accent-muted)" : "transparent",
+          background: i === 0 ? "var(--labs-accent-muted)" : "var(--labs-surface)",
           border: `1px solid ${i === 0 ? "var(--labs-accent)" : "var(--labs-border)"}`,
           borderRadius: "var(--labs-radius-sm)", cursor: "pointer", textAlign: "left", fontFamily: "inherit",
         }}
@@ -2062,10 +2062,10 @@ export default function LabsSolo() {
           <ChevronLeft className="w-4 h-4" />
           Taste
         </button>
-        <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-text)", margin: "16px 0 4px" }} data-testid="text-hub-title">
+        <h1 className="ty-h1" style={{ margin: "16px 0 4px" }} data-testid="text-hub-title">
           {t("m2.solo.hubTitle", "Your Drams")}
         </h1>
-        <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 20 }}>
+        <p className="ty-sub" style={{ marginBottom: 20 }}>
           {t("m2.solo.subtitle", "Log a whisky on your own — take notes, rate, and remember.")}
         </p>
 
@@ -2115,13 +2115,13 @@ export default function LabsSolo() {
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div className="ty-ui" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {draft.whiskyName || "\u2014"}
                           </div>
                           {draft.distillery && (
-                            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.distillery}</div>
+                            <div className="ty-caption" style={{ marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.distillery}</div>
                           )}
-                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                          <div className="ty-caption" style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
                             <Clock style={{ width: 10, height: 10 }} />
                             {draft.updatedAt || draft.createdAt ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
                             {draft.personalScore != null && (
@@ -2209,7 +2209,7 @@ export default function LabsSolo() {
                           padding: "5px 12px", fontSize: 12, fontWeight: group.state === opt.key ? 600 : 400,
                           borderRadius: "var(--labs-radius-sm)", whiteSpace: "nowrap", cursor: "pointer",
                           border: `1px solid ${group.state === opt.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                          background: group.state === opt.key ? "var(--labs-accent-muted)" : "transparent",
+                          background: group.state === opt.key ? "var(--labs-accent-muted)" : "var(--labs-surface)",
                           color: group.state === opt.key ? "var(--labs-accent)" : "var(--labs-text-secondary)",
                           fontFamily: "inherit",
                         }}
@@ -2258,12 +2258,12 @@ export default function LabsSolo() {
                     );
                   }
                   return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+                    <div className="labs-grouped-list" style={{ marginTop: 12 }}>
                       {filtered.map((entry: any) => (
                         <div
                           key={entry.id}
-                          className="labs-card labs-card-interactive"
-                          style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}
+                          className="labs-list-row"
+                          style={{ cursor: "pointer", gap: 12 }}
                           onClick={() => loadDraftIntoForm(entry)}
                           data-testid={`card-completed-${entry.id}`}
                         >
@@ -2275,13 +2275,13 @@ export default function LabsSolo() {
                             </div>
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div className="ty-ui" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {entry.whiskyName || "\u2014"}
                             </div>
                             {entry.distillery && (
-                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.distillery}</div>
+                              <div className="ty-caption" style={{ marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.distillery}</div>
                             )}
-                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                            <div className="ty-caption" style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                                 <Calendar style={{ width: 10, height: 10 }} />
                                 {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""}

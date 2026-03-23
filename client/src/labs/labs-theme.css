@@ -818,7 +818,7 @@
   width: 40px;
   height: 40px;
   margin-bottom: 1.5rem;
-  opacity: 0.25;
+  opacity: 0.5;
 }
 
 .labs-empty-title {
@@ -836,7 +836,7 @@
   font-weight: 300;
   font-style: italic;
   line-height: 1.6;
-  opacity: 0.55;
+  opacity: 0.7;
   max-width: 280px;
   color: var(--labs-text-secondary);
 }

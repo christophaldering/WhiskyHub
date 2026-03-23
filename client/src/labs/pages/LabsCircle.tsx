@@ -244,8 +244,8 @@ export default function LabsCircle() {
       <div style={{ marginBottom: 20 }}>
         <div className="flex items-center justify-between">
           <h1
-            className="labs-serif"
-            style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
+            className="ty-h1"
+            style={{ margin: 0 }}
             data-testid="labs-circle-title"
           >
             Circle
@@ -280,7 +280,7 @@ export default function LabsCircle() {
             </button>
           </div>
         </div>
-        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
+        <p className="ty-sub" style={{ margin: "2px 0 0" }}>
           Friends, rankings & tastings
         </p>
       </div>
@@ -458,9 +458,9 @@ export default function LabsCircle() {
                 key={cat.key}
                 className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[11px] transition-all"
                 style={{
-                  background: isActive ? "var(--labs-accent-muted)" : "transparent",
+                  background: isActive ? "var(--labs-accent-muted)" : "var(--labs-surface)",
                   color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                  border: `1px solid ${isActive ? "var(--labs-accent)" : "transparent"}`,
+                  border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
                   fontWeight: isActive ? 700 : 500,
                   cursor: "pointer",
                 }}
@@ -485,14 +485,14 @@ export default function LabsCircle() {
         {activeCat.entries.length === 0 ? (
           <EmptyState icon={Trophy} title="Noch keine Rangliste" description="Rangdaten erscheinen, sobald genug Bewertungen abgegeben wurden." />
         ) : (
-          <div className="space-y-2">
+          <div className="labs-grouped-list">
             {activeCat.entries.map((entry, i) => {
               const nameDisplay = getNameDisplay(entry);
               return (
                 <div
                   key={entry.id || i}
-                  className="labs-card p-4 flex items-center gap-3"
-                  style={getEntryStyle(entry)}
+                  className="labs-list-row"
+                  style={{ gap: 12, ...getEntryStyle(entry) }}
                   data-testid={`labs-circle-lb-entry-${i}`}
                 >
                   <div
@@ -508,7 +508,7 @@ export default function LabsCircle() {
                   </div>
                   <div className="flex-1 min-w-0 flex items-center gap-2">
                     <span
-                      className="text-sm font-semibold truncate"
+                      className="ty-ui truncate"
                       style={{ color: nameDisplay.color, fontStyle: !entry.isSelf && !entry.isFriend ? "italic" : "normal" }}
                       data-testid={`labs-circle-lb-name-${i}`}
                     >
@@ -624,12 +624,12 @@ export default function LabsCircle() {
                 {pendingList.length}
               </span>
             </p>
-            <div className="space-y-2">
+            <div className="labs-grouped-list">
               {pendingList.map((req, i) => (
                 <div
                   key={(req.id as string) || i}
-                  className="labs-card p-4 flex items-center gap-3"
-                  style={{ borderLeft: "3px solid var(--labs-accent)" }}
+                  className="labs-list-row"
+                  style={{ gap: 12, borderLeft: "3px solid var(--labs-accent)" }}
                   data-testid={`labs-circle-pending-${i}`}
                 >
                   <div
@@ -639,9 +639,9 @@ export default function LabsCircle() {
                     {String(req.firstName || req.name || "?")[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                    <span className="ty-ui truncate">
                       {String(req.firstName ?? "")} {String(req.lastName ?? "")}
-                    </p>
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -733,8 +733,9 @@ export default function LabsCircle() {
                 return (
                   <div
                     key={fid || i}
-                    className="labs-card p-4 flex items-center gap-3"
+                    className="labs-list-row"
                     style={{
+                      gap: 12,
                       ...(isOnline ? { borderLeft: "3px solid var(--labs-success)", background: "color-mix(in srgb, var(--labs-success) 6%, var(--labs-surface))" } : {}),
                       cursor: isOnline ? "pointer" : undefined,
                     }}
@@ -772,9 +773,9 @@ export default function LabsCircle() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold truncate" style={{ color: isSelf ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                        <span className="ty-ui truncate" style={{ color: isSelf ? "var(--labs-accent)" : undefined }}>
                           {isSelf ? "You ★" : displayName}
-                        </p>
+                        </span>
                         {isOnline && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>
                             ONLINE
@@ -782,11 +783,11 @@ export default function LabsCircle() {
                         )}
                       </div>
                       {isOnline ? (
-                        <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
+                        <p className="ty-caption mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
                           Active {timeAgo(onlineInfo?.lastSeenAt)}
                         </p>
                       ) : typeof friend.email === "string" && friend.email ? (
-                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                        <p className="ty-caption truncate">
                           {friend.email}
                         </p>
                       ) : null}
@@ -823,7 +824,7 @@ export default function LabsCircle() {
                         <span style={{ color: "var(--labs-success)" }}>Online</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>{onlineList.length}</span>
                       </p>
-                      <div className="space-y-2">
+                      <div className="labs-grouped-list">
                         {onlineList.map((f, i) => renderFriendCard(f, i, true))}
                       </div>
                     </div>
@@ -835,7 +836,7 @@ export default function LabsCircle() {
                         <span style={{ color: "var(--labs-text-secondary)" }}>Offline</span>
                         <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineList.length}</span>
                       </p>
-                      <div className="space-y-2">
+                      <div className="labs-grouped-list">
                         {offlineList.map((f, i) => renderFriendCard(f, i + onlineList.length, false))}
                       </div>
                     </div>
@@ -872,7 +873,7 @@ export default function LabsCircle() {
             </div>
 
             <p className="labs-section-label">Recent Sessions</p>
-            <div className="space-y-2">
+            <div className="labs-grouped-list">
               {recentSharedSessions.map((s: Record<string, unknown>) => {
                 const sId = s.id as string;
                 const pCount = participantCounts[sId] || (s.participantIds as string[] | undefined)?.length || 0;
@@ -881,51 +882,50 @@ export default function LabsCircle() {
                 return (
                   <div
                     key={sId}
-                    className="labs-card labs-card-interactive p-4"
+                    className="labs-list-row"
+                    style={{ cursor: "pointer" }}
                     onClick={() => navigate(`/labs/tastings/${sId}`)}
                     data-testid={`labs-circle-session-${sId}`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: "var(--labs-accent-muted)" }}
-                      >
-                        <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                            {String(s.title ?? "")}
-                          </p>
-                          {isHost && (
-                            <span
-                              className="text-[11px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
-                              style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                            >
-                              Host
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                            {String(s.date ?? "")}
-                          </span>
-                          {pCount > 0 && (
-                            <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                              <Users className="w-3 h-3" />
-                              {pCount}
-                            </span>
-                          )}
-                          {whiskyCount > 0 && (
-                            <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                              <GlassWater className="w-3 h-3" />
-                              {whiskyCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "var(--labs-accent-muted)" }}
+                    >
+                      <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="ty-ui truncate">
+                          {String(s.title ?? "")}
+                        </span>
+                        {isHost && (
+                          <span
+                            className="text-[11px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
+                            style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                          >
+                            Host
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="ty-caption">
+                          {String(s.date ?? "")}
+                        </span>
+                        {pCount > 0 && (
+                          <span className="ty-caption flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {pCount}
+                          </span>
+                        )}
+                        {whiskyCount > 0 && (
+                          <span className="ty-caption flex items-center gap-1">
+                            <GlassWater className="w-3 h-3" />
+                            {whiskyCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ opacity: 0.3, fontSize: 16, flexShrink: 0 }}>›</span>
                   </div>
                 );
               })}
@@ -956,57 +956,60 @@ export default function LabsCircle() {
     }
 
     return (
-      <div className="labs-fade-in space-y-2">
-        {items.slice(0, 20).map((item, idx) => {
-          const details = (item.details || {}) as Record<string, unknown>;
-          const isJournal = item.type === "journal";
-          const whiskyName = (details.whiskyName || details.name) as string | undefined;
-          const score = (details.score || details.overall || details.personalScore) as number | undefined;
-          return (
-            <div
-              key={`${item.type}-${item.participantId}-${idx}`}
-              className="labs-card p-4 flex gap-3"
-              data-testid={`labs-circle-activity-${idx}`}
-            >
+      <div className="labs-fade-in">
+        <div className="labs-grouped-list">
+          {items.slice(0, 20).map((item, idx) => {
+            const details = (item.details || {}) as Record<string, unknown>;
+            const isJournal = item.type === "journal";
+            const whiskyName = (details.whiskyName || details.name) as string | undefined;
+            const score = (details.score || details.overall || details.personalScore) as number | undefined;
+            return (
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--labs-accent-muted)" }}
+                key={`${item.type}-${item.participantId}-${idx}`}
+                className="labs-list-row"
+                style={{ gap: 12 }}
+                data-testid={`labs-circle-activity-${idx}`}
               >
-                {isJournal ? (
-                  <FileText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                ) : (
-                  <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                  {stripGuestSuffix(String(item.participantName || "Someone"))}
-                </p>
-                <p className="text-xs truncate mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "var(--labs-accent-muted)" }}
+                >
                   {isJournal ? (
-                    whiskyName ? (
-                      <>
-                        Logged: {String(whiskyName)}
-                        {score != null && (
-                          <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
-                            {typeof score === "number" ? Math.round(score * 10) / 10 : String(score)}/100
-                          </span>
-                        )}
-                      </>
-                    ) : "Logged a dram"
+                    <FileText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                   ) : (
-                    details.title ? `Joined: ${String(details.title)}` : "Participated in a tasting"
+                    <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                   )}
-                </p>
-                {typeof item.timestamp === "string" && (
-                  <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>
-                    {formatRelativeTime(item.timestamp)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="ty-ui truncate" style={{ display: "block" }}>
+                    {stripGuestSuffix(String(item.participantName || "Someone"))}
+                  </span>
+                  <p className="ty-caption truncate mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
+                    {isJournal ? (
+                      whiskyName ? (
+                        <>
+                          Logged: {String(whiskyName)}
+                          {score != null && (
+                            <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
+                              {typeof score === "number" ? Math.round(score * 10) / 10 : String(score)}/100
+                            </span>
+                          )}
+                        </>
+                      ) : "Logged a dram"
+                    ) : (
+                      details.title ? `Joined: ${String(details.title)}` : "Participated in a tasting"
+                    )}
                   </p>
-                )}
+                  {typeof item.timestamp === "string" && (
+                    <p className="ty-caption mt-1">
+                      {formatRelativeTime(item.timestamp)}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -1186,7 +1189,7 @@ function EmptyState({
           <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="0.5" opacity="0.15"/>
           <circle cx="20" cy="20" r="10" stroke="currentColor" strokeWidth="0.3" opacity="0.1"/>
         </svg>
-        <Icon className="w-5 h-5" style={{ color: "currentColor", opacity: 0.3, position: "relative" }} />
+        <Icon className="w-5 h-5" style={{ color: "currentColor", opacity: 0.5, position: "relative" }} />
       </div>
       <h2 className="labs-empty-title">{title}</h2>
       <p className="labs-empty-sub">{description}</p>
