@@ -3627,6 +3627,104 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  const cheersCooldowns = new Map<string, number>();
+
+  app.post("/api/participants/:id/cheers", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const senderId = req.params.id;
+      const { friendId, recipientParticipantId } = req.body;
+      if (!friendId) return res.status(400).json({ message: "friendId required" });
+
+      const cooldownKey = `${senderId}:${friendId}`;
+      const lastCheers = cheersCooldowns.get(cooldownKey);
+      if (lastCheers && Date.now() - lastCheers < 5 * 60 * 1000) {
+        const remaining = Math.ceil((5 * 60 * 1000 - (Date.now() - lastCheers)) / 1000);
+        return res.status(429).json({ message: `Cooldown active. Try again in ${remaining}s`, remainingSeconds: remaining });
+      }
+
+      const friends = await storage.getWhiskyFriends(senderId);
+      const friend = friends.find((f: WhiskyFriend) => f.id === friendId);
+      if (!friend) return res.status(404).json({ message: "Friend not found" });
+
+      let recipientId = recipientParticipantId;
+      if (!recipientId) {
+        const match = friend.email ? await storage.getParticipantByEmail(friend.email) : undefined;
+        recipientId = match?.id;
+      }
+      if (!recipientId) return res.status(404).json({ message: "Recipient not found on platform" });
+
+      const recipientParticipant = await storage.getParticipant(recipientId);
+      if (!recipientParticipant) return res.status(404).json({ message: "Recipient not found on platform" });
+
+      const sender = await storage.getParticipant(senderId);
+      const senderName = sender?.name || "Someone";
+
+      await storage.createNotification({
+        recipientId: recipientParticipant.id,
+        type: "cheers",
+        title: `${senderName} stößt mit dir an! 🥃`,
+        message: "Prost! Ein Cheers von deinem Freund.",
+        linkUrl: "/labs/circle",
+        tastingId: null,
+        isGlobal: false,
+      });
+
+      cheersCooldowns.set(cooldownKey, Date.now());
+      res.json({ success: true });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/participants/:id/invite-to-tasting", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+      const senderId = req.params.id;
+      const { friendId, tastingId, recipientParticipantId } = req.body;
+      if (!friendId || !tastingId) return res.status(400).json({ message: "friendId and tastingId required" });
+
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== senderId) return res.status(403).json({ message: "Only the host can invite to a tasting" });
+
+      const friends = await storage.getWhiskyFriends(senderId);
+      const friend = friends.find((f: WhiskyFriend) => f.id === friendId);
+      if (!friend) return res.status(404).json({ message: "Friend not found" });
+
+      let recipientId = recipientParticipantId;
+      if (!recipientId) {
+        const match = friend.email ? await storage.getParticipantByEmail(friend.email) : undefined;
+        recipientId = match?.id;
+      }
+      if (!recipientId) return res.status(404).json({ message: "Recipient not found on platform" });
+
+      const recipientParticipant = await storage.getParticipant(recipientId);
+      if (!recipientParticipant) return res.status(404).json({ message: "Recipient not found on platform" });
+
+      const sender = await storage.getParticipant(senderId);
+      const senderName = sender?.name || "Someone";
+
+      await storage.createNotification({
+        recipientId: recipientParticipant.id,
+        type: "tasting_invite",
+        title: `${senderName} lädt dich zum Tasting ein!`,
+        message: `Komm zum Tasting: ${tasting.title}`,
+        linkUrl: `/labs/tastings/${tastingId}`,
+        tastingId: tastingId,
+        isGlobal: false,
+      });
+
+      res.json({ success: true });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: msg });
+    }
+  });
+
   app.get("/api/participants/:id/platform-online", async (req, res) => {
     try {
       const auth = await requireAuth(req);

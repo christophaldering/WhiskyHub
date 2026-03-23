@@ -12,6 +12,7 @@ import { stripGuestSuffix } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
+import { toast } from "@/hooks/use-toast";
 
 type Tab = "friends" | "leaderboard" | "sessions" | "activity" | "community";
 
@@ -208,6 +209,49 @@ export default function LabsCircle() {
   });
 
   const [selectedFriend, setSelectedFriend] = useState<OnlineFriend | null>(null);
+  const [cheersCooldowns, setCheersCooldowns] = useState<Record<string, number>>({});
+  const [invitePickerFriend, setInvitePickerFriend] = useState<OnlineFriend | null>(null);
+
+  const cheersMutation = useMutation({
+    mutationFn: ({ friendId, recipientParticipantId }: { friendId: string; recipientParticipantId?: string }) =>
+      friendsApi.cheers(pid!, friendId, recipientParticipantId),
+    onSuccess: (_data, { friendId }) => {
+      setCheersCooldowns((prev) => ({ ...prev, [friendId]: Date.now() }));
+      toast({ title: "Cheers! 🥃", description: "Prost wurde gesendet!" });
+    },
+    onError: (err: Error & { code?: string }) => {
+      if (err.message?.includes("Cooldown")) {
+        toast({ title: "Cooldown aktiv", description: "Warte noch einen Moment, bevor du erneut anstoßen kannst." });
+      } else {
+        toast({ title: "Fehler", description: err.message });
+      }
+    },
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: ({ friendId, tastingId, recipientParticipantId }: { friendId: string; tastingId: string; recipientParticipantId?: string }) =>
+      friendsApi.inviteToTasting(pid!, friendId, tastingId, recipientParticipantId),
+    onSuccess: () => {
+      setInvitePickerFriend(null);
+      toast({ title: "Einladung gesendet!", description: "Dein Freund wurde zum Tasting eingeladen." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Fehler", description: err.message });
+    },
+  });
+
+  const isCheersOnCooldown = useCallback((friendId: string) => {
+    const lastCheers = cheersCooldowns[friendId];
+    if (!lastCheers) return false;
+    return Date.now() - lastCheers < 5 * 60 * 1000;
+  }, [cheersCooldowns]);
+
+  const myActiveTastings = useMemo(() => {
+    return (tastings || []).filter(
+      (t: Record<string, unknown>) =>
+        t.hostId === pid && (t.status === "draft" || t.status === "open")
+    );
+  }, [tastings, pid]);
 
   const filteredOnline = useMemo(() => {
     const thresholdMs = 2.5 * 60 * 1000;
@@ -370,6 +414,23 @@ export default function LabsCircle() {
           friend={selectedFriend}
           sharedSessions={sharedSessions}
           onClose={() => setSelectedFriend(null)}
+          onCheers={(friendId) => cheersMutation.mutate({ friendId, recipientParticipantId: selectedFriend.participantId })}
+          isCheersOnCooldown={isCheersOnCooldown(selectedFriend.friendId)}
+          isCheersLoading={cheersMutation.isPending}
+          myActiveTastings={myActiveTastings}
+          onInvite={(friendId, tastingId) => inviteMutation.mutate({ friendId, tastingId, recipientParticipantId: selectedFriend.participantId })}
+          isInviteLoading={inviteMutation.isPending}
+          pid={pid!}
+        />
+      )}
+
+      {invitePickerFriend && (
+        <InvitePickerSheet
+          friend={invitePickerFriend}
+          tastings={myActiveTastings}
+          onClose={() => setInvitePickerFriend(null)}
+          onInvite={(tastingId) => inviteMutation.mutate({ friendId: invitePickerFriend.friendId, tastingId, recipientParticipantId: invitePickerFriend.participantId })}
+          isLoading={inviteMutation.isPending}
         />
       )}
     </div>
@@ -852,7 +913,49 @@ export default function LabsCircle() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {isOnline && !isSelf && (
+                        <>
+                          <button
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                            style={{
+                              background: isCheersOnCooldown(fid) ? "var(--labs-surface-elevated)" : "var(--labs-accent-muted)",
+                              color: isCheersOnCooldown(fid) ? "var(--labs-text-muted)" : "var(--labs-accent)",
+                              border: "none",
+                              cursor: isCheersOnCooldown(fid) ? "default" : "pointer",
+                              opacity: isCheersOnCooldown(fid) ? 0.5 : 1,
+                            }}
+                            disabled={isCheersOnCooldown(fid) || cheersMutation.isPending}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isCheersOnCooldown(fid)) cheersMutation.mutate({ friendId: fid, recipientParticipantId: onlineInfo?.participantId });
+                            }}
+                            title={isCheersOnCooldown(fid) ? "Cooldown – bitte warten" : "Cheers senden"}
+                            data-testid={`labs-circle-cheers-${i}`}
+                          >
+                            <GlassWater className="w-3.5 h-3.5" />
+                          </button>
+                          {myActiveTastings.length > 0 && (
+                            <button
+                              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                              style={{
+                                background: "var(--labs-accent-muted)",
+                                color: "var(--labs-accent)",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onlineInfo) setInvitePickerFriend(onlineInfo);
+                              }}
+                              title="Zum Tasting einladen"
+                              data-testid={`labs-circle-invite-${i}`}
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </>
+                      )}
                       {isOnline && (
                         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
                       )}
@@ -1139,11 +1242,27 @@ function FriendDetailSheet({
   friend,
   sharedSessions,
   onClose,
+  onCheers,
+  isCheersOnCooldown,
+  isCheersLoading,
+  myActiveTastings,
+  onInvite,
+  isInviteLoading,
+  pid,
 }: {
   friend: OnlineFriend;
   sharedSessions: Array<Record<string, unknown>>;
   onClose: () => void;
+  onCheers: (friendId: string) => void;
+  isCheersOnCooldown: boolean;
+  isCheersLoading: boolean;
+  myActiveTastings: Array<Record<string, unknown>>;
+  onInvite: (friendId: string, tastingId: string) => void;
+  isInviteLoading: boolean;
+  pid: string;
 }) {
+  const [showInvitePicker, setShowInvitePicker] = useState(false);
+  const isSelf = friend.participantId === pid;
   const initials = friend.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
   const friendSessions = sharedSessions.filter((s) => {
     const participants = (s.participants || []) as Array<Record<string, unknown>>;
@@ -1195,6 +1314,75 @@ function FriendDetailSheet({
             </p>
           </div>
         </div>
+
+        {!isSelf && (
+          <div className="flex gap-3 mb-6">
+            <button
+              className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+              style={{
+                background: isCheersOnCooldown ? "var(--labs-surface-elevated)" : "var(--labs-accent)",
+                color: isCheersOnCooldown ? "var(--labs-text-muted)" : "var(--labs-bg)",
+                border: "none",
+                cursor: isCheersOnCooldown ? "default" : "pointer",
+                opacity: isCheersOnCooldown ? 0.6 : 1,
+              }}
+              disabled={isCheersOnCooldown || isCheersLoading}
+              onClick={() => onCheers(friend.friendId)}
+              data-testid="friend-detail-cheers"
+            >
+              <GlassWater className="w-4 h-4" />
+              {isCheersOnCooldown ? "Cooldown..." : "Cheers! 🥃"}
+            </button>
+            {myActiveTastings.length > 0 && (
+              <button
+                className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+                style={{
+                  background: "var(--labs-accent-muted)",
+                  color: "var(--labs-accent)",
+                  border: "1px solid var(--labs-accent)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setShowInvitePicker(!showInvitePicker)}
+                data-testid="friend-detail-invite"
+              >
+                <Send className="w-4 h-4" />
+                Einladen
+              </button>
+            )}
+          </div>
+        )}
+
+        {showInvitePicker && myActiveTastings.length > 0 && (
+          <div className="mb-6">
+            <p className="labs-section-label mb-2">Tasting auswählen</p>
+            <div className="space-y-2">
+              {myActiveTastings.map((t: Record<string, unknown>) => (
+                <button
+                  key={t.id as string}
+                  className="w-full labs-card p-3 flex items-center gap-3 transition-all"
+                  style={{ border: "1px solid var(--labs-border)", cursor: "pointer", background: "var(--labs-surface)" }}
+                  onClick={() => {
+                    onInvite(friend.friendId, t.id as string);
+                    setShowInvitePicker(false);
+                  }}
+                  disabled={isInviteLoading}
+                  data-testid={`friend-detail-invite-tasting-${t.id}`}
+                >
+                  <Wine className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                      {String(t.title || "Tasting")}
+                    </p>
+                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                      {String(t.date ?? "")} · {String(t.status ?? "")}
+                    </p>
+                  </div>
+                  <Send className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3 mb-6">
           <div className="labs-card p-4 flex items-center gap-3">
@@ -1266,6 +1454,82 @@ function FriendDetailSheet({
           data-testid="friend-detail-close"
         >
           Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InvitePickerSheet({
+  friend,
+  tastings,
+  onClose,
+  onInvite,
+  isLoading,
+}: {
+  friend: OnlineFriend;
+  tastings: Array<Record<string, unknown>>;
+  onClose: () => void;
+  onInvite: (tastingId: string) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
+        background: "rgba(0, 0, 0, 0.75)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+      onClick={onClose}
+      data-testid="invite-picker-overlay"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="labs-fade-in"
+        style={{
+          width: "100%", maxWidth: 480,
+          background: "var(--labs-surface)", borderRadius: "20px 20px 0 0",
+          padding: "28px 24px 36px",
+          maxHeight: "60vh", overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />
+        <p className="text-sm font-bold labs-serif mb-1" style={{ color: "var(--labs-text)" }}>
+          {stripGuestSuffix(friend.name)} einladen
+        </p>
+        <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>
+          Wähle ein Tasting aus:
+        </p>
+        <div className="space-y-2">
+          {tastings.map((t: Record<string, unknown>) => (
+            <button
+              key={t.id as string}
+              className="w-full labs-card p-3 flex items-center gap-3 transition-all"
+              style={{ border: "1px solid var(--labs-border)", cursor: "pointer", background: "var(--labs-surface)" }}
+              onClick={() => onInvite(t.id as string)}
+              disabled={isLoading}
+              data-testid={`invite-picker-tasting-${t.id}`}
+            >
+              <Wine className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                  {String(t.title || "Tasting")}
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                  {String(t.date ?? "")} · {String(t.status ?? "")}
+                </p>
+              </div>
+              <Send className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full mt-4 py-3 rounded-xl text-sm font-semibold"
+          style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text)", border: "none", cursor: "pointer" }}
+          data-testid="invite-picker-close"
+        >
+          Abbrechen
         </button>
       </div>
     </div>

@@ -320,6 +320,10 @@ export const friendsApi = {
     fetchJSON(`/participants/${participantId}/friends/${friendId}/decline`, { method: "POST" }),
   resendInvite: (participantId: string, friendId: string) =>
     fetchJSON(`/participants/${participantId}/friends/${friendId}/resend-invite`, { method: "POST" }),
+  cheers: (participantId: string, friendId: string, recipientParticipantId?: string) =>
+    fetchJSON(`/participants/${participantId}/cheers`, { method: "POST", body: JSON.stringify({ friendId, recipientParticipantId }) }),
+  inviteToTasting: (participantId: string, friendId: string, tastingId: string, recipientParticipantId?: string) =>
+    fetchJSON(`/participants/${participantId}/invite-to-tasting`, { method: "POST", body: JSON.stringify({ friendId, tastingId, recipientParticipantId }) }),
 };
 
 // ===== Whisky Groups (Clubs) =====

@@ -322,6 +322,57 @@ function useFriendOnlineNotifications(): number {
   return onlineCount;
 }
 
+function useIncomingNotificationPolling() {
+  const { currentParticipant } = useAppStore();
+  const lastSeenIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const pid = currentParticipant?.id;
+    if (!pid) return;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/notifications?participantId=${pid}`, {
+          headers: pidHeaders(),
+        });
+        if (cancelled || !res.ok) return;
+        const notifications = await res.json();
+        if (!Array.isArray(notifications) || notifications.length === 0) return;
+
+        const unread = notifications.filter(
+          (n: { isRead?: boolean; type?: string }) =>
+            !n.isRead && (n.type === "cheers" || n.type === "tasting_invite")
+        );
+        if (unread.length === 0) return;
+
+        const newest = unread[0];
+        if (lastSeenIdRef.current === newest.id) return;
+        lastSeenIdRef.current = newest.id;
+
+        toast({
+          title: newest.title,
+          description: newest.message,
+        });
+
+        fetch(`/api/notifications/${newest.id}/read`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...pidHeaders() },
+          body: JSON.stringify({ participantId: pid }),
+        }).catch(() => {});
+      } catch {}
+    };
+
+    const timeout = setTimeout(poll, 5000);
+    const interval = setInterval(poll, 30000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [currentParticipant?.id]);
+}
+
 function LabsNotificationBell() {
   const [count] = useState(() => {
     try {
@@ -626,6 +677,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   const onlineFriendsCount = useFriendOnlineNotifications();
+  useIncomingNotificationPolling();
   const { theme, toggle: toggleTheme } = useLabsTheme();
 
   const handleLang = (lang: 'de' | 'en') => {
