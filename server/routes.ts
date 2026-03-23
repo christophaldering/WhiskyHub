@@ -12936,9 +12936,14 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       const participantId = req.headers["x-participant-id"] as string;
       if (!participantId) return res.json({ communities: [] });
       const myCommunities = await storage.getParticipantCommunities(participantId);
+      const thresholdAgo = new Date(Date.now() - 2.5 * 60 * 1000);
       const result = await Promise.all(myCommunities.map(async (c) => {
         const members = await storage.getCommunityMemberships(c.id);
-        return { ...c, memberCount: members.length };
+        const onlineCount = await Promise.all(members.map(async (m) => {
+          const p = await storage.getParticipant(m.participantId);
+          return p?.lastSeenAt && new Date(p.lastSeenAt) > thresholdAgo ? 1 : 0;
+        })).then(counts => counts.reduce((a, b) => a + b, 0));
+        return { ...c, memberCount: members.length, onlineCount };
       }));
       res.json({ communities: result });
     } catch (e: any) {
@@ -13070,8 +13075,12 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       if (!isMember) return res.status(403).json({ message: "You must be a member of this community" });
 
       const members = await storage.getCommunityMemberships(community.id);
+      const membersWithOnline = await Promise.all(members.map(async (m) => {
+        const p = await storage.getParticipant(m.participantId);
+        return { ...m, lastSeenAt: p?.lastSeenAt || null };
+      }));
       const myRole = await storage.getCommunityMemberRole(community.id, participantId);
-      res.json({ ...community, members, myRole });
+      res.json({ ...community, members: membersWithOnline, myRole });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

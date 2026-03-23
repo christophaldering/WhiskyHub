@@ -36,6 +36,7 @@ export default function LabsCommunityDetail() {
     queryKey: ["community-detail", communityId],
     queryFn: () => communityApi.getById(communityId!),
     enabled: !!communityId && !!pid,
+    refetchInterval: 30000,
   });
 
   const { data: friendsData, isLoading: friendsLoading } = useQuery({
@@ -67,7 +68,16 @@ export default function LabsCommunityDetail() {
   });
 
   const isAdmin = community?.myRole === "admin";
-  const members = community?.members || [];
+  const ONLINE_THRESHOLD = 2.5 * 60 * 1000;
+  const isOnline = (lastSeenAt: string | null | undefined) => {
+    if (!lastSeenAt) return false;
+    return Date.now() - new Date(lastSeenAt).getTime() < ONLINE_THRESHOLD;
+  };
+  const members = [...(community?.members || [])].sort((a: any, b: any) => {
+    const aOnline = isOnline(a.lastSeenAt) ? 1 : 0;
+    const bOnline = isOnline(b.lastSeenAt) ? 1 : 0;
+    return bOnline - aOnline;
+  });
 
   const handleInviteByEmail = async () => {
     if (!inviteEmail.trim()) return;
@@ -227,6 +237,12 @@ export default function LabsCommunityDetail() {
               <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                 <Users className="w-3 h-3 inline mr-1" /> {members.length} members
               </span>
+              {members.filter((m: any) => isOnline(m.lastSeenAt)).length > 0 && (
+                <span className="text-xs flex items-center gap-1" style={{ color: "#22c55e" }} data-testid="detail-online-count">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#22c55e" }} />
+                  {members.filter((m: any) => isOnline(m.lastSeenAt)).length} online
+                </span>
+              )}
               <span className="text-xs flex items-center gap-1" style={{ color: roleColor(community.myRole) }}>
                 {roleIcon(community.myRole)} {roleLabel(community.myRole)}
               </span>
@@ -410,11 +426,20 @@ export default function LabsCommunityDetail() {
         {members.map((m: any) => (
           <div key={m.id} className="labs-card p-3 flex items-center justify-between" data-testid={`member-${m.participantId}`}>
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-              >
-                {(m.participantName || "?")[0].toUpperCase()}
+              <div className="relative flex-shrink-0">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                >
+                  {(m.participantName || "?")[0].toUpperCase()}
+                </div>
+                {isOnline(m.lastSeenAt) && (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
+                    style={{ background: "#22c55e", borderColor: "var(--labs-bg)" }}
+                    data-testid={`online-badge-${m.participantId}`}
+                  />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>

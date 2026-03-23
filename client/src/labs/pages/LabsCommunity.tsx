@@ -24,6 +24,7 @@ export default function LabsCommunity() {
     queryKey: ["my-communities", pid],
     queryFn: () => communityApi.getMine(),
     enabled: !!pid,
+    refetchInterval: 30000,
   });
 
   const { data: pendingInvites } = useQuery<any[]>({
@@ -235,10 +236,16 @@ export default function LabsCommunity() {
                     {c.description}
                   </p>
                 )}
-                <p className="text-[11px] mt-1" style={{ color: "var(--labs-text-muted)" }}>
-                  <Users className="w-3 h-3 inline mr-1" />
-                  {c.memberCount || 0} members
-                </p>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                    <Users className="w-3 h-3 inline mr-1" />
+                    {c.memberCount || 0} members
+                  </span>
+                  <span className="text-[11px] flex items-center gap-1" style={{ color: (c.onlineCount ?? 0) > 0 ? "#22c55e" : "var(--labs-text-muted)" }} data-testid={`online-count-${c.id}`}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: (c.onlineCount ?? 0) > 0 ? "#22c55e" : "var(--labs-text-muted)", opacity: (c.onlineCount ?? 0) > 0 ? 1 : 0.5 }} />
+                    {c.onlineCount ?? 0} online
+                  </span>
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
             </button>
