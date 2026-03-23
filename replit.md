@@ -152,3 +152,7 @@ Admin "Aromas" tab in LabsAdmin.tsx for managing flavour categories and descript
 -   **jsPDF**: For PDF generation.
 -   **Framer Motion**: For animations.
 -   **Capacitor**: For native mobile application wrapping.
+# MILESTONE: 23. Maerz 2026, 12:30 Uhr
+
+Checkpoint nach intensiver Entwicklungsphase. 40+ Tasks abgeschlossen.
+Alles fast fertig.
