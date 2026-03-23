@@ -22,6 +22,8 @@ export interface Translations {
   ratingModeQ: string; ratingModeSub: string
   ratingGuided: string; ratingGuidedD: string; ratingGuidedH: string
   ratingCompact: string; ratingCompactD: string; ratingCompactH: string
+  ratingQuick: string; ratingQuickD: string; ratingQuickH: string
+  ratingAddDetails: string
   ratingNose: string; ratingPalate: string; ratingFinish: string; ratingOverall: string
   ratingQ_nose: string; ratingQ_palate: string; ratingQ_finish: string; ratingQ_overall: string
   ratingHint_nose: string; ratingHint_palate: string; ratingHint_finish: string; ratingHint_overall: string
@@ -210,9 +212,11 @@ const DE: Translations = {
   joinWaiting: 'startet gleich', joinPour: 'Giess dir schon mal ein.',
   back: 'Zurück', darkMode: 'Dunkel', lightMode: 'Hell',
   participantsLabel: 'Im Raum', hostLabel: 'Host', youLabel: 'Du', readyLabel: 'Bereit', waitingLabel: 'Wartet',
-  ratingModeQ: 'Wie möchtest du bewerten?', ratingModeSub: 'Beide Modi erfassen Nase · Gaumen · Abgang · Gesamt.',
+  ratingModeQ: 'Wie möchtest du bewerten?', ratingModeSub: 'Wähle deinen Bewertungsmodus.',
   ratingGuided: 'Geführt', ratingGuidedD: 'Eine Dimension nach der anderen — mit Fragen und Aroma-Vorschlägen.', ratingGuidedH: 'Wenn man sich Zeit nimmt.',
   ratingCompact: 'Kompakt', ratingCompactD: 'Alle vier Dimensionen auf einmal — Score direkt eingeben.', ratingCompactH: 'Wenn man sein Bewertungsschema kennt.',
+  ratingQuick: 'Quick Rate', ratingQuickD: 'Nur ein Score — perfekt für Events und unterwegs.', ratingQuickH: '2 Taps und fertig.',
+  ratingAddDetails: 'Details ergänzen',
   ratingNose: 'Nase', ratingPalate: 'Gaumen', ratingFinish: 'Abgang', ratingOverall: 'Gesamt',
   ratingQ_nose: 'Was nimmst du zuerst wahr?', ratingQ_palate: 'Was spürst du beim ersten Schluck?', ratingQ_finish: 'Was bleibt zurück?', ratingQ_overall: 'Dein Gesamteindruck.',
   ratingHint_nose: 'Lass das Glas kurz atmen.', ratingHint_palate: 'Lass ihn auf der Zunge verweilen.', ratingHint_finish: 'Warte einen Moment.', ratingHint_overall: 'Vertrau deiner Intuition.',
@@ -411,9 +415,11 @@ const EN: Translations = {
   joinWaiting: 'starting shortly', joinPour: 'Pour yourself a glass.',
   back: 'Back', darkMode: 'Dark', lightMode: 'Light',
   participantsLabel: 'In the room', hostLabel: 'Host', youLabel: 'You', readyLabel: 'Ready', waitingLabel: 'Waiting',
-  ratingModeQ: 'How would you like to rate?', ratingModeSub: 'Both modes capture Nose · Palate · Finish · Overall.',
+  ratingModeQ: 'How would you like to rate?', ratingModeSub: 'Choose your rating mode.',
   ratingGuided: 'Guided', ratingGuidedD: 'One dimension at a time — with questions and aroma suggestions.', ratingGuidedH: 'When you want to take your time.',
   ratingCompact: 'Compact', ratingCompactD: 'All four dimensions at once — type scores directly.', ratingCompactH: 'When you know your rating scheme.',
+  ratingQuick: 'Quick Rate', ratingQuickD: 'Just one score — perfect for events and on the go.', ratingQuickH: '2 taps and done.',
+  ratingAddDetails: 'Add details',
   ratingNose: 'Nose', ratingPalate: 'Palate', ratingFinish: 'Finish', ratingOverall: 'Overall',
   ratingQ_nose: 'What do you notice first?', ratingQ_palate: 'What do you taste on the first sip?', ratingQ_finish: 'What lingers?', ratingQ_overall: 'Your overall impression.',
   ratingHint_nose: 'Let the glass breathe a moment.', ratingHint_palate: 'Let it rest on your tongue.', ratingHint_finish: 'Wait a moment.', ratingHint_overall: 'Trust your instinct.',

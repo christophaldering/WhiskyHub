@@ -7,6 +7,7 @@ import { PhaseSignature } from '../../components/PhaseSignature'
 import { RatingModeSelect } from './RatingModeSelect'
 import { GuidedRating } from './GuidedRating'
 import { CompactRating } from './CompactRating'
+import { QuickRating } from './QuickRating'
 import * as Icon from '../../icons/Icons'
 
 // ── RatingSummary ─────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ interface SummaryProps {
   th: ThemeTokens; t: Translations
   data: RatingData; whisky: WhiskyData
   dramIdx: number; onNext: () => void; onEdit: () => void
+  isQuick?: boolean; onAddDetails?: () => void
 }
 
 function getBandColor(s: number) {
@@ -23,8 +25,9 @@ function getBandColor(s: number) {
 
 const PHASE_IDS = ['nose', 'palate', 'finish', 'overall'] as const
 
-const RatingSummary: React.FC<SummaryProps> = ({ th, t, data, whisky, dramIdx, onNext, onEdit }) => {
-  const avg = Math.round(PHASE_IDS.reduce((s, p) => s + data.scores[p], 0) / 4)
+const RatingSummary: React.FC<SummaryProps> = ({ th, t, data, whisky, dramIdx, onNext, onEdit, isQuick, onAddDetails }) => {
+  const displayPhases = isQuick ? (['overall'] as const) : PHASE_IDS
+  const displayScore = isQuick ? data.scores.overall : Math.round(PHASE_IDS.reduce((s, p) => s + data.scores[p], 0) / 4)
 
   return (
     <div style={{ minHeight: '100%', background: th.bg, color: th.text, fontFamily: 'DM Sans, sans-serif', paddingBottom: 120 }}>
@@ -43,9 +46,9 @@ const RatingSummary: React.FC<SummaryProps> = ({ th, t, data, whisky, dramIdx, o
       <div style={{ margin: `0 ${SP.md}px`, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, animation: 'fadeUp 400ms ease 0.1s both' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SP.md }}>
           <span style={{ fontSize: 14, fontWeight: 600 }}>{t.ratingMyRating}</span>
-          <span style={{ fontSize: 48, fontWeight: 700, color: getBandColor(avg), lineHeight: 1 }}>{avg}</span>
+          <span style={{ fontSize: 48, fontWeight: 700, color: getBandColor(displayScore), lineHeight: 1 }}>{displayScore}</span>
         </div>
-        {PHASE_IDS.map(p => {
+        {displayPhases.map(p => {
           const score = data.scores[p]
           const pct = ((score - 60) / 40) * 100
           const pt = th.phases[p]
@@ -74,14 +77,22 @@ const RatingSummary: React.FC<SummaryProps> = ({ th, t, data, whisky, dramIdx, o
 
       {/* CTAs */}
       <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, padding: `0 ${SP.md}px`, display: 'flex', flexDirection: 'column', gap: SP.sm }}>
-        <button onClick={onNext} style={{
+        <button data-testid="button-next-dram" onClick={onNext} style={{
           width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer',
           background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
           color: '#1a0f00', fontSize: 17, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
         }}>
           {t.ratingNext} #{dramIdx + 1} →
         </button>
-        <button onClick={onEdit} style={{ width: '100%', height: 44, borderRadius: 14, background: 'none', border: `1px solid ${th.border}`, color: th.muted, fontSize: 15, cursor: 'pointer' }}>
+        {isQuick && onAddDetails && (
+          <button data-testid="button-add-details" onClick={onAddDetails} style={{
+            width: '100%', height: 44, borderRadius: 14, background: 'none',
+            border: `1px solid ${th.gold}60`, color: th.gold, fontSize: 15, fontWeight: 600, cursor: 'pointer',
+          }}>
+            {t.ratingAddDetails} →
+          </button>
+        )}
+        <button data-testid="button-edit-rating" onClick={onEdit} style={{ width: '100%', height: 44, borderRadius: 14, background: 'none', border: `1px solid ${th.border}`, color: th.muted, fontSize: 15, cursor: 'pointer' }}>
           {t.ratingEdit}
         </button>
       </div>
@@ -99,7 +110,7 @@ interface FlowProps {
 }
 
 export const RatingFlow: React.FC<FlowProps> = (props) => {
-  const [mode, setMode]     = useState<null | 'guided' | 'compact'>(null)
+  const [mode, setMode]     = useState<null | 'guided' | 'compact' | 'quick'>(null)
   const [step, setStep]     = useState<'mode' | 'rating' | 'summary'>('mode')
   const [result, setResult] = useState<RatingData | null>(null)
 
@@ -115,13 +126,18 @@ export const RatingFlow: React.FC<FlowProps> = (props) => {
     <RatingModeSelect th={props.th} t={props.t} whisky={props.whisky} dramIdx={props.dramIdx} total={props.total}
       onSelect={m => { setMode(m); setStep('rating') }} onBack={props.onBack} />
   )
-  if (step === 'rating') return mode === 'guided'
-    ? <GuidedRating {...sharedProps} />
-    : <CompactRating {...sharedProps} />
+  if (step === 'rating') {
+    if (mode === 'quick') return <QuickRating {...sharedProps} />
+    return mode === 'guided'
+      ? <GuidedRating {...sharedProps} initialData={result ?? undefined} />
+      : <CompactRating {...sharedProps} />
+  }
   if (step === 'summary' && result) return (
     <RatingSummary th={props.th} t={props.t} data={result} whisky={props.whisky} dramIdx={props.dramIdx}
       onNext={() => props.onDone(result)}
-      onEdit={() => setStep('rating')} />
+      onEdit={() => setStep('rating')}
+      isQuick={mode === 'quick'}
+      onAddDetails={() => { setMode('guided'); setStep('rating') }} />
   )
   return null
 }

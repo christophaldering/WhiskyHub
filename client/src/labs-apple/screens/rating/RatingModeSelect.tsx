@@ -12,14 +12,15 @@ interface Props {
   whisky:    WhiskyData
   dramIdx:   number
   total:     number
-  onSelect:  (mode: 'guided' | 'compact') => void
+  onSelect:  (mode: 'guided' | 'compact' | 'quick') => void
   onBack:    () => void
 }
 
 export const RatingModeSelect: React.FC<Props> = ({ th, t, whisky, dramIdx, total, onSelect, onBack }) => {
   const options = [
-    { id: 'guided' as const,  label: t.ratingGuided,  desc: t.ratingGuidedD,  hint: t.ratingGuidedH,  phaseId: 'nose'   as const },
-    { id: 'compact' as const, label: t.ratingCompact, desc: t.ratingCompactD, hint: t.ratingCompactH, phaseId: 'palate' as const },
+    { id: 'guided' as const,  label: t.ratingGuided,  desc: t.ratingGuidedD,  hint: t.ratingGuidedH,  phaseId: 'nose'    as const },
+    { id: 'compact' as const, label: t.ratingCompact, desc: t.ratingCompactD, hint: t.ratingCompactH, phaseId: 'palate'  as const },
+    { id: 'quick'   as const, label: t.ratingQuick,   desc: t.ratingQuickD,   hint: t.ratingQuickH,   phaseId: 'overall' as const },
   ]
 
   return (

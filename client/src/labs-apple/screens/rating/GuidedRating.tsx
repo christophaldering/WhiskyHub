@@ -15,6 +15,7 @@ interface Props {
   dramIdx: number; total: number
   tastingStatus: string; participantId: string
   lang?: 'de' | 'en'
+  initialData?: Partial<RatingData>
   onDone: (data: RatingData) => void; onBack: () => void
 }
 
@@ -25,11 +26,11 @@ const PHASES: { id: PhaseId; labelKey: keyof Translations; qKey: keyof Translati
   { id: 'overall', labelKey: 'ratingOverall', qKey: 'ratingQ_overall', hintKey: 'ratingHint_overall' },
 ]
 
-export const GuidedRating: React.FC<Props> = ({ th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, lang = 'de', onDone, onBack }) => {
+export const GuidedRating: React.FC<Props> = ({ th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, lang = 'de', initialData, onDone, onBack }) => {
   const [phaseIndex, setPhaseIndex] = useState(0)
-  const [scores, setScores]         = useState({ nose: 75, palate: 75, finish: 75, overall: 75 })
-  const [tags, setTags]             = useState({ nose: [] as string[], palate: [] as string[], finish: [] as string[], overall: [] as string[] })
-  const [notes, setNotes]           = useState({ nose: '', palate: '', finish: '', overall: '' })
+  const [scores, setScores]         = useState({ nose: 75, palate: 75, finish: 75, overall: 75, ...initialData?.scores })
+  const [tags, setTags]             = useState({ nose: [] as string[], palate: [] as string[], finish: [] as string[], overall: [] as string[], ...initialData?.tags })
+  const [notes, setNotes]           = useState({ nose: '', palate: '', finish: '', overall: '', ...initialData?.notes })
   const [showFlash, setFlash]       = useState(false)
   const [visible, setVisible]       = useState(true)
   const [saveError, setSaveError]   = useState<string | null>(null)
