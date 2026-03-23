@@ -17,6 +17,12 @@ type AuthMode = 'welcome' | 'login' | 'register' | 'guest' | 'forgotPin' | 'forg
 
 const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
+const scrollInputIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
+  setTimeout(() => {
+    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, 350)
+}
+
 const PasswordField: React.FC<{
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
   th: ThemeTokens; show: boolean; onToggle: () => void; autoFocus?: boolean;
@@ -34,7 +40,7 @@ const PasswordField: React.FC<{
         data-testid={testId}
         onKeyDown={onKeyDown}
         style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 44px 0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms' }}
-        onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold }}
+        onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold; scrollInputIntoView(e) }}
         onBlur={e => { (e.target as HTMLInputElement).style.borderColor = th.border }}
       />
       <button
@@ -63,7 +69,7 @@ const Field: React.FC<{ label: string; type?: string; value: string; onChange: (
       inputMode={inputMode as any}
       maxLength={maxLength}
       style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms', ...style }}
-      onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold }}
+      onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold; scrollInputIntoView(e) }}
       onBlur={e => { (e.target as HTMLInputElement).style.borderColor = th.border }}
     />
   </div>
@@ -580,9 +586,10 @@ export const AuthScreen: React.FC<Props> = ({ th, t, onLogin }) => {
     fontFamily: 'DM Sans, sans-serif',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'center',
     padding: `${SP.xl}px ${SP.lg}px`,
+    paddingBottom: `calc(${SP.xl}px + env(safe-area-inset-bottom, 0px) + 40px)`,
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
   }
 
   const back = backTarget(mode)
@@ -590,25 +597,27 @@ export const AuthScreen: React.FC<Props> = ({ th, t, onLogin }) => {
   return (
     <div style={containerStyle}>
       {back && (
-        <button onClick={() => setMode(back)} style={{ position: 'absolute', top: SP.lg, left: SP.md, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15 }}>
+        <button onClick={() => setMode(back)} style={{ position: 'absolute', top: SP.lg, left: SP.md, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: th.muted, minHeight: 44, cursor: 'pointer', fontSize: 15, zIndex: 1 }}>
           <Icon.Back color={th.muted} size={18} />{t.back}
         </button>
       )}
 
-      <div style={{ maxWidth: 400, width: '100%', margin: '0 auto', animation: 'fadeUp 300ms ease' }}>
-        {mode === 'welcome'        && <WelcomeView th={th} t={t} onSwitch={setMode} />}
-        {mode === 'login'          && <LoginView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
-        {mode === 'register'       && <RegisterView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
-        {mode === 'guest'          && <GuestView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
-        {mode === 'forgotPin'      && <ForgotPinView th={th} t={t} onSwitch={setMode} />}
-        {mode === 'forgotPinVerify' && <ForgotPinVerifyView th={th} t={t} onSwitch={setMode} />}
-        {mode === 'forgotPinDone'  && <ForgotPinDoneView th={th} t={t} onSwitch={setMode} />}
-        {mode === 'verify'         && <VerifyView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
-        {mode === 'blocked'        && <BlockedView th={th} t={t} onSwitch={setMode} />}
-        {mode === 'consentGate'    && <ConsentGateView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+      <div style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ maxWidth: 400, width: '100%', margin: '0 auto', animation: 'fadeUp 300ms ease' }}>
+          {mode === 'welcome'        && <WelcomeView th={th} t={t} onSwitch={setMode} />}
+          {mode === 'login'          && <LoginView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+          {mode === 'register'       && <RegisterView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+          {mode === 'guest'          && <GuestView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+          {mode === 'forgotPin'      && <ForgotPinView th={th} t={t} onSwitch={setMode} />}
+          {mode === 'forgotPinVerify' && <ForgotPinVerifyView th={th} t={t} onSwitch={setMode} />}
+          {mode === 'forgotPinDone'  && <ForgotPinDoneView th={th} t={t} onSwitch={setMode} />}
+          {mode === 'verify'         && <VerifyView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+          {mode === 'blocked'        && <BlockedView th={th} t={t} onSwitch={setMode} />}
+          {mode === 'consentGate'    && <ConsentGateView th={th} t={t} onSuccess={onLogin} onSwitch={setMode} />}
+        </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: SP.xl, fontSize: 11, color: th.faint }}>
+      <div style={{ flex: '0 0 auto', textAlign: 'center', marginTop: SP.xl, fontSize: 11, color: th.faint }}>
         CaskSense - Dein Gaumen. Deine Geschichte.
       </div>
     </div>
