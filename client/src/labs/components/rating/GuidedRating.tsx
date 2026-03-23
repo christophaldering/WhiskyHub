@@ -175,7 +175,7 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
   };
 
   return (
-    <div style={{ position: "relative", minHeight: "100dvh", paddingBottom: 140 }}>
+    <div style={{ position: "relative", minHeight: "100dvh", paddingBottom: 200 }}>
       <div
         style={{
           position: "fixed",
@@ -360,7 +360,7 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
           data-testid="rating-error-banner"
           style={{
             position: "fixed",
-            bottom: 70,
+            bottom: "calc(140px + env(safe-area-inset-bottom, 8px))",
             left: SP.md,
             right: SP.md,
             padding: `${SP.sm}px ${SP.md}px`,
@@ -380,7 +380,7 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
 
       <div style={{
         position: "fixed",
-        bottom: 8,
+        bottom: "calc(72px + env(safe-area-inset-bottom, 8px))",
         left: SP.md,
         right: SP.md,
         zIndex: 15,

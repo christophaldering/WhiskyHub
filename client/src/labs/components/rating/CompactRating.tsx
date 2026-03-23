@@ -98,7 +98,7 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
   }, [scores, tags, notes, onDone]);
 
   return (
-    <div style={{ padding: `${SP.md}px`, paddingBottom: 140 }}>
+    <div style={{ padding: `${SP.md}px`, paddingBottom: 200 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: SP.lg }}>
         <div>
           {!whisky.blind && whisky.name && (
@@ -268,7 +268,7 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
 
       <div style={{
         position: "fixed",
-        bottom: 8,
+        bottom: "calc(72px + env(safe-area-inset-bottom, 8px))",
         left: SP.md,
         right: SP.md,
         zIndex: 15,
