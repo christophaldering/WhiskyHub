@@ -1,10 +1,23 @@
 import { useState, useMemo } from "react";
 import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
-import { bottlers, type Bottler } from "@/data/bottlers";
+import { useQuery } from "@tanstack/react-query";
+import { useAppStore } from "@/lib/store";
+import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink, ChevronLeft } from "lucide-react";
 
-const COUNTRIES = ["All", ...Array.from(new Set(bottlers.map((b) => b.country))).sort()];
+interface Bottler {
+  id: string;
+  name: string;
+  country: string;
+  region: string;
+  founded: number | null;
+  description: string | null;
+  specialty: string | null;
+  website: string | null;
+  notableReleases: string[] | null;
+  status: string;
+}
 
 function Card({ b }: { b: Bottler }) {
   const [open, setOpen] = useState(false);
@@ -18,7 +31,7 @@ function Card({ b }: { b: Bottler }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "var(--labs-text-muted)" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><MapPin style={{ width: 10, height: 10 }} />{b.region}, {b.country}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar style={{ width: 10, height: 10 }} />Est. {b.founded}</span>
+            {b.founded && <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar style={{ width: 10, height: 10 }} />Est. {b.founded}</span>}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -30,11 +43,13 @@ function Card({ b }: { b: Bottler }) {
       </button>
       {open && (
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--labs-text)", margin: 0, opacity: 0.9 }}>{b.description}</p>
-          <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)", display: "flex", alignItems: "flex-start", gap: 6 }}>
-            <Star style={{ width: 12, height: 12, color: "var(--labs-accent)", flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: "var(--labs-accent)", margin: 0, fontStyle: "italic" }}>{b.specialty}</p>
-          </div>
+          {b.description && <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--labs-text)", margin: 0, opacity: 0.9 }}>{b.description}</p>}
+          {b.specialty && (
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)", display: "flex", alignItems: "flex-start", gap: 6 }}>
+              <Star style={{ width: 12, height: 12, color: "var(--labs-accent)", flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 11, lineHeight: 1.5, color: "var(--labs-accent)", margin: 0, fontStyle: "italic" }}>{b.specialty}</p>
+            </div>
+          )}
           {b.notableReleases && b.notableReleases.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>Notable Releases</span>
@@ -51,18 +66,35 @@ function Card({ b }: { b: Bottler }) {
 
 export default function LabsBottlers() {
   const { t } = useTranslation();
+  const currentParticipant = useAppStore((s) => s.currentParticipant);
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "founded">("name");
 
-  const filtered = useMemo(() => bottlers
+  const { data: bottlersData, isLoading } = useQuery<Bottler[]>({
+    queryKey: ["encyclopedia-bottlers"],
+    queryFn: async () => {
+      const res = await fetch("/api/encyclopedia/bottlers");
+      if (!res.ok) throw new Error("Failed to fetch bottlers");
+      return res.json();
+    },
+  });
+
+  const bottlersList = bottlersData || [];
+
+  const countries = useMemo(() => {
+    const unique = Array.from(new Set(bottlersList.map((b) => b.country))).sort();
+    return ["All", ...unique];
+  }, [bottlersList]);
+
+  const filtered = useMemo(() => bottlersList
     .filter((b) => {
-      const s = !search || b.name.toLowerCase().includes(search.toLowerCase()) || b.country.toLowerCase().includes(search.toLowerCase()) || b.description.toLowerCase().includes(search.toLowerCase());
+      const s = !search || b.name.toLowerCase().includes(search.toLowerCase()) || b.country.toLowerCase().includes(search.toLowerCase()) || (b.description || "").toLowerCase().includes(search.toLowerCase());
       const c = country === "All" || b.country === country;
       return s && c;
     })
-    .sort((a, b) => sortBy === "name" ? a.name.localeCompare(b.name) : a.founded - b.founded),
-  [search, country, sortBy]);
+    .sort((a, b) => sortBy === "name" ? a.name.localeCompare(b.name) : (a.founded || 0) - (b.founded || 0)),
+  [search, country, sortBy, bottlersList]);
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-bottlers-page">
@@ -72,12 +104,15 @@ export default function LabsBottlers() {
         </button>
       </BackLink>
 
-      <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }} data-testid="text-bottlers-title">Independent Bottlers</h1>
-      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>Explore {bottlers.length} independent bottlers worldwide</p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-bottlers-title">Independent Bottlers</h1>
+        {currentParticipant && <SuggestEntryDialog type="bottler" />}
+      </div>
+      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : `Explore ${bottlersList.length} independent bottlers worldwide`}</p>
 
       <input type="text" placeholder="Search bottlers..." value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-bottlers" />
       <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
-        {COUNTRIES.map((c) => (
+        {countries.map((c) => (
           <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? "var(--labs-accent)" : "var(--labs-border)"}`, background: country === c ? "var(--labs-accent)" : "transparent", color: country === c ? "var(--labs-bg)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`labs-chip-bottler-${c.toLowerCase()}`}>{c}</button>
         ))}
       </div>
@@ -90,7 +125,7 @@ export default function LabsBottlers() {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {filtered.map((b) => <Card key={b.name} b={b} />)}
+        {filtered.map((b) => <Card key={b.id} b={b} />)}
         {filtered.length === 0 && <div className="labs-empty" data-testid="text-bottlers-empty">No bottlers match your search.</div>}
       </div>
     </div>

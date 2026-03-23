@@ -62,6 +62,8 @@ import {
   type InsertFlavourDescriptor, type FlavourDescriptor,
   distilleries,
   type InsertDistillery, type Distillery,
+  bottlers,
+  type InsertBottler, type Bottler,
   bottleSplits,
   bottleSplitClaims,
   type InsertBottleSplit, type BottleSplit,
@@ -472,6 +474,15 @@ export interface IStorage {
   deleteDistillery(id: string): Promise<void>;
   getDistilleryCount(): Promise<number>;
   createDistilleries(data: InsertDistillery[]): Promise<Distillery[]>;
+
+  // Bottlers
+  getAllBottlers(): Promise<Bottler[]>;
+  getBottler(id: string): Promise<Bottler | undefined>;
+  createBottler(data: InsertBottler): Promise<Bottler>;
+  updateBottler(id: string, data: Partial<InsertBottler>): Promise<Bottler | undefined>;
+  deleteBottler(id: string): Promise<void>;
+  getBottlerCount(): Promise<number>;
+  createBottlers(data: InsertBottler[]): Promise<Bottler[]>;
 
   // Bottle Splits
   getBottleSplit(id: string): Promise<BottleSplit | undefined>;
@@ -2970,6 +2981,39 @@ export class DatabaseStorage implements IStorage {
   async createDistilleries(data: InsertDistillery[]): Promise<Distillery[]> {
     if (data.length === 0) return [];
     return db.insert(distilleries).values(data).returning();
+  }
+
+  async getAllBottlers(): Promise<Bottler[]> {
+    return db.select().from(bottlers).orderBy(asc(bottlers.name));
+  }
+
+  async getBottler(id: string): Promise<Bottler | undefined> {
+    const [result] = await db.select().from(bottlers).where(eq(bottlers.id, id));
+    return result;
+  }
+
+  async createBottler(data: InsertBottler): Promise<Bottler> {
+    const [result] = await db.insert(bottlers).values(data).returning();
+    return result;
+  }
+
+  async updateBottler(id: string, data: Partial<InsertBottler>): Promise<Bottler | undefined> {
+    const [result] = await db.update(bottlers).set(data).where(eq(bottlers.id, id)).returning();
+    return result;
+  }
+
+  async deleteBottler(id: string): Promise<void> {
+    await db.delete(bottlers).where(eq(bottlers.id, id));
+  }
+
+  async getBottlerCount(): Promise<number> {
+    const [{ cnt }] = await db.select({ cnt: sql`count(*)::int` }).from(bottlers);
+    return Number(cnt);
+  }
+
+  async createBottlers(data: InsertBottler[]): Promise<Bottler[]> {
+    if (data.length === 0) return [];
+    return db.insert(bottlers).values(data).returning();
   }
 
   // --- Bottle Splits ---

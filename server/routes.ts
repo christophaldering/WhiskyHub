@@ -5618,6 +5618,24 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
     }
   });
 
+  app.get("/api/encyclopedia/distilleries", async (_req: Request, res: Response) => {
+    try {
+      const all = await storage.getAllDistilleries();
+      res.json(all);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/encyclopedia/bottlers", async (_req: Request, res: Response) => {
+    try {
+      const all = await storage.getAllBottlers();
+      res.json(all);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // --- Whiskybase Collection ---
   
   app.get("/api/collection/:participantId", async (req: Request, res: Response) => {
@@ -10875,7 +10893,41 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       if (!["approved", "rejected"].includes(status)) {
         return res.status(400).json({ message: "status must be 'approved' or 'rejected'" });
       }
+
+      const existing = await storage.getEncyclopediaSuggestions();
+      const suggestion = existing.find(s => s.id === req.params.id);
+      const wasAlreadyApproved = suggestion?.status === "approved";
+
       const updated = await storage.updateSuggestionStatus(req.params.id as string, status, adminNote);
+
+      if (status === "approved" && updated && !wasAlreadyApproved) {
+        if (updated.type === "distillery") {
+          await storage.createDistillery({
+            name: updated.name,
+            region: updated.region,
+            country: updated.country,
+            founded: updated.founded ?? null,
+            description: updated.description ?? null,
+            feature: updated.feature ?? null,
+            status: "active",
+            lat: null,
+            lng: null,
+          });
+        } else if (updated.type === "bottler") {
+          await storage.createBottler({
+            name: updated.name,
+            country: updated.country,
+            region: updated.region,
+            founded: updated.founded ?? null,
+            description: updated.description ?? null,
+            specialty: updated.feature ?? null,
+            website: updated.website ?? null,
+            notableReleases: null,
+            status: "active",
+          });
+        }
+      }
+
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

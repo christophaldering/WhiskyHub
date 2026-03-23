@@ -1,11 +1,25 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
-import { distilleries, type Distillery } from "@/data/distilleries";
+import { useAppStore } from "@/lib/store";
+import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon, ExternalLink } from "lucide-react";
 
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
-const COUNTRIES = ["All", "Scotland", "Ireland", "Japan", "USA"];
+
+interface Distillery {
+  id: string;
+  name: string;
+  region: string;
+  country: string;
+  founded: number | null;
+  description: string | null;
+  feature: string | null;
+  status: string;
+  lat: number | null;
+  lng: number | null;
+}
 
 function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opts?: any) => string }) {
   const [open, setOpen] = useState(false);
@@ -31,10 +45,12 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
       </button>
       {open && (
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--labs-text)", margin: 0, opacity: 0.9 }}>{d.description}</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10, fontSize: 11, color: "var(--labs-accent)" }}>
-            <Calendar style={{ width: 12, height: 12 }} />{t("discover.founded", "Founded {{year}}", { year: d.founded })}
-          </div>
+          {d.description && <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--labs-text)", margin: 0, opacity: 0.9 }}>{d.description}</p>}
+          {d.founded && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10, fontSize: 11, color: "var(--labs-accent)" }}>
+              <Calendar style={{ width: 12, height: 12 }} />{t("discover.founded", "Founded {{year}}", { year: d.founded })}
+            </div>
+          )}
           {d.feature && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.5 }}>{t("discover.keyFact", "Key Fact")}</span>
@@ -47,19 +63,33 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
   );
 }
 
+const COUNTRIES = ["All", "Scotland", "Ireland", "Japan", "USA"];
+
 export default function LabsDistilleries() {
   const { t } = useTranslation();
+  const currentParticipant = useAppStore((s) => s.currentParticipant);
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("All");
   const [view, setView] = useState<"list" | "map">("list");
   const [sortBy, setSortBy] = useState<"name" | "founded" | "region">("name");
 
+  const { data: distilleriesData, isLoading } = useQuery<Distillery[]>({
+    queryKey: ["encyclopedia-distilleries"],
+    queryFn: async () => {
+      const res = await fetch("/api/encyclopedia/distilleries");
+      if (!res.ok) throw new Error("Failed to fetch distilleries");
+      return res.json();
+    },
+  });
+
+  const distilleries = distilleriesData || [];
+
   const filtered = useMemo(() => distilleries.filter((d) => {
     const s = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.region.toLowerCase().includes(search.toLowerCase()) || d.country.toLowerCase().includes(search.toLowerCase());
     const c = country === "All" || d.country === country;
     return s && c;
-  }).sort((a, b) => sortBy === "name" ? a.name.localeCompare(b.name) : sortBy === "founded" ? a.founded - b.founded : a.region.localeCompare(b.region)),
-  [search, country, sortBy]);
+  }).sort((a, b) => sortBy === "name" ? a.name.localeCompare(b.name) : sortBy === "founded" ? (a.founded || 0) - (b.founded || 0) : a.region.localeCompare(b.region)),
+  [search, country, sortBy, distilleries]);
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
@@ -71,15 +101,18 @@ export default function LabsDistilleries() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
-        <div style={{ display: "flex", borderRadius: 10, border: "1px solid var(--labs-border)", overflow: "hidden", background: "var(--labs-surface-elevated)" }}>
-          {(["list", "map"] as const).map((m) => (
-            <button key={m} onClick={() => setView(m)} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, background: view === m ? "var(--labs-accent)" : "transparent", color: view === m ? "var(--labs-bg)" : "var(--labs-text-muted)", borderRadius: 0, transition: "all 0.2s ease", opacity: view === m ? 1 : 0.8 }} data-testid={`labs-view-${m}`}>
-              {m === "list" ? <List style={{ width: 15, height: 15 }} /> : <MapIcon style={{ width: 15, height: 15 }} />}{t(`discover.${m}`, m === "list" ? "List" : "Map")}
-            </button>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {currentParticipant && <SuggestEntryDialog type="distillery" />}
+          <div style={{ display: "flex", borderRadius: 10, border: "1px solid var(--labs-border)", overflow: "hidden", background: "var(--labs-surface-elevated)" }}>
+            {(["list", "map"] as const).map((m) => (
+              <button key={m} onClick={() => setView(m)} className="labs-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, background: view === m ? "var(--labs-accent)" : "transparent", color: view === m ? "var(--labs-bg)" : "var(--labs-text-muted)", borderRadius: 0, transition: "all 0.2s ease", opacity: view === m ? 1 : 0.8 }} data-testid={`labs-view-${m}`}>
+                {m === "list" ? <List style={{ width: 15, height: 15 }} /> : <MapIcon style={{ width: 15, height: 15 }} />}{t(`discover.${m}`, m === "list" ? "List" : "Map")}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
+      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
 
       {view === "list" && (
         <button
@@ -154,7 +187,7 @@ export default function LabsDistilleries() {
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{t("discover.found", "{{count}} found", { count: filtered.length })}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.map((d) => <Card key={d.name} d={d} t={t} />)}
+            {filtered.map((d) => <Card key={d.id} d={d} t={t} />)}
             {filtered.length === 0 && <div className="labs-empty" data-testid="text-distilleries-empty">{t("discover.noMatch", "No distilleries match your search.")}</div>}
           </div>
         </>

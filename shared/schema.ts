@@ -878,6 +878,24 @@ export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id
 export type InsertDistillery = z.infer<typeof insertDistillerySchema>;
 export type Distillery = typeof distilleries.$inferSelect;
 
+// --- Bottlers (encyclopedia of independent bottlers) ---
+export const bottlers = pgTable("bottlers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  country: text("country").notNull(),
+  region: text("region").notNull(),
+  founded: integer("founded"),
+  description: text("description"),
+  specialty: text("specialty"),
+  website: text("website"),
+  notableReleases: text("notable_releases").array(),
+  status: text("status").notNull().default("active"),
+});
+
+export const insertBottlerSchema = createInsertSchema(bottlers).omit({ id: true });
+export type InsertBottler = z.infer<typeof insertBottlerSchema>;
+export type Bottler = typeof bottlers.$inferSelect;
+
 // --- Bottle Splits (Flaschenteilung) ---
 export const bottleSplits = pgTable("bottle_splits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

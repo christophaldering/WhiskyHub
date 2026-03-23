@@ -213,6 +213,34 @@ async function seedDistilleries() {
   }
 }
 
+async function seedBottlers() {
+  try {
+    const count = await storage.getBottlerCount();
+    if (count > 0) {
+      log(`Bottler seed: ${count} bottlers already present, skipping`, "seed");
+      return;
+    }
+
+    const { bottlers: staticData } = await import("../client/src/data/bottlers");
+    const seedData = staticData.map((b: { name: string; country: string; region: string; founded: number; description: string; specialty: string; website?: string; notableReleases?: string[] }) => ({
+      name: b.name,
+      country: b.country,
+      region: b.region,
+      founded: b.founded ?? null,
+      description: b.description ?? null,
+      specialty: b.specialty ?? null,
+      website: b.website ?? null,
+      notableReleases: b.notableReleases ?? null,
+      status: "active",
+    }));
+
+    await storage.createBottlers(seedData);
+    log(`Bottler seed: inserted ${seedData.length} bottlers`, "seed");
+  } catch (e) {
+    log(`Bottler seed failed: ${(e as Error).message}`, "seed");
+  }
+}
+
 const LOADING_HTML =
   "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
   "<meta http-equiv='refresh' content='2'></head>" +
@@ -377,6 +405,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       .catch((e) => log(`Labs pilot seed error: ${(e as Error).message}`, "seed"))
       .then(() => seedDistilleries())
       .catch((e) => log(`Distillery seed error: ${(e as Error).message}`, "seed"))
+      .then(() => seedBottlers())
+      .catch((e) => log(`Bottler seed error: ${(e as Error).message}`, "seed"))
       .finally(() =>
         backfillNormalizedScores().catch((e) =>
           log(`Backfill error: ${(e as Error).message}`, "seed"),
