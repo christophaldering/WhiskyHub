@@ -253,7 +253,7 @@ export default function LabsTasteSettings() {
               {(["de", "en"] as const).map(lng => {
                 const active = i18n.language === lng;
                 return (
-                  <button key={lng} onClick={() => { i18n.changeLanguage(lng); localStorage.setItem("i18nextLng", lng); if (pid) participantApi.setLanguage(pid, lng).catch(() => {}); toast({ title: "Language updated", duration: 1500 }); }}
+                  <button key={lng} onClick={() => { i18n.changeLanguage(lng); localStorage.setItem("casksense-language", lng); if (pid) participantApi.setLanguage(pid, lng).catch(() => {}); toast({ title: "Language updated", duration: 1500 }); }}
                     style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer" }}
                     data-testid={`button-labs-language-${lng}`}>{lng === "de" ? "Deutsch" : "English"}</button>
                 );
