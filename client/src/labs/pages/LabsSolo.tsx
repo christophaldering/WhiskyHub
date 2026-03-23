@@ -208,41 +208,33 @@ export default function LabsSolo() {
 
   if (participantError) {
     return (
-      <div className="labs-fade-in" style={{
-        padding: "var(--labs-space-xl) var(--labs-space-md)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 300,
-        gap: "var(--labs-space-lg)",
-      }}>
-        <p className="ty-body" style={{ color: "var(--labs-text)", textAlign: "center" }} data-testid="solo-participant-error">
-          {t("v2.solo.participantError", "Could not create session. Please try again.")}
-        </p>
-        <button
-          onClick={initParticipant}
-          data-testid="solo-participant-retry-btn"
-          className="labs-card"
-          style={{
-            padding: "var(--labs-space-sm) var(--labs-space-lg)",
-            minHeight: 44,
-            borderRadius: "var(--labs-radius-xl)",
-            color: "var(--labs-text)",
-            fontFamily: "var(--font-ui)",
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
-          {t("v2.solo.identifyRetry", "Try again")}
-        </button>
+      <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
+        <div className="labs-card" style={{
+          padding: "var(--labs-space-xl)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--labs-space-lg)",
+        }}>
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--labs-text)", textAlign: "center", margin: 0 }} data-testid="solo-participant-error">
+            {t("v2.solo.participantError", "Could not create session. Please try again.")}
+          </p>
+          <button
+            onClick={initParticipant}
+            data-testid="solo-participant-retry-btn"
+            className="labs-btn-secondary"
+            style={{ minWidth: 140 }}
+          >
+            {t("v2.solo.identifyRetry", "Try again")}
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!participantId) {
     return (
-      <div style={{
+      <div className="labs-fade-in" style={{
         padding: "var(--labs-space-xl) var(--labs-space-md)",
         display: "flex",
         alignItems: "center",
@@ -293,35 +285,27 @@ export default function LabsSolo() {
           onBack={() => setStep("form")}
         />
         {saveError && (
-          <div style={{
+          <div className="labs-card" style={{
             position: "fixed",
             bottom: 80,
             left: 16,
             right: 16,
             padding: "12px 16px",
-            borderRadius: "var(--labs-radius)",
             background: "var(--labs-phase-finish-dim)",
-            border: "1px solid var(--labs-phase-finish)",
+            borderColor: "var(--labs-phase-finish)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             zIndex: 100,
           }} data-testid="solo-save-error">
-            <span style={{ fontSize: 14, color: "var(--labs-text)" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--labs-text)" }}>
               {t("v2.ratingError", "Error saving")}
             </span>
             <button
               onClick={handleRetrySave}
               data-testid="solo-save-retry-btn"
-              style={{
-                padding: "6px 14px",
-                borderRadius: 9999,
-                border: "1px solid var(--labs-phase-finish)",
-                background: "none",
-                color: "var(--labs-phase-finish)",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
+              className="labs-btn-ghost"
+              style={{ color: "var(--labs-phase-finish)", fontSize: 13 }}
             >
               {t("v2.solo.saveRetry", "Retry save")}
             </button>

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine } from "lucide-react";
+import { Camera, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight } from "lucide-react";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
@@ -147,8 +147,14 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
         minHeight: 400,
         gap: "var(--labs-space-lg)",
       }}>
-        <Loader2 size={48} style={{ color: "var(--labs-phase-nose)", animation: "spin 1s linear infinite" }} />
-        <p className="ty-body" style={{ color: "var(--labs-text-muted)" }} data-testid="solo-identifying-text">
+        <div style={{
+          width: 64, height: 64, borderRadius: 16,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--labs-accent-muted)",
+        }}>
+          <Loader2 size={32} style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+        </div>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--labs-text-muted)", margin: 0 }} data-testid="solo-identifying-text">
           {t("v2.solo.identifying", "Identifying whisky...")}
         </p>
       </div>
@@ -157,40 +163,38 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
 
   if (status === "error") {
     return (
-      <div className="labs-fade-in" style={{
-        padding: "var(--labs-space-xl) var(--labs-space-md)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 400,
-        gap: "var(--labs-space-lg)",
-      }}>
-        <AlertTriangle size={48} style={{ color: "var(--labs-danger)" }} />
-        <p className="ty-body" style={{ color: "var(--labs-text)", textAlign: "center" }} data-testid="solo-error-text">
-          {t("v2.solo.identifyFail", "Identification failed")}
-        </p>
-        {errorMsg && (
-          <p className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
-            {errorMsg}
+      <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
+        <div className="labs-card" style={{
+          padding: "var(--labs-space-xl)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--labs-space-lg)",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 14,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--labs-danger-muted)",
+          }}>
+            <AlertTriangle size={28} style={{ color: "var(--labs-danger)" }} />
+          </div>
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--labs-text)", textAlign: "center", margin: 0 }} data-testid="solo-error-text">
+            {t("v2.solo.identifyFail", "Identification failed")}
           </p>
-        )}
-        <button
-          onClick={() => { setStatus("idle"); setErrorMsg(""); }}
-          data-testid="solo-retry-btn"
-          className="labs-card"
-          style={{
-            padding: "var(--labs-space-sm) var(--labs-space-lg)",
-            minHeight: 44,
-            borderRadius: "var(--labs-radius-xl)",
-            color: "var(--labs-text)",
-            fontFamily: "var(--font-ui)",
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
-          {t("v2.solo.identifyRetry", "Try again")}
-        </button>
+          {errorMsg && (
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: 0 }}>
+              {errorMsg}
+            </p>
+          )}
+          <button
+            onClick={() => { setStatus("idle"); setErrorMsg(""); }}
+            data-testid="solo-retry-btn"
+            className="labs-btn-secondary"
+            style={{ minWidth: 140 }}
+          >
+            {t("v2.solo.identifyRetry", "Try again")}
+          </button>
+        </div>
       </div>
     );
   }
@@ -201,36 +205,31 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
         <button
           onClick={() => { setStatus("idle"); setBarcodeValue(""); }}
           data-testid="solo-barcode-back-btn"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--labs-space-sm)",
-            background: "none",
-            border: "none",
-            color: "var(--labs-accent)",
-            fontFamily: "var(--font-ui)",
-            fontSize: 15,
-            cursor: "pointer",
-            padding: 0,
-            marginBottom: "var(--labs-space-lg)",
-          }}
+          className="labs-btn-ghost"
+          style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
         >
           <ArrowLeft size={18} />
           {t("v2.back", "Back")}
         </button>
 
-        <h2 className="ty-section-title" style={{ marginBottom: "var(--labs-space-lg)" }}>
+        <h2 className="labs-h2" style={{ marginBottom: "var(--labs-space-lg)" }}>
           {t("v2.solo.barcodeInput", "Enter barcode")}
         </h2>
 
-        <div style={{
+        <div className="labs-card" style={{
+          padding: "var(--labs-space-xl)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: "var(--labs-space-lg)",
-          padding: "var(--labs-space-xl) 0",
         }}>
-          <Barcode size={48} style={{ color: "var(--labs-phase-finish)" }} />
+          <div style={{
+            width: 56, height: 56, borderRadius: 14,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--labs-phase-finish-dim)",
+          }}>
+            <Barcode size={28} style={{ color: "var(--labs-phase-finish)" }} />
+          </div>
 
           <input
             type="text"
@@ -240,26 +239,12 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             placeholder={t("v2.solo.barcodeInputPH", "EAN / UPC number")}
             autoFocus
             data-testid="solo-barcode-input"
-            style={{
-              width: "100%",
-              maxWidth: 300,
-              minHeight: 44,
-              padding: "var(--labs-space-sm) var(--labs-space-md)",
-              borderRadius: "var(--labs-radius-sm)",
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              color: "var(--labs-text)",
-              fontFamily: "var(--font-ui)",
-              fontSize: 18,
-              textAlign: "center",
-              letterSpacing: "0.1em",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
+            className="labs-input"
+            style={{ textAlign: "center", letterSpacing: "0.1em", fontSize: 18, maxWidth: 300 }}
             onKeyDown={(e) => { if (e.key === "Enter") handleBarcodeSubmit(); }}
           />
 
-          <p className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: 0 }}>
             {t("v2.solo.barcodeDesc", "Read an EAN or QR code")}
           </p>
 
@@ -267,21 +252,8 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             onClick={handleBarcodeSubmit}
             disabled={barcodeValue.trim().length === 0}
             data-testid="solo-barcode-submit-btn"
-            style={{
-              width: "100%",
-              maxWidth: 300,
-              minHeight: 44,
-              borderRadius: "var(--labs-radius-xl)",
-              border: "none",
-              background: barcodeValue.trim().length > 0 ? "var(--labs-phase-finish)" : "var(--labs-surface-hover)",
-              color: barcodeValue.trim().length > 0 ? "#0e0b05" : "var(--labs-text-muted)",
-              fontFamily: "var(--font-display)",
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: barcodeValue.trim().length > 0 ? "pointer" : "default",
-              opacity: barcodeValue.trim().length > 0 ? 1 : 0.5,
-              transition: "all 0.2s",
-            }}
+            className="labs-btn-primary"
+            style={{ width: "100%", maxWidth: 300, minHeight: 44 }}
           >
             {t("v2.solo.barcodeSubmit", "Continue")}
           </button>
@@ -305,140 +277,129 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
       <button
         onClick={onBack}
         data-testid="solo-back-btn"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "var(--labs-space-sm)",
-          background: "none",
-          border: "none",
-          color: "var(--labs-accent)",
-          fontFamily: "var(--font-ui)",
-          fontSize: 15,
-          cursor: "pointer",
-          padding: 0,
-          marginBottom: "var(--labs-space-lg)",
-        }}
+        className="labs-btn-ghost"
+        style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
       >
         <ArrowLeft size={18} />
         {t("v2.back", "Back")}
       </button>
 
-      <h2 className="ty-section-title" data-testid="solo-title" style={{ marginBottom: "var(--labs-space-sm)" }}>
+      <h2 className="labs-h2" data-testid="solo-title" style={{ marginBottom: "var(--labs-space-sm)" }}>
         {t("v2.solo.title", "Log a Dram")}
       </h2>
 
-      <p className="ty-body" style={{
+      <p style={{
+        fontFamily: "var(--font-ui)",
+        fontSize: 14,
         color: "var(--labs-text-muted)",
         marginBottom: "var(--labs-space-xl)",
+        marginTop: 0,
       }} data-testid="solo-capture-sub">
         {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
       </p>
 
-      <button
-        onClick={handlePhoto}
-        data-testid="solo-photo-btn"
-        className="labs-card-interactive"
-        style={{
-          width: "100%",
-          height: 120,
-          borderRadius: "var(--labs-radius-lg)",
-          border: "1px solid var(--labs-phase-nose)",
-          background: "var(--labs-phase-nose-dim)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "var(--labs-space-sm)",
-          cursor: "pointer",
-          marginBottom: "var(--labs-space-lg)",
-        }}
-      >
-        <Camera size={36} style={{ color: "var(--labs-phase-nose)" }} />
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600, color: "var(--labs-text)" }}>
-          {t("v2.solo.photo", "Take a Photo")}
-        </span>
-        <span className="ty-caption" style={{ color: "var(--labs-text-muted)" }}>
-          {t("v2.solo.photoDesc", "Photograph the bottle and identify via AI")}
-        </span>
-      </button>
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "var(--labs-space-md)",
-        marginBottom: "var(--labs-space-lg)",
-      }}>
+      <div className="labs-grouped-list" style={{ marginBottom: "var(--labs-space-lg)" }}>
         <button
-          onClick={onManual}
-          data-testid="solo-manual-btn"
-          className="labs-card labs-card-interactive"
-          style={{
-            padding: "var(--labs-space-md)",
-            borderRadius: "var(--labs-radius)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "var(--labs-space-sm)",
-            cursor: "pointer",
-            minHeight: 80,
-          }}
+          type="button"
+          onClick={handlePhoto}
+          data-testid="solo-photo-btn"
+          className="labs-list-row"
+          style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
         >
-          <PenLine size={24} style={{ color: "var(--labs-phase-palate)" }} />
-          <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-            {t("v2.solo.manual", "Manual Entry")}
-          </span>
-          <span className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
-            {t("v2.solo.manualDesc", "Enter name, distillery, and details yourself")}
-          </span>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            background: "var(--labs-phase-nose-dim)",
+          }}>
+            <Camera className="w-5 h-5" style={{ color: "var(--labs-phase-nose)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.photo", "Take a Photo")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+              {t("v2.solo.photoDesc", "Photograph the bottle and identify via AI")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
         </button>
 
         <button
+          type="button"
+          onClick={onManual}
+          data-testid="solo-manual-btn"
+          className="labs-list-row"
+          style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            background: "var(--labs-phase-palate-dim)",
+          }}>
+            <PenLine className="w-5 h-5" style={{ color: "var(--labs-phase-palate)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.manual", "Manual Entry")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+              {t("v2.solo.manualDesc", "Enter name, distillery, and details yourself")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+        </button>
+
+        <button
+          type="button"
           onClick={() => setStatus("barcode")}
           data-testid="solo-barcode-btn"
-          className="labs-card labs-card-interactive"
-          style={{
-            padding: "var(--labs-space-md)",
-            borderRadius: "var(--labs-radius)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "var(--labs-space-sm)",
-            cursor: "pointer",
-            minHeight: 80,
-          }}
+          className="labs-list-row"
+          style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
         >
-          <Barcode size={24} style={{ color: "var(--labs-phase-finish)" }} />
-          <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-            {t("v2.solo.barcode", "Scan Barcode")}
-          </span>
-          <span className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
-            {t("v2.solo.barcodeDesc", "Read an EAN or QR code")}
-          </span>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            background: "var(--labs-phase-finish-dim)",
+          }}>
+            <Barcode className="w-5 h-5" style={{ color: "var(--labs-phase-finish)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.barcode", "Scan Barcode")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+              {t("v2.solo.barcodeDesc", "Read an EAN or QR code")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
         </button>
 
         {isAuthenticated && (
           <button
+            type="button"
             onClick={() => setShowCollectionPicker(true)}
             data-testid="solo-collection-btn"
-            className="labs-card labs-card-interactive"
-            style={{
-              padding: "var(--labs-space-md)",
-              borderRadius: "var(--labs-radius)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "var(--labs-space-sm)",
-              cursor: "pointer",
-              minHeight: 80,
-            }}
+            className="labs-list-row"
+            style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
           >
-            <Wine size={24} style={{ color: "var(--labs-accent)" }} />
-            <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-              {t("v2.solo.collection", "From my Collection")}
-            </span>
-            <span className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
-              {t("v2.solo.collectionDesc", "Pick a whisky from your journal or collection")}
-            </span>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              background: "var(--labs-accent-muted)",
+            }}>
+              <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                {t("v2.solo.collection", "From my Collection")}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                {t("v2.solo.collectionDesc", "Pick a whisky from your journal or collection")}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
           </button>
         )}
       </div>
