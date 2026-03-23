@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -10,9 +10,19 @@ import {
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, Sparkles, BarChart3,
   Info, Heart, Flame, Globe, History, Archive,
+  X, ChevronDown, Check,
 } from "lucide-react";
 
 type DiscoveryTab = "whiskys" | "tastings" | "insights";
+type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
+
+const ENTDECKEN_FILTER_DIMENSIONS: { key: EntdeckenFilterDimension; labelKey: string; fallback: string }[] = [
+  { key: "region", labelKey: "explore.filterRegion", fallback: "Region" },
+  { key: "distillery", labelKey: "discover.filterDistillery", fallback: "Distillery" },
+  { key: "category", labelKey: "explore.filterCategory", fallback: "Category" },
+  { key: "country", labelKey: "explore.filterCountry", fallback: "Country" },
+  { key: "peatLevel", labelKey: "explore.filterPeat", fallback: "Peat Level" },
+];
 
 export default function LabsEntdecken() {
   const { t, i18n } = useTranslation();
@@ -24,6 +34,27 @@ export default function LabsEntdecken() {
   const [activeTab, setActiveTab] = useState<DiscoveryTab>("whiskys");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("avg");
+  const [filters, setFilters] = useState<Record<EntdeckenFilterDimension, Set<string>>>({
+    region: new Set(),
+    distillery: new Set(),
+    category: new Set(),
+    country: new Set(),
+    peatLevel: new Set(),
+  });
+  const [expandedFilter, setExpandedFilter] = useState<EntdeckenFilterDimension | null>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
+        setExpandedFilter(null);
+      }
+    };
+    if (expandedFilter) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [expandedFilter]);
 
   const knowledgeItems = [
     { icon: BookOpen, key: "lexicon", path: "/labs/discover/lexicon" },
@@ -49,7 +80,7 @@ export default function LabsEntdecken() {
     { icon: Heart, key: "donate", path: "/labs/donate" },
   ];
 
-  const { data: whiskies = [] } = useQuery({
+  const { data: whiskiesRaw = [] } = useQuery({
     queryKey: ["discovery-whiskies", search, sort, pid],
     queryFn: async () => {
       const res = await fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: pid ? { "x-participant-id": pid } : {} });
@@ -58,6 +89,60 @@ export default function LabsEntdecken() {
     },
     enabled: activeTab === "whiskys",
   });
+
+  const filterValues = useMemo(() => {
+    if (!Array.isArray(whiskiesRaw) || whiskiesRaw.length === 0) return {} as Record<EntdeckenFilterDimension, string[]>;
+    const result: Record<EntdeckenFilterDimension, Set<string>> = {
+      region: new Set(), distillery: new Set(), category: new Set(), country: new Set(), peatLevel: new Set(),
+    };
+    for (const w of whiskiesRaw) {
+      if (w.region) result.region.add(w.region);
+      if (w.distillery) result.distillery.add(w.distillery);
+      if (w.category) result.category.add(w.category);
+      if (w.country) result.country.add(w.country);
+      if (w.peatLevel) result.peatLevel.add(w.peatLevel);
+    }
+    return {
+      region: Array.from(result.region).sort(),
+      distillery: Array.from(result.distillery).sort(),
+      category: Array.from(result.category).sort(),
+      country: Array.from(result.country).sort(),
+      peatLevel: Array.from(result.peatLevel).sort(),
+    };
+  }, [whiskiesRaw]);
+
+  const activeFilterCount = useMemo(() => {
+    return Object.values(filters).reduce((sum, set) => sum + set.size, 0);
+  }, [filters]);
+
+  const toggleFilter = useCallback((dim: EntdeckenFilterDimension, value: string) => {
+    setFilters(prev => {
+      const newSet = new Set(prev[dim]);
+      if (newSet.has(value)) newSet.delete(value);
+      else newSet.add(value);
+      return { ...prev, [dim]: newSet };
+    });
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({
+      region: new Set(), distillery: new Set(), category: new Set(), country: new Set(), peatLevel: new Set(),
+    });
+    setExpandedFilter(null);
+  }, []);
+
+  const whiskies = useMemo(() => {
+    if (!Array.isArray(whiskiesRaw)) return [];
+    if (activeFilterCount === 0) return whiskiesRaw;
+    return whiskiesRaw.filter((w: any) => {
+      if (filters.region.size > 0 && (!w.region || !filters.region.has(w.region))) return false;
+      if (filters.distillery.size > 0 && (!w.distillery || !filters.distillery.has(w.distillery))) return false;
+      if (filters.category.size > 0 && (!w.category || !filters.category.has(w.category))) return false;
+      if (filters.country.size > 0 && (!w.country || !filters.country.has(w.country))) return false;
+      if (filters.peatLevel.size > 0 && (!w.peatLevel || !filters.peatLevel.has(w.peatLevel))) return false;
+      return true;
+    });
+  }, [whiskiesRaw, filters, activeFilterCount]);
 
   const { data: tastingsData, isLoading: tastingsLoading } = useQuery({
     queryKey: ["discovery-tastings", pid],
@@ -175,6 +260,155 @@ export default function LabsEntdecken() {
                 }}
               />
             </div>
+
+            <div ref={filterDropdownRef} style={{ position: "relative", marginBottom: 8 }}>
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                {ENTDECKEN_FILTER_DIMENSIONS.map(dim => {
+                  const dimValues = filterValues[dim.key] || [];
+                  if (dimValues.length === 0) return null;
+                  const isActive = filters[dim.key].size > 0;
+                  const isExpanded = expandedFilter === dim.key;
+                  return (
+                    <button
+                      key={dim.key}
+                      onClick={() => setExpandedFilter(isExpanded ? null : dim.key)}
+                      data-testid={`filter-chip-${dim.key}`}
+                      style={{
+                        height: 32,
+                        padding: "0 10px",
+                        borderRadius: 16,
+                        border: isActive ? "1.5px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                        cursor: "pointer",
+                        background: isActive ? "var(--labs-accent)" : "var(--labs-surface)",
+                        color: isActive ? "var(--labs-on-accent)" : "var(--labs-text-muted)",
+                        fontSize: 12,
+                        fontWeight: isActive ? 600 : 400,
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        transition: "all 150ms",
+                      }}
+                    >
+                      {t(dim.labelKey, dim.fallback)}
+                      {isActive && <span style={{ fontSize: 10, opacity: 0.8 }}>({filters[dim.key].size})</span>}
+                      <ChevronDown className="w-3 h-3" style={{ opacity: 0.6, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    </button>
+                  );
+                })}
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    data-testid="filter-reset-all"
+                    style={{
+                      height: 32,
+                      padding: "0 10px",
+                      borderRadius: 16,
+                      border: "1px solid var(--labs-border)",
+                      cursor: "pointer",
+                      background: "transparent",
+                      color: "var(--labs-text-muted)",
+                      fontSize: 11,
+                      fontFamily: "inherit",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                    {t("discover.resetFilters", "Reset All")}
+                  </button>
+                )}
+              </div>
+
+              {expandedFilter && (filterValues[expandedFilter] || []).length > 0 && (
+                <div
+                  data-testid={`filter-dropdown-${expandedFilter}`}
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    zIndex: 20,
+                    marginTop: 4,
+                    background: "var(--labs-surface)",
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: 12,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    maxHeight: 240,
+                    overflowY: "auto",
+                    padding: "4px 0",
+                  }}
+                >
+                  {(filterValues[expandedFilter] || []).map(val => {
+                    const isSelected = filters[expandedFilter].has(val);
+                    return (
+                      <button
+                        key={val}
+                        onClick={() => toggleFilter(expandedFilter, val)}
+                        data-testid={`filter-option-${expandedFilter}-${val}`}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "10px 14px",
+                          border: "none",
+                          cursor: "pointer",
+                          background: isSelected ? "rgba(var(--labs-accent-rgb, 139,90,43), 0.08)" : "transparent",
+                          color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
+                          fontSize: 14,
+                          fontFamily: "inherit",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span>{val}</span>
+                        {isSelected && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {activeFilterCount > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                {ENTDECKEN_FILTER_DIMENSIONS.map(dim =>
+                  Array.from(filters[dim.key]).map(val => (
+                    <span
+                      key={`${dim.key}-${val}`}
+                      data-testid={`active-filter-${dim.key}-${val}`}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        height: 26,
+                        padding: "0 8px",
+                        borderRadius: 13,
+                        background: "var(--labs-accent)",
+                        color: "var(--labs-on-accent)",
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {val}
+                      <button
+                        onClick={() => toggleFilter(dim.key, val)}
+                        data-testid={`remove-filter-${dim.key}-${val}`}
+                        style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", color: "inherit" }}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
               {[
                 ["avg", t("discover.sortAvg", "Avg Score")],
@@ -242,7 +476,7 @@ export default function LabsEntdecken() {
             ))}
             {whiskies.length === 0 && (
               <div style={{ textAlign: "center", padding: 32, color: "var(--labs-text-muted)", fontSize: 14 }}>
-                {search ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
+                {(search || activeFilterCount > 0) ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
               </div>
             )}
           </div>
