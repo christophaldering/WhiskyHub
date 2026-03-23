@@ -41,9 +41,8 @@ const PasswordField: React.FC<{
         data-testid={testId}
         onKeyDown={onKeyDown}
         autoComplete={autoComplete}
-        inputMode="text"
         enterKeyHint="done"
-        style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 44px 0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms' }}
+        style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 48px 0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms' }}
         onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold; scrollInputIntoView(e) }}
         onBlur={e => { (e.target as HTMLInputElement).style.borderColor = th.border }}
       />
@@ -51,7 +50,7 @@ const PasswordField: React.FC<{
         type="button"
         onClick={onToggle}
         data-testid={toggleTestId}
-        style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 6, minHeight: 44, display: 'flex', alignItems: 'center' }}
+        style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 8px', minWidth: 36, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
       >
         {show ? <Icon.EyeOff color={th.muted} size={18} /> : <Icon.Eye color={th.muted} size={18} />}
       </button>
