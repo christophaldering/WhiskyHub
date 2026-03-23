@@ -14,7 +14,6 @@ import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
 import { tastingApi, journalApi, flavorProfileApi, ratingApi, statsApi, participantApi, pidHeaders } from "@/lib/api";
 import type { JournalEntry, Tasting } from "@shared/schema";
-import LabsScoreRing from "@/labs/components/LabsScoreRing";
 
 const ANALYTICS_THRESHOLD = 10;
 
@@ -473,10 +472,9 @@ export default function LabsTaste() {
   const whiskyCount = (statsObj?.totalTastingWhiskies ?? 0) + (statsObj?.totalJournalEntries ?? 0);
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
 
-  const participantObj = participant as { ratingStabilityScore?: number; explorationIndex?: number; smokeAffinityIndex?: number } | null;
+  const participantObj = participant as { ratingStabilityScore?: number; explorationIndex?: number } | null;
   const stability = participantObj?.ratingStabilityScore ?? null;
   const exploration = participantObj?.explorationIndex ?? null;
-  const smoke = participantObj?.smokeAffinityIndex ?? null;
   const insight = insightData?.insight ?? null;
 
   const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, overall: 0 };
@@ -515,27 +513,38 @@ export default function LabsTaste() {
         </div>
       ) : analyticsLocked ? (
         <>
-          <div className="labs-empty labs-fade-in labs-stagger-1" data-testid="card-taste-welcome">
-            <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="12" fill="currentColor" opacity="0.1" />
-              <circle cx="20" cy="20" r="6"  fill="currentColor" opacity="0.15"/>
-              <circle cx="20" cy="20" r="2"  fill="currentColor" opacity="0.3"/>
-            </svg>
-            <h2 className="labs-empty-title">Noch nicht genug Daten</h2>
-            <p className="labs-empty-sub" style={{ marginBottom: '1rem' }}>
-              {whiskyCount > 0
-                ? `Noch ${Math.max(0, ANALYTICS_THRESHOLD - whiskyCount)} Drams bis zu deinem Profil.`
-                : 'Dein erster Dram ist nur einen Atemzug entfernt.'}
-            </p>
-            <div style={{ maxWidth: 220, margin: "0 auto 1.5rem", width: '100%' }}>
-              <div style={{ height: 3, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "var(--labs-accent)", borderRadius: 3, transition: "width 0.5s", opacity: 0.6 }} />
+          <div className="labs-card labs-fade-in labs-stagger-1" style={{ padding: 24, marginBottom: 24, position: "relative", overflow: "hidden" }} data-testid="card-taste-welcome">
+            <div style={{ position: "absolute", top: -40, right: -40, width: 120, height: 120, background: "radial-gradient(circle, var(--labs-accent-glow), transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Target className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
               </div>
-              <p style={{ fontSize: 10, color: "var(--labs-text-muted)", opacity: 0.5, marginTop: 6, textAlign: "center" }}>
-                {whiskyCount} / {ANALYTICS_THRESHOLD}
-              </p>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", margin: 0, fontFamily: "var(--font-display)" }}>
+                  {whiskyCount > 0 ? t("myTastePage.unlockTitle", "Building Your Profile") : t("myTastePage.startTitle", "Your Whisky Journey")}
+                </h2>
+                <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0, marginTop: 2 }}>
+                  {whiskyCount > 0
+                    ? t("myTastePage.unlockSubtitle", "{{remaining}} more drams until your reliable profile", { remaining: Math.max(0, ANALYTICS_THRESHOLD - whiskyCount) })
+                    : t("myTastePage.startSubtitle", "Your first dram is just a moment away")}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)" }}>
+                  {t("myTastePage.progress", "Progress")}
+                </span>
+                <span style={{ fontSize: 28, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
+                  {whiskyCount}<span style={{ fontSize: 13, fontWeight: 400, color: "var(--labs-text-muted)" }}> / {ANALYTICS_THRESHOLD}</span>
+                </span>
+              </div>
+              <div style={{ height: 6, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`, background: "var(--labs-accent)", borderRadius: 3, transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+              </div>
               {whiskyCount > 0 && (
-                <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 12, fontSize: 10, color: "var(--labs-text-muted)" }}>
+                <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-start", gap: 12, fontSize: 11, color: "var(--labs-text-muted)" }}>
                   {(statsObj?.totalTastingWhiskies ?? 0) > 0 && (
                     <span data-testid="text-count-tasting-ratings">{statsObj?.totalTastingWhiskies} from tastings</span>
                   )}
@@ -545,8 +554,32 @@ export default function LabsTaste() {
                 </div>
               )}
             </div>
-            <button className="labs-empty-action" onClick={() => navigate("/labs/solo")} data-testid="button-taste-log-dram">
-              {whiskyCount > 0 ? "Log next dram" : "Log your first dram"}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
+              {[
+                { label: t("labs.statTastingsLabel", "Tastings"), icon: <Wine className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+                { label: t("labs.statConsistencyLabel", "Consistency"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+                { label: t("labs.statExplorationLabel", "Exploration"), icon: <Compass className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+              ].map(s => (
+                <div key={s.label} style={{ background: "var(--labs-surface-hover)", borderRadius: 10, padding: "12px 8px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  {s.icon}
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)" }}>{s.label}</div>
+                  <div style={{ height: 3, width: "60%", borderRadius: 2, background: "var(--labs-border)", marginTop: 2 }} />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => navigate("/labs/solo")}
+              style={{
+                width: "100%", padding: "12px 16px", borderRadius: 12, border: "none",
+                background: "var(--labs-accent)", color: "var(--labs-on-accent)",
+                fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                transition: "opacity 0.2s, transform 0.15s",
+              }}
+              data-testid="button-taste-log-dram"
+            >
+              {whiskyCount > 0 ? t("myTastePage.logNext", "Log next dram") : t("myTastePage.logFirst", "Log your first dram")}
             </button>
           </div>
 
@@ -649,47 +682,106 @@ export default function LabsTaste() {
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 labs-fade-in labs-stagger-1">
-            {[
-              { label: "Stability", value: stability, id: "stability", desc: t("labs.statStabilityDesc", "Rating consistency"), maxScore: 10, formatValue: (v: number) => v.toFixed(1) },
-              { label: "Exploration", value: exploration, id: "exploration", desc: t("labs.statExplorationDesc", "Variety of regions & styles"), maxScore: 10, formatValue: (v: number) => v.toFixed(1) },
-              { label: "Smoke", value: smoke, id: "smoke", desc: t("labs.statSmokeDesc", "Peat & smoke affinity"), maxScore: 1, formatValue: (v: number) => `${Math.round(v * 100)}%` },
-            ].map(s => (
-              <div key={s.id} className="labs-card p-4 flex flex-col items-center justify-center" data-testid={`labs-taste-stat-${s.id}`}>
-                <LabsScoreRing
-                  score={s.value}
-                  maxScore={s.maxScore}
-                  size={72}
-                  strokeWidth={5}
-                  showValue
-                  formatValue={s.formatValue}
-                />
-                <p className="text-[11px] mt-2 font-medium" style={{ color: "var(--labs-text-muted)" }}>{s.label}</p>
-                <p className="text-[10px] mt-0.5 text-center" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{s.desc}</p>
-              </div>
-            ))}
-            <div className="labs-card p-4 flex flex-col items-center justify-center" data-testid="labs-taste-stat-tastings">
-              <div className="flex items-center justify-center" style={{ width: 72, height: 72 }}>
-                <span className="labs-serif font-semibold" style={{ fontSize: 28, color: "var(--labs-accent)", lineHeight: 1 }}>
-                  {totalTastings ?? "—"}
+          <div className="labs-card labs-fade-in labs-stagger-1" style={{ padding: 0, marginBottom: 24, position: "relative", overflow: "hidden" }} data-testid="card-hero-insight">
+            <div style={{ position: "absolute", top: -50, right: -50, width: 140, height: 140, background: "radial-gradient(circle, var(--labs-accent-glow), transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ padding: "20px 20px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--labs-text-muted)" }}>
+                  {t("labs.heroInsightLabel", "Taste Insight")}
                 </span>
               </div>
-              <p className="text-[11px] mt-2 font-medium" style={{ color: "var(--labs-text-muted)" }}>Tastings</p>
-              <p className="text-[10px] mt-0.5 text-center" style={{ color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 1.3 }}>{t("labs.statTastingsDesc", "Sessions joined")}</p>
+              {insight ? (
+                <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0, fontFamily: "var(--font-display)", fontStyle: "italic" }} data-testid="text-insight-message">
+                  {String(insight.message ?? "")}
+                </p>
+              ) : avgScores.overall > 0 ? (
+                <div data-testid="text-hero-palate-summary">
+                  <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0 }}>
+                    {t("labs.heroAvgSummary", "Your average score is")} <span style={{ fontWeight: 700, fontSize: 18, color: "var(--labs-accent)", fontFamily: "var(--font-display)" }}>{Math.round(avgScores.overall)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: getPalateBandColor(avgScores.overall), marginLeft: 6 }}>
+                      — {getPalateBandLabel(avgScores.overall, i18n.language)}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  {t("labs.heroPlaceholder", "Your personal taste insights will appear here as you rate more whiskies.")}
+                </p>
+              )}
             </div>
+            {avgScores.overall > 0 && (
+              <div style={{ padding: "0 20px 16px" }}>
+                <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", width: `${Math.min(100, ((Math.max(60, Math.min(100, avgScores.overall)) - 60) / 40) * 100)}%`,
+                    borderRadius: 2, background: getPalateBandColor(avgScores.overall),
+                    transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  }} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {insight && (
-            <div className="labs-card p-4 mb-6 labs-fade-in labs-stagger-2" data-testid="card-taste-insight">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste Insight</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
+            <div className="labs-card" style={{ padding: 16, textAlign: "center" }} data-testid="labs-taste-stat-tastings">
+              <div style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1, marginBottom: 4 }}>
+                {totalTastings ?? "—"}
               </div>
-              <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="text-insight-message">
-                {String(insight.message ?? "")}
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 2 }}>
+                {t("labs.statTastingsLabel", "Tastings")}
+              </p>
+              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3 }}>
+                {t("labs.statTastingsDesc", "Sessions joined")}
               </p>
             </div>
-          )}
+
+            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-consistency">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
+                <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
+                  {stability != null ? stability.toFixed(1) : "—"}
+                </span>
+                <span style={{ fontSize: 13, color: "var(--labs-text-muted)", fontWeight: 400 }}>/10</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden", marginBottom: 6 }}>
+                <div style={{
+                  height: "100%", width: stability != null ? `${(stability / 10) * 100}%` : "0%",
+                  borderRadius: 2,
+                  background: stability != null ? (stability >= 7.5 ? "var(--labs-success)" : stability >= 5 ? "var(--labs-accent)" : "var(--labs-danger)") : "var(--labs-border)",
+                  transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }} />
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2 }}>
+                {t("labs.statConsistencyLabel", "Consistency")}
+              </p>
+              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
+                {t("labs.statConsistencyDesc", "Rating consistency")}
+              </p>
+            </div>
+
+            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-exploration">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
+                <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
+                  {exploration != null ? exploration.toFixed(1) : "—"}
+                </span>
+                <span style={{ fontSize: 13, color: "var(--labs-text-muted)", fontWeight: 400 }}>/10</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden", marginBottom: 6 }}>
+                <div style={{
+                  height: "100%", width: exploration != null ? `${(exploration / 10) * 100}%` : "0%",
+                  borderRadius: 2,
+                  background: exploration != null ? (exploration >= 7.5 ? "var(--labs-success)" : exploration >= 5 ? "var(--labs-accent)" : "var(--labs-danger)") : "var(--labs-border)",
+                  transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }} />
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2 }}>
+                {t("labs.statExplorationLabel", "Exploration")}
+              </p>
+              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
+                {t("labs.statExplorationDesc", "Variety of regions & styles")}
+              </p>
+            </div>
+          </div>
 
           {dimensions.some(d => d.value > 0) && (
             <div className="mb-6 labs-fade-in labs-stagger-2">
