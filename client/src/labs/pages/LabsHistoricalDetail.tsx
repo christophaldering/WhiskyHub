@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
@@ -7,7 +7,7 @@ import { getParticipantId } from "@/lib/api";
 import {
   Trophy, Wine, Calendar, Flame,
   Sparkles, BarChart3, RefreshCw, Lock, ChevronLeft, Camera,
-  UserCheck, Users, Star, Save, Check,
+  UserCheck, Users, Star, Save, Check, ScanLine,
 } from "lucide-react";
 import LabsRatingCardScan from "./LabsRatingCardScan";
 
@@ -97,7 +97,7 @@ function MedalBadge({ rank }: { rank: number }) {
   return <span style={{ fontSize: 20, lineHeight: 1 }}>{medal}</span>;
 }
 
-function WhiskyCard({ entry, t, isTied }: { entry: HistoricalEntry; t: (k: string, d: string) => string; isTied: boolean }) {
+function WhiskyCard({ entry, t, isTied, myRating }: { entry: HistoricalEntry; t: (k: string, d: string) => string; isTied: boolean; myRating?: PersonalRating }) {
   const rank = entry.totalRank;
   const isTop3 = rank != null && rank <= 3;
   const isWinner = rank === 1;
@@ -164,17 +164,33 @@ function WhiskyCard({ entry, t, isTied }: { entry: HistoricalEntry; t: (k: strin
             </div>
           )}
         </div>
-        {entry.totalScore != null && (
-          <div style={{ textAlign: "center", flexShrink: 0 }}>
-            <div style={{
-              fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1,
-              color: isWinner ? "var(--labs-accent)" : isTop3 ? "var(--labs-accent)" : "var(--labs-text)",
-            }}>
-              {Math.round(entry.normalizedTotal ?? entry.totalScore * 10)}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          {entry.totalScore != null && (
+            <div style={{ textAlign: "center" }}>
+              <div style={{
+                fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1,
+                color: isWinner ? "var(--labs-accent)" : isTop3 ? "var(--labs-accent)" : "var(--labs-text)",
+              }}>
+                {Math.round(entry.normalizedTotal ?? entry.totalScore * 10)}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
             </div>
-            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>/100</div>
-          </div>
-        )}
+          )}
+          {myRating && (
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 3,
+                background: "var(--labs-success-muted, rgba(34,197,94,0.1))", color: "var(--labs-success)",
+                padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+              data-testid={`badge-my-score-${entry.id}`}
+            >
+              <Star size={10} fill="currentColor" />
+              {Math.round(myRating.overall)}
+            </div>
+          )}
+        </div>
       </div>
       {(entry.noseScore != null || entry.tasteScore != null || entry.finishScore != null) && (
         <div style={{ paddingLeft: 52 }}>
@@ -358,6 +374,8 @@ export default function LabsHistoricalDetail() {
   const queryClient = useQueryClient();
   const [showRatings, setShowRatings] = useState<Set<string>>(new Set());
   const [showScanner, setShowScanner] = useState(false);
+  const [showClaimBanner, setShowClaimBanner] = useState(false);
+  const lineupRef = useRef<HTMLDivElement>(null);
 
   const toggleRating = useCallback((entryId: string) => {
     setShowRatings(prev => {
@@ -417,10 +435,17 @@ export default function LabsHistoricalDetail() {
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, claim) => {
       queryClient.invalidateQueries({ queryKey: ["historical-my-participations"] });
       queryClient.invalidateQueries({ queryKey: ["historical-participants", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["historical-participant-counts"] });
+      if (claim) {
+        setShowClaimBanner(true);
+        setTimeout(() => {
+          lineupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
+        setTimeout(() => setShowClaimBanner(false), 6000);
+      }
     },
   });
 
@@ -453,7 +478,7 @@ export default function LabsHistoricalDetail() {
         participantId={pid}
         onClose={() => setShowScanner(false)}
         onSaved={() => {
-          queryClient.invalidateQueries({ queryKey: ["historical-personal-ratings", tastingId] });
+          queryClient.invalidateQueries({ queryKey: ["historical-my-ratings", tastingId] });
         }}
       />
     );
@@ -629,31 +654,86 @@ export default function LabsHistoricalDetail() {
             </div>
           )}
 
+          {showClaimBanner && (
+            <div
+              className="labs-fade-in"
+              style={{
+                padding: "14px 16px", marginBottom: 16, borderRadius: 12,
+                background: "linear-gradient(135deg, var(--labs-accent-muted), var(--labs-success-muted, rgba(34,197,94,0.1)))",
+                border: "1px solid var(--labs-accent)",
+                display: "flex", alignItems: "center", gap: 12,
+                animation: "pulse-border 2s ease-in-out infinite",
+              }}
+              data-testid="claim-success-banner"
+            >
+              <style>{`@keyframes pulse-border { 0%, 100% { box-shadow: 0 0 0 0 var(--labs-accent); } 50% { box-shadow: 0 0 0 4px transparent; } }`}</style>
+              <Star size={20} style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                  {t("m2.historicalDetail.claimSuccessTitle", "Du bist dabei!")}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                  {t("m2.historicalDetail.claimSuccessDesc", "Scrolle zum Lineup und bewerte jeden Whisky mit dem ★-Button.")}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowClaimBanner(false)}
+                className="labs-btn-ghost"
+                style={{ padding: 4, flexShrink: 0, fontSize: 18, lineHeight: 1, color: "var(--labs-text-muted)" }}
+                data-testid="dismiss-claim-banner"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           <ScoreDistribution entries={entries} t={t} />
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div ref={lineupRef} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <Sparkles size={14} style={{ color: "var(--labs-accent)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", flex: 1 }}>
               {t("m2.historicalDetail.lineup", "Lineup")}
               <span style={{ fontSize: 12, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 6 }}>({sorted.length})</span>
             </span>
-            {pid && (
-              <button
-                onClick={() => setShowScanner(true)}
-                className="labs-btn-secondary"
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12 }}
-                data-testid="button-scan-rating-card"
-              >
-                <Camera size={14} />
-                {t("m2.ratingCard.scanButton", "Scan Card")}
-              </button>
-            )}
           </div>
+
+          {isClaimed && pid && (
+            <button
+              onClick={() => setShowScanner(true)}
+              className="labs-card labs-fade-in"
+              style={{
+                width: "100%", padding: "16px 20px", marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 14,
+                borderColor: "var(--labs-accent)", cursor: "pointer",
+                background: "var(--labs-accent-muted)",
+                textAlign: "left", border: "1px dashed var(--labs-accent)",
+                borderRadius: 12,
+              }}
+              data-testid="button-scan-rating-card"
+            >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: "var(--labs-accent)", display: "flex",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <ScanLine size={22} style={{ color: "#fff" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                  {t("m2.ratingCard.scanButton", "Scan Card")}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                  {t("m2.ratingCard.scanDesc", "Fotografiere deine Bewertungskarte und importiere alle Scores auf einmal")}
+                </div>
+              </div>
+              <Camera size={18} style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+            </button>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {sorted.map((entry) => (
               <div key={entry.id}>
-                <WhiskyCard entry={entry} t={t} isTied={entry.totalRank != null && tiedRanks.has(entry.totalRank)} />
+                <WhiskyCard entry={entry} t={t} isTied={entry.totalRank != null && tiedRanks.has(entry.totalRank)} myRating={myRatingsMap.get(entry.id)} />
                 {isClaimed && pid && (
                   <div style={{ marginTop: -6, marginBottom: 6, paddingLeft: 16, paddingRight: 16 }}>
                     {showRatings.has(entry.id) ? (
@@ -676,15 +756,18 @@ export default function LabsHistoricalDetail() {
                     ) : (
                       <button
                         onClick={() => toggleRating(entry.id)}
-                        className="labs-btn-ghost"
+                        className={myRatingsMap.has(entry.id) ? "labs-btn-secondary" : "labs-btn-primary"}
                         style={{
-                          fontSize: 12, padding: "5px 12px", borderRadius: 8,
-                          display: "inline-flex", alignItems: "center", gap: 5,
-                          color: myRatingsMap.has(entry.id) ? "var(--labs-success)" : "var(--labs-accent)",
+                          fontSize: 13, padding: "8px 16px", borderRadius: 10,
+                          display: "inline-flex", alignItems: "center", gap: 6,
+                          fontWeight: 600,
+                          ...(myRatingsMap.has(entry.id)
+                            ? { borderColor: "var(--labs-success)", color: "var(--labs-success)" }
+                            : {}),
                         }}
                         data-testid={`toggle-rating-${entry.id}`}
                       >
-                        <Star size={12} />
+                        <Star size={14} fill={myRatingsMap.has(entry.id) ? "currentColor" : "none"} />
                         {myRatingsMap.has(entry.id)
                           ? `${t("m2.historicalDetail.editRating", "Bewertung bearbeiten")} (${Math.round(myRatingsMap.get(entry.id)!.overall)}/100)`
                           : t("m2.historicalDetail.addRating", "Bewertung abgeben")}
