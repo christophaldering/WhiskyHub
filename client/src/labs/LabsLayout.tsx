@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { User, Bell, Download, X, Search, AlertTriangle } from "lucide-react";
+import { User, Bell, Download, X, Search, AlertTriangle, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
 import { getSession, tryAutoResume, syncStoreParticipant } from "@/lib/session";
@@ -587,7 +587,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   const onlineFriendsCount = useFriendOnlineNotifications();
-  const { theme } = useLabsTheme();
+  const { theme, toggle: toggleTheme } = useLabsTheme();
 
   const handleLang = (lang: 'de' | 'en') => {
     i18n.changeLanguage(lang);
@@ -765,6 +765,22 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               EN
             </button>
           </div>
+          <button
+            onClick={() => { toggleTheme(); triggerHaptic("light"); }}
+            className="flex items-center justify-center rounded-full transition-all"
+            style={{
+              width: 36,
+              height: 36,
+              background: "var(--labs-surface-elevated)",
+              border: "1px solid var(--labs-border)",
+              color: "var(--labs-text-secondary)",
+              cursor: "pointer",
+            }}
+            data-testid="labs-theme-toggle"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <button
             onClick={() => currentParticipant ? setProfileOpen(true) : openAuthDialog()}
             style={{
