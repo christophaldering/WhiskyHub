@@ -408,6 +408,7 @@ export interface IStorage {
   isCommunityMember(communityId: string, participantId: string): Promise<boolean>;
   getCommunityMemberRole(communityId: string, participantId: string): Promise<string | null>;
   updateCommunityMemberRole(communityId: string, participantId: string, role: string): Promise<CommunityMembership | undefined>;
+  getCommunityTastings(communityId: string): Promise<{ upcoming: any[]; past: any[] }>;
 
   // Community Invites
   createCommunityInvite(data: InsertCommunityInvite): Promise<CommunityInvite>;
@@ -2391,6 +2392,71 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning();
     return result;
+  }
+
+  async getCommunityTastings(communityId: string): Promise<{ upcoming: any[]; past: any[] }> {
+    const allTastingRows = await db.select().from(tastings).where(
+      and(
+        ne(tastings.status, "deleted"),
+        sql`COALESCE(${tastings.tastingType}, 'standard') = 'standard'`,
+        sql`${tastings.targetCommunityIds} IS NOT NULL AND ${tastings.targetCommunityIds} != '' AND (
+          CASE WHEN ${tastings.targetCommunityIds} ~ '^\[.*\]$' THEN ${tastings.targetCommunityIds}::jsonb @> ${JSON.stringify([communityId])}::jsonb ELSE false END
+        )`
+      )
+    );
+
+    const tastingIds = allTastingRows.map(t => t.id);
+    if (tastingIds.length === 0) return { upcoming: [], past: [] };
+
+    const [allWhiskies, allParticipants, hostIds] = await Promise.all([
+      db.select({ tastingId: whiskies.tastingId, id: whiskies.id }).from(whiskies).where(inArray(whiskies.tastingId, tastingIds)),
+      db.select({ tastingId: tastingParticipants.tastingId, id: tastingParticipants.id }).from(tastingParticipants).where(inArray(tastingParticipants.tastingId, tastingIds)),
+      db.select({ id: participants.id, name: participants.name }).from(participants).where(inArray(participants.id, [...new Set(allTastingRows.map(t => t.hostId))])),
+    ]);
+
+    const whiskyCounts = new Map<string, number>();
+    for (const w of allWhiskies) {
+      whiskyCounts.set(w.tastingId, (whiskyCounts.get(w.tastingId) || 0) + 1);
+    }
+    const participantCounts = new Map<string, number>();
+    for (const p of allParticipants) {
+      participantCounts.set(p.tastingId, (participantCounts.get(p.tastingId) || 0) + 1);
+    }
+    const hostNames = new Map<string, string>();
+    for (const h of hostIds) {
+      hostNames.set(h.id, h.name);
+    }
+
+    const now = new Date();
+    const upcoming: any[] = [];
+    const past: any[] = [];
+
+    for (const t of allTastingRows) {
+      const entry = {
+        id: t.id,
+        title: t.title,
+        date: t.date,
+        status: t.status,
+        hostId: t.hostId,
+        hostName: hostNames.get(t.hostId) || "Unknown",
+        whiskyCount: whiskyCounts.get(t.id) || 0,
+        participantCount: participantCounts.get(t.id) || 0,
+        coverImageUrl: t.coverImageUrl,
+      };
+
+      const tastingDate = new Date(t.date);
+      const isUpcoming = ["draft", "open"].includes(t.status) || tastingDate > now;
+      if (isUpcoming) {
+        upcoming.push(entry);
+      } else {
+        past.push(entry);
+      }
+    }
+
+    upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    past.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return { upcoming, past };
   }
 
   async createCommunityInvite(data: InsertCommunityInvite): Promise<CommunityInvite> {

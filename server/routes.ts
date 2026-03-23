@@ -13260,6 +13260,24 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  app.get("/api/communities/:id/tastings", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const community = await storage.getCommunityById(req.params.id);
+      if (!community) return res.status(404).json({ message: "Community not found" });
+
+      const isMember = await storage.isCommunityMember(community.id, participantId);
+      if (!isMember) return res.status(403).json({ message: "You must be a member of this community" });
+
+      const result = await storage.getCommunityTastings(community.id);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/admin/communities", async (req: Request, res: Response) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;

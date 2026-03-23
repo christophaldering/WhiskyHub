@@ -408,6 +408,8 @@ export const communityApi = {
     fetchJSON(`/communities/${communityId}/members/${participantId}`, { method: "DELETE", body: JSON.stringify({}) }),
   updateMemberRole: (communityId: string, participantId: string, role: string) =>
     fetchJSON(`/communities/${communityId}/members/${participantId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  getTastings: (communityId: string) =>
+    fetchJSON(`/communities/${communityId}/tastings`),
 };
 
 // ===== Public Insights (no auth needed) =====

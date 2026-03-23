@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { communityApi, friendsApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Users, ChevronLeft, UserPlus, Shield, Crown, Eye, Trash2, Mail, ChevronDown, Edit2, Save, X,
+  Wine, Calendar, User, GlassWater,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -15,6 +16,7 @@ export default function LabsCommunityDetail() {
   const [, params] = useRoute("/labs/community/:id");
   const communityId = params?.id;
   const goBack = useBackNavigation("/labs/community");
+  const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
   const session = getSession();
   const pid = currentParticipant?.id || session.pid;
@@ -43,6 +45,12 @@ export default function LabsCommunityDetail() {
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
     enabled: !!pid && showInvite,
+  });
+
+  const { data: tastingsData, isLoading: tastingsLoading, isError: tastingsError } = useQuery({
+    queryKey: ["community-tastings", communityId],
+    queryFn: () => communityApi.getTastings(communityId!),
+    enabled: !!communityId && !!pid,
   });
 
   const updateMutation = useMutation({
@@ -498,6 +506,117 @@ export default function LabsCommunityDetail() {
             )}
           </div>
         ))}
+      </div>
+
+      <div className="mt-6" data-testid="community-tastings-section">
+        <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)" }}>
+          <Wine className="w-3 h-3 inline mr-1" /> Tastings
+        </h3>
+
+        {tastingsLoading ? (
+          <p className="text-sm text-center py-6" style={{ color: "var(--labs-text-muted)" }} data-testid="text-tastings-loading">Loading tastings...</p>
+        ) : tastingsError ? (
+          <div className="labs-card p-6 text-center" data-testid="text-tastings-error">
+            <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-danger)", opacity: 0.5 }} />
+            <p className="text-sm" style={{ color: "var(--labs-danger)" }}>Failed to load tastings</p>
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["community-tastings", communityId] })}
+              className="text-xs mt-2 underline"
+              style={{ color: "var(--labs-accent)", cursor: "pointer" }}
+              data-testid="btn-retry-tastings"
+            >
+              Retry
+            </button>
+          </div>
+        ) : !tastingsData || (tastingsData.upcoming.length === 0 && tastingsData.past.length === 0) ? (
+          <div className="labs-card p-6 text-center" data-testid="text-no-tastings">
+            <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
+            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Noch keine Tastings in dieser Community</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tastingsData.upcoming.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{ color: "var(--labs-accent)" }}>
+                  <Calendar className="w-3 h-3" /> Upcoming
+                </p>
+                <div className="space-y-1">
+                  {tastingsData.upcoming.map((t: any) => (
+                    <button
+                      key={t.id}
+                      onClick={() => navigate(`/labs/tastings/${t.id}`)}
+                      className="labs-card p-3 w-full text-left hover:ring-1 transition-all"
+                      style={{ cursor: "pointer", borderColor: "var(--labs-accent)", borderWidth: "1px", borderStyle: "solid" }}
+                      data-testid={`tasting-card-upcoming-${t.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{t.title}</p>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <Calendar className="w-3 h-3" /> {t.date}
+                            </span>
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <Users className="w-3 h-3" /> {t.participantCount}
+                            </span>
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <GlassWater className="w-3 h-3" /> {t.whiskyCount}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                          {t.status === "draft" ? "Draft" : "Open"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] mt-1.5 flex items-center gap-1" style={{ color: "var(--labs-text-secondary)" }}>
+                        <Crown className="w-3 h-3" /> {t.hostName}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tastingsData.past.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  Past Tastings ({tastingsData.past.length})
+                </p>
+                <div className="space-y-1">
+                  {tastingsData.past.map((t: any) => (
+                    <button
+                      key={t.id}
+                      onClick={() => navigate(`/labs/tastings/${t.id}`)}
+                      className="labs-card p-3 w-full text-left hover:ring-1 transition-all"
+                      style={{ cursor: "pointer" }}
+                      data-testid={`tasting-card-past-${t.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{t.title}</p>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <Calendar className="w-3 h-3" /> {t.date}
+                            </span>
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <Users className="w-3 h-3" /> {t.participantCount}
+                            </span>
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                              <GlassWater className="w-3 h-3" /> {t.whiskyCount}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] mt-1.5 flex items-center gap-1" style={{ color: "var(--labs-text-secondary)" }}>
+                        <Crown className="w-3 h-3" /> {t.hostName}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
