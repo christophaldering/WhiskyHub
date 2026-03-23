@@ -331,9 +331,37 @@ interface Props {
 
 type StudioMode = 'guide' | 'journey' | 'describe'
 
+const LS_KEY_APPLE = 'flavourstudio-mode-apple'
+
+function getStoredMode(): StudioMode {
+  try {
+    const v = localStorage.getItem(LS_KEY_APPLE)
+    if (v === 'guide' || v === 'journey' || v === 'describe') return v
+  } catch {}
+  return 'guide'
+}
+
 export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onToggle, onNote, whiskyRegion, whiskyCask, flavorProfile, blind }) => {
-  const [mode, setMode] = useState<StudioMode>('guide')
+  const [mode, setMode] = useState<StudioMode>(getStoredMode)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const [apiCategories, setApiCategories] = React.useState<Category[] | null>(null)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  const handleSetMode = React.useCallback((m: StudioMode) => {
+    setMode(m)
+    setDropdownOpen(false)
+    try { localStorage.setItem(LS_KEY_APPLE, m) } catch {}
+  }, [])
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    if (dropdownOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownOpen])
 
   const profile: FlavorProfileKey = useMemo(() => {
     if (blind) return 'generic'
@@ -369,15 +397,56 @@ export const FlavourStudio: React.FC<Props> = ({ th, lang, selected, note, onTog
     { id: 'describe',label: lang === 'de' ? 'Freitext' : 'Describe' },
   ]
 
+  const currentLabel = modes.find(m => m.id === mode)?.label || modes[0].label
+
   return (
     <div>
-      {/* Mode selector */}
-      <div style={{ display: 'flex', gap: SP.xs, marginBottom: SP.lg }}>
-        {modes.map(m => (
-          <button key={m.id} onClick={() => setMode(m.id)} style={{ flex: 1, height: 40, borderRadius: 20, border: 'none', cursor: 'pointer', background: mode === m.id ? th.gold : th.bgCard, color: mode === m.id ? '#1a0f00' : th.muted, fontSize: 13, fontWeight: mode === m.id ? 700 : 400, fontFamily: 'DM Sans, sans-serif', transition: 'all 150ms' }}>
-            {m.label}
-          </button>
-        ))}
+      <div ref={dropdownRef} style={{ position: 'relative', marginBottom: SP.lg }}>
+        <button
+          onClick={() => setDropdownOpen(o => !o)}
+          data-testid="studio-mode-switcher"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '4px 0',
+            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+            color: th.muted,
+          }}
+        >
+          <span>{lang === 'de' ? 'Ansicht' : 'View'}:</span>
+          <span style={{ color: th.gold, fontWeight: 600 }}>{currentLabel}</span>
+          <span style={{ fontSize: 10, transition: 'transform 200ms', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+        </button>
+        {dropdownOpen && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, zIndex: 20,
+            marginTop: 4, padding: 4, borderRadius: 12,
+            background: th.bgCard, border: `1px solid ${th.border}`,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            minWidth: 160,
+            animation: 'labsFadeIn 150ms ease both',
+          }}>
+            {modes.map(m => (
+              <button
+                key={m.id}
+                onClick={() => handleSetMode(m.id)}
+                data-testid={`studio-mode-${m.id}`}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '10px 14px', borderRadius: 8,
+                  border: 'none', cursor: 'pointer',
+                  background: mode === m.id ? `${th.gold}22` : 'transparent',
+                  color: mode === m.id ? th.gold : th.muted,
+                  fontSize: 13, fontWeight: mode === m.id ? 600 : 400,
+                  fontFamily: 'DM Sans, sans-serif',
+                  transition: 'background 100ms',
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {mode === 'guide'   && <GuideView th={th} lang={lang} selected={selected} onToggle={onToggle} categories={activeCategories} />}

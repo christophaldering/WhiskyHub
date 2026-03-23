@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Plus, Sparkles, Search, ChevronRight, Check, HelpCircle, ChevronDown, RotateCcw } from "lucide-react";
+import { X, Plus, Sparkles, Search, ChevronRight, Check, HelpCircle, RotateCcw } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { FLAVOR_CATEGORIES, JOURNEY_CATEGORY_ORDER, FLAVOR_PROFILES, type FlavorCategory, type FlavorSubGroup } from "@/labs/data/flavor-data";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
@@ -172,101 +172,97 @@ function findTermCategory(term: string, categories: VocabCategory[]): CategoryId
   return null;
 }
 
+const LS_KEY_SHEET = 'flavourstudio-mode-sheet';
+
+function getStoredSheetView(): StudioView {
+  try {
+    const v = localStorage.getItem(LS_KEY_SHEET);
+    if (v && ["guide", "journey", "describe", "wheel", "compass", "radar"].includes(v)) return v as StudioView;
+  } catch {}
+  return "guide";
+}
+
 function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v: StudioView) => void }) {
   const { t } = useTranslation();
-  const [showMore, setShowMore] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const primaryOptions: { key: StudioView; label: string }[] = [
+  const allOptions: { key: StudioView; label: string; icon?: string }[] = [
     { key: "guide", label: t("m2.rating.studioGuide", "Guide") },
     { key: "journey", label: t("m2.rating.studioJourney", "Journey") },
     { key: "describe", label: t("m2.rating.studioDescribe", "Describe") },
-  ];
-
-  const expertOptions: { key: StudioView; label: string; icon: string }[] = [
     { key: "wheel", label: t("m2.rating.studioWheel", "Wheel"), icon: "◎" },
     { key: "compass", label: t("m2.rating.studioCompass", "Compass"), icon: "◇" },
     { key: "radar", label: "Radar", icon: "⬡" },
   ];
 
-  const isExpertActive = expertOptions.some((o) => o.key === value);
+  const currentLabel = allOptions.find((o) => o.key === value)?.label || allOptions[0].label;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen]);
+
+  const handleSelect = (key: StudioView) => {
+    onChange(key);
+    setDropdownOpen(false);
+    try { localStorage.setItem(LS_KEY_SHEET, key); } catch {}
+    triggerHaptic("light");
+  };
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{
-        display: "flex", gap: 2, padding: 3, borderRadius: 10,
-        background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
-      }} data-testid="studio-segmented-control">
-        {primaryOptions.map((opt) => (
-          <button
-            key={opt.key}
-            onClick={() => { onChange(opt.key); setShowMore(false); triggerHaptic("light"); }}
-            data-testid={`studio-view-${opt.key}`}
-            style={{
-              flex: 1, padding: "10px 4px", borderRadius: 8,
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-              fontSize: 12, fontWeight: value === opt.key ? 700 : 500,
-              background: value === opt.key ? "var(--labs-accent)" : "transparent",
-              color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-              transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 6 }}>
-        <button
-          onClick={() => setShowMore((p) => !p)}
-          data-testid="studio-more-tools-toggle"
-          style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "8px 8px",
-            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-            fontSize: 11, color: isExpertActive ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-            fontWeight: isExpertActive ? 600 : 400,
-          }}
-        >
-          {isExpertActive && (
-            <span style={{
-              width: 6, height: 6, borderRadius: 3,
-              background: "var(--labs-accent)", display: "inline-block",
-            }} />
-          )}
-          {t("m2.rating.studioMoreTools", "More Tools")}
-          <ChevronDown style={{
-            width: 12, height: 12,
-            transition: "transform 0.2s",
-            transform: showMore ? "rotate(180deg)" : "rotate(0deg)",
-          }} />
-        </button>
-
-        {showMore && (
-          <div style={{
-            display: "flex", gap: 6, marginTop: 4, padding: "6px 0",
-            animation: "labsFadeIn 200ms ease both",
-          }}>
-            {expertOptions.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => { onChange(opt.key); triggerHaptic("light"); }}
-                data-testid={`studio-view-${opt.key}`}
-                style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  padding: "8px 14px", borderRadius: 16, fontFamily: "inherit",
-                  fontSize: 11, fontWeight: value === opt.key ? 700 : 500,
-                  background: value === opt.key ? "var(--labs-accent)" : "var(--labs-surface)",
-                  color: value === opt.key ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-                  border: `1px solid ${value === opt.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                  cursor: "pointer", transition: "all 0.2s ease",
-                }}
-              >
-                <span style={{ fontSize: 12 }}>{opt.icon}</span>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+    <div ref={dropdownRef} style={{ position: "relative", marginBottom: 16 }} data-testid="studio-segmented-control">
+      <button
+        onClick={() => setDropdownOpen((p) => !p)}
+        data-testid="studio-mode-switcher"
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          padding: "4px 0", fontFamily: "inherit",
+          fontSize: 12, fontWeight: 500,
+          color: "var(--labs-text-secondary)",
+        }}
+      >
+        <span>{t("m2.rating.studioViewLabel", "View")}:</span>
+        <span style={{ color: "var(--labs-accent)", fontWeight: 600 }}>{currentLabel}</span>
+        <span style={{ fontSize: 10, transition: "transform 200ms", transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+      </button>
+      {dropdownOpen && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, zIndex: 20,
+          marginTop: 4, padding: 4, borderRadius: 12,
+          background: "var(--labs-surface, #252018)", border: "1px solid var(--labs-border)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+          minWidth: 180,
+          animation: "labsFadeIn 150ms ease both",
+        }}>
+          {allOptions.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => handleSelect(opt.key)}
+              data-testid={`studio-view-${opt.key}`}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                width: "100%", textAlign: "left",
+                padding: "10px 14px", borderRadius: 8,
+                border: "none", cursor: "pointer", fontFamily: "inherit",
+                background: value === opt.key ? "var(--labs-accent-muted, rgba(200,134,26,0.15))" : "transparent",
+                color: value === opt.key ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+                fontSize: 13, fontWeight: value === opt.key ? 600 : 400,
+                transition: "background 100ms",
+              }}
+            >
+              {opt.icon && <span style={{ fontSize: 12 }}>{opt.icon}</span>}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2031,11 +2027,11 @@ export default function FlavourStudioSheet({
 }: FlavourStudioSheetProps) {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
-  const [view, setView] = useState<StudioView>(initialView || "guide");
+  const [view, setView] = useState<StudioView>(initialView || getStoredSheetView());
 
   useEffect(() => {
     if (open) {
-      setView(initialView || "guide");
+      setView(initialView || getStoredSheetView());
     }
   }, [open, initialView]);
   const [customInput, setCustomInput] = useState("");
