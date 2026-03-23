@@ -15442,5 +15442,355 @@ Rules:
     }
   });
 
+  // ===== BOTTLE-SPLIT (FLASCHENTEILUNG) API =====
+
+  async function checkSplitAccess(split: any, participantId: string): Promise<'allowed' | 'denied'> {
+    if (!split) return 'denied';
+    if (split.visibility === 'public') return 'allowed';
+    if (split.hostId === participantId) return 'allowed';
+    if (split.visibility === 'private') return 'allowed';
+    if (split.visibility === 'group' && split.targetCommunityIds) {
+      try {
+        const targetIds = JSON.parse(split.targetCommunityIds) as string[];
+        const userCommunities = await storage.getParticipantCommunities(participantId);
+        const userCommunityIds = userCommunities.map((c: any) => c.id);
+        if (targetIds.some((id: string) => userCommunityIds.includes(id))) return 'allowed';
+      } catch {}
+    }
+    const claims = await storage.getClaimsForSplit(split.id);
+    if (claims.some((c: any) => c.participantId === participantId)) return 'allowed';
+    return 'denied';
+  }
+
+  app.get("/api/bottle-splits/public", async (_req: Request, res: Response) => {
+    try {
+      const splits = await storage.getPublicBottleSplits();
+      const enriched = await Promise.all(splits.map(async (s) => {
+        const host = await storage.getParticipant(s.hostId);
+        const claims = await storage.getClaimsForSplit(s.id);
+        return { ...s, hostName: host?.name || 'Unknown', claimCount: claims.length, totalClaimedMl: claims.reduce((sum, c) => sum + c.sizeMl, 0) };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/bottle-splits/mine", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const splits = await storage.getBottleSplitsForParticipant(participantId);
+      const enriched = await Promise.all(splits.map(async (s) => {
+        const host = await storage.getParticipant(s.hostId);
+        const claims = await storage.getClaimsForSplit(s.id);
+        return { ...s, hostName: host?.name || 'Unknown', claimCount: claims.length, totalClaimedMl: claims.reduce((sum, c) => sum + c.sizeMl, 0) };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/bottle-splits/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      const access = await checkSplitAccess(split, participantId);
+      if (access === 'denied') return res.status(403).json({ message: "Access denied" });
+      const host = await storage.getParticipant(split.hostId);
+      const claims = await storage.getClaimsForSplit(split.id);
+      let tastingData = null;
+      if (split.tastingId) {
+        const tasting = await storage.getTasting(split.tastingId);
+        if (tasting) {
+          const ratings = await storage.getRatingsForTasting(tasting.id);
+          const whiskiesArr = await storage.getWhiskiesForTasting(tasting.id);
+          const tastingParts = await storage.getTastingParticipants(tasting.id);
+          tastingData = {
+            id: tasting.id,
+            status: tasting.status,
+            code: tasting.code,
+            ratingCount: ratings.length,
+            participantCount: tastingParts.length,
+            whiskies: whiskiesArr,
+            ratings,
+          };
+        }
+      }
+      res.json({ ...split, hostName: host?.name || 'Unknown', claims, tasting: tastingData });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-splits", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const { title, description, visibility, targetCommunityIds, deadline, minClaims, bottles } = req.body;
+      if (!title || !bottles || !Array.isArray(bottles) || bottles.length === 0) {
+        return res.status(400).json({ message: "Title and at least one bottle are required" });
+      }
+      for (const b of bottles) {
+        if (!b.name || !b.totalVolumeMl || b.totalVolumeMl <= 0 || !b.sampleOptions || b.sampleOptions.length === 0) {
+          return res.status(400).json({ message: "Each bottle needs name, positive totalVolumeMl, and at least one sampleOption" });
+        }
+        if ((b.ownerKeepMl || 0) < 0 || (b.ownerKeepMl || 0) >= b.totalVolumeMl) {
+          return res.status(400).json({ message: "ownerKeepMl must be non-negative and less than totalVolumeMl" });
+        }
+        for (const opt of b.sampleOptions) {
+          if (!opt.sizeMl || opt.sizeMl <= 0 || opt.priceEur < 0) {
+            return res.status(400).json({ message: "Each sample option needs a positive sizeMl and non-negative priceEur" });
+          }
+        }
+      }
+      const split = await storage.createBottleSplit({
+        hostId: participantId,
+        title,
+        description: description || null,
+        status: "draft",
+        visibility: visibility || "public",
+        targetCommunityIds: targetCommunityIds || null,
+        deadline: deadline ? new Date(deadline) : null,
+        minClaims: minClaims || null,
+        bottles,
+      });
+      res.status(201).json(split);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/bottle-splits/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.hostId !== participantId) return res.status(403).json({ message: "Only the host can update this split" });
+      if (split.status !== "draft") {
+        return res.status(400).json({ message: "Can only edit splits in draft status" });
+      }
+      const allowedFields = ["title", "description", "visibility", "targetCommunityIds", "deadline", "minClaims", "bottles"] as const;
+      const sanitized: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (req.body[key] !== undefined) {
+          sanitized[key] = req.body[key];
+        }
+      }
+      if (Object.keys(sanitized).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+      const updated = await storage.updateBottleSplit(req.params.id, sanitized);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/bottle-splits/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.hostId !== participantId) return res.status(403).json({ message: "Only the host can delete this split" });
+      await storage.deleteBottleSplit(req.params.id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-splits/:id/claim", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.status !== "open") return res.status(400).json({ message: "Split is not accepting claims" });
+      const access = await checkSplitAccess(split, participantId);
+      if (access === 'denied') return res.status(403).json({ message: "Access denied" });
+      const { bottleIndex, sizeMl } = req.body;
+      if (bottleIndex === undefined || !sizeMl) return res.status(400).json({ message: "bottleIndex and sizeMl are required" });
+      const bottle = (split.bottles as any[])[bottleIndex];
+      if (!bottle) return res.status(400).json({ message: "Invalid bottle index" });
+      const sampleOption = bottle.sampleOptions.find((o: any) => o.sizeMl === sizeMl);
+      if (!sampleOption) return res.status(400).json({ message: "Invalid sample size for this bottle" });
+      const existingClaims = await storage.getClaimsForSplit(split.id);
+      const bottleClaims = existingClaims.filter(c => c.bottleIndex === bottleIndex);
+      const claimedMl = bottleClaims.reduce((sum, c) => sum + c.sizeMl, 0);
+      const availableMl = bottle.totalVolumeMl - (bottle.ownerKeepMl || 0) - claimedMl;
+      if (sizeMl > availableMl) {
+        return res.status(400).json({ message: `Not enough capacity. Only ${availableMl}ml remaining.`, availableMl });
+      }
+      if (split.deadline && new Date(split.deadline) < new Date()) {
+        return res.status(400).json({ message: "The claim deadline has passed" });
+      }
+      const claim = await storage.createBottleSplitClaim({
+        splitId: split.id,
+        participantId,
+        bottleIndex,
+        sizeMl,
+        priceEur: sampleOption.priceEur,
+        status: "claimed",
+      });
+      res.status(201).json(claim);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/bottle-splits/:id/claims/:claimId", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.hostId !== participantId) return res.status(403).json({ message: "Only the host can remove claims" });
+      const claims = await storage.getClaimsForSplit(split.id);
+      const claim = claims.find(c => c.id === req.params.claimId);
+      if (!claim) return res.status(404).json({ message: "Claim not found in this split" });
+      await storage.deleteBottleSplitClaim(req.params.claimId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-splits/:id/status", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.hostId !== participantId) return res.status(403).json({ message: "Only the host can change status" });
+      const { status } = req.body;
+      const validTransitions: Record<string, string[]> = {
+        draft: ["open", "cancelled"],
+        open: ["confirmed", "cancelled"],
+        confirmed: ["distributed", "cancelled"],
+        distributed: ["tasting", "completed", "cancelled"],
+        tasting: ["completed"],
+      };
+      const allowed = validTransitions[split.status] || [];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({ message: `Cannot transition from '${split.status}' to '${status}'` });
+      }
+      const updateData: any = { status };
+      if (status === "confirmed") {
+        updateData.confirmedAt = new Date();
+        const claims = await storage.getClaimsForSplit(split.id);
+        for (const c of claims) {
+          await storage.updateBottleSplitClaim(c.id, { status: "confirmed" });
+        }
+      }
+      if (status === "distributed") updateData.distributedAt = new Date();
+      if (status === "cancelled") updateData.cancelledAt = new Date();
+      const updated = await storage.updateBottleSplit(req.params.id, updateData);
+
+      if (status === "cancelled" || status === "confirmed") {
+        const claims = await storage.getClaimsForSplit(split.id);
+        const uniqueParticipants = [...new Set(claims.map(c => c.participantId))];
+        for (const pId of uniqueParticipants) {
+          if (pId !== participantId) {
+            await storage.createNotification({
+              participantId: pId,
+              type: "bottle-split",
+              title: status === "cancelled" ? "Split Cancelled" : "Split Confirmed",
+              message: status === "cancelled"
+                ? `The split "${split.title}" has been cancelled.`
+                : `The split "${split.title}" has been confirmed! Your samples are on the way.`,
+              link: `/labs/splits/${split.id}`,
+            });
+          }
+        }
+      }
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/bottle-splits/:id/start-tasting", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      const split = await storage.getBottleSplit(req.params.id);
+      if (!split) return res.status(404).json({ message: "Split not found" });
+      if (split.hostId !== participantId) return res.status(403).json({ message: "Only the host can start a tasting" });
+      if (!["distributed", "confirmed"].includes(split.status)) {
+        return res.status(400).json({ message: "Split must be distributed or confirmed to start a tasting" });
+      }
+      if (split.tastingId) {
+        return res.status(400).json({ message: "A tasting has already been created for this split" });
+      }
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const tasting = await storage.createTasting({
+        title: split.title,
+        date: new Date().toISOString().split("T")[0],
+        location: "Flaschenteilung / Bottle Split",
+        hostId: participantId,
+        code,
+        status: "open",
+        blindMode: false,
+        tastingType: "bottle-sharing",
+        visibility: split.visibility,
+        targetCommunityIds: split.targetCommunityIds,
+        ratingScale: 100,
+        sharingMessage: split.description,
+      });
+      const bottles = split.bottles as any[];
+      for (let i = 0; i < bottles.length; i++) {
+        const b = bottles[i];
+        await storage.createWhisky({
+          tastingId: tasting.id,
+          name: b.name,
+          distillery: b.distillery || undefined,
+          age: b.age || undefined,
+          abv: b.abv ?? undefined,
+          region: b.region || undefined,
+          caskInfluence: b.caskInfluence || undefined,
+          category: b.category || undefined,
+          country: b.country || undefined,
+          whiskybaseId: b.whiskybaseId || undefined,
+          bottler: b.bottler || undefined,
+          vintage: b.vintage || undefined,
+          peatLevel: b.peatLevel || undefined,
+          ppm: b.ppm ?? undefined,
+          wbScore: b.wbScore ?? undefined,
+          imageUrl: b.imageUrl || undefined,
+          sortOrder: i,
+        });
+      }
+      await storage.addParticipantToTasting({ tastingId: tasting.id, participantId });
+      const claims = await storage.getClaimsForSplit(split.id);
+      const uniqueParticipants = [...new Set(claims.map(c => c.participantId))];
+      for (const pId of uniqueParticipants) {
+        if (pId !== participantId) {
+          const isAlready = await storage.isParticipantInTasting(tasting.id, pId);
+          if (!isAlready) {
+            await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: pId });
+          }
+          await storage.createNotification({
+            participantId: pId,
+            type: "bottle-split",
+            title: "Tasting Started",
+            message: `The tasting for "${split.title}" is now live! Rate your samples at your own pace.`,
+            link: `/labs/splits/${split.id}`,
+          });
+        }
+      }
+      await storage.updateBottleSplit(split.id, { tastingId: tasting.id, status: "tasting" });
+      res.status(201).json({ split: { ...split, tastingId: tasting.id, status: "tasting" }, tasting });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

@@ -92,6 +92,8 @@ const LabsConnoisseur = lazy(() => import("@/labs/pages/LabsConnoisseur"));
 const LabsAICuration = lazy(() => import("@/labs/pages/LabsAICuration"));
 const LabsBottleSharing = lazy(() => import("@/labs/pages/LabsBottleSharing"));
 const LabsBottleSharingDetail = lazy(() => import("@/labs/pages/LabsBottleSharingDetail"));
+const LabsBottleSplit = lazy(() => import("@/labs/pages/LabsBottleSplit"));
+const LabsBottleSplitDetail = lazy(() => import("@/labs/pages/LabsBottleSplitDetail"));
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
 const LabsDiscover = lazy(() => import("@/labs/pages/LabsDiscover"));
 const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
@@ -522,6 +524,8 @@ function Router() {
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/bottle-sharing/:id">{(params: any) => <LabsBottleSharingDetail id={params.id} />}</Route>
               <Route path="/labs/bottle-sharing" component={LabsBottleSharing} />
+              <Route path="/labs/splits/:id">{(params: any) => <LabsBottleSplitDetail id={params.id} />}</Route>
+              <Route path="/labs/splits" component={LabsBottleSplit} />
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo" component={LabsSolo} />
               <Route path="/labs/about" component={LabsAbout} />

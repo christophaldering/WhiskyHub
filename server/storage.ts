@@ -62,6 +62,10 @@ import {
   type InsertFlavourDescriptor, type FlavourDescriptor,
   distilleries,
   type InsertDistillery, type Distillery,
+  bottleSplits,
+  bottleSplitClaims,
+  type InsertBottleSplit, type BottleSplit,
+  type InsertBottleSplitClaim, type BottleSplitClaim,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -468,6 +472,20 @@ export interface IStorage {
   deleteDistillery(id: string): Promise<void>;
   getDistilleryCount(): Promise<number>;
   createDistilleries(data: InsertDistillery[]): Promise<Distillery[]>;
+
+  // Bottle Splits
+  getBottleSplit(id: string): Promise<BottleSplit | undefined>;
+  getPublicBottleSplits(): Promise<BottleSplit[]>;
+  getBottleSplitsForParticipant(participantId: string): Promise<BottleSplit[]>;
+  createBottleSplit(data: InsertBottleSplit): Promise<BottleSplit>;
+  updateBottleSplit(id: string, data: Partial<Record<string, any>>): Promise<BottleSplit | undefined>;
+  deleteBottleSplit(id: string): Promise<void>;
+
+  // Bottle Split Claims
+  getClaimsForSplit(splitId: string): Promise<(BottleSplitClaim & { participantName: string })[]>;
+  createBottleSplitClaim(data: InsertBottleSplitClaim): Promise<BottleSplitClaim>;
+  updateBottleSplitClaim(id: string, data: Partial<{ status: string }>): Promise<BottleSplitClaim | undefined>;
+  deleteBottleSplitClaim(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2952,6 +2970,87 @@ export class DatabaseStorage implements IStorage {
   async createDistilleries(data: InsertDistillery[]): Promise<Distillery[]> {
     if (data.length === 0) return [];
     return db.insert(distilleries).values(data).returning();
+  }
+
+  // --- Bottle Splits ---
+  async getBottleSplit(id: string): Promise<BottleSplit | undefined> {
+    const [result] = await db.select().from(bottleSplits).where(eq(bottleSplits.id, id));
+    return result;
+  }
+
+  async getPublicBottleSplits(): Promise<BottleSplit[]> {
+    return db.select().from(bottleSplits)
+      .where(and(eq(bottleSplits.visibility, "public"), ne(bottleSplits.status, "cancelled")))
+      .orderBy(desc(bottleSplits.createdAt));
+  }
+
+  async getBottleSplitsForParticipant(participantId: string): Promise<BottleSplit[]> {
+    const hosted = await db.select().from(bottleSplits).where(eq(bottleSplits.hostId, participantId)).orderBy(desc(bottleSplits.createdAt));
+    const claimedRows = await db.select({ splitId: bottleSplitClaims.splitId }).from(bottleSplitClaims).where(eq(bottleSplitClaims.participantId, participantId));
+    const claimedIds = claimedRows.map(r => r.splitId).filter(id => !hosted.some(h => h.id === id));
+    let claimed: BottleSplit[] = [];
+    if (claimedIds.length > 0) {
+      claimed = await db.select().from(bottleSplits).where(inArray(bottleSplits.id, claimedIds)).orderBy(desc(bottleSplits.createdAt));
+    }
+    return [...hosted, ...claimed];
+  }
+
+  async createBottleSplit(data: InsertBottleSplit): Promise<BottleSplit> {
+    const [result] = await db.insert(bottleSplits).values(data).returning();
+    return result;
+  }
+
+  async updateBottleSplit(id: string, data: Partial<Record<string, any>>): Promise<BottleSplit | undefined> {
+    const [result] = await db.update(bottleSplits).set(data).where(eq(bottleSplits.id, id)).returning();
+    return result;
+  }
+
+  async deleteBottleSplit(id: string): Promise<void> {
+    await db.delete(bottleSplitClaims).where(eq(bottleSplitClaims.splitId, id));
+    await db.delete(bottleSplits).where(eq(bottleSplits.id, id));
+  }
+
+  // --- Bottle Split Claims ---
+  async getClaimsForSplit(splitId: string): Promise<(BottleSplitClaim & { participantName: string })[]> {
+    const claims = await db.select().from(bottleSplitClaims).where(eq(bottleSplitClaims.splitId, splitId)).orderBy(asc(bottleSplitClaims.claimedAt));
+    const enriched = await Promise.all(claims.map(async (c) => {
+      const p = await this.getParticipant(c.participantId);
+      return { ...c, participantName: p?.name || "Unknown" };
+    }));
+    return enriched;
+  }
+
+  async createBottleSplitClaim(data: InsertBottleSplitClaim): Promise<BottleSplitClaim> {
+    return await db.transaction(async (tx) => {
+      const existingClaims = await tx.select().from(bottleSplitClaims)
+        .where(eq(bottleSplitClaims.splitId, data.splitId));
+      const bottleClaims = existingClaims.filter(c => c.bottleIndex === data.bottleIndex);
+      const claimedMl = bottleClaims.reduce((sum, c) => sum + c.sizeMl, 0);
+
+      const [split] = await tx.select().from(bottleSplits)
+        .where(eq(bottleSplits.id, data.splitId));
+      if (!split) throw new Error("Split not found");
+      const bottle = (split.bottles as any[])[data.bottleIndex];
+      if (!bottle) throw new Error("Invalid bottle index");
+      const availableMl = bottle.totalVolumeMl - (bottle.ownerKeepMl || 0) - claimedMl;
+      if (data.sizeMl > availableMl) {
+        throw new Error(`Not enough capacity. Only ${availableMl}ml remaining.`);
+      }
+
+      const [result] = await tx.insert(bottleSplitClaims).values(data).returning();
+      return result;
+    });
+  }
+
+  async updateBottleSplitClaim(id: string, data: Partial<{ status: string }>): Promise<BottleSplitClaim | undefined> {
+    const updateData: any = { ...data };
+    if (data.status === "confirmed") updateData.confirmedAt = new Date();
+    const [result] = await db.update(bottleSplitClaims).set(updateData).where(eq(bottleSplitClaims.id, id)).returning();
+    return result;
+  }
+
+  async deleteBottleSplitClaim(id: string): Promise<void> {
+    await db.delete(bottleSplitClaims).where(eq(bottleSplitClaims.id, id));
   }
 }
 

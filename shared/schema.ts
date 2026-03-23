@@ -878,6 +878,65 @@ export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id
 export type InsertDistillery = z.infer<typeof insertDistillerySchema>;
 export type Distillery = typeof distilleries.$inferSelect;
 
+// --- Bottle Splits (Flaschenteilung) ---
+export const bottleSplits = pgTable("bottle_splits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostId: varchar("host_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("draft"), // draft | open | confirmed | distributed | tasting | completed | cancelled
+  visibility: text("visibility").notNull().default("public"), // public | private | group
+  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
+  tastingId: varchar("tasting_id"), // link to generated tasting session
+  deadline: timestamp("deadline"),
+  minClaims: integer("min_claims"),
+  bottles: jsonb("bottles").notNull().$type<Array<{
+    name: string;
+    distillery?: string;
+    age?: string;
+    abv?: number | null;
+    region?: string;
+    category?: string;
+    country?: string;
+    caskInfluence?: string;
+    peatLevel?: string;
+    whiskybaseId?: string;
+    bottler?: string;
+    vintage?: string;
+    ppm?: number | null;
+    wbScore?: number | null;
+    imageUrl?: string;
+    totalVolumeMl: number;
+    ownerKeepMl: number;
+    sampleOptions: Array<{ sizeMl: number; priceEur: number }>;
+  }>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
+  distributedAt: timestamp("distributed_at"),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export const insertBottleSplitSchema = createInsertSchema(bottleSplits).omit({ id: true, createdAt: true, confirmedAt: true, distributedAt: true, cancelledAt: true });
+export type InsertBottleSplit = z.infer<typeof insertBottleSplitSchema>;
+export type BottleSplit = typeof bottleSplits.$inferSelect;
+
+// --- Bottle Split Claims ---
+export const bottleSplitClaims = pgTable("bottle_split_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  splitId: varchar("split_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  bottleIndex: integer("bottle_index").notNull().default(0),
+  sizeMl: integer("size_ml").notNull(),
+  priceEur: real("price_eur").notNull(),
+  status: text("status").notNull().default("claimed"), // claimed | confirmed | paid | shipped | received
+  claimedAt: timestamp("claimed_at").defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
+});
+
+export const insertBottleSplitClaimSchema = createInsertSchema(bottleSplitClaims).omit({ id: true, claimedAt: true, confirmedAt: true });
+export type InsertBottleSplitClaim = z.infer<typeof insertBottleSplitClaimSchema>;
+export type BottleSplitClaim = typeof bottleSplitClaims.$inferSelect;
+
 // --- User Activity Sessions (admin tracking) ---
 export const userActivitySessions = pgTable("user_activity_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

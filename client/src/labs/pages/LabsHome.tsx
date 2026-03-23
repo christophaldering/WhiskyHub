@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Share2 } from "lucide-react";
+import { ChevronRight, Share2, Scissors } from "lucide-react";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
 import { tastingHistoryApi } from "@/lib/api";
 import { useMemo } from "react";
@@ -80,6 +80,14 @@ function HubPage() {
       sub: t("hub.bottleSharingSub"),
       href: "/labs/bottle-sharing",
       colorClass: "labs-hub-icon-solo",
+    },
+    {
+      key: "bottle-split",
+      icon: Scissors,
+      label: "Flaschenteilung",
+      sub: "Flaschen teilen & gemeinsam verkosten",
+      href: "/labs/splits",
+      colorClass: "labs-hub-icon-host",
     },
   ];
 
