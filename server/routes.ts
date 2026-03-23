@@ -450,6 +450,30 @@ export async function registerRoutes(
     });
   }
 
+  const BOTTLE_FEEDBACK_MAX = 1000;
+  const bottleFeedbackLog: Array<{ original: any; corrected?: any; action: string; participantId: string; timestamp: string }> = [];
+
+  app.post("/api/bottle-recognition/feedback", (req: Request, res: Response) => {
+    const { original, corrected, action, participantId, timestamp } = req.body || {};
+    if (!original || !action || !participantId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (!["confirm", "edit", "reject"].includes(action)) {
+      return res.status(400).json({ message: "Invalid action" });
+    }
+    const entry = { original, corrected, action, participantId, timestamp: timestamp || new Date().toISOString() };
+    if (bottleFeedbackLog.length >= BOTTLE_FEEDBACK_MAX) {
+      bottleFeedbackLog.shift();
+    }
+    bottleFeedbackLog.push(entry);
+    if (action === "edit" && corrected) {
+      console.log(`[BOTTLE FEEDBACK] correction by ${participantId}: ${JSON.stringify({ original, corrected })}`);
+    } else {
+      console.log(`[BOTTLE FEEDBACK] ${action} by ${participantId}`);
+    }
+    res.json({ ok: true });
+  });
+
   app.post("/api/client-error", (req: Request, res: Response) => {
     const { message, stack, componentStack, url, userAgent, timestamp } = req.body || {};
     console.error(`[CLIENT ERROR] ${message || "unknown"} at ${url || "?"} (${userAgent?.slice(0, 80) || "?"})`);

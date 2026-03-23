@@ -3,6 +3,7 @@ import type { ThemeTokens } from "../../tokens";
 import type { Translations } from "../../i18n";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
 import { Camera, Edit, Barcode, Skip, Spinner, Back, AlertTriangle } from "../../icons";
+import BottleRecognitionFeedback, { type BottleRecognitionResult } from "../../components/BottleRecognitionFeedback";
 
 export interface CapturedWhisky {
   name: string;
@@ -26,13 +27,14 @@ interface Props {
   onBack: () => void;
 }
 
-type Status = "idle" | "identifying" | "error" | "barcode";
+type Status = "idle" | "identifying" | "error" | "barcode" | "feedback";
 
 export default function SoloCaptureScreen({ th, t, participantId, onManual, onCaptured, onBarcode, onSkip, onBack }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
+  const [aiResult, setAiResult] = useState<BottleRecognitionResult | null>(null);
 
   const handlePhoto = () => {
     fileRef.current?.click();
@@ -63,15 +65,17 @@ export default function SoloCaptureScreen({ th, t, participantId, onManual, onCa
       const whiskies = Array.isArray(data.whiskies) ? data.whiskies : [];
       const bottle = whiskies[0] || {};
 
-      onCaptured({
-        name: bottle.whiskyName || bottle.matchedExisting || "",
+      const recognitionResult: BottleRecognitionResult = {
+        whiskyName: bottle.whiskyName || bottle.matchedExisting || "",
         distillery: bottle.distillery || "",
         region: bottle.region || "",
-        cask: bottle.caskType || "",
+        caskType: bottle.caskType || "",
         age: bottle.age ? String(bottle.age) : "",
         abv: bottle.abv ? String(bottle.abv) : "",
-        fromAI: true,
-      });
+        confidence: typeof bottle.confidence === "number" ? bottle.confidence : 75,
+      };
+      setAiResult(recognitionResult);
+      setStatus("feedback");
     } catch (err: unknown) {
       setStatus("error");
       const message = err instanceof Error ? err.message : t.soloIdentifyFail;
@@ -88,7 +92,42 @@ export default function SoloCaptureScreen({ th, t, participantId, onManual, onCa
     }
   };
 
+  const handleFeedbackConfirm = (data: BottleRecognitionResult) => {
+    onCaptured({
+      name: data.whiskyName,
+      distillery: data.distillery,
+      region: data.region,
+      cask: data.caskType,
+      age: data.age,
+      abv: data.abv,
+      fromAI: true,
+    });
+  };
+
+  const handleFeedbackDismiss = () => {
+    setAiResult(null);
+    setStatus("idle");
+  };
+
   const nosePhase = th.phases.nose;
+
+  if (status === "feedback" && aiResult) {
+    return (
+      <div className="v2-fade-up" style={{
+        padding: `${SP.xl}px ${SP.md}px`,
+        minHeight: 400,
+      }}>
+        <BottleRecognitionFeedback
+          th={th}
+          t={t}
+          result={aiResult}
+          participantId={participantId}
+          onConfirm={handleFeedbackConfirm}
+          onDismiss={handleFeedbackDismiss}
+        />
+      </div>
+    );
+  }
 
   if (status === "identifying") {
     return (

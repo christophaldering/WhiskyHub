@@ -469,6 +469,21 @@ export interface Translations {
   upgradeMaybeLater: string;
   upgradeEmailErr: string;
   upgradePasswordErr: string;
+  recognitionTitle: string;
+  recognitionConfidence: string;
+  recognitionLowConf: string;
+  recognitionConfirm: string;
+  recognitionEdit: string;
+  recognitionReject: string;
+  recognitionSave: string;
+  recognitionRejected: string;
+  recognitionEditHint: string;
+  labelDistillery: string;
+  labelRegion: string;
+  labelAge: string;
+  labelABV: string;
+  labelCask: string;
+  labelName: string;
 }
 
 const de: Translations = {
@@ -940,6 +955,21 @@ const de: Translations = {
   upgradeMaybeLater: "Vielleicht sp\u00e4ter",
   upgradeEmailErr: "E-Mail konnte nicht gespeichert werden",
   upgradePasswordErr: "Passwort konnte nicht gespeichert werden",
+  recognitionTitle: "Erkannter Whisky",
+  recognitionConfidence: "Konfidenz",
+  recognitionLowConf: "Niedrige Konfidenz – bitte Daten prüfen",
+  recognitionConfirm: "Stimmt",
+  recognitionEdit: "Bearbeiten",
+  recognitionReject: "Falsch",
+  recognitionSave: "Speichern",
+  recognitionRejected: "Ergebnis verworfen",
+  recognitionEditHint: "Korrigiere die Felder und speichere",
+  labelDistillery: "Destillerie",
+  labelRegion: "Region",
+  labelAge: "Alter",
+  labelABV: "ABV",
+  labelCask: "Fass",
+  labelName: "Name",
 };
 
 const en: Translations = {
@@ -1411,6 +1441,21 @@ const en: Translations = {
   upgradeMaybeLater: "Maybe later",
   upgradeEmailErr: "Could not save email",
   upgradePasswordErr: "Could not save password",
+  recognitionTitle: "Recognized Whisky",
+  recognitionConfidence: "Confidence",
+  recognitionLowConf: "Low confidence – please verify data",
+  recognitionConfirm: "Correct",
+  recognitionEdit: "Edit",
+  recognitionReject: "Wrong",
+  recognitionSave: "Save",
+  recognitionRejected: "Result dismissed",
+  recognitionEditHint: "Correct the fields and save",
+  labelDistillery: "Distillery",
+  labelRegion: "Region",
+  labelAge: "Age",
+  labelABV: "ABV",
+  labelCask: "Cask",
+  labelName: "Name",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };
