@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { User, Bell, Download, X, Search, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders } from "@/lib/api";
-import { getSession, tryAutoResume } from "@/lib/session";
+import { getSession, tryAutoResume, syncStoreParticipant } from "@/lib/session";
 import { queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import M2ProfileMenu from "@/components/ProfileMenu";
@@ -631,6 +631,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   useEffect(() => {
     const session = getSession();
     if (session.signedIn) {
+      syncStoreParticipant(session.pid, session.name, session.role, session.photoUrl);
       setAutoResumeChecked(true);
       return;
     }
@@ -679,7 +680,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     );
   }
 
-  if (!isPublicLabsRoute(location) && (!autoResumeChecked || needsAuthRedirect)) {
+  if (!autoResumeChecked || (!isPublicLabsRoute(location) && needsAuthRedirect)) {
     return (
       <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} />
     );

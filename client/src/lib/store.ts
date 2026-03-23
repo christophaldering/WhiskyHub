@@ -105,11 +105,21 @@ export const useAppStore = create<AppState>()(
       name: 'casksense-app',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => {
-        const { wishlistTransfer, authDialogOpen, authDialogTab, ...rest } = state;
+        const { wishlistTransfer, authDialogOpen, authDialogTab, currentParticipant, ...rest } = state;
         return rest;
       },
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
+        try {
+          const raw = localStorage.getItem('casksense-app');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.state?.currentParticipant !== undefined) {
+              delete parsed.state.currentParticipant;
+              localStorage.setItem('casksense-app', JSON.stringify(parsed));
+            }
+          }
+        } catch {}
       },
     }
   )

@@ -107,6 +107,11 @@ export function updateSessionPhotoUrl(photoUrl: string | null | undefined) {
   } catch {}
 }
 
+export function setSessionAndSync(mode: SessionMode, name?: string | null, pid?: string, role?: string, photoUrl?: string) {
+  setSessionStorage(mode, name, pid, role, photoUrl);
+  syncStoreParticipant(pid, name, role, photoUrl);
+}
+
 export function syncStoreParticipant(pid?: string, name?: string | null, role?: string, photoUrl?: string) {
   try {
     if (pid) {
@@ -118,9 +123,8 @@ export function syncStoreParticipant(pid?: string, name?: string | null, role?: 
 }
 
 export function setGuestSession(pid: string, name: string) {
-  setSessionStorage("tasting", name, pid, undefined);
+  setSessionAndSync("tasting", name, pid, undefined);
   try { localStorage.setItem("casksense_participant_id", pid); } catch {}
-  syncStoreParticipant(pid, name, undefined);
   window.dispatchEvent(new Event("session-change"));
 }
 
@@ -150,11 +154,10 @@ export async function signIn(opts: {
   const pid = data.pid || undefined;
   const role = data.role || undefined;
   const photoUrl = data.photoUrl || undefined;
-  setSessionStorage(opts.mode, displayName, pid, role, photoUrl);
+  setSessionAndSync(opts.mode, displayName, pid, role, photoUrl);
   if (pid) {
     try { localStorage.setItem("casksense_participant_id", pid); } catch {}
   }
-  syncStoreParticipant(pid, displayName, role, photoUrl);
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
   } else {
@@ -198,11 +201,10 @@ export async function tryAutoResume(): Promise<boolean> {
             const pid = data.pid || undefined;
             const role = data.role || undefined;
             const photoUrl = data.photoUrl || undefined;
-            setSessionStorage(mode, name, pid, role, photoUrl);
+            setSessionAndSync(mode, name, pid, role, photoUrl);
             if (pid) {
               try { localStorage.setItem("casksense_participant_id", pid); } catch {}
             }
-            syncStoreParticipant(pid, name, role, photoUrl);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
@@ -220,8 +222,7 @@ export async function tryAutoResume(): Promise<boolean> {
     }
 
     const storedPid = localStorage.getItem("casksense_participant_id");
-    const storePid = useAppStore.getState().currentParticipant?.id;
-    const candidatePid = storedPid || storePid;
+    const candidatePid = storedPid;
     if (candidatePid) {
       try {
         const verRes = await fetch(`/api/participants/${candidatePid}/verification-status`, { headers: { "x-participant-id": candidatePid } });
@@ -247,9 +248,8 @@ export async function tryAutoResume(): Promise<boolean> {
           const p = await res.json();
           if (p?.id) {
             const mode = (localStorage.getItem(LK_MODE) || "log") as SessionMode;
-            setSessionStorage(mode, p.name || null, p.id, p.role || undefined, p.photoUrl || undefined);
+            setSessionAndSync(mode, p.name || null, p.id, p.role || undefined, p.photoUrl || undefined);
             try { localStorage.setItem("casksense_participant_id", p.id); } catch {}
-            syncStoreParticipant(p.id, p.name, p.role, p.photoUrl || undefined);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
