@@ -1,0 +1,252 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — FEATURE B: PUSH NOTIFICATIONS
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CaskSense V2 läuft vollständig. Feature A (Offline/PWA) ist deployed —
+der Service Worker existiert bereits unter client/public/sw.js und enthält
+bereits den Push-Handler (push Event + notificationclick Event).
+
+Jetzt wird die Server-Seite für Push-Notifications gebaut:
+VAPID-Setup, Subscription-Endpunkte, und Trigger-Logik wenn ein Tasting
+startet. Außerdem bekommt die Lobby den Permission-Prompt.
+
+VORAUSSETZUNG: Feature A muss deployed sein bevor dieser Prompt ausgeführt wird.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS bestehende Routen in server/routes.ts löschen oder umbenennen
+❌ NIEMALS bestehende Dateien in client/src/labs/ anfassen
+❌ NIEMALS bestehende Dateien in client/src/labs-v2/ löschen
+
+✅ server/routes.ts: NUR neue Routen ergänzen (append-only)
+✅ Neue Datei server/pushService.ts anlegen
+✅ Neue Dateien in client/src/labs-v2/hooks/ und components/ anlegen
+✅ npm install web-push + @types/web-push (keine DB-Migrationen)
+✅ .env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL ergänzen
+✅ i18n Keys append-only
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  pushLobbyTitle:    "Benachrichtigungen aktivieren?"
+  pushLobbyBody:     "Erfahre sofort wenn das Tasting beginnt — auch wenn CaskSense im Hintergrund läuft."
+  pushDismiss:       "Nicht jetzt"
+  pushEnable:        "Aktivieren"
+  pushNotifTitle:    "CaskSense"
+  pushTastingStart:  "{{name}} hat begonnen — jetzt bewerten!"
+  pushNewDram:       "Neuer Dram: {{whisky}}"
+
+EN:
+  pushLobbyTitle:    "Enable notifications?"
+  pushLobbyBody:     "Get notified instantly when the tasting starts — even when CaskSense is in the background."
+  pushDismiss:       "Not now"
+  pushEnable:        "Enable"
+  pushNotifTitle:    "CaskSense"
+  pushTastingStart:  "{{name}} has started — rate now!"
+  pushNewDram:       "New dram: {{whisky}}"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 1: VAPID-KEYS GENERIEREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. npm install web-push @types/web-push
+
+2. VAPID-Keys generieren (einmalig, direkt in der Replit-Shell):
+   node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.log(JSON.stringify(k,null,2))"
+
+3. Die generierten Keys in .env eintragen:
+   VAPID_PUBLIC_KEY=<publicKey aus Schritt 2>
+   VAPID_PRIVATE_KEY=<privateKey aus Schritt 2>
+   VAPID_EMAIL=mailto:christoph.aldering@googlemail.com
+   VITE_VAPID_PUBLIC_KEY=<publicKey — gleicher Wert, für Frontend>
+
+WICHTIG: VITE_VAPID_PUBLIC_KEY muss mit VITE_ beginnen damit Vite ihn
+im Frontend über import.meta.env exponiert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 2: SERVER PUSH SERVICE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: server/pushService.ts
+
+In-Memory Subscription Store (kein DB-Schema nötig):
+  Map<participantId: string, Set<PushSubscriptionJSON>>
+
+Funktionen:
+  setVapidDetails() beim Modulstart aufrufen mit env-Vars.
+
+  addSubscription(participantId: string, subscription: PushSubscriptionJSON): void
+    → In Map speichern. Doppelte Subscriptions (gleicher endpoint) nicht doppelt eintragen.
+
+  removeSubscription(participantId: string, endpoint: string): void
+    → Subscription mit passendem endpoint aus Set entfernen.
+
+  sendToParticipant(participantId: string, payload: PushPayload): Promise<void>
+    → Alle Subscriptions für participantId aus Map laden.
+    → webpush.sendNotification() für jede Subscription.
+    → Bei 410/404 Response: Subscription automatisch entfernen (abgelaufen).
+
+  sendToAll(payload: PushPayload): Promise<void>
+    → Alle participantIds in der Map durchlaufen, sendToParticipant aufrufen.
+
+  PushPayload Interface:
+    { title: string; body: string; url?: string }
+
+HINWEIS: In-Memory bedeutet: Subscriptions gehen beim Server-Neustart
+verloren. Nutzer müssen sich erneut subscriben. Das ist für den Anfang
+ausreichend — für Persistenz wäre eine DB-Tabelle nötig (separates Feature).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 3: SERVER ROUTEN ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In server/routes.ts — NUR neue Routen ergänzen, nichts entfernen:
+
+POST /api/push/subscribe
+  Body: { subscription: PushSubscriptionJSON, participantId: string }
+  → addSubscription() aufrufen
+  → 201 { ok: true }
+
+DELETE /api/push/subscribe
+  Body: { endpoint: string, participantId: string }
+  → removeSubscription() aufrufen
+  → 200 { ok: true }
+
+POST /api/push/test (nur für Entwicklung — kann nach Test entfernt werden)
+  Body: { participantId: string }
+  → sendToParticipant() mit Test-Payload aufrufen
+  → 200 { ok: true }
+
+TASTING-START TRIGGER:
+  In der bestehenden Route die Tastings auf 'open' setzt
+  (wahrscheinlich PATCH /api/tastings/:id mit status: 'open'):
+  Nach dem DB-Update:
+  import { sendToAll } from './pushService'
+  await sendToAll({
+    title: 'CaskSense',
+    body: `${tasting.name} hat begonnen`,
+    url: `/labs-v2`
+  })
+  WICHTIG: Nur ergänzen, niemals die bestehende Route-Logik ändern.
+  Wenn die Route nicht eindeutig identifizierbar ist: NUR die drei
+  neuen /api/push/* Routen anlegen und den Trigger weglassen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 4: FRONTEND HOOK usePushNotifications
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/src/labs-v2/hooks/usePushNotifications.ts
+
+Props des Hooks: { participantId: string | null }
+
+Exportierter State:
+  state: 'unsupported' | 'denied' | 'granted' | 'default' | 'loading'
+  subscribe(): Promise<void>
+  unsubscribe(): Promise<void>
+  canPrompt: boolean  (true wenn state === 'default')
+
+Logik subscribe():
+  1. Notification.requestPermission() aufrufen
+  2. Bei 'denied': state → 'denied', return
+  3. navigator.serviceWorker.ready warten
+  4. reg.pushManager.subscribe({
+       userVisibleOnly: true,
+       applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+     })
+  5. fetch POST /api/push/subscribe mit { subscription: sub.toJSON(), participantId }
+     Header: 'x-participant-id': participantId
+  6. state → 'granted'
+
+Logik unsubscribe():
+  1. Subscription aus pushManager holen
+  2. fetch DELETE /api/push/subscribe mit { endpoint: sub.endpoint, participantId }
+  3. sub.unsubscribe()
+  4. state → 'default'
+
+Initialer State: Notification.permission casten auf State-Type.
+Falls 'serviceWorker' nicht in navigator: state → 'unsupported'.
+
+Hilfsfunktion urlBase64ToUint8Array(base64: string): Uint8Array
+  → Standard VAPID Base64URL → Uint8Array Konvertierung
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 5: PERMISSION PROMPT KOMPONENTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/src/labs-v2/components/PushPermissionPrompt.tsx
+
+Props: { th: ThemeTokens, t: Translations, participantId: string | null }
+
+Darstellung:
+  position: fixed
+  bottom: 88px  (über Bottom-Tab-Bar)
+  left: 16px, right: 16px
+  zIndex: 300
+  background: th.bgCard, border: th.border, borderRadius: 16px
+  padding: 20px
+  Animation beim Einblenden: slide-up, 350ms, cubic-bezier(0.34,1.56,0.64,1)
+
+Aufbau:
+  Oben: Gold-getönter Icon-Container (40×40px, borderRadius 10px) +
+        SVG Bell-Icon (20px, stroke: #c9a227) + Titel + Body-Text
+  Unten: Zwei Buttons nebeneinander
+    Links:  "Nicht jetzt" → dismiss → localStorage 'cs-push-dismissed' = Date.now()
+    Rechts: "Aktivieren"  → subscribe() aus Hook, dann ausblenden
+
+Erscheint NUR wenn:
+  - state === 'default' (noch nicht gefragt)
+  - localStorage 'cs-push-dismissed' nicht gesetzt ODER älter als 14 Tage
+  - Erscheinen mit 1200ms Verzögerung nach Mount (nicht sofort)
+
+Verschwindet automatisch nach:
+  - Klick auf "Nicht jetzt"
+  - Klick auf "Aktivieren"
+  - state wechselt zu 'granted' oder 'denied'
+
+Kein Emoji. SVG Bell-Icon inline.
+Button-Höhen: minHeight 44px.
+Schrift: DM Sans.
+
+EINBINDEN in Lobby-Komponente (labs-v2):
+  import { PushPermissionPrompt } from '../components/PushPermissionPrompt'
+  Am Ende der Lobby-Render-Funktion:
+  <PushPermissionPrompt th={th} t={t} participantId={participantId} />
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE FEATURE B
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] VAPID Keys in .env gesetzt (alle vier Variablen)
+  [ ] npm install web-push erfolgreich
+  [ ] POST /api/push/subscribe gibt 201 zurück
+  [ ] DELETE /api/push/subscribe gibt 200 zurück
+  [ ] POST /api/push/test löst Notification aus (im Browser testen)
+  [ ] PushPermissionPrompt erscheint in der Lobby nach 1.2s
+  [ ] "Nicht jetzt" schließt Prompt, erscheint nicht wieder < 14 Tage
+  [ ] "Aktivieren" → Browser-Permission-Dialog → Notification-Berechtigung
+  [ ] Kein einziges Emoji
+  [ ] DE/EN Keys in allen neuen Texten
+  [ ] Bestehende Routen und Dateien unverändert
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE FEATURE B PROMPT
+═══════════════════════════════════════════════════════════════════════════════
