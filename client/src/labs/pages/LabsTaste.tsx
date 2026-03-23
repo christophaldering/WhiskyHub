@@ -508,11 +508,13 @@ export default function LabsTaste() {
   const insight = insightData?.insight ?? null;
 
   const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, overall: 0 };
+  const defaultStats = { stdDev: 0, min: 0, max: 0 };
+  const dimStats = flavorProfile?.dimensionStats || { nose: defaultStats, taste: defaultStats, finish: defaultStats, overall: defaultStats };
   const dimensions = [
-    { label: "Nose", key: "nose", value: avgScores.nose, color: "var(--labs-phase-nose)", dimColor: "var(--labs-phase-nose-dim)" },
-    { label: "Palate", key: "palate", value: avgScores.taste, color: "var(--labs-phase-palate)", dimColor: "var(--labs-phase-palate-dim)" },
-    { label: "Finish", key: "finish", value: avgScores.finish, color: "var(--labs-phase-finish)", dimColor: "var(--labs-phase-finish-dim)" },
-    { label: "Overall", key: "overall", value: avgScores.overall, color: "var(--labs-phase-overall)", dimColor: "var(--labs-phase-overall-dim)" },
+    { label: "Nose", key: "nose", value: avgScores.nose, stats: dimStats.nose, color: "var(--labs-phase-nose)", dimColor: "var(--labs-phase-nose-dim)" },
+    { label: "Palate", key: "palate", value: avgScores.taste, stats: dimStats.taste, color: "var(--labs-phase-palate)", dimColor: "var(--labs-phase-palate-dim)" },
+    { label: "Finish", key: "finish", value: avgScores.finish, stats: dimStats.finish, color: "var(--labs-phase-finish)", dimColor: "var(--labs-phase-finish-dim)" },
+    { label: "Overall", key: "overall", value: avgScores.overall, stats: dimStats.overall, color: "var(--labs-phase-overall)", dimColor: "var(--labs-phase-overall-dim)" },
   ];
 
   const recentTastings = tastings
@@ -728,10 +730,7 @@ export default function LabsTaste() {
               ) : avgScores.overall > 0 ? (
                 <div data-testid="text-hero-palate-summary">
                   <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0 }}>
-                    {t("labs.heroAvgSummary", "Your average score is")} <span style={{ fontWeight: 700, fontSize: 18, color: "var(--labs-accent)", fontFamily: "var(--font-display)" }}>{Math.round(avgScores.overall)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: getPalateBandColor(avgScores.overall), marginLeft: 6 }}>
-                      — {getPalateBandLabel(avgScores.overall, i18n.language)}
-                    </span>
+                    {t("labs.heroAvgNeutral", "Your average is based on {{count}} ratings", { count: (flavorProfile?.sources?.tastingRatings || 0) + (flavorProfile?.sources?.journalEntries || 0) })}
                   </p>
                 </div>
               ) : (
@@ -745,7 +744,7 @@ export default function LabsTaste() {
                 <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
                   <div style={{
                     height: "100%", width: `${Math.min(100, ((Math.max(60, Math.min(100, avgScores.overall)) - 60) / 40) * 100)}%`,
-                    borderRadius: 2, background: getPalateBandColor(avgScores.overall),
+                    borderRadius: 2, background: "var(--labs-accent)",
                     transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }} />
                 </div>
@@ -826,24 +825,22 @@ export default function LabsTaste() {
                     const hasScore = score > 0;
                     const clampedScore = Math.max(60, Math.min(100, score));
                     const pct = hasScore ? ((clampedScore - 60) / 40) * 100 : 0;
-                    const bandLabel = hasScore ? getPalateBandLabel(clampedScore, i18n.language) : null;
-                    const bandColor = hasScore ? getPalateBandColor(clampedScore) : null;
                     return (
                       <div key={dim.key} data-testid={`palate-dim-${dim.key}`}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-secondary)", letterSpacing: "0.02em" }}>
                             {dim.label}
                           </span>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                            {bandLabel && (
-                              <span style={{ fontSize: 11, fontWeight: 500, color: bandColor || "var(--labs-text-muted)", letterSpacing: "0.01em" }}>
-                                {bandLabel}
+                          {hasScore && (
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", letterSpacing: "0.01em" }}>
+                                σ {dim.stats.stdDev}
                               </span>
-                            )}
-                            <span style={{ fontSize: 18, fontWeight: 700, color: hasScore ? dim.color : "var(--labs-text-muted)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
-                              {hasScore ? Math.round(score) : "—"}
-                            </span>
-                          </div>
+                              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", letterSpacing: "0.01em" }}>
+                                {dim.stats.min}–{dim.stats.max}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div style={{ height: 6, borderRadius: 3, background: dim.dimColor, overflow: "hidden" }}>
                           <div

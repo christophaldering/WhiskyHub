@@ -228,6 +228,12 @@ export interface IStorage {
   // Flavor Profile (aggregated ratings with whisky metadata)
   getFlavorProfile(participantId: string): Promise<{
     avgScores: { nose: number; taste: number; finish: number; overall: number };
+    dimensionStats: {
+      nose: { stdDev: number; min: number; max: number };
+      taste: { stdDev: number; min: number; max: number };
+      finish: { stdDev: number; min: number; max: number };
+      overall: { stdDev: number; min: number; max: number };
+    };
     regionBreakdown: Record<string, { count: number; avgScore: number }>;
     caskBreakdown: Record<string, { count: number; avgScore: number }>;
     peatBreakdown: Record<string, { count: number; avgScore: number }>;
@@ -1181,6 +1187,12 @@ export class DatabaseStorage implements IStorage {
 
   async getFlavorProfile(participantId: string): Promise<{
     avgScores: { nose: number; taste: number; finish: number; overall: number };
+    dimensionStats: {
+      nose: { stdDev: number; min: number; max: number };
+      taste: { stdDev: number; min: number; max: number };
+      finish: { stdDev: number; min: number; max: number };
+      overall: { stdDev: number; min: number; max: number };
+    };
     regionBreakdown: Record<string, { count: number; avgScore: number }>;
     caskBreakdown: Record<string, { count: number; avgScore: number }>;
     peatBreakdown: Record<string, { count: number; avgScore: number }>;
@@ -1203,6 +1215,10 @@ export class DatabaseStorage implements IStorage {
     const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
 
     let sumNose = 0, sumTaste = 0, sumFinish = 0, sumOverall = 0;
+    const noseScores: number[] = [];
+    const tasteScores: number[] = [];
+    const finishScores: number[] = [];
+    const overallScores: number[] = [];
     const regionAcc: Record<string, { total: number; count: number }> = {};
     const caskAcc: Record<string, { total: number; count: number }> = {};
     const peatAcc: Record<string, { total: number; count: number }> = {};
@@ -1211,8 +1227,12 @@ export class DatabaseStorage implements IStorage {
     for (const r of allRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      sumNose += (r.normalizedNose ?? r.nose * norm); sumTaste += (r.normalizedTaste ?? r.taste * norm); sumFinish += (r.normalizedFinish ?? r.finish * norm);
-      sumOverall += (r.normalizedScore ?? r.overall * norm);
+      const nNose = r.normalizedNose ?? r.nose * norm;
+      const nTaste = r.normalizedTaste ?? r.taste * norm;
+      const nFinish = r.normalizedFinish ?? r.finish * norm;
+      const nOverall = r.normalizedScore ?? r.overall * norm;
+      sumNose += nNose; sumTaste += nTaste; sumFinish += nFinish; sumOverall += nOverall;
+      noseScores.push(nNose); tasteScores.push(nTaste); finishScores.push(nFinish); overallScores.push(nOverall);
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
         const normOverall = (r.normalizedScore ?? r.overall * norm);
@@ -1242,6 +1262,7 @@ export class DatabaseStorage implements IStorage {
       const score = j.personalScore;
       if (score != null && score > 0) {
         sumOverall += score;
+        overallScores.push(score);
         journalScoreCount++;
 
         if (j.region) {
@@ -1268,6 +1289,17 @@ export class DatabaseStorage implements IStorage {
       return result;
     };
 
+    const computeStats = (scores: number[]) => {
+      if (scores.length === 0) return { stdDev: 0, min: 0, max: 0 };
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
+      return {
+        stdDev: Math.round(Math.sqrt(variance) * 10) / 10,
+        min: Math.round(Math.min(...scores) * 10) / 10,
+        max: Math.round(Math.max(...scores) * 10) / 10,
+      };
+    };
+
     const allWhiskyRows = await db.select().from(whiskies);
 
     const ratedWhiskiesResult = allRatings.map(r => {
@@ -1281,6 +1313,12 @@ export class DatabaseStorage implements IStorage {
         taste: Math.round((sumTaste / n) * 10) / 10,
         finish: Math.round((sumFinish / n) * 10) / 10,
         overall: Math.round((sumOverall / nOverall) * 10) / 10,
+      },
+      dimensionStats: {
+        nose: computeStats(noseScores),
+        taste: computeStats(tasteScores),
+        finish: computeStats(finishScores),
+        overall: computeStats(overallScores),
       },
       regionBreakdown: toBreakdown(regionAcc),
       caskBreakdown: toBreakdown(caskAcc),
