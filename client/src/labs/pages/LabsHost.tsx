@@ -373,7 +373,7 @@ function HostRatingPanel({
 
   const hostScale = useRatingScale(ratingScale);
   const scaleMax = hostScale.max;
-  const scaleDefault = Math.round(scaleMax / 2);
+  const scaleDefault = 75;
   const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
   const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
 
@@ -444,8 +444,9 @@ function HostRatingPanel({
           const existing = await ratingApi.getMyRating(participantId, w.id);
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
-            setHostScores(prev => ({ ...prev, [w.id]: { nose: existing.nose ?? scaleDefault, taste: existing.taste ?? scaleDefault, finish: existing.finish ?? scaleDefault } }));
-            setHostOverall(prev => ({ ...prev, [w.id]: existing.overall ?? scaleDefault }));
+            const clamp = (v: number) => Math.max(60, Math.min(100, v));
+            setHostScores(prev => ({ ...prev, [w.id]: { nose: clamp(existing.nose ?? scaleDefault), taste: clamp(existing.taste ?? scaleDefault), finish: clamp(existing.finish ?? scaleDefault) } }));
+            setHostOverall(prev => ({ ...prev, [w.id]: clamp(existing.overall ?? scaleDefault) }));
             setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
             setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
             setHostNotes(prev => ({ ...prev, [w.id]: parsed.cleanNotes }));

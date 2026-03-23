@@ -129,13 +129,14 @@ export default function OverallCircle({
 
   const commitEdit = useCallback(() => {
     const num = parseFloat(editInput);
-    if (!isNaN(num) && num >= 0 && num <= scale.max) {
-      const snapped = Math.round(num / scale.step) * scale.step;
+    if (!isNaN(num) && num >= 60 && num <= 100) {
+      const clamped = Math.max(60, Math.min(100, num));
+      const snapped = Math.round(clamped / scale.step) * scale.step;
       onChange(snapped);
       triggerHaptic("light");
     }
     setEditing(false);
-  }, [editInput, scale.max, scale.step, onChange]);
+  }, [editInput, scale.step, onChange]);
 
   const handleReset = useCallback(() => {
     onReset();
@@ -173,8 +174,8 @@ export default function OverallCircle({
                 if (e.key === "Enter") commitEdit();
                 if (e.key === "Escape") setEditing(false);
               }}
-              min={0}
-              max={scale.max}
+              min={60}
+              max={100}
               style={{
                 width: size * 0.4,
                 textAlign: "center",

@@ -395,9 +395,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           const existing = await ratingApi.getMyRating(pid, w.id);
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
-            const scaleDefault = Math.round((tasting?.ratingScale || 100) / 2);
-            setHostScores(prev => ({ ...prev, [w.id]: { nose: existing.nose ?? scaleDefault, taste: existing.taste ?? scaleDefault, finish: existing.finish ?? scaleDefault } }));
-            setHostOverall(prev => ({ ...prev, [w.id]: existing.overall ?? scaleDefault }));
+            const scaleDefault = 75;
+            const clamp = (v: number) => Math.max(60, Math.min(100, v));
+            setHostScores(prev => ({ ...prev, [w.id]: { nose: clamp(existing.nose ?? scaleDefault), taste: clamp(existing.taste ?? scaleDefault), finish: clamp(existing.finish ?? scaleDefault) } }));
+            setHostOverall(prev => ({ ...prev, [w.id]: clamp(existing.overall ?? scaleDefault) }));
             setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
             setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
             setHostNotes(prev => ({ ...prev, [w.id]: parsed.cleanNotes }));
@@ -464,7 +465,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const guidedIdx = localGuidedIdx ?? (tasting?.guidedWhiskyIndex ?? -1);
   const guidedRevealStep = localRevealStep ?? (tasting?.guidedRevealStep ?? 0);
   const ratingScale = tasting?.ratingScale ?? 100;
-  const scaleDefault = Math.round(ratingScale / 2);
+  const scaleDefault = 75;
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
 

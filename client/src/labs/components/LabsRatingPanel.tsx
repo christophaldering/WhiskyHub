@@ -261,14 +261,14 @@ export default function LabsRatingPanel({
         </div>
         <input
           type="range"
-          min={0}
-          max={scale}
+          min={60}
+          max={100}
           step={scaleInfo.step}
           value={scores[key]}
           onChange={(e) => {
             const val = Number(e.target.value);
             const prev = prevSliderVals.current[key];
-            if ((val === 0 || val === scale) && prev !== val) {
+            if ((val === 60 || val === 100) && prev !== val) {
               triggerHaptic("boundary");
             }
             prevSliderVals.current[key] = val;
@@ -279,9 +279,9 @@ export default function LabsRatingPanel({
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>0</span>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{Math.round(scale / 2)}</span>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{scale}</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>60</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>80</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>100</span>
         </div>
       </div>
     );
@@ -655,13 +655,13 @@ export default function LabsRatingPanel({
       </div>
       <input
         type="range"
-        min={0}
-        max={scale}
+        min={60}
+        max={100}
         value={overall}
         onChange={(e) => {
           const val = Number(e.target.value);
           const prev = prevSliderVals.current["overall"];
-          if ((val === 0 || val === scale) && prev !== val) {
+          if ((val === 60 || val === 100) && prev !== val) {
             triggerHaptic("boundary");
           }
           prevSliderVals.current["overall"] = val;

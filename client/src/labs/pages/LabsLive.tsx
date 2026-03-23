@@ -591,7 +591,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const mainScale = useRatingScale(tasting?.ratingScale);
   const maxScore = mainScale.max;
-  const mid2 = Math.round(maxScore / 2);
+  const mid2 = 75;
+  const clampScore = (v: number) => Math.max(60, Math.min(100, v));
 
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
@@ -612,10 +613,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   useEffect(() => {
     if (myRating) {
-      const n = myRating.nose ?? mid2;
-      const ta = myRating.taste ?? mid2;
-      const f = myRating.finish ?? mid2;
-      const o = myRating.overall ?? mid2;
+      const n = clampScore(myRating.nose ?? mid2);
+      const ta = clampScore(myRating.taste ?? mid2);
+      const f = clampScore(myRating.finish ?? mid2);
+      const o = clampScore(myRating.overall ?? mid2);
       setScores({ nose: n, taste: ta, finish: f, overall: o });
       setNotes(myRating.notes || "");
       const auto = Math.round((n + ta + f) / 3);
@@ -1092,17 +1093,17 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   <div className="labs-slider-track">
                     <div
                       className="labs-slider-fill"
-                      style={{ width: `${(scores[activeDim] / maxScore) * 100}%` }}
+                      style={{ width: `${((scores[activeDim] - 60) / 40) * 100}%` }}
                     />
                     <div
                       className="labs-slider-thumb"
-                      style={{ left: `${(scores[activeDim] / maxScore) * 100}%` }}
+                      style={{ left: `${((scores[activeDim] - 60) / 40) * 100}%` }}
                     />
                   </div>
                   <input
                     type="range"
-                    min={0}
-                    max={maxScore}
+                    min={60}
+                    max={100}
                     value={scores[activeDim]}
                     onChange={(e) => updateScore(activeDim, Number(e.target.value))}
                     className="absolute inset-0 w-full opacity-0 cursor-pointer"
@@ -1112,9 +1113,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 </div>
 
                 <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                  <span>0</span>
-                  <span>{Math.round(maxScore / 2)}</span>
-                  <span>{maxScore}</span>
+                  <span>60</span>
+                  <span>80</span>
+                  <span>100</span>
                 </div>
 
                 {(activeDim === "nose" || activeDim === "taste" || activeDim === "finish") && (
@@ -1243,8 +1244,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   </div>
                   <input
                     type="range"
-                    min={0}
-                    max={maxScore}
+                    min={60}
+                    max={100}
                     value={scores.overall}
                     onChange={(e) => updateOverall(Number(e.target.value))}
                     data-testid="labs-live-overall-slider"

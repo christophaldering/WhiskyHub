@@ -151,10 +151,10 @@ export const HostCockpit: React.FC<Props> = ({ th, t, tastingId, participantId, 
           if (res.ok) {
             const existing = await res.json()
             if (existing) {
-              const scale = tasting?.ratingScale || 100
-              const def = Math.round(scale / 2)
-              setHostScores(prev => ({ ...prev, [w.id]: { nose: existing.nose ?? def, taste: existing.taste ?? def, finish: existing.finish ?? def } }))
-              setHostOverall(prev => ({ ...prev, [w.id]: existing.overall ?? def }))
+              const def = 75
+              const clamp = (v: number) => Math.max(60, Math.min(100, v))
+              setHostScores(prev => ({ ...prev, [w.id]: { nose: clamp(existing.nose ?? def), taste: clamp(existing.taste ?? def), finish: clamp(existing.finish ?? def) } }))
+              setHostOverall(prev => ({ ...prev, [w.id]: clamp(existing.overall ?? def) }))
               if (existing.notes) setHostNotes(prev => ({ ...prev, [w.id]: existing.notes }))
             }
           }
@@ -175,7 +175,7 @@ export const HostCockpit: React.FC<Props> = ({ th, t, tastingId, participantId, 
   const isLive = status === 'open' || status === 'reveal'
   const isDraft = status === 'draft'
   const ratingScale = tasting?.ratingScale ?? 100
-  const scaleDefault = Math.round(ratingScale / 2)
+  const scaleDefault = 75
 
   const rv = useMemo(() => isBlind && tasting ? getRevealState(tasting, whiskies.length, t) : null, [tasting, whiskies.length, isBlind, t])
 

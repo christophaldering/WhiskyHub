@@ -161,7 +161,7 @@ export default function LabsSolo() {
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
-  const scaleMid = Math.round(ratingScale.max / 2);
+  const scaleMid = 75;
   const [score, setScore] = useState(scaleMid);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -289,7 +289,10 @@ export default function LabsSolo() {
       if (d.unknownPrice) setUnknownPrice(d.unknownPrice);
       if (d.photoUrl) setPhotoUrl(d.photoUrl);
       if (d.showManual) setShowManual(true);
-      if (d.detailedScores) setDetailedScores(d.detailedScores);
+      if (d.detailedScores) {
+        const clamp = (v: number) => Math.max(60, Math.min(100, v));
+        setDetailedScores({ nose: clamp(d.detailedScores.nose), taste: clamp(d.detailedScores.taste), finish: clamp(d.detailedScores.finish) });
+      }
       if (d.detailTouched) setDetailTouched(true);
       if (d.overrideActive) setOverrideActive(true);
       if (d.detailChips) setDetailChips(d.detailChips);
@@ -338,7 +341,7 @@ export default function LabsSolo() {
       if (!d) return;
       setWhiskyName(d.whiskyName || "");
       setDistillery(d.distillery || "");
-      setScore(d.personalScore != null ? d.personalScore : scaleMid);
+      setScore(d.personalScore != null ? Math.max(60, Math.min(100, d.personalScore)) : scaleMid);
       setNotes("");
       setUnknownAge(d.age ? String(d.age) : "");
       setUnknownAbv(d.abv ? String(d.abv) : "");
@@ -411,6 +414,7 @@ export default function LabsSolo() {
       }
 
       if (restoredScores) {
+        restoredScores = { nose: Math.max(60, Math.min(100, restoredScores.nose)), taste: Math.max(60, Math.min(100, restoredScores.taste)), finish: Math.max(60, Math.min(100, restoredScores.finish)) };
         setDetailedScores(restoredScores);
         setDetailTouched(true);
         const noseScored = restoredScores.nose !== scaleMid;
@@ -1873,14 +1877,14 @@ export default function LabsSolo() {
                 </div>
                 <input
                   type="range"
-                  min={0}
+                  min={60}
                   max={100}
                   value={detailedScores[key]}
                   onChange={(e) => handleDetailScoreChange(key, parseInt(e.target.value))}
                   className="labs-range-slider"
                   style={{
-                    background: detailedScores[key] > 0
-                      ? `linear-gradient(to right, ${color} 0%, ${color} ${detailedScores[key]}%, rgba(255,255,255,0.08) ${detailedScores[key]}%, rgba(255,255,255,0.08) 100%)`
+                    background: detailedScores[key] >= 60
+                      ? `linear-gradient(to right, ${color} 0%, ${color} ${((detailedScores[key] - 60) / 40) * 100}%, rgba(255,255,255,0.08) ${((detailedScores[key] - 60) / 40) * 100}%, rgba(255,255,255,0.08) 100%)`
                       : undefined,
                   }}
                   data-testid={`input-slider-${key}`}
@@ -1913,7 +1917,7 @@ export default function LabsSolo() {
               {editingOverall ? (
                 <input
                   type="number"
-                  min={0}
+                  min={60}
                   max={100}
                   autoFocus
                   value={overallInput}
