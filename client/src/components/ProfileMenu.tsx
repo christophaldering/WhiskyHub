@@ -107,7 +107,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [m2GuestConsent, setM2GuestConsent] = useState(false);
 
   const [labsTheme, setLabsThemeState] = useState<"dark" | "light">(() => {
-    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+    try { return ((localStorage.getItem("cs_labs_theme") || localStorage.getItem("v2_theme")) as "dark" | "light") || "dark"; } catch { return "dark"; }
   });
 
   const refreshSession = useCallback(() => {
@@ -200,7 +200,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const toggleLabsTheme = () => {
     const next = labsTheme === "dark" ? "light" : "dark";
     setLabsThemeState(next);
-    try { localStorage.setItem("cs_labs_theme", next); } catch {}
+    try { localStorage.setItem("cs_labs_theme", next); localStorage.setItem("v2_theme", next); } catch {}
+    window.dispatchEvent(new CustomEvent("labs-theme-changed"));
     const shell = document.querySelector(".labs-shell");
     if (shell) {
       if (next === "light") shell.classList.add("labs-light");

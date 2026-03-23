@@ -394,11 +394,12 @@ function LabsNotificationBell() {
 
 function useLabsTheme() {
   const [theme, setThemeState] = useState<"dark" | "light">(() => {
-    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+    try { return ((localStorage.getItem("cs_labs_theme") || localStorage.getItem("v2_theme")) as "dark" | "light") || "dark"; } catch { return "dark"; }
   });
   const setTheme = useCallback((t: "dark" | "light") => {
     setThemeState(t);
-    try { localStorage.setItem("cs_labs_theme", t); } catch {}
+    try { localStorage.setItem("cs_labs_theme", t); localStorage.setItem("v2_theme", t); } catch {}
+    window.dispatchEvent(new CustomEvent("labs-theme-changed"));
   }, []);
   const toggle = useCallback(() => setTheme(theme === "dark" ? "light" : "dark"), [theme, setTheme]);
   return { theme, toggle };

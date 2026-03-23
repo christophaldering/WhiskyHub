@@ -49,7 +49,7 @@ const tabMeta: { id: TabId; icon: (p: IconProps) => React.JSX.Element; label: (t
 export default function LabsV2Layout({ children, activeTab, onTabChange, hideTabBar, onLogoClick }: LayoutProps) {
   const [mode, setMode] = useState<V2Theme>(() => {
     try {
-      return (localStorage.getItem("v2_theme") as V2Theme) || "dark";
+      return (localStorage.getItem("cs_labs_theme") as V2Theme) || (localStorage.getItem("v2_theme") as V2Theme) || "dark";
     } catch (_e: unknown) {
       return "dark";
     }
@@ -68,7 +68,8 @@ export default function LabsV2Layout({ children, activeTab, onTabChange, hideTab
   const toggleTheme = useCallback(() => {
     setMode((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      try { localStorage.setItem("v2_theme", next); } catch (_e: unknown) { /* unavailable */ }
+      try { localStorage.setItem("cs_labs_theme", next); localStorage.setItem("v2_theme", next); } catch (_e: unknown) { /* unavailable */ }
+      window.dispatchEvent(new CustomEvent("labs-theme-changed"));
       return next;
     });
   }, []);
