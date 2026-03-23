@@ -181,7 +181,7 @@ export default function DistilleryMap() {
 
   const flyTo = (d: Distillery) => {
     if (mapRef.current) {
-      mapRef.current.flyTo([d.lat, d.lng], 13, { duration: 1.2 });
+      mapRef.current.flyTo([d.lat, d.lng], 13, { duration: 2.2 });
     }
     setHoveredName(d.name);
   };
