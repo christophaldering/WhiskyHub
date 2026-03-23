@@ -216,16 +216,14 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: "relative", marginBottom: 16 }} data-testid="studio-segmented-control">
+    <div ref={dropdownRef} style={{ position: "relative", marginBottom: "var(--labs-space-md)" }} data-testid="studio-segmented-control">
       <button
         onClick={() => setDropdownOpen((p) => !p)}
+        className="labs-btn-ghost"
         data-testid="studio-mode-switcher"
         style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "none", border: "none", cursor: "pointer",
-          padding: "4px 0", fontFamily: "inherit",
-          fontSize: 12, fontWeight: 500,
-          color: "var(--labs-text-secondary)",
+          display: "flex", alignItems: "center", gap: "var(--labs-space-xs)",
+          padding: "var(--labs-space-xs) 0", fontSize: 12,
         }}
       >
         <span>{t("m2.rating.studioViewLabel", "View")}:</span>
@@ -233,28 +231,29 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
         <span style={{ fontSize: 10, transition: "transform 200ms", transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
       </button>
       {dropdownOpen && (
-        <div style={{
-          position: "absolute", top: "100%", left: 0, zIndex: 20,
-          marginTop: 4, padding: 4, borderRadius: 12,
-          background: "var(--labs-surface, #252018)", border: "1px solid var(--labs-border)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-          minWidth: 180,
-          animation: "labsFadeIn 150ms ease both",
-        }}>
+        <div
+          className="labs-card"
+          style={{
+            position: "absolute", top: "100%", left: 0, zIndex: 20,
+            marginTop: "var(--labs-space-xs)", padding: "var(--labs-space-xs)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+            minWidth: 180,
+            animation: "labsFadeIn 150ms ease both",
+          }}
+        >
           {allOptions.map((opt) => (
             <button
               key={opt.key}
               onClick={() => handleSelect(opt.key)}
+              className="labs-btn-ghost"
               data-testid={`studio-view-${opt.key}`}
               style={{
-                display: "flex", alignItems: "center", gap: 6,
+                display: "flex", alignItems: "center", gap: "var(--labs-space-xs)",
                 width: "100%", textAlign: "left",
-                padding: "10px 14px", borderRadius: 8,
-                border: "none", cursor: "pointer", fontFamily: "inherit",
-                background: value === opt.key ? "var(--labs-accent-muted, rgba(200,134,26,0.15))" : "transparent",
+                padding: "var(--labs-space-sm) var(--labs-space-md)", borderRadius: "var(--labs-radius-sm)",
+                background: value === opt.key ? "var(--labs-accent-muted)" : "transparent",
                 color: value === opt.key ? "var(--labs-accent)" : "var(--labs-text-secondary)",
                 fontSize: 13, fontWeight: value === opt.key ? 600 : 400,
-                transition: "background 100ms",
               }}
             >
               {opt.icon && <span style={{ fontSize: 12 }}>{opt.icon}</span>}
@@ -425,20 +424,20 @@ function GuidedView({
 
       {level > 1 && (
         <div style={{
-          display: "flex", alignItems: "center", gap: 4, marginBottom: 12,
+          display: "flex", alignItems: "center", gap: "var(--labs-space-xs)", marginBottom: "var(--labs-space-md)",
           fontSize: 12, color: "var(--labs-text-secondary)", flexWrap: "wrap",
         }} data-testid="guide-breadcrumbs">
           {breadcrumbs.map((crumb, i) => {
             const isLast = i === breadcrumbs.length - 1;
             return (
-              <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-xs)" }}>
                 {i > 0 && <ChevronRight style={{ width: 12, height: 12, color: "var(--labs-text-secondary)" }} />}
                 <button
                   onClick={() => { if (!isLast) goBack(crumb.level); }}
+                  className="labs-btn-ghost"
                   data-testid={`guide-breadcrumb-${i}`}
                   style={{
-                    background: "none", border: "none", cursor: isLast ? "default" : "pointer",
-                    fontFamily: "inherit", fontSize: 12, padding: "2px 4px", borderRadius: 4,
+                    fontSize: 12, padding: "2px var(--labs-space-xs)", borderRadius: "var(--labs-space-xs)",
                     color: isLast
                       ? (navCategory ? adjustCategoryTextColor(navCategory.color, isDark) : "var(--labs-text)")
                       : "var(--labs-text-secondary)",
@@ -460,14 +459,11 @@ function GuidedView({
         {level === 1 && (
           <div>
             {selectedByCategory.size > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 600, color: "var(--labs-accent)",
-                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-                }}>
+              <div style={{ marginBottom: "var(--labs-space-md)" }}>
+                <div className="ty-label" style={{ color: "var(--labs-accent)", marginBottom: "var(--labs-space-sm)" }}>
                   {t("m2.rating.studioGuideSelected", "Your Selections")}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
                   {Array.from(selectedByCategory.entries()).map(([catId, paths]) => {
                     const cat = FLAVOR_CATEGORIES.find((c) => c.id === catId);
                     const color = cat?.color || "var(--labs-accent)";
@@ -475,24 +471,22 @@ function GuidedView({
                     return (
                       <div key={catId}>
                         <div style={{
-                          display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
+                          display: "flex", alignItems: "center", gap: "var(--labs-space-xs)", marginBottom: "var(--labs-space-xs)",
                           fontSize: 11, color: adjustCategoryTextColor(color as string, isDark), fontWeight: 600,
                         }}>
                           <span style={{ fontSize: 12, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, catId, 12)}</span>
                           <span>{catLabel}</span>
                         </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)", paddingLeft: 2 }}>
                           {paths.map((p) => (
                             <button
                               key={p.descriptorKey}
                               onClick={() => onToggle(p.descriptorKey)}
+                              className="labs-chip"
                               data-testid={`guide-selected-${p.descriptorKey.replace(/\s+/g, "-").toLowerCase()}`}
                               style={{
-                                fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
                                 background: tintBg(color, "chip"), color: "#f5f0e8",
-                                border: `1px solid ${tintBorder(color)}`, cursor: "pointer",
-                                display: "flex", alignItems: "center", gap: 4,
-                                transition: "all 0.15s",
+                                border: `1px solid ${tintBorder(color)}`,
                               }}
                             >
                               {p.subgroupLabel && (
@@ -510,14 +504,11 @@ function GuidedView({
               </div>
             )}
 
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-            }}>
+            <div className="ty-label" style={{ marginBottom: "var(--labs-space-sm)" }}>
               {t("m2.rating.studioGuideCategories", "Tap to explore")}
             </div>
             <div style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
+              display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--labs-space-sm)",
             }} data-testid="guide-category-grid">
               {FLAVOR_CATEGORIES.map((cat, i) => {
                 const count = countSelectedInCategory(cat);
@@ -526,19 +517,21 @@ function GuidedView({
                   <button
                     key={cat.id}
                     onClick={() => drillDown(cat.id)}
+                    className="labs-card labs-card-interactive"
                     data-testid={`guide-category-${cat.id}`}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "flex-start",
-                      padding: "12px 14px", borderRadius: 12, fontFamily: "inherit",
-                      background: count > 0 ? tintBg(cat.color, "subtle") : "var(--labs-surface)",
-                      border: `1.5px solid ${count > 0 ? tintBorder(cat.color) : "var(--labs-border)"}`,
-                      cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                      padding: "var(--labs-space-sm) 14px", fontFamily: "inherit",
+                      background: count > 0 ? tintBg(cat.color, "subtle") : undefined,
+                      borderColor: count > 0 ? tintBorder(cat.color) : undefined,
+                      borderWidth: "1.5px",
+                      textAlign: "left",
                       position: "relative", overflow: "hidden",
                       animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                       animationDelay: `${i * 40}ms`,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-xs)", width: "100%" }}>
                       <span style={{ fontSize: 16, lineHeight: 1 }}>
                         {renderIcon(GUIDE_CATEGORY_SVG, cat.id, 16)}
                       </span>
@@ -549,7 +542,7 @@ function GuidedView({
                       </span>
                       {count > 0 && (
                         <span style={{
-                          fontSize: 11, padding: "1px 6px", borderRadius: 8,
+                          fontSize: 11, padding: "1px 6px", borderRadius: "var(--labs-space-sm)",
                           background: cat.color, color: "var(--labs-bg)", fontWeight: 700,
                           marginLeft: "auto",
                         }}>
@@ -558,7 +551,7 @@ function GuidedView({
                       )}
                     </div>
                     <div style={{
-                      fontSize: 11, color: "var(--labs-text-secondary)", marginTop: 4,
+                      fontSize: 11, color: "var(--labs-text-secondary)", marginTop: "var(--labs-space-xs)",
                       display: "flex", alignItems: "center", gap: 3,
                     }}>
                       <span>
@@ -584,20 +577,22 @@ function GuidedView({
         {level === 2 && navCategory && (
           <div>
             {navCategory.subgroups && navCategory.subgroups.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
                 {navCategory.subgroups.map((sg, i) => {
                   const sgCount = countSelectedInSubgroup(sg);
                   return (
                     <button
                       key={sg.id}
                       onClick={() => drillDown(navCategory.id, sg.id)}
+                      className="labs-card labs-card-interactive"
                       data-testid={`guide-subgroup-${sg.id}`}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "14px 16px", borderRadius: 12, fontFamily: "inherit",
-                        background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
-                        border: `1.5px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
-                        cursor: "pointer", transition: "all 0.2s ease", textAlign: "left",
+                        padding: "var(--labs-space-md) var(--labs-space-md)", fontFamily: "inherit",
+                        background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : undefined,
+                        borderColor: sgCount > 0 ? tintBorder(navCategory.color) : undefined,
+                        borderWidth: "1.5px",
+                        textAlign: "left",
                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                         animationDelay: `${i * 60}ms`,
                       }}
@@ -608,14 +603,14 @@ function GuidedView({
                         }}>
                           {isDE ? sg.de : sg.en}
                         </div>
-                        <div style={{ fontSize: 11, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-secondary)", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: sgCount > 0 ? "var(--labs-text)" : "var(--labs-text-secondary)", marginTop: "2px" }}>
                           {sg.descriptors.map((d) => isDE ? d.de : d.en).join(", ")}
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-xs)" }}>
                         {sgCount > 0 && (
                           <span style={{
-                            fontSize: 11, padding: "1px 6px", borderRadius: 8,
+                            fontSize: 11, padding: "1px 6px", borderRadius: "var(--labs-space-sm)",
                             background: navCategory.color, color: "var(--labs-bg)", fontWeight: 700,
                           }}>
                             {sgCount}
@@ -628,29 +623,26 @@ function GuidedView({
                 })}
 
                 <div style={{
-                  marginTop: 8, padding: "10px 0",
+                  marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm) 0",
                   borderTop: "1px solid var(--labs-border-subtle)",
                 }}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-                    textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-                  }}>
+                  <div className="ty-label" style={{ marginBottom: "var(--labs-space-sm)" }}>
                     {t("m2.rating.studioGuideAllInCategory", "All in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
                     {navCategory.subcategories.map((desc, i) => {
                       const isS = isTermSelected(desc);
                       return (
                         <button
                           key={desc.id}
                           onClick={() => onToggle(desc.en)}
+                          className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                           data-testid={`guide-term-${desc.id}`}
                           style={{
-                            fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
-                            background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
-                            color: isS ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
-                            cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                            background: isS ? tintBg(navCategory.color, "chip") : undefined,
+                            color: isS ? "#f5f0e8" : undefined,
+                            borderColor: isS ? tintBorder(navCategory.color) : undefined,
+                            borderWidth: "1.5px",
                             fontWeight: isS ? 600 : 400,
                             animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                             animationDelay: `${i * 40}ms`,
@@ -664,20 +656,20 @@ function GuidedView({
                 </div>
               </div>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
                 {navCategory.subcategories.map((desc, i) => {
                   const isS = isTermSelected(desc);
                   return (
                     <button
                       key={desc.id}
                       onClick={() => onToggle(desc.en)}
+                      className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                       data-testid={`guide-term-${desc.id}`}
                       style={{
-                        fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
-                        background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
-                        color: isS ? "#f5f0e8" : "var(--labs-text)",
-                        border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
-                        cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                        background: isS ? tintBg(navCategory.color, "chip") : undefined,
+                        color: isS ? "#f5f0e8" : undefined,
+                        borderColor: isS ? tintBorder(navCategory.color) : undefined,
+                        borderWidth: "1.5px",
                         fontWeight: isS ? 600 : 400,
                         animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                         animationDelay: `${i * 50}ms`,
@@ -694,20 +686,20 @@ function GuidedView({
 
         {level === 3 && navSubgroup && navCategory && (
           <div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-sm)" }}>
               {navSubgroup.descriptors.map((desc, i) => {
                 const isS = isTermSelected(desc);
                 return (
                   <button
                     key={desc.id}
                     onClick={() => onToggle(desc.en)}
+                    className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                     data-testid={`guide-term-${desc.id}`}
                     style={{
-                      fontSize: 13, padding: "10px 18px", borderRadius: 22, fontFamily: "inherit",
-                      background: isS ? tintBg(navCategory.color, "chip") : "var(--labs-surface)",
-                      color: isS ? "#f5f0e8" : "var(--labs-text)",
-                      border: `1.5px solid ${isS ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
-                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 42,
+                      background: isS ? tintBg(navCategory.color, "chip") : undefined,
+                      color: isS ? "#f5f0e8" : undefined,
+                      borderColor: isS ? tintBorder(navCategory.color) : undefined,
+                      borderWidth: "1.5px",
                       fontWeight: isS ? 600 : 400,
                       animation: `labsFadeIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                       animationDelay: `${i * 60}ms`,
@@ -720,14 +712,11 @@ function GuidedView({
             </div>
 
             {navCategory.subgroups && navCategory.subgroups.length > 1 && (
-              <div style={{ marginTop: 16 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-                }}>
+              <div style={{ marginTop: "var(--labs-space-md)" }}>
+                <div className="ty-label" style={{ marginBottom: "var(--labs-space-sm)" }}>
                   {t("m2.rating.studioGuideRelated", "Other groups in {{category}}", { category: isDE ? navCategory.de : navCategory.en })}
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--labs-space-xs)", flexWrap: "wrap" }}>
                   {navCategory.subgroups
                     .filter((sg) => sg.id !== navSubgroupId)
                     .map((sg) => {
@@ -736,14 +725,12 @@ function GuidedView({
                         <button
                           key={sg.id}
                           onClick={() => drillDown(navCategory.id, sg.id)}
+                          className="labs-chip"
                           data-testid={`guide-related-${sg.id}`}
                           style={{
-                            fontSize: 11, padding: "6px 12px", borderRadius: 16, fontFamily: "inherit",
-                            background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : "var(--labs-surface)",
-                            color: sgCount > 0 ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1px solid ${sgCount > 0 ? tintBorder(navCategory.color) : "var(--labs-border)"}`,
-                            cursor: "pointer", transition: "all 0.15s",
-                            display: "flex", alignItems: "center", gap: 4,
+                            background: sgCount > 0 ? tintBg(navCategory.color, "subtle") : undefined,
+                            color: sgCount > 0 ? "#f5f0e8" : undefined,
+                            borderColor: sgCount > 0 ? tintBorder(navCategory.color) : undefined,
                           }}
                         >
                           {isDE ? sg.de : sg.en}
@@ -847,31 +834,35 @@ function CompactWheel({
       </svg>
 
       {focusedCat && focused && (
-        <div style={{
-          marginTop: 12, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[focused])}`,
-          animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
-        }} data-testid={`wheel-detail-${focused}`}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div
+          className="labs-card"
+          style={{
+            marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm) 14px",
+            borderColor: tintBorder(CATEGORY_COLORS[focused]),
+            animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+          }}
+          data-testid={`wheel-detail-${focused}`}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)", marginBottom: "var(--labs-space-sm)" }}>
             <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, focused, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[focused], isDark) }}>{focusedCat.name}</span>
-            <button onClick={(e) => { e.stopPropagation(); setFocused(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="button-close-wheel-detail">
+            <button onClick={(e) => { e.stopPropagation(); setFocused(null); }} className="labs-btn-ghost" style={{ marginLeft: "auto", padding: "var(--labs-space-xs)" }} data-testid="button-close-wheel-detail">
               <X style={{ width: 14, height: 14 }} />
             </button>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
             {focusedCat[section].map((term) => {
               const isSelected = selected.has(term.toLowerCase());
               return (
                 <button
                   key={term} onClick={(e) => { e.stopPropagation(); onToggle(term); }}
+                  className={isSelected ? "labs-chip labs-chip-active" : "labs-chip"}
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isSelected ? tintBg(CATEGORY_COLORS[focused], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
-                    color: isSelected ? "#f5f0e8" : "var(--labs-text)",
-                    border: `1.5px solid ${isSelected ? CATEGORY_COLORS[focused] : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                    background: isSelected ? tintBg(CATEGORY_COLORS[focused], "chip") : undefined,
+                    color: isSelected ? "#f5f0e8" : undefined,
+                    borderColor: isSelected ? CATEGORY_COLORS[focused] : undefined,
+                    borderWidth: "1.5px",
                     boxShadow: isSelected ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[focused])}` : "none",
                   }}
                 >
@@ -999,30 +990,34 @@ function CompactCompass({
         )}
       </svg>
       {selCat && selectedCat && (
-        <div style={{
-          marginTop: 10, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[selectedCat])}`,
-          animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
-        }} data-testid={`compass-detail-${selectedCat}`}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div
+          className="labs-card"
+          style={{
+            marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm) 14px",
+            borderColor: tintBorder(CATEGORY_COLORS[selectedCat]),
+            animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+          }}
+          data-testid={`compass-detail-${selectedCat}`}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)", marginBottom: "var(--labs-space-sm)" }}>
             <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, selectedCat, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedCat], isDark) }}>{selCat.name}</span>
-            <button onClick={(e) => { e.stopPropagation(); setSelectedCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
+            <button onClick={(e) => { e.stopPropagation(); setSelectedCat(null); }} className="labs-btn-ghost" style={{ marginLeft: "auto", padding: "var(--labs-space-xs)" }}>
               <X style={{ width: 14, height: 14 }} />
             </button>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
             {selCat[section].map((term) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button key={term} onClick={(e) => { e.stopPropagation(); onToggle(term); }}
+                  className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? tintBg(CATEGORY_COLORS[selectedCat], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
-                    color: isS ? "#f5f0e8" : "var(--labs-text)",
-                    border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedCat] : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                    background: isS ? tintBg(CATEGORY_COLORS[selectedCat], "chip") : undefined,
+                    color: isS ? "#f5f0e8" : undefined,
+                    borderColor: isS ? CATEGORY_COLORS[selectedCat] : undefined,
+                    borderWidth: "1.5px",
                     boxShadow: isS ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[selectedCat])}` : "none",
                   }}
                 >
@@ -1079,17 +1074,16 @@ function CompactRadar({
 
   return (
     <div data-testid="studio-radar-view">
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12, justifyContent: "center" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)", marginBottom: "var(--labs-space-sm)", justifyContent: "center" }}>
         {categories.map((cat) => {
           const isOn = enabledCats.has(cat.id);
           return (
             <button key={cat.id} onClick={() => toggleCat(cat.id)}
+              className={isOn ? "labs-chip labs-chip-active" : "labs-chip"}
               style={{
-                fontSize: 11, padding: "4px 10px", borderRadius: 20, fontFamily: "inherit", cursor: "pointer",
-                background: isOn ? tintBg(CATEGORY_COLORS[cat.id], "chip") : "var(--labs-surface)",
-                border: `1px solid ${isOn ? CATEGORY_COLORS[cat.id] : "var(--labs-border)"}`,
-                color: isOn ? "#f5f0e8" : "var(--labs-text)",
-                transition: "all 0.2s", display: "flex", alignItems: "center", gap: 4,
+                background: isOn ? tintBg(CATEGORY_COLORS[cat.id], "chip") : undefined,
+                borderColor: isOn ? CATEGORY_COLORS[cat.id] : undefined,
+                color: isOn ? "#f5f0e8" : undefined,
               }}
               data-testid={`studio-radar-toggle-${cat.id}`}
             >
@@ -1127,7 +1121,7 @@ function CompactRadar({
         )}
       </svg>
       {selected.size > 0 && (
-        <div style={{ textAlign: "center", marginTop: 2 }}>
+        <div style={{ textAlign: "center", marginTop: "2px" }}>
           <span style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 500 }}>— {t("m2.rating.studioYourProfile", "Your tasting profile")} —</span>
         </div>
       )}
@@ -1144,31 +1138,28 @@ function CompactRadar({
         const uniqueTerms = Array.from(new Set(axisTerms));
         if (uniqueTerms.length === 0) return null;
         return (
-          <div style={{
-            marginTop: 10, padding: 14, background: "var(--labs-surface)",
-            borderRadius: "var(--labs-radius, 10px)", border: "1px solid var(--labs-accent-muted)",
-            animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
-          }} data-testid={`radar-axis-${selectedAxis.toLowerCase()}`}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div
+            className="labs-card"
+            style={{
+              marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm) 14px",
+              borderColor: "var(--labs-accent-muted)",
+              animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+            }}
+            data-testid={`radar-axis-${selectedAxis.toLowerCase()}`}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)", marginBottom: "var(--labs-space-sm)" }}>
               <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>{selectedAxis}</span>
-              <button onClick={() => setSelectedAxis(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
+              <button onClick={() => setSelectedAxis(null)} className="labs-btn-ghost" style={{ marginLeft: "auto", padding: "var(--labs-space-xs)" }}>
                 <X style={{ width: 14, height: 14 }} />
               </button>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
               {uniqueTerms.map((term) => {
                 const isS = selected.has(term.toLowerCase());
                 return (
                   <button key={term} onClick={() => onToggle(term)}
+                    className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                     data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
-                    style={{
-                      fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                      background: isS ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated, var(--labs-bg))",
-                      color: isS ? "var(--labs-accent)" : "var(--labs-text)",
-                      border: `1.5px solid ${isS ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
-                      boxShadow: isS ? "0 0 0 2px var(--labs-accent-muted)" : "none",
-                    }}
                   >
                     {isS ? "✓ " : ""}{term}
                   </button>
@@ -1179,30 +1170,33 @@ function CompactRadar({
         );
       })()}
       {selCat && selectedRadarCat && (
-        <div style={{
-          marginTop: 10, padding: 14, background: "var(--labs-surface)",
-          borderRadius: "var(--labs-radius, 10px)", border: `1px solid ${tintBorder(CATEGORY_COLORS[selectedRadarCat])}`,
-          animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div
+          className="labs-card"
+          style={{
+            marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm) 14px",
+            borderColor: tintBorder(CATEGORY_COLORS[selectedRadarCat]),
+            animation: "labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)", marginBottom: "var(--labs-space-sm)" }}>
             <span style={{ fontSize: 18 }}>{renderIcon(STYLE_CATEGORY_SVG, selectedRadarCat, 18)}</span>
             <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: adjustCategoryTextColor(CATEGORY_COLORS[selectedRadarCat], isDark) }}>{selCat.name}</span>
-            <button onClick={(e) => { e.stopPropagation(); setSelectedRadarCat(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }}>
+            <button onClick={(e) => { e.stopPropagation(); setSelectedRadarCat(null); }} className="labs-btn-ghost" style={{ marginLeft: "auto", padding: "var(--labs-space-xs)" }}>
               <X style={{ width: 14, height: 14 }} />
             </button>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
             {selCat[section].map((term) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button key={term} onClick={(e) => { e.stopPropagation(); onToggle(term); }}
+                  className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                   data-testid={`studio-term-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? tintBg(CATEGORY_COLORS[selectedRadarCat], "chip") : "var(--labs-surface-elevated, var(--labs-bg))",
-                    color: isS ? "#f5f0e8" : "var(--labs-text)",
-                    border: `1.5px solid ${isS ? CATEGORY_COLORS[selectedRadarCat] : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                    background: isS ? tintBg(CATEGORY_COLORS[selectedRadarCat], "chip") : undefined,
+                    color: isS ? "#f5f0e8" : undefined,
+                    borderColor: isS ? CATEGORY_COLORS[selectedRadarCat] : undefined,
+                    borderWidth: "1.5px",
                     boxShadow: isS ? `0 0 0 2px ${tintBorder(CATEGORY_COLORS[selectedRadarCat])}` : "none",
                   }}
                 >
@@ -1313,7 +1307,7 @@ function DescribeView({
 
   return (
     <div data-testid="studio-describe-view">
-      <div style={{ position: "relative", marginBottom: 12 }}>
+      <div style={{ position: "relative", marginBottom: "var(--labs-space-sm)" }}>
         <textarea
           value={description}
           onChange={(e) => handleInputChange(e.target.value)}
@@ -1321,7 +1315,7 @@ function DescribeView({
           rows={3}
           className="labs-input"
           data-testid="studio-describe-input"
-          style={{ width: "100%", fontSize: 13, padding: "12px 14px", resize: "none", boxSizing: "border-box" }}
+          style={{ width: "100%", resize: "none", boxSizing: "border-box" }}
         />
         {loading && (
           <div style={{ position: "absolute", right: 12, top: 12 }}>
@@ -1331,23 +1325,22 @@ function DescribeView({
       </div>
 
       {suggestions.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+        <div style={{ marginBottom: "var(--labs-space-sm)" }}>
+          <div className="ty-label" style={{ color: "var(--labs-accent)", marginBottom: "var(--labs-space-xs)" }}>
             {t("m2.rating.studioSuggestedFlavours", "Suggested Flavours")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
             {suggestions.map((term, i) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button
                   key={term} onClick={() => onToggle(term)}
+                  className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                   data-testid={`studio-suggest-${term.replace(/\s+/g, "-").toLowerCase()}`}
                   style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? "var(--labs-accent)" : "var(--labs-surface)",
-                    color: isS ? "var(--labs-bg)" : "var(--labs-text)",
-                    border: `1.5px solid ${isS ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                    background: isS ? "var(--labs-accent)" : undefined,
+                    color: isS ? "var(--labs-bg)" : undefined,
+                    borderColor: isS ? "var(--labs-accent)" : undefined,
                     animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                     animationDelay: `${i * 60}ms`,
                   }}
@@ -1362,13 +1355,11 @@ function DescribeView({
 
       <button
         onClick={() => setTastesLikeOpen(!tastesLikeOpen)}
+        className="labs-btn-secondary"
         data-testid="studio-tastes-like-button"
         style={{
-          display: "flex", alignItems: "center", gap: 6, width: "100%",
-          padding: "10px 14px", borderRadius: 10,
-          background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
-          cursor: "pointer", fontFamily: "inherit", color: "var(--labs-text)",
-          fontSize: 12, fontWeight: 500,
+          display: "flex", alignItems: "center", gap: "var(--labs-space-xs)", width: "100%",
+          padding: "var(--labs-space-sm) var(--labs-space-md)", fontSize: 12,
         }}
       >
         <Search style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
@@ -1376,7 +1367,10 @@ function DescribeView({
       </button>
 
       {tastesLikeOpen && (
-        <div style={{ marginTop: 8, padding: 12, background: "var(--labs-surface)", borderRadius: 10, border: "1px solid var(--labs-border)", animation: "labsFadeIn 200ms ease both" }}>
+        <div
+          className="labs-card"
+          style={{ marginTop: "var(--labs-space-sm)", padding: "var(--labs-space-sm)", animation: "labsFadeIn 200ms ease both" }}
+        >
           <input
             className="labs-input"
             placeholder={t("m2.rating.studioSearchWhisky", "Search whisky...")}
@@ -1387,44 +1381,43 @@ function DescribeView({
               tastesLikeDebounceRef.current = setTimeout(() => handleTastesLikeSearch(e.target.value), 350);
             }}
             data-testid="studio-tastes-like-search"
-            style={{ width: "100%", fontSize: 12, padding: "8px 12px", marginBottom: 8, boxSizing: "border-box" }}
+            style={{ marginBottom: "var(--labs-space-sm)", boxSizing: "border-box" }}
           />
-          {tastesLikeLoading && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", padding: 4 }}>{t("m2.rating.studioSearching", "Searching...")}</div>}
+          {tastesLikeLoading && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", padding: "var(--labs-space-xs)" }}>{t("m2.rating.studioSearching", "Searching...")}</div>}
           {tastesLikeResults.map((w) => (
             <button
               key={`${w.name}-${w.distillery}`}
               onClick={() => handleSelectReference(w.name, w.distillery)}
+              className="labs-btn-ghost"
               style={{
-                display: "block", width: "100%", padding: "8px 10px", borderRadius: 8,
-                background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                textAlign: "left", color: "var(--labs-text)", fontSize: 12,
+                display: "block", width: "100%", padding: "var(--labs-space-sm) 10px",
+                textAlign: "left", fontSize: 12,
               }}
               data-testid={`tastes-like-${w.name.replace(/\s+/g, "-").toLowerCase()}`}
             >
               <strong>{w.name}</strong>
-              {w.distillery && <span style={{ color: "var(--labs-text-muted)", marginLeft: 6 }}>{w.distillery}</span>}
+              {w.distillery && <span style={{ color: "var(--labs-text-muted)", marginLeft: "var(--labs-space-xs)" }}>{w.distillery}</span>}
             </button>
           ))}
         </div>
       )}
 
       {refSuggestions.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+        <div style={{ marginTop: "var(--labs-space-sm)" }}>
+          <div className="ty-label" style={{ color: "var(--labs-accent)", marginBottom: "var(--labs-space-xs)" }}>
             {t("m2.rating.studioTypicalFlavours", "Typical Flavours")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
             {refSuggestions.map((term, i) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button
                   key={term} onClick={() => onToggle(term)}
+                  className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                   style={{
-                    fontSize: 11, padding: "5px 11px", borderRadius: 20, fontFamily: "inherit",
-                    background: isS ? "var(--labs-accent)" : "var(--labs-surface)",
-                    color: isS ? "var(--labs-bg)" : "var(--labs-text)",
-                    border: `1.5px solid ${isS ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    cursor: "pointer", transition: "all 0.2s ease", minHeight: 34,
+                    background: isS ? "var(--labs-accent)" : undefined,
+                    color: isS ? "var(--labs-bg)" : undefined,
+                    borderColor: isS ? "var(--labs-accent)" : undefined,
                     animation: `labsFadeIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both`,
                     animationDelay: `${i * 60}ms`,
                   }}
@@ -1557,9 +1550,9 @@ function JourneyView({
       <div data-testid="studio-journey-view">
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          marginBottom: 12,
+          marginBottom: "var(--labs-space-sm)",
         }}>
-          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
+          <div className="ty-label">
             {t("m2.rating.journeyPhase1", "Phase 1: First Impressions")}
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>
@@ -1568,7 +1561,7 @@ function JourneyView({
         </div>
 
         <div style={{
-          display: "flex", gap: 2, marginBottom: 12, height: 4, borderRadius: 2,
+          display: "flex", gap: 2, marginBottom: "var(--labs-space-sm)", height: 4, borderRadius: 2,
           background: "var(--labs-surface)", overflow: "hidden",
         }} data-testid="journey-progress-bar">
           {miniProfileBars.map((bar) => (
@@ -1584,41 +1577,46 @@ function JourneyView({
           ))}
         </div>
 
-        <div style={{ fontSize: 13, color: "var(--labs-text)", textAlign: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: "var(--labs-text)", textAlign: "center", marginBottom: "var(--labs-space-sm)" }}>
           {t("m2.rating.journeySweepPrompt", "Do you detect this flavour family?")}
         </div>
 
         {currentSweepCat && (
           <div className={animClass} key={currentSweepCat.id} style={{ animation: "labsFadeIn 300ms ease both" }}>
-            <div style={{
-              padding: 20, borderRadius: 16,
-              background: `linear-gradient(135deg, ${tintBg(currentSweepCat.color, "medium")}, ${tintBg(currentSweepCat.color, "subtle")})`,
-              border: `1.5px solid ${tintBorder(currentSweepCat.color)}`,
-              textAlign: "center", marginBottom: 16,
-            }} data-testid={`journey-sweep-card-${currentSweepCat.id}`}>
-              <div style={{ fontSize: 32, marginBottom: 8, display: "flex", justifyContent: "center" }}>
+            <div
+              className="labs-card"
+              style={{
+                padding: "var(--labs-space-lg)",
+                background: `linear-gradient(135deg, ${tintBg(currentSweepCat.color, "medium")}, ${tintBg(currentSweepCat.color, "subtle")})`,
+                borderColor: tintBorder(currentSweepCat.color),
+                borderWidth: "1.5px",
+                textAlign: "center", marginBottom: "var(--labs-space-md)",
+              }}
+              data-testid={`journey-sweep-card-${currentSweepCat.id}`}
+            >
+              <div style={{ fontSize: 32, marginBottom: "var(--labs-space-sm)", display: "flex", justifyContent: "center" }}>
                 {renderIcon(GUIDE_CATEGORY_SVG, currentSweepCat.id, 32)}
               </div>
-              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${tintBorder(currentSweepCat.color)}`, marginBottom: 4 }}>
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", textShadow: `0 1px 8px ${tintBorder(currentSweepCat.color)}`, marginBottom: "var(--labs-space-xs)" }}>
                 {isDE ? currentSweepCat.de : currentSweepCat.en}
               </div>
-              <div style={{ fontSize: 13, color: "var(--labs-text)", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: "var(--labs-text)", marginBottom: "var(--labs-space-sm)" }}>
                 {isDE ? currentSweepCat.descDe : currentSweepCat.descEn}
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)", justifyContent: "center" }}>
                 {currentSweepCat.subcategories.slice(0, 4).map((sub) => (
-                  <span key={sub.id} style={{
-                    fontSize: 11, padding: "2px 8px", borderRadius: 10,
+                  <span key={sub.id} className="labs-chip" style={{
                     background: tintBg(currentSweepCat.color, "chip"), color: "#f5f0e8",
                     border: `1px solid ${tintBorder(currentSweepCat.color)}`,
+                    cursor: "default",
                   }}>
                     {isDE ? sub.de : sub.en}
                   </span>
                 ))}
                 {currentSweepCat.subcategories.length > 4 && (
-                  <span style={{
-                    fontSize: 11, padding: "2px 8px", borderRadius: 10,
+                  <span className="labs-chip" style={{
                     background: tintBg(currentSweepCat.color, "subtle"), color: "#f5f0e8",
+                    cursor: "default",
                   }}>
                     +{currentSweepCat.subcategories.length - 4}
                   </span>
@@ -1626,16 +1624,14 @@ function JourneyView({
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: "var(--labs-space-sm)" }}>
               <button
                 onClick={() => handleDecision("no")}
+                className="labs-btn-secondary"
                 data-testid="journey-btn-no"
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                  padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
-                  background: "var(--labs-surface-elevated)", border: "1.5px solid var(--labs-text-muted)",
-                  cursor: "pointer", color: "var(--labs-text)", transition: "all 0.15s",
-                  minWidth: 70,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--labs-space-xs)",
+                  padding: "var(--labs-space-sm) 18px", minWidth: 70,
                 }}
               >
                 <X style={{ width: 18, height: 18 }} />
@@ -1643,13 +1639,12 @@ function JourneyView({
               </button>
               <button
                 onClick={() => handleDecision("maybe")}
+                className="labs-btn-secondary"
                 data-testid="journey-btn-maybe"
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                  padding: "10px 18px", borderRadius: 14, fontFamily: "inherit",
-                  background: "var(--labs-surface-elevated)", border: "1.5px solid var(--labs-accent)",
-                  cursor: "pointer", color: "var(--labs-accent)", transition: "all 0.15s",
-                  minWidth: 70,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--labs-space-xs)",
+                  padding: "var(--labs-space-sm) 18px", minWidth: 70,
+                  borderColor: "var(--labs-accent)", color: "var(--labs-accent)",
                 }}
               >
                 <HelpCircle style={{ width: 18, height: 18 }} />
@@ -1657,14 +1652,12 @@ function JourneyView({
               </button>
               <button
                 onClick={() => handleDecision("yes")}
+                className="labs-btn-primary"
                 data-testid="journey-btn-yes"
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                  padding: "10px 22px", borderRadius: 14, fontFamily: "inherit",
-                  background: "var(--labs-accent)", border: "none",
-                  cursor: "pointer", color: "var(--labs-bg)", transition: "all 0.15s",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--labs-space-xs)",
+                  padding: "var(--labs-space-sm) 22px", minWidth: 70,
                   boxShadow: "0 2px 12px rgba(201, 167, 108, 0.3)",
-                  minWidth: 70,
                 }}
               >
                 <Check style={{ width: 18, height: 18 }} />
@@ -1683,9 +1676,9 @@ function JourneyView({
       <div data-testid="studio-journey-drilldown">
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          marginBottom: 8,
+          marginBottom: "var(--labs-space-sm)",
         }}>
-          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
+          <div className="ty-label">
             {t("m2.rating.journeyPhase2", "Phase 2: Specific Notes")}
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-secondary)" }}>
@@ -1694,7 +1687,7 @@ function JourneyView({
         </div>
 
         <div style={{
-          display: "flex", gap: 2, marginBottom: 12, height: 3, borderRadius: 2,
+          display: "flex", gap: 2, marginBottom: "var(--labs-space-sm)", height: 3, borderRadius: 2,
           background: "var(--labs-surface)", overflow: "hidden",
         }}>
           {drillCategories.map((cat, i) => (
@@ -1709,7 +1702,7 @@ function JourneyView({
 
         <div className={animClass} key={currentDrillCat.id}>
           <div style={{
-            display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
+            display: "flex", alignItems: "center", gap: "var(--labs-space-sm)", marginBottom: "var(--labs-space-sm)",
           }}>
             <span style={{ fontSize: 20, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, currentDrillCat.id, 20)}</span>
             <div>
@@ -1730,29 +1723,26 @@ function JourneyView({
           </div>
 
           {currentDrillCat.subgroups && currentDrillCat.subgroups.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
               {currentDrillCat.subgroups.map((sg) => (
                 <div key={sg.id}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-                    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
-                  }}>
+                  <div className="ty-label" style={{ marginBottom: "var(--labs-space-xs)" }}>
                     {isDE ? sg.de : sg.en}
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
                     {sg.descriptors.map((desc) => {
                       const isS = isTermSelected(desc);
                       return (
                         <button
                           key={desc.id}
                           onClick={() => { onToggle(desc.en); triggerHaptic("light"); }}
+                          className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                           data-testid={`journey-term-${desc.id}`}
                           style={{
-                            fontSize: 12, padding: "7px 14px", borderRadius: 20, fontFamily: "inherit",
-                            background: isS ? tintBg(currentDrillCat.color, "chip") : "var(--labs-surface)",
-                            color: isS ? "#f5f0e8" : "var(--labs-text)",
-                            border: `1.5px solid ${isS ? tintBorder(currentDrillCat.color) : "var(--labs-border)"}`,
-                            cursor: "pointer", transition: "all 0.2s ease", minHeight: 36,
+                            background: isS ? tintBg(currentDrillCat.color, "chip") : undefined,
+                            color: isS ? "#f5f0e8" : undefined,
+                            borderColor: isS ? tintBorder(currentDrillCat.color) : undefined,
+                            borderWidth: "1.5px",
                             fontWeight: isS ? 600 : 400,
                           }}
                         >
@@ -1765,20 +1755,20 @@ function JourneyView({
               ))}
             </div>
           ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
               {currentDrillCat.subcategories.map((desc) => {
                 const isS = isTermSelected(desc);
                 return (
                   <button
                     key={desc.id}
                     onClick={() => { onToggle(desc.en); triggerHaptic("light"); }}
+                    className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                     data-testid={`journey-term-${desc.id}`}
                     style={{
-                      fontSize: 12, padding: "8px 16px", borderRadius: 20, fontFamily: "inherit",
-                      background: isS ? tintBg(currentDrillCat.color, "chip") : "var(--labs-surface)",
-                      color: isS ? "#f5f0e8" : "var(--labs-text)",
-                      border: `1.5px solid ${isS ? tintBorder(currentDrillCat.color) : "var(--labs-border)"}`,
-                      cursor: "pointer", transition: "all 0.2s ease", minHeight: 38,
+                      background: isS ? tintBg(currentDrillCat.color, "chip") : undefined,
+                      color: isS ? "#f5f0e8" : undefined,
+                      borderColor: isS ? tintBorder(currentDrillCat.color) : undefined,
+                      borderWidth: "1.5px",
                       fontWeight: isS ? 600 : 400,
                     }}
                   >
@@ -1789,7 +1779,7 @@ function JourneyView({
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--labs-space-md)" }}>
             <button
               onClick={() => {
                 triggerHaptic("light");
@@ -1801,12 +1791,9 @@ function JourneyView({
                   setSweepIndex(orderedCategories.length - 1);
                 }
               }}
+              className="labs-btn-secondary"
               data-testid="journey-drill-back"
-              style={{
-                fontSize: 12, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
-                background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-text-muted)",
-                cursor: "pointer", color: "var(--labs-text)",
-              }}
+              style={{ fontSize: 12, padding: "var(--labs-space-xs) 14px" }}
             >
               {t("common.back", "Back")}
             </button>
@@ -1823,12 +1810,9 @@ function JourneyView({
                   setAnimDir(null);
                 }, 200);
               }}
+              className="labs-btn-primary"
               data-testid="journey-drill-next"
-              style={{
-                fontSize: 11, padding: "6px 14px", borderRadius: 10, fontFamily: "inherit",
-                background: "var(--labs-accent)", border: "none",
-                cursor: "pointer", color: "var(--labs-bg)", fontWeight: 600,
-              }}
+              style={{ fontSize: 11, padding: "var(--labs-space-xs) 14px" }}
             >
               {drillIndex < drillCategories.length - 1
                 ? t("m2.rating.journeyNext", "Next")
@@ -1847,19 +1831,19 @@ function JourneyView({
     <div data-testid="studio-journey-profile">
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 12,
+        marginBottom: "var(--labs-space-sm)",
       }}>
-        <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 600 }}>
+        <div className="ty-label">
           {t("m2.rating.journeyPhase3", "Phase 3: Your Profile")}
         </div>
         <button
           onClick={handleRestart}
+          className="labs-btn-ghost"
           data-testid="journey-restart"
           style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
-            background: "none", border: "1px solid var(--labs-border)",
-            borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-            fontSize: 11, color: "var(--labs-text-secondary)",
+            display: "flex", alignItems: "center", gap: "var(--labs-space-xs)",
+            padding: "var(--labs-space-xs) var(--labs-space-sm)",
+            border: "1px solid var(--labs-border)", fontSize: 11,
           }}
         >
           <RotateCcw style={{ width: 10, height: 10 }} />
@@ -1868,8 +1852,8 @@ function JourneyView({
       </div>
 
       {totalSelected === 0 ? (
-        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--labs-text-muted)" }}>
-          <div style={{ fontSize: 24, marginBottom: 8 }}>🔍</div>
+        <div style={{ textAlign: "center", padding: "var(--labs-space-lg) var(--labs-space-md)", color: "var(--labs-text-muted)" }}>
+          <div style={{ fontSize: 24, marginBottom: "var(--labs-space-sm)" }}>🔍</div>
           <div style={{ fontSize: 13 }}>
             {t("m2.rating.journeyNoSelections", "No notes selected yet. Go back and tap specific notes in each category.")}
           </div>
@@ -1882,12 +1866,9 @@ function JourneyView({
                 handleRestart();
               }
             }}
+            className="labs-btn-primary"
             data-testid="journey-back-to-drill"
-            style={{
-              marginTop: 12, fontSize: 12, padding: "8px 16px", borderRadius: 10,
-              fontFamily: "inherit", background: "var(--labs-accent)", border: "none",
-              cursor: "pointer", color: "var(--labs-bg)", fontWeight: 600,
-            }}
+            style={{ marginTop: "var(--labs-space-sm)", fontSize: 12, padding: "var(--labs-space-sm) var(--labs-space-md)" }}
           >
             {t("m2.rating.journeyGoBack", "Go Back")}
           </button>
@@ -1895,13 +1876,17 @@ function JourneyView({
       ) : (
         <>
           {profileMatch && (
-            <div style={{
-              padding: 12, borderRadius: 12, marginBottom: 14,
-              background: "var(--labs-accent-muted, rgba(212, 162, 86, 0.08))",
-              border: "1px solid var(--labs-accent)",
-              textAlign: "center",
-            }} data-testid="journey-profile-match">
-              <div style={{ fontSize: 11, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, fontWeight: 600 }}>
+            <div
+              className="labs-card"
+              style={{
+                padding: "var(--labs-space-sm)", marginBottom: "var(--labs-space-md)",
+                background: "var(--labs-accent-muted)",
+                borderColor: "var(--labs-accent)",
+                textAlign: "center",
+              }}
+              data-testid="journey-profile-match"
+            >
+              <div className="ty-label" style={{ color: "var(--labs-accent)", marginBottom: "var(--labs-space-xs)" }}>
                 {t("m2.rating.journeyProfileMatch", "Profile Match")}
               </div>
               <div className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)" }}>
@@ -1910,14 +1895,11 @@ function JourneyView({
             </div>
           )}
 
-          <div style={{ marginBottom: 14 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-            }}>
+          <div style={{ marginBottom: "var(--labs-space-md)" }}>
+            <div className="ty-label" style={{ marginBottom: "var(--labs-space-sm)" }}>
               {t("m2.rating.journeyCategoryWeights", "Category Weights")}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-xs)" }}>
               {orderedCategories
                 .filter((cat) => catWeights[cat.id] > 0)
                 .sort((a, b) => (catWeights[b.id] || 0) - (catWeights[a.id] || 0))
@@ -1925,17 +1907,17 @@ function JourneyView({
                   const w = catWeights[cat.id] || 0;
                   const pct = (w / maxWeight) * 100;
                   return (
-                    <div key={cat.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div key={cat.id} style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}>
                       <span style={{ fontSize: 14, width: 20, textAlign: "center", display: "inline-flex", justifyContent: "center" }}>{renderIcon(GUIDE_CATEGORY_SVG, cat.id, 14)}</span>
                       <span style={{ fontSize: 11, width: 60, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600 }}>
                         {isDE ? cat.de : cat.en}
                       </span>
                       <div style={{
-                        flex: 1, height: 8, borderRadius: 4,
+                        flex: 1, height: 8, borderRadius: "var(--labs-space-xs)",
                         background: "var(--labs-surface)", overflow: "hidden",
                       }}>
                         <div style={{
-                          width: `${pct}%`, height: "100%", borderRadius: 4,
+                          width: `${pct}%`, height: "100%", borderRadius: "var(--labs-space-xs)",
                           background: cat.color, transition: "width 0.5s ease",
                         }} />
                       </div>
@@ -1949,13 +1931,10 @@ function JourneyView({
           </div>
 
           <div>
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)",
-              textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
-            }}>
+            <div className="ty-label" style={{ marginBottom: "var(--labs-space-sm)" }}>
               {t("m2.rating.journeySelectedNotes", "Selected Notes")} ({totalSelected})
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
               {orderedCategories
                 .filter((cat) => catWeights[cat.id] > 0)
                 .map((cat) => {
@@ -1963,24 +1942,22 @@ function JourneyView({
                   return (
                     <div key={cat.id}>
                       <div style={{
-                        display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
+                        display: "flex", alignItems: "center", gap: "var(--labs-space-xs)", marginBottom: "var(--labs-space-xs)",
                         fontSize: 11, color: adjustCategoryTextColor(cat.color, isDark), fontWeight: 600,
                       }}>
                         <span style={{ fontSize: 12, display: "inline-flex" }}>{renderIcon(GUIDE_CATEGORY_SVG, cat.id, 12)}</span>
                         <span>{isDE ? cat.de : cat.en}</span>
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 2 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)", paddingLeft: 2 }}>
                         {selectedDescs.map((desc) => (
                           <button
                             key={desc.id}
                             onClick={() => onToggle(desc.en)}
+                            className="labs-chip"
                             data-testid={`journey-profile-${desc.id}`}
                             style={{
-                              fontSize: 11, padding: "3px 8px", borderRadius: 14, fontFamily: "inherit",
                               background: tintBg(cat.color, "chip"), color: "#f5f0e8",
-                              border: `1px solid ${tintBorder(cat.color)}`, cursor: "pointer",
-                              display: "flex", alignItems: "center", gap: 4,
-                              transition: "all 0.15s",
+                              border: `1px solid ${tintBorder(cat.color)}`,
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>{isDE ? desc.de : desc.en}</span>
@@ -1994,7 +1971,7 @@ function JourneyView({
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: "var(--labs-space-sm)", marginTop: "var(--labs-space-md)" }}>
             <button
               onClick={() => {
                 if (drillCategories.length > 0) {
@@ -2005,13 +1982,9 @@ function JourneyView({
                 }
                 triggerHaptic("light");
               }}
+              className="labs-btn-secondary"
               data-testid="journey-refine"
-              style={{
-                flex: 1, fontSize: 11, padding: "8px 12px", borderRadius: 10,
-                fontFamily: "inherit", background: "var(--labs-surface)",
-                border: "1px solid var(--labs-border)", cursor: "pointer",
-                color: "var(--labs-text-muted)",
-              }}
+              style={{ flex: 1, fontSize: 11, padding: "var(--labs-space-sm) var(--labs-space-sm)" }}
             >
               {t("m2.rating.journeyRefine", "Refine Notes")}
             </button>
@@ -2107,40 +2080,40 @@ export default function FlavourStudioSheet({
       <DrawerContent
         style={{
           maxHeight: "88vh",
-          background: "var(--labs-bg, #1a1714)",
-          borderColor: "var(--labs-border, #6b5f53)",
+          background: "var(--labs-bg)",
+          borderColor: "var(--labs-border)",
         }}
         data-testid="flavour-studio-sheet"
       >
         <DrawerTitle className="sr-only">Flavour Studio</DrawerTitle>
-        <div style={{ padding: "12px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "var(--labs-space-sm) var(--labs-space-md) 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}>
             <span className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
               Flavour Studio
             </span>
-            <span style={{
-              fontSize: 11, padding: "2px 8px", borderRadius: 10,
+            <span className="labs-chip" style={{
               background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontWeight: 600,
+              cursor: "default", padding: "2px var(--labs-space-sm)",
             }}>
               {dimLabel}
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}>
             {selectedTerms.size > 0 && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 10,
+                fontSize: 11, padding: "2px var(--labs-space-sm)", borderRadius: 10,
                 background: "var(--labs-accent)", color: "var(--labs-bg)", fontWeight: 700,
               }} data-testid="studio-count-badge">
                 {selectedTerms.size}
               </span>
             )}
-            <button onClick={handleClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--labs-text-muted)" }} data-testid="studio-close">
+            <button onClick={handleClose} className="labs-btn-ghost" style={{ padding: "var(--labs-space-xs)" }} data-testid="studio-close">
               <X style={{ width: 18, height: 18 }} />
             </button>
           </div>
         </div>
 
-        <div style={{ padding: "12px 16px", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
+        <div style={{ padding: "var(--labs-space-sm) var(--labs-space-md)", overflowY: "auto", flex: 1, maxHeight: "calc(88vh - 160px)" }}>
           <SegmentedControl value={view} onChange={setView} />
 
           {view === "guide" && <GuidedView selected={selectedTerms} onToggle={toggleTerm} isDE={isDE} />}
@@ -2152,29 +2125,27 @@ export default function FlavourStudioSheet({
         </div>
 
         <div style={{
-          padding: "8px 16px 16px", borderTop: "1px solid var(--labs-border-subtle)",
-          background: "var(--labs-bg, #1a1714)",
+          padding: "var(--labs-space-sm) var(--labs-space-md) var(--labs-space-md)", borderTop: "1px solid var(--labs-border-subtle)",
+          background: "var(--labs-bg)",
         }}>
           {quickTerms.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+            <div style={{ marginBottom: "var(--labs-space-sm)" }}>
+              <div className="ty-label" style={{ marginBottom: "var(--labs-space-xs)" }}>
                 {t("m2.rating.studioQuickAdd", "Quick Add")}
               </div>
-              <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 4 }}>
+              <div style={{ display: "flex", gap: "var(--labs-space-xs)", overflowX: "auto", paddingBottom: "var(--labs-space-xs)" }}>
                 {quickTerms.map((term) => {
                   const isS = selectedTerms.has(term.toLowerCase());
                   const catId = findTermCategory(term, categories);
                   const color = catId ? CATEGORY_COLORS[catId] : "var(--labs-accent)";
                   return (
                     <button key={term} onClick={() => toggleTerm(term)}
+                      className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
                       data-testid={`studio-quick-${term.replace(/\s+/g, "-").toLowerCase()}`}
                       style={{
-                        fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
-                        whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
-                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : "var(--labs-surface-elevated)",
-                        color: isS ? "#f5f0e8" : "var(--labs-text)",
-                        border: `1px solid ${isS ? color : "var(--labs-text-muted)"}`,
-                        cursor: "pointer", transition: "all 0.15s",
+                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : undefined,
+                        color: isS ? "#f5f0e8" : undefined,
+                        borderColor: isS ? color : undefined,
                       }}
                     >
                       {isS ? "✓ " : ""}{term}
@@ -2186,21 +2157,19 @@ export default function FlavourStudioSheet({
           )}
 
           {selectedTerms.size > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 4 }}>
+            <div style={{ marginBottom: "var(--labs-space-sm)" }}>
+              <div style={{ display: "flex", gap: "var(--labs-space-xs)", overflowX: "auto", paddingBottom: "var(--labs-space-xs)" }}>
                 {Array.from(selectedTerms).map((lower) => {
                   const display = lower.charAt(0).toUpperCase() + lower.slice(1);
                   const catId = findTermCategory(display, categories);
                   const color = catId ? CATEGORY_COLORS[catId] : "var(--labs-accent)";
                   return (
                     <button key={lower} onClick={() => toggleTerm(display)}
+                      className="labs-chip"
                       data-testid={`studio-selected-${lower.replace(/\s+/g, "-")}`}
                       style={{
-                        fontSize: 11, padding: "4px 10px", borderRadius: 16, fontFamily: "inherit",
-                        whiteSpace: "nowrap", flexShrink: 0, minHeight: 28,
                         background: "var(--labs-accent)", color: "var(--labs-bg)", fontWeight: 600,
-                        border: "none", cursor: "pointer", transition: "all 0.15s",
-                        display: "flex", alignItems: "center", gap: 4,
+                        border: "none",
                         borderLeft: `3px solid ${color}`,
                       }}
                     >
@@ -2213,7 +2182,7 @@ export default function FlavourStudioSheet({
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: "var(--labs-space-xs)" }}>
             <input
               className="labs-input"
               placeholder={t("m2.rating.studioCustomPlaceholder", "Custom descriptor...")}
@@ -2221,19 +2190,16 @@ export default function FlavourStudioSheet({
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
               disabled={disabled}
-              style={{ flex: 1, fontSize: 12, padding: "6px 10px", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-text-muted)" }}
+              style={{ flex: 1 }}
               data-testid="studio-custom-input"
             />
             <button onClick={addCustomTag} disabled={!customInput.trim() || disabled}
+              className={customInput.trim() ? "labs-btn-primary" : "labs-btn-secondary"}
               data-testid="studio-custom-add"
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
-                width: 32, height: 32, borderRadius: 8,
-                border: "1px solid var(--labs-border)",
-                background: customInput.trim() ? "var(--labs-accent)" : "var(--labs-surface)",
-                color: customInput.trim() ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                cursor: customInput.trim() && !disabled ? "pointer" : "default",
-                fontFamily: "inherit",
+                width: 32, height: 32, padding: 0,
+                borderRadius: "var(--labs-space-sm)",
               }}
             >
               <Plus style={{ width: 16, height: 16 }} />
