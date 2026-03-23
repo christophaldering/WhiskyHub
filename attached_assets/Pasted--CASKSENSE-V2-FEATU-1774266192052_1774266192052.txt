@@ -1,0 +1,226 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE V2 — FEATURE A: OFFLINE / PWA
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CaskSense V2 ist vollständig deployed (/labs-v2). Alle 8 Phasen laufen.
+Jetzt wird Offline-Fähigkeit ergänzt: Bewertungen sollen auch ohne
+Internetverbindung gespeichert und beim Reconnect automatisch synchronisiert
+werden. Außerdem wird die App als vollständige PWA installierbar gemacht.
+
+Alle Sicherheitsregeln und Design-Standards aller bisherigen Phasen gelten
+unverändert weiter.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anlegen oder ändern
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS bestehende Dateien in client/src/labs/ anfassen
+❌ NIEMALS bestehende Dateien in client/src/labs-v2/ löschen
+❌ NIEMALS bestehende Routen in App.tsx löschen oder umbenennen
+
+✅ Neue Dateien in client/public/ anlegen (sw.js, manifest.json)
+✅ Neue Dateien in client/src/labs-v2/hooks/ und components/ anlegen
+✅ Bestehende Dateien NUR per append oder minimaler gezielter Ergänzung ändern
+✅ i18n Keys in client/src/lib/i18n.ts ergänzen (append-only)
+✅ client/index.html: NUR zwei Zeilen im <head> ergänzen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEUE I18N-KEYS (append-only in i18n.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DE:
+  offlineLabel:    "Keine Verbindung — Bewertungen werden lokal gespeichert"
+  offlineQueued1:  "Offline — 1 Bewertung gespeichert"
+  offlineQueuedN:  "Offline — {{n}} Bewertungen gespeichert"
+  syncingLabel:    "Verbindung wiederhergestellt — synchronisiere…"
+  onlineLabel:     "Wieder online"
+
+EN:
+  offlineLabel:    "No connection — ratings saved locally"
+  offlineQueued1:  "Offline — 1 rating saved"
+  offlineQueuedN:  "Offline — {{n}} ratings saved"
+  syncingLabel:    "Connection restored — syncing…"
+  onlineLabel:     "Back online"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 1: SERVICE WORKER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/public/sw.js
+
+Der Service Worker implementiert drei Strategien:
+
+STRATEGIE 1 — App Shell (Cache First):
+  Beim Install: '/', '/labs-v2', '/manifest.json' in Cache 'casksense-v2-shell-v1'
+  Beim Fetch für alle Nicht-API-Requests: Zuerst Cache prüfen, bei Miss
+  Network-Request und Antwort cachen. Bei Offline + kein Cache: 503 zurück.
+
+STRATEGIE 2 — API GET (Network First):
+  Für alle Requests auf /api/* mit GET:
+  Zuerst Network, Antwort in Cache speichern.
+  Bei Netzwerkfehler: Cache-Fallback, sonst JSON { offline: true } mit Status 503.
+
+STRATEGIE 3 — Rating-Writes offline queuen:
+  Für POST und PATCH auf /api/ratings*:
+  Zuerst direktes Senden versuchen.
+  Bei Netzwerkfehler: Request in separatem Cache 'casksense-offline-queue'
+  speichern mit Key "queued-{timestamp}-{random}".
+  Background Sync registrieren: self.registration.sync.register('casksense-rating-sync').
+  Optimistische 202-Antwort zurückgeben: { queued: true, offline: true }.
+
+BACKGROUND SYNC — sync Event 'casksense-rating-sync':
+  Alle Keys aus 'casksense-offline-queue' laden.
+  Jeden Request erneut senden.
+  Bei Erfolg: Key aus Queue löschen.
+  Bei Fehler: stehen lassen (nächster Sync-Versuch).
+  Nach vollständiger Verarbeitung: allen offenen Tabs postMessage({ type: 'QUEUE_FLUSHED' }) senden.
+
+PUSH — push Event:
+  event.data.json() lesen ({ title, body, url }).
+  showNotification mit icon '/icons/icon-192.png'.
+  notificationclick: Fenster focussieren oder öffnen mit data.url.
+
+Install: self.skipWaiting()
+Activate: alte Caches löschen (alle außer 'casksense-v2-shell-v1' und
+'casksense-offline-queue'), dann self.clients.claim().
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 2: WEB APP MANIFEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/public/manifest.json
+
+Inhalt:
+  name:             "CaskSense"
+  short_name:       "CaskSense"
+  description:      "Strukturierte Whisky-Tastings — überall, auch offline."
+  start_url:        "/labs-v2"
+  display:          "standalone"
+  orientation:      "portrait"
+  background_color: "#0e0b05"
+  theme_color:      "#0e0b05"
+  icons:
+    - src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable"
+    - src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable"
+  lang:             "de-DE"
+
+Hinweis: Falls die Icon-Dateien noch nicht existieren, Platzhalter-PNGs
+in client/public/icons/ anlegen (einfarbig #c9a227, 192×192 und 512×512).
+Dafür sharp oder canvas verwenden. Kein externes CDN für Icons.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 3: INDEX.HTML ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/index.html — NUR im <head> ergänzen, nichts entfernen:
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0e0b05" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 4: HOOK useOfflineQueue
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/src/labs-v2/hooks/useOfflineQueue.ts
+
+TypeScript-Hook, der exportiert:
+  status: 'online' | 'offline' | 'syncing'
+  pendingCount: number
+  swReady: boolean
+
+Logik:
+  - Initialer Status: navigator.onLine ? 'online' : 'offline'
+  - window 'online' Event: status → 'syncing', nach 2500ms → 'online'
+  - window 'offline' Event: status → 'offline'
+  - navigator.serviceWorker registrieren mit '/sw.js'
+  - navigator.serviceWorker 'message' Event: bei QUEUE_FLUSHED → pendingCount=0, status='online'
+  - CustomEvent 'casksense:rating-queued' auf window: pendingCount um 1 erhöhen (nur wenn offline)
+
+Exportierte Hilfsfunktion (kein Hook, plain function):
+  signalRatingQueued(): window.dispatchEvent(new CustomEvent('casksense:rating-queued'))
+  → Diese Funktion im Rating-Save aufrufen wenn Response { queued: true } kommt.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 5: KOMPONENTE OfflineBanner
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Datei: client/src/labs-v2/components/OfflineBanner.tsx
+
+Props: { th: ThemeTokens, t: Translations }
+
+Verwendet useOfflineQueue intern.
+
+Darstellung:
+  position: fixed, top: 56px (unter TopBar), left: 0, right: 0, zIndex: 200
+  Hintergrund + Border passen sich dem Status an:
+    offline → rot getönt  (rgba(180,60,40,...))
+    syncing → gold getönt (rgba(180,130,40,...))
+    online  → grün getönt (rgba(40,140,80,...))
+  Inhalt: farbiger Dot (8px) + Label-Text + optionaler Pending-Badge (Zahl)
+  Syncing-Dot hat CSS pulse-Animation
+  Bei status='online': nach 2000ms automatisch ausblenden (visibility)
+  Bei status='offline' oder 'syncing': immer sichtbar
+
+Kein Emoji. Kein SVG-Icon nötig. Nur Dot + Text.
+Schrift: DM Sans, 13px, fontWeight 500.
+
+WICHTIG: OfflineBanner in LabsV2App.tsx einbinden.
+  In der Haupt-Render-Funktion von LabsV2App, direkt nach dem TopBar-Element:
+  import { OfflineBanner } from './components/OfflineBanner'
+  <OfflineBanner th={th} t={t} />
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — SCHRITT 6: RATING-SAVE ANPASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In der Komponente oder dem Hook wo Ratings gespeichert werden
+(wahrscheinlich RatingScreen.tsx oder useRatings.ts in labs-v2):
+
+Nach dem fetch()-Aufruf für POST/PATCH auf /api/ratings:
+  const data = await response.json()
+  if (data.queued === true) {
+    signalRatingQueued()  // import aus useOfflineQueue
+  }
+
+Diese Änderung ist minimal — nur diese zwei Zeilen (import + if-Block)
+werden ergänzt. Bestehende Save-Logik bleibt unverändert.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÄTS-CHECKLISTE FEATURE A
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] client/public/sw.js vorhanden und registriert
+  [ ] client/public/manifest.json vorhanden und valide
+  [ ] Icons in client/public/icons/ vorhanden (192 + 512)
+  [ ] index.html: manifest link + theme-color meta vorhanden
+  [ ] OfflineBanner erscheint im Browser wenn Netzwerk deaktiviert wird
+  [ ] Bei Netzwerk aus + Rating speichern: 202-Response, kein Fehler-Dialog
+  [ ] Bei Netzwerk wieder an: Banner wechselt zu 'syncing', dann verschwindet
+  [ ] Kein einziges Emoji
+  [ ] DE/EN Keys in allen neuen Texten
+  [ ] /labs und /labs-v2 noch erreichbar
+  [ ] Lighthouse PWA Score ≥ 80
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE FEATURE A PROMPT
+═══════════════════════════════════════════════════════════════════════════════
