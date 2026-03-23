@@ -6703,6 +6703,19 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     }
   });
 
+  app.get("/api/journal/:participantId/trash", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const entries = await storage.getDeletedJournalEntries(req.params.participantId);
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/journal/:participantId/:id", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;
@@ -6827,8 +6840,68 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.delete("/api/journal/:participantId/:id", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       await storage.deleteJournalEntry(req.params.id, req.params.participantId);
       res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/journal/:participantId/:id/restore", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      await storage.restoreJournalEntry(req.params.id, req.params.participantId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/journal/:participantId/:id/permanent", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      await storage.permanentlyDeleteJournalEntry(req.params.id, req.params.participantId);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/trash", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const entries = await storage.getAdminDeletedJournalEntries();
+      const enriched = await Promise.all(entries.map(async (entry) => {
+        const participant = await storage.getParticipant(entry.participantId);
+        return { ...entry, participantName: participant?.name || entry.participantId };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/trash/:id/restore", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      await storage.restoreJournalEntryById(req.params.id);
+      res.json({ ok: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

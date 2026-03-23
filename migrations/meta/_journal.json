@@ -71,6 +71,13 @@
       "when": 1774295244674,
       "tag": "0009_faulty_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774300771731,
+      "tag": "0010_volatile_jack_flag",
+      "breakpoints": true
     }
   ]
 }

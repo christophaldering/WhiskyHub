@@ -353,6 +353,11 @@ export const journalApi = {
     fetchJSON(`/journal/${participantId}/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (participantId: string, id: string) =>
     fetchJSON(`/journal/${participantId}/${id}`, { method: "DELETE" }),
+  getTrash: (participantId: string) => fetchJSON(`/journal/${participantId}/trash`),
+  restore: (participantId: string, id: string) =>
+    fetchJSON(`/journal/${participantId}/${id}/restore`, { method: "POST" }),
+  permanentDelete: (participantId: string, id: string) =>
+    fetchJSON(`/journal/${participantId}/${id}/permanent`, { method: "DELETE" }),
 };
 
 // ===== Participant Stats =====
@@ -752,6 +757,8 @@ export const adminApi = {
     const params = new URLSearchParams({ participantId: requesterId });
     return fetchJSON(`/admin/filter-options?${params}`);
   },
+  getTrash: () => fetchJSON(`/admin/trash`),
+  restoreTrashEntry: (id: string) => fetchJSON(`/admin/trash/${id}/restore`, { method: "POST" }),
 };
 
 export const tastingPhotoApi = {

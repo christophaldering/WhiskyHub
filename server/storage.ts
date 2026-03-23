@@ -1,4 +1,4 @@
-import { eq, ne, and, asc, desc, sql, inArray, gte } from "drizzle-orm";
+import { eq, ne, and, asc, desc, sql, inArray, gte, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, ratings,
@@ -223,6 +223,12 @@ export interface IStorage {
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
   updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined>;
   deleteJournalEntry(id: string, participantId: string): Promise<void>;
+  restoreJournalEntry(id: string, participantId: string): Promise<void>;
+  permanentlyDeleteJournalEntry(id: string, participantId: string): Promise<void>;
+  getDeletedJournalEntries(participantId: string): Promise<JournalEntry[]>;
+  getAdminDeletedJournalEntries(): Promise<JournalEntry[]>;
+  restoreJournalEntryById(id: string): Promise<void>;
+  purgeExpiredJournalEntries(olderThanDays: number): Promise<number>;
 
   // Participant Stats (for badges)
   getParticipantStats(participantId: string): Promise<{
@@ -1131,17 +1137,17 @@ export class DatabaseStorage implements IStorage {
 
   // --- Journal Entries ---
   async getAllJournalEntries(): Promise<JournalEntry[]> {
-    return db.select().from(journalEntries).orderBy(desc(journalEntries.createdAt));
+    return db.select().from(journalEntries).where(isNull(journalEntries.deletedAt)).orderBy(desc(journalEntries.createdAt));
   }
 
   async getCuratedDatabaseEntries(): Promise<JournalEntry[]> {
     return db.select().from(journalEntries)
-      .where(eq(journalEntries.source, "casksense-database"))
+      .where(and(eq(journalEntries.source, "casksense-database"), isNull(journalEntries.deletedAt)))
       .orderBy(desc(journalEntries.createdAt));
   }
 
   async getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]> {
-    const conditions = [eq(journalEntries.participantId, participantId)];
+    const conditions = [eq(journalEntries.participantId, participantId), isNull(journalEntries.deletedAt)];
     if (statusFilter) {
       conditions.push(eq(journalEntries.status, statusFilter));
     }
@@ -1149,13 +1155,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined> {
-    const [result] = await db.select().from(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+    const [result] = await db.select().from(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId), isNull(journalEntries.deletedAt)));
     return result;
   }
 
   async getJournalEntryById(id: string): Promise<JournalEntry | undefined> {
     const [result] = await db.select().from(journalEntries).where(
-      and(eq(journalEntries.id, id), eq(journalEntries.source, "casksense-database"))
+      and(eq(journalEntries.id, id), eq(journalEntries.source, "casksense-database"), isNull(journalEntries.deletedAt))
     );
     return result;
   }
@@ -1171,7 +1177,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteJournalEntry(id: string, participantId: string): Promise<void> {
+    await db.update(journalEntries).set({ deletedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+  }
+
+  async restoreJournalEntry(id: string, participantId: string): Promise<void> {
+    await db.update(journalEntries).set({ deletedAt: null }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+  }
+
+  async permanentlyDeleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+  }
+
+  async getDeletedJournalEntries(participantId: string): Promise<JournalEntry[]> {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return db.select().from(journalEntries).where(and(eq(journalEntries.participantId, participantId), isNotNull(journalEntries.deletedAt), gte(journalEntries.deletedAt, cutoff))).orderBy(desc(journalEntries.deletedAt));
+  }
+
+  async getAdminDeletedJournalEntries(): Promise<JournalEntry[]> {
+    return db.select().from(journalEntries).where(isNotNull(journalEntries.deletedAt)).orderBy(desc(journalEntries.deletedAt));
+  }
+
+  async restoreJournalEntryById(id: string): Promise<void> {
+    await db.update(journalEntries).set({ deletedAt: null }).where(eq(journalEntries.id, id));
+  }
+
+  async purgeExpiredJournalEntries(olderThanDays: number): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+    const deleted = await db.delete(journalEntries).where(and(isNotNull(journalEntries.deletedAt), lt(journalEntries.deletedAt, cutoff))).returning();
+    return deleted.length;
   }
 
   async getParticipantStats(participantId: string): Promise<{
@@ -1204,7 +1237,8 @@ export class DatabaseStorage implements IStorage {
     const journalCount = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(
       and(
         eq(journalEntries.participantId, participantId),
-        ne(journalEntries.status, 'draft')
+        ne(journalEntries.status, 'draft'),
+        isNull(journalEntries.deletedAt)
       )
     );
 
@@ -1305,7 +1339,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    const journal = await db.select().from(journalEntries).where(eq(journalEntries.participantId, participantId));
+    const journal = await db.select().from(journalEntries).where(and(eq(journalEntries.participantId, participantId), isNull(journalEntries.deletedAt)));
     let journalScoreCount = 0;
 
     for (const j of journal) {
@@ -1788,7 +1822,7 @@ export class DatabaseStorage implements IStorage {
     const uniquePersonCount = await deduplicateParticipantList(allParticipantRecords);
     const [whiskyCount] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskies);
     const [ratingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(ratings);
-    const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries);
+    const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(isNull(journalEntries.deletedAt));
     const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
     return {
       totalTastings: tastingCount?.count ?? 0,

@@ -427,6 +427,24 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       }
     })();
 
+    (async () => {
+      try {
+        const purged = await storage.purgeExpiredJournalEntries(30);
+        if (purged > 0) log(`Purged ${purged} expired soft-deleted journal entries (>30 days)`, "startup");
+      } catch (e: any) {
+        log(`Journal purge error: ${e.message}`, "startup");
+      }
+    })();
+
+    setInterval(async () => {
+      try {
+        const purged = await storage.purgeExpiredJournalEntries(30);
+        if (purged > 0) log(`Purged ${purged} expired soft-deleted journal entries`, "scheduler");
+      } catch (e: any) {
+        log(`Journal purge error: ${e.message}`, "scheduler");
+      }
+    }, 6 * 60 * 60 * 1000);
+
     warmupGmailToken();
 
     seedProductionData()

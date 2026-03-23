@@ -18,10 +18,10 @@ import {
   MessageSquarePlus, Rocket, AlertTriangle,
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
   BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, GripVertical, Pencil, X,
-  FileText,
+  FileText, RotateCcw,
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas";
+type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas" | "trash";
 
 const ADMIN_GROUPS = [
   {
@@ -80,6 +80,7 @@ const ADMIN_GROUPS = [
       { id: "settings",     label: "Einstellungen" },
       { id: "cleanup",      label: "Aufr\u00e4umen" },
       { id: "analytics",    label: "Analytics" },
+      { id: "trash",        label: "Papierkorb" },
     ],
   },
 ] as const;
@@ -405,6 +406,7 @@ export default function LabsAdmin() {
           {activeTab === "feedback"     && <FeedbackTab pid={pid} />}
           {activeTab === "making-of"    && <MakingOfTab pid={pid} participants={data.participants} />}
           {activeTab === "aromas"       && <AromasTab pid={pid} />}
+          {activeTab === "trash"        && <AdminTrashTab pid={pid} />}
         </div>
       </div>
     </div>
@@ -2467,5 +2469,103 @@ function ToggleSwitch({ on, onToggle, testId, disabled, small }: { on: boolean; 
         boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
       }} />
     </button>
+  );
+}
+
+type AdminTrashEntry = {
+  id: string;
+  participantId: string;
+  participantName: string;
+  title: string;
+  whiskyName: string | null;
+  distillery: string | null;
+  deletedAt: string | null;
+};
+
+function AdminTrashTab({ pid }: { pid: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: trashEntries = [], isLoading } = useQuery<AdminTrashEntry[]>({
+    queryKey: ["admin-trash"],
+    queryFn: () => adminApi.getTrash(),
+    enabled: !!pid,
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => adminApi.restoreTrashEntry(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-trash"] });
+      toast({ title: "Entry restored" });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} />
+      </div>
+    );
+  }
+
+  return (
+    <div data-testid="labs-admin-trash-tab">
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>Papierkorb</h2>
+        <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>
+          All soft-deleted drams across all users. Admin restores have no time limit.
+        </p>
+      </div>
+
+      {trashEntries.length === 0 ? (
+        <div style={{ padding: "48px 20px", textAlign: "center" }}>
+          <Trash2 className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--labs-text-muted)" }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>No deleted entries</p>
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 4 }}>The trash is empty.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {trashEntries.map((entry: AdminTrashEntry) => {
+            const deletedAt = entry.deletedAt ? new Date(entry.deletedAt) : new Date();
+            const daysAgo = Math.floor((Date.now() - deletedAt.getTime()) / 86400000);
+            return (
+              <div key={entry.id} className="labs-card p-3.5" data-testid={`admin-trash-item-${entry.id}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                      {entry.whiskyName || entry.title || "—"}
+                    </div>
+                    <div className="text-[11px] mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: "var(--labs-text-muted)" }}>
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" /> {entry.participantName || entry.participantId}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Deleted {daysAgo === 0 ? "today" : `${daysAgo}d ago`}
+                      </span>
+                      {entry.distillery && <span>{entry.distillery}</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => restoreMutation.mutate(entry.id)}
+                    disabled={restoreMutation.isPending}
+                    className="flex items-center gap-1.5"
+                    style={{
+                      padding: "6px 14px", fontSize: 12, fontWeight: 500, borderRadius: 8, cursor: "pointer",
+                      background: "var(--labs-accent-muted, rgba(212,168,71,0.12))",
+                      color: "var(--labs-accent)",
+                      border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)",
+                      flexShrink: 0,
+                    }}
+                    data-testid={`admin-restore-${entry.id}`}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Restore
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

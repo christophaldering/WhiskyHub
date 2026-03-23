@@ -12,12 +12,12 @@ import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
-  ArrowUp, ArrowDown, SlidersHorizontal,
+  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
-type ViewState = "list" | "detail" | "edit";
+type ViewState = "list" | "detail" | "edit" | "trash";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 type SortBy = "date" | "score" | "name" | "saved";
@@ -253,8 +253,26 @@ export default function LabsTasteDrams() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => journalApi.delete(session.pid!, id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); setDeleteTarget(null); if (selectedEntry?.id === deleteTarget?.id) { setSelectedEntry(null); setViewState("list"); } },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); queryClient.invalidateQueries({ queryKey: ["journal-trash"] }); setDeleteTarget(null); if (selectedEntry?.id === deleteTarget?.id) { setSelectedEntry(null); setViewState("list"); } },
   });
+
+  const { data: trashEntries = [] } = useQuery<JournalEntry[]>({
+    queryKey: ["journal-trash", session.pid],
+    queryFn: () => journalApi.getTrash(session.pid!),
+    enabled: !!session.pid && viewState === "trash",
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => journalApi.restore(session.pid!, id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); queryClient.invalidateQueries({ queryKey: ["journal-trash"] }); },
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id: string) => journalApi.permanentDelete(session.pid!, id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal-trash"] }); },
+  });
+
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<JournalEntry | null>(null);
 
   const handleView = (entry: any) => { setSelectedEntry(entry); setViewState("detail"); };
 
@@ -321,6 +339,89 @@ export default function LabsTasteDrams() {
 
   const handleBack = () => { setViewState("list"); setSelectedEntry(null); };
   const isSoloEntry = (entry: any) => !entry.source || entry.source === "solo" || entry.source === "casksense";
+
+  if (viewState === "trash") {
+    return (
+      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-drams-trash">
+        <div className="flex items-center justify-between mb-5">
+          <button onClick={() => setViewState("list")} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-from-trash">
+            <ChevronLeft className="w-4 h-4" /> Drams
+          </button>
+        </div>
+        <div className="flex items-center gap-2 mb-4">
+          <Archive className="w-5 h-5" style={{ color: "var(--labs-text-muted)" }} />
+          <h2 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>Trash</h2>
+        </div>
+        <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+          Deleted drams are kept for 30 days before being permanently removed.
+        </p>
+        {trashEntries.length === 0 ? (
+          <div style={{ padding: "48px 20px", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Trash2 className="w-6 h-6" style={{ color: "var(--labs-text-muted)" }} />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>Trash is empty</h3>
+            <p style={{ fontSize: 14, color: "var(--labs-text-muted)" }}>No deleted drams.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col" style={{ gap: 10 }}>
+            {trashEntries.map((entry: JournalEntry) => {
+              const deletedAt = entry.deletedAt ? new Date(entry.deletedAt).getTime() : Date.now();
+              const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - deletedAt) / 86400000));
+              return (
+                <div key={entry.id} className="labs-card" style={{ padding: "16px 18px", borderRadius: 14, opacity: 0.85 }} data-testid={`labs-trash-item-${entry.id}`}>
+                  <div className="flex items-start gap-3">
+                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.whiskyName || entry.title || "—"}</div>
+                      {entry.distillery && <div style={{ fontSize: 13, color: "var(--labs-text-secondary, var(--labs-text-muted))", marginBottom: 6 }} className="truncate">{entry.distillery}</div>}
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3" style={{ color: daysLeft <= 3 ? "var(--labs-danger)" : "var(--labs-text-muted)" }} />
+                        <span style={{ fontSize: 11, color: daysLeft <= 3 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
+                          {daysLeft === 0 ? "Expires today" : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5" style={{ flexShrink: 0 }}>
+                      <button
+                        onClick={() => restoreMutation.mutate(entry.id)}
+                        disabled={restoreMutation.isPending}
+                        style={{ padding: "6px 12px", fontSize: 12, fontWeight: 500, borderRadius: 8, cursor: "pointer", background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }}
+                        data-testid={`button-restore-${entry.id}`}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setPermanentDeleteTarget(entry)}
+                        style={{ padding: "6px 12px", fontSize: 12, fontWeight: 500, borderRadius: 8, cursor: "pointer", background: "transparent", color: "var(--labs-danger)", border: "1px solid var(--labs-danger)", opacity: 0.8 }}
+                        data-testid={`button-permanent-delete-${entry.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {permanentDeleteTarget && (
+          <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-permanent-delete">
+            <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
+              <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Permanently Delete</h3>
+              <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This will permanently delete "{permanentDeleteTarget.whiskyName || permanentDeleteTarget.title}". This cannot be undone.</p>
+              <div className="flex justify-end gap-2.5">
+                <button onClick={() => setPermanentDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-cancel-permanent-delete">Cancel</button>
+                <button onClick={() => { permanentDeleteMutation.mutate(permanentDeleteTarget.id); setPermanentDeleteTarget(null); }} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-confirm-permanent-delete">
+                  Delete Forever
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (viewState === "detail" && selectedEntry) {
     return (
@@ -581,6 +682,17 @@ export default function LabsTasteDrams() {
                   data-testid={`labs-filter-${f.key}`}>{f.label}</button>
               ))}
             </div>
+          </div>
+
+          <div style={{ padding: "0 20px", marginBottom: 8 }}>
+            <button
+              onClick={() => setViewState("trash")}
+              className="flex items-center gap-1.5"
+              style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
+              data-testid="button-labs-open-trash"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Trash
+            </button>
           </div>
 
           <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)" }}>
@@ -1140,7 +1252,7 @@ function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void
     <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-dram">
       <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
         <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Dram</h3>
-        <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Are you sure you want to delete this entry? This cannot be undone.</p>
+        <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This entry will be moved to the trash. You can restore it within 30 days.</p>
         <div className="flex justify-end gap-2.5">
           <button onClick={onCancel} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-labs-cancel-delete">Cancel</button>
           <button onClick={onConfirm} disabled={isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: isPending ? 0.6 : 1 }} data-testid="button-labs-confirm-delete">
