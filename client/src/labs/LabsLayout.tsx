@@ -527,6 +527,9 @@ const PUBLIC_PATH_PREFIXES = [
   "/labs/discover",
   "/labs/donate",
   "/labs/solo",
+  "/labs/tastings",
+  "/labs/taste",
+  "/labs/circle",
 ];
 
 function isPublicLabsRoute(path: string): boolean {
