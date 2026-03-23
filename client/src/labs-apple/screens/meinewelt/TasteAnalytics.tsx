@@ -86,7 +86,7 @@ export const TasteAnalytics: React.FC<Props> = ({ th, t, participantId, onBack }
               <text x={PAD - 4} y={toY(v) + 4} textAnchor="end" fontSize="9" fill={th.faint}>{v}</text>
             </g>
           ))}
-          {data.length > 1 && <path d={`${pathD} L ${toX(data.length - 1)} ${H - PAD} L ${toX(0)} ${H - PAD} Z`} fill={`${th.gold}15`} />}
+          {data.length > 1 && <path d={`${pathD} L ${toX(data.length - 1)} ${H - PAD} L ${toX(0)} ${H - PAD} Z`} fill={`${th.gold}22`} />}
           {data.length > 1 && <path d={pathD} fill="none" stroke={th.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
           {data.map((pt, i) => <circle key={i} cx={toX(i)} cy={toY(pt.avg)} r="4" fill={th.gold} />)}
           {data.map((pt, i) => <text key={i} x={toX(i)} y={H - 4} textAnchor="middle" fontSize="9" fill={th.faint}>{pt.month}</text>)}

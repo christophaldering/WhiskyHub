@@ -217,7 +217,7 @@ export const LabsAppleLayout: React.FC<Props> = ({
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${th.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 48, height: 48, borderRadius: 24,
-              border: `2px solid ${th.gold}44`,
+              border: `2px solid ${th.gold}55`,
               background: photoUrl ? 'transparent' : `linear-gradient(135deg, ${th.phases.nose.dim}, ${th.phases.palate.dim})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden', flexShrink: 0,

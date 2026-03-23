@@ -82,23 +82,23 @@ const darkTheme: ThemeTokens = {
 
 const lightTheme: ThemeTokens = {
   bg: "#faf6f0",
-  bgCard: "rgba(0,0,0,0.032)",
-  bgHover: "rgba(0,0,0,0.06)",
-  border: "rgba(0,0,0,0.09)",
+  bgCard: "rgba(0,0,0,0.06)",
+  bgHover: "rgba(0,0,0,0.10)",
+  border: "rgba(0,0,0,0.15)",
   text: "#1a1208",
-  muted: "rgba(26,18,8,0.55)",
-  faint: "rgba(26,18,8,0.28)",
+  muted: "rgba(26,18,8,0.65)",
+  faint: "rgba(26,18,8,0.45)",
   gold: "#b8892a",
   amber: "#a05e22",
   green: "#4a8c3a",
   tabBg: "rgba(250,246,240,0.96)",
   headerBg: "rgba(250,246,240,0.92)",
-  inputBg: "rgba(0,0,0,0.04)",
+  inputBg: "rgba(0,0,0,0.05)",
   phases: {
-    nose:    { accent: "#5a8fa8", dim: "rgba(90,143,168,0.08)",  glow: "rgba(90,143,168,0.15)" },
-    palate:  { accent: "#b8892a", dim: "rgba(184,137,42,0.08)",  glow: "rgba(184,137,42,0.15)" },
-    finish:  { accent: "#a05e22", dim: "rgba(160,94,34,0.08)",   glow: "rgba(160,94,34,0.15)" },
-    overall: { accent: "#4a8c3a", dim: "rgba(74,140,58,0.08)",   glow: "rgba(74,140,58,0.15)" },
+    nose:    { accent: "#5a8fa8", dim: "rgba(90,143,168,0.12)",  glow: "rgba(90,143,168,0.22)" },
+    palate:  { accent: "#b8892a", dim: "rgba(184,137,42,0.12)",  glow: "rgba(184,137,42,0.22)" },
+    finish:  { accent: "#a05e22", dim: "rgba(160,94,34,0.12)",   glow: "rgba(160,94,34,0.22)" },
+    overall: { accent: "#4a8c3a", dim: "rgba(74,140,58,0.12)",   glow: "rgba(74,140,58,0.22)" },
   },
 };
 

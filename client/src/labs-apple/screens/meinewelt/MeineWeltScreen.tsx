@@ -80,7 +80,7 @@ const TasteProfile: React.FC<{ th: ThemeTokens; t: Translations; participantId: 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14, color: th.muted }}>{dimLabels[d]}</span>
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${conf.color}15`, color: conf.color }}>{conf.label}</span>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${conf.color}22`, color: conf.color }}>{conf.label}</span>
               </div>
               <span style={{ fontSize: 16, fontWeight: 700, color: pt.accent }}>{score}</span>
             </div>
@@ -121,7 +121,7 @@ const AppleFilterDropdown: React.FC<{ th: ThemeTokens; value: string; onChange: 
   return (
     <div style={{ position: 'relative', flex: '1 1 0', minWidth: 100 }}>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', padding: '7px 28px 7px 10px', fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? th.gold : th.muted, background: isActive ? `${th.gold}15` : th.bgCard, border: `1px solid ${isActive ? th.gold : th.border}`, borderRadius: 10, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', outline: 'none' }}
+        style={{ width: '100%', padding: '7px 28px 7px 10px', fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? th.gold : th.muted, background: isActive ? `${th.gold}22` : th.bgCard, border: `1px solid ${isActive ? th.gold : th.border}`, borderRadius: 10, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', outline: 'none' }}
         data-testid={testId}>
         <option value="all">{placeholder}</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -306,7 +306,7 @@ const JournalList: React.FC<{ th: ThemeTokens; t: Translations; participantId: s
                 {entry.flavorTags && typeof entry.flavorTags === 'object' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: SP.xs }}>
                     {(Object.values(entry.flavorTags) as any[]).flat().filter(Boolean).slice(0, 8).map((tag: any, i) => (
-                      <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: `${th.gold}15`, color: th.gold }}>{tag}</span>
+                      <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: `${th.gold}22`, color: th.gold }}>{tag}</span>
                     ))}
                   </div>
                 )}
@@ -391,7 +391,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
           const isSelected = selected === String(day)
           const isToday   = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
           return (
-            <button key={day} onClick={() => setSelected(isSelected ? null : String(day))} style={{ aspectRatio: '1', borderRadius: 10, border: `1px solid ${isSelected ? th.gold : th.border}`, background: isSelected ? `${th.gold}15` : isToday ? th.phases.nose.dim : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <button key={day} onClick={() => setSelected(isSelected ? null : String(day))} style={{ aspectRatio: '1', borderRadius: 10, border: `1px solid ${isSelected ? th.gold : th.border}`, background: isSelected ? `${th.gold}22` : isToday ? th.phases.nose.dim : 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
               <span style={{ fontSize: 13, fontWeight: isToday ? 700 : 400, color: isToday ? th.gold : th.text }}>{day}</span>
               {dayEvents.length > 0 && (
                 <div style={{ display: 'flex', gap: 2 }}>
@@ -411,7 +411,7 @@ const TastingCalendar: React.FC<{ th: ThemeTokens; t: Translations; participantI
             <div key={i} style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 14, padding: SP.md, marginBottom: SP.sm }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 15, fontWeight: 600 }}>{e.name}</span>
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: `${statusColor(e.status)}15`, color: statusColor(e.status) }}>{e.status}</span>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: `${statusColor(e.status)}22`, color: statusColor(e.status) }}>{e.status}</span>
               </div>
               {e.location && <div style={{ fontSize: 12, color: th.faint, marginTop: 4 }}>{e.location}</div>}
             </div>

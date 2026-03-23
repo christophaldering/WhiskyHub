@@ -119,8 +119,8 @@ function SectionHeader({ th, title, tagline, color }: { th: ThemeTokens; title: 
         width: 40,
         height: 40,
         borderRadius: 12,
-        background: `${color}15`,
-        border: `1px solid ${color}33`,
+        background: `${color}22`,
+        border: `1px solid ${color}44`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -185,7 +185,7 @@ export const DeepDiveBackground: React.FC<Props> = ({ th, t, lang, onBack }) => 
                 position: 'relative',
                 overflow: 'hidden',
               }}>
-                <div style={{ position: 'absolute', top: 4, right: 8, fontSize: 28, fontWeight: 900, color: `${th.green}18` }}>{step.num}</div>
+                <div style={{ position: 'absolute', top: 4, right: 8, fontSize: 28, fontWeight: 900, color: `${th.green}28` }}>{step.num}</div>
                 <div style={{ position: 'relative' }}>
                   <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 13, fontWeight: 600, color: th.text, margin: `0 0 ${SP.xs}px` }}>
                     {l(step.title)}
@@ -225,7 +225,7 @@ export const DeepDiveBackground: React.FC<Props> = ({ th, t, lang, onBack }) => 
                   width: 30,
                   height: 30,
                   borderRadius: 8,
-                  background: `${th.phases.nose.accent}15`,
+                  background: `${th.phases.nose.accent}22`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -259,7 +259,7 @@ export const DeepDiveBackground: React.FC<Props> = ({ th, t, lang, onBack }) => 
             {DIMENSIONS.map(dim => (
               <div key={dim.key} style={{
                 background: th.bgCard,
-                border: `1px solid ${dim.color}33`,
+                border: `1px solid ${dim.color}44`,
                 borderRadius: 14,
                 padding: SP.md,
               }}>
@@ -273,7 +273,7 @@ export const DeepDiveBackground: React.FC<Props> = ({ th, t, lang, onBack }) => 
           </div>
           <div style={{
             background: th.bgCard,
-            border: `1px solid ${th.gold}44`,
+            border: `1px solid ${th.gold}55`,
             borderRadius: 14,
             padding: SP.md,
             marginTop: 10,
@@ -306,7 +306,7 @@ export const DeepDiveBackground: React.FC<Props> = ({ th, t, lang, onBack }) => 
             {SCIENCE_CARDS.map((card, i) => (
               <div key={i} style={{
                 background: th.bgCard,
-                border: `1px solid ${card.color}33`,
+                border: `1px solid ${card.color}44`,
                 borderRadius: 14,
                 padding: SP.md,
               }}>

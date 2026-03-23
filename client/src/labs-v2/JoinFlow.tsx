@@ -498,7 +498,7 @@ export default function JoinFlow({ onBack, onEnterLive }: JoinFlowProps) {
                       fontSize: 11,
                       fontWeight: 600,
                       color: th.amber,
-                      background: `${th.amber}18`,
+                      background: `${th.amber}28`,
                       padding: `${SP.xs}px ${SP.sm}px`,
                       borderRadius: RADIUS.full,
                     }}
@@ -513,7 +513,7 @@ export default function JoinFlow({ onBack, onEnterLive }: JoinFlowProps) {
                       fontSize: 11,
                       fontWeight: 600,
                       color: th.gold,
-                      background: `${th.gold}18`,
+                      background: `${th.gold}28`,
                       padding: `${SP.xs}px ${SP.sm}px`,
                       borderRadius: RADIUS.full,
                     }}
@@ -542,8 +542,8 @@ export default function JoinFlow({ onBack, onEnterLive }: JoinFlowProps) {
       <div
         style={{
           padding: `${SP.lg}px`,
-          background: `${th.gold}0A`,
-          border: `1px solid ${th.gold}30`,
+          background: `${th.gold}1A`,
+          border: `1px solid ${th.gold}44`,
           borderRadius: RADIUS.lg,
           textAlign: "center",
           marginBottom: SP.lg,

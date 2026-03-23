@@ -45,7 +45,7 @@ export class LabsErrorBoundary extends React.Component<Props, State> {
       <div style={{ minHeight: '100dvh', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'DM Sans, sans-serif' }}>
         <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
           {/* Icon */}
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: `${gold}15`, border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: `${gold}22`, border: `1px solid ${gold}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={gold} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>

@@ -104,7 +104,7 @@ const Checkbox: React.FC<{ checked: boolean; onChange: (v: boolean) => void; th:
       type="button"
       data-testid={testId}
       onClick={() => onChange(!checked)}
-      style={{ width: 22, height: 22, minWidth: 22, borderRadius: 6, border: `1.5px solid ${checked ? th.gold : th.border}`, background: checked ? `${th.gold}20` : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1, transition: 'all 150ms' }}
+      style={{ width: 22, height: 22, minWidth: 22, borderRadius: 6, border: `1.5px solid ${checked ? th.gold : th.border}`, background: checked ? `${th.gold}30` : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1, transition: 'all 150ms' }}
     >
       {checked && <Icon.Check color={th.gold} size={14} />}
     </button>
@@ -265,7 +265,7 @@ const GuestView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
           { id: 'standard' as const, label: tx.authGuestStandard, sub: tx.authGuestStandardDesc },
           { id: 'ultra' as const, label: tx.authGuestUltra, sub: tx.authGuestUltraDesc },
         ].map(m => (
-          <button key={m.id} onClick={() => setMode(m.id)} style={{ minHeight: 80, borderRadius: 16, cursor: 'pointer', border: `1px solid ${mode === m.id ? th.gold : th.border}`, background: mode === m.id ? `${th.gold}10` : th.bgCard, padding: SP.sm, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, textAlign: 'left', transition: 'all 150ms' }}>
+          <button key={m.id} onClick={() => setMode(m.id)} style={{ minHeight: 80, borderRadius: 16, cursor: 'pointer', border: `1px solid ${mode === m.id ? th.gold : th.border}`, background: mode === m.id ? `${th.gold}1A` : th.bgCard, padding: SP.sm, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, textAlign: 'left', transition: 'all 150ms' }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: mode === m.id ? th.gold : th.text }}>{m.label}</div>
             <div style={{ fontSize: 11, color: th.faint, lineHeight: 1.4 }}>{m.sub}</div>
           </button>
@@ -560,7 +560,7 @@ const WelcomeView: React.FC<{ th: ThemeTokens; t: Translations; onSwitch: (m: Au
 export const VerificationBanner: React.FC<{ th: ThemeTokens; t: Translations; email: string }> = ({ th, t, email }) => {
   const tx = t as any
   return (
-    <div style={{ background: `${th.gold}15`, border: `1px solid ${th.gold}44`, borderRadius: 14, padding: `${SP.sm}px ${SP.md}px`, margin: `${SP.sm}px ${SP.md}px`, display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ background: `${th.gold}22`, border: `1px solid ${th.gold}55`, borderRadius: 14, padding: `${SP.sm}px ${SP.md}px`, margin: `${SP.sm}px ${SP.md}px`, display: 'flex', alignItems: 'center', gap: 10 }}>
       <Icon.Mail color={th.gold} size={16} />
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: th.gold }}>{tx.authVerifyReminder}</div>

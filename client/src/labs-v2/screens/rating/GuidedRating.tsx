@@ -382,7 +382,7 @@ export default function GuidedRating({
             left: SP.md,
             right: SP.md,
             padding: `${SP.sm}px ${SP.md}px`,
-            background: `${th.amber}18`,
+            background: `${th.amber}28`,
             border: `1px solid ${th.amber}44`,
             borderRadius: RADIUS.md,
             display: "flex",

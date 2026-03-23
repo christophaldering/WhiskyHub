@@ -145,15 +145,15 @@ export const JoinFlow: React.FC<JoinProps> = ({ th, t, onEnterLive, onBack }) =>
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
                 <div style={{ width: 36, height: 36, borderRadius: 18, background: th.phases.nose.dim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: th.phases.nose.accent }}>{(p.name || '?')[0].toUpperCase()}</div>
                 <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
-                {p.isHost && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${th.amber}20`, color: th.amber }}>{t.hostLabel}</span>}
-                {p.id === session?.id && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${th.gold}20`, color: th.gold }}>{t.youLabel}</span>}
+                {p.isHost && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${th.amber}30`, color: th.amber }}>{t.hostLabel}</span>}
+                {p.id === session?.id && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: `${th.gold}30`, color: th.gold }}>{t.youLabel}</span>}
                 <div style={{ width: 8, height: 8, borderRadius: 4, background: th.green }} />
               </div>
             ))}
           </div>
 
           {/* Waiting card */}
-          <div style={{ background: `${th.gold}10`, border: `1px solid ${th.gold}33`, borderRadius: 20, padding: SP.md }}>
+          <div style={{ background: `${th.gold}1A`, border: `1px solid ${th.gold}44`, borderRadius: 20, padding: SP.md }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Icon.Live color={th.green} size={16} />
               <span style={{ fontSize: 14, fontWeight: 600 }}>{hostName} {t.joinWaiting}</span>
@@ -272,7 +272,7 @@ const TastingHistoryView: React.FC<{ th: ThemeTokens; t: Translations; tastings:
               ) : (
                 <span style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 10,
-                  background: tasting.status === 'open' ? `${th.green}20` : th.bgCard,
+                  background: tasting.status === 'open' ? `${th.green}30` : th.bgCard,
                   color: tasting.status === 'open' ? th.green : th.faint,
                 }}>{tasting.status}</span>
               )}
@@ -340,7 +340,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = th.phases[action.phaseId].accent; (e.currentTarget as HTMLElement).style.background = th.phases[action.phaseId].dim }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = th.border; (e.currentTarget as HTMLElement).style.background = th.bgCard }}
             >
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: th.phases[action.phaseId].dim, border: `1px solid ${th.phases[action.phaseId].accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: th.phases[action.phaseId].dim, border: `1px solid ${th.phases[action.phaseId].accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {action.icon}
               </div>
               <div>
@@ -392,7 +392,7 @@ export const TastingsHub: React.FC<HubProps> = ({ th, t, onJoin, onSolo, onHost,
                       {t.resultsTitle} <Icon.ChevronRight color={th.gold} size={14} />
                     </span>
                   ) : (
-                    <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: isOpen ? `${th.green}20` : th.bgCard, color: isOpen ? th.green : th.faint }}>{tasting.status}</span>
+                    <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: isOpen ? `${th.green}30` : th.bgCard, color: isOpen ? th.green : th.faint }}>{tasting.status}</span>
                   )}
                 </button>
               )
