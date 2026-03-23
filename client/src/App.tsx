@@ -473,6 +473,9 @@ function Router() {
               <Route path="/labs/join" component={LabsJoin} />
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
               <Route path="/labs/host/calendar" component={LabsCalendar} />
+              <Route path="/labs/history/insights" component={LabsHistory} />
+              <Route path="/labs/history/:id" component={LabsHistoricalDetail} />
+              <Route path="/labs/history" component={LabsHistory} />
               <Route path="/labs/host/history/insights" component={LabsHistory} />
               <Route path="/labs/host/history/:id" component={LabsHistoricalDetail} />
               <Route path="/labs/host/history" component={LabsHistory} />

@@ -6,7 +6,7 @@ import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
   Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
-  ChevronDown, Layers,
+  ChevronDown, Layers, Archive,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
@@ -1233,7 +1233,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     display: "inline-flex", alignItems: "center", gap: 6,
                   }} data-testid="cockpit-sidebar-status">
                     {status === "open" && <span className="cockpit-live-dot" />}
-                    {isDraft ? "Draft" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : "Completed"}
+                    {status === "archived" && <Lock style={{ width: 10, height: 10 }} />}
+                    {isDraft ? "Draft" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : status === "archived" ? "Archived" : "Completed"}
                   </span>
                   <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>
                     {whiskies.length} Drams
@@ -1862,10 +1863,34 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           )
         )}
 
-        {["closed", "reveal", "archived"].includes(status) && !restartDialog && (
+        {status === "reveal" && !restartDialog && (
+          <button
+            onClick={() => {
+              if (confirm("Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.")) {
+                tastingApi.updateStatus(tastingId, "archived", undefined, pid).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                });
+              }
+            }}
+            className="cockpit-action-btn cockpit-action-primary"
+            data-testid="cockpit-archive"
+          >
+            <Archive style={{ width: 14, height: 14 }} />
+            Archive Tasting
+          </button>
+        )}
+
+        {["closed", "reveal"].includes(status) && !restartDialog && (
           <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">
             <RotateCcw style={{ width: 14, height: 14 }} />
             Restart Session
+          </button>
+        )}
+
+        {status === "archived" && currentParticipant?.role === "admin" && !restartDialog && (
+          <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">
+            <RotateCcw style={{ width: 14, height: 14 }} />
+            Reopen (Admin)
           </button>
         )}
 

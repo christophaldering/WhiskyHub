@@ -95,7 +95,6 @@ function LabsHistoryList() {
   const { data: analytics } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],
     queryFn: () => fetchJSON("/api/historical/analytics", pid || undefined),
-    enabled: isMember,
   });
 
   const tastings = tastingsData?.tastings ?? [];
@@ -135,31 +134,9 @@ function LabsHistoryList() {
     { value: "quality", label: t("m2.historical.sortQuality", "Best rated") },
   ];
 
-  if (!isMember && !commLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: "48px 20px" }}>
-        <div className="labs-card" style={{ padding: "40px 20px", maxWidth: 420, margin: "0 auto" }}>
-          {!session.signedIn ? (
-            <AuthGateMessage
-              icon={<LogIn style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} strokeWidth={1.2} />}
-              message="Sign in to see if you have access to this community's tasting archive."
-              compact
-            />
-          ) : (
-            <>
-              <Lock style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
-              <p style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>Community Members Only</p>
-              <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>This archive is available to community members.</p>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
-      {isMember && analytics && (
+      {analytics && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 8, marginBottom: 16 }}>
           {[
             { value: totalTastings, label: t("m2.historical.statTastings", "Tastings") },
@@ -175,26 +152,36 @@ function LabsHistoryList() {
         </div>
       )}
 
-      {isMember && (
-        <Link href="/labs/host/history/insights" style={{ textDecoration: "none" }}>
-          <div
-            className="labs-card-interactive"
-            style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}
-            data-testid="link-insights"
-          >
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, background: "var(--labs-accent-muted)",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <BarChart3 style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("m2.historical.insightsLink", "Cross-Tasting Insights")}</div>
-              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>{t("m2.historical.insightsDesc", "Top whiskies, regions, trends & group profile")}</div>
-            </div>
-            <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} strokeWidth={1.8} />
+      <Link href="/labs/history/insights" style={{ textDecoration: "none" }}>
+        <div
+          className="labs-card-interactive"
+          style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}
+          data-testid="link-insights"
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, background: "var(--labs-accent-muted)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <BarChart3 style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
           </div>
-        </Link>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("m2.historical.insightsLink", "Cross-Tasting Insights")}</div>
+            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>{t("m2.historical.insightsDesc", "Top whiskies, regions, trends & group profile")}</div>
+          </div>
+          <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} strokeWidth={1.8} />
+        </div>
+      </Link>
+
+      {!isMember && !commLoading && analytics && (
+        <div className="labs-card" style={{ padding: "20px 16px", marginBottom: 16, textAlign: "center" }}>
+          <Lock style={{ width: 24, height: 24, color: "var(--labs-text-muted)", margin: "0 auto 8px", display: "block" }} strokeWidth={1.5} />
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
+            {t("m2.historical.memberListTitle", "Tasting List — Community Members Only")}
+          </p>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+            {t("m2.historical.memberListDesc", "Join the community to browse individual tasting details and full archives.")}
+          </p>
+        </div>
       )}
 
       {isMember && (
@@ -258,7 +245,7 @@ function LabsHistoryList() {
             {sorted.map(tasting => {
               const winnerLabel = [tasting.winnerDistillery, tasting.winnerName].filter(Boolean).join(" \u2014 ");
               return (
-                <Link key={tasting.id} href={`/labs/host/history/${tasting.id}`} style={{ textDecoration: "none" }}>
+                <Link key={tasting.id} href={`/labs/history/${tasting.id}`} style={{ textDecoration: "none" }}>
                   <div className="labs-card-interactive" style={{ padding: "14px 16px" }} data-testid={`tasting-card-${tasting.tastingNumber}`}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div style={{
@@ -316,6 +303,7 @@ function LabsHistoryInsights() {
   });
 
   const isMember = session.role === "admin" || (myCommunities?.communities?.length ?? 0) > 0;
+  const isAdmin = session.role === "admin";
 
   const { data: analytics, isLoading, isError, refetch } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],
@@ -326,18 +314,7 @@ function LabsHistoryInsights() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
-    enabled: isMember,
   });
-
-  if (!isMember && !commLoading) {
-    return (
-      <div className="labs-card" style={{ textAlign: "center", padding: "48px 20px", maxWidth: 420, margin: "0 auto" }}>
-        <Lock style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
-        <p style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>Community Members Only</p>
-        <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Full community insights are available to members.</p>
-      </div>
-    );
-  }
 
   if (isLoading || commLoading) {
     return (
@@ -568,9 +545,11 @@ function EmptyState() {
 }
 
 export default function LabsHistory() {
-  const [isInsights] = useRoute("/labs/host/history/insights");
+  const [isInsightsNew] = useRoute("/labs/history/insights");
+  const [isInsightsOld] = useRoute("/labs/host/history/insights");
+  const isInsights = isInsightsNew || isInsightsOld;
   const [, navigate] = useLocation();
-  const goBack = useLabsBack("/labs/tastings");
+  const goBack = useLabsBack("/labs/entdecken");
 
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-history-page">
@@ -581,7 +560,7 @@ export default function LabsHistory() {
         data-testid="labs-history-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        Tastings
+        {isInsights ? "History" : "Entdecken"}
       </button>
       <h1
         className="labs-serif"

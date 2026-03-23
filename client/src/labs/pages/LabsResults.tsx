@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2 } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -693,12 +693,22 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: tasting, isLoading: loadingTasting, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
     queryFn: () => tastingApi.get(tastingId),
     enabled: !!tastingId,
     refetchInterval: 5000,
+  });
+
+  const archiveMut = useMutation({
+    mutationFn: () => tastingApi.updateStatus(tastingId, "archived", undefined, currentParticipant?.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      setShowArchiveDialog(false);
+    },
   });
 
   const { data: whiskies, isLoading: loadingWhiskies } = useQuery({
@@ -1060,6 +1070,16 @@ export default function LabsResults({ params }: LabsResultsProps) {
               Guided Tasting
             </span>
           )}
+          {tasting.status === "archived" && (
+            <span
+              className="labs-badge text-[11px] flex items-center gap-1"
+              style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+              data-testid="results-archived-badge"
+            >
+              <Lock className="w-3 h-3" />
+              Archived
+            </span>
+          )}
             </div>
           </div>
           {sorted.length > 0 && (
@@ -1072,6 +1092,17 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 >
                   <Monitor className="w-4 h-4" />
                   Present
+                </button>
+              )}
+              {currentParticipant?.id === tasting.hostId && tasting.status === "reveal" && (
+                <button
+                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={() => setShowArchiveDialog(true)}
+                  data-testid="button-archive-tasting"
+                >
+                  <Archive className="w-4 h-4" />
+                  Archive
                 </button>
               )}
               <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
@@ -1593,6 +1624,79 @@ export default function LabsResults({ params }: LabsResultsProps) {
           Tasting Details
         </button>
       </div>
+
+      {showArchiveDialog && createPortal(
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.5)", display: "flex",
+            alignItems: "center", justifyContent: "center", padding: 20,
+          }}
+          onClick={() => setShowArchiveDialog(false)}
+          data-testid="archive-dialog-overlay"
+        >
+          <div
+            className="labs-card"
+            style={{
+              maxWidth: 400, width: "100%", padding: 24,
+              background: "var(--labs-surface)", borderRadius: 16,
+            }}
+            onClick={e => e.stopPropagation()}
+            data-testid="archive-dialog"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: "var(--labs-accent-muted)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Archive style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
+              </div>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
+                Archive Tasting
+              </h3>
+            </div>
+            <p style={{ fontSize: 14, color: "var(--labs-text-muted)", lineHeight: 1.5, marginBottom: 8 }}>
+              This will finalize the tasting and make it <strong style={{ color: "var(--labs-text)" }}>immutable</strong>.
+            </p>
+            <ul style={{ fontSize: 13, color: "var(--labs-text-muted)", lineHeight: 1.7, paddingLeft: 20, marginBottom: 20 }}>
+              <li>Ratings, whiskies, and results can no longer be edited</li>
+              <li>The tasting will appear in the Historical Tastings archive</li>
+              <li>An admin can reopen it if needed</li>
+            </ul>
+            {archiveMut.isError && (
+              <p style={{ fontSize: 13, color: "var(--labs-danger)", marginBottom: 12 }}>
+                Failed to archive. Please try again.
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="labs-btn-ghost"
+                style={{ flex: 1 }}
+                onClick={() => setShowArchiveDialog(false)}
+                data-testid="archive-dialog-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                className="labs-btn-primary flex items-center justify-center gap-2"
+                style={{ flex: 1 }}
+                onClick={() => archiveMut.mutate()}
+                disabled={archiveMut.isPending}
+                data-testid="archive-dialog-confirm"
+              >
+                {archiveMut.isPending ? (
+                  <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                {archiveMut.isPending ? "Archiving..." : "Archive Now"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

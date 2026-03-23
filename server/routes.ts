@@ -415,6 +415,21 @@ async function findCollectionImageUrl(
   return null;
 }
 
+async function rejectIfArchived(tastingId: string, res: Response): Promise<boolean> {
+  const tasting = await storage.getTasting(tastingId);
+  if (tasting && tasting.status === "archived") {
+    res.status(403).json({ message: "This tasting is archived and cannot be modified.", code: "ARCHIVED_IMMUTABLE" });
+    return true;
+  }
+  return false;
+}
+
+async function rejectIfWhiskyArchived(whiskyId: string, res: Response): Promise<boolean> {
+  const whisky = await storage.getWhisky(whiskyId);
+  if (!whisky) return false;
+  return rejectIfArchived(whisky.tastingId, res);
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -1475,7 +1490,7 @@ export async function registerRoutes(
       open: ["closed", "draft", "deleted"],
       closed: ["reveal", "open", "deleted"],
       reveal: ["archived", "closed", "open", "deleted"],
-      archived: ["open", "deleted"],
+      archived: ["open"],
       deleted: [],
     };
     const allowed = allowedTransitions[tasting.status] || [];
@@ -1485,7 +1500,14 @@ export async function registerRoutes(
 
     const isRestart = status === "open" && ["closed", "reveal", "archived"].includes(tasting.status);
 
-    if (status === "deleted" || status === "archived" || isRestart) {
+    const isUnarchive = status === "open" && tasting.status === "archived";
+    if (isUnarchive) {
+      if (!hostId) return res.status(400).json({ message: "hostId required for this action" });
+      const requester = await storage.getParticipant(hostId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Only an admin can reopen an archived tasting" });
+      }
+    } else if (status === "deleted" || status === "archived" || isRestart) {
       if (!hostId) return res.status(400).json({ message: "hostId required for this action" });
       const requester = await storage.getParticipant(hostId);
       if (tasting.hostId !== hostId && (!requester || requester.role !== "admin")) {
@@ -1571,6 +1593,7 @@ export async function registerRoutes(
 
   app.patch("/api/tastings/:id/title", async (req, res) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const { title, hostId } = req.body;
       if (!hostId) return res.status(400).json({ message: "hostId required" });
       const trimmedTitle = (title || "").trim();
@@ -1590,6 +1613,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/tastings/:id/reflection", async (req, res) => {
+    if (await rejectIfArchived(req.params.id, res)) return;
     const { reflection } = req.body;
     const updated = await storage.updateTastingReflection(req.params.id, reflection);
     if (!updated) return res.status(404).json({ message: "Not found" });
@@ -1598,6 +1622,7 @@ export async function registerRoutes(
 
   app.patch("/api/tastings/:id/details", async (req, res) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const { hostId, ...details } = req.body;
@@ -1908,6 +1933,7 @@ export async function registerRoutes(
 
   app.post("/api/whiskies", async (req, res) => {
     try {
+      if (req.body.tastingId && await rejectIfArchived(req.body.tastingId, res)) return;
       const body = { ...req.body };
       if (body.abv !== undefined && body.abv !== null) body.abv = typeof body.abv === "string" ? (parseFloat(body.abv) || null) : body.abv;
       if (body.abv === "" || body.abv === 0) body.abv = null;
@@ -1942,6 +1968,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/whiskies/:id", async (req, res) => {
+    if (await rejectIfWhiskyArchived(req.params.id, res)) return;
     const body = { ...req.body };
     if (body.abv !== undefined) body.abv = (typeof body.abv === "string" ? parseFloat(body.abv) : body.abv) || null;
     if (body.abv === "" || body.abv === 0) body.abv = null;
@@ -1972,6 +1999,7 @@ export async function registerRoutes(
 
   app.post("/api/whiskies/:id/fetch-whiskybase-image", async (req, res) => {
     try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Whisky not found" });
       const wbId = req.body.whiskybaseId || whisky.whiskybaseId;
@@ -1993,6 +2021,7 @@ export async function registerRoutes(
   app.patch("/api/tastings/:id/reorder", async (req, res) => {
     try {
       const tastingId = req.params.id;
+      if (await rejectIfArchived(tastingId, res)) return;
       const tasting = await storage.getTasting(tastingId);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       
@@ -2012,6 +2041,7 @@ export async function registerRoutes(
 
   app.delete("/api/whiskies/:id", async (req, res) => {
     try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Not found" });
       if (whisky.imageUrl && whisky.imageUrl.startsWith("/uploads/")) {
@@ -2040,6 +2070,7 @@ export async function registerRoutes(
     });
   }, async (req: any, res: any) => {
     try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Not found" });
@@ -2075,6 +2106,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/whiskies/:id/image", async (req, res) => {
+    if (await rejectIfWhiskyArchived(req.params.id, res)) return;
     const whisky = await storage.getWhisky(req.params.id);
     if (!whisky) return res.status(404).json({ message: "Not found" });
     if (whisky.imageUrl) {
@@ -2619,6 +2651,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     { name: "images", maxCount: 50 },
   ]), async (req: any, res: any) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const files = req.files as Record<string, any[]>;
       const spreadsheetFile = files?.spreadsheet?.[0];
       if (!spreadsheetFile) return res.status(400).json({ message: "No spreadsheet file provided" });
@@ -2688,6 +2721,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     { name: "images", maxCount: 50 },
   ]), async (req: any, res: any) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const tastingId = req.params.id;
       const tasting = await storage.getTasting(tastingId);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
@@ -3982,6 +4016,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.patch("/api/tastings/:id/blind-mode", async (req, res) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const { hostId } = req.body;
@@ -4044,6 +4079,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.patch("/api/tastings/:id/guided-mode", async (req, res) => {
     try {
+      if (await rejectIfArchived(req.params.id, res)) return;
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const { hostId } = req.body;
@@ -4186,6 +4222,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
     try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
       const { participantId } = req.body;
       const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "ai_enrich");
       if (!openai) {
@@ -5106,6 +5143,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const { hostId, revealed } = req.body;
       if (!hostId) return res.status(401).json({ message: "Not authenticated" });
 
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Whisky not found" });
 
@@ -12823,7 +12861,16 @@ Important rules:
         }
       }
 
-      if (tasting.visibilityLevel === "public_aggregated" && !isAdmin && (!tasting.communityId || !communityIds.includes(tasting.communityId))) {
+      const isMember = isAdmin || communityIds.length > 0;
+      const isCommunityMember = isAdmin || (tasting.communityId && communityIds.includes(tasting.communityId));
+
+      if (tasting.visibilityLevel === "public_aggregated") {
+        if (!isCommunityMember) {
+          return res.status(403).json({
+            message: "Historical tasting details are available to members only. Aggregated insights are available on the public insights page.",
+            code: "MEMBER_ACCESS_REQUIRED",
+          });
+        }
         const { entries, ...meta } = tasting;
         return res.json({
           ...meta,
@@ -12835,6 +12882,13 @@ Important rules:
             normalizedIsSmoky: e.normalizedIsSmoky,
           })),
           accessLevel: "aggregated",
+        });
+      }
+
+      if (tasting.visibilityLevel === "public_full" && !isMember) {
+        return res.status(403).json({
+          message: "Historical tasting details are available to members only. Aggregated insights are available on the public insights page.",
+          code: "MEMBER_ACCESS_REQUIRED",
         });
       }
 
@@ -12928,13 +12982,118 @@ Important rules:
     }
   });
 
+  const publicAnalyticsRateLimit = new Map<string, { count: number; resetAt: number }>();
+  const PUBLIC_ANALYTICS_RATE_LIMIT = 30;
+  const PUBLIC_ANALYTICS_RATE_WINDOW_MS = 60 * 1000;
+  let publicAnalyticsLastCleanup = Date.now();
+
   app.get("/api/historical/analytics", async (req: Request, res: Response) => {
     try {
       const { isAdmin, communityIds } = await getRequesterInfo(req);
-      const accessible = await storage.getAccessibleHistoricalTastingIds(communityIds, isAdmin);
-      const tastingIds = accessible === "all" ? undefined : accessible;
-      const stats = await storage.getHistoricalWhiskyStats(tastingIds);
-      res.json(stats);
+      const isMember = isAdmin || communityIds.length > 0;
+      if (isMember) {
+        const accessible = await storage.getAccessibleHistoricalTastingIds(communityIds, isAdmin);
+        const tastingIds = accessible === "all" ? undefined : accessible;
+        const stats = await storage.getHistoricalWhiskyStats(tastingIds);
+        res.json(stats);
+      } else {
+        const rawIp = req.ip || "unknown";
+        const clientIp = typeof rawIp === "string" ? rawIp.split(",")[0].trim() : "unknown";
+        const now = Date.now();
+        const rlEntry = publicAnalyticsRateLimit.get(clientIp);
+        if (rlEntry && now <= rlEntry.resetAt && rlEntry.count >= PUBLIC_ANALYTICS_RATE_LIMIT) {
+          const retryAfter = Math.ceil((rlEntry.resetAt - now) / 1000);
+          res.set("Retry-After", String(retryAfter));
+          return res.status(429).json({ message: "Too many requests" });
+        }
+        if (!rlEntry || now > rlEntry.resetAt) {
+          publicAnalyticsRateLimit.set(clientIp, { count: 1, resetAt: now + PUBLIC_ANALYTICS_RATE_WINDOW_MS });
+        } else {
+          rlEntry.count++;
+        }
+        if (now - publicAnalyticsLastCleanup > PUBLIC_ANALYTICS_RATE_WINDOW_MS * 2 || publicAnalyticsRateLimit.size > 10000) {
+          for (const [k, v] of publicAnalyticsRateLimit) {
+            if (now > v.resetAt) publicAnalyticsRateLimit.delete(k);
+          }
+          publicAnalyticsLastCleanup = now;
+        }
+
+        const { db: dbInst } = await import("./db");
+        const { historicalTastings: htTable, historicalTastingEntries: hteTable } = await import("@shared/schema");
+        const { inArray } = await import("drizzle-orm");
+        const publicTastings = await dbInst.select({ id: htTable.id }).from(htTable)
+          .where(inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]));
+        const publicIds = publicTastings.map(t => t.id);
+        interface PublicEntry {
+          normalizedRegion: string | null;
+          normalizedIsSmoky: boolean | null;
+          normalizedTotal: number | null;
+          totalScore: number | null;
+          distilleryRaw: string | null;
+          whiskyNameRaw: string | null;
+        }
+        let allEntries: PublicEntry[] = [];
+        if (publicIds.length > 0) {
+          allEntries = await dbInst.select({
+            normalizedRegion: hteTable.normalizedRegion,
+            normalizedIsSmoky: hteTable.normalizedIsSmoky,
+            normalizedTotal: hteTable.normalizedTotal,
+            totalScore: hteTable.totalScore,
+            distilleryRaw: hteTable.distilleryRaw,
+            whiskyNameRaw: hteTable.whiskyNameRaw,
+          }).from(hteTable).where(inArray(hteTable.historicalTastingId, publicIds));
+        }
+        const regionBreakdown: Record<string, number> = {};
+        let smoky = 0, nonSmoky = 0, unknownSmoky = 0;
+        const scoreRanges = [
+          { range: "< 60", min: 0, max: 60, count: 0 },
+          { range: "60-69", min: 60, max: 70, count: 0 },
+          { range: "70-79", min: 70, max: 80, count: 0 },
+          { range: "80-89", min: 80, max: 90, count: 0 },
+          { range: "90+", min: 90, max: 200, count: 0 },
+        ];
+        const whiskyScores: Record<string, { total: number; count: number; distillery: string | null; name: string | null }> = {};
+        for (const e of allEntries) {
+          if (e.normalizedRegion) regionBreakdown[e.normalizedRegion] = (regionBreakdown[e.normalizedRegion] || 0) + 1;
+          if (e.normalizedIsSmoky === true) smoky++;
+          else if (e.normalizedIsSmoky === false) nonSmoky++;
+          else unknownSmoky++;
+          const score = e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null);
+          if (score != null) {
+            for (const r of scoreRanges) {
+              if (score >= r.min && score < r.max) { r.count++; break; }
+            }
+            const key = `${(e.distilleryRaw || "").toLowerCase().trim()}|${(e.whiskyNameRaw || "").toLowerCase().trim()}`;
+            if (!whiskyScores[key]) {
+              whiskyScores[key] = { total: 0, count: 0, distillery: e.distilleryRaw, name: e.whiskyNameRaw };
+            }
+            whiskyScores[key].total += score;
+            whiskyScores[key].count++;
+          }
+        }
+        const topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }> = Object.values(whiskyScores)
+          .filter(w => w.count >= 1)
+          .map(w => ({
+            distillery: w.distillery,
+            name: w.name,
+            totalScore: null,
+            normalizedTotal: Math.round((w.total / w.count) * 10) / 10,
+            tastingNumber: 0,
+          }))
+          .sort((a, b) => (b.normalizedTotal ?? 0) - (a.normalizedTotal ?? 0))
+          .slice(0, 20);
+
+        res.json({
+          totalTastings: publicTastings.length,
+          totalEntries: allEntries.length,
+          topWhiskies,
+          regionBreakdown,
+          smokyBreakdown: { smoky, nonSmoky, unknown: unknownSmoky },
+          caskBreakdown: {},
+          scoreDistribution: scoreRanges.map(r => ({ range: r.range, count: r.count })),
+          publicView: true,
+        });
+      }
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

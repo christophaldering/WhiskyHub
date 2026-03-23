@@ -232,7 +232,7 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: (k: 
 
 export default function LabsHistoricalDetail() {
   const { t, i18n } = useTranslation();
-  const goBackToHistory = useBackNavigation("/labs/host/history");
+  const goBackToHistory = useBackNavigation("/labs/history");
   const lang = i18n.language;
   const params = useParams<{ id: string }>();
   const tastingId = params.id;

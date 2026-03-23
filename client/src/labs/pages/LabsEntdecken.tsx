@@ -9,7 +9,7 @@ import {
   Search, ChevronRight, Wine, Lock, Calendar,
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, Sparkles, BarChart3,
-  Info, Heart, Flame, Globe, History,
+  Info, Heart, Flame, Globe, History, Archive,
 } from "lucide-react";
 
 type DiscoveryTab = "whiskys" | "tastings" | "insights";
@@ -40,7 +40,8 @@ export default function LabsEntdecken() {
 
   const deepDiveItems = [
     { icon: BookMarked, key: "rabbitHole", path: "/labs/discover/rabbit-hole" },
-    { icon: BarChart3, key: "insights", path: "/labs/host/history/insights" },
+    { icon: Archive, key: "historicalTastings", path: "/labs/history" },
+    { icon: BarChart3, key: "insights", path: "/labs/history/insights" },
   ];
 
   const moreItems = [
@@ -393,13 +394,6 @@ export default function LabsEntdecken() {
               <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
                 <div style={{ width: 28, height: 28, border: "2px solid var(--labs-border)", borderTopColor: "var(--labs-accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               </div>
-            ) : !isMember ? (
-              <div style={{ textAlign: "center", padding: 32 }}>
-                <Lock className="w-9 h-9" style={{ color: "var(--labs-text-muted)", opacity: 0.3, margin: "0 auto 8px" }} />
-                <div style={{ fontSize: 16, color: "var(--labs-text-muted)", marginBottom: 8 }}>
-                  {t("discover.insightsLocked", "Join a tasting to unlock insights")}
-                </div>
-              </div>
             ) : (
               <>
                 <p style={{ fontSize: 13, fontStyle: "italic", color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
@@ -534,6 +528,24 @@ export default function LabsEntdecken() {
                     </div>
                   </div>
                 </div>
+                <Link href="/labs/history" style={{ textDecoration: "none" }}>
+                  <div
+                    className="labs-card-interactive"
+                    style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}
+                    data-testid="link-entdecken-history-full"
+                  >
+                    <Archive className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                        {t("discover.viewHistoricalTastings", "Browse Historical Tastings")}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                        {t("discover.viewHistoricalTastingsSub", "Full archive & cross-tasting insights")}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                  </div>
+                </Link>
               </>
             )}
           </div>
