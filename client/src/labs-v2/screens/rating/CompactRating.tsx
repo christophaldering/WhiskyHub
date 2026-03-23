@@ -24,6 +24,7 @@ interface CompactRatingProps {
   total: number;
   tastingStatus: string;
   participantId: string;
+  existingRating?: RatingData | null;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
@@ -46,14 +47,21 @@ function getBandColor(score: number): string {
 }
 
 export default function CompactRating({
-  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, onDone,
+  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, existingRating, onDone,
 }: CompactRatingProps) {
-  const [scores, setScores] = useState<PhaseScores>({ nose: 75, palate: 75, finish: 75, overall: 75 });
-  const [tags, setTags] = useState<PhaseTags>({ nose: [], palate: [], finish: [], overall: [] });
-  const [notes, setNotes] = useState<PhaseNotes>({ nose: "", palate: "", finish: "", overall: "" });
+  const [scores, setScores] = useState<PhaseScores>(
+    existingRating ? { ...existingRating.scores } : { nose: 75, palate: 75, finish: 75, overall: 75 }
+  );
+  const [tags, setTags] = useState<PhaseTags>(
+    existingRating ? { nose: [...existingRating.tags.nose], palate: [...existingRating.tags.palate], finish: [...existingRating.tags.finish], overall: [...existingRating.tags.overall] } : { nose: [], palate: [], finish: [], overall: [] }
+  );
+  const [notes, setNotes] = useState<PhaseNotes>(
+    existingRating ? { ...existingRating.notes } : { nose: "", palate: "", finish: "", overall: "" }
+  );
   const [openPhase, setOpenPhase] = useState<PhaseId | null>("nose");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const overallAvg = Math.round((scores.nose + scores.palate + scores.finish + scores.overall) / 4);
@@ -87,10 +95,11 @@ export default function CompactRating({
   }, [tastingId, whisky.id, participantId, scores, notes, tastingStatus, t.ratingError]);
 
   useEffect(() => {
+    if (!isDirty) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => { doSave(); }, 2000);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [scores, notes, doSave]);
+  }, [scores, notes, doSave, isDirty]);
 
   const handleSubmit = useCallback(async () => {
     setSaving(true);
@@ -199,7 +208,7 @@ export default function CompactRating({
 
             {isOpen && (
               <div style={{ borderTop: `1px solid ${th.border}`, padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
-                <ScoreInput value={scores[pid]} onChange={(v) => setScores((p) => ({ ...p, [pid]: v }))} phaseId={pid} th={th} t={t} />
+                <ScoreInput value={scores[pid]} onChange={(v) => { setScores((p) => ({ ...p, [pid]: v })); setIsDirty(true); }} phaseId={pid} th={th} t={t} />
                 {pid !== "overall" && (
                   <FlavorTags
                     phaseId={pid}
@@ -214,6 +223,7 @@ export default function CompactRating({
                         const next = curr.includes(tag) ? curr.filter((t) => t !== tag) : [...curr, tag];
                         return { ...prev, [pid]: next };
                       });
+                      setIsDirty(true);
                     }}
                     th={th}
                     t={t}

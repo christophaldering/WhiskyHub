@@ -16,6 +16,7 @@ interface RatingFlowProps {
   total: number;
   tastingStatus: string;
   participantId: string;
+  existingRating?: RatingData | null;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
@@ -23,7 +24,7 @@ interface RatingFlowProps {
 type Step = "mode" | "rating" | "summary";
 
 export function RatingFlow({
-  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, onDone, onBack,
+  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, existingRating, onDone, onBack,
 }: RatingFlowProps) {
   const [mode, setMode] = useState<"guided" | "compact" | null>(null);
   const [step, setStep] = useState<Step>("mode");
@@ -72,6 +73,7 @@ export function RatingFlow({
         total={total}
         tastingStatus={tastingStatus}
         participantId={participantId}
+        existingRating={existingRating}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
       />
@@ -89,6 +91,7 @@ export function RatingFlow({
         total={total}
         tastingStatus={tastingStatus}
         participantId={participantId}
+        existingRating={existingRating}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
       />

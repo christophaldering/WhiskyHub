@@ -25,6 +25,7 @@ interface GuidedRatingProps {
   total: number;
   tastingStatus: string;
   participantId: string;
+  existingRating?: RatingData | null;
   onDone: (data: RatingData) => void;
   onBack: () => void;
 }
@@ -62,15 +63,22 @@ function phaseHintKey(id: PhaseId): keyof Translations {
 }
 
 export default function GuidedRating({
-  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, onDone, onBack,
+  th, t, whisky, tastingId, dramIdx, total, tastingStatus, participantId, existingRating, onDone, onBack,
 }: GuidedRatingProps) {
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [scores, setScores] = useState<PhaseScores>({ nose: 75, palate: 75, finish: 75, overall: 75 });
-  const [tags, setTags] = useState<PhaseTags>({ nose: [], palate: [], finish: [], overall: [] });
-  const [notes, setNotes] = useState<PhaseNotes>({ nose: "", palate: "", finish: "", overall: "" });
+  const [scores, setScores] = useState<PhaseScores>(
+    existingRating ? { ...existingRating.scores } : { nose: 75, palate: 75, finish: 75, overall: 75 }
+  );
+  const [tags, setTags] = useState<PhaseTags>(
+    existingRating ? { nose: [...existingRating.tags.nose], palate: [...existingRating.tags.palate], finish: [...existingRating.tags.finish], overall: [...existingRating.tags.overall] } : { nose: [], palate: [], finish: [], overall: [] }
+  );
+  const [notes, setNotes] = useState<PhaseNotes>(
+    existingRating ? { ...existingRating.notes } : { nose: "", palate: "", finish: "", overall: "" }
+  );
   const [showFlash, setShowFlash] = useState(false);
   const [visibleContent, setVisibleContent] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -106,10 +114,11 @@ export default function GuidedRating({
   }, [tastingId, whisky.id, participantId, scores, notes, tastingStatus, t.ratingError]);
 
   useEffect(() => {
+    if (!isDirty) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => { doSave(); }, 2000);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [scores, notes, doSave]);
+  }, [scores, notes, doSave, isDirty]);
 
   useEffect(() => {
     setSaveError(null);
@@ -150,6 +159,7 @@ export default function GuidedRating({
 
   const handleScoreChange = useCallback((v: number) => {
     setScores((prev) => ({ ...prev, [currentPhase]: v }));
+    setIsDirty(true);
   }, [currentPhase]);
 
   const handleTagToggle = useCallback((tag: string) => {
@@ -158,10 +168,12 @@ export default function GuidedRating({
       const next = curr.includes(tag) ? curr.filter((t) => t !== tag) : [...curr, tag];
       return { ...prev, [currentPhase]: next };
     });
+    setIsDirty(true);
   }, [currentPhase]);
 
   const handleNoteChange = useCallback((val: string) => {
     setNotes((prev) => ({ ...prev, [currentPhase]: val }));
+    setIsDirty(true);
   }, [currentPhase]);
 
   const nextPhaseLabel = phaseIndex < 3 ? String(t[phaseLabelKey(PHASES[phaseIndex + 1])]) : "";

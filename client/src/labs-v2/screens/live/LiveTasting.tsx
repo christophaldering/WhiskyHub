@@ -72,6 +72,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
   const [revealedMap, setRevealedMap] = useState<Record<string, Set<string>>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: "idle" });
   const [showRating, setShowRating] = useState(false);
+  const [editRatingMode, setEditRatingMode] = useState<"edit" | "retaste" | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const participantId = useRef<string>("");
@@ -200,6 +202,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
         setTimeout(() => {
           setCurrentDramIdx(newIdx);
           setShowRating(false);
+          setEditRatingMode(null);
+          setShowEditDialog(false);
           setBreathing(false);
         }, 350);
       }
@@ -249,6 +253,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
 
     setMyRatings((prev) => ({ ...prev, [w.id]: data }));
     setShowRating(false);
+    setEditRatingMode(null);
+    setShowEditDialog(false);
   }, [whiskies, currentDramIdx, saveRating]);
 
   useEffect(() => {
@@ -483,6 +489,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
   }
 
   if (showRating && currentWhisky) {
+    const existingForWhisky = myRatings[currentWhisky.id] || null;
+    const ratingToPass = editRatingMode === "edit" ? existingForWhisky : null;
     return (
       <RatingFlow
         th={th}
@@ -500,8 +508,9 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
         total={dramCount}
         tastingStatus={status}
         participantId={participantId.current}
+        existingRating={ratingToPass}
         onDone={handleRatingDone}
-        onBack={() => setShowRating(false)}
+        onBack={() => { setShowRating(false); setEditRatingMode(null); setShowEditDialog(false); }}
       />
     );
   }
@@ -596,6 +605,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
                     setTimeout(() => {
                       setCurrentDramIdx(idx);
                       setShowRating(false);
+                      setEditRatingMode(null);
+                      setShowEditDialog(false);
                       setBreathing(false);
                     }, 350);
                   }
@@ -680,7 +691,7 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
                 {t.ratingDone}
               </span>
               <button
-                onClick={() => setShowRating(true)}
+                onClick={() => setShowEditDialog(true)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -747,6 +758,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
                     setTimeout(() => {
                       setCurrentDramIdx((i) => i - 1);
                       setShowRating(false);
+                      setEditRatingMode(null);
+                      setShowEditDialog(false);
                       setBreathing(false);
                     }, 350);
                   }}
@@ -774,6 +787,8 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
                     setTimeout(() => {
                       setCurrentDramIdx((i) => i + 1);
                       setShowRating(false);
+                      setEditRatingMode(null);
+                      setShowEditDialog(false);
                       setBreathing(false);
                     }, 350);
                   }}
@@ -796,6 +811,97 @@ export default function LiveTasting({ tastingId, onBack }: LiveTastingProps) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {showEditDialog && (
+        <div
+          data-testid="edit-retaste-dialog-overlay"
+          onClick={() => setShowEditDialog(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: SP.lg,
+          }}
+        >
+          <div
+            data-testid="edit-retaste-dialog"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: th.bgCard,
+              borderRadius: RADIUS.lg,
+              padding: SP.xl,
+              width: "100%",
+              maxWidth: 340,
+              display: "flex",
+              flexDirection: "column",
+              gap: SP.md,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: FONT.display,
+                fontSize: 18,
+                fontWeight: 600,
+                color: th.text,
+                margin: 0,
+                textAlign: "center",
+              }}
+            >
+              {t.ratingEditOrRetasteTitle}
+            </h3>
+            <button
+              data-testid="edit-retaste-edit-btn"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditRatingMode("edit");
+                setShowRating(true);
+              }}
+              style={{
+                width: "100%",
+                padding: `${SP.md}px`,
+                background: `linear-gradient(135deg, ${th.gold}, ${th.amber})`,
+                color: "#0e0b05",
+                border: "none",
+                borderRadius: RADIUS.full,
+                fontSize: 15,
+                fontWeight: 600,
+                fontFamily: FONT.body,
+                cursor: "pointer",
+                minHeight: TOUCH_MIN,
+              }}
+            >
+              {t.ratingEditExisting}
+            </button>
+            <button
+              data-testid="edit-retaste-retaste-btn"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditRatingMode("retaste");
+                setShowRating(true);
+              }}
+              style={{
+                width: "100%",
+                padding: `${SP.md}px`,
+                background: th.bgHover,
+                color: th.text,
+                border: `1px solid ${th.border}`,
+                borderRadius: RADIUS.full,
+                fontSize: 15,
+                fontWeight: 600,
+                fontFamily: FONT.body,
+                cursor: "pointer",
+                minHeight: TOUCH_MIN,
+              }}
+            >
+              {t.ratingRetaste}
+            </button>
+          </div>
         </div>
       )}
     </div>

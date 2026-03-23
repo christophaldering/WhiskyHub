@@ -77,6 +77,9 @@ export interface Translations {
   ratingDone: string;
   ratingNext: string;
   ratingEdit: string;
+  ratingEditExisting: string;
+  ratingRetaste: string;
+  ratingEditOrRetasteTitle: string;
   ratingFinish2: string;
   ratingOf: string;
   ratingDram: string;
@@ -545,6 +548,9 @@ const de: Translations = {
   ratingDone: "Gespeichert",
   ratingNext: "Weiter zu Dram",
   ratingEdit: "Bewertung anpassen",
+  ratingEditExisting: "Bewertung bearbeiten",
+  ratingRetaste: "Nochmal verkosten",
+  ratingEditOrRetasteTitle: "Dram bereits bewertet",
   ratingFinish2: "Bewertung abschlie\u00dfen \u2192",
   ratingOf: "von",
   ratingDram: "Dram",
@@ -1013,6 +1019,9 @@ const en: Translations = {
   ratingDone: "Saved",
   ratingNext: "Continue to Dram",
   ratingEdit: "Adjust rating",
+  ratingEditExisting: "Edit rating",
+  ratingRetaste: "Taste again",
+  ratingEditOrRetasteTitle: "Dram already rated",
   ratingFinish2: "Complete rating \u2192",
   ratingOf: "of",
   ratingDram: "Dram",
