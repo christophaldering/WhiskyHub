@@ -13,7 +13,7 @@ import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
   ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
-  Loader2, Eye, EyeOff, Camera, ExternalLink,
+  Loader2, Eye, EyeOff, Camera, ExternalLink, Bell,
 } from "lucide-react";
 
 const REGIONS = ["Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown", "Islands", "Ireland", "Japan", "USA", "Taiwan", "Other"];
@@ -49,7 +49,10 @@ export default function LabsTasteSettings() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
-  const [friendNotificationsEnabled, setFriendNotificationsEnabled] = useState(true);
+  const [onlineToastLevel, setOnlineToastLevel] = useState("all");
+  const [cheersEnabled, setCheersEnabled] = useState(true);
+  const [tastingInviteEnabled, setTastingInviteEnabled] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
   const activeScale = useRatingScale();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -80,13 +83,29 @@ export default function LabsTasteSettings() {
       setBio(profile.bio || ""); setFavoriteWhisky(profile.favoriteWhisky || ""); setGoToDram(profile.goToDram || "");
       setPreferredRegions(profile.preferredRegions || []); setPreferredPeatLevel(profile.preferredPeatLevel || "");
       setPreferredCaskInfluence(profile.preferredCaskInfluence || ""); setOpenaiApiKey(profile.openaiApiKey || "");
-      setFriendNotificationsEnabled(profile.friendNotificationsEnabled !== false);
+      setOnlineToastLevel(profile.onlineToastLevel || "all");
+      setCheersEnabled(profile.cheersEnabled !== false);
+      setTastingInviteEnabled(profile.tastingInviteEnabled !== false);
     }
   }, [profile]);
 
   useEffect(() => {
     if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); setPreferredRatingScale(participant.preferredRatingScale ?? null); }
   }, [participant]);
+
+  const saveNotificationPref = useCallback(async (prefs: { onlineToastLevel?: string; cheersEnabled?: boolean; tastingInviteEnabled?: boolean }) => {
+    if (!currentParticipant) return;
+    setNotifSaving(true);
+    try {
+      await profileApi.update(currentParticipant.id, prefs);
+      queryClient.invalidateQueries({ queryKey: ["profile", pid] });
+      window.dispatchEvent(new CustomEvent("casksense:notification-prefs-changed", { detail: prefs }));
+    } catch {
+      toast({ title: "Failed to save notification preference", variant: "destructive" });
+    } finally {
+      setNotifSaving(false);
+    }
+  }, [currentParticipant, pid, queryClient, toast]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -103,7 +122,7 @@ export default function LabsTasteSettings() {
           window.dispatchEvent(new CustomEvent("casksense:photo-updated", { detail: { photoUrl: photoResult.photoUrl } }));
         }
       }
-      await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, openaiApiKey: openaiApiKey.trim() || null, friendNotificationsEnabled });
+      await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, openaiApiKey: openaiApiKey.trim() || null });
       const participantUpdates: any = {};
       if (displayName.trim() && displayName !== participant?.name) participantUpdates.name = displayName.trim();
       if (email !== (participant?.email || "")) participantUpdates.email = email;
@@ -321,13 +340,44 @@ export default function LabsTasteSettings() {
 
           {appSettings?.friend_online_notifications !== "false" && (
             <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input type="checkbox" checked={friendNotificationsEnabled} onChange={(e) => setFriendNotificationsEnabled(e.target.checked)} style={{ marginTop: 2, accentColor: "var(--labs-accent)" }} data-testid="checkbox-labs-friend-notifications" />
+              <div className="flex items-center gap-2 mb-3">
+                <Bell className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Notifications</label>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {notifSaving && <div className="text-xs" style={{ color: "var(--labs-accent)" }}>Saving...</div>}
                 <div>
-                  <div className="text-sm" style={{ color: "var(--labs-text)" }}>Friend Online Notifications</div>
-                  <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Get notified when friends come online</div>
+                  <div className="text-sm mb-1.5" style={{ color: "var(--labs-text)" }}>Online Toasts</div>
+                  <div className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>Show a toast when friends come online</div>
+                  <div className="flex gap-2" data-testid="select-online-toast-level">
+                    {([["all", "All Friends"], ["close_friends", "Close Friends"], ["off", "Off"]] as const).map(([value, label]) => {
+                      const active = onlineToastLevel === value;
+                      return (
+                        <button key={value} onClick={() => { setOnlineToastLevel(value); saveNotificationPref({ onlineToastLevel: value }); }}
+                          style={{ flex: 1, padding: "8px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 12, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}
+                          data-testid={`button-online-toast-${value}`}>{label}</button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={cheersEnabled} onChange={(e) => { const v = e.target.checked; setCheersEnabled(v); saveNotificationPref({ cheersEnabled: v }); }} style={{ marginTop: 2, accentColor: "var(--labs-accent)" }} data-testid="checkbox-labs-cheers-notifications" />
+                  <div>
+                    <div className="text-sm" style={{ color: "var(--labs-text)" }}>Cheers Notifications</div>
+                    <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Get notified when someone cheers you</div>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={tastingInviteEnabled} onChange={(e) => { const v = e.target.checked; setTastingInviteEnabled(v); saveNotificationPref({ tastingInviteEnabled: v }); }} style={{ marginTop: 2, accentColor: "var(--labs-accent)" }} data-testid="checkbox-labs-tasting-invite-notifications" />
+                  <div>
+                    <div className="text-sm" style={{ color: "var(--labs-text)" }}>Tasting Invitations</div>
+                    <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Get notified about tasting invitations</div>
+                  </div>
+                </label>
+              </div>
             </div>
           )}
         </div>

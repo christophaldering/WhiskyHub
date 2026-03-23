@@ -171,6 +171,9 @@ export const profiles = pgTable("profiles", {
   photoUrl: text("photo_url"),
   openaiApiKey: text("openai_api_key"),
   friendNotificationsEnabled: boolean("friend_notifications_enabled").default(true),
+  onlineToastLevel: text("online_toast_level").default("all"),
+  cheersEnabled: boolean("cheers_enabled").default(true),
+  tastingInviteEnabled: boolean("tasting_invite_enabled").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

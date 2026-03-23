@@ -258,6 +258,7 @@ function useFriendOnlineNotifications(): number {
   const { currentParticipant } = useAppStore();
   const prevOnlineRef = useRef<Map<string, string> | null>(null);
   const mountedRef = useRef(false);
+  const toastLevelRef = useRef<string>("all");
   const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
@@ -269,6 +270,20 @@ function useFriendOnlineNotifications(): number {
       return;
     }
     let cancelled = false;
+
+    profileApi.get(pid).then((profile) => {
+      if (!cancelled && profile) {
+        toastLevelRef.current = profile.onlineToastLevel || "all";
+      }
+    }).catch(() => {});
+
+    const onPrefsChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.onlineToastLevel !== undefined) {
+        toastLevelRef.current = detail.onlineToastLevel;
+      }
+    };
+    window.addEventListener("casksense:notification-prefs-changed", onPrefsChange);
 
     const check = async () => {
       try {
@@ -288,7 +303,9 @@ function useFriendOnlineNotifications(): number {
         }
         setOnlineCount(currentOnline.size);
 
-        if (mountedRef.current && prevOnlineRef.current) {
+        const level = toastLevelRef.current;
+        // "close_friends" currently behaves like "all" — close-friends marking is a future feature
+        if (level !== "off" && mountedRef.current && prevOnlineRef.current) {
           const prev = prevOnlineRef.current;
           const newlyOnline: string[] = [];
           for (const [uid, name] of currentOnline) {
@@ -316,7 +333,7 @@ function useFriendOnlineNotifications(): number {
 
     check();
     const interval = setInterval(check, 60000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => { cancelled = true; clearInterval(interval); window.removeEventListener("casksense:notification-prefs-changed", onPrefsChange); };
   }, [currentParticipant?.id]);
 
   return onlineCount;
@@ -325,11 +342,30 @@ function useFriendOnlineNotifications(): number {
 function useIncomingNotificationPolling() {
   const { currentParticipant } = useAppStore();
   const lastSeenIdRef = useRef<string | null>(null);
+  const prefsRef = useRef<{ cheersEnabled: boolean; tastingInviteEnabled: boolean }>({ cheersEnabled: true, tastingInviteEnabled: true });
 
   useEffect(() => {
     const pid = currentParticipant?.id;
     if (!pid) return;
     let cancelled = false;
+
+    profileApi.get(pid).then((profile) => {
+      if (!cancelled && profile) {
+        prefsRef.current = {
+          cheersEnabled: profile.cheersEnabled !== false,
+          tastingInviteEnabled: profile.tastingInviteEnabled !== false,
+        };
+      }
+    }).catch(() => {});
+
+    const onPrefsChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        if (detail.cheersEnabled !== undefined) prefsRef.current.cheersEnabled = detail.cheersEnabled;
+        if (detail.tastingInviteEnabled !== undefined) prefsRef.current.tastingInviteEnabled = detail.tastingInviteEnabled;
+      }
+    };
+    window.addEventListener("casksense:notification-prefs-changed", onPrefsChange);
 
     const poll = async () => {
       try {
@@ -340,9 +376,15 @@ function useIncomingNotificationPolling() {
         const notifications = await res.json();
         if (!Array.isArray(notifications) || notifications.length === 0) return;
 
+        const prefs = prefsRef.current;
+        const allowedTypes: string[] = [];
+        if (prefs.cheersEnabled) allowedTypes.push("cheers");
+        if (prefs.tastingInviteEnabled) allowedTypes.push("tasting_invite");
+        if (allowedTypes.length === 0) return;
+
         const unread = notifications.filter(
           (n: { isRead?: boolean; type?: string }) =>
-            !n.isRead && (n.type === "cheers" || n.type === "tasting_invite")
+            !n.isRead && n.type && allowedTypes.includes(n.type)
         );
         if (unread.length === 0) return;
 
@@ -369,6 +411,7 @@ function useIncomingNotificationPolling() {
       cancelled = true;
       clearTimeout(timeout);
       clearInterval(interval);
+      window.removeEventListener("casksense:notification-prefs-changed", onPrefsChange);
     };
   }, [currentParticipant?.id]);
 }

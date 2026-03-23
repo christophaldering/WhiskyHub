@@ -3451,12 +3451,12 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const existing = await storage.getProfile(req.params.participantId);
       const data: any = {
         participantId: req.params.participantId,
-        bio: req.body.bio || null,
-        favoriteWhisky: req.body.favoriteWhisky || null,
-        goToDram: req.body.goToDram || null,
-        preferredRegions: req.body.preferredRegions || null,
-        preferredPeatLevel: req.body.preferredPeatLevel || null,
-        preferredCaskInfluence: req.body.preferredCaskInfluence || null,
+        bio: "bio" in req.body ? (req.body.bio || null) : (existing?.bio ?? null),
+        favoriteWhisky: "favoriteWhisky" in req.body ? (req.body.favoriteWhisky || null) : (existing?.favoriteWhisky ?? null),
+        goToDram: "goToDram" in req.body ? (req.body.goToDram || null) : (existing?.goToDram ?? null),
+        preferredRegions: "preferredRegions" in req.body ? (req.body.preferredRegions || null) : (existing?.preferredRegions ?? null),
+        preferredPeatLevel: "preferredPeatLevel" in req.body ? (req.body.preferredPeatLevel || null) : (existing?.preferredPeatLevel ?? null),
+        preferredCaskInfluence: "preferredCaskInfluence" in req.body ? (req.body.preferredCaskInfluence || null) : (existing?.preferredCaskInfluence ?? null),
       };
       if ("openaiApiKey" in req.body) {
         data.openaiApiKey = req.body.openaiApiKey || null;
@@ -3472,6 +3472,22 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         data.friendNotificationsEnabled = req.body.friendNotificationsEnabled;
       } else if (existing) {
         data.friendNotificationsEnabled = existing.friendNotificationsEnabled;
+      }
+      if ("onlineToastLevel" in req.body) {
+        const level = req.body.onlineToastLevel;
+        data.onlineToastLevel = ["all", "close_friends", "off"].includes(level) ? level : "all";
+      } else if (existing) {
+        data.onlineToastLevel = existing.onlineToastLevel;
+      }
+      if ("cheersEnabled" in req.body) {
+        data.cheersEnabled = !!req.body.cheersEnabled;
+      } else if (existing) {
+        data.cheersEnabled = existing.cheersEnabled;
+      }
+      if ("tastingInviteEnabled" in req.body) {
+        data.tastingInviteEnabled = !!req.body.tastingInviteEnabled;
+      } else if (existing) {
+        data.tastingInviteEnabled = existing.tastingInviteEnabled;
       }
       const profile = await storage.upsertProfile(data);
       res.json(profile);
