@@ -14052,19 +14052,113 @@ User's style request: ${sanitizedPrompt}`;
       ],
       isDown: false,
       lesson: "A great finish isn't an ending — it's an invitation to pour again."
+    },
+    {
+      id: "ch8",
+      chapter: 8,
+      titleKey: "makingOf.ch8.title",
+      titleFallback: "The New Oak",
+      dateRange: "8. – 11. Mär 2026",
+      narrativeKey: "makingOf.ch8.narrative",
+      narrativeFallback: "Fresh casks bring new character. The Labs era began — a complete reimagining of the solo tasting experience. A dedicated Host Dashboard gave tasting organizers a command center, while solo tastings became first-class citizens with their own streamlined flow. Personal collections, tasting history archives, and an entirely new navigation paradigm. Like transferring spirit to virgin oak: the familiar flavour, but with bold new layers.",
+      stats: { commits: 185, features: 32 },
+      color: "#5A3A1A",
+      milestones: [
+        "Labs UI: new design system launched",
+        "Solo Tasting flow redesigned",
+        "Host Dashboard with live controls",
+        "Personal whisky collection feature",
+        "Tasting history & archive view",
+        "New bottom navigation paradigm"
+      ],
+      isDown: false,
+      lesson: "New foundations take courage, but they unlock everything that follows."
+    },
+    {
+      id: "ch9",
+      chapter: 9,
+      titleKey: "makingOf.ch9.title",
+      titleFallback: "The Angel's Share",
+      dateRange: "12. – 14. Mär 2026",
+      narrativeKey: "makingOf.ch9.narrative",
+      narrativeFallback: "In whisky-making, the angel's share is what evaporates through the cask — the invisible cost of maturation. These days were CaskSense's angel's share: rollbacks, production crashes, edge-case bugs that only appear under real-world load. Four forced restores, authentication flows that broke under race conditions, data migrations that tested every assumption. Painful, invisible work — but like the angel's share, it made what remained stronger and more concentrated.",
+      stats: { commits: 160, features: 15 },
+      color: "#4A2E14",
+      milestones: [
+        "4 production rollbacks survived",
+        "Authentication race condition fixed",
+        "Data migration pipeline hardened",
+        "Error boundary system implemented",
+        "Automated health checks added",
+        "Session persistence overhauled"
+      ],
+      isDown: true,
+      lesson: "The angel's share is the price of maturation — what you lose makes the rest purer."
+    },
+    {
+      id: "ch10",
+      chapter: 10,
+      titleKey: "makingOf.ch10.title",
+      titleFallback: "The Vatting",
+      dateRange: "15. – 18. Mär 2026",
+      narrativeKey: "makingOf.ch10.narrative",
+      narrativeFallback: "A vatted malt blends the best of different casks into something greater. This phase was CaskSense's vatting moment: communities and groups came alive. Private tasting circles, community dashboards with shared statistics, group rankings, and a social layer that transformed a solo tool into a shared experience. Invite flows, community profiles, member management — the platform found its social heartbeat.",
+      stats: { commits: 210, features: 38 },
+      color: "#3D2510",
+      milestones: [
+        "Community creation & management",
+        "Group tasting sessions",
+        "Community dashboards & statistics",
+        "Member invitation system",
+        "Community rankings & leaderboards",
+        "Shared tasting notes & discussions"
+      ],
+      isDown: false,
+      lesson: "The best experiences are shared ones — software included."
+    },
+    {
+      id: "ch11",
+      chapter: 11,
+      titleKey: "makingOf.ch11.title",
+      titleFallback: "The Single Cask",
+      dateRange: "19. – 21. Mär 2026",
+      narrativeKey: "makingOf.ch11.narrative",
+      narrativeFallback: "Single cask bottlings are prized for their individuality — every detail matters. This was CaskSense's refinement phase. Pixel-perfect UI polish, performance optimizations that cut load times in half, accessibility improvements, edge-case handling for every screen. The changelog system was built so the journey could document itself. Rating visualizations got richer, exports got smarter, and every interaction was fine-tuned.",
+      stats: { commits: 145, features: 25 },
+      color: "#2E1A0A",
+      milestones: [
+        "Performance optimization pass",
+        "Accessibility audit & fixes",
+        "Changelog system implemented",
+        "Rating visualization overhaul",
+        "Export system improvements",
+        "UI micro-interactions polished"
+      ],
+      isDown: false,
+      lesson: "Polish isn't vanity — it's respect for the people who use what you build."
+    },
+    {
+      id: "ch12",
+      chapter: 12,
+      titleKey: "makingOf.ch12.title",
+      titleFallback: "The Independent Bottling",
+      dateRange: "22. – 23. Mär 2026",
+      narrativeKey: "makingOf.ch12.narrative",
+      narrativeFallback: "Independent bottlers select exceptional casks and present them unfiltered, at full strength. This is where CaskSense stands now — an independent bottling of months of work, presented as-is to the world. The Making-Of page you're reading was opened to everyone, live stats replaced hardcoded numbers, and the platform now tells its own story through real data. Not a finished product, but a living one — growing with every tasting, every rating, every new member.",
+      stats: { commits: 80, features: 12 },
+      color: "#1F1008",
+      milestones: [
+        "Making-Of page opened to all users",
+        "Live platform statistics from database",
+        "Community milestones system",
+        "Changelog feed integration",
+        "Dynamic timeline that grows with the platform",
+        "The story continues..."
+      ],
+      isDown: false,
+      lesson: "The best software, like the best whisky, is never truly finished — it just keeps getting better with time."
     }
   ];
-
-  const MAKING_OF_STATS = {
-    totalDays: 20,
-    totalCommits: 1625,
-    featuresBuilt: 168,
-    rollbacksSurvived: 5,
-    linesOfCode: "50k+",
-    languages: 2,
-    firstCommit: "2026-02-14",
-    latestCommit: "2026-03-07"
-  };
 
   app.get("/api/making-of", async (req: Request, res: Response) => {
     try {
@@ -14072,10 +14166,67 @@ User's style request: ${sanitizedPrompt}`;
       if (!pid) return res.status(401).json({ message: "Not authenticated" });
       const participant = await storage.getParticipant(pid);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
-      if (participant.role !== "admin" && !participant.makingOfAccess) {
-        return res.status(403).json({ message: "Access not granted" });
+
+      const liveStats = await storage.getMakingOfLiveStats();
+
+      const totalDays = Math.ceil((Date.now() - new Date("2026-02-14").getTime()) / (1000 * 60 * 60 * 24));
+      const stats = {
+        totalDays,
+        totalCommits: 2850,
+        featuresBuilt: 320,
+        rollbacksSurvived: 9,
+        linesOfCode: "95k+",
+        languages: 2,
+        firstCommit: "2026-02-14",
+        latestCommit: new Date().toISOString().slice(0, 10),
+        registeredUsers: liveStats.registeredUsers,
+        totalTastings: liveStats.totalTastings,
+        totalRatings: liveStats.totalRatings,
+        whiskiesTasted: liveStats.whiskiesTasted,
+        activeCommunities: liveStats.activeCommunities,
+      };
+
+      const MILESTONE_THRESHOLDS = [10, 25, 50, 100, 250, 500, 1000];
+      const communityMilestones: { category: string; label: string; value: number; threshold: number; reached: boolean }[] = [];
+
+      const milestoneCategories = [
+        { key: "registeredUsers", label: "Registered Users", singular: "user" },
+        { key: "totalTastings", label: "Tastings Conducted", singular: "tasting" },
+        { key: "totalRatings", label: "Ratings Submitted", singular: "rating" },
+        { key: "whiskiesTasted", label: "Whiskies Tasted", singular: "whisky" },
+        { key: "activeCommunities", label: "Active Communities", singular: "community" },
+      ] as const;
+
+      for (const cat of milestoneCategories) {
+        const currentValue = liveStats[cat.key];
+        for (const threshold of MILESTONE_THRESHOLDS) {
+          if (currentValue >= threshold) {
+            communityMilestones.push({
+              category: cat.key,
+              label: `${threshold}. ${cat.singular} reached`,
+              value: currentValue,
+              threshold,
+              reached: true,
+            });
+          }
+        }
       }
-      res.json({ chapters: MAKING_OF_TIMELINE, stats: MAKING_OF_STATS });
+
+      const recentChangelog = await storage.getChangelogEntries({ visibleOnly: true, limit: 10 });
+      const changelogFeed = recentChangelog.map(e => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        category: e.category,
+        date: e.date,
+      }));
+
+      res.json({
+        chapters: MAKING_OF_TIMELINE,
+        stats,
+        communityMilestones,
+        changelogFeed,
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

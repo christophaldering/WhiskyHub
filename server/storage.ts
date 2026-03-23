@@ -114,6 +114,7 @@ export interface IStorage {
   verifyEmail(id: string): Promise<Participant | undefined>;
   updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined>;
   updateMakingOfAccess(id: string, access: boolean): Promise<Participant | undefined>;
+  getMakingOfLiveStats(): Promise<{ registeredUsers: number; totalTastings: number; totalRatings: number; whiskiesTasted: number; activeCommunities: number }>;
 
   // Tastings
   getTasting(id: string): Promise<Tasting | undefined>;
@@ -1425,6 +1426,23 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getMakingOfLiveStats(): Promise<{ registeredUsers: number; totalTastings: number; totalRatings: number; whiskiesTasted: number; activeCommunities: number }> {
+    const [usersResult] = await db.select({ count: sql<number>`count(*)::int` }).from(participants);
+    const [tastingsResult] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings);
+    const [historicalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
+    const [ratingsResult] = await db.select({ count: sql<number>`count(*)::int` }).from(ratings);
+    const [whiskiesResult] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskies);
+    const [communitiesResult] = await db.select({ count: sql<number>`count(*)::int` }).from(communities);
+
+    return {
+      registeredUsers: usersResult.count,
+      totalTastings: tastingsResult.count + historicalResult.count,
+      totalRatings: ratingsResult.count,
+      whiskiesTasted: whiskiesResult.count,
+      activeCommunities: communitiesResult.count,
+    };
+  }
+
   async updateCommunityContributor(id: string, status: boolean): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ communityContributor: status }).where(eq(participants.id, id)).returning();
     return result;
@@ -2106,7 +2124,7 @@ export class DatabaseStorage implements IStorage {
     }).length;
   }
 
-  async getChangelogEntries(options?: { category?: string; from?: string; to?: string; visibleOnly?: boolean }): Promise<ChangelogEntry[]> {
+  async getChangelogEntries(options?: { category?: string; from?: string; to?: string; visibleOnly?: boolean; limit?: number }): Promise<ChangelogEntry[]> {
     let query = db.select().from(changelogEntries).orderBy(desc(changelogEntries.date));
     const results = await query;
     let filtered = results;
@@ -2121,6 +2139,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (options?.to) {
       filtered = filtered.filter(e => e.date <= options.to!);
+    }
+    if (options?.limit) {
+      filtered = filtered.slice(0, options.limit);
     }
     return filtered;
   }

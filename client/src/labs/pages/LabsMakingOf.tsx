@@ -6,6 +6,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Wine, GitCommit, Layers, Calendar, Code2, Languages,
   AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Lock, ChevronLeft,
+  Users, Star, Trophy, Globe, BookOpen,
 } from "lucide-react";
 
 interface ChapterData {
@@ -32,11 +33,34 @@ interface MakingOfStats {
   languages: number;
   firstCommit: string;
   latestCommit: string;
+  registeredUsers: number;
+  totalTastings: number;
+  totalRatings: number;
+  whiskiesTasted: number;
+  activeCommunities: number;
+}
+
+interface CommunityMilestone {
+  category: string;
+  label: string;
+  value: number;
+  threshold: number;
+  reached: boolean;
+}
+
+interface ChangelogFeedItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
 }
 
 interface MakingOfData {
   chapters: ChapterData[];
   stats: MakingOfStats;
+  communityMilestones: CommunityMilestone[];
+  changelogFeed: ChangelogFeedItem[];
 }
 
 function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.15) {
@@ -157,6 +181,115 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
   );
 }
 
+const MILESTONE_ICONS: Record<string, React.ElementType> = {
+  registeredUsers: Users,
+  totalTastings: Wine,
+  totalRatings: Star,
+  whiskiesTasted: Wine,
+  activeCommunities: Globe,
+};
+
+const MILESTONE_COLORS: Record<string, string> = {
+  registeredUsers: "#E8A87C",
+  totalTastings: "#D4A256",
+  totalRatings: "#C48B3F",
+  whiskiesTasted: "#B07A35",
+  activeCommunities: "#8B5E2F",
+};
+
+function MilestoneCard({ milestone, index }: { milestone: CommunityMilestone; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useInView(ref as React.RefObject<HTMLElement>);
+  const Icon = MILESTONE_ICONS[milestone.category] || Trophy;
+  const color = MILESTONE_COLORS[milestone.category] || "var(--labs-accent)";
+
+  return (
+    <div
+      ref={ref}
+      className="flex items-center gap-3 px-4 py-3 rounded-xl"
+      style={{
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "scale(1)" : "scale(0.9)",
+        transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${index * 60}ms`,
+      }}
+      data-testid={`labs-makingof-milestone-${milestone.category}-${milestone.threshold}`}
+    >
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ background: `${color}22`, color }}
+      >
+        <Icon className="w-4 h-4" strokeWidth={1.5} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-medium truncate" style={{ color: "var(--labs-text)" }}>
+          {milestone.label}
+        </div>
+        <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+          Current: {milestone.value}
+        </div>
+      </div>
+      <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color, opacity: 0.6 }} />
+    </div>
+  );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  feature: "#4CAF50",
+  improvement: "#2196F3",
+  fix: "#FF9800",
+  milestone: "#9C27B0",
+  community: "#E91E63",
+};
+
+function ChangelogCard({ entry, index }: { entry: ChangelogFeedItem; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useInView(ref as React.RefObject<HTMLElement>);
+  const badgeColor = CATEGORY_COLORS[entry.category] || "var(--labs-accent)";
+
+  return (
+    <div
+      ref={ref}
+      className="flex items-start gap-3 px-4 py-3 rounded-xl"
+      style={{
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateX(0)" : "translateX(-12px)",
+        transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${index * 80}ms`,
+      }}
+      data-testid={`labs-makingof-changelog-${entry.id}`}
+    >
+      <div className="flex flex-col items-center flex-shrink-0 pt-0.5">
+        <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[11px] font-medium truncate" style={{ color: "var(--labs-text)" }}>
+            {entry.title}
+          </span>
+          <span
+            className="text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase font-semibold"
+            style={{ background: `${badgeColor}22`, color: badgeColor }}
+            data-testid={`labs-makingof-changelog-badge-${entry.id}`}
+          >
+            {entry.category}
+          </span>
+        </div>
+        {entry.description && (
+          <div className="text-[10px] mt-0.5 line-clamp-2" style={{ color: "var(--labs-text-secondary)" }}>
+            {entry.description}
+          </div>
+        )}
+        <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+          {entry.date}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LabsMakingOf() {
   const session = getSession();
 
@@ -168,7 +301,7 @@ export default function LabsMakingOf() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error((err as { message?: string }).message || "Access denied");
+        throw new Error((err as { message?: string }).message || "Failed to load");
       }
       return res.json();
     },
@@ -206,17 +339,26 @@ export default function LabsMakingOf() {
       <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
         <BackBtn />
         <div className="text-center py-16">
-          <Lock className="w-10 h-10 mx-auto mb-4 opacity-40" style={{ color: "var(--labs-text-muted)" }} />
-          <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Access Required</h3>
+          <Wine className="w-10 h-10 mx-auto mb-4 opacity-40" style={{ color: "var(--labs-text-muted)" }} />
+          <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Something went wrong</h3>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-            This page is available by invitation only. Ask the admin for access.
+            Could not load the Making-Of page. Please try again later.
           </p>
         </div>
       </div>
     );
   }
 
-  const { chapters, stats } = data;
+  const { chapters, stats, communityMilestones, changelogFeed } = data;
+
+  const highestMilestones = Object.values(
+    communityMilestones.reduce((acc, m) => {
+      if (!acc[m.category] || m.threshold > acc[m.category].threshold) {
+        acc[m.category] = m;
+      }
+      return acc;
+    }, {} as Record<string, CommunityMilestone>)
+  );
 
   return (
     <div className="px-5 py-6 pb-16 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
@@ -231,7 +373,7 @@ export default function LabsMakingOf() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-10">
+      <div className="flex flex-wrap gap-2 mb-6">
         <StatCard label="Days" value={stats.totalDays} icon={Calendar} testId="labs-makingof-stat-days" delay={0} />
         <StatCard label="Commits" value={stats.totalCommits} icon={GitCommit} testId="labs-makingof-stat-commits" delay={100} />
         <StatCard label="Features" value={stats.featuresBuilt} icon={Layers} testId="labs-makingof-stat-features" delay={200} />
@@ -240,6 +382,27 @@ export default function LabsMakingOf() {
         <StatCard label="Languages" value={stats.languages} icon={Languages} testId="labs-makingof-stat-langs" delay={500} />
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-10">
+        <StatCard label="Users" value={stats.registeredUsers} icon={Users} testId="labs-makingof-stat-users" delay={0} />
+        <StatCard label="Tastings" value={stats.totalTastings} icon={Wine} testId="labs-makingof-stat-tastings" delay={100} />
+        <StatCard label="Ratings" value={stats.totalRatings} icon={Star} testId="labs-makingof-stat-ratings" delay={200} />
+        <StatCard label="Whiskies" value={stats.whiskiesTasted} icon={Wine} testId="labs-makingof-stat-whiskies" delay={300} />
+        <StatCard label="Communities" value={stats.activeCommunities} icon={Globe} testId="labs-makingof-stat-communities" delay={400} />
+      </div>
+
+      {highestMilestones.length > 0 && (
+        <>
+          <h2 className="labs-h3 mb-4" style={{ color: "var(--labs-text)" }} data-testid="labs-makingof-milestones-heading">
+            Community Milestones
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-10">
+            {highestMilestones.map((m, i) => (
+              <MilestoneCard key={`${m.category}-${m.threshold}`} milestone={m} index={i} />
+            ))}
+          </div>
+        </>
+      )}
+
       <h2 className="labs-h3 mb-6" style={{ color: "var(--labs-text)" }}>The Journey</h2>
 
       <div>
@@ -247,6 +410,22 @@ export default function LabsMakingOf() {
           <ChapterCard key={chapter.id} chapter={chapter} index={i} />
         ))}
       </div>
+
+      {changelogFeed.length > 0 && (
+        <div className="mt-8">
+          <h2 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }} data-testid="labs-makingof-changelog-heading">
+            The Story Continues
+          </h2>
+          <p className="text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }}>
+            Latest updates — this feed grows automatically with every new feature.
+          </p>
+          <div className="space-y-2">
+            {changelogFeed.map((entry, i) => (
+              <ChangelogCard key={entry.id} entry={entry} index={i} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
