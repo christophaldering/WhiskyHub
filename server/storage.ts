@@ -44,8 +44,10 @@ import {
   type InsertHistoricalImportRun, type HistoricalImportRun,
   communities,
   communityMemberships,
+  communityInvites,
   type InsertCommunity, type Community,
   type InsertCommunityMembership, type CommunityMembership,
+  type InsertCommunityInvite, type CommunityInvite,
   connoisseurReports,
   type InsertConnoisseurReport, type ConnoisseurReport,
   voiceMemos,
@@ -391,6 +393,17 @@ export interface IStorage {
   addCommunityMember(data: InsertCommunityMembership): Promise<CommunityMembership>;
   removeCommunityMember(communityId: string, participantId: string): Promise<void>;
   isCommunityMember(communityId: string, participantId: string): Promise<boolean>;
+  getCommunityMemberRole(communityId: string, participantId: string): Promise<string | null>;
+  updateCommunityMemberRole(communityId: string, participantId: string, role: string): Promise<CommunityMembership | undefined>;
+
+  // Community Invites
+  createCommunityInvite(data: InsertCommunityInvite): Promise<CommunityInvite>;
+  getCommunityInviteById(id: string): Promise<CommunityInvite | undefined>;
+  getCommunityInviteByToken(token: string): Promise<CommunityInvite | undefined>;
+  getPendingCommunityInvites(participantId: string): Promise<(CommunityInvite & { communityName?: string; inviterName?: string })[]>;
+  getPendingCommunityInvitesByEmail(email: string): Promise<(CommunityInvite & { communityName?: string; inviterName?: string })[]>;
+  acceptCommunityInvite(id: string): Promise<CommunityInvite | undefined>;
+  declineCommunityInvite(id: string): Promise<CommunityInvite | undefined>;
 
   // Historical Tastings
   getAccessibleHistoricalTastingIds(communityIds: string[], isAdmin: boolean): Promise<string[] | "all">;
@@ -2267,6 +2280,112 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
     return !!result;
+  }
+
+  async getCommunityMemberRole(communityId: string, participantId: string): Promise<string | null> {
+    const [result] = await db.select({ role: communityMemberships.role })
+      .from(communityMemberships)
+      .where(and(
+        eq(communityMemberships.communityId, communityId),
+        eq(communityMemberships.participantId, participantId),
+        eq(communityMemberships.status, "active")
+      ))
+      .limit(1);
+    return result?.role ?? null;
+  }
+
+  async updateCommunityMemberRole(communityId: string, participantId: string, role: string): Promise<CommunityMembership | undefined> {
+    const [result] = await db.update(communityMemberships)
+      .set({ role, updatedAt: new Date() })
+      .where(and(
+        eq(communityMemberships.communityId, communityId),
+        eq(communityMemberships.participantId, participantId)
+      ))
+      .returning();
+    return result;
+  }
+
+  async createCommunityInvite(data: InsertCommunityInvite): Promise<CommunityInvite> {
+    const [result] = await db.insert(communityInvites).values(data).returning();
+    return result;
+  }
+
+  async getCommunityInviteById(id: string): Promise<CommunityInvite | undefined> {
+    const [result] = await db.select().from(communityInvites).where(eq(communityInvites.id, id)).limit(1);
+    return result;
+  }
+
+  async getCommunityInviteByToken(token: string): Promise<CommunityInvite | undefined> {
+    const [result] = await db.select().from(communityInvites).where(eq(communityInvites.token, token)).limit(1);
+    return result;
+  }
+
+  async getPendingCommunityInvites(participantId: string): Promise<(CommunityInvite & { communityName?: string; inviterName?: string })[]> {
+    const rows = await db.select({
+      id: communityInvites.id,
+      communityId: communityInvites.communityId,
+      invitedEmail: communityInvites.invitedEmail,
+      invitedParticipantId: communityInvites.invitedParticipantId,
+      invitedByParticipantId: communityInvites.invitedByParticipantId,
+      token: communityInvites.token,
+      status: communityInvites.status,
+      personalNote: communityInvites.personalNote,
+      createdAt: communityInvites.createdAt,
+      acceptedAt: communityInvites.acceptedAt,
+      communityName: communities.name,
+      inviterName: participants.name,
+    })
+    .from(communityInvites)
+    .leftJoin(communities, eq(communityInvites.communityId, communities.id))
+    .leftJoin(participants, eq(communityInvites.invitedByParticipantId, participants.id))
+    .where(and(
+      eq(communityInvites.invitedParticipantId, participantId),
+      eq(communityInvites.status, "pending")
+    ))
+    .orderBy(desc(communityInvites.createdAt));
+    return rows.map(r => ({ ...r, communityName: r.communityName ?? undefined, inviterName: r.inviterName ?? undefined }));
+  }
+
+  async getPendingCommunityInvitesByEmail(email: string): Promise<(CommunityInvite & { communityName?: string; inviterName?: string })[]> {
+    const rows = await db.select({
+      id: communityInvites.id,
+      communityId: communityInvites.communityId,
+      invitedEmail: communityInvites.invitedEmail,
+      invitedParticipantId: communityInvites.invitedParticipantId,
+      invitedByParticipantId: communityInvites.invitedByParticipantId,
+      token: communityInvites.token,
+      status: communityInvites.status,
+      personalNote: communityInvites.personalNote,
+      createdAt: communityInvites.createdAt,
+      acceptedAt: communityInvites.acceptedAt,
+      communityName: communities.name,
+      inviterName: participants.name,
+    })
+    .from(communityInvites)
+    .leftJoin(communities, eq(communityInvites.communityId, communities.id))
+    .leftJoin(participants, eq(communityInvites.invitedByParticipantId, participants.id))
+    .where(and(
+      sql`lower(${communityInvites.invitedEmail}) = ${email.toLowerCase().trim()}`,
+      eq(communityInvites.status, "pending")
+    ))
+    .orderBy(desc(communityInvites.createdAt));
+    return rows.map(r => ({ ...r, communityName: r.communityName ?? undefined, inviterName: r.inviterName ?? undefined }));
+  }
+
+  async acceptCommunityInvite(id: string): Promise<CommunityInvite | undefined> {
+    const [result] = await db.update(communityInvites)
+      .set({ status: "accepted", acceptedAt: new Date() })
+      .where(eq(communityInvites.id, id))
+      .returning();
+    return result;
+  }
+
+  async declineCommunityInvite(id: string): Promise<CommunityInvite | undefined> {
+    const [result] = await db.update(communityInvites)
+      .set({ status: "declined" })
+      .where(eq(communityInvites.id, id))
+      .returning();
+    return result;
   }
 
   // --- Historical Tastings ---

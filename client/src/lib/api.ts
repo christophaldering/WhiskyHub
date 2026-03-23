@@ -385,6 +385,23 @@ export const communityApi = {
   getScores: () => fetchJSON(`/community-scores`),
   getTasteTwins: (participantId: string) => fetchJSON(`/participants/${participantId}/taste-twins`),
   getContributors: () => fetchJSON("/community-contributors"),
+  getMine: () => fetch("/api/communities/mine", { headers: pidHeaders() }).then(r => r.json()),
+  create: (data: { name: string; description?: string; slug?: string }) =>
+    fetchJSON("/communities", { method: "POST", body: JSON.stringify(data) }),
+  getById: (id: string) => fetchJSON(`/communities/${id}`),
+  update: (id: string, data: { name?: string; description?: string }) =>
+    fetchJSON(`/communities/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  invite: (communityId: string, data: { email?: string; participantId?: string; personalNote?: string }) =>
+    fetchJSON(`/communities/${communityId}/invite`, { method: "POST", body: JSON.stringify(data) }),
+  getPendingInvites: () => fetchJSON("/communities/invites/pending"),
+  acceptInvite: (inviteId: string) =>
+    fetchJSON(`/communities/invites/${inviteId}/accept`, { method: "POST", body: JSON.stringify({}) }),
+  declineInvite: (inviteId: string) =>
+    fetchJSON(`/communities/invites/${inviteId}/decline`, { method: "POST", body: JSON.stringify({}) }),
+  removeMember: (communityId: string, participantId: string) =>
+    fetchJSON(`/communities/${communityId}/members/${participantId}`, { method: "DELETE", body: JSON.stringify({}) }),
+  updateMemberRole: (communityId: string, participantId: string, role: string) =>
+    fetchJSON(`/communities/${communityId}/members/${participantId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
 };
 
 // ===== Public Insights (no auth needed) =====

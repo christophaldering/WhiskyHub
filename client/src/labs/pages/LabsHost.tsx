@@ -2657,6 +2657,8 @@ function CreateTastingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(draft?.advancedOpen ?? false);
+  const [myCommunities, setMyCommunities] = useState<any[]>([]);
+  const [selectedCommunityIds, setSelectedCommunityIds] = useState<Set<string>>(new Set());
   const [draftSaved, setDraftSaved] = useState(!!draft);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2720,6 +2722,23 @@ function CreateTastingForm() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  useEffect(() => {
+    if (currentParticipant?.id) {
+      fetch("/api/communities/mine", { headers: { "x-participant-id": currentParticipant.id } })
+        .then(r => r.ok ? r.json() : { communities: [] })
+        .then(d => setMyCommunities(d.communities || []))
+        .catch(() => {});
+    }
+  }, [currentParticipant?.id]);
+
+  const toggleCommunity = (id: string) => {
+    setSelectedCommunityIds(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
   const handleCreate = async () => {
     if (!title.trim()) { setError("Title is required"); return; }
     if (!currentParticipant) { setError("Please sign in to create a tasting"); return; }
@@ -2746,6 +2765,8 @@ function CreateTastingForm() {
         reflectionVisibility,
         videoLink: videoLink.trim() || null,
         status: "draft",
+        visibility: selectedCommunityIds.size > 0 ? "group" : undefined,
+        targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
       });
       if (result?.id) {
         clearDraft();
@@ -2939,6 +2960,27 @@ function CreateTastingForm() {
             onChange={setRatingScale}
           />
         </div>
+
+        {myCommunities.length > 0 && (
+          <div>
+            <label className="labs-section-label flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+              Target Communities (optional)
+            </label>
+            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
+              Share this tasting with specific communities
+            </p>
+            <div className="labs-card" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)" }}>
+              {myCommunities.map((c: any) => (
+                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }} data-testid={`tasting-community-${c.id}`}>
+                  <input type="checkbox" checked={selectedCommunityIds.has(c.id)} onChange={() => toggleCommunity(c.id)} data-testid={`checkbox-tasting-community-${c.id}`} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)" }}>{c.name}</span>
+                  {c.memberCount != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>({c.memberCount})</span>}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="labs-card overflow-hidden" style={{ border: "1px solid var(--labs-border)" }}>
           <button

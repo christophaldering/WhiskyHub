@@ -670,6 +670,28 @@ export const insertCommunityMembershipSchema = createInsertSchema(communityMembe
 export type InsertCommunityMembership = z.infer<typeof insertCommunityMembershipSchema>;
 export type CommunityMembership = typeof communityMemberships.$inferSelect;
 
+// --- Community Invites (invitation tracking with status) ---
+export const communityInvites = pgTable("community_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id").notNull(),
+  invitedEmail: text("invited_email"),
+  invitedParticipantId: varchar("invited_participant_id"),
+  invitedByParticipantId: varchar("invited_by_participant_id").notNull(),
+  token: text("token").notNull(),
+  status: text("status").notNull().default("pending"),
+  personalNote: text("personal_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+}, (table) => [
+  index("idx_community_invites_community").on(table.communityId),
+  index("idx_community_invites_email").on(table.invitedEmail),
+  index("idx_community_invites_participant").on(table.invitedParticipantId),
+]);
+
+export const insertCommunityInviteSchema = createInsertSchema(communityInvites).omit({ id: true, createdAt: true, acceptedAt: true });
+export type InsertCommunityInvite = z.infer<typeof insertCommunityInviteSchema>;
+export type CommunityInvite = typeof communityInvites.$inferSelect;
+
 // --- Historical Tastings (imported external tasting data, independent from CaskSense live tastings) ---
 export const historicalTastings = pgTable("historical_tastings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

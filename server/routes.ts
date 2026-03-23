@@ -13,7 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { addConnection, broadcastToTasting } from "./sse";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
@@ -1468,6 +1468,21 @@ export async function registerRoutes(
       if (data.title && data.title.length > 200) {
         return res.status(400).json({ message: "Title must not exceed 200 characters" });
       }
+
+      if (data.targetCommunityIds && data.hostId) {
+        try {
+          const communityIds = JSON.parse(data.targetCommunityIds) as string[];
+          if (Array.isArray(communityIds) && communityIds.length > 0) {
+            for (const cid of communityIds) {
+              const isMember = await storage.isCommunityMember(cid, data.hostId);
+              if (!isMember) {
+                return res.status(403).json({ message: `You are not a member of community ${cid}` });
+              }
+            }
+          }
+        } catch {}
+      }
+
       const tasting = await storage.createTasting(data);
       res.status(201).json(tasting);
     } catch (e: any) {
@@ -12621,7 +12636,300 @@ Important rules:
       const participantId = req.headers["x-participant-id"] as string;
       if (!participantId) return res.json({ communities: [] });
       const myCommunities = await storage.getParticipantCommunities(participantId);
-      res.json({ communities: myCommunities });
+      const result = await Promise.all(myCommunities.map(async (c) => {
+        const members = await storage.getCommunityMemberships(c.id);
+        return { ...c, memberCount: members.length };
+      }));
+      res.json({ communities: result });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/communities", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(401).json({ message: "Authentication required" });
+
+      const createSchema = z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+        slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens").optional(),
+      });
+      const parsed = createSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      const slug = parsed.data.slug || parsed.data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const existing = await storage.getCommunityBySlug(slug);
+      if (existing) return res.status(409).json({ message: "A community with this slug already exists" });
+
+      const community = await storage.createCommunity({
+        name: parsed.data.name,
+        description: parsed.data.description || null,
+        slug,
+        archiveVisibility: "community_only",
+        publicAggregatedEnabled: true,
+      });
+
+      await storage.addCommunityMember({
+        communityId: community.id,
+        participantId: participantId,
+        role: "admin",
+        status: "active",
+      });
+
+      res.json(community);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/communities/invites/pending", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.json([]);
+
+      const participant = await storage.getParticipant(participantId);
+      let invites = await storage.getPendingCommunityInvites(participantId);
+
+      if (participant?.email) {
+        const emailInvites = await storage.getPendingCommunityInvitesByEmail(participant.email);
+        const existingIds = new Set(invites.map(i => i.id));
+        for (const ei of emailInvites) {
+          if (!existingIds.has(ei.id)) invites.push(ei);
+        }
+      }
+
+      res.json(invites);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/communities/invites/:id/accept", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const invite = await storage.getCommunityInviteById(req.params.id);
+      if (!invite || invite.status !== "pending") return res.status(404).json({ message: "Invite not found or already processed" });
+
+      const participant = await storage.getParticipant(participantId);
+      const isTarget = invite.invitedParticipantId === participantId ||
+        (invite.invitedEmail && participant?.email && invite.invitedEmail.toLowerCase() === participant.email.toLowerCase());
+      if (!isTarget) return res.status(403).json({ message: "This invite is not for you" });
+
+      const alreadyMember = await storage.isCommunityMember(invite.communityId, participantId);
+      await storage.acceptCommunityInvite(invite.id);
+      if (!alreadyMember) {
+        await storage.addCommunityMember({
+          communityId: invite.communityId,
+          participantId: participantId,
+          role: "member",
+          status: "active",
+        });
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/communities/invites/:id/decline", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const invite = await storage.getCommunityInviteById(req.params.id);
+      if (!invite || invite.status !== "pending") return res.status(404).json({ message: "Invite not found or already processed" });
+
+      const participant = await storage.getParticipant(participantId);
+      const isTarget = invite.invitedParticipantId === participantId ||
+        (invite.invitedEmail && participant?.email && invite.invitedEmail.toLowerCase() === participant.email.toLowerCase());
+      if (!isTarget) return res.status(403).json({ message: "This invite is not for you" });
+
+      await storage.declineCommunityInvite(invite.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/communities/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const community = await storage.getCommunityById(req.params.id);
+      if (!community) return res.status(404).json({ message: "Community not found" });
+
+      const isMember = await storage.isCommunityMember(community.id, participantId);
+      if (!isMember) return res.status(403).json({ message: "You must be a member of this community" });
+
+      const members = await storage.getCommunityMemberships(community.id);
+      const myRole = await storage.getCommunityMemberRole(community.id, participantId);
+      res.json({ ...community, members, myRole });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/communities/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const role = await storage.getCommunityMemberRole(req.params.id, participantId);
+      if (role !== "admin") return res.status(403).json({ message: "Only community admins can edit" });
+
+      const updateSchema = z.object({
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().max(500).optional(),
+      });
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      const updated = await storage.updateCommunity(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ message: "Community not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/communities/:id/invite", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const role = await storage.getCommunityMemberRole(req.params.id, participantId);
+      if (role !== "admin") return res.status(403).json({ message: "Only community admins can invite" });
+
+      const inviter = await storage.getParticipant(participantId);
+      const community = await storage.getCommunityById(req.params.id);
+      if (!community) return res.status(404).json({ message: "Community not found" });
+
+      const inviteSchema = z.object({
+        email: z.string().email().optional(),
+        participantId: z.string().optional(),
+        personalNote: z.string().max(500).optional(),
+      }).refine(d => d.email || d.participantId, { message: "email or participantId required" });
+      const parsed = inviteSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      let targetParticipantId = parsed.data.participantId;
+      let targetEmail = parsed.data.email;
+      let targetParticipant: Participant | undefined;
+
+      if (targetParticipantId) {
+        targetParticipant = await storage.getParticipant(targetParticipantId);
+        if (!targetParticipant) return res.status(404).json({ message: "Participant not found" });
+        targetEmail = targetParticipant.email || undefined;
+      } else if (targetEmail) {
+        const { db: dbInst } = await import("./db");
+        const { participants: pTable } = await import("@shared/schema");
+        const { sql: sqlTag } = await import("drizzle-orm");
+        const [found] = await dbInst.select().from(pTable).where(sqlTag`lower(${pTable.email}) = ${targetEmail.toLowerCase().trim()}`).limit(1);
+        if (found) {
+          targetParticipantId = found.id;
+          targetParticipant = found;
+        }
+      }
+
+      if (targetParticipantId) {
+        const alreadyMember = await storage.isCommunityMember(community.id, targetParticipantId);
+        if (alreadyMember) return res.status(409).json({ message: "Already a member of this community" });
+
+        const existingInvites = await storage.getPendingCommunityInvites(targetParticipantId);
+        if (existingInvites.some(i => i.communityId === community.id)) {
+          return res.status(409).json({ message: "An invitation is already pending for this person" });
+        }
+      }
+
+      if (targetEmail && !targetParticipantId) {
+        const existingEmailInvites = await storage.getPendingCommunityInvitesByEmail(targetEmail);
+        if (existingEmailInvites.some(i => i.communityId === community.id)) {
+          return res.status(409).json({ message: "An invitation is already pending for this email" });
+        }
+      }
+
+      const token = crypto.randomUUID();
+      const invite = await storage.createCommunityInvite({
+        communityId: community.id,
+        invitedEmail: targetEmail || null,
+        invitedParticipantId: targetParticipantId || null,
+        invitedByParticipantId: participantId,
+        token,
+        status: "pending",
+        personalNote: parsed.data.personalNote || null,
+      });
+
+      if (targetEmail && inviter) {
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+        const { subject, html } = buildCommunityInviteEmail({
+          inviterName: inviter.name,
+          communityName: community.name,
+          personalNote: parsed.data.personalNote,
+          platformLink: `${baseUrl}/labs/circle`,
+          language: targetParticipant?.language || inviter.language || "en",
+        });
+        sendEmail({ to: targetEmail, subject, html }).catch(() => {});
+      }
+
+      res.json(invite);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/communities/:id/members/:participantId", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(401).json({ message: "Authentication required" });
+
+      const role = await storage.getCommunityMemberRole(req.params.id, requesterId);
+      if (role !== "admin") return res.status(403).json({ message: "Only community admins can remove members" });
+      if (req.params.participantId === requesterId) return res.status(400).json({ message: "You cannot remove yourself" });
+
+      const targetRole = await storage.getCommunityMemberRole(req.params.id, req.params.participantId);
+      if (targetRole === "admin") {
+        const members = await storage.getCommunityMemberships(req.params.id);
+        const adminCount = members.filter(m => m.role === "admin").length;
+        if (adminCount <= 1) return res.status(400).json({ message: "Cannot remove the last admin" });
+      }
+
+      await storage.removeCommunityMember(req.params.id, req.params.participantId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/communities/:id/members/:participantId/role", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(401).json({ message: "Authentication required" });
+
+      const role = await storage.getCommunityMemberRole(req.params.id, requesterId);
+      if (role !== "admin") return res.status(403).json({ message: "Only community admins can change roles" });
+
+      const roleSchema = z.object({ role: z.enum(["admin", "member", "viewer"]) });
+      const parsed = roleSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      const currentRole = await storage.getCommunityMemberRole(req.params.id, req.params.participantId);
+      if (currentRole === "admin" && parsed.data.role !== "admin") {
+        const members = await storage.getCommunityMemberships(req.params.id);
+        const adminCount = members.filter(m => m.role === "admin").length;
+        if (adminCount <= 1) return res.status(400).json({ message: "Cannot demote the last admin" });
+      }
+
+      const updated = await storage.updateCommunityMemberRole(req.params.id, req.params.participantId, parsed.data.role);
+      if (!updated) return res.status(404).json({ message: "Member not found" });
+      res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

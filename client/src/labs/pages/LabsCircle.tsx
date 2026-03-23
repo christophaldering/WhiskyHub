@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
-import { friendsApi, activityApi, tastingApi, leaderboardApi, pidHeaders } from "@/lib/api";
+import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
@@ -145,6 +145,15 @@ export default function LabsCircle() {
     queryFn: () => tastingApi.getAll(pid),
     enabled: !!pid && (tab === "sessions" || tab === "friends"),
   });
+
+  const { data: communityInvites } = useQuery<unknown[]>({
+    queryKey: ["community-invites-pending", pid],
+    queryFn: () => communityApi.getPendingInvites(),
+    enabled: !!pid,
+    refetchInterval: 30000,
+  });
+
+  const communityInviteCount = Array.isArray(communityInvites) ? communityInvites.length : 0;
 
   const addFriendMutation = useMutation({
     mutationFn: (data: { firstName: string; lastName: string; email: string }) =>
@@ -314,6 +323,18 @@ export default function LabsCircle() {
                   }}
                 >
                   {pendingList.length}
+                </span>
+              )}
+              {t.key === "community" && communityInviteCount > 0 && (
+                <span
+                  className="labs-circle-tab-badge inline-flex items-center justify-center rounded-full"
+                  style={{
+                    width: 16, height: 16, fontSize: 11, fontWeight: 700,
+                    background: "var(--labs-danger)", color: "var(--labs-on-accent)",
+                  }}
+                  data-testid="badge-community-invites"
+                >
+                  {communityInviteCount}
                 </span>
               )}
             </button>

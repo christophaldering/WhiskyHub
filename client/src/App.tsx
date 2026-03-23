@@ -112,6 +112,7 @@ const LabsPrivacy = lazy(() => import("@/labs/pages/LabsPrivacy"));
 const LabsTerms = lazy(() => import("@/labs/pages/LabsTerms"));
 const LabsActivityPage = lazy(() => import("@/labs/pages/LabsActivity"));
 const LabsCommunity = lazy(() => import("@/labs/pages/LabsCommunity"));
+const LabsCommunityDetail = lazy(() => import("@/labs/pages/LabsCommunityDetail"));
 const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
 const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
@@ -529,6 +530,7 @@ function Router() {
               <Route path="/labs/privacy" component={LabsPrivacy} />
               <Route path="/labs/terms" component={LabsTerms} />
               <Route path="/labs/activity" component={LabsActivityPage} />
+              <Route path="/labs/community/:id" component={LabsCommunityDetail} />
               <Route path="/labs/community" component={LabsCommunity} />
               <Route path="/labs/making-of" component={LabsMakingOf} />
               <Route path="/labs/admin" component={LabsAdmin} />
