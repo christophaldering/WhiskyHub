@@ -998,8 +998,31 @@ export async function registerRoutes(
 
       const hours = Math.max(0, parseInt(req.query.hours as string) || 24);
       const role = req.query.role as string | undefined;
+      const userIds = req.query.userIds ? (req.query.userIds as string).split(",").filter(Boolean) : [];
+      const tastingId = req.query.tastingId as string | undefined;
+      const communityId = req.query.communityId as string | undefined;
       const { db } = await import("./db");
       const { sql } = await import("drizzle-orm");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const safeIds = (ids: string[]) => ids.filter(id => uuidRegex.test(id));
+
+      let resolvedUserIds: string[] | undefined = userIds.length > 0 ? safeIds(userIds) : undefined;
+
+      if (tastingId && uuidRegex.test(tastingId)) {
+        const tpRows = await db.execute(sql`SELECT participant_id FROM tasting_participants WHERE tasting_id = ${tastingId}`);
+        const tpIds = ((tpRows as any).rows || tpRows).map((r: any) => r.participant_id);
+        resolvedUserIds = resolvedUserIds ? resolvedUserIds.filter((id: string) => tpIds.includes(id)) : tpIds;
+      }
+      if (communityId && uuidRegex.test(communityId)) {
+        const cmRows = await db.execute(sql`SELECT participant_id FROM community_memberships WHERE community_id = ${communityId}`);
+        const cmIds = ((cmRows as any).rows || cmRows).map((r: any) => r.participant_id);
+        resolvedUserIds = resolvedUserIds ? resolvedUserIds.filter((id: string) => cmIds.includes(id)) : cmIds;
+      }
+
+      if (resolvedUserIds !== undefined && resolvedUserIds.length === 0) {
+        return res.json([]);
+      }
 
       const conditions: string[] = [];
       if (hours > 0) {
@@ -1009,6 +1032,9 @@ export async function registerRoutes(
       }
       if (role && ["admin", "host", "user"].includes(role)) {
         conditions.push(`p.role = '${role}'`);
+      }
+      if (resolvedUserIds && resolvedUserIds.length > 0) {
+        conditions.push(`p.id IN (${resolvedUserIds.map(id => `'${id}'`).join(",")})`);
       }
       const whereClause = "WHERE " + conditions.join(" AND ");
 
@@ -1040,6 +1066,37 @@ export async function registerRoutes(
         ratingCount: r.rating_count,
         journalCount: r.journal_count,
       })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/filter-options", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string || req.query.participantId as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const [allParticipants, allTastings] = await Promise.all([
+        storage.getAllParticipants(),
+        storage.getAllTastings(),
+      ]);
+
+      const hostIds = new Set(allTastings.map(t => t.hostId));
+
+      let allCommunities: { id: string; name: string }[] = [];
+      try {
+        const communities = await storage.getCommunities();
+        allCommunities = communities.map(c => ({ id: c.id, name: c.name }));
+      } catch {}
+
+      res.json({
+        users: allParticipants.map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role })),
+        hosts: allParticipants.filter(p => hostIds.has(p.id) || p.role === "host" || p.role === "admin").map(p => ({ id: p.id, name: p.name, email: p.email })),
+        tastings: allTastings.map(t => ({ id: t.id, title: t.title, date: t.date })),
+        communities: allCommunities,
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -1113,8 +1170,31 @@ export async function registerRoutes(
 
       const from = req.query.from ? new Date(req.query.from as string) : undefined;
       const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const userIds = req.query.userIds ? (req.query.userIds as string).split(",").filter(id => uuidRegex.test(id)) : undefined;
+      const communityId = req.query.communityId as string | undefined;
 
-      const summary = await storage.getActivitySummary(from, to);
+      let filteredUserIds = userIds;
+      if (communityId && uuidRegex.test(communityId)) {
+        const { db } = await import("./db");
+        const { sql: sqlDrizzle } = await import("drizzle-orm");
+        const rows = await db.execute(sqlDrizzle`SELECT participant_id FROM community_memberships WHERE community_id = ${communityId}`);
+        const memberIds = ((rows as any).rows || rows).map((r: any) => r.participant_id);
+        if (filteredUserIds) {
+          filteredUserIds = filteredUserIds.filter((id: string) => memberIds.includes(id));
+        } else {
+          filteredUserIds = memberIds;
+        }
+      }
+
+      if (filteredUserIds !== undefined && filteredUserIds.length === 0) {
+        return res.json({
+          totalSessions: 0, uniqueUsers: 0, avgDurationMinutes: 0, totalMinutes: 0,
+          byDay: [], byHour: [], topUsers: [],
+        });
+      }
+
+      const summary = await storage.getActivitySummary(from, to, filteredUserIds);
       res.json(summary);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

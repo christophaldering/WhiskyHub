@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
@@ -392,7 +392,7 @@ export default function LabsAdmin() {
           {activeTab === "participants" && <ParticipantsTab data={data} pid={pid} />}
           {activeTab === "tastings"     && <TastingsTab data={data} pid={pid} />}
           {activeTab === "online"       && <OnlineTab />}
-          {activeTab === "activity"     && <ActivityTab />}
+          {activeTab === "activity"     && <ActivityTab pid={pid} />}
           {activeTab === "sessions"     && <SessionsTab pid={pid} />}
           {activeTab === "ai"           && <AITab pid={pid} />}
           {activeTab === "newsletter"   && <NewsletterTab participants={data.participants} pid={pid} />}
@@ -658,10 +658,208 @@ function OnlineTab() {
   );
 }
 
-function ActivityTab() {
+interface FilterOption { id: string; name: string; email?: string; role?: string; title?: string; date?: string }
+interface ActivityFilters { userIds: string[]; hostIds: string[]; tastingId: string; communityId: string }
+const emptyFilters: ActivityFilters = { userIds: [], hostIds: [], tastingId: "", communityId: "" };
+
+function useFilterOptions(pid: string) {
+  return useQuery({
+    queryKey: ["/api/admin/filter-options", pid],
+    queryFn: () => adminApi.getFilterOptions(pid),
+    enabled: !!pid,
+    staleTime: 60000,
+  });
+}
+
+function FilterDropdown({ label, icon, options, selected, onToggle, searchPlaceholder, multi = true, renderLabel }: {
+  label: string;
+  icon: React.ReactNode;
+  options: FilterOption[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  searchPlaceholder: string;
+  multi?: boolean;
+  renderLabel?: (opt: FilterOption) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = options.filter(o => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (o.name || "").toLowerCase().includes(s) || (o.email || "").toLowerCase().includes(s) || (o.title || "").toLowerCase().includes(s);
+  });
+
+  const getLabel = renderLabel || ((o: FilterOption) => o.name || o.title || o.id);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef} data-testid={`filter-dropdown-${label.toLowerCase()}`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all whitespace-nowrap"
+        style={{
+          border: `1px solid ${selected.length > 0 ? "var(--labs-accent)" : "var(--labs-border)"}`,
+          background: selected.length > 0 ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+          color: selected.length > 0 ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+          cursor: "pointer",
+          fontWeight: selected.length > 0 ? 600 : 400,
+        }}
+        data-testid={`filter-btn-${label.toLowerCase()}`}
+      >
+        {icon}
+        {label}
+        {selected.length > 0 && (
+          <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--labs-accent)", color: "#fff" }}>{selected.length}</span>
+        )}
+      </button>
+      {open && (
+        <div
+          className="absolute top-full left-0 mt-1 rounded-lg shadow-lg z-50 min-w-[220px] max-h-[280px] flex flex-col"
+          style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)" }}
+        >
+          <div className="p-2 border-b" style={{ borderColor: "var(--labs-border)" }}>
+            <input
+              type="text"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full text-xs px-2 py-1.5 rounded"
+              style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)", color: "var(--labs-text)", outline: "none" }}
+              autoFocus
+              data-testid={`filter-search-${label.toLowerCase()}`}
+            />
+          </div>
+          <div className="overflow-y-auto flex-1" style={{ maxHeight: 220 }}>
+            {filtered.length === 0 ? (
+              <div className="px-3 py-4 text-xs text-center" style={{ color: "var(--labs-text-muted)" }}>No matches</div>
+            ) : filtered.map(opt => {
+              const isSelected = selected.includes(opt.id);
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    onToggle(opt.id);
+                    if (!multi) setOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors"
+                  style={{
+                    background: isSelected ? "var(--labs-accent-muted)" : "transparent",
+                    color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
+                    cursor: "pointer",
+                    border: "none",
+                    borderBottom: "1px solid var(--labs-border)",
+                  }}
+                  data-testid={`filter-option-${label.toLowerCase()}-${opt.id}`}
+                >
+                  {multi && (
+                    <span className="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0"
+                      style={{ borderColor: isSelected ? "var(--labs-accent)" : "var(--labs-border)", background: isSelected ? "var(--labs-accent)" : "transparent" }}>
+                      {isSelected && <span style={{ color: "#fff", fontSize: 10, lineHeight: 1 }}>✓</span>}
+                    </span>
+                  )}
+                  <span className="truncate">{getLabel(opt)}</span>
+                  {opt.email && <span className="text-[10px] ml-auto truncate flex-shrink-0" style={{ color: "var(--labs-text-muted)", maxWidth: 100 }}>{opt.email}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminActivityFilterBar({ filters, onChange, pid, hideTasting }: { filters: ActivityFilters; onChange: (f: ActivityFilters) => void; pid: string; hideTasting?: boolean }) {
+  const { data: options } = useFilterOptions(pid);
+
+  const hasFilters = filters.userIds.length > 0 || filters.hostIds.length > 0 || !!filters.tastingId || !!filters.communityId;
+
+  const toggleUser = (id: string) => {
+    const next = filters.userIds.includes(id) ? filters.userIds.filter(x => x !== id) : [...filters.userIds, id];
+    onChange({ ...filters, userIds: next });
+  };
+  const toggleHost = (id: string) => {
+    const next = filters.hostIds.includes(id) ? filters.hostIds.filter(x => x !== id) : [...filters.hostIds, id];
+    onChange({ ...filters, hostIds: next });
+  };
+  const toggleTasting = (id: string) => {
+    onChange({ ...filters, tastingId: filters.tastingId === id ? "" : id });
+  };
+  const toggleCommunity = (id: string) => {
+    onChange({ ...filters, communityId: filters.communityId === id ? "" : id });
+  };
+
+  if (!options) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap mb-3" data-testid="admin-activity-filter-bar">
+      <FilterDropdown
+        label="User"
+        icon={<User className="w-3 h-3" />}
+        options={options.users || []}
+        selected={filters.userIds}
+        onToggle={toggleUser}
+        searchPlaceholder="Search users..."
+      />
+      <FilterDropdown
+        label="Host"
+        icon={<Crown className="w-3 h-3" />}
+        options={options.hosts || []}
+        selected={filters.hostIds}
+        onToggle={toggleHost}
+        searchPlaceholder="Search hosts..."
+      />
+      {!hideTasting && (
+        <FilterDropdown
+          label="Tasting"
+          icon={<Wine className="w-3 h-3" />}
+          options={(options.tastings || []).map((t: FilterOption) => ({ ...t, name: t.title || t.name }))}
+          selected={filters.tastingId ? [filters.tastingId] : []}
+          onToggle={toggleTasting}
+          searchPlaceholder="Search tastings..."
+          multi={false}
+          renderLabel={(o: FilterOption) => `${o.title || o.name}${o.date ? ` (${o.date})` : ""}`}
+        />
+      )}
+      <FilterDropdown
+        label="Community"
+        icon={<Users className="w-3 h-3" />}
+        options={options.communities || []}
+        selected={filters.communityId ? [filters.communityId] : []}
+        onToggle={toggleCommunity}
+        searchPlaceholder="Search communities..."
+        multi={false}
+      />
+      {hasFilters && (
+        <button
+          onClick={() => onChange(emptyFilters)}
+          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-lg transition-all"
+          style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)", color: "var(--labs-danger)", cursor: "pointer" }}
+          data-testid="filter-reset-all"
+        >
+          <X className="w-3 h-3" />
+          Reset
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ActivityTab({ pid }: { pid: string }) {
   const [hours, setHours] = useState(24);
   const [roleFilter, setRoleFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [advFilters, setAdvFilters] = useState<ActivityFilters>(emptyFilters);
 
   const timeOpts = [
     { hours: 1, label: "1h" }, { hours: 6, label: "6h" }, { hours: 12, label: "12h" },
@@ -669,11 +867,16 @@ function ActivityTab() {
     { hours: 0, label: "All" },
   ];
 
+  const allUserIds = [...new Set([...advFilters.userIds, ...advFilters.hostIds])];
+
   const { data: users = [], isLoading, isError } = useQuery({
-    queryKey: ["/api/admin/user-activity", hours, roleFilter],
+    queryKey: ["/api/admin/user-activity", hours, roleFilter, allUserIds, advFilters.tastingId, advFilters.communityId],
     queryFn: async () => {
       const params = new URLSearchParams({ hours: String(hours) });
       if (roleFilter !== "all") params.set("role", roleFilter);
+      if (allUserIds.length > 0) params.set("userIds", allUserIds.join(","));
+      if (advFilters.tastingId) params.set("tastingId", advFilters.tastingId);
+      if (advFilters.communityId) params.set("communityId", advFilters.communityId);
       const session = getSession();
       const res = await fetch(`/api/admin/user-activity?${params}`, { headers: session.pid ? { "x-participant-id": session.pid } : {} });
       if (!res.ok) throw new Error("Failed");
@@ -721,6 +924,7 @@ function ActivityTab() {
           <option value="user">User</option>
         </select>
       </div>
+      <AdminActivityFilterBar filters={advFilters} onChange={setAdvFilters} pid={pid} />
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
       ) : isError ? (
@@ -761,6 +965,7 @@ function SessionsTab({ pid }: { pid: string }) {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [userSearch, setUserSearch] = useState("");
+  const [advFilters, setAdvFilters] = useState<ActivityFilters>(emptyFilters);
 
   const getFromDate = () => {
     if (timeRange === "all") return undefined;
@@ -768,9 +973,15 @@ function SessionsTab({ pid }: { pid: string }) {
     return new Date(Date.now() - days * 86400000).toISOString();
   };
 
+  const allUserIds = [...new Set([...advFilters.userIds, ...advFilters.hostIds])];
+
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["/api/admin/activity-summary", pid, timeRange],
-    queryFn: () => adminApi.getActivitySummary(pid, { from: getFromDate() }),
+    queryKey: ["/api/admin/activity-summary", pid, timeRange, allUserIds, advFilters.communityId],
+    queryFn: () => adminApi.getActivitySummary(pid, {
+      from: getFromDate(),
+      userIds: allUserIds.length > 0 ? allUserIds : undefined,
+      communityId: advFilters.communityId || undefined,
+    }),
   });
 
   const { data: userSessions = [], isLoading: userSessionsLoading } = useQuery({
@@ -936,6 +1147,7 @@ function SessionsTab({ pid }: { pid: string }) {
           ))}
         </div>
       </div>
+      <AdminActivityFilterBar filters={advFilters} onChange={setAdvFilters} pid={pid} hideTasting />
 
       {summaryLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>

@@ -2815,7 +2815,7 @@ export class DatabaseStorage implements IStorage {
     return query;
   }
 
-  async getActivitySummary(from?: Date, to?: Date): Promise<{
+  async getActivitySummary(from?: Date, to?: Date, userIds?: string[]): Promise<{
     totalSessions: number;
     uniqueUsers: number;
     avgDurationMinutes: number;
@@ -2827,6 +2827,9 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (from) conditions.push(gte(userActivitySessions.startedAt, from));
     if (to) conditions.push(sql`${userActivitySessions.startedAt} <= ${to}`);
+    if (userIds && userIds.length > 0) {
+      conditions.push(inArray(userActivitySessions.participantId, userIds));
+    }
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [totals] = await db.select({

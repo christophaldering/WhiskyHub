@@ -732,11 +732,17 @@ export const adminApi = {
     if (filters?.to) params.set("to", filters.to);
     return fetchJSON(`/admin/activity-sessions/${userId}?${params}`);
   },
-  getActivitySummary: (requesterId: string, filters?: { from?: string; to?: string }) => {
+  getActivitySummary: (requesterId: string, filters?: { from?: string; to?: string; userIds?: string[]; communityId?: string }) => {
     const params = new URLSearchParams({ participantId: requesterId });
     if (filters?.from) params.set("from", filters.from);
     if (filters?.to) params.set("to", filters.to);
+    if (filters?.userIds && filters.userIds.length > 0) params.set("userIds", filters.userIds.join(","));
+    if (filters?.communityId) params.set("communityId", filters.communityId);
     return fetchJSON(`/admin/activity-summary?${params}`);
+  },
+  getFilterOptions: (requesterId: string) => {
+    const params = new URLSearchParams({ participantId: requesterId });
+    return fetchJSON(`/admin/filter-options?${params}`);
   },
 };
 
