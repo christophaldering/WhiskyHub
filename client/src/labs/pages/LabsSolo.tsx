@@ -235,6 +235,23 @@ export default function LabsSolo() {
     return () => window.removeEventListener("online", trySync);
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("cs_retaste_context");
+      if (raw) {
+        sessionStorage.removeItem("cs_retaste_context");
+        const ctx = JSON.parse(raw);
+        if (ctx.whiskyName) setWhiskyName(ctx.whiskyName);
+        if (ctx.distillery) setDistillery(ctx.distillery);
+        if (ctx.age) setUnknownAge(ctx.age);
+        if (ctx.abv) setUnknownAbv(ctx.abv);
+        if (ctx.caskType) setUnknownCask(ctx.caskType);
+        if (ctx.region) setUnknownRegion(ctx.region);
+        setSoloView("editor");
+      }
+    } catch {}
+  }, []);
+
   const localDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localDraftRestoredRef = useRef(false);
   const formSnapshotRef = useRef({ whiskyName: "", distillery: "", unknownAge: "", unknownAbv: "", unknownCask: "", unknownRegion: "", unknownCountry: "", unknownPeatLevel: "", unknownVintage: "", unknownBottler: "", unknownWbId: "", unknownPrice: "" });

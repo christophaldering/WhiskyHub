@@ -280,6 +280,27 @@ export default function LabsTasteDrams() {
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
+              {selectedEntry.status === "final" && (
+                <button
+                  onClick={() => {
+                    const retasteData = {
+                      whiskyName: selectedEntry.whiskyName || selectedEntry.title || "",
+                      distillery: selectedEntry.distillery || "",
+                      region: selectedEntry.region || "",
+                      age: selectedEntry.age || "",
+                      abv: selectedEntry.abv || "",
+                      caskType: selectedEntry.caskType || "",
+                    };
+                    sessionStorage.setItem("cs_retaste_context", JSON.stringify(retasteData));
+                    navigate("/labs/solo");
+                  }}
+                  className="labs-btn-secondary flex items-center gap-1.5"
+                  style={{ padding: "6px 12px", fontSize: 13 }}
+                  data-testid="button-labs-retaste-dram"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
+                </button>
+              )}
               <button onClick={() => setDeleteTarget(selectedEntry)} className="flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13, color: "var(--labs-danger)", background: "transparent", border: "1px solid var(--labs-danger)", borderRadius: 8, cursor: "pointer", opacity: 0.8 }} data-testid="button-labs-delete-dram">
                 <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>

@@ -141,6 +141,8 @@ function GuidedStepView({
   const [flowSaved, setFlowSaved] = useState(false);
   const [dramTransitionKey, setDramTransitionKey] = useState(0);
   const prevWhiskyIndexRef = useRef(whiskyIndex);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editRatingMode, setEditRatingMode] = useState<"edit" | "retaste" | null>(null);
 
   useEffect(() => {
     if (whiskyIndex !== prevWhiskyIndexRef.current) {
@@ -394,6 +396,10 @@ function GuidedStepView({
             setLocalIndex(idx);
             setFlowSaved(false);
             setDramTransitionKey(k => k + 1);
+            setEditRatingMode(null);
+            if (rating) {
+              setShowEditDialog(true);
+            }
           }
         }}
         scaleMax={maxScore}
@@ -430,7 +436,7 @@ function GuidedStepView({
               cask: activeWhisky?.caskInfluence || undefined,
               blind: isBlindStep,
             }}
-            initialData={myRating ? (() => {
+            initialData={myRating && editRatingMode !== "retaste" ? (() => {
               const rawNotes = myRating.notes || "";
               const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
               const chips = flavourMatch ? flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
@@ -525,6 +531,93 @@ function GuidedStepView({
               {t("m2.taste.rating.ratingsClosed", "Ratings are currently closed")}
             </p>
           )}
+        </div>
+      )}
+
+      {showEditDialog && (
+        <div
+          data-testid="edit-retaste-dialog-overlay"
+          onClick={() => setShowEditDialog(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            data-testid="edit-retaste-dialog"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--labs-surface-elevated, #1a1a1a)",
+              borderRadius: 16,
+              padding: 24,
+              width: "100%",
+              maxWidth: 340,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "var(--labs-font-display, inherit)",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "var(--labs-text, #fff)",
+                margin: 0,
+                textAlign: "center",
+              }}
+            >
+              {t("labs.editOrRetaste.title", "Dram bereits bewertet")}
+            </h3>
+            <button
+              data-testid="edit-retaste-edit-btn"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditRatingMode("edit");
+                setDramTransitionKey(k => k + 1);
+              }}
+              className="labs-btn-primary"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: 15,
+                fontWeight: 600,
+                borderRadius: 9999,
+                cursor: "pointer",
+                minHeight: 44,
+              }}
+            >
+              {t("labs.editOrRetaste.edit", "Bewertung bearbeiten")}
+            </button>
+            <button
+              data-testid="edit-retaste-retaste-btn"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditRatingMode("retaste");
+                setDramTransitionKey(k => k + 1);
+              }}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "var(--labs-surface, #222)",
+                color: "var(--labs-text, #fff)",
+                border: "1px solid var(--labs-border, #333)",
+                borderRadius: 9999,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                minHeight: 44,
+              }}
+            >
+              {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
+            </button>
+          </div>
         </div>
       )}
     </div>

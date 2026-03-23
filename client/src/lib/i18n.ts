@@ -4858,6 +4858,11 @@ const resources = {
         statExplorationDesc: "Variety of regions & styles",
         statSmokeDesc: "Peat & smoke affinity",
         statTastingsDesc: "Sessions joined",
+        editOrRetaste: {
+          title: "Dram already rated",
+          edit: "Edit rating",
+          retaste: "Taste again",
+        },
       },
       m2: {
         ai: {
@@ -11303,6 +11308,11 @@ const resources = {
         statExplorationDesc: "Vielfalt bei Regionen & Stilen",
         statSmokeDesc: "Vorliebe für Rauch & Torf",
         statTastingsDesc: "Teilgenommene Sessions",
+        editOrRetaste: {
+          title: "Dram bereits bewertet",
+          edit: "Bewertung bearbeiten",
+          retaste: "Nochmal verkosten",
+        },
       },
       m2: {
         ai: {
