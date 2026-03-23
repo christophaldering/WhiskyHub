@@ -37,7 +37,7 @@ function getParticipantId(): string {
 
 export default function MeineWeltScreen() {
   const { th } = useV2Theme();
-  const { t } = useV2Lang();
+  const { t, lang } = useV2Lang();
   const [sub, setSub] = useState<MeineWeltSub>(null);
   const participantId = getParticipantId();
 
@@ -57,6 +57,7 @@ export default function MeineWeltScreen() {
     <MeineWeltHub
       th={th}
       t={t}
+      lang={lang}
       participantId={participantId}
       onNavigate={setSub}
     />

@@ -489,6 +489,39 @@ export interface Translations {
   offlineQueuedN: string;
   syncingLabel: string;
   onlineLabel: string;
+  mwPalateTimeline: string;
+  mwPalateTimelineEmpty: string;
+  mwTimelineTrendUp: string;
+  mwTimelineTrendDown: string;
+  mwTimelineTrendStable: string;
+  mwTimelineFinishScore: string;
+  mwTimelineSherryTrend: string;
+  mwTimelineRegionTrend: string;
+  mwTimelineCaskTrend: string;
+  mwTimelineAvgScore: string;
+  mwTimelineRatings: string;
+  mwMilestones: string;
+  mwMilestonesEmpty: string;
+  mwMilestone10: string;
+  mwMilestone25: string;
+  mwMilestone50: string;
+  mwMilestone100: string;
+  mwMilestone5Regions: string;
+  mwMilestone3Tastings: string;
+  mwMilestoneConsistency: string;
+  mwMilestoneTasteTwin: string;
+  mwMilestoneExplorer: string;
+  mwMilestoneConfidenceUp: string;
+  mwMilestoneNew: string;
+  mwMonthlyReview: string;
+  mwMonthlyReviewTitle: string;
+  mwMonthlyReviewRated: string;
+  mwMonthlyReviewNewRegions: string;
+  mwMonthlyReviewVsPrev: string;
+  mwMonthlyReviewUp: string;
+  mwMonthlyReviewDown: string;
+  mwMonthlyReviewSame: string;
+  mwMonthlyReviewEmpty: string;
 }
 
 const de: Translations = {
@@ -980,6 +1013,39 @@ const de: Translations = {
   offlineQueuedN: "{n} ausstehend",
   syncingLabel: "Synchronisiere\u2026",
   onlineLabel: "Wieder online",
+  mwPalateTimeline: "Gaumen-Timeline",
+  mwPalateTimelineEmpty: "Noch nicht genug Daten für eine Timeline. Bewerte weitere Whiskies!",
+  mwTimelineTrendUp: "Stärkere Tendenz zu",
+  mwTimelineTrendDown: "Weniger Fokus auf",
+  mwTimelineTrendStable: "Stabil",
+  mwTimelineFinishScore: "Finish-Score",
+  mwTimelineSherryTrend: "Sherry-Fässern",
+  mwTimelineRegionTrend: "Regionen erkundet",
+  mwTimelineCaskTrend: "Fass-Vielfalt",
+  mwTimelineAvgScore: "Ø Score",
+  mwTimelineRatings: "Bewertungen",
+  mwMilestones: "Meilensteine",
+  mwMilestonesEmpty: "Deine ersten Meilensteine warten auf dich!",
+  mwMilestone10: "10. Whisky bewertet",
+  mwMilestone25: "25. Whisky bewertet",
+  mwMilestone50: "50. Whisky bewertet",
+  mwMilestone100: "100. Whisky bewertet",
+  mwMilestone5Regions: "5 Regionen erkundet",
+  mwMilestone3Tastings: "3 Tastings besucht",
+  mwMilestoneConsistency: "Konsistenz verbessert",
+  mwMilestoneTasteTwin: "Erster Taste Twin gefunden",
+  mwMilestoneExplorer: "Exploration-Index gestiegen",
+  mwMilestoneConfidenceUp: "Konfidenz-Level aufgestiegen",
+  mwMilestoneNew: "Neu!",
+  mwMonthlyReview: "Dein Monat",
+  mwMonthlyReviewTitle: "Monatsrückblick",
+  mwMonthlyReviewRated: "bewertet",
+  mwMonthlyReviewNewRegions: "Neue Regionen",
+  mwMonthlyReviewVsPrev: "vs. Vormonat",
+  mwMonthlyReviewUp: "Punkte höher",
+  mwMonthlyReviewDown: "Punkte niedriger",
+  mwMonthlyReviewSame: "Gleich wie Vormonat",
+  mwMonthlyReviewEmpty: "Noch keine Bewertungen in diesem Monat.",
 };
 
 const en: Translations = {
@@ -1471,6 +1537,39 @@ const en: Translations = {
   offlineQueuedN: "{n} pending",
   syncingLabel: "Syncing\u2026",
   onlineLabel: "Back online",
+  mwPalateTimeline: "Palate Timeline",
+  mwPalateTimelineEmpty: "Not enough data for a timeline yet. Rate more whiskies!",
+  mwTimelineTrendUp: "Stronger tendency towards",
+  mwTimelineTrendDown: "Less focus on",
+  mwTimelineTrendStable: "Stable",
+  mwTimelineFinishScore: "Finish score",
+  mwTimelineSherryTrend: "sherry casks",
+  mwTimelineRegionTrend: "regions explored",
+  mwTimelineCaskTrend: "cask variety",
+  mwTimelineAvgScore: "Avg score",
+  mwTimelineRatings: "ratings",
+  mwMilestones: "Milestones",
+  mwMilestonesEmpty: "Your first milestones are waiting!",
+  mwMilestone10: "10th whisky rated",
+  mwMilestone25: "25th whisky rated",
+  mwMilestone50: "50th whisky rated",
+  mwMilestone100: "100th whisky rated",
+  mwMilestone5Regions: "5 regions explored",
+  mwMilestone3Tastings: "3 tastings attended",
+  mwMilestoneConsistency: "Consistency improved",
+  mwMilestoneTasteTwin: "First taste twin found",
+  mwMilestoneExplorer: "Exploration index increased",
+  mwMilestoneConfidenceUp: "Confidence level up",
+  mwMilestoneNew: "New!",
+  mwMonthlyReview: "Your Month",
+  mwMonthlyReviewTitle: "Monthly Review",
+  mwMonthlyReviewRated: "rated",
+  mwMonthlyReviewNewRegions: "New regions",
+  mwMonthlyReviewVsPrev: "vs. last month",
+  mwMonthlyReviewUp: "points higher",
+  mwMonthlyReviewDown: "points lower",
+  mwMonthlyReviewSame: "Same as last month",
+  mwMonthlyReviewEmpty: "No ratings this month yet.",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };

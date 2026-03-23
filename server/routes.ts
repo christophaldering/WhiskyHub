@@ -7209,6 +7209,258 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== PALATE TIMELINE (temporal aggregation) =====
+
+  app.get("/api/participants/:id/palate-timeline", async (req, res) => {
+    try {
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
+
+      const userRatings = await storage.getRatingsForParticipant(req.params.id);
+      if (userRatings.length < 3) {
+        return res.json({ periods: [], hasData: false });
+      }
+
+      const whiskyIds = [...new Set(userRatings.map(r => r.whiskyId))];
+      const allWhiskies = whiskyIds.length > 0 ? await storage.getWhiskiesByIds(whiskyIds) : [];
+      const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+
+      const tastingIds = [...new Set(userRatings.map(r => r.tastingId))];
+      const tastingsData: Array<{ id: string; ratingScale: number }> = [];
+      for (const tid of tastingIds) {
+        const t = await storage.getTasting(tid);
+        if (t) tastingsData.push({ id: t.id, ratingScale: t.ratingScale });
+      }
+      const scaleMap = new Map(tastingsData.map(t => [t.id, t.ratingScale]));
+
+      const byMonth: Record<string, typeof userRatings> = {};
+      for (const r of userRatings) {
+        const date = r.createdAt ? new Date(r.createdAt) : null;
+        if (!date) continue;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        if (!byMonth[key]) byMonth[key] = [];
+        byMonth[key].push(r);
+      }
+
+      const sortedMonths = Object.keys(byMonth).sort();
+      const periods = sortedMonths.map((month, idx) => {
+        const monthRatings = byMonth[month];
+        const norm = (r: typeof userRatings[0]) => {
+          const scale = scaleMap.get(r.tastingId) ?? 100;
+          const factor = scale === 100 ? 1 : 100 / scale;
+          return {
+            nose: (r.normalizedNose ?? (r.nose ?? 50) * factor),
+            taste: (r.normalizedTaste ?? (r.taste ?? 50) * factor),
+            finish: (r.normalizedFinish ?? (r.finish ?? 50) * factor),
+            overall: (r.normalizedScore ?? (r.overall ?? 50) * factor),
+          };
+        };
+
+        const scores = monthRatings.map(norm);
+        const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        const avgScores = {
+          nose: Math.round(avg(scores.map(s => s.nose)) * 10) / 10,
+          taste: Math.round(avg(scores.map(s => s.taste)) * 10) / 10,
+          finish: Math.round(avg(scores.map(s => s.finish)) * 10) / 10,
+          overall: Math.round(avg(scores.map(s => s.overall)) * 10) / 10,
+        };
+
+        const regions: Record<string, number> = {};
+        const casks: Record<string, number> = {};
+        for (const r of monthRatings) {
+          const w = whiskyMap.get(r.whiskyId);
+          if (w?.region) regions[w.region] = (regions[w.region] || 0) + 1;
+          if (w?.caskInfluence) casks[w.caskInfluence] = (casks[w.caskInfluence] || 0) + 1;
+        }
+
+        const topRegion = Object.entries(regions).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+        const topCask = Object.entries(casks).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+        let delta: { overall: number; finish: number } | null = null;
+        if (idx > 0) {
+          const prevMonth = sortedMonths[idx - 1];
+          const prevRatings = byMonth[prevMonth];
+          const prevScores = prevRatings.map(norm);
+          const prevAvg = {
+            overall: avg(prevScores.map(s => s.overall)),
+            finish: avg(prevScores.map(s => s.finish)),
+          };
+          delta = {
+            overall: Math.round((avgScores.overall - prevAvg.overall) * 10) / 10,
+            finish: Math.round((avgScores.finish - prevAvg.finish) * 10) / 10,
+          };
+        }
+
+        return {
+          month,
+          count: monthRatings.length,
+          avgScores,
+          topRegion,
+          topCask,
+          regionCount: Object.keys(regions).length,
+          delta,
+        };
+      });
+
+      res.json({ periods, hasData: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== MILESTONES (computed from existing data) =====
+
+  app.get("/api/participants/:id/milestones", async (req, res) => {
+    try {
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
+
+      const stats = await storage.getParticipantStats(req.params.id);
+      const participant = await storage.getParticipant(req.params.id);
+
+      const milestones: Array<{ key: string; icon: string; unlocked: boolean; category: string }> = [];
+
+      milestones.push({ key: "rating10", icon: "🥃", unlocked: stats.totalRatings >= 10, category: "quantitative" });
+      milestones.push({ key: "rating25", icon: "🏅", unlocked: stats.totalRatings >= 25, category: "quantitative" });
+      milestones.push({ key: "rating50", icon: "⭐", unlocked: stats.totalRatings >= 50, category: "quantitative" });
+      milestones.push({ key: "rating100", icon: "💎", unlocked: stats.totalRatings >= 100, category: "quantitative" });
+
+      const regionCount = Object.keys(stats.ratedRegions).length;
+      milestones.push({ key: "regions5", icon: "🌍", unlocked: regionCount >= 5, category: "quantitative" });
+
+      milestones.push({ key: "tastings3", icon: "🎉", unlocked: stats.totalTastings >= 3, category: "quantitative" });
+
+      const stabilityScore = participant?.ratingStabilityScore;
+      milestones.push({ key: "consistency", icon: "🎯", unlocked: stabilityScore != null && stabilityScore > 70, category: "qualitative" });
+
+      let hasTasteTwin = false;
+      try {
+        const twins = await storage.getTasteTwins(req.params.id);
+        hasTasteTwin = twins.length > 0;
+      } catch { /* ignore */ }
+      milestones.push({ key: "tasteTwin", icon: "👥", unlocked: hasTasteTwin, category: "qualitative" });
+
+      const explorationIndex = participant?.explorationIndex;
+      milestones.push({ key: "explorer", icon: "🧭", unlocked: explorationIndex != null && explorationIndex > 50, category: "qualitative" });
+
+      let confidenceUp = false;
+      if (stats.totalRatings >= 10) {
+        const userRatings = await storage.getRatingsForParticipant(req.params.id);
+        const scored = userRatings.filter(r => r.normalizedScore != null).map(r => r.normalizedScore as number);
+        if (scored.length >= 10) {
+          const mean = scored.reduce((a, b) => a + b, 0) / scored.length;
+          const stdDev = Math.sqrt(scored.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / scored.length);
+          confidenceUp = stdDev < 15;
+        }
+      }
+      milestones.push({ key: "confidenceUp", icon: "📈", unlocked: confidenceUp, category: "progress" });
+
+      res.json({ milestones });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== MONTHLY REVIEW =====
+
+  app.get("/api/participants/:id/monthly-review", async (req, res) => {
+    try {
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
+
+      const userRatings = await storage.getRatingsForParticipant(req.params.id);
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+
+      const whiskyIds = [...new Set(userRatings.map(r => r.whiskyId))];
+      const allWhiskies = whiskyIds.length > 0 ? await storage.getWhiskiesByIds(whiskyIds) : [];
+      const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+
+      const tastingIds = [...new Set(userRatings.map(r => r.tastingId))];
+      const tastingsData: Array<{ id: string; ratingScale: number }> = [];
+      for (const tid of tastingIds) {
+        const t = await storage.getTasting(tid);
+        if (t) tastingsData.push({ id: t.id, ratingScale: t.ratingScale });
+      }
+      const scaleMap = new Map(tastingsData.map(t => [t.id, t.ratingScale]));
+
+      const normalizeScore = (r: typeof userRatings[0]) => {
+        const scale = scaleMap.get(r.tastingId) ?? 100;
+        return r.normalizedScore ?? (r.overall ?? 50) * (100 / scale);
+      };
+
+      const getMonthKey = (r: typeof userRatings[0]) => {
+        const d = r.createdAt ? new Date(r.createdAt) : null;
+        if (!d) return null;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+
+      const currentRatings = userRatings.filter(r => getMonthKey(r) === currentMonth);
+      const prevRatings = userRatings.filter(r => getMonthKey(r) === prevMonth);
+
+      if (currentRatings.length === 0) {
+        return res.json({ hasData: false, month: currentMonth });
+      }
+
+      const currentAvg = currentRatings.reduce((s, r) => s + normalizeScore(r), 0) / currentRatings.length;
+
+      const currentRegions = new Set<string>();
+      const prevRegions = new Set<string>();
+      for (const r of currentRatings) {
+        const w = whiskyMap.get(r.whiskyId);
+        if (w?.region) currentRegions.add(w.region);
+      }
+
+      const allPrevRatings = userRatings.filter(r => {
+        const mk = getMonthKey(r);
+        return mk !== null && mk < currentMonth;
+      });
+      for (const r of allPrevRatings) {
+        const w = whiskyMap.get(r.whiskyId);
+        if (w?.region) prevRegions.add(w.region);
+      }
+
+      const newRegions = [...currentRegions].filter(r => !prevRegions.has(r));
+
+      let scoreDelta: number | null = null;
+      if (prevRatings.length > 0) {
+        const prevAvg = prevRatings.reduce((s, r) => s + normalizeScore(r), 0) / prevRatings.length;
+        scoreDelta = Math.round((currentAvg - prevAvg) * 10) / 10;
+      }
+
+      const monthNames: Record<string, { de: string; en: string }> = {
+        "01": { de: "Januar", en: "January" },
+        "02": { de: "Februar", en: "February" },
+        "03": { de: "März", en: "March" },
+        "04": { de: "April", en: "April" },
+        "05": { de: "Mai", en: "May" },
+        "06": { de: "Juni", en: "June" },
+        "07": { de: "Juli", en: "July" },
+        "08": { de: "August", en: "August" },
+        "09": { de: "September", en: "September" },
+        "10": { de: "Oktober", en: "October" },
+        "11": { de: "November", en: "November" },
+        "12": { de: "Dezember", en: "December" },
+      };
+      const monthNum = currentMonth.split("-")[1];
+      const monthLabel = monthNames[monthNum] || { de: monthNum, en: monthNum };
+
+      res.json({
+        hasData: true,
+        month: currentMonth,
+        monthLabel,
+        ratingsCount: currentRatings.length,
+        avgScore: Math.round(currentAvg * 10) / 10,
+        newRegions,
+        scoreDelta,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== FRIEND ACTIVITY FEED =====
 
   app.get("/api/participants/:id/friend-activity", async (req, res) => {
