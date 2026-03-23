@@ -5,6 +5,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
+  Globe,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -12,7 +13,7 @@ import { friendsApi, activityApi, tastingApi, leaderboardApi, pidHeaders } from 
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
-type Tab = "friends" | "leaderboard" | "sessions" | "activity";
+type Tab = "friends" | "leaderboard" | "sessions" | "activity" | "community";
 
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
@@ -237,6 +238,7 @@ export default function LabsCircle() {
     { key: "leaderboard", label: "Board", icon: Trophy },
     { key: "sessions", label: "Sessions", icon: Wine },
     { key: "activity", label: "Feed", icon: Activity },
+    { key: "community", label: "Community", icon: Globe },
   ];
 
   return (
@@ -292,7 +294,13 @@ export default function LabsCircle() {
               key={t.key}
               className={`labs-chip ${tab === t.key ? "labs-chip-active" : ""}`}
               style={{ display: "flex", alignItems: "center" }}
-              onClick={() => setTab(t.key)}
+              onClick={() => {
+                if (t.key === "community") {
+                  navigate("/labs/community");
+                  return;
+                }
+                setTab(t.key);
+              }}
               data-testid={`labs-circle-tab-${t.key}`}
             >
               <t.icon className="labs-circle-tab-icon" style={{ width: 14, height: 14, flexShrink: 0 }} />
