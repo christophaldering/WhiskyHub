@@ -132,8 +132,8 @@ export default function LabsSolo() {
     setStep("form");
   }, []);
 
-  const handleSkip = useCallback(() => {
-    setWhisky({ name: "", distillery: "", region: "", cask: "", age: "", abv: "", fromAI: false });
+  const handleCollectionSelect = useCallback((w: CapturedWhisky) => {
+    setWhisky(w);
     setStep("rating");
   }, []);
 
@@ -258,10 +258,11 @@ export default function LabsSolo() {
     return (
       <SoloCaptureScreen
         participantId={participantId}
+        isAuthenticated={isUserAuthenticated()}
         onManual={handleManual}
         onCaptured={handleCaptured}
         onBarcode={handleBarcode}
-        onSkip={handleSkip}
+        onCollectionSelect={handleCollectionSelect}
         onBack={goBack}
       />
     );

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, PenLine, Barcode, SkipForward, Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Camera, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine } from "lucide-react";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
 export interface CapturedWhisky {
   name: string;
@@ -16,22 +17,38 @@ export interface CapturedWhisky {
 
 interface Props {
   participantId: string;
+  isAuthenticated: boolean;
   onManual: () => void;
   onCaptured: (w: CapturedWhisky) => void;
   onBarcode: (barcode: string) => void;
-  onSkip: () => void;
+  onCollectionSelect: (w: CapturedWhisky) => void;
   onBack: () => void;
 }
 
 type Status = "idle" | "identifying" | "error" | "barcode" | "feedback";
 
-export default function SoloCaptureScreen({ participantId, onManual, onCaptured, onBarcode, onSkip, onBack }: Props) {
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack }: Props) {
   const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
   const [aiResult, setAiResult] = useState<BottleRecognitionResult | null>(null);
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+
+  const handleCollectionPickerSelect = (selected: SelectedWhisky) => {
+    const captured: CapturedWhisky = {
+      name: selected.name,
+      distillery: selected.distillery || "",
+      region: selected.region || "",
+      cask: selected.cask || "",
+      age: selected.age || "",
+      abv: selected.abv || "",
+      fromAI: false,
+    };
+    setShowCollectionPicker(false);
+    onCollectionSelect(captured);
+  };
 
   const handlePhoto = () => {
     fileRef.current?.click();
@@ -398,39 +415,41 @@ export default function SoloCaptureScreen({ participantId, onManual, onCaptured,
             {t("v2.solo.barcodeDesc", "Read an EAN or QR code")}
           </span>
         </button>
+
+        {isAuthenticated && (
+          <button
+            onClick={() => setShowCollectionPicker(true)}
+            data-testid="solo-collection-btn"
+            className="labs-card labs-card-interactive"
+            style={{
+              padding: "var(--labs-space-md)",
+              borderRadius: "var(--labs-radius)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "var(--labs-space-sm)",
+              cursor: "pointer",
+              minHeight: 80,
+            }}
+          >
+            <Wine size={24} style={{ color: "var(--labs-accent)" }} />
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.collection", "From my Collection")}
+            </span>
+            <span className="ty-caption" style={{ color: "var(--labs-text-muted)", textAlign: "center" }}>
+              {t("v2.solo.collectionDesc", "Pick a whisky from your journal or collection")}
+            </span>
+          </button>
+        )}
       </div>
 
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--labs-space-md)",
-        marginBottom: "var(--labs-space-lg)",
-      }}>
-        <div style={{ flex: 1, height: 1, background: "var(--labs-border)" }} />
-      </div>
-
-      <button
-        onClick={onSkip}
-        data-testid="solo-skip-btn"
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "var(--labs-space-sm)",
-          padding: "var(--labs-space-sm)",
-          minHeight: 44,
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--labs-text-muted)",
-          fontFamily: "var(--font-ui)",
-          fontSize: 14,
-        }}
-      >
-        <SkipForward size={18} />
-        {t("v2.solo.skip", "Rate without details")}
-      </button>
+      {showCollectionPicker && (
+        <CollectionPicker
+          participantId={participantId}
+          onSelect={handleCollectionPickerSelect}
+          onClose={() => setShowCollectionPicker(false)}
+        />
+      )}
     </div>
   );
 }
