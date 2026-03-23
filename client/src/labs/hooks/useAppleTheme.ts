@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { THEMES, SP, type ThemeTokens } from "@/labs-apple/theme/tokens";
+import { THEMES, SP, type ThemeTokens } from "@/labs/theme/tokens";
 
 export { SP };
 export type { ThemeTokens };
