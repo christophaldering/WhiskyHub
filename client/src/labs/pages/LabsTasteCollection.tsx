@@ -15,6 +15,7 @@ import {
   ArrowRight, Globe, FileDown,
 } from "lucide-react";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 
 type SortKey = "name" | "rating" | "price" | "added";
 type StatusFilter = "all" | "open" | "closed" | "empty";
@@ -546,6 +547,7 @@ export default function LabsTasteCollection() {
                       {(isSelected || isPriceSelected) && <Check className="w-3 h-3" style={{ color: "var(--labs-bg)" }} />}
                     </div>
                   )}
+                  <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={44} height={56} testId={`img-collection-${item.id}`} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}</div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--labs-text-muted)" }}>
@@ -577,7 +579,10 @@ export default function LabsTasteCollection() {
 
                 {expanded && (
                   <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--labs-border)" }}>
-                    <div className="flex items-center gap-2 mt-3 mb-2">
+                    <div className="flex items-start gap-3 mt-3 mb-2">
+                      <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={64} height={88} testId={`img-collection-detail-${item.id}`} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="flex items-center gap-2 mb-2">
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{
                         background: manual ? "rgba(139,92,246,0.1)" : "rgba(59,130,246,0.1)",
                         color: manual ? "#8b5cf6" : "var(--labs-info)",
@@ -647,6 +652,8 @@ export default function LabsTasteCollection() {
                       <button onClick={() => setDeleteTarget(item)} style={{ padding: "5px 10px", fontSize: 11, color: "var(--labs-danger)", background: "transparent", border: "1px solid var(--labs-danger)", borderRadius: 8, cursor: "pointer", opacity: 0.8 }} data-testid={`button-labs-delete-${item.id}`}>
                         <Trash2 className="w-3 h-3" />
                       </button>
+                    </div>
+                      </div>
                     </div>
                   </div>
                 )}
