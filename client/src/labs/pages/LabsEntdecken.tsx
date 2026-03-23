@@ -64,13 +64,13 @@ export default function LabsEntdecken() {
       const headers = pid ? { "x-participant-id": pid } : {};
       const [ownRes, histRes, insRes, unifiedRes] = await Promise.all([
         fetch("/api/tastings", { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch("/api/historical-tastings", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch("/api/historical-tastings/insights", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch("/api/historical/tastings", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch("/api/historical/public-insights", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
         fetch("/api/historical/tastings?includeOwn=true&limit=200", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
       ]);
       const ownTastings = unifiedRes?.ownTastings || ownRes || [];
-      const archiveTastings = histRes || [];
-      const isMember = !!histRes;
+      const archiveTastings = histRes?.tastings || [];
+      const isMember = archiveTastings.length > 0 || ownTastings.length > 0;
       return { ownTastings, archiveTastings, insights: insRes, isMember };
     },
     enabled: activeTab === "tastings" || activeTab === "insights",
