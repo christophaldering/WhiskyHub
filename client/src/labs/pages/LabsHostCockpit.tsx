@@ -162,6 +162,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const userSelectedTabRef = useRef(false);
   const lastStatusRef = useRef<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [isWideDesktop, setIsWideDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1200);
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   useEffect(() => {
@@ -169,7 +170,14 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     setIsMobile(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    const mqWide = window.matchMedia("(min-width: 1200px)");
+    setIsWideDesktop(mqWide.matches);
+    const wideHandler = (e: MediaQueryListEvent) => setIsWideDesktop(e.matches);
+    mqWide.addEventListener("change", wideHandler);
+    return () => {
+      mq.removeEventListener("change", handler);
+      mqWide.removeEventListener("change", wideHandler);
+    };
   }, []);
   useEffect(() => {
     if (!headerRef.current || !isMobile) return;
@@ -696,11 +704,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         }
         .cockpit-grid {
           display: grid;
-          grid-template-columns: 1fr 380px;
+          grid-template-columns: 260px 1fr 360px;
           gap: 20px;
           align-items: start;
         }
-        @media (max-width: 1100px) {
+        @media (max-width: 1199px) {
           .cockpit-grid {
             grid-template-columns: 1fr 340px;
             gap: 16px;
@@ -851,6 +859,59 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         }
         .cockpit-dram-row[data-clickable="true"]:hover {
           background: var(--labs-surface-elevated);
+        }
+        .cockpit-lineup-sidebar {
+          position: sticky;
+          top: 16px;
+          max-height: calc(100vh - 32px);
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .cockpit-compact-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 10px;
+          border: 1.5px solid transparent;
+          transition: all 0.15s;
+          cursor: default;
+        }
+        .cockpit-compact-row[data-active="true"] {
+          background: color-mix(in srgb, var(--labs-accent) 12%, var(--labs-surface));
+          border-color: var(--labs-accent);
+        }
+        .cockpit-compact-row[data-clickable="true"] {
+          cursor: pointer;
+        }
+        .cockpit-compact-row[data-clickable="true"]:hover {
+          background: var(--labs-surface-elevated);
+        }
+        .cockpit-compact-badge {
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          flex-shrink: 0;
+          transition: all 0.15s;
+        }
+        .cockpit-compact-progress-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          transition: background 0.3s;
+        }
+        @media (max-width: 1199px) {
+          .cockpit-lineup-sidebar {
+            display: none;
+          }
         }
         .cockpit-dram-badge {
           width: 32px;
@@ -1155,26 +1216,52 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </>
         ) : (
           <>
-            {/* Desktop: Progress bar + two-column grid */}
-            {isLive && whiskies.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>Overall Progress</span>
-                  <span style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{overallProgress}%</span>
-                </div>
-                <div className="cockpit-progress-bar">
-                  <div className="cockpit-progress-fill" style={{ width: `${overallProgress}%`, background: overallProgress === 100 ? "var(--labs-success)" : "var(--labs-accent)" }} />
-                </div>
-              </div>
-            )}
-
+            {/* Desktop: 3-column grid (≥1200px) or 2-column (768–1199px) */}
             <div className="cockpit-grid">
+              {/* Left column: Lineup sidebar (visible ≥1200px only) */}
+              <div className="cockpit-lineup-sidebar" data-testid="cockpit-lineup-sidebar">
+                {/* Session status badge */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 10,
+                    background: status === "open" ? "var(--labs-success-muted)" : status === "reveal" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                    color: status === "open" ? "var(--labs-success)" : status === "reveal" ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                  }} data-testid="cockpit-sidebar-status">
+                    {status === "open" && <span className="cockpit-live-dot" />}
+                    {isDraft ? "Draft" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : "Completed"}
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+                    {whiskies.length} Drams
+                  </span>
+                </div>
+
+                {/* Overall progress */}
+                {isLive && whiskies.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>Progress</span>
+                      <span style={{ fontSize: 10, color: "var(--labs-accent)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{overallProgress}%</span>
+                    </div>
+                    <div className="cockpit-progress-bar">
+                      <div className="cockpit-progress-fill" style={{ width: `${overallProgress}%`, background: overallProgress === 100 ? "var(--labs-success)" : "var(--labs-accent)" }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Compact lineup list */}
+                {renderCompactLineup()}
+              </div>
+
+              {/* Middle column: Controls, Lineup (hidden when sidebar visible), Participants, My Rating */}
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {renderControls(false)}
-                {renderLineup()}
+                {!isWideDesktop && renderLineup()}
                 {renderParticipants()}
                 {renderMyRating()}
               </div>
+
+              {/* Right column: Guest View */}
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {renderGuestView()}
               </div>
@@ -1853,6 +1940,63 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         <div className="cockpit-card-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {controlButtons}
         </div>
+      </div>
+    );
+  }
+
+  function renderCompactLineup() {
+    if (whiskies.length === 0) {
+      return (
+        <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 12 }}>
+          No drams yet
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }} data-testid="cockpit-compact-lineup">
+        {whiskies.map((w: any, idx: number) => {
+          const isCurrent = isGuided ? idx === guidedIdx : idx === guestDramIdx;
+          const isPast = isGuided ? idx < guidedIdx : false;
+          const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
+          const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
+          const avgScore = whiskyRatings.length > 0
+            ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length)
+            : null;
+          const pct = totalParticipants > 0 ? Math.round((ratedCount / totalParticipants) * 100) : 0;
+          const shortName = (w.name || `Whisky ${idx + 1}`).length > 18
+            ? (w.name || `Whisky ${idx + 1}`).slice(0, 16) + "…"
+            : (w.name || `Whisky ${idx + 1}`);
+
+          return (
+            <div
+              key={w.id}
+              className="cockpit-compact-row"
+              data-active={isCurrent}
+              data-clickable={isGuided}
+              onClick={() => isGuided && guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 })}
+              data-testid={`cockpit-compact-lineup-${idx}`}
+            >
+              <div className="cockpit-compact-badge" style={{
+                background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
+                color: isCurrent ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
+              }}>
+                {isPast ? <CheckCircle2 style={{ width: 13, height: 13 }} /> : isBlind ? blindLabel(idx) : idx + 1}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, fontWeight: 600, color: isCurrent ? "var(--labs-text)" : "var(--labs-text-secondary)" }}>
+                {shortName}
+              </div>
+
+              <div className="cockpit-compact-progress-dot" style={{
+                background: pct === 100 ? "var(--labs-success)" : pct > 0 ? "var(--labs-accent)" : "var(--labs-border)",
+              }} title={`${pct}% rated`} />
+
+              {avgScore !== null && (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{avgScore}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
