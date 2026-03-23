@@ -5,7 +5,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
-  Globe,
+  Globe, Mail, Send,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -186,6 +186,24 @@ export default function LabsCircle() {
     mutationFn: (friendId: string) => friendsApi.decline(pid!, friendId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friends-pending", pid] });
+    },
+  });
+
+  const [resendingInvite, setResendingInvite] = useState<string | null>(null);
+  const [resentSuccess, setResentSuccess] = useState<string | null>(null);
+  const [resentError, setResentError] = useState<string | null>(null);
+  const resendInviteMutation = useMutation({
+    mutationFn: (friendId: string) => friendsApi.resendInvite(pid!, friendId),
+    onSuccess: (_data, friendId) => {
+      setResendingInvite(null);
+      setResentSuccess(friendId);
+      setResentError(null);
+      setTimeout(() => setResentSuccess(null), 3000);
+    },
+    onError: (_err, friendId) => {
+      setResendingInvite(null);
+      setResentError(friendId);
+      setTimeout(() => setResentError(null), 3000);
     },
   });
 
@@ -753,12 +771,15 @@ export default function LabsCircle() {
             </div>
             {(() => {
               const onlineList = friendList.filter(f => onlineFriendIds.has(f.id as string));
-              const offlineList = friendList.filter(f => !onlineFriendIds.has(f.id as string));
-              const renderFriendCard = (friend: Record<string, unknown>, i: number, isOnline: boolean) => {
+              const offlineRegistered = friendList.filter(f => !onlineFriendIds.has(f.id as string) && f.isRegistered);
+              const invitedList = friendList.filter(f => !onlineFriendIds.has(f.id as string) && !f.isRegistered);
+              const renderFriendCard = (friend: Record<string, unknown>, i: number, status: "online" | "offline" | "invited") => {
                 const fid = friend.id as string;
                 const displayName = stripGuestSuffix([friend.firstName, friend.lastName].filter(v => v != null && typeof v !== "object").map(String).join(" ") || String(friend.name ?? "") || "Friend");
                 const onlineInfo = onlineFriendsMap.get(fid);
                 const isSelf = onlineInfo?.participantId === pid || friend.matchedParticipantId === pid;
+                const isOnline = status === "online";
+                const isInvited = status === "invited";
                 return (
                   <div
                     key={fid || i}
@@ -766,6 +787,7 @@ export default function LabsCircle() {
                     style={{
                       gap: 12,
                       ...(isOnline ? { borderLeft: "3px solid var(--labs-success)", background: "color-mix(in srgb, var(--labs-success) 6%, var(--labs-surface))" } : {}),
+                      ...(isInvited ? { borderLeft: "3px solid var(--labs-warning, #f59e0b)" } : {}),
                       cursor: isOnline ? "pointer" : undefined,
                     }}
                     onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
@@ -779,15 +801,15 @@ export default function LabsCircle() {
                           className="w-10 h-10 rounded-full"
                           style={{
                             objectFit: "cover",
-                            border: isOnline ? "2px solid var(--labs-success)" : "2px solid var(--labs-accent-muted)",
+                            border: isOnline ? "2px solid var(--labs-success)" : isInvited ? "2px solid var(--labs-warning, #f59e0b)" : "2px solid var(--labs-accent-muted)",
                           }}
                         />
                       ) : (
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
                         style={{
-                          background: isOnline ? "color-mix(in srgb, var(--labs-success) 20%, var(--labs-surface))" : "var(--labs-accent-muted)",
-                          color: isOnline ? "var(--labs-success)" : "var(--labs-accent)",
+                          background: isOnline ? "color-mix(in srgb, var(--labs-success) 20%, var(--labs-surface))" : isInvited ? "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))" : "var(--labs-accent-muted)",
+                          color: isOnline ? "var(--labs-success)" : isInvited ? "var(--labs-warning, #f59e0b)" : "var(--labs-accent)",
                         }}
                       >
                         {displayName[0]}
@@ -810,10 +832,19 @@ export default function LabsCircle() {
                             ONLINE
                           </span>
                         )}
+                        {isInvited && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-warning, #f59e0b)", color: "#fff" }} data-testid={`labs-circle-invited-badge-${fid}`}>
+                            INVITED
+                          </span>
+                        )}
                       </div>
                       {isOnline ? (
                         <p className="ty-caption mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
                           Active {timeAgo(onlineInfo?.lastSeenAt)}
+                        </p>
+                      ) : isInvited ? (
+                        <p className="ty-caption mt-0.5" style={{ color: "var(--labs-warning, #f59e0b)" }}>
+                          Not yet registered
                         </p>
                       ) : typeof friend.email === "string" && friend.email ? (
                         <p className="ty-caption truncate">
@@ -824,6 +855,35 @@ export default function LabsCircle() {
                     <div className="flex items-center gap-2">
                       {isOnline && (
                         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                      )}
+                      {isInvited && (
+                        <button
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                          style={{
+                            background: resentSuccess === fid ? "var(--labs-success-muted, rgba(34,197,94,0.15))" : resentError === fid ? "var(--labs-danger-muted, rgba(239,68,68,0.15))" : "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))",
+                            color: resentSuccess === fid ? "var(--labs-success)" : resentError === fid ? "var(--labs-danger, #ef4444)" : "var(--labs-warning, #f59e0b)",
+                            border: "none",
+                            cursor: resendingInvite === fid ? "wait" : "pointer",
+                          }}
+                          disabled={resendingInvite === fid || resentSuccess === fid}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setResentError(null);
+                            setResendingInvite(fid);
+                            resendInviteMutation.mutate(fid);
+                          }}
+                          data-testid={`labs-circle-resend-invite-${fid}`}
+                        >
+                          {resendingInvite === fid ? (
+                            <>Sending…</>
+                          ) : resentSuccess === fid ? (
+                            <><Check className="w-3 h-3" /> Sent!</>
+                          ) : resentError === fid ? (
+                            <><X className="w-3 h-3" /> Failed</>
+                          ) : (
+                            <><Send className="w-3 h-3" /> Resend</>
+                          )}
+                        </button>
                       )}
                         {!isSelf && (
                         <button
@@ -854,19 +914,31 @@ export default function LabsCircle() {
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>{onlineList.length}</span>
                       </p>
                       <div className="labs-grouped-list">
-                        {onlineList.map((f, i) => renderFriendCard(f, i, true))}
+                        {onlineList.map((f, i) => renderFriendCard(f, i, "online"))}
                       </div>
                     </div>
                   )}
-                  {offlineList.length > 0 && (
-                    <div>
+                  {offlineRegistered.length > 0 && (
+                    <div className="mb-4">
                       <p className="labs-section-label flex items-center gap-2 mb-2">
                         <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
                         <span style={{ color: "var(--labs-text-secondary)" }}>Offline</span>
-                        <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineList.length}</span>
+                        <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineRegistered.length}</span>
                       </p>
                       <div className="labs-grouped-list">
-                        {offlineList.map((f, i) => renderFriendCard(f, i + onlineList.length, false))}
+                        {offlineRegistered.map((f, i) => renderFriendCard(f, i + onlineList.length, "offline"))}
+                      </div>
+                    </div>
+                  )}
+                  {invitedList.length > 0 && (
+                    <div>
+                      <p className="labs-section-label flex items-center gap-2 mb-2">
+                        <Mail className="w-3.5 h-3.5" style={{ color: "var(--labs-warning, #f59e0b)" }} />
+                        <span style={{ color: "var(--labs-warning, #f59e0b)" }}>Invited</span>
+                        <span className="text-[11px] px-1.5 rounded-full" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))", color: "var(--labs-warning, #f59e0b)" }}>{invitedList.length}</span>
+                      </p>
+                      <div className="labs-grouped-list">
+                        {invitedList.map((f, i) => renderFriendCard(f, i + onlineList.length + offlineRegistered.length, "invited"))}
                       </div>
                     </div>
                   )}

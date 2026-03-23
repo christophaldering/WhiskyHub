@@ -3590,8 +3590,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             }
             let friendPhoto: string | null = null;
             if (match) { try { const prof = await storage.getProfile(match.id); if (prof?.photoUrl) friendPhoto = prof.photoUrl; } catch {} }
-            return { ...f, photoUrl: friendPhoto, matchedParticipantId: match?.id || null };
-          } catch { return { ...f, photoUrl: null, matchedParticipantId: null }; }
+            return { ...f, photoUrl: friendPhoto, matchedParticipantId: match?.id || null, isRegistered: !!match };
+          } catch { return { ...f, photoUrl: null, matchedParticipantId: null, isRegistered: false }; }
         })
       );
       res.json(enriched);
@@ -3719,6 +3719,37 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       res.status(201).json({ ...friend, emailSent });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:id/friends/:friendId/resend-invite", async (req, res) => {
+    try {
+      const authCheck = await requireOwnerOrAdmin(req, req.params.id);
+      if (!authCheck.authorized) return res.status(authCheck.status).json({ message: authCheck.message });
+
+      const friends = await storage.getWhiskyFriends(req.params.id);
+      const friend = friends.find((f: any) => f.id === req.params.friendId);
+      if (!friend) return res.status(404).json({ message: "Friend not found" });
+
+      if (!friend.email) return res.status(400).json({ message: "This friend has no email address" });
+
+      const match = await storage.getParticipantByEmail(friend.email);
+      if (match) return res.status(400).json({ message: "This friend is already registered on CaskSense" });
+
+      const adder = await storage.getParticipant(req.params.id);
+      const adderName = adder?.name || "A friend";
+      const platformLink = process.env.APP_BASE_URL || "https://casksense.com";
+      const lang = (req.headers["accept-language"] || "").startsWith("de") ? "de" : "en";
+      const emailContent = buildFriendInviteEmail({
+        adderName,
+        recipientName: friend.firstName,
+        platformLink,
+        language: lang,
+      });
+      const emailSent = await sendEmail({ to: friend.email, ...emailContent });
+      res.json({ success: true, emailSent });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
