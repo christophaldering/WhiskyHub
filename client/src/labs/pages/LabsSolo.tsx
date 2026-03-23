@@ -346,11 +346,7 @@ export default function LabsSolo() {
       setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
       setUnknownPrice(d.price ? String(d.price) : "");
       setPhotoUrl(d.imageUrl || "");
-      setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
-      setDetailTouched(false);
       setOverrideActive(false);
-      setDetailChips({ nose: [], taste: [], finish: [] });
-      setDetailTexts({ nose: "", taste: "", finish: "" });
       setSoloVoiceMemo(null);
       setRatingFlowStep(0);
       setCandidates([]);
@@ -358,6 +354,20 @@ export default function LabsSolo() {
       setIsMenuMode(false);
       setWbLookupResult("");
       setError("");
+
+      let restoredScores: { nose: number; taste: number; finish: number } | null = null;
+
+      if (d.tasteNotes) {
+        try {
+          const parsed = JSON.parse(d.tasteNotes);
+          if (parsed && typeof parsed.noseScore === "number" && typeof parsed.tasteScore === "number" && typeof parsed.finishScore === "number") {
+            restoredScores = { nose: parsed.noseScore, taste: parsed.tasteScore, finish: parsed.finishScore };
+          }
+        } catch {}
+      }
+
+      setDetailChips({ nose: [], taste: [], finish: [] });
+      setDetailTexts({ nose: "", taste: "", finish: "" });
 
       if (d.noseNotes) {
         let cleaned = d.noseNotes;
@@ -368,20 +378,11 @@ export default function LabsSolo() {
         cleaned = cleaned.trim();
         setNotes(cleaned);
 
-        const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES\]/);
-        if (scoresMatch) {
-          const restoredNose = parseInt(scoresMatch[1]);
-          const restoredTaste = parseInt(scoresMatch[2]);
-          const restoredFinish = parseInt(scoresMatch[3]);
-          setDetailedScores({ nose: restoredNose, taste: restoredTaste, finish: restoredFinish });
-          setDetailTouched(true);
-          const noseScored = restoredNose !== scaleMid;
-          const tasteScored = restoredTaste !== scaleMid;
-          const finishScored = restoredFinish !== scaleMid;
-          if (noseScored && tasteScored && finishScored) setRatingFlowStep(3);
-          else if (noseScored && tasteScored) setRatingFlowStep(2);
-          else if (noseScored) setRatingFlowStep(1);
-          else setRatingFlowStep(0);
+        if (!restoredScores) {
+          const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)(?:\s*Balance:\d+)?\s*\[\/SCORES\]/);
+          if (scoresMatch) {
+            restoredScores = { nose: parseInt(scoresMatch[1]), taste: parseInt(scoresMatch[2]), finish: parseInt(scoresMatch[3]) };
+          }
         }
 
         const dims: DimKey[] = ["nose", "taste", "finish"];
@@ -409,6 +410,21 @@ export default function LabsSolo() {
         }
       }
 
+      if (restoredScores) {
+        setDetailedScores(restoredScores);
+        setDetailTouched(true);
+        const noseScored = restoredScores.nose !== scaleMid;
+        const tasteScored = restoredScores.taste !== scaleMid;
+        const finishScored = restoredScores.finish !== scaleMid;
+        if (noseScored && tasteScored && finishScored) setRatingFlowStep(3);
+        else if (noseScored && tasteScored) setRatingFlowStep(2);
+        else if (noseScored) setRatingFlowStep(1);
+        else setRatingFlowStep(0);
+      } else {
+        setDetailedScores({ nose: scaleMid, taste: scaleMid, finish: scaleMid });
+        setDetailTouched(false);
+      }
+
       if (d.voiceMemoUrl || d.voiceMemoTranscript) {
         setSoloVoiceMemo({
           audioUrl: d.voiceMemoUrl || null,
@@ -430,7 +446,8 @@ export default function LabsSolo() {
     const hasChipsOrTexts = (["nose", "taste", "finish"] as DimKey[]).some(
       (d) => detailChips[d].length > 0 || detailTexts[d].trim()
     );
-    if (!detailTouched && !hasChipsOrTexts) return "";
+    const hasNonDefaultScores = detailedScores.nose !== scaleMid || detailedScores.taste !== scaleMid || detailedScores.finish !== scaleMid;
+    if (!detailTouched && !hasChipsOrTexts && !hasNonDefaultScores) return "";
     const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} [/SCORES]`];
     const dims: DimKey[] = ["nose", "taste", "finish"];
     for (const d of dims) {
@@ -446,6 +463,7 @@ export default function LabsSolo() {
   const buildDraftBodyRef = useRef<() => Record<string, any>>(() => ({}));
   buildDraftBodyRef.current = () => {
     const scoresBlock = buildScoresBlock();
+    const hasScores = detailTouched || detailedScores.nose !== scaleMid || detailedScores.taste !== scaleMid || detailedScores.finish !== scaleMid;
     const body: Record<string, any> = {
       title: whiskyName.trim(),
       whiskyName: whiskyName.trim(),
@@ -456,6 +474,9 @@ export default function LabsSolo() {
       imageUrl: photoUrl || undefined,
       status: "draft",
     };
+    if (hasScores) {
+      body.tasteNotes = JSON.stringify({ noseScore: detailedScores.nose, tasteScore: detailedScores.taste, finishScore: detailedScores.finish });
+    }
     if (unknownAge.trim()) body.age = unknownAge.trim();
     if (unknownAbv.trim()) body.abv = unknownAbv.trim();
     if (unknownCask.trim()) body.caskType = unknownCask.trim();
@@ -529,6 +550,41 @@ export default function LabsSolo() {
   }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, soloVoiceMemo?.audioUrl, soloVoiceMemo?.transcript, soloVoiceMemo?.durationSeconds,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     JSON.stringify(detailChips), JSON.stringify(detailTexts)]);
+
+  const unlockedRef = useRef(unlocked);
+  unlockedRef.current = unlocked;
+  const pidRef = useRef(pid);
+  pidRef.current = pid;
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentPid = pidRef.current;
+      if (!currentPid || !unlockedRef.current) return;
+      if (draftStatusRef.current === "finalized") return;
+      const body = buildDraftBodyRef.current();
+      if (!body.title) return;
+      const entryId = draftEntryIdRef.current;
+      try {
+        if (entryId) {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PATCH", `/api/journal/${currentPid}/${entryId}`, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.setRequestHeader("x-participant-id", currentPid);
+          xhr.send(JSON.stringify(body));
+        } else {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", `/api/journal/${currentPid}`, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.setRequestHeader("x-participant-id", currentPid);
+          xhr.send(JSON.stringify(body));
+        }
+      } catch {}
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -1161,6 +1217,7 @@ export default function LabsSolo() {
       const body = buildDraftBody();
       body.status = "final";
       body.personalScore = effectiveScore;
+      body.tasteNotes = "";
       if (draftEntryId) {
         const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
           method: "PATCH",
@@ -1179,6 +1236,8 @@ export default function LabsSolo() {
         setDraftEntryId(created.id);
       }
       queryClient.invalidateQueries({ queryKey: ["journal"] });
+      setDraftStatus("finalized");
+      draftStatusRef.current = "finalized";
       setSaved(true);
       if (pid) checkConnoisseurAutoTrigger(pid);
       handleReset(true);
@@ -1188,6 +1247,7 @@ export default function LabsSolo() {
         const body = buildDraftBody();
         body.status = "final";
         body.personalScore = effectiveScore;
+        body.tasteNotes = "";
         addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
         setOfflineCount(getOfflineQueue().length);
       }
@@ -1642,6 +1702,7 @@ export default function LabsSolo() {
         distillery: distillery.trim() || undefined,
         personalScore: normalizedScore,
         noseNotes: (allNotes + scoresBlock + (dimParts.length ? "\n" + dimParts.join("\n") : "")).trim() || undefined,
+        tasteNotes: "",
         source: "casksense",
         imageUrl: photoUrl || undefined,
         status: "final",
@@ -1700,6 +1761,8 @@ export default function LabsSolo() {
           setDraftEntryId(created.id);
         }
         queryClient.invalidateQueries({ queryKey: ["journal"] });
+        setDraftStatus("finalized");
+        draftStatusRef.current = "finalized";
         setSaved(true);
         setInterruptedFlowDraft(null);
         if (pid) checkConnoisseurAutoTrigger(pid);
@@ -1707,11 +1770,13 @@ export default function LabsSolo() {
         handleReset(true);
       } catch {
         if (pid) {
-          addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
+          const retryBody = buildV2Body(data);
+          addToOfflineQueue({ pid, body: retryBody, timestamp: new Date().toISOString() });
           setOfflineCount(getOfflineQueue().length);
         }
         persistLocal();
-        handleReset(true);
+        setError(t("soloQuick.saveOffline", "Saved offline — will sync when back online"));
+        setSoloView("editor");
       } finally {
         setSaving(false);
       }

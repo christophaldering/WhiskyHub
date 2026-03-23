@@ -6361,7 +6361,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status", "whiskybaseId", "price"];
+      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
       const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion", "region", "country", "peatLevel", "vintage", "bottler", "price"];
       const filtered: any = {};
       for (const key of allowed) {
