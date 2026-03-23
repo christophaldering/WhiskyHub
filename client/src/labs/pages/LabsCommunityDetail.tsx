@@ -20,7 +20,7 @@ export default function LabsCommunityDetail() {
   const pid = currentParticipant?.id || session.pid;
   const queryClient = useQueryClient();
 
-  const [inviteTab, setInviteTab] = useState<"email" | "friends">("email");
+  const [inviteTab, setInviteTab] = useState<"email" | "friends">("friends");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteNote, setInviteNote] = useState("");
   const [showInvite, setShowInvite] = useState(false);
@@ -41,7 +41,7 @@ export default function LabsCommunityDetail() {
   const { data: friendsData, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
-    enabled: !!pid && showInvite && inviteTab === "friends",
+    enabled: !!pid && showInvite,
   });
 
   const updateMutation = useMutation({
@@ -164,7 +164,7 @@ export default function LabsCommunityDetail() {
     return "var(--labs-text-secondary)";
   };
 
-  const friends = Array.isArray(friendsData) ? friendsData : [];
+  const friends = (Array.isArray(friendsData) ? friendsData : []).filter((f: any) => f.status === "accepted");
   const memberIds = new Set(members.map((m: any) => m.participantId));
   const allFriendsWithStatus = friends.map((f: any) => ({
     ...f,
