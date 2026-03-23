@@ -65,12 +65,12 @@ const DARK: ThemeTokens = {
 
 const LIGHT: ThemeTokens = {
   bg:       '#faf6f0',
-  bgCard:   'rgba(0,0,0,0.032)',
-  bgHover:  'rgba(0,0,0,0.06)',
-  border:   'rgba(0,0,0,0.09)',
+  bgCard:   'rgba(0,0,0,0.06)',
+  bgHover:  'rgba(0,0,0,0.10)',
+  border:   'rgba(0,0,0,0.15)',
   text:     '#1a1208',
-  muted:    'rgba(26,18,8,0.55)',
-  faint:    'rgba(26,18,8,0.28)',
+  muted:    'rgba(26,18,8,0.70)',
+  faint:    'rgba(26,18,8,0.60)',
   gold:     '#b8892a',
   amber:    '#a05e22',
   green:    '#4a8c3a',
