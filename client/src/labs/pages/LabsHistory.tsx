@@ -300,7 +300,7 @@ function LabsHistoryList() {
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar size={11} /> {formatDate(tasting.tastingDate, lang)}</span>
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Wine size={11} /> {tasting.whiskyCount}</span>
                           {tasting.avgTotalScore != null && (
-                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Sparkles size={11} /> \u00d8 {typeof tasting.avgTotalScore === "number" ? Math.round(tasting.avgTotalScore * 10) / 10 : tasting.avgTotalScore}/100</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Sparkles size={11} /> Ø {typeof tasting.avgTotalScore === "number" ? Math.round(tasting.avgTotalScore * 10) / 10 : tasting.avgTotalScore}/100</span>
                           )}
                           {pCount > 0 && (
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }} data-testid={`participant-count-${tasting.id}`}>
