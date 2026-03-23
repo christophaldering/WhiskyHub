@@ -12,7 +12,7 @@ import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
-  ArrowUp, ArrowDown,
+  ArrowUp, ArrowDown, SlidersHorizontal,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 
@@ -84,6 +84,8 @@ export default function LabsTasteDrams() {
   const [sortBy, setSortBy] = useState<SortBy>("saved");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -138,12 +140,39 @@ export default function LabsTasteDrams() {
   const uniqueRegions = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.region).filter(Boolean))).sort(), [allItems]);
   const uniqueCaskTypes = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.caskType).filter(Boolean))).sort(), [allItems]);
 
-  const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all";
+  const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all" || datePeriod !== "all";
   const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "saved" || sortDirection !== "desc";
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (datePeriod !== "all") count++;
+    if (scoreRange !== "all") count++;
+    if (filterDistillery !== "all") count++;
+    if (filterRegion !== "all") count++;
+    if (filterCaskType !== "all") count++;
+    return count;
+  }, [datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType]);
+
+  const activeFilterChips = useMemo(() => {
+    const chips: { label: string; onClear: () => void }[] = [];
+    if (datePeriod !== "all") {
+      const label = DATE_PERIODS.find(p => p.key === datePeriod)?.label || datePeriod;
+      chips.push({ label, onClear: () => setDatePeriod("all") });
+    }
+    if (scoreRange !== "all") chips.push({ label: `Score: ${scoreRange}`, onClear: () => setScoreRange("all") });
+    if (filterDistillery !== "all") chips.push({ label: filterDistillery, onClear: () => setFilterDistillery("all") });
+    if (filterRegion !== "all") chips.push({ label: filterRegion, onClear: () => setFilterRegion("all") });
+    if (filterCaskType !== "all") chips.push({ label: filterCaskType, onClear: () => setFilterCaskType("all") });
+    return chips;
+  }, [datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType]);
 
   const resetAllFilters = () => {
     setActiveFilter("all"); setDatePeriod("all"); setSearch("");
     setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
+  };
+
+  const clearAdvancedFilters = () => {
+    setDatePeriod("all"); setScoreRange("all"); setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all");
   };
 
   const filteredEntries = useMemo(() => {
@@ -473,193 +502,300 @@ export default function LabsTasteDrams() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-drams">
-      <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste">
-        <ChevronLeft className="w-4 h-4" /> My Whisky
-      </button>
-      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <div>
-          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">My Drams</h1>
-          <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>Your logged drams</p>
-        </div>
-        <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
-          <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
+    <div className="max-w-2xl mx-auto" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
+      <div style={{ padding: "20px 20px 0" }}>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3" style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="button-labs-back-taste">
+          <ChevronLeft className="w-4 h-4" /> My Whisky
         </button>
+        <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+          <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">My Drams</h1>
+          <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "7px 14px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
+            <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
+          </button>
+        </div>
       </div>
 
       {!session.signedIn ? (
-        <AuthGateMessage
-          icon={<Wine className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
-          message="Sign in to access your drams"
-          className="labs-empty"
-          compact
-        />
+        <div style={{ padding: "0 20px" }}>
+          <AuthGateMessage
+            icon={<Wine className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
+            message="Sign in to access your drams"
+            className="labs-empty"
+            compact
+          />
+        </div>
       ) : (
         <>
-          <div className="labs-card p-4 mb-4" data-testid="labs-drams-overview">
-            <h3 className="labs-serif text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Overview</h3>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { value: journal.length + tastingWhiskies.length, label: "Total" },
-                { value: journal.filter((e: any) => e.status !== "draft").length, label: "Solo" },
-                { value: tastingWhiskies.length, label: "Tastings" },
-                { value: journal.filter((e: any) => e.status === "draft").length, label: "Drafts" },
-              ].map(s => (
-                <div key={s.label} className="text-center">
-                  <div className="labs-h2" style={{ color: "var(--labs-accent)" }}>{s.value}</div>
-                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="labs-segmented" style={{ marginBottom: 12 }}>
-            {FILTERS.map(f => (
-              <button key={f.key} onClick={() => setActiveFilter(f.key)}
-                className={`labs-segmented-btn ${activeFilter === f.key ? "labs-segmented-btn-active" : ""}`}
-                data-testid={`labs-filter-${f.key}`}>{f.label}</button>
-            ))}
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-1" style={{ marginBottom: 10 }}>
-            {DATE_PERIODS.map(p => (
-              <button key={p.key} onClick={() => setDatePeriod(p.key)}
-                className={`labs-chip ${datePeriod === p.key ? "labs-chip-active" : ""}`}
-                style={{ fontSize: 12, padding: "5px 12px" }}
-                data-testid={`labs-period-${p.key}`}>{p.label}</button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Score</span>
-            <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
-              {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
-                <button key={sr} onClick={() => setScoreRange(sr)}
-                  className={`labs-chip ${scoreRange === sr ? "labs-chip-active" : ""}`}
-                  style={{ fontSize: 12, padding: "5px 12px" }}
-                  data-testid={`labs-score-${sr}`}>{sr === "all" ? "All" : sr}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
-            <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Sort</span>
-            <div className="relative" style={{ flex: "0 0 auto" }}>
+          {allItems.length > 0 && (
+            <div style={{ padding: "0 20px", marginBottom: 12 }}>
               <button
-                onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-                className="labs-chip labs-chip-active flex items-center gap-1.5"
-                style={{ fontSize: 12, padding: "5px 12px", minWidth: 120 }}
-                data-testid="button-sort-dropdown"
+                onClick={() => setStatsExpanded(!statsExpanded)}
+                className="w-full flex items-center justify-between"
+                style={{ padding: "10px 14px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "1px solid var(--labs-border)", borderRadius: 12, cursor: "pointer", color: "var(--labs-text)" }}
+                data-testid="button-labs-toggle-stats"
               >
-                {sortBy === "saved" ? "Last saved" : sortBy === "date" ? "Date created" : sortBy === "score" ? "Score" : "Name"}
-                <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto", transition: "transform 0.2s", transform: sortDropdownOpen ? "rotate(180deg)" : "rotate(0)" }} />
+                <div className="flex items-center gap-3">
+                  <span className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{allItems.length}</span>
+                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>drams logged</span>
+                </div>
+                <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: statsExpanded ? "rotate(180deg)" : "rotate(0)" }} />
               </button>
-              {sortDropdownOpen && (
-                <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
-                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 50, minWidth: 160, background: "var(--labs-card-bg, #1a1a2e)", border: "1px solid var(--labs-border, #2a2a4a)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
-                    {([
-                      { key: "saved" as SortBy, label: "Last saved" },
-                      { key: "date" as SortBy, label: "Date created" },
-                      { key: "score" as SortBy, label: "Score" },
-                      { key: "name" as SortBy, label: "Name" },
-                    ]).map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => { setSortBy(opt.key); setSortDropdownOpen(false); }}
-                        className="w-full text-left flex items-center gap-2"
-                        style={{ fontSize: 13, padding: "8px 12px", borderRadius: 8, color: sortBy === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortBy === opt.key ? "rgba(245,158,11,0.1)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-                        data-testid={`sort-option-${opt.key}`}
-                      >
-                        {sortBy === opt.key && <Check className="w-3.5 h-3.5" />}
-                        <span style={{ marginLeft: sortBy === opt.key ? 0 : 18 }}>{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
+              {statsExpanded && (
+                <div className="grid grid-cols-4 gap-2" style={{ marginTop: 8 }} data-testid="labs-drams-overview">
+                  {[
+                    { value: allItems.length, label: "Total" },
+                    { value: journal.filter((e: any) => e.status !== "draft").length, label: "Solo" },
+                    { value: tastingWhiskies.length, label: "Tastings" },
+                    { value: journal.filter((e: any) => e.status === "draft").length, label: "Drafts" },
+                  ].map(s => (
+                    <div key={s.label} style={{ textAlign: "center", padding: "10px 4px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", borderRadius: 10, border: "1px solid var(--labs-border)" }}>
+                      <div className="labs-h2" style={{ color: "var(--labs-accent)", fontSize: 20 }}>{s.value}</div>
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            <button
-              onClick={() => setSortDirection(d => d === "desc" ? "asc" : "desc")}
-              className="labs-chip flex items-center gap-1"
-              style={{ fontSize: 12, padding: "5px 10px" }}
-              title={sortDirection === "desc" ? "Descending — click to switch" : "Ascending — click to switch"}
-              data-testid="button-sort-direction"
-            >
-              {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
-              <span style={{ fontSize: 11 }}>{sortDirection === "desc" ? "DESC" : "ASC"}</span>
-            </button>
-          </div>
-
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {uniqueDistilleries.length > 0 && <FilterDropdown value={filterDistillery} onChange={setFilterDistillery} options={uniqueDistilleries} placeholder="Distillery" testId="labs-filter-distillery" />}
-            {uniqueRegions.length > 0 && <FilterDropdown value={filterRegion} onChange={setFilterRegion} options={uniqueRegions} placeholder="Region" testId="labs-filter-region" />}
-            {uniqueCaskTypes.length > 0 && <FilterDropdown value={filterCaskType} onChange={setFilterCaskType} options={uniqueCaskTypes} placeholder="Cask Type" testId="labs-filter-cask-type" />}
-          </div>
-
-          {hasAnyFilter && (
-            <button onClick={resetAllFilters} className="labs-chip labs-chip-active flex items-center gap-1.5" style={{ marginBottom: 10, fontSize: 12, padding: "5px 12px" }} data-testid="button-labs-reset-filters">
-              <RotateCcw className="w-3 h-3" /> Reset filters
-            </button>
           )}
 
-          <div className="relative" style={{ marginBottom: 16 }}>
-            <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drams..."
-              className="labs-input" style={{ paddingLeft: 40, fontSize: 15, height: 44 }}
-              data-testid="input-labs-search-drams" />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 2 }} data-testid="button-labs-clear-search">
-                <X className="w-3.5 h-3.5" />
+          <div style={{ padding: "0 20px", marginBottom: 12 }}>
+            <div className="labs-segmented" style={{ marginBottom: 0 }}>
+              {FILTERS.map(f => (
+                <button key={f.key} onClick={() => setActiveFilter(f.key)}
+                  className={`labs-segmented-btn ${activeFilter === f.key ? "labs-segmented-btn-active" : ""}`}
+                  style={{ fontSize: 13, padding: "6px 0" }}
+                  data-testid={`labs-filter-${f.key}`}>{f.label}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)" }}>
+            <div className="flex items-center gap-2">
+              <div className="relative" style={{ flex: 1 }}>
+                <Search className="absolute" style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--labs-text-muted)" }} />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drams..."
+                  className="labs-input" style={{ paddingLeft: 36, fontSize: 14, height: 38, borderRadius: 10 }}
+                  data-testid="input-labs-search-drams" />
+                {search && (
+                  <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 2 }} data-testid="button-labs-clear-search">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className="flex items-center gap-1.5"
+                style={{
+                  padding: "8px 12px", fontSize: 13, fontWeight: 500, borderRadius: 10, cursor: "pointer",
+                  background: activeFilterCount > 0 ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+                  border: `1px solid ${activeFilterCount > 0 ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  color: activeFilterCount > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                }}
+                data-testid="button-labs-open-filters"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Filter
+                {activeFilterCount > 0 && (
+                  <span style={{ background: "var(--labs-accent)", color: "var(--labs-bg, #0e0b05)", fontSize: 11, fontWeight: 700, borderRadius: 999, minWidth: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>{activeFilterCount}</span>
+                )}
               </button>
+              <div className="relative" style={{ flexShrink: 0 }}>
+                <button
+                  onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    padding: "8px 12px", fontSize: 13, fontWeight: 500, borderRadius: 10, cursor: "pointer",
+                    background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+                    border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)", whiteSpace: "nowrap",
+                  }}
+                  data-testid="button-sort-dropdown"
+                >
+                  {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
+                  {sortBy === "saved" ? "Saved" : sortBy === "date" ? "Date" : sortBy === "score" ? "Score" : "Name"}
+                </button>
+                {sortDropdownOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
+                    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-card-bg, #1a1a2e)", border: "1px solid var(--labs-border, #2a2a4a)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
+                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>Sort by</div>
+                      {([
+                        { key: "saved" as SortBy, label: "Last saved" },
+                        { key: "date" as SortBy, label: "Date created" },
+                        { key: "score" as SortBy, label: "Score" },
+                        { key: "name" as SortBy, label: "Name" },
+                      ]).map(opt => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setSortBy(opt.key); setSortDropdownOpen(false); }}
+                          className="w-full text-left flex items-center gap-2"
+                          style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: sortBy === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortBy === opt.key ? "rgba(245,158,11,0.08)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+                          data-testid={`sort-option-${opt.key}`}
+                        >
+                          {sortBy === opt.key && <Check className="w-3.5 h-3.5" />}
+                          <span style={{ marginLeft: sortBy === opt.key ? 0 : 18 }}>{opt.label}</span>
+                        </button>
+                      ))}
+                      <div style={{ height: 1, background: "var(--labs-border)", margin: "4px 0" }} />
+                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>Direction</div>
+                      {([
+                        { key: "desc" as SortDirection, label: "Descending", icon: <ArrowDown className="w-3.5 h-3.5" /> },
+                        { key: "asc" as SortDirection, label: "Ascending", icon: <ArrowUp className="w-3.5 h-3.5" /> },
+                      ]).map(opt => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setSortDirection(opt.key); setSortDropdownOpen(false); }}
+                          className="w-full text-left flex items-center gap-2"
+                          style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: sortDirection === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortDirection === opt.key ? "rgba(245,158,11,0.08)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+                          data-testid={`sort-direction-${opt.key}`}
+                        >
+                          {sortDirection === opt.key ? opt.icon : <span style={{ width: 14 }} />}
+                          <span style={{ marginLeft: sortDirection === opt.key ? 0 : 4 }}>{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {activeFilterChips.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap" style={{ padding: "8px 20px 0" }}>
+              {activeFilterChips.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={chip.onClear}
+                  className="flex items-center gap-1"
+                  style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 999, background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)", cursor: "pointer" }}
+                  data-testid={`filter-chip-${i}`}
+                >
+                  {chip.label}
+                  <X className="w-3 h-3" />
+                </button>
+              ))}
+              {activeFilterChips.length > 1 && (
+                <button
+                  onClick={clearAdvancedFilters}
+                  style={{ padding: "4px 8px", fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
+                  data-testid="button-labs-clear-all-filters"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
+
+          <div style={{ padding: "12px 20px 0" }}>
+            {isError ? (
+              <div className="labs-card" style={{ padding: "40px 20px", textAlign: "center" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "color-mix(in srgb, var(--labs-danger, #ef4444) 12%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                  <RotateCcw className="w-5 h-5" style={{ color: "var(--labs-danger, #ef4444)" }} />
+                </div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>Failed to load drams</p>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: 16 }}>Something went wrong. Please try again.</p>
+                <button onClick={() => refetch()} className="labs-btn-secondary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "8px 20px", fontSize: 13 }} data-testid="button-labs-retry">
+                  <RotateCcw className="w-3.5 h-3.5" /> Retry
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="flex flex-col gap-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="labs-card" style={{ padding: "16px 18px" }} data-testid={`skeleton-card-${i}`}>
+                    <div className="flex items-start gap-3">
+                      <div style={{ width: 44, height: 56, borderRadius: 8, background: "var(--labs-border)", opacity: 0.5, animation: "pulse 1.5s ease-in-out infinite" }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ height: 16, width: "65%", borderRadius: 6, background: "var(--labs-border)", opacity: 0.5, marginBottom: 8, animation: "pulse 1.5s ease-in-out infinite" }} />
+                        <div style={{ height: 12, width: "40%", borderRadius: 5, background: "var(--labs-border)", opacity: 0.35, marginBottom: 10, animation: "pulse 1.5s ease-in-out infinite", animationDelay: "0.15s" }} />
+                        <div style={{ height: 10, width: "30%", borderRadius: 4, background: "var(--labs-border)", opacity: 0.25, animation: "pulse 1.5s ease-in-out infinite", animationDelay: "0.3s" }} />
+                      </div>
+                      <div style={{ width: 42, height: 28, borderRadius: 14, background: "var(--labs-border)", opacity: 0.4, animation: "pulse 1.5s ease-in-out infinite", animationDelay: "0.2s" }} />
+                    </div>
+                  </div>
+                ))}
+                <style>{`@keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }`}</style>
+              </div>
+            ) : filteredEntries.length === 0 ? (
+              <div style={{ padding: "48px 20px", textAlign: "center" }}>
+                {allItems.length === 0 ? (
+                  <>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                      <BookOpen className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>No drams yet</h3>
+                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 20, lineHeight: 1.5 }}>Start logging solo drams or join a tasting to build your collection.</p>
+                    <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "10px 20px", fontSize: 14 }} data-testid="button-labs-add-first-dram">
+                      <Plus className="w-4 h-4" /> Log your first dram
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                      <Search className="w-6 h-6" style={{ color: "var(--labs-text-muted)" }} />
+                    </div>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>No matches found</h3>
+                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>Try adjusting your filters or search term.</p>
+                    <button onClick={resetAllFilters} className="labs-btn-secondary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-reset-filters">
+                      <RotateCcw className="w-3.5 h-3.5" /> Clear all filters
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col" style={{ gap: 10 }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: "0 2px" }}>
+                  {hasAnyFilter ? `${filteredEntries.length} of ${allItems.length} entries` : `${filteredEntries.length} entries`}
+                </div>
+                {filteredEntries.map((entry: any) => (
+                  <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "16px 18px", cursor: "pointer", borderRadius: 14 }} data-testid={`labs-dram-${entry.id}`}>
+                    <div className="flex items-start gap-3">
+                      <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.whiskyName || entry.title || "—"}</div>
+                        {entry.distillery && <div style={{ fontSize: 13, color: "var(--labs-text-secondary, var(--labs-text-muted))", marginBottom: 6 }} className="truncate">{entry.distillery}</div>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {entry.status === "draft" && (
+                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>
+                          )}
+                          {entry.source === "tasting" && (
+                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }}>Tasting</span>
+                          )}
+                          {entry.createdAt && (
+                            <span className="flex items-center gap-1" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              <Calendar className="w-3 h-3" />{new Date(entry.createdAt).toLocaleDateString()}
+                            </span>
+                          )}
+                          {entry.region && (
+                            <span className="flex items-center gap-1" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              <MapPin className="w-3 h-3" />{entry.region}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {entry.personalScore != null && (
+                        <div style={{ flexShrink: 0, background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", borderRadius: 12, padding: "6px 10px", textAlign: "center", minWidth: 44 }}>
+                          <div className="labs-serif" style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1.1 }}>{Number(entry.personalScore).toFixed(1)}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {isError ? (
-            <div className="labs-card p-6 text-center">
-              <p className="text-sm mb-3" style={{ color: "var(--labs-danger)" }}>Failed to load</p>
-              <button onClick={() => refetch()} className="labs-btn-secondary" data-testid="button-labs-retry">Retry</button>
-            </div>
-          ) : isLoading ? (
-            <div className="flex flex-col gap-2">
-              {[1, 2, 3].map(i => <div key={i} className="labs-card" style={{ height: 72 }} />)}
-            </div>
-          ) : filteredEntries.length === 0 ? (
-            <div className="labs-empty" style={{ minHeight: 200 }}>
-              <BookOpen className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-              <h3 className="text-base font-semibold mb-1" style={{ color: "var(--labs-text)" }}>No drams yet</h3>
-              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Start logging solo drams or join a tasting</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="text-xs mb-1" style={{ color: "var(--labs-text-muted)" }}>
-                {hasAnyFilter ? `${filteredEntries.length} of ${allItems.length} entries` : `${filteredEntries.length} entries`}
-              </div>
-              {filteredEntries.map((entry: any) => (
-                <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "14px 16px", cursor: "pointer" }} data-testid={`labs-dram-${entry.id}`}>
-                  <div className="flex justify-between items-start gap-3">
-                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={40} height={52} className="flex-shrink-0" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="flex items-center gap-1.5">
-                        <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.whiskyName || entry.title || "—"}</div>
-                        {entry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 11, padding: "2px 6px" }} data-testid={`labs-badge-draft-${entry.id}`}>Setting up</span>}
-                        {entry.source === "tasting" && <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 6px" }}>Tasting</span>}
-                      </div>
-                      {entry.distillery && <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>{entry.distillery}</div>}
-                      <div className="flex items-center gap-2 mt-1 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                        {entry.createdAt && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(entry.createdAt).toLocaleDateString()}</span>}
-                        {entry.region && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{entry.region}</span>}
-                      </div>
-                    </div>
-                    {entry.personalScore != null && (
-                      <div className="flex items-center gap-1 labs-serif font-bold" style={{ fontSize: 16, color: "var(--labs-accent)", flexShrink: 0 }}>
-                        <Star className="w-3.5 h-3.5" />{Number(entry.personalScore).toFixed(1)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {filterSheetOpen && (
+            <FilterBottomSheet
+              datePeriod={datePeriod} setDatePeriod={setDatePeriod}
+              scoreRange={scoreRange} setScoreRange={setScoreRange}
+              filterDistillery={filterDistillery} setFilterDistillery={setFilterDistillery}
+              filterRegion={filterRegion} setFilterRegion={setFilterRegion}
+              filterCaskType={filterCaskType} setFilterCaskType={setFilterCaskType}
+              uniqueDistilleries={uniqueDistilleries} uniqueRegions={uniqueRegions} uniqueCaskTypes={uniqueCaskTypes}
+              onClose={() => setFilterSheetOpen(false)}
+              onClear={clearAdvancedFilters}
+              activeCount={activeFilterCount}
+            />
           )}
         </>
       )}
@@ -669,17 +805,126 @@ export default function LabsTasteDrams() {
   );
 }
 
-function FilterDropdown({ value, onChange, options, placeholder, testId }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string; testId: string }) {
-  const isActive = value !== "all";
+function FilterBottomSheet({
+  datePeriod, setDatePeriod, scoreRange, setScoreRange,
+  filterDistillery, setFilterDistillery, filterRegion, setFilterRegion,
+  filterCaskType, setFilterCaskType,
+  uniqueDistilleries, uniqueRegions, uniqueCaskTypes,
+  onClose, onClear, activeCount,
+}: {
+  datePeriod: DatePeriod; setDatePeriod: (v: DatePeriod) => void;
+  scoreRange: ScoreRange; setScoreRange: (v: ScoreRange) => void;
+  filterDistillery: string; setFilterDistillery: (v: string) => void;
+  filterRegion: string; setFilterRegion: (v: string) => void;
+  filterCaskType: string; setFilterCaskType: (v: string) => void;
+  uniqueDistilleries: string[]; uniqueRegions: string[]; uniqueCaskTypes: string[];
+  onClose: () => void; onClear: () => void; activeCount: number;
+}) {
+  const selectStyle = (isActive: boolean) => ({
+    width: "100%", padding: "10px 32px 10px 12px", fontSize: 14, fontWeight: isActive ? 600 : 400,
+    color: isActive ? "var(--labs-accent)" : "var(--labs-text)",
+    background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+    border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
+    borderRadius: 10, cursor: "pointer", appearance: "none" as const, WebkitAppearance: "none" as const, outline: "none", boxSizing: "border-box" as const,
+  });
+
   return (
-    <div style={{ position: "relative", flex: "1 1 0", minWidth: 100 }}>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "7px 28px 7px 10px", fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", background: isActive ? "var(--labs-accent-muted)" : "var(--labs-surface)", border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 10, cursor: "pointer", appearance: "none", WebkitAppearance: "none", outline: "none" }}
-        data-testid={testId}>
-        <option value="all">{placeholder}</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-      <ChevronDown style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", pointerEvents: "none" }} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 100 }} data-testid="filter-bottom-sheet">
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={onClose} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "80vh", background: "var(--labs-bg, #0e0b05)", borderRadius: "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
+        <div style={{ position: "sticky", top: 0, background: "var(--labs-bg, #0e0b05)", padding: "16px 20px 12px", borderBottom: "1px solid var(--labs-border)", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>Filters</h3>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-close-filter-sheet">
+            <X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+          </button>
+        </div>
+
+        <div style={{ padding: "16px 20px" }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Date Period</label>
+            <div className="flex gap-2 flex-wrap">
+              {DATE_PERIODS.map(p => (
+                <button key={p.key} onClick={() => setDatePeriod(p.key)}
+                  style={{
+                    padding: "7px 14px", fontSize: 13, fontWeight: datePeriod === p.key ? 600 : 400, borderRadius: 999, cursor: "pointer",
+                    background: datePeriod === p.key ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+                    border: `1px solid ${datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                    color: datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  }}
+                  data-testid={`labs-period-${p.key}`}
+                >{p.label}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Score Range</label>
+            <div className="flex gap-2 flex-wrap">
+              {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
+                <button key={sr} onClick={() => setScoreRange(sr)}
+                  style={{
+                    padding: "7px 14px", fontSize: 13, fontWeight: scoreRange === sr ? 600 : 400, borderRadius: 999, cursor: "pointer",
+                    background: scoreRange === sr ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+                    border: `1px solid ${scoreRange === sr ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                    color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  }}
+                  data-testid={`labs-score-${sr}`}
+                >{sr === "all" ? "All" : sr}</button>
+              ))}
+            </div>
+          </div>
+
+          {uniqueDistilleries.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Distillery</label>
+              <div style={{ position: "relative" }}>
+                <select value={filterDistillery} onChange={(e) => setFilterDistillery(e.target.value)} style={selectStyle(filterDistillery !== "all")} data-testid="labs-filter-distillery">
+                  <option value="all">All distilleries</option>
+                  {uniqueDistilleries.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
+              </div>
+            </div>
+          )}
+
+          {uniqueRegions.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Region</label>
+              <div style={{ position: "relative" }}>
+                <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} style={selectStyle(filterRegion !== "all")} data-testid="labs-filter-region">
+                  <option value="all">All regions</option>
+                  {uniqueRegions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
+              </div>
+            </div>
+          )}
+
+          {uniqueCaskTypes.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Cask Type</label>
+              <div style={{ position: "relative" }}>
+                <select value={filterCaskType} onChange={(e) => setFilterCaskType(e.target.value)} style={selectStyle(filterCaskType !== "all")} data-testid="labs-filter-cask-type">
+                  <option value="all">All cask types</option>
+                  {uniqueCaskTypes.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--labs-border)", display: "flex", gap: 10 }}>
+          {activeCount > 0 && (
+            <button onClick={() => { onClear(); }} className="labs-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-clear">
+              Clear all
+            </button>
+          )}
+          <button onClick={onClose} className="labs-btn-primary" style={{ flex: activeCount > 0 ? 2 : 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-apply">
+            {activeCount > 0 ? `Done (${activeCount} active)` : "Done"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
