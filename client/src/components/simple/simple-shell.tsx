@@ -199,12 +199,12 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
           display: "flex",
           alignItems: "center",
           justifyContent: "space-around",
-          background: "rgba(26, 23, 20, 0.88)",
-          backdropFilter: "blur(16px) saturate(1.4)",
-          WebkitBackdropFilter: "blur(16px) saturate(1.4)",
-          borderTop: "1px solid rgba(212, 162, 86, 0.15)",
-          paddingTop: 8,
-          paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+          background: "rgba(26, 23, 20, 0.92)",
+          backdropFilter: "blur(18px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(18px) saturate(1.5)",
+          borderTop: "1px solid rgba(212, 162, 86, 0.12)",
+          paddingTop: 10,
+          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
         }}
         data-testid="simple-bottom-nav"
       >
@@ -217,19 +217,41 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 2,
-                  padding: "4px 10px",
+                  gap: 4,
+                  padding: "6px 16px",
                   cursor: "pointer",
-                  color: active ? "#d4a256" : "rgba(180, 170, 155, 0.7)",
-                  transition: "color 0.2s",
+                  color: active ? "#d4a256" : "rgba(180, 170, 155, 0.5)",
+                  transition: "color 0.2s, transform 0.2s ease",
+                  transform: active ? "scale(1.05)" : "scale(1)",
+                  position: "relative",
+                  minWidth: 44,
+                  minHeight: 44,
+                  justifyContent: "center",
                 }}
                 data-testid={`simple-nav-${(item.labelFallback || item.labelKey).toLowerCase().replace(/\s/g, "-")}`}
               >
+                {active && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: "#d4a256",
+                    }}
+                    data-testid={`simple-nav-indicator-${(item.labelFallback || item.labelKey).toLowerCase().replace(/\s/g, "-")}`}
+                  />
+                )}
                 <item.icon
-                  style={{ width: 20, height: 20 }}
-                  strokeWidth={active ? 2.2 : 1.8}
+                  style={{ width: 24, height: 24 }}
+                  strokeWidth={active ? 2.6 : 1.6}
+                  fill={active ? "currentColor" : "none"}
+                  fillOpacity={active ? 0.15 : 0}
                 />
-                <span style={{ fontSize: 10, fontWeight: active ? 600 : 500 }}>{t(item.labelKey, item.labelFallback)}</span>
+                <span style={{ fontSize: 11, fontWeight: active ? 700 : 400, letterSpacing: active ? "0.01em" : "0" }}>{t(item.labelKey, item.labelFallback)}</span>
               </div>
             </Link>
           );
