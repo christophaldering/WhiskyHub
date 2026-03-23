@@ -833,22 +833,23 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3.5rem 2rem;
   text-align: center;
   min-height: 240px;
 }
 
 .labs-empty-icon {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 1.5rem;
-  opacity: 0.5;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 1.25rem;
+  color: var(--labs-accent);
+  opacity: 0.8;
 }
 
 .labs-empty-title {
   font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 400;
+  font-size: 22px;
+  font-weight: 500;
   line-height: 1.3;
   margin-bottom: 0.5rem;
   color: var(--labs-text);
@@ -860,28 +861,33 @@
   font-weight: 300;
   font-style: italic;
   line-height: 1.6;
-  opacity: 0.7;
+  opacity: 0.8;
   max-width: 280px;
   color: var(--labs-text-secondary);
 }
 
 .labs-empty-action {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 400;
-  opacity: 0.6;
-  border: 0.5px solid currentColor;
-  border-radius: 20px;
-  padding: 6px 18px;
-  background: transparent;
-  color: var(--labs-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 28px;
+  background: var(--labs-accent);
+  color: var(--labs-bg);
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  box-shadow: 0 2px 8px rgba(201, 167, 108, 0.25);
 }
 
 .labs-empty-action:hover {
-  opacity: 1;
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(201, 167, 108, 0.35);
+}
+
+.labs-empty-action:active {
+  transform: scale(0.97);
 }
 
 .labs-lobby {
@@ -1318,12 +1324,19 @@
 .labs-list-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
+  gap: 14px;
+  padding: 16px 16px;
   background: var(--labs-surface);
   cursor: pointer;
   transition: background-color 160ms ease;
   -webkit-tap-highlight-color: transparent;
+  min-height: 56px;
+}
+
+@media (hover: hover) {
+  .labs-list-row:hover {
+    background: var(--labs-surface-hover);
+  }
 }
 
 .labs-list-row:active {
@@ -1342,6 +1355,70 @@
 
 .labs-grouped-list .labs-list-row:first-child {
   border-top: none;
+}
+
+.labs-action-bar {
+  display: flex;
+  gap: 0;
+  background: var(--labs-surface);
+  border: 1px solid var(--labs-border);
+  border-radius: var(--labs-radius);
+  overflow: hidden;
+}
+
+.labs-action-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  cursor: pointer;
+  transition: background-color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+.labs-action-bar-item + .labs-action-bar-item {
+  border-left: 1px solid var(--labs-border-subtle);
+}
+
+@media (hover: hover) {
+  .labs-action-bar-item:hover {
+    background: var(--labs-surface-hover);
+  }
+}
+
+.labs-action-bar-item:active {
+  background: var(--labs-surface-hover);
+}
+
+.labs-action-bar-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.labs-action-bar-icon--accent {
+  background: var(--labs-accent-muted);
+}
+
+.labs-action-bar-icon--surface {
+  background: var(--labs-surface-elevated);
+}
+
+.labs-action-bar-icon--success {
+  background: var(--labs-success-muted);
+}
+
+.labs-action-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--labs-text);
+  line-height: 1;
 }
 
 .labs-action-grid {
@@ -1368,6 +1445,299 @@
   transform: scale(0.96);
   background: var(--labs-surface-hover);
 }
+
+.labs-tastings-header {
+  margin-bottom: 16px;
+}
+
+.labs-tastings-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--labs-text);
+  margin: 0;
+}
+
+.labs-tastings-live-badge {
+  font-size: 11px;
+}
+
+.labs-tastings-actions {
+  margin-bottom: 14px;
+}
+
+.labs-tastings-search-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.labs-tastings-search-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 14px;
+  color: var(--labs-text-muted);
+}
+
+.labs-tastings-search-input {
+  padding-left: 40px;
+  font-size: 15px;
+  height: 44px;
+}
+
+.labs-tastings-filter-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px;
+  background: var(--labs-surface);
+  border: 1px solid var(--labs-border);
+  border-radius: var(--labs-radius-sm);
+}
+
+.labs-tastings-filter-zone .labs-segmented {
+  margin-bottom: 0;
+  border: none;
+  background: var(--labs-surface-elevated);
+}
+
+.labs-tastings-time-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.labs-tastings-chip-count {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.labs-tastings-chip-count--live {
+  background: var(--labs-success-muted);
+  color: var(--labs-success);
+}
+
+.labs-tastings-chip-count--active {
+  background: var(--labs-accent);
+  color: var(--labs-bg);
+}
+
+.labs-tastings-chip-count--default {
+  background: var(--labs-accent-muted);
+  color: var(--labs-accent);
+}
+
+.labs-tastings-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 1.5rem;
+}
+
+.labs-tasting-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.labs-tasting-card-icon--invited {
+  background: var(--labs-warning-muted, #fef3c7);
+}
+
+.labs-tasting-card-icon--live {
+  background: var(--labs-success-muted);
+}
+
+.labs-tasting-card-icon--default {
+  background: var(--labs-accent-muted);
+}
+
+.labs-tasting-card-body {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.labs-tasting-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.labs-tasting-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--labs-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.labs-tasting-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.labs-tasting-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+.labs-tasting-badge--invite {
+  background: var(--labs-warning-muted, #fef3c7);
+  color: var(--labs-warning, #d97706);
+}
+
+.labs-tasting-badge--host {
+  background: var(--labs-accent-muted);
+  color: var(--labs-accent);
+}
+
+.labs-tasting-badge--historical {
+  background: var(--labs-success-muted);
+  color: var(--labs-success);
+}
+
+.labs-tasting-status-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.labs-tasting-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.labs-tasting-card-host {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--labs-text-secondary);
+  margin-bottom: 1px;
+}
+
+.labs-tasting-card-host-icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.labs-tasting-card-host-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-tasting-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--labs-text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.labs-tasting-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.labs-tasting-card-meta-item--location {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.labs-tasting-card-meta-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.labs-tasting-card-icon-sm {
+  width: 18px;
+  height: 18px;
+}
+
+.labs-tasting-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.labs-tasting-action-btn {
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.labs-tasting-action-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--labs-text-muted);
+}
+
+.labs-tasting-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--labs-text-muted);
+  opacity: 0.75;
+}
+
+.labs-tasting-invite-wrapper {
+  cursor: pointer;
+}
+
+.labs-tasting-invite-wrapper--loading {
+  cursor: wait;
+}
+
+.labs-icon-accent { color: var(--labs-accent); }
+.labs-icon-success { color: var(--labs-success); }
+.labs-icon-text-secondary { color: var(--labs-text-secondary); }
+.labs-icon-text-muted { color: var(--labs-text-muted); }
+.labs-icon-warning { color: var(--labs-warning, #d97706); }
+
+.labs-skeleton--h20 { height: 20px; }
+.labs-skeleton--h14 { height: 14px; }
+.labs-skeleton--w60 { width: 60%; }
+.labs-skeleton--w55 { width: 55%; }
+.labs-skeleton--w45 { width: 45%; }
+.labs-skeleton--w40 { width: 40%; }
+.labs-skeleton--w80 { width: 80%; }
+.labs-skeleton--w70 { width: 70%; }
+.labs-skeleton--mt8 { margin-top: 8px; }
+.labs-skeleton--mt12 { margin-top: 12px; }
 
 .labs-body {
   font-size: 15px;
