@@ -13,10 +13,10 @@
 
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120.png" />
-    <meta name="theme-color" content="#c8a864" />
+    <meta name="theme-color" content="#0e0b05" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="CaskSense" />
@@ -27,24 +27,6 @@
   <body>
     <script>
       try{var d=JSON.parse(localStorage.getItem('casksense-app')||'{}');if(d.state&&d.state.theme==='light')document.documentElement.classList.add('light');}catch(e){}
-    </script>
-    <script>
-      (function(){
-        var V='csk_v10';
-        if('serviceWorker' in navigator){
-          navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})});
-        }
-        if(typeof caches!=='undefined'){
-          caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});
-        }
-        var prev=localStorage.getItem('casksense_build');
-        if(prev&&prev!==V){
-          localStorage.setItem('casksense_build',V);
-          location.reload();
-        } else {
-          localStorage.setItem('casksense_build',V);
-        }
-      })();
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -7,6 +7,7 @@ import ScoreInput from "../../components/ScoreInput";
 import FlavorTags from "../../components/FlavorTags";
 import PhaseSignature from "../../components/PhaseSignature";
 import { ChevronDown, AlertTriangle, Check } from "../../icons";
+import { signalRatingQueued } from "../../hooks/useOfflineQueue";
 
 interface CompactRatingProps {
   th: ThemeTokens;
@@ -84,9 +85,12 @@ export default function CompactRating({
         headers: { "Content-Type": "application/json", "x-participant-id": participantId },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Error" }));
-        throw new Error(err.message || "Save failed");
+      const resData = await res.json().catch(() => ({}));
+      if (resData.queued) {
+        signalRatingQueued();
+      }
+      if (!res.ok && !resData.queued) {
+        throw new Error(resData.message || "Save failed");
       }
       setSaveError(null);
     } catch (e: unknown) {

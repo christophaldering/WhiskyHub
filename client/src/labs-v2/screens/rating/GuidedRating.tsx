@@ -8,6 +8,7 @@ import FlavorTags from "../../components/FlavorTags";
 import PhaseSignature from "../../components/PhaseSignature";
 import SaveConfirm from "../../components/SaveConfirm";
 import { AlertTriangle, Check } from "../../icons";
+import { signalRatingQueued } from "../../hooks/useOfflineQueue";
 
 interface GuidedRatingProps {
   th: ThemeTokens;
@@ -103,9 +104,12 @@ export default function GuidedRating({
         headers: { "Content-Type": "application/json", "x-participant-id": participantId },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Error" }));
-        throw new Error(err.message || "Save failed");
+      const resData = await res.json().catch(() => ({}));
+      if (resData.queued) {
+        signalRatingQueued();
+      }
+      if (!res.ok && !resData.queued) {
+        throw new Error(resData.message || "Save failed");
       }
       setSaveError(null);
     } catch (e: unknown) {

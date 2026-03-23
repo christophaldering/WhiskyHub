@@ -484,6 +484,11 @@ export interface Translations {
   labelABV: string;
   labelCask: string;
   labelName: string;
+  offlineLabel: string;
+  offlineQueued1: string;
+  offlineQueuedN: string;
+  syncingLabel: string;
+  onlineLabel: string;
 }
 
 const de: Translations = {
@@ -970,6 +975,11 @@ const de: Translations = {
   labelABV: "ABV",
   labelCask: "Fass",
   labelName: "Name",
+  offlineLabel: "Keine Verbindung — Bewertungen werden lokal gespeichert",
+  offlineQueued1: "1 ausstehend",
+  offlineQueuedN: "{n} ausstehend",
+  syncingLabel: "Synchronisiere\u2026",
+  onlineLabel: "Wieder online",
 };
 
 const en: Translations = {
@@ -1456,6 +1466,11 @@ const en: Translations = {
   labelABV: "ABV",
   labelCask: "Cask",
   labelName: "Name",
+  offlineLabel: "No connection — ratings saved locally",
+  offlineQueued1: "1 pending",
+  offlineQueuedN: "{n} pending",
+  syncingLabel: "Syncing\u2026",
+  onlineLabel: "Back online",
 };
 
 export const I18N: Record<V2Lang, Translations> = { de, en };

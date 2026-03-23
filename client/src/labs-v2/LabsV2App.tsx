@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import LabsV2Layout from "./LabsV2Layout";
 import { useV2Theme, useV2Lang } from "./LabsV2Layout";
+import OfflineBanner from "./components/OfflineBanner";
 import TastingsHub from "./TastingsHub";
 import JoinFlow from "./JoinFlow";
 import PlaceholderTab from "./PlaceholderTab";
@@ -67,6 +68,12 @@ function RatingScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
+function OfflineBannerWrapper() {
+  const { th } = useV2Theme();
+  const { t } = useV2Lang();
+  return <OfflineBanner th={th} t={t} />;
+}
+
 export default function LabsV2App() {
   const [activeTab, setActiveTab] = useState<TabId>("tastings");
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
@@ -131,6 +138,7 @@ export default function LabsV2App() {
       hideTabBar={hideTabBar}
       onLogoClick={handleLogoClick}
     >
+      <OfflineBannerWrapper />
       {content}
     </LabsV2Layout>
   );

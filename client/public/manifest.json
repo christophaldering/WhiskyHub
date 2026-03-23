@@ -1,12 +1,13 @@
 {
   "name": "CaskSense",
   "short_name": "CaskSense",
-  "description": "Sophisticated whisky tasting & analysis",
-  "start_url": "/",
+  "description": "Strukturierte Whisky-Tastings — überall, auch offline.",
+  "start_url": "/labs-v2",
   "display": "standalone",
-  "background_color": "#0f1419",
-  "theme_color": "#c8a864",
-  "orientation": "any",
+  "background_color": "#0e0b05",
+  "theme_color": "#0e0b05",
+  "orientation": "portrait",
+  "lang": "de-DE",
   "icons": [
     {
       "src": "/icons/icon-48.png",
