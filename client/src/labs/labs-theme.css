@@ -1133,6 +1133,12 @@
   margin: 0 auto;
 }
 
+.labs-solo-container {
+  max-width: 672px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 @keyframes labsPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

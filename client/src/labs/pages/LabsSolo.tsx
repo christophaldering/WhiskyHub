@@ -206,8 +206,10 @@ export default function LabsSolo() {
     setStep("capture");
   }, []);
 
+  let content: React.ReactNode = null;
+
   if (participantError) {
-    return (
+    content = (
       <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
         <div className="labs-card" style={{
           padding: "var(--labs-space-xl)",
@@ -230,10 +232,8 @@ export default function LabsSolo() {
         </div>
       </div>
     );
-  }
-
-  if (!participantId) {
-    return (
+  } else if (!participantId) {
+    content = (
       <div className="labs-fade-in" style={{
         padding: "var(--labs-space-xl) var(--labs-space-md)",
         display: "flex",
@@ -244,10 +244,8 @@ export default function LabsSolo() {
         <Loader2 size={32} style={{ color: "var(--labs-text-muted)", animation: "spin 1s linear infinite" }} />
       </div>
     );
-  }
-
-  if (step === "capture") {
-    return (
+  } else if (step === "capture") {
+    content = (
       <SoloCaptureScreen
         participantId={participantId}
         isAuthenticated={isUserAuthenticated()}
@@ -258,10 +256,8 @@ export default function LabsSolo() {
         onBack={goBack}
       />
     );
-  }
-
-  if (step === "form") {
-    return (
+  } else if (step === "form") {
+    content = (
       <SoloWhiskyForm
         initial={whisky || undefined}
         fromAI={whisky?.fromAI}
@@ -269,10 +265,8 @@ export default function LabsSolo() {
         onBack={() => setStep("capture")}
       />
     );
-  }
-
-  if (step === "rating") {
-    return (
+  } else if (step === "rating") {
+    content = (
       <div style={{ minHeight: "60vh" }}>
         <RatingFlowV2
           whisky={{
@@ -313,10 +307,8 @@ export default function LabsSolo() {
         )}
       </div>
     );
-  }
-
-  if (step === "done" && ratingResult) {
-    return (
+  } else if (step === "done" && ratingResult) {
+    content = (
       <SoloDoneScreen
         whiskyName={whisky?.name || t("v2.ratingDram", "Dram")}
         score={ratingResult.scores.overall}
@@ -326,5 +318,9 @@ export default function LabsSolo() {
     );
   }
 
-  return null;
+  return (
+    <div className="labs-solo-container">
+      {content}
+    </div>
+  );
 }
