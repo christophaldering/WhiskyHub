@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation, useSearch } from "wouter";
-import { useEffect, Component, type ReactNode, type ErrorInfo, lazy, Suspense } from "react";
+import { useEffect, useRef, Component, type ReactNode, type ErrorInfo, lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
-import { pushRoute, incrementNavIdx } from "@/lib/navStack";
+import { pushRoute, incrementNavIdx, saveScrollPosition, getScrollPosition, consumeBackNavigation } from "@/lib/navStack";
 
 window.addEventListener("unhandledrejection", (event) => {
   const msg = String(event.reason?.message || event.reason || "");
@@ -208,6 +208,40 @@ function RouteTracker() {
   return null;
 }
 
+function ScrollRestoration() {
+  const [location] = useLocation();
+  const prevLocationRef = useRef(location);
+
+  useEffect(() => {
+    if (prevLocationRef.current !== location) {
+      saveScrollPosition(prevLocationRef.current, window.scrollY);
+      prevLocationRef.current = location;
+
+      const isBack = consumeBackNavigation();
+      const savedY = isBack ? getScrollPosition(location) : null;
+
+      if (savedY != null && savedY > 0) {
+        let attempts = 0;
+        const maxAttempts = 50;
+        const interval = 30;
+        const tryScroll = () => {
+          if (document.documentElement.scrollHeight >= savedY + window.innerHeight * 0.5 || attempts >= maxAttempts) {
+            window.scrollTo(0, savedY);
+            return;
+          }
+          attempts++;
+          requestAnimationFrame(() => setTimeout(tryScroll, interval));
+        };
+        requestAnimationFrame(tryScroll);
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, [location]);
+
+  return null;
+}
+
 function SmartRedirectToLabs() {
   const [location] = useLocation();
 
@@ -342,6 +376,7 @@ function Router() {
   return (
     <Suspense fallback={<LazyFallback />}>
       <RouteTracker />
+      <ScrollRestoration />
       <Switch>
         {/* ── Public / Marketing ── */}
         <Route path="/" component={LandingNew} />

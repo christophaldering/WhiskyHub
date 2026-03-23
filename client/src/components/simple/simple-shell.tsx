@@ -11,12 +11,13 @@ import { primaryTabs } from "@/lib/navConfig";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DesktopTabSwitcher from "@/components/navigation/DesktopTabSwitcher";
-import { popRoute, getSmartFallback } from "@/lib/navStack";
+import { popRoute, getSmartFallback, markBackNavigation } from "@/lib/navStack";
 
 function BackButtonBottom() {
   const [location, navigate] = useLocation();
   const { t } = useTranslation();
   const goBack = () => {
+    markBackNavigation();
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
     if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) { navigate(from); return; }

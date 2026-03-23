@@ -13,7 +13,7 @@ import LabsErrorBoundary from "./LabsErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
-import { saveScrollPosition, getScrollPosition, consumeBackNavigation, markBackNavigation } from "@/lib/navStack";
+import { markBackNavigation } from "@/lib/navStack";
 import "./labs-theme.css";
 
 interface OnlineUserInfo {
@@ -728,35 +728,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     localStorage.setItem('casksense-language', lang);
   };
   const vb = useVerificationBanner();
-  const prevLocationRef = useRef(location);
   const [autoResumeChecked, setAutoResumeChecked] = useState(() => getSession().signedIn);
-
-  useEffect(() => {
-    if (prevLocationRef.current !== location) {
-      saveScrollPosition(prevLocationRef.current, window.scrollY);
-      prevLocationRef.current = location;
-
-      const isBack = consumeBackNavigation();
-      const savedY = isBack ? getScrollPosition(location) : null;
-
-      if (savedY != null && savedY > 0) {
-        let attempts = 0;
-        const maxAttempts = 50;
-        const interval = 30;
-        const tryScroll = () => {
-          if (document.documentElement.scrollHeight >= savedY + window.innerHeight * 0.5 || attempts >= maxAttempts) {
-            window.scrollTo(0, savedY);
-            return;
-          }
-          attempts++;
-          requestAnimationFrame(() => setTimeout(tryScroll, interval));
-        };
-        requestAnimationFrame(tryScroll);
-      } else {
-        window.scrollTo(0, 0);
-      }
-    }
-  }, [location]);
 
   useEffect(() => {
     const session = getSession();
