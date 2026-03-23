@@ -379,6 +379,9 @@ const resources = {
         ctaVoteSubline: "Rate your next whisky",
         ctaVoteButton: "Find a whisky",
         whiskies: "whiskies",
+        allInsights: "All insights",
+        heroAvgScore: "Avg. score",
+        heroTotalRatings: "Ratings",
       },
       contextLevel: {
         naked: "Naked",
@@ -6855,6 +6858,9 @@ const resources = {
         ctaVoteSubline: "Bewerte deinen nächsten Whisky",
         ctaVoteButton: "Whisky finden",
         whiskies: "Whiskys",
+        allInsights: "Alle Insights",
+        heroAvgScore: "Ø Bewertung",
+        heroTotalRatings: "Bewertungen",
       },
       contextLevel: {
         naked: "Naked",

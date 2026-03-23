@@ -1398,6 +1398,15 @@
   color: var(--labs-text-muted);
 }
 
+.ty-section-title {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--labs-text);
+  margin: 0;
+}
+
 .ty-h1 {
   font-family: var(--font-display);
   font-size: clamp(24px, 5vw, 30px);
