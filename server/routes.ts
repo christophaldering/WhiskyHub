@@ -6336,6 +6336,11 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.post("/api/journal/:participantId", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "personalScore", "whiskybaseId", "price", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
 

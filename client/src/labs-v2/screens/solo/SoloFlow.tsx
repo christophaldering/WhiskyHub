@@ -8,6 +8,7 @@ import { RatingFlow } from "../rating/RatingFlow";
 import SoloCaptureScreen, { type CapturedWhisky } from "./SoloCaptureScreen";
 import SoloWhiskyForm from "./SoloWhiskyForm";
 import SoloDoneScreen from "./SoloDoneScreen";
+import { useAppStore } from "@/lib/store";
 
 type Step = "capture" | "form" | "rating" | "done";
 
@@ -33,19 +34,52 @@ interface JournalBody {
   source: string;
 }
 
-function getExistingParticipantId(): string | null {
+function getExistingParticipantId(storeParticipantId: string | null): string | null {
   try {
     return sessionStorage.getItem("session_pid")
       || localStorage.getItem("casksense_participant_id")
+      || storeParticipantId
       || null;
+  } catch {
+    return storeParticipantId || null;
+  }
+}
+
+function isUserAuthenticated(): boolean {
+  try {
+    if (sessionStorage.getItem("session_signed_in") === "1") return true;
+  } catch { /* ignore */ }
+  try {
+    const storeUser = useAppStore.getState().currentParticipant;
+    if (storeUser?.id) return true;
+  } catch { /* ignore */ }
+  return false;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getStoreParticipantId(): string | null {
+  try {
+    return useAppStore.getState().currentParticipant?.id || null;
   } catch {
     return null;
   }
 }
 
 async function ensureParticipantId(): Promise<string> {
-  const existing = getExistingParticipantId();
+  const existing = getExistingParticipantId(getStoreParticipantId());
   if (existing) return existing;
+
+  if (isUserAuthenticated()) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await delay(500);
+      const retried = getExistingParticipantId(getStoreParticipantId());
+      if (retried) return retried;
+    }
+    throw new Error("Authenticated user but participant ID unavailable");
+  }
 
   const res = await fetch("/api/participants/guest", {
     method: "POST",
@@ -74,12 +108,29 @@ export default function SoloFlow({ th, t, onBack }: Props) {
   const [participantId, setParticipantId] = useState<string>("");
   const [participantError, setParticipantError] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [initToken, setInitToken] = useState(0);
 
   const initParticipant = useCallback(() => {
+    const token = Date.now();
+    setInitToken(token);
     setParticipantError(false);
     ensureParticipantId()
-      .then(setParticipantId)
-      .catch(() => setParticipantError(true));
+      .then((pid) => {
+        setInitToken((current) => {
+          if (current === token) {
+            setParticipantId(pid);
+          }
+          return current;
+        });
+      })
+      .catch(() => {
+        setInitToken((current) => {
+          if (current === token) {
+            setParticipantError(true);
+          }
+          return current;
+        });
+      });
   }, []);
 
   useEffect(() => {
