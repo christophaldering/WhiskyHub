@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -789,6 +789,44 @@ export const historicalImportRuns = pgTable("historical_import_runs", {
 export const insertHistoricalImportRunSchema = createInsertSchema(historicalImportRuns).omit({ id: true, createdAt: true, completedAt: true });
 export type InsertHistoricalImportRun = z.infer<typeof insertHistoricalImportRunSchema>;
 export type HistoricalImportRun = typeof historicalImportRuns.$inferSelect;
+
+// --- Historical Tasting Participants (self-service "I was there" claims) ---
+export const historicalTastingParticipants = pgTable("historical_tasting_participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  historicalTastingId: varchar("historical_tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow(),
+}, (table) => [
+  index("idx_htp_tasting").on(table.historicalTastingId),
+  index("idx_htp_participant").on(table.participantId),
+  uniqueIndex("uq_htp_tasting_participant").on(table.historicalTastingId, table.participantId),
+]);
+
+export const insertHistoricalTastingParticipantSchema = createInsertSchema(historicalTastingParticipants).omit({ id: true, joinedAt: true });
+export type InsertHistoricalTastingParticipant = z.infer<typeof insertHistoricalTastingParticipantSchema>;
+export type HistoricalTastingParticipant = typeof historicalTastingParticipants.$inferSelect;
+
+// --- Historical Personal Ratings (retroactive individual scores per whisky) ---
+export const historicalPersonalRatings = pgTable("historical_personal_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  historicalTastingEntryId: varchar("historical_tasting_entry_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  nose: real("nose").default(50),
+  taste: real("taste").default(50),
+  finish: real("finish").default(50),
+  overall: real("overall").default(50),
+  notes: text("notes").default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_hpr_entry").on(table.historicalTastingEntryId),
+  index("idx_hpr_participant").on(table.participantId),
+  uniqueIndex("uq_hpr_entry_participant").on(table.historicalTastingEntryId, table.participantId),
+]);
+
+export const insertHistoricalPersonalRatingSchema = createInsertSchema(historicalPersonalRatings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertHistoricalPersonalRating = z.infer<typeof insertHistoricalPersonalRatingSchema>;
+export type HistoricalPersonalRating = typeof historicalPersonalRatings.$inferSelect;
 
 // --- Connoisseur Reports (AI-generated personal whisky profile) ---
 export const connoisseurReports = pgTable("connoisseur_reports", {

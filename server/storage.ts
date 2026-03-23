@@ -39,9 +39,13 @@ import {
   historicalTastings,
   historicalTastingEntries,
   historicalImportRuns,
+  historicalTastingParticipants,
+  historicalPersonalRatings,
   type InsertHistoricalTasting, type HistoricalTasting,
   type InsertHistoricalTastingEntry, type HistoricalTastingEntry,
   type InsertHistoricalImportRun, type HistoricalImportRun,
+  type InsertHistoricalTastingParticipant, type HistoricalTastingParticipant,
+  type InsertHistoricalPersonalRating, type HistoricalPersonalRating,
   communities,
   communityMemberships,
   communityInvites,
@@ -440,6 +444,21 @@ export interface IStorage {
   createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun>;
   updateHistoricalImportRun(id: string, data: Partial<HistoricalImportRun>): Promise<HistoricalImportRun | undefined>;
   getHistoricalImportRuns(): Promise<HistoricalImportRun[]>;
+
+  // Historical Tasting Participation
+  claimHistoricalParticipation(historicalTastingId: string, participantId: string): Promise<HistoricalTastingParticipant>;
+  unclaimHistoricalParticipation(historicalTastingId: string, participantId: string): Promise<void>;
+  getHistoricalParticipants(historicalTastingId: string): Promise<HistoricalTastingParticipant[]>;
+  getHistoricalParticipationForUser(participantId: string): Promise<HistoricalTastingParticipant[]>;
+  isHistoricalParticipant(historicalTastingId: string, participantId: string): Promise<boolean>;
+  getHistoricalParticipantCounts(tastingIds: string[]): Promise<Record<string, number>>;
+
+  getHistoricalTastingEntryById(entryId: string): Promise<any | undefined>;
+
+  // Historical Personal Ratings
+  upsertHistoricalPersonalRating(data: InsertHistoricalPersonalRating): Promise<HistoricalPersonalRating>;
+  getHistoricalPersonalRatings(historicalTastingId: string, participantId: string): Promise<HistoricalPersonalRating[]>;
+  getHistoricalPersonalRating(entryId: string, participantId: string): Promise<HistoricalPersonalRating | undefined>;
 
   // Connoisseur Reports
   createConnoisseurReport(data: InsertConnoisseurReport): Promise<ConnoisseurReport>;
@@ -3188,6 +3207,116 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBottleSplitClaim(id: string): Promise<void> {
     await db.delete(bottleSplitClaims).where(eq(bottleSplitClaims.id, id));
+  }
+
+  // --- Historical Tasting Participation ---
+  async claimHistoricalParticipation(historicalTastingId: string, participantId: string): Promise<HistoricalTastingParticipant> {
+    const [result] = await db.insert(historicalTastingParticipants)
+      .values({ historicalTastingId, participantId })
+      .onConflictDoNothing({
+        target: [historicalTastingParticipants.historicalTastingId, historicalTastingParticipants.participantId],
+      })
+      .returning();
+    if (result) return result;
+    const [existing] = await db.select().from(historicalTastingParticipants)
+      .where(and(
+        eq(historicalTastingParticipants.historicalTastingId, historicalTastingId),
+        eq(historicalTastingParticipants.participantId, participantId)
+      )).limit(1);
+    return existing;
+  }
+
+  async unclaimHistoricalParticipation(historicalTastingId: string, participantId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(historicalPersonalRatings)
+        .where(and(
+          eq(historicalPersonalRatings.participantId, participantId),
+          sql`${historicalPersonalRatings.historicalTastingEntryId} IN (
+            SELECT id FROM historical_tasting_entries WHERE historical_tasting_id = ${historicalTastingId}
+          )`
+        ));
+      await tx.delete(historicalTastingParticipants)
+        .where(and(
+          eq(historicalTastingParticipants.historicalTastingId, historicalTastingId),
+          eq(historicalTastingParticipants.participantId, participantId)
+        ));
+    });
+  }
+
+  async getHistoricalParticipants(historicalTastingId: string): Promise<HistoricalTastingParticipant[]> {
+    return db.select().from(historicalTastingParticipants)
+      .where(eq(historicalTastingParticipants.historicalTastingId, historicalTastingId));
+  }
+
+  async getHistoricalParticipationForUser(participantId: string): Promise<HistoricalTastingParticipant[]> {
+    return db.select().from(historicalTastingParticipants)
+      .where(eq(historicalTastingParticipants.participantId, participantId));
+  }
+
+  async isHistoricalParticipant(historicalTastingId: string, participantId: string): Promise<boolean> {
+    const [result] = await db.select({ id: historicalTastingParticipants.id })
+      .from(historicalTastingParticipants)
+      .where(and(
+        eq(historicalTastingParticipants.historicalTastingId, historicalTastingId),
+        eq(historicalTastingParticipants.participantId, participantId)
+      )).limit(1);
+    return !!result;
+  }
+
+  async getHistoricalParticipantCounts(tastingIds: string[]): Promise<Record<string, number>> {
+    if (tastingIds.length === 0) return {};
+    const rows = await db.select({
+      historicalTastingId: historicalTastingParticipants.historicalTastingId,
+      count: sql<number>`count(*)::int`,
+    }).from(historicalTastingParticipants)
+      .where(inArray(historicalTastingParticipants.historicalTastingId, tastingIds))
+      .groupBy(historicalTastingParticipants.historicalTastingId);
+    const result: Record<string, number> = {};
+    for (const r of rows) result[r.historicalTastingId] = r.count;
+    return result;
+  }
+
+  async getHistoricalTastingEntryById(entryId: string): Promise<any | undefined> {
+    const [entry] = await db.select().from(historicalTastingEntries).where(eq(historicalTastingEntries.id, entryId)).limit(1);
+    return entry;
+  }
+
+  // --- Historical Personal Ratings ---
+  async upsertHistoricalPersonalRating(data: InsertHistoricalPersonalRating): Promise<HistoricalPersonalRating> {
+    const [result] = await db.insert(historicalPersonalRatings)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [historicalPersonalRatings.historicalTastingEntryId, historicalPersonalRatings.participantId],
+        set: {
+          nose: data.nose,
+          taste: data.taste,
+          finish: data.finish,
+          overall: data.overall,
+          notes: data.notes,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getHistoricalPersonalRatings(historicalTastingId: string, participantId: string): Promise<HistoricalPersonalRating[]> {
+    return db.select().from(historicalPersonalRatings)
+      .where(and(
+        eq(historicalPersonalRatings.participantId, participantId),
+        sql`${historicalPersonalRatings.historicalTastingEntryId} IN (
+          SELECT id FROM historical_tasting_entries WHERE historical_tasting_id = ${historicalTastingId}
+        )`
+      ));
+  }
+
+  async getHistoricalPersonalRating(entryId: string, participantId: string): Promise<HistoricalPersonalRating | undefined> {
+    const [result] = await db.select().from(historicalPersonalRatings)
+      .where(and(
+        eq(historicalPersonalRatings.historicalTastingEntryId, entryId),
+        eq(historicalPersonalRatings.participantId, participantId)
+      )).limit(1);
+    return result;
   }
 }
 

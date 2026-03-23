@@ -1,11 +1,13 @@
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
   Trophy, Wine, Calendar, Flame,
   Sparkles, BarChart3, RefreshCw, Lock, ChevronLeft,
+  UserCheck, Users, Star, Save, Check,
 } from "lucide-react";
 
 interface HistoricalEntry {
@@ -230,6 +232,121 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: (k: 
   );
 }
 
+interface PersonalRating {
+  id: string;
+  historicalTastingEntryId: string;
+  participantId: string;
+  nose: number;
+  taste: number;
+  finish: number;
+  overall: number;
+  notes: string;
+}
+
+function PersonalRatingEditor({ entry, existingRating, pid, tastingId }: {
+  entry: HistoricalEntry;
+  existingRating?: PersonalRating;
+  pid: string;
+  tastingId: string;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [nose, setNose] = useState(existingRating?.nose ?? 50);
+  const [taste, setTaste] = useState(existingRating?.taste ?? 50);
+  const [finish, setFinish] = useState(existingRating?.finish ?? 50);
+  const [overall, setOverall] = useState(existingRating?.overall ?? 50);
+  const [notes, setNotes] = useState(existingRating?.notes ?? "");
+  const [saved, setSaved] = useState(false);
+  const [initialized, setInitialized] = useState(!!existingRating);
+
+  useEffect(() => {
+    if (existingRating && !initialized) {
+      setNose(existingRating.nose);
+      setTaste(existingRating.taste);
+      setFinish(existingRating.finish);
+      setOverall(existingRating.overall);
+      setNotes(existingRating.notes ?? "");
+      setInitialized(true);
+    }
+  }, [existingRating, initialized]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/historical/entries/${entry.id}/rating`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ nose, taste, finish, overall, notes }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["historical-my-ratings", tastingId] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  const whiskyLabel = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || "Unknown Whisky";
+
+  const SliderRow = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 12, color: "var(--labs-text-muted)", fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{Math.round(value)}</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: "100%", accentColor: "var(--labs-accent)" }}
+        data-testid={`slider-${label.toLowerCase()}-${entry.id}`}
+      />
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: 12, padding: 12, background: "var(--labs-surface-elevated)", borderRadius: 10 }} data-testid={`personal-rating-${entry.id}`}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <Star size={13} style={{ color: "var(--labs-accent)" }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>
+          {t("m2.historicalDetail.myRating", "Meine Bewertung")}
+        </span>
+      </div>
+      <SliderRow label={t("m2.historicalDetail.nose", "Nose")} value={nose} onChange={setNose} />
+      <SliderRow label={t("m2.historicalDetail.taste", "Taste")} value={taste} onChange={setTaste} />
+      <SliderRow label={t("m2.historicalDetail.finish", "Finish")} value={finish} onChange={setFinish} />
+      <SliderRow label="Overall" value={overall} onChange={setOverall} />
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder={t("m2.historicalDetail.notesPlaceholder", "Persönliche Notizen...")}
+        rows={2}
+        style={{
+          width: "100%", padding: "8px 12px", fontSize: 13, borderRadius: 8,
+          background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
+          color: "var(--labs-text)", outline: "none", resize: "vertical", boxSizing: "border-box",
+          fontFamily: "inherit", marginBottom: 8,
+        }}
+        data-testid={`notes-${entry.id}`}
+      />
+      <button
+        onClick={() => saveMutation.mutate()}
+        disabled={saveMutation.isPending}
+        className="labs-btn-primary"
+        style={{ fontSize: 12, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 5 }}
+        data-testid={`save-rating-${entry.id}`}
+      >
+        {saved ? <Check size={12} /> : <Save size={12} />}
+        {saved ? t("m2.historicalDetail.saved", "Gespeichert") : t("m2.historicalDetail.saveRating", "Bewertung speichern")}
+      </button>
+    </div>
+  );
+}
+
 export default function LabsHistoricalDetail() {
   const { t, i18n } = useTranslation();
   const goBackToHistory = useBackNavigation("/labs/history");
@@ -237,6 +354,17 @@ export default function LabsHistoricalDetail() {
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
   const pid = getParticipantId();
+  const queryClient = useQueryClient();
+  const [showRatings, setShowRatings] = useState<Set<string>>(new Set());
+
+  const toggleRating = useCallback((entryId: string) => {
+    setShowRatings(prev => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  }, []);
 
   const { data, isLoading, isError, error, refetch } = useQuery<TastingDetail>({
     queryKey: ["historical-tasting", tastingId],
@@ -245,6 +373,52 @@ export default function LabsHistoricalDetail() {
     retry: (failureCount, err) => {
       if (err instanceof ForbiddenError) return false;
       return failureCount < 3;
+    },
+  });
+
+  const { data: participationData } = useQuery<{ participants: any[]; count: number }>({
+    queryKey: ["historical-participants", tastingId],
+    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}/participants`, pid || undefined),
+    enabled: !!tastingId,
+  });
+
+  const { data: myParticipations } = useQuery<{ participations: Array<{ historicalTastingId: string }> }>({
+    queryKey: ["historical-my-participations", pid],
+    queryFn: () => fetchJSON("/api/historical/my-participations", pid || undefined),
+    enabled: !!pid,
+  });
+
+  const isClaimed = myParticipations?.participations?.some(p => p.historicalTastingId === tastingId) ?? false;
+  const participantCount = participationData?.count ?? 0;
+
+  const { data: myRatingsData } = useQuery<{ ratings: PersonalRating[] }>({
+    queryKey: ["historical-my-ratings", tastingId],
+    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}/my-ratings`, pid || undefined),
+    enabled: !!pid && isClaimed,
+  });
+
+  const myRatingsMap = new Map<string, PersonalRating>();
+  if (myRatingsData?.ratings) {
+    for (const r of myRatingsData.ratings) {
+      myRatingsMap.set(r.historicalTastingEntryId, r);
+    }
+  }
+
+  const claimMutation = useMutation({
+    mutationFn: async (claim: boolean) => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch(`/api/historical/tastings/${tastingId}/claim`, {
+        method: claim ? "POST" : "DELETE",
+        headers,
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["historical-my-participations"] });
+      queryClient.invalidateQueries({ queryKey: ["historical-participants", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["historical-participant-counts"] });
     },
   });
 
@@ -362,6 +536,53 @@ export default function LabsHistoricalDetail() {
             </div>
           </div>
 
+          {pid && (
+            <div
+              className="labs-card"
+              style={{
+                padding: "14px 16px", marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 12,
+                borderColor: isClaimed ? "var(--labs-success)" : "var(--labs-border)",
+              }}
+              data-testid="detail-claim-section"
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: isClaimed ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                {isClaimed ? <UserCheck size={16} style={{ color: "var(--labs-success)" }} /> : <Users size={16} style={{ color: "var(--labs-accent)" }} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+                  {isClaimed
+                    ? t("m2.historicalDetail.youParticipated", "Du warst dabei")
+                    : t("m2.historicalDetail.wereYouThere", "Warst du dabei?")}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                  {participantCount > 0
+                    ? t("m2.historicalDetail.participantCount", "{{count}} Teilnehmer", { count: participantCount })
+                    : t("m2.historicalDetail.noParticipantsYet", "Noch keine Teilnehmer")}
+                </div>
+              </div>
+              <button
+                onClick={() => claimMutation.mutate(!isClaimed)}
+                disabled={claimMutation.isPending}
+                className={isClaimed ? "labs-btn-ghost" : "labs-btn-primary"}
+                style={{
+                  fontSize: 12, padding: "6px 14px", borderRadius: 8, flexShrink: 0,
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  ...(isClaimed ? { color: "var(--labs-danger, #ef4444)" } : {}),
+                }}
+                data-testid="detail-claim-btn"
+              >
+                {isClaimed
+                  ? t("m2.historicalDetail.unclaim", "Entfernen")
+                  : t("m2.historicalDetail.claim", "Ich war dabei")}
+              </button>
+            </div>
+          )}
+
           {winnerName && (
             <div className="labs-card" style={{
               padding: 16, marginBottom: 16,
@@ -405,7 +626,47 @@ export default function LabsHistoricalDetail() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {sorted.map((entry) => (
-              <WhiskyCard key={entry.id} entry={entry} t={t} isTied={entry.totalRank != null && tiedRanks.has(entry.totalRank)} />
+              <div key={entry.id}>
+                <WhiskyCard entry={entry} t={t} isTied={entry.totalRank != null && tiedRanks.has(entry.totalRank)} />
+                {isClaimed && pid && (
+                  <div style={{ marginTop: -6, marginBottom: 6, paddingLeft: 16, paddingRight: 16 }}>
+                    {showRatings.has(entry.id) ? (
+                      <>
+                        <button
+                          onClick={() => toggleRating(entry.id)}
+                          className="labs-btn-ghost"
+                          style={{ fontSize: 11, padding: "3px 8px", color: "var(--labs-text-muted)", marginBottom: 4 }}
+                          data-testid={`toggle-rating-close-${entry.id}`}
+                        >
+                          {t("m2.historicalDetail.hideRating", "Bewertung ausblenden")}
+                        </button>
+                        <PersonalRatingEditor
+                          entry={entry}
+                          existingRating={myRatingsMap.get(entry.id)}
+                          pid={pid}
+                          tastingId={tastingId!}
+                        />
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => toggleRating(entry.id)}
+                        className="labs-btn-ghost"
+                        style={{
+                          fontSize: 12, padding: "5px 12px", borderRadius: 8,
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          color: myRatingsMap.has(entry.id) ? "var(--labs-success)" : "var(--labs-accent)",
+                        }}
+                        data-testid={`toggle-rating-${entry.id}`}
+                      >
+                        <Star size={12} />
+                        {myRatingsMap.has(entry.id)
+                          ? `${t("m2.historicalDetail.editRating", "Bewertung bearbeiten")} (${Math.round(myRatingsMap.get(entry.id)!.overall)}/100)`
+                          : t("m2.historicalDetail.addRating", "Bewertung abgeben")}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 

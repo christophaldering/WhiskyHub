@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, Archive } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, getParticipantId } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
@@ -52,11 +52,47 @@ export default function LabsTastings() {
   const queryClient = useQueryClient();
 
   const isAdmin = currentParticipant?.role === "admin";
+  const pid = getParticipantId();
 
   const { data: tastings, isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
+  });
+
+  const { data: myHistoricalParticipations } = useQuery<{ participations: Array<{ historicalTastingId: string }> }>({
+    queryKey: ["historical-my-participations", pid],
+    queryFn: async () => {
+      if (!pid) return { participations: [] };
+      const res = await fetch("/api/historical/my-participations", { headers: { "x-participant-id": pid } });
+      if (!res.ok) return { participations: [] };
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const claimedHistoricalIds = myHistoricalParticipations?.participations?.map(p => p.historicalTastingId) ?? [];
+
+  const { data: claimedHistoricalDetails } = useQuery<Record<string, { id: string; tastingNumber: number; titleDe: string | null; titleEn: string | null; tastingDate: string | null; whiskyCount: number }>>({
+    queryKey: ["historical-tastings-details", claimedHistoricalIds.join(",")],
+    queryFn: async () => {
+      if (claimedHistoricalIds.length === 0) return {};
+      const results: Record<string, any> = {};
+      const fetches = claimedHistoricalIds.map(async (id) => {
+        try {
+          const res = await fetch(`/api/historical/tastings/${id}`, {
+            headers: pid ? { "x-participant-id": pid } : {},
+          });
+          if (res.ok) {
+            const data = await res.json();
+            results[id] = data;
+          }
+        } catch {}
+      });
+      await Promise.all(fetches);
+      return results;
+    },
+    enabled: claimedHistoricalIds.length > 0,
   });
 
   const handleAcceptInvite = async (tasting: any) => {
@@ -78,6 +114,29 @@ export default function LabsTastings() {
     }
   };
 
+  const historicalAsPast = useMemo(() => {
+    if (!claimedHistoricalIds.length || !claimedHistoricalDetails) return [];
+    const lang = navigator.language?.startsWith("de") ? "de" : "en";
+    return claimedHistoricalIds
+      .filter(id => claimedHistoricalDetails[id])
+      .map(id => {
+        const ht = claimedHistoricalDetails[id];
+        return {
+          id: `historical-${ht.id}`,
+          historicalId: ht.id,
+          title: (lang === "de" ? ht.titleDe : ht.titleEn) || ht.titleDe || `Tasting #${ht.tastingNumber}`,
+          date: ht.tastingDate || "",
+          location: "",
+          status: "archived",
+          hostId: null,
+          hostName: null,
+          isHistorical: true,
+          tastingNumber: ht.tastingNumber,
+          whiskyCount: ht.whiskyCount,
+        };
+      });
+  }, [claimedHistoricalIds, claimedHistoricalDetails]);
+
   const filtered = useMemo(() => {
     if (!tastings) return [];
     let list = [...tastings].filter((t: any) => !t.isTestData);
@@ -94,6 +153,13 @@ export default function LabsTastings() {
       list = list.filter((t: any) => t.status === "draft");
     } else if (timeFilter === "past") {
       list = list.filter((t: any) => t.status === "archived" || t.status === "reveal" || t.status === "closed");
+      if (filterTab !== "hosting") {
+        list = [...list, ...historicalAsPast];
+      }
+    }
+
+    if (timeFilter === null && filterTab !== "hosting") {
+      list = [...list, ...historicalAsPast];
     }
 
     if (searchQuery.trim()) {
@@ -109,15 +175,15 @@ export default function LabsTastings() {
     list.sort((a: any, b: any) => {
       if (a.invitePending && !b.invitePending) return -1;
       if (!a.invitePending && b.invitePending) return 1;
-      const statusOrder: Record<string, number> = { open: 0, draft: 1, reveal: 2, closed: 3, archived: 4 };
-      const orderA = statusOrder[a.status] ?? 5;
-      const orderB = statusOrder[b.status] ?? 5;
+      const statusOrder: Record<string, number> = { open: 0, draft: 1, reveal: 2, closed: 3, archived: 4, historical: 5 };
+      const orderA = a.isHistorical ? 5 : (statusOrder[a.status] ?? 5);
+      const orderB = b.isHistorical ? 5 : (statusOrder[b.status] ?? 5);
       if (orderA !== orderB) return orderA - orderB;
       return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
     });
 
     return list;
-  }, [tastings, filterTab, timeFilter, searchQuery, currentParticipant?.id]);
+  }, [tastings, filterTab, timeFilter, searchQuery, currentParticipant?.id, historicalAsPast]);
 
   const counts = useMemo(() => {
     if (!tastings) return { live: 0, upcoming: 0, past: 0 };
@@ -125,9 +191,9 @@ export default function LabsTastings() {
     return {
       live: real.filter((t: any) => t.status === "open").length,
       upcoming: real.filter((t: any) => t.status === "draft").length,
-      past: real.filter((t: any) => ["archived", "reveal", "closed"].includes(t.status)).length,
+      past: real.filter((t: any) => ["archived", "reveal", "closed"].includes(t.status)).length + historicalAsPast.length,
     };
-  }, [tastings]);
+  }, [tastings, historicalAsPast]);
 
   if (!currentParticipant) {
     return (
@@ -352,12 +418,18 @@ export default function LabsTastings() {
                   style={{
                     width: 40, height: 40, borderRadius: 12, flexShrink: 0, marginTop: 2,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: isInvited
-                      ? "var(--labs-warning-muted, #fef3c7)"
-                      : isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
+                    background: tasting.isHistorical
+                      ? "var(--labs-success-muted)"
+                      : isInvited
+                        ? "var(--labs-warning-muted, #fef3c7)"
+                        : isLive ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
                   }}
                 >
-                  {isInvited ? (
+                  {tasting.isHistorical ? (
+                    <Archive
+                      style={{ width: 18, height: 18, color: "var(--labs-success)" }}
+                    />
+                  ) : isInvited ? (
                     <Mail
                       style={{ width: 18, height: 18, color: "var(--labs-warning, #d97706)" }}
                     />
@@ -395,7 +467,20 @@ export default function LabsTastings() {
                           Eingeladen
                         </span>
                       )}
-                      {isHost && !isInvited && (
+                      {tasting.isHistorical && (
+                        <span
+                          style={{
+                            fontSize: 11, fontWeight: 600,
+                            padding: "2px 6px", borderRadius: 5,
+                            background: "var(--labs-success-muted)",
+                            color: "var(--labs-success)",
+                          }}
+                          data-testid={`labs-tasting-historical-badge-${tasting.id}`}
+                        >
+                          Archiv
+                        </span>
+                      )}
+                      {isHost && !isInvited && !tasting.isHistorical && (
                         <span
                           style={{
                             fontSize: 11, fontWeight: 600,
@@ -408,22 +493,24 @@ export default function LabsTastings() {
                           Host
                         </span>
                       )}
-                      <span
-                        className={`labs-badge ${status.cssClass}`}
-                        style={{ fontSize: 11, padding: "2px 6px" }}
-                        data-testid={`labs-tasting-status-${tasting.id}`}
-                      >
-                        {isLive && (
-                          <span
-                            className="animate-pulse"
-                            style={{
-                              width: 5, height: 5, borderRadius: "50%",
-                              background: "currentColor", display: "inline-block",
-                            }}
-                          />
-                        )}
-                        {status.label}
-                      </span>
+                      {!tasting.isHistorical && (
+                        <span
+                          className={`labs-badge ${status.cssClass}`}
+                          style={{ fontSize: 11, padding: "2px 6px" }}
+                          data-testid={`labs-tasting-status-${tasting.id}`}
+                        >
+                          {isLive && (
+                            <span
+                              className="animate-pulse"
+                              style={{
+                                width: 5, height: 5, borderRadius: "50%",
+                                background: "currentColor", display: "inline-block",
+                              }}
+                            />
+                          )}
+                          {status.label}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -524,6 +611,14 @@ export default function LabsTastings() {
                 >
                   {cardContent}
                 </div>
+              );
+            }
+
+            if (tasting.isHistorical) {
+              return (
+                <Link key={tasting.id} href={`/labs/history/${tasting.historicalId}`}>
+                  {cardContent}
+                </Link>
               );
             }
 

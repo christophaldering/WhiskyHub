@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useRoute, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -12,7 +12,7 @@ import {
   Search, Wine, Trophy, Calendar, BarChart3,
   ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
   Lock, LogIn, MapPin, Flame, Droplets, TrendingUp,
-  Loader2,
+  Loader2, UserCheck, Users,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -72,6 +72,7 @@ function LabsHistoryList() {
   const [sortMode, setSortMode] = useState<SortMode>("number-desc");
   const session = useSession();
   const pid = getParticipantId();
+  const queryClient = useQueryClient();
 
   const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({
     queryKey: ["my-communities", pid],
@@ -98,6 +99,37 @@ function LabsHistoryList() {
   });
 
   const tastings = tastingsData?.tastings ?? [];
+  const tastingIds = tastings.map(t => t.id);
+
+  const { data: myParticipations } = useQuery<{ participations: Array<{ historicalTastingId: string }> }>({
+    queryKey: ["historical-my-participations", pid],
+    queryFn: () => fetchJSON("/api/historical/my-participations", pid || undefined),
+    enabled: !!pid,
+  });
+
+  const { data: participantCountsData } = useQuery<{ counts: Record<string, number> }>({
+    queryKey: ["historical-participant-counts", tastingIds.join(",")],
+    queryFn: () => fetchJSON(`/api/historical/participant-counts?ids=${tastingIds.join(",")}`, pid || undefined),
+    enabled: tastingIds.length > 0,
+  });
+
+  const myClaimedIds = new Set(myParticipations?.participations?.map(p => p.historicalTastingId) ?? []);
+  const participantCounts = participantCountsData?.counts ?? {};
+
+  const claimMutation = useMutation({
+    mutationFn: async ({ tastingId, claim }: { tastingId: string; claim: boolean }) => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pid) headers["x-participant-id"] = pid;
+      const method = claim ? "POST" : "DELETE";
+      const res = await fetch(`/api/historical/tastings/${tastingId}/claim`, { method, headers });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["historical-my-participations"] });
+      queryClient.invalidateQueries({ queryKey: ["historical-participant-counts"] });
+    },
+  });
 
   const sorted = useMemo(() => {
     const arr = [...tastings];
@@ -244,15 +276,21 @@ function LabsHistoryList() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sorted.map(tasting => {
               const winnerLabel = [tasting.winnerDistillery, tasting.winnerName].filter(Boolean).join(" \u2014 ");
+              const isClaimed = myClaimedIds.has(tasting.id);
+              const pCount = participantCounts[tasting.id] || 0;
               return (
-                <Link key={tasting.id} href={`/labs/history/${tasting.id}`} style={{ textDecoration: "none" }}>
-                  <div className="labs-card-interactive" style={{ padding: "14px 16px" }} data-testid={`tasting-card-${tasting.tastingNumber}`}>
+                <div key={tasting.id} className="labs-card-interactive" style={{ padding: "14px 16px" }} data-testid={`tasting-card-${tasting.tastingNumber}`}>
+                  <Link href={`/labs/history/${tasting.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div style={{
-                        width: 40, height: 40, borderRadius: 10, background: "var(--labs-accent-muted)",
+                        width: 40, height: 40, borderRadius: 10,
+                        background: isClaimed ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
                         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2,
                       }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>#{tasting.tastingNumber}</span>
+                        {isClaimed
+                          ? <UserCheck size={16} style={{ color: "var(--labs-success)" }} />
+                          : <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>#{tasting.tastingNumber}</span>
+                        }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -263,6 +301,11 @@ function LabsHistoryList() {
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Wine size={11} /> {tasting.whiskyCount}</span>
                           {tasting.avgTotalScore != null && (
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Sparkles size={11} /> \u00d8 {typeof tasting.avgTotalScore === "number" ? Math.round(tasting.avgTotalScore * 10) / 10 : tasting.avgTotalScore}/100</span>
+                          )}
+                          {pCount > 0 && (
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }} data-testid={`participant-count-${tasting.id}`}>
+                              <Users size={11} /> {pCount}
+                            </span>
                           )}
                         </div>
                         {winnerLabel && (
@@ -275,8 +318,32 @@ function LabsHistoryList() {
                       </div>
                       <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0, marginTop: 12 }} strokeWidth={1.8} />
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {pid && (
+                    <div style={{ marginTop: 8, paddingLeft: 52 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          claimMutation.mutate({ tastingId: tasting.id, claim: !isClaimed });
+                        }}
+                        disabled={claimMutation.isPending}
+                        className={isClaimed ? "labs-btn-ghost" : "labs-btn-primary"}
+                        style={{
+                          fontSize: 12, padding: "5px 12px", borderRadius: 8,
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          ...(isClaimed ? { color: "var(--labs-success)", border: "1px solid var(--labs-success)", background: "var(--labs-success-muted)" } : {}),
+                        }}
+                        data-testid={`claim-btn-${tasting.id}`}
+                      >
+                        {isClaimed ? <UserCheck size={12} /> : <Users size={12} />}
+                        {isClaimed
+                          ? t("m2.historical.claimed", "Ich war dabei ✓")
+                          : t("m2.historical.claim", "Ich war dabei")
+                        }
+                      </button>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

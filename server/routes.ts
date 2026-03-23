@@ -13846,6 +13846,120 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  // ===== Historical Tasting Participation (self-service "Ich war dabei") =====
+
+  app.post("/api/historical/tastings/:id/claim", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(401).json({ message: "Participant not found" });
+
+      const tasting = await storage.getHistoricalTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Historical tasting not found" });
+
+      const result = await storage.claimHistoricalParticipation(req.params.id, participantId);
+      const allParticipants = await storage.getHistoricalParticipants(req.params.id);
+      res.json({ participation: result, participantCount: allParticipants.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/historical/tastings/:id/claim", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      await storage.unclaimHistoricalParticipation(req.params.id, participantId);
+      const allParticipants = await storage.getHistoricalParticipants(req.params.id);
+      res.json({ ok: true, participantCount: allParticipants.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/tastings/:id/participants", async (req: Request, res: Response) => {
+    try {
+      const participants = await storage.getHistoricalParticipants(req.params.id);
+      res.json({ participants, count: participants.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/my-participations", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const participations = await storage.getHistoricalParticipationForUser(participantId);
+      res.json({ participations });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/participant-counts", async (req: Request, res: Response) => {
+    try {
+      const ids = (req.query.ids as string || "").split(",").filter(Boolean);
+      if (ids.length === 0) return res.json({ counts: {} });
+      const counts = await storage.getHistoricalParticipantCounts(ids);
+      res.json({ counts });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== Historical Personal Ratings =====
+
+  app.put("/api/historical/entries/:entryId/rating", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const entryId = req.params.entryId;
+      const entry = await storage.getHistoricalTastingEntryById(entryId);
+      if (!entry) return res.status(404).json({ message: "Entry not found" });
+
+      const isClaimed = await storage.isHistoricalParticipant(entry.historicalTastingId, participantId);
+      if (!isClaimed) return res.status(403).json({ message: "You must claim participation before rating" });
+
+      const { nose, taste, finish, overall, notes } = req.body;
+      const clamp = (v: any, def: number) => {
+        const n = typeof v === "number" ? v : parseFloat(v);
+        if (isNaN(n)) return def;
+        return Math.max(0, Math.min(100, n));
+      };
+      const validatedNotes = typeof notes === "string" ? notes.slice(0, 2000) : "";
+
+      const rating = await storage.upsertHistoricalPersonalRating({
+        historicalTastingEntryId: entryId,
+        participantId,
+        nose: clamp(nose, 50),
+        taste: clamp(taste, 50),
+        finish: clamp(finish, 50),
+        overall: clamp(overall, 50),
+        notes: validatedNotes,
+      });
+      res.json(rating);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/tastings/:id/my-ratings", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+
+      const ratings = await storage.getHistoricalPersonalRatings(req.params.id, participantId);
+      res.json({ ratings });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PDF STYLE THEME (AI-generated cover page styling) =====
   app.post("/api/tastings/:id/pdf-style", async (req: Request, res: Response) => {
     try {
