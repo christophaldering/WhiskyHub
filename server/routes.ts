@@ -13255,55 +13255,6 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
-  // ===== COMMUNITY SEED (T003) =====
-
-  app.post("/api/admin/communities/seed", async (req: Request, res: Response) => {
-    try {
-      const requesterId = req.headers["x-participant-id"] as string;
-      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
-      const requester = await storage.getParticipant(requesterId);
-      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
-
-      let community = await storage.getCommunityBySlug("aldering-tasting-circle");
-      if (!community) {
-        community = await storage.createCommunity({
-          slug: "aldering-tasting-circle",
-          name: "Aldering Tasting Circle",
-          description: "The original tasting circle — 32+ blind tastings since the beginning.",
-          archiveVisibility: "community_only",
-          publicAggregatedEnabled: true,
-        });
-      }
-
-      const { db: dbInst } = await import("./db");
-      const { historicalTastings: htTable } = await import("@shared/schema");
-      const { sql: sqlTag } = await import("drizzle-orm");
-      const updateResult = await dbInst.execute(
-        sqlTag`UPDATE historical_tastings SET community_id = ${community.id}, visibility_level = 'community_only' WHERE community_id IS NULL`
-      );
-
-      const isMember = await storage.isCommunityMember(community.id, requester.id);
-      if (!isMember) {
-        await storage.addCommunityMember({
-          communityId: community.id,
-          participantId: requester.id,
-          role: "admin",
-          status: "active",
-        });
-      }
-
-      res.json({
-        success: true,
-        community,
-        tastingsLinked: (updateResult as any)?.rowCount ?? "all unlinked",
-        adminMember: true,
-      });
-    } catch (e: any) {
-      console.error("Community seed error:", e);
-      res.status(500).json({ message: e.message });
-    }
-  });
-
   // ===== HISTORICAL TASTINGS (with access control — T004) =====
 
   async function getRequesterInfo(req: Request) {

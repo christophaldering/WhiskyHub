@@ -1893,10 +1893,6 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); toast({ title: "Member removed" }); },
   });
 
-  const seedMutation = useMutation({
-    mutationFn: async () => { const res = await fetch("/api/admin/communities/seed", { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" } }); if (!res.ok) throw new Error(await res.text()); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); toast({ title: "Seed complete" }); },
-  });
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
 
@@ -2000,9 +1996,6 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
           <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-create-community-btn">
             <Plus className="w-3 h-3" /> Neue Community
           </button>
-          <button onClick={() => { if (confirm("Run community seed?")) seedMutation.mutate(); }} disabled={seedMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)", cursor: seedMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-seed-communities">
-            {seedMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />} Seed
-          </button>
         </div>
       </div>
       {showCreateForm && (
@@ -2027,7 +2020,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
         <div className="text-center py-12" style={{ color: "var(--labs-text-muted)" }}>
           <Globe className="w-8 h-8 mx-auto mb-3 opacity-30" />
           <div className="text-sm font-medium mb-1">No communities yet</div>
-          <div className="text-xs">Use the "Neue Community" button or Seed to get started.</div>
+          <div className="text-xs">Use the "Neue Community" button to get started.</div>
         </div>
       ) : communities.length > 0 ? (
         <div className="space-y-2">
