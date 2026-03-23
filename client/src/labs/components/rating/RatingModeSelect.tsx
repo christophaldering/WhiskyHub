@@ -12,26 +12,30 @@ interface RatingLabels {
   compact: string;
   compactD: string;
   compactH: string;
+  quick?: string;
+  quickD?: string;
+  quickH?: string;
   back: string;
 }
 
 interface RatingModeSelectProps {
   th: ThemeTokens;
   labels: RatingLabels;
-  onSelect: (mode: "guided" | "compact") => void;
+  onSelect: (mode: "guided" | "compact" | "quick") => void;
   onBack: () => void;
 }
 
 export default function RatingModeSelect({ th, labels, onSelect, onBack }: RatingModeSelectProps) {
   const cards: Array<{
-    mode: "guided" | "compact";
+    mode: "guided" | "compact" | "quick";
     title: string;
     desc: string;
     hint: string;
-    phaseId: "nose" | "palate";
+    phaseId: "nose" | "palate" | "overall";
   }> = [
     { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
     { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
+    { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
   ];
 
   return (

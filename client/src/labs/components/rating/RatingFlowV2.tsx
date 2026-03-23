@@ -5,6 +5,7 @@ import type { RatingData } from "./types";
 import RatingModeSelect from "./RatingModeSelect";
 import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
+import QuickRating from "./QuickRating";
 
 interface RatingFlowV2Props {
   whisky: {
@@ -23,7 +24,7 @@ type Step = "mode" | "rating";
 
 export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: RatingFlowV2Props) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<"guided" | "compact" | null>(null);
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const [step, setStep] = useState<Step>("mode");
 
   const th = LABS_THEME;
@@ -37,6 +38,9 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
     compact: t("v2.ratingCompact", "Kompakt"),
     compactD: t("v2.ratingCompactD", "Alle vier Dimensionen auf einmal -- Score direkt eingeben."),
     compactH: t("v2.ratingCompactH", "Wenn man sein Bewertungsschema kennt."),
+    quick: t("v2.ratingQuick", "Quick"),
+    quickD: t("v2.ratingQuickD", "Nur Overall-Score -- zwei Taps und fertig."),
+    quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
     back: t("v2.back", "Zurueck"),
   }), [t]);
 
@@ -78,7 +82,24 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
     done: t("v2.ratingDone", "Gespeichert"),
   }), [t, guidedLabels]);
 
-  const handleModeSelect = useCallback((m: "guided" | "compact") => {
+  const quickLabels = useMemo(() => ({
+    tapEdit: guidedLabels.tapEdit,
+    of: guidedLabels.of,
+    band90: guidedLabels.band90,
+    band85: guidedLabels.band85,
+    band80: guidedLabels.band80,
+    band75: guidedLabels.band75,
+    band70: guidedLabels.band70,
+    band0: guidedLabels.band0,
+    quick: t("v2.ratingQuick", "Quick"),
+    quickD: t("v2.ratingQuickD", "Nur Overall-Score -- zwei Taps und fertig."),
+    note: guidedLabels.note,
+    notePH: guidedLabels.notePH,
+    save: guidedLabels.save,
+    back: modeLabels.back,
+  }), [t, guidedLabels, modeLabels.back]);
+
+  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick") => {
     setMode(m);
     setStep("rating");
   }, []);
@@ -118,6 +139,18 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
         labels={compactLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
+        onDone={handleRatingDone}
+        onBack={() => setStep("mode")}
+      />
+    );
+  }
+
+  if (step === "rating" && mode === "quick") {
+    return (
+      <QuickRating
+        th={th}
+        labels={quickLabels}
+        whisky={{ ...whisky, blind: whisky.blind ?? false }}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
       />

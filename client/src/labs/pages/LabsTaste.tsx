@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -7,7 +7,7 @@ import {
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
   Download, Brain, Utensils, Library, Info, Star,
-  Archive, Heart,
+  Archive, Heart, Trophy,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -380,6 +380,36 @@ export default function LabsTaste() {
       if (!pid) return [];
       const res = await fetch(`/api/participants/${pid}/connoisseur-reports`, { headers: pidHeaders() });
       if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const { data: timelineData } = useQuery({
+    queryKey: ["palate-timeline", pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${pid}/palate-timeline`, { headers: { "x-participant-id": pid! } });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const { data: milestonesData } = useQuery({
+    queryKey: ["milestones", pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${pid}/milestones`, { headers: { "x-participant-id": pid! } });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const { data: monthlyReviewData } = useQuery({
+    queryKey: ["monthly-review", pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${pid}/monthly-review`, { headers: { "x-participant-id": pid! } });
+      if (!res.ok) return null;
       return res.json();
     },
     enabled: !!pid,
@@ -834,6 +864,18 @@ export default function LabsTaste() {
             </div>
           )}
 
+          {monthlyReviewData?.hasData && (
+            <LabsMonthlyReview data={monthlyReviewData} />
+          )}
+
+          {timelineData?.hasData && timelineData?.periods?.length > 0 && (
+            <LabsPalateTimeline periods={timelineData.periods} />
+          )}
+
+          {milestonesData?.milestones?.length > 0 && (
+            <LabsMilestoneBadges milestones={milestonesData.milestones} />
+          )}
+
           <div className="mt-6 labs-fade-in labs-stagger-2">
             <p className="labs-section-label flex items-center gap-2">
               <Archive className="w-3.5 h-3.5" />
@@ -924,6 +966,376 @@ export default function LabsTaste() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface TimelinePeriod {
+  month: string;
+  count: number;
+  avgScores: { nose: number; taste: number; finish: number; overall: number };
+  topRegion: string | null;
+  topCask: string | null;
+  regionCount: number;
+  delta: { overall: number; finish: number } | null;
+}
+
+interface MilestoneItem {
+  key: string;
+  icon: string;
+  unlocked: boolean;
+  category: string;
+}
+
+interface MonthlyReviewData {
+  hasData: boolean;
+  month: string;
+  monthLabel?: { de: string; en: string };
+  ratingsCount?: number;
+  avgScore?: number;
+  newRegions?: string[];
+  scoreDelta?: number | null;
+}
+
+function MiniSparkline({ data, color, width, height }: { data: number[]; color: string; width: number; height: number }) {
+  if (data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  }).join(" ");
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block" }}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LabsMonthlyReview({ data }: { data: MonthlyReviewData }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const monthName = data.monthLabel ? (lang.startsWith("de") ? data.monthLabel.de : data.monthLabel.en) : data.month;
+
+  return (
+    <div
+      className="labs-card labs-fade-in labs-stagger-2"
+      style={{
+        padding: 20,
+        marginBottom: 24,
+        background: "linear-gradient(135deg, var(--labs-phase-palate-dim), var(--labs-phase-finish-dim))",
+        border: "1px solid color-mix(in srgb, var(--labs-accent) 28%, transparent)",
+      }}
+      data-testid="labs-monthly-review"
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {t("labs.monthlyReview", "Your Month")}
+        </span>
+        <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+          {monthName}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-accent)", fontFamily: "var(--font-display)" }}>
+            {data.ratingsCount}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase" }}>
+            {t("labs.monthlyReviewRated", "Rated")}
+          </div>
+        </div>
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-phase-nose)", fontFamily: "var(--font-display)" }}>
+            {data.avgScore?.toFixed(1) || "\u2013"}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase" }}>
+            {t("labs.monthlyReviewAvg", "Avg Score")}
+          </div>
+        </div>
+        {data.newRegions && data.newRegions.length > 0 && (
+          <div style={{ textAlign: "center", flex: 1 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-success)", fontFamily: "var(--font-display)" }}>
+              {data.newRegions.length}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase" }}>
+              {t("labs.monthlyReviewNewRegions", "New Regions")}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {data.scoreDelta != null && (
+        <div style={{ fontSize: 12, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{
+            color: data.scoreDelta > 0 ? "var(--labs-success)" : data.scoreDelta < 0 ? "var(--labs-warning, #f59e0b)" : "var(--labs-text-muted)",
+            fontWeight: 600,
+          }}>
+            {data.scoreDelta > 0 ? "\u25b2" : data.scoreDelta < 0 ? "\u25bc" : "\u25cf"}
+            {" "}
+            {data.scoreDelta > 0
+              ? `${data.scoreDelta.toFixed(1)} ${t("labs.monthlyReviewUp", "up")}`
+              : data.scoreDelta < 0
+                ? `${Math.abs(data.scoreDelta).toFixed(1)} ${t("labs.monthlyReviewDown", "down")}`
+                : t("labs.monthlyReviewSame", "steady")
+            }
+          </span>
+          <span style={{ opacity: 0.6 }}>{t("labs.monthlyReviewVsPrev", "vs. previous month")}</span>
+        </div>
+      )}
+
+      {data.newRegions && data.newRegions.length > 0 && (
+        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {data.newRegions.map(r => (
+            <span
+              key={r}
+              style={{
+                fontSize: 10,
+                padding: "2px 8px",
+                borderRadius: 99,
+                background: "color-mix(in srgb, var(--labs-success) 15%, transparent)",
+                color: "var(--labs-success)",
+                fontWeight: 600,
+              }}
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LabsPalateTimeline({ periods }: { periods: TimelinePeriod[] }) {
+  const { t } = useTranslation();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [periods]);
+
+  const monthNames: Record<string, string> = {
+    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun",
+    "07": "Jul", "08": "Aug", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+  };
+
+  const overallScores = periods.map(p => p.avgScores.overall);
+  const finishScores = periods.map(p => p.avgScores.finish);
+
+  return (
+    <div className="mb-6 labs-fade-in labs-stagger-2" data-testid="labs-palate-timeline">
+      <p className="labs-section-label flex items-center gap-2">
+        <Activity className="w-3.5 h-3.5" />
+        {t("labs.palateTimeline", "Palate Timeline")}
+      </p>
+      <div
+        ref={scrollRef}
+        style={{
+          display: "flex",
+          gap: 8,
+          overflowX: "auto",
+          paddingBottom: 8,
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+        }}
+      >
+        {periods.map((p, i) => {
+          const [year, monthNum] = p.month.split("-");
+          const monthLabel = monthNames[monthNum] || monthNum;
+          const deltaText = p.delta
+            ? p.delta.overall > 0
+              ? `+${p.delta.overall.toFixed(0)}`
+              : p.delta.overall < 0
+                ? `${p.delta.overall.toFixed(0)}`
+                : "\u00b10"
+            : null;
+          const deltaColor = p.delta
+            ? p.delta.overall > 0 ? "var(--labs-success)" : p.delta.overall < 0 ? "var(--labs-warning, #f59e0b)" : "var(--labs-text-muted)"
+            : "var(--labs-text-muted)";
+
+          return (
+            <div
+              key={p.month}
+              className="labs-card"
+              style={{ minWidth: 200, maxWidth: 220, padding: 16, flexShrink: 0 }}
+              data-testid={`labs-timeline-card-${i}`}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+                  {monthLabel} {year}
+                </span>
+                {deltaText && (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: deltaColor }}>
+                    {deltaText}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)", textTransform: "uppercase" }}>
+                    {t("labs.timelineAvgScore", "Avg")}
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--labs-accent)" }}>
+                    {p.avgScores.overall.toFixed(0)}
+                  </div>
+                </div>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                  <MiniSparkline
+                    data={overallScores.slice(0, i + 1)}
+                    color="var(--labs-accent)"
+                    width={80}
+                    height={28}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                    {t("labs.timelineFinish", "Finish")}
+                  </div>
+                  <MiniSparkline
+                    data={finishScores.slice(0, i + 1)}
+                    color="var(--labs-phase-finish)"
+                    width={60}
+                    height={20}
+                  />
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                    {t("labs.timelineRatings", "Ratings")}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                    {p.count}
+                  </div>
+                </div>
+              </div>
+
+              {p.topRegion && (
+                <p style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.4, margin: 0 }}>
+                  {p.topRegion} — {p.regionCount} {t("labs.timelineRatings", "Ratings")}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LabsMilestoneBadges({ milestones }: { milestones: MilestoneItem[] }) {
+  const { t } = useTranslation();
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  const milestoneLabels: Record<string, string> = {
+    rating10: t("labs.milestone10", "10 Ratings"),
+    rating25: t("labs.milestone25", "25 Ratings"),
+    rating50: t("labs.milestone50", "50 Ratings"),
+    rating100: t("labs.milestone100", "100 Ratings"),
+    regions5: t("labs.milestone5Regions", "5 Regions"),
+    tastings3: t("labs.milestone3Tastings", "3 Tastings"),
+    consistency: t("labs.milestoneConsistency", "Consistency"),
+    tasteTwin: t("labs.milestoneTasteTwin", "Taste Twin"),
+    explorer: t("labs.milestoneExplorer", "Explorer"),
+    confidenceUp: t("labs.milestoneConfidenceUp", "Confidence Up"),
+  };
+
+  const unlocked = milestones.filter(m => m.unlocked);
+  const locked = milestones.filter(m => !m.unlocked);
+
+  return (
+    <div className="mb-6 labs-fade-in labs-stagger-2" data-testid="labs-milestones">
+      <p className="labs-section-label flex items-center gap-2">
+        <Trophy className="w-3.5 h-3.5" />
+        {t("labs.milestones", "Milestones")}
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {unlocked.map((m) => (
+          <div key={m.key} style={{ position: "relative" }}>
+            <button
+              onClick={() => setExpandedKey(expandedKey === m.key ? null : m.key)}
+              data-testid={`labs-milestone-${m.key}`}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, var(--labs-phase-palate-dim), var(--labs-phase-overall-dim))",
+                border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                boxShadow: expandedKey === m.key ? "0 0 12px color-mix(in srgb, var(--labs-accent) 27%, transparent)" : "none",
+                fontFamily: "inherit",
+              }}
+            >
+              {m.icon}
+            </button>
+            {expandedKey === m.key && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -36,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "var(--labs-surface)",
+                  border: "1px solid var(--labs-border)",
+                  borderRadius: 8,
+                  padding: "4px 10px",
+                  whiteSpace: "nowrap",
+                  fontSize: 11,
+                  color: "var(--labs-text)",
+                  zIndex: 10,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                }}
+              >
+                {milestoneLabels[m.key] || m.key}
+              </div>
+            )}
+          </div>
+        ))}
+        {locked.slice(0, 3).map((m) => (
+          <div
+            key={m.key}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              background: "var(--labs-surface)",
+              border: "1px solid var(--labs-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+              opacity: 0.3,
+              filter: "grayscale(1)",
+            }}
+            data-testid={`labs-milestone-locked-${m.key}`}
+          >
+            {m.icon}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
