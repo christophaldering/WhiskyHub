@@ -17,6 +17,7 @@ import {
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
+import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
 
 interface HostSummary {
   totalTastings: number;
@@ -47,15 +48,20 @@ function parseCalendarDate(dateStr: string): Date | null {
   return null;
 }
 
-const statusColor = (status: string) => {
-  if (status === "open" || status === "reveal") return "var(--labs-success)";
-  if (status === "draft") return "var(--labs-text-muted)";
-  if (status === "closed") return "var(--labs-accent)";
-  if (status === "archived") return "var(--labs-text-muted)";
-  return "var(--labs-text-muted)";
-};
+function useStatusColor() {
+  const th = useAppleTheme();
+  return (status: string) => {
+    if (status === "open" || status === "reveal") return th.green;
+    if (status === "draft") return th.faint;
+    if (status === "closed") return th.gold;
+    if (status === "archived") return th.faint;
+    return th.faint;
+  };
+}
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
+  const getColor = useStatusColor();
+  const color = getColor(status);
   return (
     <span
       style={{
@@ -63,11 +69,11 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.08em",
-        color: statusColor(status),
+        color: color,
         padding: "3px 8px",
-        borderRadius: 6,
-        border: `1px solid color-mix(in srgb, ${statusColor(status)} 30%, transparent)`,
-        background: `color-mix(in srgb, ${statusColor(status)} 12%, transparent)`,
+        borderRadius: 8,
+        border: `1px solid ${withAlpha(color, 0.3)}`,
+        background: withAlpha(color, 0.12),
         whiteSpace: "nowrap",
       }}
       data-testid={`status-badge-${status}`}
@@ -78,15 +84,18 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
 }
 
 function SectionTitle({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+  const th = useAppleTheme();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-      <Icon style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
-      <h2 className="labs-serif" style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{title}</h2>
+    <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
+      <Icon style={{ width: 16, height: 16, color: th.gold }} />
+      <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 15, fontWeight: 600, color: th.text, margin: 0 }}>{title}</h2>
     </div>
   );
 }
 
 function LabsDashboardCalendar() {
+  const th = useAppleTheme();
+  const getStatusColor = useStatusColor();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -131,22 +140,22 @@ function LabsDashboardCalendar() {
   const selectedEvents = selectedDay ? (eventsByDate.get(selectedDay) || []) : [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button type="button" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text)", padding: 4 }} data-testid="button-cal-prev">
+          style={{ background: "none", border: "none", cursor: "pointer", color: th.text, padding: 4 }} data-testid="button-cal-prev">
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span className="labs-serif" style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-text)" }}>{monthName} {year}</span>
+        <span style={{ fontFamily: "Playfair Display, serif", fontSize: 15, fontWeight: 700, color: th.text }}>{monthName} {year}</span>
         <button type="button" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text)", padding: 4 }} data-testid="button-cal-next">
+          style={{ background: "none", border: "none", cursor: "pointer", color: th.text, padding: 4 }} data-testid="button-cal-next">
           <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
         {dayNames.map((d) => (
-          <div key={d} style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 0", textTransform: "uppercase" }}>{d}</div>
+          <div key={d} style={{ fontSize: 11, fontWeight: 700, color: th.faint, padding: "4px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{d}</div>
         ))}
         {Array.from({ length: startOffset }).map((_, i) => <div key={`e-${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -162,7 +171,7 @@ function LabsDashboardCalendar() {
               type="button"
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
               style={{
-                borderRadius: 8,
+                borderRadius: 10,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -170,8 +179,8 @@ function LabsDashboardCalendar() {
                 padding: "5px 0",
                 fontSize: 13,
                 fontWeight: isToday || isSelected ? 700 : 400,
-                color: isSelected ? "var(--labs-bg)" : isToday ? "var(--labs-accent)" : "var(--labs-text)",
-                background: isSelected ? "var(--labs-accent)" : isToday ? "var(--labs-accent-muted)" : "transparent",
+                color: isSelected ? th.bg : isToday ? th.gold : th.text,
+                background: isSelected ? th.gold : isToday ? withAlpha(th.gold, 0.12) : "transparent",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "system-ui, sans-serif",
@@ -183,7 +192,7 @@ function LabsDashboardCalendar() {
               {dayEvents.length > 0 && (
                 <div style={{ display: "flex", gap: 2 }}>
                   {dayEvents.slice(0, 3).map((ev, idx) => (
-                    <div key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: isSelected ? "var(--labs-bg)" : statusColor(ev.status) }} />
+                    <div key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: isSelected ? th.bg : getStatusColor(ev.status) }} />
                   ))}
                 </div>
               )}
@@ -193,23 +202,25 @@ function LabsDashboardCalendar() {
       </div>
 
       {selectedDay && selectedEvents.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: SP.xs }}>
           {selectedEvents.map((ev) => (
             <Link key={ev.id} href={ev.status === "closed" || ev.status === "archived" ? `/labs/results/${ev.id}` : `/labs/host/${ev.id}`}>
               <div
-                className="labs-card-interactive"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "10px 12px",
-                  borderLeft: `3px solid ${statusColor(ev.status)}`,
+                  borderLeft: `3px solid ${getStatusColor(ev.status)}`,
+                  background: th.bgHover,
+                  borderRadius: 12,
+                  cursor: "pointer",
                 }}
                 data-testid={`cal-event-${ev.id}`}
               >
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{ev.title}</p>
-                  <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} guests</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: th.text, margin: 0 }}>{ev.title}</p>
+                  <p style={{ fontSize: 11, color: th.faint, margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} guests</p>
                 </div>
                 <StatusBadge status={ev.status} label={t(`session.status.${ev.status}`, ev.status)} />
               </div>
@@ -218,7 +229,7 @@ function LabsDashboardCalendar() {
         </div>
       )}
       {selectedDay && selectedEvents.length === 0 && (
-        <p style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", padding: "8px 0" }}>
+        <p style={{ fontSize: 12, color: th.faint, textAlign: "center", padding: "8px 0" }}>
           {t("hostDashboard.noTastingsDay", "No tastings on this day")}
         </p>
       )}
@@ -229,6 +240,7 @@ function LabsDashboardCalendar() {
 interface InviteResult { email: string; status: string; }
 
 function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: string; status: string; code?: string }[] }) {
+  const th = useAppleTheme();
   const [selectedTastingId, setSelectedTastingId] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [emails, setEmails] = useState("");
@@ -289,30 +301,41 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
     }
   }, [selectedTastingId, emails, personalNote, queryClient]);
 
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 14px",
+    fontSize: 14,
+    borderRadius: 12,
+    background: th.inputBg,
+    border: `1px solid ${th.border}`,
+    color: th.text,
+    outline: "none",
+    fontFamily: "system-ui, sans-serif",
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+      <p style={{ fontSize: 12, color: th.faint }}>
         {t("hostDashboard.inviteDesc", "Select a tasting and invite participants via QR code or email.")}
       </p>
 
       <div style={{ position: "relative" }}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="labs-input"
           style={{
+            ...inputStyle,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             gap: 8,
             cursor: "pointer",
-            color: selectedTasting ? "var(--labs-text)" : "var(--labs-text-muted)",
+            color: selectedTasting ? th.text : th.faint,
             textAlign: "left",
-            width: "100%",
           }}
           data-testid="invite-tasting-selector"
         >
           <span>{selectedTasting ? selectedTasting.title : t("hostDashboard.selectTasting", "Select a tasting...")}</span>
-          <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", transition: "transform 0.15s", transform: dropdownOpen ? "rotate(180deg)" : "none" }} />
+          <ChevronDown style={{ width: 14, height: 14, color: th.faint, transition: "transform 0.15s", transform: dropdownOpen ? "rotate(180deg)" : "none" }} />
         </button>
         {dropdownOpen && (
           <div style={{
@@ -322,15 +345,15 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
             left: 0,
             right: 0,
             marginTop: 4,
-            borderRadius: 10,
-            border: "1px solid var(--labs-border)",
-            background: "var(--labs-surface-elevated)",
+            borderRadius: 14,
+            border: `1px solid ${th.border}`,
+            background: th.bgCard,
             boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
             maxHeight: 200,
             overflowY: "auto",
           }}>
             {activeTastings.length === 0 && (
-              <p style={{ padding: 12, fontSize: 12, color: "var(--labs-text-muted)" }}>{t("hostDashboard.noActiveTastings", "No active tastings")}</p>
+              <p style={{ padding: 12, fontSize: 12, color: th.faint }}>{t("hostDashboard.noActiveTastings", "No active tastings")}</p>
             )}
             {activeTastings.map(ta => (
               <button
@@ -341,10 +364,10 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
                   textAlign: "left",
                   padding: "10px 14px",
                   fontSize: 13,
-                  background: ta.id === selectedTastingId ? "var(--labs-accent-muted)" : "transparent",
+                  background: ta.id === selectedTastingId ? withAlpha(th.gold, 0.12) : "transparent",
                   border: "none",
                   cursor: "pointer",
-                  color: "var(--labs-text)",
+                  color: th.text,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -361,36 +384,42 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
       </div>
 
       {selectedTasting && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <QrCode style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>QR Code</span>
+            <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
+              <QrCode style={{ width: 14, height: 14, color: th.gold }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>QR Code</span>
             </div>
             {qrDataUrl ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{ background: "var(--labs-surface)", borderRadius: 10, padding: 8, display: "inline-block" }}>
+                <div style={{ background: th.inputBg, borderRadius: 14, padding: 8, display: "inline-block" }}>
                   <img src={qrDataUrl} alt="QR Code" style={{ width: 140, height: 140 }} data-testid="invite-qr-image" />
                 </div>
-                <div style={{ display: "flex", gap: 8, width: "100%" }}>
-                  <button onClick={handleDownloadQr} className="labs-btn-secondary" style={{ flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} data-testid="invite-download-qr">
+                <div style={{ display: "flex", gap: SP.sm, width: "100%" }}>
+                  <button onClick={handleDownloadQr} style={{
+                    flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, color: th.text, cursor: "pointer",
+                  }} data-testid="invite-download-qr">
                     <Download style={{ width: 13, height: 13 }} /> Save
                   </button>
-                  <button onClick={handleCopyLink} className="labs-btn-secondary" style={{ flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} data-testid="invite-copy-link">
+                  <button onClick={handleCopyLink} style={{
+                    flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, color: th.text, cursor: "pointer",
+                  }} data-testid="invite-copy-link">
                     {copiedLink ? <Check style={{ width: 13, height: 13 }} /> : <LinkIcon style={{ width: 13, height: 13 }} />}
                     {copiedLink ? "Copied!" : "Link"}
                   </button>
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", fontStyle: "italic" }}>No join code available</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No join code available</p>
             )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <Mail style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Email Invite</span>
+            <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
+              <Mail style={{ width: 14, height: 14, color: th.gold }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>Email Invite</span>
             </div>
             {currentParticipant?.id && selectedTastingId && (
               <FriendsQuickSelect
@@ -414,7 +443,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
               value={emails}
               onChange={e => setEmails(e.target.value)}
               placeholder="email@example.com, ..."
-              className="labs-input"
+              style={inputStyle}
               data-testid="invite-email-input"
             />
             <textarea
@@ -422,8 +451,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
               onChange={e => setPersonalNote(e.target.value)}
               placeholder="Add a personal note (optional)"
               rows={2}
-              className="labs-input"
-              style={{ resize: "none" }}
+              style={{ ...inputStyle, resize: "none" }}
               data-testid="invite-personal-note"
             />
             <button
@@ -452,10 +480,10 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
                       {ok
-                        ? <Check style={{ width: 13, height: 13, color: "var(--labs-success)", flexShrink: 0 }} />
-                        : <Mail style={{ width: 13, height: 13, color: "var(--labs-danger)", flexShrink: 0 }} />
+                        ? <Check style={{ width: 13, height: 13, color: th.green, flexShrink: 0 }} />
+                        : <Mail style={{ width: 13, height: 13, color: "#e06060", flexShrink: 0 }} />
                       }
-                      <span style={{ color: "var(--labs-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.email}</span>
+                      <span style={{ color: th.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.email}</span>
                       <StatusBadge status={ok ? "open" : "closed"} label={ok ? "Sent" : "Failed"} />
                     </div>
                   );
@@ -472,6 +500,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
 const WHISKY_COUNTS = [3, 4, 5, 6, 8];
 
 function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: string) => void }) {
+  const th = useAppleTheme();
   const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [count, setCount] = useState(4);
@@ -515,16 +544,16 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
 
   return (
     <div
-      className="labs-card labs-fade-in"
       style={{
-        padding: "20px 20px 22px",
-        marginBottom: 20,
-        border: "1px solid rgba(201,151,43,0.2)",
-        background: "rgba(201,151,43,0.04)",
+        background: th.bgCard,
+        border: `1px solid ${withAlpha(th.gold, 0.2)}`,
+        borderRadius: 20,
+        padding: `${SP.lg}px ${SP.lg}px ${SP.lg + 2}px`,
+        marginBottom: SP.lg,
       }}
       data-testid="card-quick-start"
     >
-      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 16 }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: th.text, marginBottom: SP.md }}>
         {t("hostQuickStart.title", "Start a new tasting")}
       </div>
 
@@ -533,25 +562,26 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
         placeholder={t("hostQuickStart.namePlaceholder", "Name of the evening")}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="labs-input"
         style={{
           width: "100%",
           padding: "12px 16px",
-          marginBottom: 16,
+          marginBottom: SP.md,
           fontSize: 14,
           borderRadius: 12,
-          background: "rgba(255,255,255,0.035)",
-          border: "1px solid rgba(201,151,43,0.18)",
-          color: "var(--labs-text)",
+          background: th.inputBg,
+          border: `1px solid ${withAlpha(th.gold, 0.18)}`,
+          color: th.text,
           outline: "none",
+          fontFamily: "system-ui, sans-serif",
+          boxSizing: "border-box",
         }}
         data-testid="input-quick-title"
       />
 
-      <div style={{ fontSize: 13, color: "var(--labs-text-secondary)", marginBottom: 8 }}>
+      <div style={{ fontSize: 13, color: th.muted, marginBottom: SP.sm }}>
         {t("hostQuickStart.howMany", "How many whiskies?")}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: SP.sm, marginBottom: SP.md }}>
         {WHISKY_COUNTS.map((n) => (
           <button
             key={n}
@@ -561,13 +591,14 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
               flex: 1,
               padding: "10px 0",
               borderRadius: 12,
-              border: count === n ? "1.5px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.08)",
-              background: count === n ? "linear-gradient(135deg, #E8B84B, #C9972B)" : "rgba(255,255,255,0.04)",
-              color: count === n ? "#1a1714" : "var(--labs-text-secondary)",
+              border: count === n ? `1.5px solid ${th.gold}` : `1px solid ${th.border}`,
+              background: count === n ? `linear-gradient(135deg, ${th.gold}, ${th.amber})` : th.inputBg,
+              color: count === n ? "#1a1714" : th.muted,
               fontSize: 15,
               fontWeight: 600,
               cursor: "pointer",
               transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
+              fontFamily: "system-ui, sans-serif",
             }}
             data-testid={`chip-whisky-count-${n}`}
           >
@@ -577,9 +608,9 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
       </div>
 
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "0 2px" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.lg, padding: "0 2px" }}
       >
-        <span style={{ fontSize: 14, color: "var(--labs-text)" }}>
+        <span style={{ fontSize: 14, color: th.text }}>
           {t("hostQuickStart.blind", "Blind Tasting")}
         </span>
         <button
@@ -594,7 +625,7 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
             border: "none",
             padding: 2,
             cursor: "pointer",
-            background: blind ? "var(--labs-accent)" : "rgba(255,255,255,0.12)",
+            background: blind ? th.gold : th.border,
             transition: "background 0.2s",
             position: "relative",
           }}
@@ -617,17 +648,17 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
         style={{
           display: "flex",
           alignItems: "flex-start",
-          gap: 8,
+          gap: SP.sm,
           padding: "12px 16px",
-          background: "rgba(201,151,43,0.06)",
-          border: "1px solid rgba(201,151,43,0.15)",
+          background: withAlpha(th.gold, 0.06),
+          border: `1px solid ${withAlpha(th.gold, 0.15)}`,
           borderRadius: 12,
-          marginBottom: 16,
+          marginBottom: SP.md,
         }}
         data-testid="quick-start-ai-hint"
       >
-        <Sparkles style={{ width: 14, height: 14, color: "#E8B84B", flexShrink: 0, marginTop: 1 }} />
-        <span style={{ fontSize: 13, fontWeight: 300, color: "rgba(240,230,211,0.6)", lineHeight: 1.4 }}>
+        <Sparkles style={{ width: 14, height: 14, color: th.gold, flexShrink: 0, marginTop: 1 }} />
+        <span style={{ fontSize: 13, fontWeight: 300, color: th.muted, lineHeight: 1.4 }}>
           {t("labs.aiImport.hint", "Add your lineup after creating — a photo is all you need.")}
         </span>
       </div>
@@ -649,7 +680,7 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
         }}
         data-testid="button-quick-create"
       >
-        {creating ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Plus className="w-4 h-4" />}
+        {creating ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
         {t("hostQuickStart.create", "Create tasting & generate code")}
       </button>
     </div>
@@ -657,6 +688,7 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
 }
 
 export default function LabsHostDashboard() {
+  const th = useAppleTheme();
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
@@ -669,10 +701,12 @@ export default function LabsHostDashboard() {
     enabled: !!pid,
   });
 
+  const cardStyle = { background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md };
+
   if (!pid) {
     return (
       <AuthGateMessage
-        icon={<GlassWater style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />}
+        icon={<GlassWater style={{ width: 40, height: 40, color: th.faint }} />}
         message="Sign in to access your dashboard"
       />
     );
@@ -680,18 +714,21 @@ export default function LabsHostDashboard() {
 
   if (isLoading) {
     return (
-      <div className="labs-fade-in" style={{ padding: "60px 20px", textAlign: "center" }}>
-        <Loader2 style={{ width: 28, height: 28, color: "var(--labs-accent)", margin: "0 auto 12px", display: "block", animation: "spin 1s linear infinite" }} />
-        <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Loading dashboard...</p>
+      <div style={{ padding: "60px 20px", textAlign: "center" }}>
+        <Loader2 style={{ width: 28, height: 28, color: th.gold, margin: "0 auto 12px", display: "block", animation: "spin 1s linear infinite" }} />
+        <p style={{ fontSize: 13, color: th.faint }}>Loading dashboard...</p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="labs-fade-in" style={{ padding: "60px 20px", textAlign: "center" }}>
-        <p style={{ color: "var(--labs-danger)", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Could not load dashboard</p>
-        <button onClick={() => refetch()} className="labs-btn-secondary">Retry</button>
+      <div style={{ padding: "60px 20px", textAlign: "center" }}>
+        <p style={{ color: "#e06060", fontSize: 15, fontWeight: 600, marginBottom: SP.sm }}>Could not load dashboard</p>
+        <button onClick={() => refetch()} style={{
+          background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10,
+          padding: "8px 16px", color: th.text, cursor: "pointer", fontSize: 13,
+        }}>Retry</button>
       </div>
     );
   }
@@ -704,37 +741,38 @@ export default function LabsHostDashboard() {
   const hasData = s.totalTastings > 0;
 
   const chartData = [
-    { dim: "Nose", score: Math.round(s.averageScores.nose), fill: "var(--labs-dim-nose)" },
-    { dim: "Taste", score: Math.round(s.averageScores.taste), fill: "var(--labs-dim-taste)" },
-    { dim: "Finish", score: Math.round(s.averageScores.finish), fill: "var(--labs-dim-finish)" },
-    { dim: "Overall", score: Math.round(s.averageScores.overall), fill: "var(--labs-accent)" },
+    { dim: "Nose", score: Math.round(s.averageScores.nose) },
+    { dim: "Taste", score: Math.round(s.averageScores.taste) },
+    { dim: "Finish", score: Math.round(s.averageScores.finish) },
+    { dim: "Overall", score: Math.round(s.averageScores.overall) },
   ];
 
   return (
-    <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-host-dashboard">
+    <div style={{ padding: `${SP.lg}px ${SP.md}px`, maxWidth: 768, margin: "0 auto", paddingBottom: 100 }} data-testid="labs-host-dashboard">
       <button
         onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
+        style={{
+          display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+          color: th.muted, cursor: "pointer", fontSize: 14, marginLeft: -8, marginBottom: SP.md, padding: 0,
+        }}
         data-testid="labs-host-dashboard-back"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft style={{ width: 16, height: 16 }} />
         Tastings
       </button>
       <h1
-        className="labs-serif"
-        style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}
+        style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 700, color: th.text, margin: "0 0 4px" }}
         data-testid="text-dashboard-title"
       >
         {t("m2.hostDash.title", "Host Dashboard")}
       </h1>
-      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 20px" }}>
+      <p style={{ fontSize: 13, color: th.muted, margin: `0 0 ${SP.lg}px` }}>
         {t("m2.hostDash.subtitle", "Your command center for tasting management")}
       </p>
 
       <QuickStartCard pid={pid} onCreated={(id) => navigate(`/labs/host/${id}`)} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: SP.sm, marginBottom: SP.lg }}>
         {[
           { icon: GlassWater, value: s.totalTastings, label: t("m2.hostDash.statTastings", "Tastings") },
           { icon: Users, value: s.totalParticipants, label: t("m2.hostDash.statParticipants", "Guests") },
@@ -742,63 +780,64 @@ export default function LabsHostDashboard() {
         ].map(({ icon: Icon, value, label }) => (
           <div
             key={label}
-            className="labs-card"
-            style={{ padding: "14px 8px", textAlign: "center" }}
+            style={{ ...cardStyle, padding: "14px 8px", textAlign: "center" }}
             data-testid={`stat-${label.toLowerCase()}`}
           >
-            <Icon style={{ width: 16, height: 16, color: "var(--labs-accent)", margin: "0 auto 6px", display: "block" }} />
-            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
-            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+            <Icon style={{ width: 16, height: 16, color: th.gold, margin: "0 auto 6px", display: "block" }} />
+            <div style={{ fontSize: 22, fontWeight: 700, color: th.gold, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+            <div style={{ fontSize: 11, color: th.faint, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
           </div>
         ))}
       </div>
 
       {hasData && (
-        <div className="labs-card" style={{ padding: 16, marginBottom: 20 }}>
+        <div style={{ ...cardStyle, marginBottom: SP.lg }}>
           <SectionTitle icon={BarChart3} title={t("m2.hostDash.avgScores", "Average Scores")} />
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} margin={{ left: 0, right: 0, top: 4, bottom: 4 }}>
-              <XAxis dataKey="dim" tick={{ fill: "var(--labs-text-secondary)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+              <XAxis dataKey="dim" tick={{ fill: th.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fill: th.faint, fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
               <Tooltip
-                contentStyle={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 8, fontSize: 12, color: "var(--labs-text)" }}
-                labelStyle={{ color: "var(--labs-text)" }}
-                itemStyle={{ color: "var(--labs-accent)" }}
+                contentStyle={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 10, fontSize: 12, color: th.text }}
+                labelStyle={{ color: th.text }}
+                itemStyle={{ color: th.gold }}
               />
-              <Bar dataKey="score" radius={[4, 4, 0, 0]} fill="var(--labs-accent)" />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]} fill={th.gold} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        <div className="labs-card" style={{ padding: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md, marginBottom: SP.lg }}>
+        <div style={cardStyle}>
           <SectionTitle icon={Calendar} title={t("m2.hostDash.calendar", "Calendar")} />
           <LabsDashboardCalendar />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="labs-card" style={{ padding: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
+          <div style={cardStyle}>
             <SectionTitle icon={Star} title={t("m2.hostDash.recentTastings", "Recent Tastings")} />
             {s.recentTastings.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", fontStyle: "italic" }}>No tastings yet</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No tastings yet</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {s.recentTastings.slice(0, 5).map(rt => (
                   <Link key={rt.id} href={`/labs/tastings/${rt.id}`}>
                     <div
-                      className="labs-card-interactive"
                       style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         padding: "8px 10px",
+                        background: th.bgHover,
+                        borderRadius: 12,
+                        cursor: "pointer",
                       }}
                       data-testid={`recent-tasting-${rt.id}`}
                     >
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rt.title}</p>
-                        <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>{rt.date} · {rt.participantCount} guests</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: th.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rt.title}</p>
+                        <p style={{ fontSize: 11, color: th.faint, margin: "2px 0 0" }}>{rt.date} · {rt.participantCount} guests</p>
                       </div>
                       <StatusBadge status={rt.status} label={t(`session.status.${rt.status}`, rt.status)} />
                     </div>
@@ -808,22 +847,22 @@ export default function LabsHostDashboard() {
             )}
           </div>
 
-          <div className="labs-card" style={{ padding: 16 }}>
+          <div style={cardStyle}>
             <SectionTitle icon={Trophy} title={t("m2.hostDash.topWhiskies", "Top Whiskies")} />
             {s.topWhiskies.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", fontStyle: "italic" }}>No ratings yet</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No ratings yet</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {s.topWhiskies.slice(0, 5).map((w, i) => {
-                  const medalColor = i === 0 ? "#d4a256" : i === 1 ? "#a8a8a8" : i === 2 ? "#cd7f32" : "var(--labs-text-muted)";
+                  const medalColor = i === 0 ? th.gold : i === 1 ? "#a8a8a8" : i === 2 ? th.amber : th.faint;
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "4px 0" }} data-testid={`top-whisky-${i}`}>
                       <span style={{ width: 20, textAlign: "right", color: medalColor, fontWeight: i < 3 ? 700 : 400, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{i + 1}.</span>
                       <WhiskyImage imageUrl={w.imageUrl} name={w.name || ""} size={24} />
-                      <span style={{ flex: 1, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ flex: 1, color: th.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {[w.distillery, w.name].filter(Boolean).join(" — ")}
                       </span>
-                      <span style={{ color: "var(--labs-accent)", fontWeight: 600, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{Math.round(w.averageScore)}</span>
+                      <span style={{ color: th.gold, fontWeight: 600, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{Math.round(w.averageScore)}</span>
                     </div>
                   );
                 })}
@@ -833,14 +872,14 @@ export default function LabsHostDashboard() {
         </div>
       </div>
 
-      <div className="labs-card" style={{ padding: 16, marginBottom: 20 }}>
+      <div style={{ ...cardStyle, marginBottom: SP.lg }}>
         <SectionTitle icon={Mail} title={t("m2.hostDash.invitations", "Invitations")} />
         <LabsInvitationsPanel tastings={s.recentTastings} />
       </div>
 
-      <div className="labs-card" style={{ padding: 16, marginBottom: 20 }}>
+      <div style={{ ...cardStyle, marginBottom: SP.lg }}>
         <SectionTitle icon={Sparkles} title={t("m2.hostDash.quickTools", "Quick Tools")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: SP.sm }}>
           {[
             { href: "/labs/host", icon: Plus, label: t("m2.hostDash.newTasting", "New Tasting"), desc: "Create a new session" },
             { href: "/labs/host/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
@@ -849,24 +888,26 @@ export default function LabsHostDashboard() {
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href}>
               <div
-                className="labs-card-interactive"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "10px 12px",
+                  background: th.bgHover,
+                  borderRadius: 14,
+                  cursor: "pointer",
                 }}
                 data-testid={`tool-link-${label.toLowerCase().replace(/\s+/g, "-")}`}
               >
                 <div style={{
-                  width: 34, height: 34, borderRadius: 10, background: "var(--labs-accent-muted)",
+                  width: 34, height: 34, borderRadius: 10, background: withAlpha(th.gold, 0.12),
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
-                  <Icon style={{ width: 15, height: 15, color: "var(--labs-accent)" }} />
+                  <Icon style={{ width: 15, height: 15, color: th.gold }} />
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{label}</p>
-                  <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>{desc}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: th.text, margin: 0 }}>{label}</p>
+                  <p style={{ fontSize: 11, color: th.faint, margin: 0 }}>{desc}</p>
                 </div>
               </div>
             </Link>

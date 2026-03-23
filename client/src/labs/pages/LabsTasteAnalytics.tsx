@@ -7,6 +7,7 @@ import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi 
 import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
 
 interface RatingNote {
   id: string;
@@ -45,6 +46,7 @@ interface WhiskyProfileResponse {
 const THRESHOLD = 10;
 
 function TasteEvolutionCard({ pid }: { pid: string }) {
+  const th = useAppleTheme();
   const { data: journal } = useQuery({
     queryKey: ["labs-journal-evolution", pid],
     queryFn: () => journalApi.getAll(pid),
@@ -92,9 +94,9 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
 
   if (grouped.length < 2) {
     return (
-      <div className="labs-card p-5" data-testid="card-taste-evolution">
-        <p className="labs-section-label mb-2">Taste Evolution</p>
-        <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-taste-evolution">
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.sm }}>Taste Evolution</p>
+        <p style={{ fontSize: 13, color: th.faint }}>
           {dataPoints.length === 0
             ? "Start rating whiskies to see how your taste evolves."
             : "Keep tasting — your evolution chart appears after 2+ months of data."}
@@ -117,28 +119,28 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
   const pathD = linePoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const delta = grouped[grouped.length - 1].avg - grouped[0].avg;
   const TrendIcon = delta > 0.5 ? TrendingUp : delta < -0.5 ? TrendingDown : Minus;
-  const trendColor = delta > 0.5 ? "var(--labs-success)" : delta < -0.5 ? "var(--labs-danger)" : "var(--labs-text-muted)";
+  const trendColor = delta > 0.5 ? th.green : delta < -0.5 ? "#e06060" : th.muted;
 
   return (
-    <div className="labs-card p-5" data-testid="card-taste-evolution">
-      <p className="labs-section-label mb-1">Taste Evolution</p>
-      <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>How your average rating has developed over time</p>
+    <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-taste-evolution">
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>Taste Evolution</p>
+      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>How your average rating has developed over time</p>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ maxWidth: "100%" }}>
-          <path d={pathD} fill="none" stroke="var(--labs-accent)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={pathD} fill="none" stroke={th.gold} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           {linePoints.map((p, i) => (
             <g key={i}>
-              <circle cx={p.x} cy={p.y} r={3} fill="var(--labs-accent)" />
-              <text x={p.x} y={chartH - 4} textAnchor="middle" fill="var(--labs-text-muted)" fontSize={8} fontFamily="sans-serif">{p.label}</text>
+              <circle cx={p.x} cy={p.y} r={3} fill={th.gold} />
+              <text x={p.x} y={chartH - 4} textAnchor="middle" fill={th.faint} fontSize={8} fontFamily="sans-serif">{p.label}</text>
             </g>
           ))}
         </svg>
       </div>
-      <div className="flex justify-between mt-2">
-        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[0].label}: avg {Math.round(grouped[0].avg)}/100</span>
-        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{grouped[grouped.length - 1].label}: avg {Math.round(grouped[grouped.length - 1].avg)}/100</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: SP.sm }}>
+        <span style={{ fontSize: 11, color: th.faint }}>{grouped[0].label}: avg {Math.round(grouped[0].avg)}/100</span>
+        <span style={{ fontSize: 11, color: th.faint }}>{grouped[grouped.length - 1].label}: avg {Math.round(grouped[grouped.length - 1].avg)}/100</span>
       </div>
-      <div className="flex items-center justify-center gap-1.5 mt-3" style={{ fontSize: 12, color: trendColor }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: SP.md, fontSize: 12, color: trendColor }}>
         <TrendIcon style={{ width: 14, height: 14 }} />
         <span>
           {delta > 0.5
@@ -153,6 +155,7 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
 }
 
 function RatingConsistencyCard({ pid }: { pid: string }) {
+  const th = useAppleTheme();
   const { data: profile } = useQuery({
     queryKey: ["labs-whisky-profile-analytics", pid],
     queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
@@ -178,46 +181,46 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
   const hasData = stability != null || stdDev != null;
 
   let consistencyLabel = "—";
-  let consistencyColor = "var(--labs-text-muted)";
+  let consistencyColor = th.muted;
   if (stability != null) {
-    if (stability >= 8) { consistencyLabel = "Very Consistent"; consistencyColor = "var(--labs-success)"; }
-    else if (stability >= 6) { consistencyLabel = "Consistent"; consistencyColor = "var(--labs-accent)"; }
-    else if (stability >= 4) { consistencyLabel = "Variable"; consistencyColor = "var(--labs-accent)"; }
-    else { consistencyLabel = "Highly Variable"; consistencyColor = "var(--labs-danger)"; }
+    if (stability >= 8) { consistencyLabel = "Very Consistent"; consistencyColor = th.green; }
+    else if (stability >= 6) { consistencyLabel = "Consistent"; consistencyColor = th.gold; }
+    else if (stability >= 4) { consistencyLabel = "Variable"; consistencyColor = th.gold; }
+    else { consistencyLabel = "Highly Variable"; consistencyColor = "#e06060"; }
   }
 
   return (
-    <div className="labs-card p-5" data-testid="card-rating-consistency">
-      <p className="labs-section-label mb-1">Rating Consistency</p>
-      <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>How stable and predictable your scoring pattern is</p>
+    <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-rating-consistency">
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>Rating Consistency</p>
+      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>How stable and predictable your scoring pattern is</p>
       {!hasData ? (
-        <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Rate more whiskies to see your consistency score.</p>
+        <p style={{ fontSize: 13, color: th.faint }}>Rate more whiskies to see your consistency score.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {stability != null && (
-            <div className="flex items-center gap-4">
+            <div style={{ display: "flex", alignItems: "center", gap: SP.md }}>
               <div style={{
                 width: 52, height: 52, borderRadius: "50%", border: `3px solid ${consistencyColor}`,
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
-                <span className="labs-serif" style={{ fontSize: 17, fontWeight: 700, color: consistencyColor }}>{stability.toFixed(1)}</span>
+                <span style={{ fontFamily: "Playfair Display, serif", fontSize: 17, fontWeight: 700, color: consistencyColor }}>{stability.toFixed(1)}</span>
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: consistencyColor }}>{consistencyLabel}</div>
-                <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                <div style={{ fontSize: 13, marginTop: 2, color: th.faint }}>
                   Your scoring pattern is {consistencyLabel.toLowerCase()}
                 </div>
               </div>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.sm }}>
             {mean != null && <StatMini value={mean.toFixed(1)} label="Avg Score" />}
             {stdDev != null && <StatMini value={stdDev.toFixed(1)} label="Spread (StdDev)" />}
             {min != null && max != null && <StatMini value={`${min.toFixed(0)}–${max.toFixed(0)}`} label="Range" />}
             {n != null && <StatMini value={String(n)} label="Ratings" />}
           </div>
           {stdDev != null && (
-            <p className="text-xs" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: th.faint, lineHeight: 1.5 }}>
               {stdDev < 8
                 ? "You tend to rate quite consistently — your scores stay close together."
                 : stdDev < 15
@@ -232,6 +235,7 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
 }
 
 function AIInsightCard({ pid }: { pid: string }) {
+  const th = useAppleTheme();
   const { data: insightData, isLoading } = useQuery({
     queryKey: ["labs-participant-insights", pid],
     queryFn: () => fetch(`/api/participants/${pid}/insights`, { headers: { "x-participant-id": pid } }).then(r => r.ok ? r.json() : null),
@@ -244,16 +248,20 @@ function AIInsightCard({ pid }: { pid: string }) {
   if (!insight) return null;
 
   return (
-    <div className="labs-card p-5" data-testid="card-ai-insight">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-        <p className="labs-section-label" style={{ marginBottom: 0 }}>AI Insight</p>
+    <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-ai-insight">
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
+        <Sparkles style={{ width: 16, height: 16, color: th.gold }} />
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, margin: 0 }}>AI Insight</p>
       </div>
-      <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.7 }} data-testid="text-ai-insight-message">
+      <p style={{ fontSize: 14, color: th.text, lineHeight: 1.7 }} data-testid="text-ai-insight-message">
         {insight.message}
       </p>
       {insight.type && (
-        <span className="labs-badge labs-badge-accent mt-3" style={{ fontSize: 11, display: "inline-block" }}>
+        <span style={{
+          fontSize: 11, display: "inline-block", marginTop: SP.md,
+          padding: "3px 10px", borderRadius: 8,
+          background: withAlpha(th.gold, 0.09), color: th.gold, fontWeight: 600,
+        }}>
           {insight.type}
         </span>
       )}
@@ -262,29 +270,32 @@ function AIInsightCard({ pid }: { pid: string }) {
 }
 
 function StatMini({ value, label }: { value: string; label: string }) {
+  const th = useAppleTheme();
   return (
-    <div style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-accent)" }}>{value}</div>
-      <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{label}</div>
+    <div style={{ background: th.inputBg, borderRadius: 12, padding: "8px 10px", textAlign: "center" }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: th.gold }}>{value}</div>
+      <div style={{ fontSize: 11, color: th.faint }}>{label}</div>
     </div>
   );
 }
 
 function UnlockBanner() {
+  const th = useAppleTheme();
   const [visible, setVisible] = useState(true);
   useEffect(() => { const t = setTimeout(() => setVisible(false), 6000); return () => clearTimeout(t); }, []);
   if (!visible) return null;
   return (
     <div data-testid="banner-unlocked" style={{
-      background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 15%, transparent), var(--labs-surface))",
-      border: "1px solid var(--labs-accent)", borderRadius: 10, padding: "12px 16px", textAlign: "center",
+      background: withAlpha(th.gold, 0.08),
+      border: `1px solid ${th.gold}`, borderRadius: 20, padding: `${SP.md}px ${SP.lg}px`, textAlign: "center",
     }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>Your Analytics are ready.</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: th.gold }}>Your Analytics are ready.</span>
     </div>
   );
 }
 
 export default function LabsTasteAnalytics() {
+  const th = useAppleTheme();
   const session = useSession();
   const pid = session.pid;
   const [, navigate] = useLocation();
@@ -311,22 +322,25 @@ export default function LabsTasteAnalytics() {
   const pct = Math.min((totalRatings / THRESHOLD) * 100, 100);
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-analytics">
+    <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }} data-testid="labs-taste-analytics">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-analytics">
-          <ChevronLeft className="w-4 h-4" /> My Whisky
+        <button style={{
+          display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+          color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
+        }} data-testid="button-back-analytics">
+          <ChevronLeft style={{ width: 16, height: 16 }} /> My Whisky
         </button>
       </BackLink>
 
-      <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-analytics-title">
+      <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
         Analytics
       </h1>
-      <p className="text-sm mb-4 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
+      <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.md }}>
         Your taste evolution & rating consistency
       </p>
       {scaleInfo?.hasMultipleScales && (
-        <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="analytics-normalized-hint">
-          <Info className="w-3 h-3 flex-shrink-0" />
+        <p style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, marginBottom: SP.lg, color: th.faint }} data-testid="analytics-normalized-hint">
+          <Info style={{ width: 12, height: 12, flexShrink: 0 }} />
           {t("labs.scoresNormalizedMultiScale", "Contains ratings from different scales, normalized to 100 points")}
         </p>
       )}
@@ -338,32 +352,34 @@ export default function LabsTasteAnalytics() {
           compact
         />
       ) : isLoading ? (
-        <div className="labs-card p-8 text-center"><div className="labs-spinner mx-auto" /></div>
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
+          <div className="labs-spinner" style={{ margin: "0 auto" }} />
+        </div>
       ) : !isUnlocked ? (
-        <div className="labs-card p-6 text-center labs-fade-in" data-testid="card-analytics-locked">
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center" }} data-testid="card-analytics-locked">
           <div style={{
             width: 48, height: 48, borderRadius: "50%",
-            background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)",
-            display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16,
+            background: withAlpha(th.gold, 0.09),
+            display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: SP.md,
           }}>
-            <Lock style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
+            <Lock style={{ width: 22, height: 22, color: th.gold }} />
           </div>
-          <h3 className="labs-serif" style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: 16, fontWeight: 600, color: th.text, marginBottom: SP.sm }}>
             Analytics unlock after {THRESHOLD} whiskies
           </h3>
-          <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>Build your tasting history to unlock deeper insights.</p>
-          <div style={{ maxWidth: 220, margin: "0 auto 8px" }}>
-            <div style={{ height: 6, background: "var(--labs-border)", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, var(--labs-accent-dark), var(--labs-accent))", borderRadius: 3, transition: "width 0.5s ease" }} />
+          <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.lg }}>Build your tasting history to unlock deeper insights.</p>
+          <div style={{ maxWidth: 220, margin: `0 auto ${SP.sm}px` }}>
+            <div style={{ height: 6, background: th.border, borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${th.amber}, ${th.gold})`, borderRadius: 3, transition: "width 0.5s ease" }} />
             </div>
-            <div className="text-xs mt-1.5 font-semibold" style={{ color: "var(--labs-accent)" }} data-testid="text-progress">
+            <div style={{ fontSize: 13, marginTop: 6, fontWeight: 600, color: th.gold }} data-testid="text-progress">
               {totalRatings} / {THRESHOLD} whiskies logged
             </div>
           </div>
           <button
             onClick={() => navigate("/labs/solo")}
-            className="labs-btn-primary mt-4"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+            className="labs-btn-primary"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, marginTop: SP.md }}
             data-testid="button-log-whisky"
           >
             <PenLine style={{ width: 14, height: 14 }} />
@@ -371,7 +387,7 @@ export default function LabsTasteAnalytics() {
           </button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
           {justUnlocked && <UnlockBanner />}
           <TasteEvolutionCard pid={pid} />
           <RatingConsistencyCard pid={pid} />

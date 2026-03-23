@@ -9,6 +9,7 @@ import {
   Star, Droplets, Calendar, Package, ChevronDown, ChevronUp,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
 
 const distilleryRegionMap = new Map<string, string>();
 for (const d of distilleries) {
@@ -54,16 +55,17 @@ interface CollectionItem {
 }
 
 function HBar({ entries, color, testIdPrefix }: { entries: BarEntry[]; color: string; testIdPrefix: string }) {
+  const th = useAppleTheme();
   if (entries.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
       {entries.map(e => (
         <div key={e.label} data-testid={`${testIdPrefix}-${e.label}`}>
-          <div className="flex justify-between text-xs mb-1">
-            <span style={{ color: "var(--labs-text)" }}>{e.label}</span>
-            <span style={{ color: "var(--labs-text-muted)" }}>{e.value} ({e.pct.toFixed(0)}%)</span>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: SP.xs }}>
+            <span style={{ color: th.text }}>{e.label}</span>
+            <span style={{ color: th.faint }}>{e.value} ({e.pct.toFixed(0)}%)</span>
           </div>
-          <div style={{ height: 8, background: "color-mix(in srgb, " + color + " 15%, transparent)", borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ height: 8, background: withAlpha(color, 0.15), borderRadius: 4, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.max(e.pct, 2)}%`, background: color, borderRadius: 4, transition: "width 0.5s ease" }} />
           </div>
         </div>
@@ -73,31 +75,35 @@ function HBar({ entries, color, testIdPrefix }: { entries: BarEntry[]; color: st
 }
 
 function StatCard({ icon: Icon, label, value, testId }: { icon: React.ElementType; label: string; value: string | number; testId: string }) {
+  const th = useAppleTheme();
   return (
-    <div className="labs-card" style={{ flex: 1, minWidth: 110, padding: "14px 12px", textAlign: "center" }} data-testid={testId}>
-      <Icon style={{ width: 18, height: 18, color: "var(--labs-accent)", marginBottom: 6 }} />
-      <div className="labs-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)" }}>{value}</div>
-      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>{label}</div>
+    <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, flex: 1, minWidth: 110, padding: "14px 12px", textAlign: "center" }} data-testid={testId}>
+      <Icon style={{ width: 18, height: 18, color: th.gold, marginBottom: 6 }} />
+      <div style={{ fontFamily: "Playfair Display, serif", fontSize: 20, fontWeight: 700, color: th.text }}>{value}</div>
+      <div style={{ fontSize: 11, color: th.faint, marginTop: 2 }}>{label}</div>
     </div>
   );
 }
 
 function ExpandableList({ items, limit = 5 }: { items: { label: string; count: number }[]; limit?: number }) {
+  const th = useAppleTheme();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? items : items.slice(0, limit);
   return (
     <div>
       {visible.map(item => (
-        <div key={item.label} className="flex justify-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--labs-border)", fontSize: 13, color: "var(--labs-text)" }}>
+        <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${th.border}`, fontSize: 13, color: th.text }}>
           <span>{item.label}</span>
-          <span style={{ color: "var(--labs-text-muted)" }}>{item.count}</span>
+          <span style={{ color: th.faint }}>{item.count}</span>
         </div>
       ))}
       {items.length > limit && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="labs-btn-ghost"
-          style={{ fontSize: 12, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}
+          style={{
+            fontSize: 12, marginTop: SP.sm, display: "flex", alignItems: "center", gap: 4,
+            background: "none", border: "none", color: th.muted, cursor: "pointer", padding: 0,
+          }}
           data-testid="button-expand-list"
         >
           {expanded ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
@@ -109,6 +115,7 @@ function ExpandableList({ items, limit = 5 }: { items: { label: string; count: n
 }
 
 export default function LabsCollectionAnalysis() {
+  const th = useAppleTheme();
   const session = useSession();
   const pid = session.pid;
 
@@ -122,7 +129,7 @@ export default function LabsCollectionAnalysis() {
   if (!session.signedIn || !pid) {
     return (
       <AuthGateMessage
-        icon={<Library className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        icon={<Library style={{ width: 48, height: 48, color: th.gold }} />}
         message="Sign in to analyze your collection"
       />
     );
@@ -130,16 +137,18 @@ export default function LabsCollectionAnalysis() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
-        <div className="labs-card p-8 text-center"><div className="labs-spinner mx-auto" /></div>
+      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
+          <div className="labs-spinner" style={{ margin: "0 auto" }} />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
-        <div className="labs-card p-6 text-center" style={{ color: "var(--labs-danger)" }}>Failed to load collection</div>
+      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center", color: "#e06060" }}>Failed to load collection</div>
       </div>
     );
   }
@@ -148,14 +157,19 @@ export default function LabsCollectionAnalysis() {
 
   if (items.length === 0) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
         <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-empty"><ChevronLeft className="w-4 h-4" /> Taste</button>
+          <button style={{
+            display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+            color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
+          }} data-testid="button-back-empty">
+            <ChevronLeft style={{ width: 16, height: 16 }} /> Taste
+          </button>
         </BackLink>
-        <div className="labs-empty">
-          <Library className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="labs-serif" style={{ color: "var(--labs-text)", fontSize: 16, fontWeight: 600 }}>No Collection Yet</p>
-          <p style={{ color: "var(--labs-text-muted)", fontSize: 13, marginTop: 8 }}>Import your Whiskybase collection to unlock detailed analytics.</p>
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
+          <Library style={{ width: 40, height: 40, marginBottom: SP.md, color: th.faint }} />
+          <p style={{ fontFamily: "Playfair Display, serif", color: th.text, fontSize: 16, fontWeight: 600 }}>No Collection Yet</p>
+          <p style={{ color: th.muted, fontSize: 13, marginTop: SP.sm }}>Import your Whiskybase collection to unlock detailed analytics.</p>
         </div>
       </div>
     );
@@ -243,109 +257,115 @@ export default function LabsCollectionAnalysis() {
   const overrated = ratingPairs.filter(r => r.personal - r.community > 3).sort((a, b) => (b.personal - b.community) - (a.personal - a.community)).slice(0, 5);
   const underrated = ratingPairs.filter(r => r.community - r.personal > 3).sort((a, b) => (b.community - b.personal) - (a.community - a.personal)).slice(0, 5);
 
+  const cardStyle = { background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md, marginBottom: SP.md };
+  const sectionLabel = { fontSize: 11, fontWeight: 700 as const, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs };
+
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-collection-analysis">
+    <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }} data-testid="labs-collection-analysis">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-collection">
-          <ChevronLeft className="w-4 h-4" /> Taste
+        <button style={{
+          display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+          color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
+        }} data-testid="button-back-collection">
+          <ChevronLeft style={{ width: 16, height: 16 }} /> Taste
         </button>
       </BackLink>
 
-      <div className="mb-5 labs-fade-in">
-        <div className="flex items-center gap-3 mb-1">
-          <Library className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-collection-analysis-title">
+      <div style={{ marginBottom: SP.lg }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>
+          <Library style={{ width: 20, height: 20, color: th.gold }} />
+          <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
             Collection Analysis
           </h1>
         </div>
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+        <p style={{ fontSize: 14, color: th.muted }}>
           Deep insights into your {total} bottles
         </p>
       </div>
 
-      <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-overview">
-        <p className="labs-section-label mb-3">Overview</p>
-        <div className="flex gap-2.5 flex-wrap mb-3">
+      <div style={cardStyle} data-testid="card-collection-overview">
+        <p style={sectionLabel}>Overview</p>
+        <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md, marginTop: SP.md }}>
           <StatCard icon={Package} label="Bottles" value={total} testId="stat-total-bottles" />
           <StatCard icon={DollarSign} label="Total Value" value={paidCount > 0 ? `€${totalPaid.toLocaleString("de-DE", { maximumFractionDigits: 0 })}` : "—"} testId="stat-total-value" />
           <StatCard icon={DollarSign} label="Avg Price" value={paidCount > 0 ? `€${avgPrice.toFixed(0)}` : "—"} testId="stat-avg-price" />
         </div>
-        <div className="flex gap-2.5">
+        <div style={{ display: "flex", gap: SP.sm }}>
           {[
-            { label: "Open", count: statusCounts.open, color: "var(--labs-success)", id: "open" },
-            { label: "Sealed", count: statusCounts.closed, color: "var(--labs-accent)", id: "closed" },
-            { label: "Empty", count: statusCounts.empty, color: "var(--labs-text-muted)", id: "empty" },
+            { label: "Open", count: statusCounts.open, color: th.green, id: "open" },
+            { label: "Sealed", count: statusCounts.closed, color: th.gold, id: "closed" },
+            { label: "Empty", count: statusCounts.empty, color: th.faint, id: "empty" },
           ].map(s => (
-            <div key={s.id} style={{ flex: 1, padding: "10px 12px", borderRadius: 10, background: `color-mix(in srgb, ${s.color} 12%, transparent)`, textAlign: "center" }} data-testid={`stat-status-${s.id}`}>
+            <div key={s.id} style={{ flex: 1, padding: "10px 12px", borderRadius: 14, background: withAlpha(s.color, 0.12), textAlign: "center" }} data-testid={`stat-status-${s.id}`}>
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.count}</div>
-              <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: th.faint }}>{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-regions">
-        <p className="labs-section-label mb-1">Regions & Distilleries</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Where your bottles come from</p>
-        <HBar entries={regionEntries} color="var(--labs-accent)" testIdPrefix="bar-region" />
+      <div style={cardStyle} data-testid="card-collection-regions">
+        <p style={sectionLabel}>Regions & Distilleries</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Where your bottles come from</p>
+        <HBar entries={regionEntries} color={th.gold} testIdPrefix="bar-region" />
         {distilleryList.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <p className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Top Distilleries</p>
+          <div style={{ marginTop: SP.md }}>
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>Top Distilleries</p>
             <ExpandableList items={distilleryList} limit={7} />
           </div>
         )}
       </div>
 
-      <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-age">
-        <p className="labs-section-label mb-1">Age Distribution</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>How old are the whiskies in your collection?</p>
-        <HBar entries={ageEntries} color="var(--labs-info)" testIdPrefix="bar-age" />
+      <div style={cardStyle} data-testid="card-collection-age">
+        <p style={sectionLabel}>Age Distribution</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>How old are the whiskies in your collection?</p>
+        <HBar entries={ageEntries} color={th.phases.nose.accent} testIdPrefix="bar-age" />
       </div>
 
       {caskEntries.length > 0 && (
-        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-cask">
-          <p className="labs-section-label mb-1">Cask Types</p>
-          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Which cask types dominate your collection?</p>
-          <HBar entries={caskEntries} color="var(--labs-accent)" testIdPrefix="bar-cask" />
+        <div style={cardStyle} data-testid="card-collection-cask">
+          <p style={sectionLabel}>Cask Types</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Which cask types dominate your collection?</p>
+          <HBar entries={caskEntries} color={th.gold} testIdPrefix="bar-cask" />
         </div>
       )}
 
       {top10Valuable.length > 0 && (
-        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-price">
-          <p className="labs-section-label mb-1">Price Analysis</p>
-          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Your most valuable bottles</p>
-          <div className="flex gap-2.5 flex-wrap mb-3">
+        <div style={cardStyle} data-testid="card-collection-price">
+          <p style={sectionLabel}>Price Analysis</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Your most valuable bottles</p>
+          <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md }}>
             <StatCard icon={DollarSign} label="Lowest" value={`€${Math.min(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-min-price" />
             <StatCard icon={DollarSign} label="Highest" value={`€${Math.max(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-max-price" />
             <StatCard icon={DollarSign} label="Median" value={`€${valuableItems.sort((a, b) => a.price - b.price)[Math.floor(valuableItems.length / 2)]?.price.toFixed(0) || "—"}`} testId="stat-median-price" />
           </div>
-          <p className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Most Valuable Bottles</p>
+          <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>Most Valuable Bottles</p>
           {top10Valuable.map((item, i) => (
-            <div key={i} className="flex justify-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--labs-border)", fontSize: 13 }} data-testid={`row-valuable-${i}`}>
-              <span style={{ color: "var(--labs-text)", flex: 1, marginRight: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
-              <span style={{ color: "var(--labs-accent)", fontWeight: 600, whiteSpace: "nowrap" }}>€{item.price.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</span>
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${th.border}`, fontSize: 13 }} data-testid={`row-valuable-${i}`}>
+              <span style={{ color: th.text, flex: 1, marginRight: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+              <span style={{ color: th.gold, fontWeight: 600, whiteSpace: "nowrap" }}>€{item.price.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</span>
             </div>
           ))}
         </div>
       )}
 
       {ratingPairs.length > 0 && (
-        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-ratings">
-          <p className="labs-section-label mb-1">Rating Comparison</p>
-          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Your ratings vs. community</p>
-          <div className="flex gap-2.5 flex-wrap mb-3">
+        <div style={cardStyle} data-testid="card-collection-ratings">
+          <p style={sectionLabel}>Rating Comparison</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Your ratings vs. community</p>
+          <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md }}>
             <StatCard icon={Star} label="Rated" value={ratingPairs.length} testId="stat-rated-count" />
             <StatCard icon={Star} label="Your Avg" value={(ratingPairs.reduce((s, r) => s + r.personal, 0) / ratingPairs.length).toFixed(1)} testId="stat-avg-personal" />
             <StatCard icon={Star} label="Avg Delta" value={`${avgDelta > 0 ? "+" : ""}${avgDelta.toFixed(1)}`} testId="stat-avg-delta" />
           </div>
           {ratingPairs.slice(0, 10).map((r, i) => (
-            <div key={i} className="flex items-center" style={{ padding: "6px 0", borderBottom: "1px solid var(--labs-border)", fontSize: 12, gap: 8 }} data-testid={`row-rating-${i}`}>
-              <span style={{ flex: 1, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-              <span style={{ color: "var(--labs-accent)", fontWeight: 600, minWidth: 36, textAlign: "right" }}>{r.personal.toFixed(1)}</span>
-              <span style={{ color: "var(--labs-text-muted)", minWidth: 12, textAlign: "center" }}>vs</span>
-              <span style={{ color: "var(--labs-text-muted)", minWidth: 36, textAlign: "right" }}>{r.community.toFixed(1)}</span>
+            <div key={i} style={{ display: "flex", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${th.border}`, fontSize: 12, gap: SP.sm }} data-testid={`row-rating-${i}`}>
+              <span style={{ flex: 1, color: th.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+              <span style={{ color: th.gold, fontWeight: 600, minWidth: 36, textAlign: "right" }}>{r.personal.toFixed(1)}</span>
+              <span style={{ color: th.faint, minWidth: 12, textAlign: "center" }}>vs</span>
+              <span style={{ color: th.faint, minWidth: 36, textAlign: "right" }}>{r.community.toFixed(1)}</span>
               <span style={{
-                color: r.personal - r.community > 0 ? "var(--labs-success)" : r.personal - r.community < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)",
+                color: r.personal - r.community > 0 ? th.green : r.personal - r.community < 0 ? "#e06060" : th.faint,
                 fontWeight: 600, minWidth: 40, textAlign: "right", fontSize: 11,
               }}>
                 {r.personal - r.community > 0 ? "+" : ""}{(r.personal - r.community).toFixed(1)}
@@ -354,20 +374,20 @@ export default function LabsCollectionAnalysis() {
           ))}
           {overrated.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-success)", marginBottom: 6 }}>Your Hidden Gems ↑</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: th.green, marginBottom: 6 }}>Your Hidden Gems ↑</p>
               {overrated.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--labs-text)", padding: "3px 0" }}>
-                  {r.name} <span style={{ color: "var(--labs-success)" }}>+{(r.personal - r.community).toFixed(1)}</span>
+                <div key={i} style={{ fontSize: 12, color: th.text, padding: "3px 0" }}>
+                  {r.name} <span style={{ color: th.green }}>+{(r.personal - r.community).toFixed(1)}</span>
                 </div>
               ))}
             </div>
           )}
           {underrated.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-danger)", marginBottom: 6 }}>Community Rates Higher ↓</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#e06060", marginBottom: 6 }}>Community Rates Higher ↓</p>
               {underrated.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--labs-text)", padding: "3px 0" }}>
-                  {r.name} <span style={{ color: "var(--labs-danger)" }}>{(r.personal - r.community).toFixed(1)}</span>
+                <div key={i} style={{ fontSize: 12, color: th.text, padding: "3px 0" }}>
+                  {r.name} <span style={{ color: "#e06060" }}>{(r.personal - r.community).toFixed(1)}</span>
                 </div>
               ))}
             </div>
@@ -375,17 +395,17 @@ export default function LabsCollectionAnalysis() {
         </div>
       )}
 
-      <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-abv">
-        <p className="labs-section-label mb-1">ABV Distribution</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>The strength spectrum of your collection</p>
-        <HBar entries={abvEntries} color="var(--labs-info)" testIdPrefix="bar-abv" />
+      <div style={cardStyle} data-testid="card-collection-abv">
+        <p style={sectionLabel}>ABV Distribution</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>The strength spectrum of your collection</p>
+        <HBar entries={abvEntries} color={th.phases.nose.accent} testIdPrefix="bar-abv" />
       </div>
 
       {vintageEntries.length > 0 && (
-        <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-vintage">
-          <p className="labs-section-label mb-1">Vintage Timeline</p>
-          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>When were your whiskies distilled?</p>
-          <HBar entries={vintageEntries} color="var(--labs-success)" testIdPrefix="bar-vintage" />
+        <div style={cardStyle} data-testid="card-collection-vintage">
+          <p style={sectionLabel}>Vintage Timeline</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>When were your whiskies distilled?</p>
+          <HBar entries={vintageEntries} color={th.green} testIdPrefix="bar-vintage" />
         </div>
       )}
 

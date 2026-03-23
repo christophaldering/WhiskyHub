@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Users, Trophy, ChevronDown, ChevronUp, Download,
@@ -14,6 +13,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
   CartesianGrid,
 } from "recharts";
+import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
 
 const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
   nose: { en: "Nose", de: "Nase" },
@@ -23,33 +23,35 @@ const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
 };
 
 function KendallBadge({ value }: { value: number | null }) {
+  const th = useAppleTheme();
   const { t } = useTranslation();
-  if (value === null || value === undefined) return <span className="text-xs text-muted-foreground italic">n/a</span>;
-  const color = value >= 0.7
-    ? "text-green-600 bg-green-500/10 border-green-500/20"
-    : value >= 0.4
-      ? "text-amber-600 bg-amber-500/10 border-amber-500/20"
-      : "text-red-600 bg-red-500/10 border-red-500/20";
+  if (value === null || value === undefined) return <span style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>n/a</span>;
+  const color = value >= 0.7 ? th.green : value >= 0.4 ? th.gold : "#e06060";
   const label = value >= 0.7
     ? t("tastingAnalytics.strong")
     : value >= 0.4
       ? t("tastingAnalytics.moderate")
       : t("tastingAnalytics.weak");
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${color}`} data-testid="badge-kendall-w">
+    <span style={{
+      fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
+      border: `1px solid ${withAlpha(color, 0.25)}`, background: withAlpha(color, 0.09), color: color,
+    }} data-testid="badge-kendall-w">
       W = {value.toFixed(2)} ({label})
     </span>
   );
 }
 
 function MedalIcon({ rank }: { rank: number }) {
-  if (rank === 1) return <Medal className="w-5 h-5 text-yellow-500" />;
-  if (rank === 2) return <Medal className="w-5 h-5 text-gray-400" />;
-  if (rank === 3) return <Medal className="w-5 h-5 text-amber-700" />;
-  return <span className="w-5 h-5 flex items-center justify-center text-xs text-muted-foreground font-bold">{rank}</span>;
+  const th = useAppleTheme();
+  if (rank === 1) return <Medal style={{ width: 20, height: 20, color: th.gold }} />;
+  if (rank === 2) return <Medal style={{ width: 20, height: 20, color: "#a8a8a8" }} />;
+  if (rank === 3) return <Medal style={{ width: 20, height: 20, color: th.amber }} />;
+  return <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: th.faint, fontWeight: 700 }}>{rank}</span>;
 }
 
 export function TastingAnalytics({ tastingId }: { tastingId: string }) {
+  const th = useAppleTheme();
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
 
@@ -67,18 +69,18 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border/40 rounded-lg p-6 flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
-        <span className="text-sm text-muted-foreground">{t("tastingAnalytics.loading")}</span>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 style={{ width: 20, height: 20, animation: "spin 1s linear infinite", color: th.gold, marginRight: SP.sm }} />
+        <span style={{ fontSize: 14, color: th.faint }}>{t("tastingAnalytics.loading")}</span>
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="bg-card border border-border/40 rounded-lg p-6 flex items-center gap-2">
-        <AlertCircle className="w-5 h-5 text-destructive" />
-        <span className="text-sm text-muted-foreground">{t("tastingAnalytics.loadError")}</span>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, display: "flex", alignItems: "center", gap: SP.sm }}>
+        <AlertCircle style={{ width: 20, height: 20, color: "#e06060" }} />
+        <span style={{ fontSize: 14, color: th.faint }}>{t("tastingAnalytics.loadError")}</span>
       </div>
     );
   }
@@ -90,30 +92,34 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
   const downloadUrl = `/api/tastings/${tastingId}/analytics/download?requesterId=${currentParticipant.id}`;
 
   return (
-    <div className="bg-card border border-border/40 rounded-lg overflow-hidden" data-testid="tasting-analytics-panel">
+    <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, overflow: "hidden" }} data-testid="tasting-analytics-panel">
       <button
-        className="w-full flex items-center justify-between p-4 md:p-5 hover:bg-secondary/20 transition-colors"
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: `${SP.md}px ${SP.lg}px`, background: "none", border: "none", cursor: "pointer",
+          color: th.text, fontFamily: "system-ui, sans-serif",
+        }}
         onClick={() => setIsExpanded(!isExpanded)}
         data-testid="toggle-analytics"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <BarChart3 className="w-5 h-5 text-primary" />
+        <div style={{ display: "flex", alignItems: "center", gap: SP.md }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: withAlpha(th.gold, 0.09), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <BarChart3 style={{ width: 20, height: 20, color: th.gold }} />
           </div>
-          <div className="text-left">
-            <h3 className="font-serif font-bold text-primary text-base md:text-lg">
+          <div style={{ textAlign: "left" }}>
+            <h3 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.text, fontSize: 16, margin: 0 }}>
               {t("tastingAnalytics.title")}
             </h3>
-            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-              <span className="text-xs text-muted-foreground">
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: SP.sm, marginTop: 2 }}>
+              <span style={{ fontSize: 12, color: th.faint }}>
                 {participantCount} {t("tastingAnalytics.participants")} · {totalRatings} {t("tastingAnalytics.ratings")}
               </span>
               <KendallBadge value={kendallW} />
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+        <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
+          {isExpanded ? <ChevronUp style={{ width: 20, height: 20, color: th.faint }} /> : <ChevronDown style={{ width: 20, height: 20, color: th.faint }} />}
         </div>
       </button>
 
@@ -124,62 +130,62 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
+            style={{ overflow: "hidden" }}
           >
-            <div className="px-4 md:px-5 pb-5 space-y-6 border-t border-border/40 pt-4">
+            <div style={{ padding: `${SP.md}px ${SP.lg}px ${SP.lg}px`, borderTop: `1px solid ${th.border}`, display: "flex", flexDirection: "column", gap: SP.lg }}>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-participants">
-                  <Users className="w-4 h-4 text-primary mx-auto mb-1" />
-                  <div className="text-xl font-serif font-bold text-primary">{participantCount}</div>
-                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.participantsLabel")}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: SP.md }}>
+                <div style={{ textAlign: "center", background: th.inputBg, borderRadius: 14, padding: SP.md }} data-testid="stat-participants">
+                  <Users style={{ width: 16, height: 16, color: th.gold, margin: "0 auto 4px", display: "block" }} />
+                  <div style={{ fontSize: 20, fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.gold }}>{participantCount}</div>
+                  <div style={{ fontSize: 10, color: th.faint }}>{t("tastingAnalytics.participantsLabel")}</div>
                 </div>
-                <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-ratings">
-                  <TrendingUp className="w-4 h-4 text-primary mx-auto mb-1" />
-                  <div className="text-xl font-serif font-bold text-primary">{totalRatings}</div>
-                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.ratingsLabel")}</div>
+                <div style={{ textAlign: "center", background: th.inputBg, borderRadius: 14, padding: SP.md }} data-testid="stat-ratings">
+                  <TrendingUp style={{ width: 16, height: 16, color: th.gold, margin: "0 auto 4px", display: "block" }} />
+                  <div style={{ fontSize: 20, fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.gold }}>{totalRatings}</div>
+                  <div style={{ fontSize: 10, color: th.faint }}>{t("tastingAnalytics.ratingsLabel")}</div>
                 </div>
-                <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-whiskies">
-                  <Trophy className="w-4 h-4 text-primary mx-auto mb-1" />
-                  <div className="text-xl font-serif font-bold text-primary">{whiskyAnalytics.length}</div>
-                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.whiskiesLabel")}</div>
+                <div style={{ textAlign: "center", background: th.inputBg, borderRadius: 14, padding: SP.md }} data-testid="stat-whiskies">
+                  <Trophy style={{ width: 16, height: 16, color: th.gold, margin: "0 auto 4px", display: "block" }} />
+                  <div style={{ fontSize: 20, fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.gold }}>{whiskyAnalytics.length}</div>
+                  <div style={{ fontSize: 10, color: th.faint }}>{t("tastingAnalytics.whiskiesLabel")}</div>
                 </div>
               </div>
 
               {ranked.length > 0 && (
                 <section>
-                  <h4 className="font-serif font-bold text-primary text-sm mb-3 flex items-center gap-2" data-testid="text-ranking-title">
-                    <Trophy className="w-4 h-4" />
+                  <h4 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.text, fontSize: 14, marginBottom: SP.md, display: "flex", alignItems: "center", gap: SP.sm }} data-testid="text-ranking-title">
+                    <Trophy style={{ width: 16, height: 16 }} />
                     {t("tastingAnalytics.rankingTitle")}
                   </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm" data-testid="ranking-table">
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse" }} data-testid="ranking-table">
                       <thead>
-                        <tr className="border-b border-border/40 text-muted-foreground text-xs">
-                          <th className="text-left py-2 px-2 w-8">#</th>
-                          <th className="text-left py-2 px-2">{t("tastingAnalytics.whisky")}</th>
-                          <th className="text-center py-2 px-2">{t("tastingAnalytics.median")}</th>
-                          <th className="text-center py-2 px-2 hidden sm:table-cell">Ø</th>
-                          <th className="text-center py-2 px-2 hidden sm:table-cell">σ</th>
-                          <th className="text-center py-2 px-2 hidden md:table-cell">IQR</th>
-                          <th className="text-center py-2 px-2">{t("tastingAnalytics.n")}</th>
+                        <tr style={{ borderBottom: `1px solid ${th.border}`, color: th.faint, fontSize: 12 }}>
+                          <th style={{ textAlign: "left", padding: "8px 8px", width: 32 }}>#</th>
+                          <th style={{ textAlign: "left", padding: "8px 8px" }}>{t("tastingAnalytics.whisky")}</th>
+                          <th style={{ textAlign: "center", padding: "8px 8px" }}>{t("tastingAnalytics.median")}</th>
+                          <th style={{ textAlign: "center", padding: "8px 8px" }}>Ø</th>
+                          <th style={{ textAlign: "center", padding: "8px 8px" }}>σ</th>
+                          <th style={{ textAlign: "center", padding: "8px 8px" }}>IQR</th>
+                          <th style={{ textAlign: "center", padding: "8px 8px" }}>{t("tastingAnalytics.n")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {ranked.map((wa: any, idx: number) => (
                           <tr
                             key={wa.whisky?.id || idx}
-                            className="border-b border-border/20 hover:bg-secondary/20 cursor-pointer transition-colors"
+                            style={{ borderBottom: `1px solid ${th.border}`, cursor: "pointer", transition: "background 0.15s" }}
                             onClick={() => setExpandedWhisky(expandedWhisky === wa.whisky?.id ? null : wa.whisky?.id)}
                             data-testid={`ranking-row-${wa.whisky?.id || idx}`}
                           >
-                            <td className="py-2 px-2"><MedalIcon rank={idx + 1} /></td>
-                            <td className="py-2 px-2 font-medium">{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</td>
-                            <td className="py-2 px-2 text-center font-semibold text-primary">{wa.median?.toFixed(1)}</td>
-                            <td className="py-2 px-2 text-center text-muted-foreground hidden sm:table-cell">{wa.avg?.toFixed(1)}</td>
-                            <td className="py-2 px-2 text-center text-muted-foreground hidden sm:table-cell">{wa.stdDev?.toFixed(1)}</td>
-                            <td className="py-2 px-2 text-center text-muted-foreground hidden md:table-cell">{wa.iqr?.toFixed(1)}</td>
-                            <td className="py-2 px-2 text-center text-muted-foreground">{wa.count}</td>
+                            <td style={{ padding: "8px 8px" }}><MedalIcon rank={idx + 1} /></td>
+                            <td style={{ padding: "8px 8px", fontWeight: 500 }}>{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", fontWeight: 600, color: th.gold }}>{wa.median?.toFixed(1)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.avg?.toFixed(1)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.stdDev?.toFixed(1)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.iqr?.toFixed(1)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.count}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -207,19 +213,19 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                     key={wa.whisky?.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-secondary/20 border border-border/30 rounded-lg p-4 space-y-4"
+                    style={{ background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 16, padding: SP.md, display: "flex", flexDirection: "column", gap: SP.md }}
                     data-testid={`whisky-detail-${wa.whisky?.id}`}
                   >
-                    <h5 className="font-serif font-bold text-primary text-sm">{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</h5>
+                    <h5 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.text, fontSize: 14, margin: 0 }}>{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</h5>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: SP.sm, textAlign: "center", fontSize: 12 }}>
                       {(["nose", "taste", "finish", "balance"] as const).map(cat => (
-                        <div key={cat} className="bg-card/50 rounded p-2">
-                          <div className="text-muted-foreground mb-0.5">{t("tastingAnalytics." + cat)}</div>
-                          <div className="font-semibold text-primary">Ø {cats[cat]?.avg?.toFixed(1) ?? "–"}</div>
-                          <div className="text-[10px] text-muted-foreground">Md {cats[cat]?.median?.toFixed(1) ?? "–"}</div>
+                        <div key={cat} style={{ background: th.bgCard, borderRadius: 10, padding: SP.sm }}>
+                          <div style={{ color: th.faint, marginBottom: 2 }}>{t("tastingAnalytics." + cat)}</div>
+                          <div style={{ fontWeight: 600, color: th.gold }}>Ø {cats[cat]?.avg?.toFixed(1) ?? "–"}</div>
+                          <div style={{ fontSize: 10, color: th.faint }}>Md {cats[cat]?.median?.toFixed(1) ?? "–"}</div>
                           {myRating && (
-                            <div className="text-[10px] text-amber-600 mt-0.5">
+                            <div style={{ fontSize: 10, color: th.amber, marginTop: 2 }}>
                               {t("tastingAnalytics.me")}: {myRating[cat] ?? "–"}
                             </div>
                           )}
@@ -227,17 +233,17 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                       ))}
                     </div>
 
-                    <div className="flex justify-center">
+                    <div style={{ display: "flex", justifyContent: "center" }}>
                       <ResponsiveContainer width="100%" height={250} maxHeight={280}>
                         <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-                          <PolarGrid stroke="hsl(var(--border))" />
-                          <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                          <PolarGrid stroke={th.border} />
+                          <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: th.faint }} />
                           <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
                           <Radar
                             name={groupAvgLabel}
                             dataKey={groupAvgLabel}
-                            stroke="#8b5e3c"
-                            fill="#8b5e3c"
+                            stroke={th.gold}
+                            fill={th.gold}
                             fillOpacity={0.15}
                             strokeWidth={2}
                           />
@@ -245,8 +251,8 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                             <Radar
                               name={myRatingLabel}
                               dataKey={myRatingLabel}
-                              stroke="#c4956a"
-                              fill="#c4956a"
+                              stroke={th.amber}
+                              fill={th.amber}
                               fillOpacity={0.1}
                               strokeWidth={2}
                               strokeDasharray="4 2"
@@ -258,12 +264,12 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                     </div>
 
                     {myRating && (
-                      <div className="text-center text-xs text-muted-foreground">
+                      <div style={{ textAlign: "center", fontSize: 12, color: th.faint }}>
                         {t("tastingAnalytics.myOverall")}{" "}
-                        <span className="font-semibold text-primary">{myRating.overall}</span>
-                        <span className="mx-2">·</span>
+                        <span style={{ fontWeight: 600, color: th.gold }}>{myRating.overall}</span>
+                        <span style={{ margin: "0 8px" }}>·</span>
                         {t("tastingAnalytics.groupMedian")}{" "}
-                        <span className="font-semibold text-primary">{wa.median?.toFixed(1)}</span>
+                        <span style={{ fontWeight: 600, color: th.gold }}>{wa.median?.toFixed(1)}</span>
                       </div>
                     )}
                   </motion.div>
@@ -272,37 +278,40 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
 
               {overallDistribution.length > 0 && (
                 <section>
-                  <h4 className="font-serif font-bold text-primary text-sm mb-3 flex items-center gap-2" data-testid="text-distribution-title">
-                    <BarChart3 className="w-4 h-4" />
+                  <h4 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.text, fontSize: 14, marginBottom: SP.md, display: "flex", alignItems: "center", gap: SP.sm }} data-testid="text-distribution-title">
+                    <BarChart3 style={{ width: 16, height: 16 }} />
                     {t("tastingAnalytics.distributionTitle")}
                   </h4>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={overallDistribution}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="bin" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                      <XAxis dataKey="bin" tick={{ fontSize: 10, fill: th.faint }} />
+                      <YAxis tick={{ fontSize: 10, fill: th.faint }} allowDecimals={false} />
                       <RechartsTooltip
-                        contentStyle={{ fontSize: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                        contentStyle={{ fontSize: 12, background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 10, color: th.text }}
                         formatter={(v: number) => [v, t("tastingAnalytics.count")]}
                       />
-                      <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} name={t("tastingAnalytics.count")} />
+                      <Bar dataKey="count" fill={th.gold} radius={[3, 3, 0, 0]} name={t("tastingAnalytics.count")} />
                     </BarChart>
                   </ResponsiveContainer>
                 </section>
               )}
 
-              <div className="flex justify-end pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
+              <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: SP.sm }}>
+                <a
+                  href={downloadUrl}
+                  download
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "8px 16px", fontSize: 13, fontWeight: 500,
+                    background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10,
+                    color: th.text, textDecoration: "none", cursor: "pointer",
+                  }}
                   data-testid="button-download-analytics"
                 >
-                  <a href={downloadUrl} download>
-                    <Download className="w-4 h-4 mr-1.5" />
-                    {t("tastingAnalytics.downloadExcel")}
-                  </a>
-                </Button>
+                  <Download style={{ width: 16, height: 16 }} />
+                  {t("tastingAnalytics.downloadExcel")}
+                </a>
               </div>
             </div>
           </motion.div>
