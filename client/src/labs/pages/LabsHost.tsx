@@ -18,8 +18,9 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
-import RatingFlow from "@/labs/components/RatingFlow";
-import { useRatingScale, buildScale } from "@/labs/hooks/useRatingScale";
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingData } from "@/labs/components/rating/types";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -353,11 +354,13 @@ function HostRatingPanel({
   tastingId,
   participantId,
   ratingScale,
+  blindMode,
 }: {
   whiskies: Array<{ id: string; name?: string; distillery?: string; age?: number; abv?: number }>;
   tastingId: string;
   participantId: string;
   ratingScale: number;
+  blindMode: boolean;
 }) {
   const queryClient = useQueryClient();
   const [activeIdx, setActiveIdx] = useState(0);
@@ -366,13 +369,11 @@ function HostRatingPanel({
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
   const [hostTexts, setHostTexts] = useState<Record<string, Record<DimKey, string>>>({});
   const [hostOverall, setHostOverall] = useState<Record<string, number>>({});
-  const [hostOverride, setHostOverride] = useState<Record<string, boolean>>({});
   const [hostNotes, setHostNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hostScale = useRatingScale(ratingScale);
-  const scaleMax = hostScale.max;
   const scaleDefault = 75;
   const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
   const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
@@ -444,9 +445,13 @@ function HostRatingPanel({
           const existing = await ratingApi.getMyRating(participantId, w.id);
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
-            const clamp = (v: number) => Math.max(60, Math.min(100, v));
-            setHostScores(prev => ({ ...prev, [w.id]: { nose: clamp(existing.nose ?? scaleDefault), taste: clamp(existing.taste ?? scaleDefault), finish: clamp(existing.finish ?? scaleDefault) } }));
-            setHostOverall(prev => ({ ...prev, [w.id]: clamp(existing.overall ?? scaleDefault) }));
+            const toV2 = (v: number | null | undefined) => {
+              const raw = v ?? scaleDefault;
+              if (raw >= 60) return raw;
+              return Math.max(60, Math.min(100, Math.round(hostScale.normalize(raw))));
+            };
+            setHostScores(prev => ({ ...prev, [w.id]: { nose: toV2(existing.nose), taste: toV2(existing.taste), finish: toV2(existing.finish) } }));
+            setHostOverall(prev => ({ ...prev, [w.id]: toV2(existing.overall) }));
             setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
             setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
             setHostNotes(prev => ({ ...prev, [w.id]: parsed.cleanNotes }));
@@ -494,39 +499,6 @@ function HostRatingPanel({
   const defaultScores = (): Record<DimKey, number> => ({ nose: scaleDefault, taste: scaleDefault, finish: scaleDefault });
   const getScores = (wId: string): Record<DimKey, number> => hostScores[wId] || defaultScores();
   const getOverall = (wId: string) => hostOverall[wId] ?? scaleDefault;
-  const getOverallAuto = (wId: string) => {
-    const sc = getScores(wId);
-    return Math.round((sc.nose + sc.taste + sc.finish) / 3);
-  };
-
-  const handleScoreChange = (wId: string, dim: DimKey, val: number) => {
-    const current = getScores(wId);
-    const updated = { ...current, [dim]: val };
-    setHostScores(prev => ({ ...prev, [wId]: updated }));
-    let freshOverall: number;
-    if (!hostOverride[wId]) {
-      freshOverall = Math.round((updated.nose + updated.taste + updated.finish) / 3);
-      setHostOverall(prev => ({ ...prev, [wId]: freshOverall }));
-    } else {
-      freshOverall = hostOverall[wId] ?? scaleDefault;
-    }
-    debouncedSave(wId, updated, freshOverall, hostNotes[wId] || "");
-  };
-
-  const handleOverallChange = (wId: string, val: number) => {
-    setHostOverall(prev => ({ ...prev, [wId]: val }));
-    setHostOverride(prev => ({ ...prev, [wId]: true }));
-    debouncedSave(wId, getScores(wId), val, hostNotes[wId] || "");
-  };
-
-  const handleChipToggle = (wId: string, dim: DimKey, chip: string) => {
-    setHostChips(prev => {
-      const current = prev[wId] || emptyChips;
-      const dimChips = current[dim];
-      const next = dimChips.includes(chip) ? dimChips.filter(c => c !== chip) : [...dimChips, chip];
-      return { ...prev, [wId]: { ...current, [dim]: next } };
-    });
-  };
 
 
   const currentWhisky = whiskies[activeIdx];
@@ -592,59 +564,79 @@ function HostRatingPanel({
       <div style={{ padding: 16 }}>
         <div style={{ marginBottom: 12 }}>
           <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
-            {currentWhisky.name || `Whisky ${activeIdx + 1}`}
+            {blindMode ? `Dram ${activeIdx + 1}` : (currentWhisky.name || `Whisky ${activeIdx + 1}`)}
           </p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>
-            {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
-          </p>
+          {!blindMode && (
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>
+              {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+            </p>
+          )}
         </div>
 
-        <RatingFlow
-          scale={buildScale(ratingScale)}
-          scores={getScores(currentWhisky.id)}
-          onScoreChange={(dim, val) => handleScoreChange(currentWhisky.id, dim, val)}
-          overall={getOverall(currentWhisky.id)}
-          onOverallChange={(val) => handleOverallChange(currentWhisky.id, val)}
-          overrideActive={!!hostOverride[currentWhisky.id]}
-          onOverrideToggle={() => {
-            const wId = currentWhisky.id;
-            setHostOverride(prev => ({ ...prev, [wId]: !prev[wId] }));
+        <RatingFlowV2
+          key={currentWhisky.id}
+          whisky={{
+            name: blindMode ? `Dram ${activeIdx + 1}` : (currentWhisky.name || `Whisky ${activeIdx + 1}`),
+            region: blindMode ? undefined : (currentWhisky as any).region,
+            cask: blindMode ? undefined : (currentWhisky as any).cask,
+            blind: blindMode,
+            flavorProfile: blindMode ? undefined : ((currentWhisky as any).flavorProfileId ?? undefined),
           }}
-          onResetOverride={() => {
+          initialData={(() => {
             const wId = currentWhisky.id;
-            setHostOverride(prev => ({ ...prev, [wId]: false }));
-            const auto = getOverallAuto(wId);
-            setHostOverall(prev => ({ ...prev, [wId]: auto }));
-            debouncedSave(wId, getScores(wId), auto, hostNotes[wId] || "");
-          }}
-          chips={(() => {
-            const ch = hostChips[currentWhisky.id] || emptyChips;
-            return [...ch.nose, ...ch.taste, ...ch.finish];
+            const sc = getScores(wId);
+            const ch = hostChips[wId] || emptyChips;
+            const tx = hostTexts[wId] || emptyTexts;
+            return {
+              scores: {
+                nose: sc.nose,
+                palate: sc.taste,
+                finish: sc.finish,
+                overall: getOverall(wId),
+              },
+              tags: {
+                nose: ch.nose,
+                palate: ch.taste,
+                finish: ch.finish,
+                overall: [],
+              },
+              notes: {
+                nose: tx.nose,
+                palate: tx.taste,
+                finish: tx.finish,
+                overall: hostNotes[wId] || "",
+              },
+            } satisfies RatingData;
           })()}
-          onChipToggle={(chip) => {
+          onDone={(data: RatingData) => {
             const wId = currentWhisky.id;
-            const current = hostChips[wId] || emptyChips;
-            const dims: DimKey[] = ["nose", "taste", "finish"];
-            for (const d of dims) {
-              if (current[d].includes(chip)) {
-                handleChipToggle(wId, d, chip);
-                return;
-              }
-            }
-            handleChipToggle(wId, "nose", chip);
+            const freshScores: Record<DimKey, number> = {
+              nose: data.scores.nose,
+              taste: data.scores.palate,
+              finish: data.scores.finish,
+            };
+            setHostScores(prev => ({ ...prev, [wId]: freshScores }));
+            setHostOverall(prev => ({ ...prev, [wId]: data.scores.overall }));
+            setHostChips(prev => ({
+              ...prev,
+              [wId]: {
+                nose: data.tags.nose,
+                taste: data.tags.palate,
+                finish: data.tags.finish,
+              },
+            }));
+            setHostTexts(prev => ({
+              ...prev,
+              [wId]: {
+                nose: data.notes.nose,
+                taste: data.notes.palate,
+                finish: data.notes.finish,
+              },
+            }));
+            setHostNotes(prev => ({ ...prev, [wId]: data.notes.overall }));
+            debouncedSave(wId, freshScores, data.scores.overall, data.notes.overall);
           }}
-          notes={hostNotes[currentWhisky.id] || ""}
-          onNotesChange={(text) => {
-            const wId = currentWhisky.id;
-            setHostNotes(prev => ({ ...prev, [wId]: text }));
-            debouncedSave(wId, getScores(wId), getOverall(wId), text);
-          }}
-          onSave={async () => {
-            const wId = currentWhisky.id;
-            debouncedSave(wId, getScores(wId), getOverall(wId), hostNotes[wId] || "");
-          }}
-          whiskyName={currentWhisky.name || `Whisky ${activeIdx + 1}`}
-          flavorProfileId={(currentWhisky as any).flavorProfileId ?? null}
+          onBack={() => {}}
         />
       </div>
     </div>
@@ -6377,6 +6369,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             tastingId={tastingId}
             participantId={currentParticipant.id}
             ratingScale={tasting.ratingScale ?? 100}
+            blindMode={!!tasting.blindMode}
           />
         </div>
       )}
