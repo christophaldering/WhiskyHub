@@ -19,7 +19,7 @@ type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
-type SortBy = "date" | "score" | "name";
+type SortBy = "date" | "score" | "name" | "saved";
 
 const FILTERS: { key: FilterValue; label: string }[] = [
   { key: "all", label: "All" },
@@ -116,6 +116,7 @@ export default function LabsTasteDrams() {
         caskType: w.caskType || null,
         personalScore: w.overall ?? w.personalScore ?? null,
         createdAt: tasting.date || tasting.createdAt,
+        savedAt: w.myRating?.updatedAt || w.myRating?.createdAt || tasting.date || tasting.createdAt,
         source: "tasting" as const,
         tastingTitle: tasting.title,
         body: null, noseNotes: null, tasteNotes: null, finishNotes: null,
@@ -186,6 +187,11 @@ export default function LabsTasteDrams() {
         const na = (a.whiskyName || a.title || "").toLowerCase();
         const nb = (b.whiskyName || b.title || "").toLowerCase();
         return na.localeCompare(nb);
+      }
+      if (sortBy === "saved") {
+        const sa = a.source === "tasting" ? (a.savedAt ? new Date(a.savedAt).getTime() : 0) : (a.updatedAt ? new Date(a.updatedAt).getTime() : a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const sb = b.source === "tasting" ? (b.savedAt ? new Date(b.savedAt).getTime() : 0) : (b.updatedAt ? new Date(b.updatedAt).getTime() : b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return sb - sa;
       }
       return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
     });
@@ -526,11 +532,11 @@ export default function LabsTasteDrams() {
                 style={{ fontSize: 12, padding: "5px 12px" }}
                 data-testid={`labs-score-${sr}`}>{sr === "all" ? "Score" : sr}</button>
             ))}
-            {(["date", "score", "name"] as SortBy[]).map(sk => (
+            {(["date", "score", "name", "saved"] as SortBy[]).map(sk => (
               <button key={sk} onClick={() => setSortBy(sk)}
                 className={`labs-chip ${sortBy === sk ? "labs-chip-active" : ""}`}
                 style={{ fontSize: 12, padding: "5px 12px" }}
-                data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : "Name"}</button>
+                data-testid={`labs-sort-${sk}`}>{sk === "date" ? "Date" : sk === "score" ? "Score" : sk === "name" ? "Name" : "Saved"}</button>
             ))}
           </div>
 

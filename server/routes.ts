@@ -8197,6 +8197,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
                 finish: myRating.finish,
                 overall: myRating.overall,
                 notes: myRating.notes,
+                updatedAt: myRating.updatedAt,
+                createdAt: myRating.createdAt,
               } : null,
               avgOverall,
             };
