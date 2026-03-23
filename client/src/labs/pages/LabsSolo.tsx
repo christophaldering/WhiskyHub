@@ -22,7 +22,7 @@ function getStoredLang(): V2Lang {
 }
 
 export default function LabsSolo() {
-  const goBack = useBackNavigation("/labs/taste");
+  const goBack = useBackNavigation("/labs/tastings");
 
   const [theme, setTheme] = useState<V2Theme>(getStoredTheme);
   const [lang] = useState<V2Lang>(getStoredLang);
