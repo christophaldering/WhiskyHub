@@ -49,6 +49,7 @@ interface GuidedRatingProps {
     region?: string;
     cask?: string;
     blind: boolean;
+    flavorProfile?: string;
   };
   initialData?: RatingData;
   onDone: (data: RatingData) => void;
@@ -313,6 +314,7 @@ export default function GuidedRating({ th, labels, whisky, initialData, onDone, 
             phaseId={currentPhase}
             whiskyRegion={whisky.region}
             whiskyCask={whisky.cask}
+            whiskyFlavorProfile={whisky.flavorProfile}
             blind={whisky.blind}
             selected={tags[currentPhase]}
             onToggle={handleTagToggle}

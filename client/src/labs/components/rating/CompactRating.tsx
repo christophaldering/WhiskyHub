@@ -38,6 +38,7 @@ interface CompactRatingProps {
     region?: string;
     cask?: string;
     blind: boolean;
+    flavorProfile?: string;
   };
   initialData?: RatingData;
   onDone: (data: RatingData) => void;
@@ -187,6 +188,7 @@ export default function CompactRating({ th, labels, whisky, initialData, onDone,
                     phaseId={pid}
                     whiskyRegion={whisky.region}
                     whiskyCask={whisky.cask}
+                    whiskyFlavorProfile={whisky.flavorProfile}
                     blind={whisky.blind}
                     selected={tags[pid]}
                     onToggle={(tag) => {

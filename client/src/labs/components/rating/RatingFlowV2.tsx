@@ -12,6 +12,7 @@ interface RatingFlowV2Props {
     region?: string;
     cask?: string;
     blind?: boolean;
+    flavorProfile?: string;
   };
   initialData?: RatingData;
   onDone: (data: RatingData) => void;
@@ -102,7 +103,7 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
       <GuidedRating
         th={th}
         labels={guidedLabels}
-        whisky={{ ...whisky, blind: whisky.blind ?? false }}
+        whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
@@ -115,7 +116,7 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
       <CompactRating
         th={th}
         labels={compactLabels}
-        whisky={{ ...whisky, blind: whisky.blind ?? false }}
+        whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
