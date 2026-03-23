@@ -505,11 +505,7 @@ export function useLabsBack(fallback: string) {
   const [, navigate] = useLocation();
   return useCallback(() => {
     markBackNavigation();
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate(fallback);
-    }
+    navigate(fallback);
   }, [fallback, navigate]);
 }
 

@@ -27,7 +27,7 @@ function relTime(ts: string): string {
 }
 
 export default function LabsActivity() {
-  const goBackToHome = useBackNavigation("/labs/home");
+  const goBackToCircle = useBackNavigation("/labs/circle");
   const session = getSession();
   const pid = session.pid;
 
@@ -43,12 +43,12 @@ export default function LabsActivity() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-activity-page">
       <button
-        onClick={goBackToHome}
+        onClick={goBackToCircle}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-activity-back"
       >
-        <ChevronLeft className="w-4 h-4" /> Home
+        <ChevronLeft className="w-4 h-4" /> Circle
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

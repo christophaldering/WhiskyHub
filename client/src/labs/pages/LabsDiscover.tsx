@@ -84,12 +84,12 @@ function LinkRow({ link, t }: { link: DiscoverLink; t: (key: string, fallback: s
 }
 
 export default function LabsDiscover() {
-  const goBackToHome = useBackNavigation("/labs/home");
+  const goBackToEntdecken = useBackNavigation("/labs/entdecken");
   const { t } = useTranslation();
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-page">
-      <button onClick={goBackToHome} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-discover">
-        <ChevronLeft className="w-4 h-4" /> Home
+      <button onClick={goBackToEntdecken} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-discover">
+        <ChevronLeft className="w-4 h-4" /> Entdecken
       </button>
 
       <div style={{ marginBottom: 24 }}>
