@@ -2,8 +2,9 @@ import { useState } from "react";
 import type { ThemeTokens } from "../../tokens";
 import type { Translations } from "../../i18n";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
-import { Back, Check } from "../../icons";
+import { Check } from "../../icons";
 import type { CapturedWhisky } from "./SoloCaptureScreen";
+import SubScreenHeader from "../meinewelt/SubScreenHeader";
 
 interface Props {
   th: ThemeTokens;
@@ -64,31 +65,7 @@ export default function SoloWhiskyForm({ th, t, initial, fromAI, onSubmit, onBac
 
   return (
     <div className="v2-fade-up" style={{ padding: `${SP.xl}px ${SP.md}px` }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.lg }}>
-        <button
-          onClick={onBack}
-          data-testid="solo-form-back-btn"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: SP.xs,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <Back color={th.text} size={24} />
-        </button>
-        <h1 style={{
-          fontFamily: FONT.display,
-          fontSize: 24,
-          fontWeight: 600,
-          color: th.text,
-          margin: 0,
-        }} data-testid="solo-form-title">
-          {t.soloTitle}
-        </h1>
-      </div>
+      <SubScreenHeader th={th} title={t.soloTitle} onBack={onBack} backTestId="solo-form-back-btn" titleTestId="solo-form-title" />
 
       {fromAI && (
         <div

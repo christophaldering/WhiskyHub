@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import type { ThemeTokens } from "../../tokens";
 import type { Translations } from "../../i18n";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "../../tokens";
-import { Camera, Edit, Barcode, Skip, Spinner, Back, AlertTriangle } from "../../icons";
+import { Camera, Edit, Barcode, Skip, Spinner, AlertTriangle } from "../../icons";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "../../components/BottleRecognitionFeedback";
+import SubScreenHeader from "../meinewelt/SubScreenHeader";
 
 export interface CapturedWhisky {
   name: string;
@@ -192,31 +193,7 @@ export default function SoloCaptureScreen({ th, t, participantId, onManual, onCa
   if (status === "barcode") {
     return (
       <div className="v2-fade-up" style={{ padding: `${SP.xl}px ${SP.md}px` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.lg }}>
-          <button
-            onClick={() => { setStatus("idle"); setBarcodeValue(""); }}
-            data-testid="solo-barcode-back-btn"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: SP.xs,
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <Back color={th.text} size={24} />
-          </button>
-          <h1 style={{
-            fontFamily: FONT.display,
-            fontSize: 24,
-            fontWeight: 600,
-            color: th.text,
-            margin: 0,
-          }}>
-            {t.soloBarcodeInput}
-          </h1>
-        </div>
+        <SubScreenHeader th={th} title={t.soloBarcodeInput} onBack={() => { setStatus("idle"); setBarcodeValue(""); }} backTestId="solo-barcode-back-btn" />
 
         <div style={{
           display: "flex",
@@ -297,31 +274,7 @@ export default function SoloCaptureScreen({ th, t, participantId, onManual, onCa
         data-testid="solo-file-input"
       />
 
-      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.lg }}>
-        <button
-          onClick={onBack}
-          data-testid="solo-back-btn"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: SP.xs,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <Back color={th.text} size={24} />
-        </button>
-        <h1 style={{
-          fontFamily: FONT.display,
-          fontSize: 24,
-          fontWeight: 600,
-          color: th.text,
-          margin: 0,
-        }} data-testid="solo-title">
-          {t.soloTitle}
-        </h1>
-      </div>
+      <SubScreenHeader th={th} title={t.soloTitle} onBack={onBack} backTestId="solo-back-btn" titleTestId="solo-title" />
 
       <p style={{
         fontFamily: FONT.body,
