@@ -344,7 +344,7 @@ export default function CommunityInsights() {
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 14px" }}>
             {signedIn ? t("insights.ctaVoteSubline") : t("insights.ctaStart")}
           </p>
-          <Link href={signedIn ? "/labs/search" : "/labs/onboarding"}>
+          <Link href={signedIn ? "/labs/solo" : "/labs/onboarding"}>
             <button
               className="labs-btn-primary"
               style={{ fontSize: 13, padding: "8px 20px", borderRadius: 20 }}
