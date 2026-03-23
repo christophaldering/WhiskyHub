@@ -210,14 +210,6 @@ export default function LabsAdmin() {
               data-testid="labs-admin-title">
             Admin
           </h1>
-          <a href="/labs-apple" style={{ display: "flex", alignItems: "center", gap: 6,
-                 color: "var(--labs-accent)", border: "1px solid var(--labs-accent)",
-                 borderRadius: 8, padding: "6px 12px", textDecoration: "none",
-                 fontSize: 12 }}
-             data-testid="link-apple-labs">
-            <FlaskConical style={{ width: 14, height: 14 }} /> Apple Labs
-            <ExternalLink style={{ width: 12, height: 12 }} />
-          </a>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)",

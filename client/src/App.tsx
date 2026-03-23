@@ -115,8 +115,6 @@ const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
 
-const LabsV2App = lazy(() => import("@/labs-v2/LabsV2App"));
-import { LabsAppleApp } from './labs-apple/LabsAppleApp';
 
 function LazyFallback() {
   return (
@@ -544,13 +542,11 @@ function Router() {
           </LabsLayout>
         </Route>
 
-        {/* ── CaskSense V2 ── */}
-        <Route path="/labs-v2/:rest*" component={LabsV2App} />
-        <Route path="/labs-v2" component={LabsV2App} />
-
-        {/* ── Labs Apple ── */}
-        <Route path="/labs-apple" component={LabsAppleApp} />
-        <Route path="/labs-apple/:rest*" component={LabsAppleApp} />
+        {/* ── Legacy V2/Apple routes redirect to Labs ── */}
+        <Route path="/labs-v2/:rest*"><SmartRedirectToLabs /></Route>
+        <Route path="/labs-v2"><SmartRedirectToLabs /></Route>
+        <Route path="/labs-apple/:rest*"><SmartRedirectToLabs /></Route>
+        <Route path="/labs-apple"><SmartRedirectToLabs /></Route>
 
         {/* ── Catch-all: redirect all remaining old routes to Labs ── */}
         <Route>
