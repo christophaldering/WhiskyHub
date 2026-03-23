@@ -5,7 +5,8 @@ import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
-import { hostDashboardApi, inviteApi, pidHeaders, tastingApi, whiskyApi } from "@/lib/api";
+import { hostDashboardApi, inviteApi, friendsApi, pidHeaders, tastingApi, whiskyApi } from "@/lib/api";
+import type { SessionInvite, WhiskyFriend } from "@shared/schema";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -253,6 +254,18 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
 
+  const { data: allInvites = [] } = useQuery<SessionInvite[]>({
+    queryKey: ["invites", selectedTastingId],
+    queryFn: () => inviteApi.getForTasting(selectedTastingId),
+    enabled: !!selectedTastingId,
+  });
+
+  const { data: friends = [] } = useQuery<WhiskyFriend[]>({
+    queryKey: ["friends", currentParticipant?.id],
+    queryFn: () => friendsApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id,
+  });
+
   const activeTastings = tastings.filter(ta => ta.status !== "archived");
   const selectedTasting = activeTastings.find(ta => ta.id === selectedTastingId);
 
@@ -492,6 +505,89 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
             )}
           </div>
         </div>
+
+        {allInvites.length > 0 ? (
+          <div style={{ marginTop: 4 }} data-testid="sent-invitations-list">
+            <div style={{ height: 1, background: th.border, marginBottom: 12 }} />
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: th.faint, marginBottom: 8 }}>
+              Sent Invitations ({allInvites.length})
+            </p>
+            <div style={{
+              maxHeight: 200,
+              overflowY: "auto",
+              borderRadius: 8,
+              border: `1px solid ${th.border}`,
+            }}>
+              {allInvites.map((invite) => {
+                const matchedFriend = friends.find(
+                  (f) => f.email && f.email.toLowerCase() === invite.email.toLowerCase() && f.status === "accepted"
+                );
+                return (
+                  <div
+                    key={invite.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 12px",
+                      borderBottom: `1px solid ${th.border}`,
+                    }}
+                    data-testid={`sent-invite-${invite.id}`}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {matchedFriend && (
+                        <p style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: th.text,
+                          margin: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }} data-testid={`text-sent-invite-name-${invite.id}`}>
+                          {String(matchedFriend.firstName ?? "")} {String(matchedFriend.lastName ?? "")}
+                        </p>
+                      )}
+                      <p style={{
+                        fontSize: 12,
+                        color: matchedFriend ? th.faint : th.text,
+                        margin: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }} data-testid={`text-sent-invite-email-${invite.id}`}>
+                        {String(invite.email ?? "")}
+                      </p>
+                    </div>
+                    {invite.createdAt && (
+                      <span style={{ fontSize: 11, color: th.faint, flexShrink: 0, marginRight: 8 }} data-testid={`text-sent-invite-date-${invite.id}`}>
+                        {new Date(invite.createdAt).toLocaleDateString()}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        flexShrink: 0,
+                        background: invite.status === "joined" ? withAlpha("#34c759", 0.15) : withAlpha(th.gold, 0.15),
+                        color: invite.status === "joined" ? "#34c759" : th.gold,
+                      }}
+                      data-testid={`badge-sent-invite-status-${invite.id}`}
+                    >
+                      {String(invite.status ?? "")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : selectedTasting && (
+          <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic", marginTop: 8 }} data-testid="no-invitations-hint">
+            No invitations sent yet for this tasting.
+          </p>
+        )}
       )}
     </div>
   );
