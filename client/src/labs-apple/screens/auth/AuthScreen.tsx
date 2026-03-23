@@ -26,8 +26,9 @@ const scrollInputIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
 const PasswordField: React.FC<{
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
   th: ThemeTokens; show: boolean; onToggle: () => void; autoFocus?: boolean;
-  testId?: string; toggleTestId?: string; onKeyDown?: (e: React.KeyboardEvent) => void
-}> = ({ label, value, onChange, placeholder, th, show, onToggle, autoFocus, testId, toggleTestId, onKeyDown }) => (
+  testId?: string; toggleTestId?: string; onKeyDown?: (e: React.KeyboardEvent) => void;
+  autoComplete?: string
+}> = ({ label, value, onChange, placeholder, th, show, onToggle, autoFocus, testId, toggleTestId, onKeyDown, autoComplete }) => (
   <div style={{ marginBottom: SP.md }}>
     <label style={{ display: 'block', fontSize: 11, color: th.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</label>
     <div style={{ position: 'relative' }}>
@@ -39,6 +40,9 @@ const PasswordField: React.FC<{
         autoFocus={autoFocus}
         data-testid={testId}
         onKeyDown={onKeyDown}
+        autoComplete={autoComplete}
+        inputMode="text"
+        enterKeyHint="done"
         style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 44px 0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms' }}
         onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold; scrollInputIntoView(e) }}
         onBlur={e => { (e.target as HTMLInputElement).style.borderColor = th.border }}
@@ -55,7 +59,7 @@ const PasswordField: React.FC<{
   </div>
 )
 
-const Field: React.FC<{ label: string; type?: string; value: string; onChange: (v: string) => void; placeholder?: string; th: ThemeTokens; autoFocus?: boolean; testId?: string; onKeyDown?: (e: React.KeyboardEvent) => void; inputMode?: string; maxLength?: number; style?: React.CSSProperties }> = ({ label, type = 'text', value, onChange, placeholder, th, autoFocus, testId, onKeyDown, inputMode, maxLength, style }) => (
+const Field: React.FC<{ label: string; type?: string; value: string; onChange: (v: string) => void; placeholder?: string; th: ThemeTokens; autoFocus?: boolean; testId?: string; onKeyDown?: (e: React.KeyboardEvent) => void; inputMode?: React.InputHTMLAttributes<HTMLInputElement>['inputMode']; maxLength?: number; style?: React.CSSProperties; autoComplete?: string; enterKeyHint?: React.InputHTMLAttributes<HTMLInputElement>['enterKeyHint'] }> = ({ label, type = 'text', value, onChange, placeholder, th, autoFocus, testId, onKeyDown, inputMode, maxLength, style, autoComplete, enterKeyHint }) => (
   <div style={{ marginBottom: SP.md }}>
     <label style={{ display: 'block', fontSize: 11, color: th.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</label>
     <input
@@ -66,8 +70,10 @@ const Field: React.FC<{ label: string; type?: string; value: string; onChange: (
       autoFocus={autoFocus}
       data-testid={testId}
       onKeyDown={onKeyDown}
-      inputMode={inputMode as any}
+      inputMode={inputMode}
       maxLength={maxLength}
+      autoComplete={autoComplete}
+      enterKeyHint={enterKeyHint}
       style={{ width: '100%', minHeight: 52, borderRadius: 14, border: `1px solid ${th.border}`, background: th.inputBg, color: th.text, fontSize: 17, fontFamily: 'DM Sans, sans-serif', padding: '0 16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms', ...style }}
       onFocus={e => { (e.target as HTMLInputElement).style.borderColor = th.gold; scrollInputIntoView(e) }}
       onBlur={e => { (e.target as HTMLInputElement).style.borderColor = th.border }}
@@ -147,8 +153,8 @@ const LoginView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
       <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{tx.authLoginTitle}</h2>
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{tx.authLoginSub}</p>
       {error && <ErrorBanner msg={error} th={th} />}
-      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} autoFocus testId="input-login-email" />
-      <PasswordField label={tx.authPassword} value={pass} onChange={setPass} placeholder="********" th={th} show={showPass} onToggle={() => setShowPass(!showPass)} testId="input-login-password" toggleTestId="button-toggle-login-pin" onKeyDown={e => e.key === 'Enter' && submit()} />
+      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} autoFocus testId="input-login-email" autoComplete="email" enterKeyHint="next" />
+      <PasswordField label={tx.authPassword} value={pass} onChange={setPass} placeholder="********" th={th} show={showPass} onToggle={() => setShowPass(!showPass)} testId="input-login-password" toggleTestId="button-toggle-login-pin" onKeyDown={e => e.key === 'Enter' && submit()} autoComplete="current-password" />
       <PrimaryButton testId="button-login" onClick={submit} disabled={!email || !pass} loading={loading} text={tx.authLoginBtn} th={th} />
       <div style={{ marginTop: SP.sm }}>
         <button data-testid="button-forgot-pin" onClick={() => onSwitch('forgotPin')} style={{ background: 'none', border: 'none', color: th.muted, cursor: 'pointer', fontSize: 13, minHeight: 44, padding: 0, textDecoration: 'underline' }}>{tx.authForgotPin}</button>
@@ -204,8 +210,8 @@ const RegisterView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: 
       <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{tx.authRegisterTitle}</h2>
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{tx.authRegisterSub}</p>
       {error && <ErrorBanner msg={error} th={th} />}
-      <Field label={tx.authName} value={name} onChange={setName} placeholder="Dein Name" th={th} autoFocus testId="input-register-name" />
-      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} testId="input-register-email" />
+      <Field label={tx.authName} value={name} onChange={setName} placeholder="Dein Name" th={th} autoFocus testId="input-register-name" autoComplete="name" enterKeyHint="next" />
+      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} testId="input-register-email" autoComplete="email" enterKeyHint="next" />
       {email.trim() && (
         <Checkbox checked={newsletterOptIn} onChange={setNewsletterOptIn} th={th} testId="checkbox-newsletter">
           <span style={{ fontWeight: 600 }}>{tx.authNewsletterOptIn}</span>
@@ -213,8 +219,8 @@ const RegisterView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: 
           <span style={{ fontSize: 11, color: th.faint }}>{tx.authNewsletterHint}</span>
         </Checkbox>
       )}
-      <PasswordField label={tx.authPassword} value={pass} onChange={setPass} placeholder="min. 4 Zeichen" th={th} show={showPass} onToggle={() => setShowPass(!showPass)} testId="input-register-password" toggleTestId="button-toggle-register-pin" />
-      <PasswordField label={tx.authPasswordConfirm} value={pass2} onChange={setPass2} placeholder="Wiederholen" th={th} show={showPass2} onToggle={() => setShowPass2(!showPass2)} testId="input-register-password2" toggleTestId="button-toggle-register-pin2" />
+      <PasswordField label={tx.authPassword} value={pass} onChange={setPass} placeholder="min. 4 Zeichen" th={th} show={showPass} onToggle={() => setShowPass(!showPass)} testId="input-register-password" toggleTestId="button-toggle-register-pin" autoComplete="new-password" />
+      <PasswordField label={tx.authPasswordConfirm} value={pass2} onChange={setPass2} placeholder="Wiederholen" th={th} show={showPass2} onToggle={() => setShowPass2(!showPass2)} testId="input-register-password2" toggleTestId="button-toggle-register-pin2" autoComplete="new-password" />
       <Checkbox checked={privacyConsent} onChange={setPrivacyConsent} th={th} testId="checkbox-privacy-consent">
         {tx.authConsentCheckLabel}{' '}
         <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: th.phases.nose.accent, textDecoration: 'underline' }}>{tx.authConsentPrivacyLink}</a>{' '}
@@ -267,7 +273,7 @@ const GuestView: React.FC<{ th: ThemeTokens; t: Translations; onSuccess: (s: any
         ))}
       </div>
 
-      <Field label={tx.authName} value={name} onChange={setName} placeholder={tx.authNamePH} th={th} autoFocus testId="input-guest-name" />
+      <Field label={tx.authName} value={name} onChange={setName} placeholder={tx.authNamePH} th={th} autoFocus testId="input-guest-name" autoComplete="name" enterKeyHint="done" />
       <PrimaryButton testId="button-guest" onClick={submit} disabled={!name.trim()} loading={loading} text={tx.authGuestBtn} th={th} />
       <div style={{ marginTop: SP.md, textAlign: 'center' }}>
         <button data-testid="link-to-login-from-guest" onClick={() => onSwitch('login')} style={{ background: 'none', border: 'none', color: th.phases.nose.accent, cursor: 'pointer', fontSize: 14, minHeight: 44 }}>{tx.authToLogin}</button>
@@ -301,7 +307,7 @@ const ForgotPinView: React.FC<{ th: ThemeTokens; t: Translations; onSwitch: (m: 
       <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 600, margin: `0 0 ${SP.xs}px` }}>{tx.authForgotPinTitle}</h2>
       <p style={{ fontSize: 14, color: th.muted, margin: `0 0 ${SP.xl}px` }}>{tx.authForgotPinSub}</p>
       {error && <ErrorBanner msg={error} th={th} />}
-      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} autoFocus testId="input-reset-email" onKeyDown={e => e.key === 'Enter' && submit()} />
+      <Field label={tx.authEmail} type="email" value={email} onChange={setEmail} placeholder="name@example.com" th={th} autoFocus testId="input-reset-email" onKeyDown={e => e.key === 'Enter' && submit()} autoComplete="email" enterKeyHint="send" />
       <PrimaryButton testId="button-send-reset-code" onClick={submit} disabled={!email.trim()} loading={loading} loadingText={tx.authForgotPinSending} text={tx.authForgotPinSend} th={th} />
     </div>
   )
@@ -344,9 +350,11 @@ const ForgotPinVerifyView: React.FC<{ th: ThemeTokens; t: Translations; onSwitch
         testId="input-reset-code"
         inputMode="numeric"
         maxLength={6}
+        autoComplete="one-time-code"
+        enterKeyHint="next"
         style={{ textAlign: 'center', fontSize: 24, letterSpacing: '0.5em', fontFamily: 'monospace' }}
       />
-      <PasswordField label={tx.authForgotPinNewPin} value={newPin} onChange={setNewPin} placeholder={tx.authForgotPinNewPinPH} th={th} show={showNewPin} onToggle={() => setShowNewPin(!showNewPin)} testId="input-new-pin" toggleTestId="button-toggle-new-pin-visibility" onKeyDown={e => e.key === 'Enter' && submit()} />
+      <PasswordField label={tx.authForgotPinNewPin} value={newPin} onChange={setNewPin} placeholder={tx.authForgotPinNewPinPH} th={th} show={showNewPin} onToggle={() => setShowNewPin(!showNewPin)} testId="input-new-pin" toggleTestId="button-toggle-new-pin-visibility" onKeyDown={e => e.key === 'Enter' && submit()} autoComplete="new-password" />
       <PrimaryButton testId="button-reset-pin" onClick={submit} disabled={code.length < 6} loading={loading} loadingText={tx.authForgotPinResetting} text={tx.authForgotPinReset} th={th} />
     </div>
   )
