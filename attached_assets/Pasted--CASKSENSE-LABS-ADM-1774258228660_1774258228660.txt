@@ -1,0 +1,401 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — ADMIN-MENÜ: PRÜFUNG UND KORREKTUR
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Öffne die Datei client/src/labs/pages/LabsAdmin.tsx und prüfe ob das
+Admin-Menü bereits auf das neue 2-Ebenen-System umgestellt wurde.
+
+PRÜFKRITERIUM — GENAU DIESES ARRAY MUSS VORHANDEN SEIN:
+
+  const ADMIN_GROUPS = [
+    { id: "nutzer", ... },
+    { id: "tastings", ... },
+    { id: "inhalt", ... },
+    { id: "tools", ... },
+    { id: "system", ... },
+  ]
+
+Wenn dieses Array VORHANDEN ist → Abschnitt "BEREITS UMGESETZT" ausführen.
+Wenn dieses Array NICHT vorhanden ist → Abschnitt "NOCH NICHT UMGESETZT" ausführen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WENN BEREITS UMGESETZT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dann folgende Detailprüfungen durchführen und jeden Punkt korrigieren
+der nicht erfüllt ist:
+
+PUNKT 1 — Kein horizontaler Tab-Scroll mehr:
+  Suche nach dem alten TAB_CONFIG Array oder einem flex-Container mit
+  "overflow-x: auto" der die 17 Tabs enthält.
+  Wenn gefunden: diesen Block entfernen.
+
+PUNKT 2 — Desktop-Sidebar vorhanden:
+  Suche nach className="admin-sidebar".
+  Wenn NICHT gefunden: die Sidebar gemäß NOCH-NICHT-UMGESETZT ergänzen.
+
+PUNKT 3 — Mobile-Navigation vorhanden:
+  Suche nach className="admin-mobile-nav".
+  Wenn NICHT gefunden: die Mobile-Nav gemäß NOCH-NICHT-UMGESETZT ergänzen.
+
+PUNKT 4 — Alle 17 Tab-Inhalte erreichbar:
+  Im Inhalt-Block muss jeder dieser Einträge vorhanden sein:
+    participants, tastings, online, activity, sessions, ai,
+    newsletter, changelog, cleanup, analytics, historical,
+    communities, settings, feedback, making-of, aromas
+  Fehlende Einträge ergänzen.
+
+PUNKT 5 — Kein Emoji:
+  Suche nach Emoji-Zeichen (z.B. 👥 🍷 ⚙️) in der Admin-Shell.
+  Wenn gefunden: durch Lucide-Icons ersetzen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WENN NOCH NICHT UMGESETZT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dann die vollständige Implementierung jetzt durchführen.
+
+ABSOLUTE SICHERHEITSREGELN:
+❌ NIEMALS server/ oder schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS die Tab-Inhalts-Komponenten verändern:
+   ParticipantsTab, TastingsTab, OnlineTab, ActivityTab, SessionsTab,
+   AITab, NewsletterTab, ChangelogTab, CleanupTab, AnalyticsTab,
+   HistoricalImportTab, CommunitiesTab, SettingsTab, FeedbackTab,
+   MakingOfTab, AromasTab — ALLE bleiben byte-identisch
+❌ NIEMALS Emojis verwenden
+✅ NUR die Shell in LabsAdmin.tsx ersetzen
+
+── SCHRITT 1: ADMIN_GROUPS Array einfügen ──
+
+Direkt vor der LabsAdmin Hauptkomponente einfügen:
+
+  const ADMIN_GROUPS = [
+    {
+      id: "nutzer",
+      label: "Nutzer",
+      icon: Users,
+      tabs: [
+        { id: "participants", label: "Teilnehmer" },
+        { id: "online",       label: "Online" },
+        { id: "sessions",     label: "Sessions" },
+        { id: "activity",     label: "Aktivität" },
+      ],
+    },
+    {
+      id: "tastings",
+      label: "Tastings",
+      icon: Wine,
+      tabs: [
+        { id: "tastings",    label: "Tastings" },
+        { id: "historical",  label: "Archiv-Import" },
+        { id: "communities", label: "Communities" },
+      ],
+    },
+    {
+      id: "inhalt",
+      label: "Inhalt",
+      icon: FileText,
+      tabs: [
+        { id: "aromas",     label: "Aromen" },
+        { id: "changelog",  label: "Changelog" },
+        { id: "making-of",  label: "Making Of" },
+      ],
+    },
+    {
+      id: "tools",
+      label: "KI & Tools",
+      icon: Sparkles,
+      tabs: [
+        { id: "ai",         label: "KI-Status" },
+        { id: "newsletter", label: "Newsletter" },
+        { id: "feedback",   label: "Feedback" },
+      ],
+    },
+    {
+      id: "system",
+      label: "System",
+      icon: Settings,
+      tabs: [
+        { id: "settings",  label: "Einstellungen" },
+        { id: "cleanup",   label: "Aufräumen" },
+        { id: "analytics", label: "Analytics" },
+      ],
+    },
+  ] as const;
+
+  type AdminGroup = typeof ADMIN_GROUPS[number]["id"];
+
+── SCHRITT 2: Imports ergänzen ──
+
+Sicherstellen dass folgende Lucide-Icons importiert sind
+(bestehende Import-Zeile erweitern, nicht ersetzen):
+
+  import { ..., FileText, Sparkles, Settings } from "lucide-react";
+  // Users, Wine, ChevronLeft, Shield, Crown bereits vorhanden
+
+── SCHRITT 3: State ersetzen ──
+
+Den bestehenden activeTab-State suchen:
+  const [activeTab, setActiveTab] = useState<AdminTab>("participants");
+
+ERGÄNZEN (nicht ersetzen — beide States werden gebraucht):
+  const [activeGroup, setActiveGroup] = useState<AdminGroup>("nutzer");
+
+Hilfsfunktion direkt nach den States einfügen:
+  const activateGroup = (groupId: AdminGroup) => {
+    const group = ADMIN_GROUPS.find(g => g.id === groupId);
+    if (group) {
+      setActiveGroup(groupId);
+      setActiveTab(group.tabs[0].id as AdminTab);
+    }
+  };
+
+── SCHRITT 4: Den alten Tab-Scroll entfernen ──
+
+Den Block mit den alten Pill-Buttons suchen — er sieht ungefähr so aus:
+  <div className="flex gap-1.5 overflow-x-auto mb-5 pb-1"
+       data-testid="labs-admin-tabs">
+    {TAB_CONFIG.map(tab => ( ... ))}
+  </div>
+
+Diesen Block KOMPLETT entfernen und durch das neue Layout ersetzen:
+
+── SCHRITT 5: Neues Layout einfügen ──
+
+Den return()-Block der Hauptkomponente durch folgendes ersetzen
+(alles zwischen dem öffnenden <div data-testid="labs-admin-page">
+und dem schließenden </div> neu aufbauen):
+
+  {/* HEADER */}
+  <div style={{ marginBottom: 20 }}>
+    <button onClick={goBackToHome}
+      style={{ display: "flex", alignItems: "center", gap: 4,
+               background: "none", border: "none", cursor: "pointer",
+               color: "var(--labs-text-muted)", fontSize: 14,
+               minHeight: 44, padding: "0 0 8px" }}
+      data-testid="labs-admin-back">
+      <ChevronLeft className="w-4 h-4" /> Home
+    </button>
+
+    <h1 className="labs-h2" style={{ color: "var(--labs-text)",
+        fontFamily: "'Playfair Display', serif",
+        marginBottom: 16 }}
+        data-testid="labs-admin-title">
+      Admin
+    </h1>
+
+    {/* Stat-Karten — 4 Spalten */}
+    <div style={{ display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 8, marginBottom: 0 }}>
+      {[
+        { label: "Nutzer",   value: data.stats.totalParticipants, Icon: Users   },
+        { label: "Hosts",    value: data.stats.totalHosts,        Icon: Crown   },
+        { label: "Tastings", value: data.stats.totalTastings,     Icon: Wine    },
+        { label: "Admins",   value: data.stats.totalAdmins,       Icon: Shield  },
+      ].map(s => (
+        <div key={s.label}
+          style={{ background: "var(--labs-surface)",
+                   border: "1px solid var(--labs-border)",
+                   borderRadius: 10, padding: "10px 12px",
+                   display: "flex", alignItems: "center", gap: 8 }}
+          data-testid={`labs-admin-stat-${s.label.toLowerCase()}`}>
+          <s.Icon style={{ width: 14, height: 14,
+                           color: "var(--labs-accent)", flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700,
+                          color: "var(--labs-text)", lineHeight: 1 }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--labs-text-muted)",
+                          marginTop: 2 }}>
+              {s.label}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* ZWEISPALTIG: Sidebar + Inhalt */}
+  <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}
+       className="admin-layout">
+
+    <style>{`
+      @media (max-width: 767px) {
+        .admin-sidebar { display: none !important; }
+        .admin-mobile-nav { display: block !important; }
+        .admin-layout { display: block !important; }
+      }
+      @media (min-width: 768px) {
+        .admin-mobile-nav { display: none !important; }
+      }
+    `}</style>
+
+    {/* SIDEBAR — Desktop */}
+    <div className="admin-sidebar"
+         style={{ width: 220, flexShrink: 0,
+                  position: "sticky", top: 16 }}>
+      {ADMIN_GROUPS.map(group => {
+        const isGroupActive = activeGroup === group.id;
+        const GroupIcon = group.icon;
+        return (
+          <div key={group.id} style={{ marginBottom: 4 }}>
+            <button
+              onClick={() => activateGroup(group.id)}
+              data-testid={`admin-group-${group.id}`}
+              style={{
+                width: "100%", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "10px 12px", borderRadius: 10,
+                border: "none", cursor: "pointer", fontSize: 14,
+                fontWeight: isGroupActive ? 600 : 400,
+                background: isGroupActive
+                  ? "var(--labs-surface-elevated)" : "none",
+                color: isGroupActive
+                  ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                minHeight: 44,
+                transition: "background 150ms, color 150ms",
+              }}>
+              <GroupIcon style={{ width: 16, height: 16, flexShrink: 0,
+                color: isGroupActive
+                  ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+              {group.label}
+            </button>
+
+            {isGroupActive && (
+              <div style={{ marginTop: 2 }}>
+                {group.tabs.map(tab => {
+                  const isTabActive = activeTab === tab.id;
+                  return (
+                    <button key={tab.id}
+                      onClick={() => setActiveTab(tab.id as AdminTab)}
+                      data-testid={`labs-admin-tab-${tab.id}`}
+                      style={{
+                        width: "100%", textAlign: "left",
+                        padding: "7px 12px 7px 36px",
+                        borderRadius: 8, border: "none",
+                        cursor: "pointer", fontSize: 13,
+                        fontWeight: isTabActive ? 600 : 400,
+                        background: isTabActive
+                          ? "var(--labs-accent-muted)" : "none",
+                        color: isTabActive
+                          ? "var(--labs-accent)"
+                          : "var(--labs-text-secondary)",
+                        minHeight: 36, display: "block",
+                        transition: "background 150ms, color 150ms",
+                      }}>
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+
+    {/* MOBILE NAV */}
+    <div className="admin-mobile-nav" style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto",
+                    scrollbarWidth: "none", paddingBottom: 8,
+                    marginBottom: 8 }}>
+        {ADMIN_GROUPS.map(group => {
+          const isGroupActive = activeGroup === group.id;
+          return (
+            <button key={group.id}
+              onClick={() => activateGroup(group.id)}
+              data-testid={`admin-group-mobile-${group.id}`}
+              style={{
+                padding: "6px 14px", borderRadius: 999,
+                minHeight: 36, fontSize: 13, flexShrink: 0,
+                fontWeight: isGroupActive ? 600 : 400,
+                background: isGroupActive
+                  ? "var(--labs-accent)"
+                  : "var(--labs-surface-elevated)",
+                color: isGroupActive
+                  ? "var(--labs-bg)" : "var(--labs-text-secondary)",
+                border: "none", cursor: "pointer",
+              }}>
+              {group.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: 6, overflowX: "auto",
+                    scrollbarWidth: "none", paddingBottom: 4 }}>
+        {ADMIN_GROUPS.find(g => g.id === activeGroup)?.tabs.map(tab => {
+          const isTabActive = activeTab === tab.id;
+          return (
+            <button key={tab.id}
+              onClick={() => setActiveTab(tab.id as AdminTab)}
+              data-testid={`labs-admin-tab-${tab.id}`}
+              style={{
+                padding: "5px 12px", borderRadius: 999,
+                minHeight: 32, fontSize: 12, flexShrink: 0,
+                fontWeight: isTabActive ? 600 : 400,
+                background: isTabActive
+                  ? "var(--labs-surface-elevated)" : "none",
+                color: isTabActive
+                  ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                border: isTabActive
+                  ? "1px solid var(--labs-accent)"
+                  : "1px solid var(--labs-border)",
+                cursor: "pointer",
+              }}>
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* INHALT */}
+    <div style={{ flex: 1, minWidth: 0 }}>
+      {activeTab === "participants" && <ParticipantsTab data={data} pid={pid} />}
+      {activeTab === "tastings"     && <TastingsTab data={data} pid={pid} />}
+      {activeTab === "online"       && <OnlineTab />}
+      {activeTab === "activity"     && <ActivityTab />}
+      {activeTab === "sessions"     && <SessionsTab pid={pid} />}
+      {activeTab === "ai"           && <AITab pid={pid} />}
+      {activeTab === "newsletter"   && <NewsletterTab participants={data.participants} pid={pid} />}
+      {activeTab === "changelog"    && <ChangelogTab pid={pid} />}
+      {activeTab === "cleanup"      && <CleanupTab data={data} pid={pid} />}
+      {activeTab === "analytics"    && <AnalyticsTab pid={pid} />}
+      {activeTab === "historical"   && <HistoricalImportTab pid={pid} />}
+      {activeTab === "communities"  && <CommunitiesTab pid={pid} participants={data.participants} />}
+      {activeTab === "settings"     && <SettingsTab pid={pid} />}
+      {activeTab === "feedback"     && <FeedbackTab pid={pid} />}
+      {activeTab === "making-of"    && <MakingOfTab pid={pid} participants={data.participants} />}
+      {activeTab === "aromas"       && <AromasTab pid={pid} />}
+    </div>
+  </div>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSCHLIESSENDE PRÜFUNG — IN BEIDEN FÄLLEN AUSFÜHREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach der Implementierung (egal ob neu oder Korrektur) folgendes prüfen:
+
+  [ ] ADMIN_GROUPS Array mit 5 Gruppen vorhanden
+  [ ] Kein alter TAB_CONFIG Pill-Scroll mehr im JSX
+  [ ] admin-sidebar und admin-mobile-nav className vorhanden
+  [ ] Alle 17 Tab-Inhalte im Inhalt-Block vorhanden
+  [ ] Kein TypeScript-Fehler (tsc --noEmit prüfen)
+  [ ] /labs/admin im Browser erreichbar
+  [ ] /labs/tastings noch erreichbar (keine Regression)
+
+═══════════════════════════════════════════════════════════════════════════════
+ENDE PROMPT
+═══════════════════════════════════════════════════════════════════════════════
