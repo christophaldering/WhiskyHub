@@ -831,7 +831,6 @@ export default function LabsCircle() {
               )}
             </div>
             {(() => {
-              const onlineList = friendList.filter(f => onlineFriendIds.has(f.id as string));
               const offlineRegistered = friendList.filter(f => !onlineFriendIds.has(f.id as string) && f.isRegistered);
               const invitedList = friendList.filter(f => !onlineFriendIds.has(f.id as string) && !f.isRegistered);
               const renderFriendCard = (friend: Record<string, unknown>, i: number, status: "online" | "offline" | "invited") => {
@@ -1009,18 +1008,6 @@ export default function LabsCircle() {
                 };
               return (
                 <>
-                  {onlineList.length > 0 && (
-                    <div className="mb-4">
-                      <p className="labs-section-label flex items-center gap-2 mb-2">
-                        <Wifi className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
-                        <span style={{ color: "var(--labs-success)" }}>Online</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>{onlineList.length}</span>
-                      </p>
-                      <div className="labs-grouped-list">
-                        {onlineList.map((f, i) => renderFriendCard(f, i, "online"))}
-                      </div>
-                    </div>
-                  )}
                   {offlineRegistered.length > 0 && (
                     <div className="mb-4">
                       <p className="labs-section-label flex items-center gap-2 mb-2">
@@ -1029,7 +1016,7 @@ export default function LabsCircle() {
                         <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineRegistered.length}</span>
                       </p>
                       <div className="labs-grouped-list">
-                        {offlineRegistered.map((f, i) => renderFriendCard(f, i + onlineList.length, "offline"))}
+                        {offlineRegistered.map((f, i) => renderFriendCard(f, i, "offline"))}
                       </div>
                     </div>
                   )}
@@ -1041,7 +1028,7 @@ export default function LabsCircle() {
                         <span className="text-[11px] px-1.5 rounded-full" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))", color: "var(--labs-warning, #f59e0b)" }}>{invitedList.length}</span>
                       </p>
                       <div className="labs-grouped-list">
-                        {invitedList.map((f, i) => renderFriendCard(f, i + onlineList.length + offlineRegistered.length, "invited"))}
+                        {invitedList.map((f, i) => renderFriendCard(f, i + offlineRegistered.length, "invited"))}
                       </div>
                     </div>
                   )}
