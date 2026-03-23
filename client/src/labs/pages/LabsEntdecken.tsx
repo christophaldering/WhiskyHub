@@ -109,7 +109,7 @@ export default function LabsEntdecken() {
   ];
 
   return (
-    <div style={{ padding: "2rem 1.25rem 6rem", maxWidth: "440px", margin: "0 auto" }} data-testid="labs-entdecken-page">
+    <div className="px-5 py-6 pb-24 max-w-2xl mx-auto" data-testid="labs-entdecken-page">
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
         {t("discoverHub.title", "Entdecken")}
       </h1>
