@@ -590,6 +590,24 @@ const resources = {
             text: "Host a blind round. Compare scores. Reveal together — and see how differently you taste.",
           },
         },
+        features: {
+          solo: {
+            title: "Solo Tasting",
+            text: "Log your dram and build your personal palate profile — one glass at a time.",
+          },
+          together: {
+            title: "Tasting Together",
+            text: "Join a blind round with friends. Compare scores and discover how differently you taste.",
+          },
+          hosting: {
+            title: "Host a Tasting",
+            text: "Set up a tasting in minutes. Add whiskies, share a code, and guide the reveal.",
+          },
+          sharing: {
+            title: "Bottle Sharing",
+            text: "Split bottles with friends. Track who gets what and keep the fair share flowing.",
+          },
+        },
         reveal: {
           label: "THE REVEAL",
           quote: "The moment everyone reveals their score. Nothing tastes the same after.",
@@ -630,6 +648,13 @@ const resources = {
           regions: "Regions",
           dimensions: "Dimensions",
           tagline: "One benchmark. Built by every tasting.",
+        },
+        liveStats: {
+          tastings: "Tastings hosted",
+          ratings: "Drams rated",
+          participants: "Participants",
+          whiskies: "Whiskies in DB",
+          tagline: "Real numbers. Built by every tasting.",
         },
         cta: {
           title: "Your next tasting starts here.",
@@ -7171,6 +7196,24 @@ const resources = {
             text: "Veranstalte eine Blind-Runde. Vergleiche Bewertungen. Enthüllt gemeinsam — und seht, wie unterschiedlich ihr schmeckt.",
           },
         },
+        features: {
+          solo: {
+            title: "Solo Tasting",
+            text: "Halte deinen Dram fest und baue dein persönliches Geschmacksprofil — Glas für Glas.",
+          },
+          together: {
+            title: "Gemeinsam verkosten",
+            text: "Nimm an einer Blind-Runde mit Freunden teil. Vergleiche Scores und entdecke, wie unterschiedlich ihr schmeckt.",
+          },
+          hosting: {
+            title: "Tasting hosten",
+            text: "Richte ein Tasting in Minuten ein. Whiskies hinzufügen, Code teilen und das Reveal leiten.",
+          },
+          sharing: {
+            title: "Flaschenteilung",
+            text: "Teile Flaschen mit Freunden. Behalte den Überblick, wer was bekommt — fair und transparent.",
+          },
+        },
         reveal: {
           label: "DAS REVEAL",
           quote: "Der Moment, in dem alle ihre Bewertung aufdecken. Danach schmeckt nichts mehr gleich.",
@@ -7211,6 +7254,13 @@ const resources = {
           regions: "Regionen",
           dimensions: "Dimensionen",
           tagline: "Ein Benchmark. Aufgebaut von jedem Tasting.",
+        },
+        liveStats: {
+          tastings: "Tastings durchgeführt",
+          ratings: "Drams verkostet",
+          participants: "Teilnehmende",
+          whiskies: "Whiskies in der DB",
+          tagline: "Echte Zahlen. Aufgebaut von jedem Tasting.",
         },
         cta: {
           title: "Dein nächstes Tasting beginnt hier.",

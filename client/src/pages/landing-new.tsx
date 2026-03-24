@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, useInView } from "framer-motion";
-import { ChevronRight, Wine, Users } from "lucide-react";
+import { ChevronRight, Wine, Users, Mic, SplitSquareVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";
@@ -420,28 +420,42 @@ function HeroSection() {
   );
 }
 
-function TwoWaysSection() {
+function FeaturesSection() {
   const { t } = useTranslation();
 
   const cards = [
     {
       icon: <Wine style={{ width: 28, height: 28 }} />,
-      title: t("landing.twoways.solo.title"),
-      desc: t("landing.twoways.solo.text"),
+      title: t("landing.features.solo.title"),
+      desc: t("landing.features.solo.text"),
       href: "/labs/onboarding",
       testId: "card-solo",
     },
     {
       icon: <Users style={{ width: 28, height: 28 }} />,
-      title: t("landing.twoways.together.title"),
-      desc: t("landing.twoways.together.text"),
+      title: t("landing.features.together.title"),
+      desc: t("landing.features.together.text"),
       href: "/labs/onboarding",
       testId: "card-together",
+    },
+    {
+      icon: <Mic style={{ width: 28, height: 28 }} />,
+      title: t("landing.features.hosting.title"),
+      desc: t("landing.features.hosting.text"),
+      href: "/labs/onboarding",
+      testId: "card-hosting",
+    },
+    {
+      icon: <SplitSquareVertical style={{ width: 28, height: 28 }} />,
+      title: t("landing.features.sharing.title"),
+      desc: t("landing.features.sharing.text"),
+      href: "/labs/onboarding",
+      testId: "card-sharing",
     },
   ];
 
   return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-two-ways">
+    <section style={{ padding: "80px 24px" }} data-testid="section-features">
       <div style={{ ...container, maxWidth: 760 }}>
         <div
           style={{
@@ -540,265 +554,6 @@ function TwoWaysSection() {
   );
 }
 
-const REVEAL_NAME = "Talisker 10";
-const REVEAL_SCORE = "87.4";
-
-function RevealMomentSection() {
-  const { t } = useTranslation();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const [charCount, setCharCount] = useState(0);
-  const [scoreCount, setScoreCount] = useState(0);
-  const [showScore, setShowScore] = useState(false);
-
-  useEffect(() => {
-    if (!inView) return;
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setCharCount(i);
-      if (i >= REVEAL_NAME.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setShowScore(true);
-          let s = 0;
-          const scoreInterval = setInterval(() => {
-            s++;
-            setScoreCount(s);
-            if (s >= REVEAL_SCORE.length) clearInterval(scoreInterval);
-          }, 100);
-        }, 400);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [inView]);
-
-  return (
-    <section
-      ref={ref}
-      style={{
-        padding: "100px 24px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-      data-testid="section-reveal"
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${ACCENT}06 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
-
-      <div style={{ ...container, maxWidth: 700, textAlign: "center", position: "relative", zIndex: 1 }}>
-        <FadeUp>
-          <div
-            style={{
-              background: v.card,
-              border: `1px solid ${v.border}`,
-              borderRadius: 20,
-              padding: "56px 32px",
-              marginBottom: 40,
-            }}
-            data-testid="reveal-card"
-          >
-            <div
-              style={{
-                fontFamily: font.body,
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: v.muted,
-                marginBottom: 14,
-              }}
-            >
-              {t("landing.reveal.label")}
-            </div>
-            <div
-              style={{
-                fontFamily: font.display,
-                fontSize: "clamp(32px, 5vw, 52px)",
-                fontWeight: 400,
-                color: v.text,
-                letterSpacing: "-0.02em",
-                minHeight: "1.2em",
-                marginBottom: 8,
-              }}
-              data-testid="text-reveal"
-            >
-              {inView ? REVEAL_NAME.slice(0, charCount) : ""}
-              {inView && charCount < REVEAL_NAME.length && (
-                <motion.span
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.5, repeat: Infinity }}
-                  style={{ color: ACCENT }}
-                >
-                  |
-                </motion.span>
-              )}
-            </div>
-            {showScore && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                data-testid="text-reveal-score"
-                style={{
-                  fontFamily: font.body,
-                  fontSize: "clamp(40px, 6vw, 64px)",
-                  fontWeight: 700,
-                  color: ACCENT,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {REVEAL_SCORE.slice(0, scoreCount)}
-                {scoreCount < REVEAL_SCORE.length && (
-                  <motion.span
-                    animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    style={{ color: ACCENT }}
-                  >
-                    |
-                  </motion.span>
-                )}
-              </motion.div>
-            )}
-            <motion.div
-              initial={{ width: 0 }}
-              animate={inView ? { width: "50%" } : {}}
-              transition={{ duration: 1.5, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-              style={{
-                height: 1,
-                margin: "24px auto 0",
-                background: `linear-gradient(90deg, transparent, ${ACCENT}35, transparent)`,
-              }}
-            />
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.15}>
-          <p
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(18px, 2.5vw, 26px)",
-              fontWeight: 400,
-              fontStyle: "italic",
-              color: v.textSecondary,
-              lineHeight: 1.5,
-              maxWidth: 500,
-              margin: "0 auto",
-            }}
-          >
-            {t("landing.reveal.quote")}
-          </p>
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-function SelfKnowledgeSection() {
-  const { t } = useTranslation();
-
-  return (
-    <section style={{ padding: "120px 48px", textAlign: "center" }} data-testid="section-selfknowledge">
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <motion.span
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.8, delay: 0 }}
-          style={{
-            display: "block",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.15em",
-            color: ACCENT,
-            marginBottom: 20,
-            fontFamily: font.body,
-          }}
-        >
-          {t("landing.selfknowledge.eyebrow")}
-        </motion.span>
-
-        <div style={{ marginBottom: 40 }}>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(32px, 5vw, 52px)",
-              fontWeight: 400,
-              fontStyle: "italic",
-              color: v.text,
-              lineHeight: 1.2,
-              margin: 0,
-            }}
-          >
-            {t("landing.selfknowledge.title1")}
-          </motion.p>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(32px, 5vw, 52px)",
-              fontWeight: 400,
-              fontStyle: "italic",
-              color: v.text,
-              lineHeight: 1.2,
-              margin: 0,
-            }}
-          >
-            {t("landing.selfknowledge.title2")}
-          </motion.p>
-        </div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          style={{
-            fontFamily: font.body,
-            fontSize: 20,
-            fontWeight: 300,
-            color: v.muted,
-            lineHeight: 1.7,
-            margin: "0 0 24px",
-          }}
-        >
-          {t("landing.selfknowledge.sub")}
-        </motion.p>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.8, delay: 0.55 }}
-          style={{
-            fontFamily: font.body,
-            fontSize: 17,
-            fontWeight: 300,
-            color: v.muted,
-            lineHeight: 1.8,
-            maxWidth: 480,
-            margin: "0 auto",
-          }}
-        >
-          {t("landing.selfknowledge.body")}
-        </motion.p>
-      </div>
-    </section>
-  );
-}
 
 function BenchmarkSection() {
   const { t } = useTranslation();
@@ -1006,17 +761,38 @@ function BenchmarkSection() {
   );
 }
 
-function SocialProofSection() {
+function LiveStatsSection() {
   const { t } = useTranslation();
+  const [platformStats, setPlatformStats] = useState<{
+    totalTastings: number;
+    totalParticipants: number;
+    totalWhiskies: number;
+    totalRatings: number;
+  } | null>(null);
 
-  const stats = [
-    { value: 1580, suffix: "+", label: t("landing.proof.whiskies") },
-    { value: 21, suffix: "", label: t("landing.proof.regions") },
-    { value: 5, suffix: "", label: t("landing.proof.dimensions") },
-  ];
+  useEffect(() => {
+    fetch("/api/platform-stats")
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((data) => setPlatformStats(data))
+      .catch(() => setPlatformStats({ totalTastings: 0, totalParticipants: 0, totalWhiskies: 0, totalRatings: 0 }));
+  }, []);
+
+  const stats = platformStats
+    ? [
+        { value: platformStats.totalTastings, suffix: "+", label: t("landing.liveStats.tastings") },
+        { value: platformStats.totalRatings, suffix: "+", label: t("landing.liveStats.ratings") },
+        { value: platformStats.totalParticipants, suffix: "", label: t("landing.liveStats.participants") },
+        { value: platformStats.totalWhiskies, suffix: "", label: t("landing.liveStats.whiskies") },
+      ]
+    : [
+        { value: 0, suffix: "", label: t("landing.liveStats.tastings") },
+        { value: 0, suffix: "", label: t("landing.liveStats.ratings") },
+        { value: 0, suffix: "", label: t("landing.liveStats.participants") },
+        { value: 0, suffix: "", label: t("landing.liveStats.whiskies") },
+      ];
 
   return (
-    <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-proof">
+    <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-live-stats">
       <div style={container}>
         <FadeUp>
           <div
@@ -1074,7 +850,7 @@ function SocialProofSection() {
               lineHeight: 1.5,
             }}
           >
-            {t("landing.proof.tagline")}
+            {t("landing.liveStats.tagline")}
           </p>
         </FadeUp>
       </div>
@@ -1276,11 +1052,9 @@ export default function LandingNew() {
         }
       `}</style>
       <HeroSection />
-      <TwoWaysSection />
-      <RevealMomentSection />
-      <SelfKnowledgeSection />
+      <FeaturesSection />
+      <LiveStatsSection />
       <BenchmarkSection />
-      <SocialProofSection />
       <CTASection />
       <Footer />
     </div>
