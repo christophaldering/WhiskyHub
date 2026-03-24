@@ -15,6 +15,7 @@ import {
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit" | "trash";
@@ -542,22 +543,16 @@ export default function LabsTasteDrams() {
 
         <div className="flex flex-col gap-3.5">
           <div className="flex items-center gap-3.5">
-            {editImageUrl ? (
-              <div style={{ position: "relative", width: 72, height: 96, borderRadius: 10, overflow: "hidden", border: "1px solid var(--labs-border)", flexShrink: 0 }}>
-                <img src={editImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <button onClick={() => imageInputRef.current?.click()} style={{ position: "absolute", bottom: 4, right: 4, width: 28, height: 28, borderRadius: "50%", background: "var(--labs-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-labs-change-image">
-                  <Camera className="w-3.5 h-3.5" style={{ color: "var(--labs-bg)" }} />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => imageInputRef.current?.click()} disabled={imageUploading} style={{ width: 72, height: 96, borderRadius: 10, border: "2px dashed var(--labs-border)", background: "var(--labs-accent-muted)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0 }} data-testid="button-labs-add-image">
-                <Camera className="w-5 h-5" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
-                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Add Photo</span>
-              </button>
-            )}
-            <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} data-testid="input-labs-image-upload" />
+            <WhiskyImageUpload
+              imageUrl={editImageUrl}
+              onFileSelected={(file) => handleImageUpload(file)}
+              onImageDeleted={() => setEditImageUrl(null)}
+              canDelete={false}
+              variant="labs"
+              size="sm"
+              testIdPrefix="labs-dram-image"
+            />
             <div className="flex-1 flex flex-col gap-2">
-              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint">{t("common.uploadRightsHint")}</span>
               <EditField label="Whisky Name" value={editForm.whiskyName} onChange={(v) => setEditForm({ ...editForm, whiskyName: v, title: v })} testId="input-labs-edit-whiskyName" />
               <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>

@@ -106,6 +106,7 @@ export default function LabsSolo() {
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
   const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
   const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
@@ -235,8 +236,9 @@ export default function LabsSolo() {
     showDraftFlash();
   }, [showDraftFlash]);
 
-  const handleFormSubmit = useCallback((w: CapturedWhisky) => {
+  const handleFormSubmit = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
+    if (imageFile) setSoloImageFile(imageFile);
     setStep("rating");
     saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection });
     showDraftFlash();
@@ -287,6 +289,18 @@ export default function LabsSolo() {
         return;
       }
 
+      if (soloImageFile) {
+        try {
+          const entry = await res.json();
+          if (entry?.id) {
+            const imgFormData = new FormData();
+            imgFormData.append("image", soloImageFile);
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+          }
+        } catch {}
+        setSoloImageFile(null);
+      }
+
       clearSoloDraft();
       hasUnsavedRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["journal"] });
@@ -294,7 +308,7 @@ export default function LabsSolo() {
     } catch {
       setSaveError(true);
     }
-  }, [whisky, participantId, t]);
+  }, [whisky, participantId, t, soloImageFile]);
 
   const handleRetrySave = useCallback(() => {
     if (ratingResult) {

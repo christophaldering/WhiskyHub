@@ -16098,6 +16098,27 @@ Rules:
     }
   });
 
+  app.post("/api/bottle-splits/upload-image", (req: any, res: any, next: any) => {
+    memUpload.single("image")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 2 MB" });
+        if (err.message) return res.status(415).json({ message: err.message });
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      const imageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      res.json({ imageUrl });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/bottle-splits", async (req: Request, res: Response) => {
     try {
       const participantId = req.headers["x-participant-id"] as string;
@@ -16336,6 +16357,12 @@ Rules:
           ppm: b.ppm ?? undefined,
           wbScore: b.wbScore ?? undefined,
           imageUrl: b.imageUrl || undefined,
+          distilledYear: b.distilledYear || undefined,
+          bottledYear: b.bottledYear || undefined,
+          price: b.price ?? undefined,
+          notes: b.notes || undefined,
+          hostSummary: b.hostSummary || undefined,
+          flavorProfile: b.flavorProfile || undefined,
           sortOrder: i,
         });
       }

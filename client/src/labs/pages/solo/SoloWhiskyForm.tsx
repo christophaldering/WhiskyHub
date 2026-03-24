@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check } from "lucide-react";
 import type { CapturedWhisky } from "./SoloCaptureScreen";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 interface Props {
   initial?: Partial<CapturedWhisky>;
   fromAI?: boolean;
-  onSubmit: (w: CapturedWhisky) => void;
+  onSubmit: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBack: () => void;
   onChange?: (w: Partial<CapturedWhisky>) => void;
 }
@@ -19,6 +20,8 @@ export default function SoloWhiskyForm({ initial, fromAI, onSubmit, onBack, onCh
   const [cask, setCask] = useState(initial?.cask || "");
   const [age, setAge] = useState(initial?.age || "");
   const [abv, setAbv] = useState(initial?.abv || "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const mountedRef = useRef(false);
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function SoloWhiskyForm({ initial, fromAI, onSubmit, onBack, onCh
       age: age.trim(),
       abv: abv.trim(),
       fromAI: fromAI || false,
-    });
+    }, imageFile);
   };
 
   return (
@@ -85,6 +88,21 @@ export default function SoloWhiskyForm({ initial, fromAI, onSubmit, onBack, onCh
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-lg)" }}>
+        <WhiskyImageUpload
+          imageUrl={imagePreview}
+          onFileSelected={(file) => {
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+          }}
+          onImageDeleted={() => {
+            setImageFile(null);
+            setImagePreview(null);
+          }}
+          variant="labs"
+          size="sm"
+          testIdPrefix="solo-image"
+        />
+
         <div>
           <span className="labs-section-label">{t("v2.solo.name", "Name")} *</span>
           <input

@@ -968,6 +968,12 @@ export const bottleSplits = pgTable("bottle_splits", {
     ppm?: number | null;
     wbScore?: number | null;
     imageUrl?: string;
+    distilledYear?: string;
+    bottledYear?: string;
+    price?: number | null;
+    notes?: string;
+    hostSummary?: string;
+    flavorProfile?: string;
     totalVolumeMl: number;
     ownerKeepMl: number;
     sampleOptions: Array<{ sizeMl: number; priceEur: number }>;

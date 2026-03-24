@@ -25,6 +25,7 @@ import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
@@ -4327,6 +4328,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [showAddPopover, setShowAddPopover] = useState(false);
   const [showExtendedFields, setShowExtendedFields] = useState(false);
   const [extFields, setExtFields] = useState<Record<string, string>>({});
+  const [extImageFile, setExtImageFile] = useState<File | null>(null);
+  const [extImagePreview, setExtImagePreview] = useState<string | null>(null);
+  const [extAddPending, setExtAddPending] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [wbLookupId, setWbLookupId] = useState("");
@@ -4661,32 +4665,52 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     }
   }, [currentParticipant?.id]);
 
-  const handleAddWhiskyExtended = () => {
+  const handleAddWhiskyExtended = async () => {
     if (!newWhiskyName.trim()) return;
-    addWhiskyMutation.mutate({
-      tastingId,
-      name: newWhiskyName.trim(),
-      distillery: extFields.distillery || "",
-      abv: normalizeAbv(extFields.abv),
-      caskInfluence: extFields.caskType || "",
-      age: extFields.age || "",
-      category: extFields.category || "",
-      country: extFields.country || "",
-      region: extFields.region || "",
-      bottler: extFields.bottler || "",
-      vintage: extFields.vintage || "",
-      distilledYear: extFields.distilledYear || "",
-      bottledYear: extFields.bottledYear || "",
-      whiskybaseId: extFields.whiskybaseId || "",
-      wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
-      price: normalizePrice(extFields.price),
-      peatLevel: extFields.peatLevel || "",
-      ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
-      hostSummary: extFields.hostSummary || "",
-      notes: extFields.notes || "",
-      flavorProfile: extFields.flavorProfile === "auto" || !extFields.flavorProfile ? null : extFields.flavorProfile,
-      sortOrder: (whiskies?.length || 0) + 1,
-    });
+    setExtAddPending(true);
+    try {
+      const created = await whiskyApi.create({
+        tastingId,
+        name: newWhiskyName.trim(),
+        distillery: extFields.distillery || "",
+        abv: normalizeAbv(extFields.abv),
+        caskInfluence: extFields.caskType || "",
+        age: extFields.age || "",
+        category: extFields.category || "",
+        country: extFields.country || "",
+        region: extFields.region || "",
+        bottler: extFields.bottler || "",
+        vintage: extFields.vintage || "",
+        distilledYear: extFields.distilledYear || "",
+        bottledYear: extFields.bottledYear || "",
+        whiskybaseId: extFields.whiskybaseId || "",
+        wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
+        price: normalizePrice(extFields.price),
+        peatLevel: extFields.peatLevel || "",
+        ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
+        hostSummary: extFields.hostSummary || "",
+        notes: extFields.notes || "",
+        flavorProfile: extFields.flavorProfile === "auto" || !extFields.flavorProfile ? null : extFields.flavorProfile,
+        sortOrder: (whiskies?.length || 0) + 1,
+      });
+      if (extImageFile && created?.id) {
+        try { await whiskyApi.uploadImage(created.id, extImageFile); } catch {}
+      }
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setNewWhiskyName("");
+      setExtFields({});
+      setExtImageFile(null);
+      setExtImagePreview(null);
+      setShowExtendedFields(false);
+      setShowAddWhisky(false);
+      setWbLookupId("");
+      setWbLookupResult("");
+      toast({ title: t("labs.whisky.added", "Whisky added") });
+    } catch (e: any) {
+      toast({ title: t("labs.whisky.addFailed", "Failed to add whisky"), description: e.message, variant: "destructive" });
+    } finally {
+      setExtAddPending(false);
+    }
   };
 
   const handleSaveEditWhisky = (whiskyId: string) => {
@@ -6117,10 +6141,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <button
                 className="labs-btn-primary px-4"
                 onClick={handleAddWhisky}
-                disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
+                disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending || extAddPending}
                 data-testid="labs-host-whisky-add-btn"
               >
-                {addWhiskyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+                {(addWhiskyMutation.isPending || extAddPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
               </button>
             </div>
             {wbLookupResult && wbLookupResult !== "ok" && (
@@ -6150,6 +6174,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 </select>
                 <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
                 <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
+                <div className="col-span-2">
+                  <WhiskyImageUpload
+                    imageUrl={extImagePreview}
+                    onFileSelected={(file) => {
+                      setExtImageFile(file);
+                      setExtImagePreview(URL.createObjectURL(file));
+                    }}
+                    onImageDeleted={() => {
+                      setExtImageFile(null);
+                      setExtImagePreview(null);
+                    }}
+                    variant="labs"
+                    size="sm"
+                    testIdPrefix="labs-ext-image"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -6273,6 +6313,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
                       <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
                     </div>
+                    <WhiskyImageUpload
+                      whiskyId={w.id}
+                      tastingId={tastingId}
+                      imageUrl={w.imageUrl}
+                      variant="labs"
+                      size="sm"
+                      testIdPrefix={`labs-edit-image-${w.id}`}
+                    />
                     <div className="flex gap-2 justify-end">
                       <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>Cancel</button>
                       <button className="labs-btn-primary text-sm" onClick={() => handleSaveEditWhisky(w.id)} disabled={updateWhiskyMutation.isPending} data-testid="labs-edit-whisky-save">

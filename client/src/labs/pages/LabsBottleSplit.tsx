@@ -3,10 +3,11 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import {
-  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound
+  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound, Camera, X
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 type WizardStep = "bottles" | "pricing" | "visibility" | "review";
 type Visibility = "public" | "private" | "group";
@@ -24,6 +25,16 @@ interface BottleEntry {
   whiskybaseId?: string;
   bottler?: string;
   vintage?: string;
+  ppm?: number | null;
+  distilledYear?: string;
+  bottledYear?: string;
+  price?: number | null;
+  wbScore?: number | null;
+  notes?: string;
+  hostSummary?: string;
+  flavorProfile?: string;
+  imageFile?: File | null;
+  imagePreview?: string;
   totalVolumeMl: number;
   ownerKeepMl: number;
   sampleOptions: Array<{ sizeMl: number; priceEur: number }>;
@@ -148,6 +159,10 @@ export default function LabsBottleSplit() {
             region: b.region, category: b.category, country: b.country,
             caskInfluence: b.caskInfluence, peatLevel: b.peatLevel,
             whiskybaseId: b.whiskybaseId, bottler: b.bottler, vintage: b.vintage,
+            ppm: b.ppm, distilledYear: b.distilledYear, bottledYear: b.bottledYear,
+            price: b.price, wbScore: b.wbScore, notes: b.notes,
+            hostSummary: b.hostSummary, flavorProfile: b.flavorProfile,
+            imageUrl: b.imagePreview && b.imagePreview.startsWith("http") ? b.imagePreview : undefined,
             totalVolumeMl: b.totalVolumeMl, ownerKeepMl: b.ownerKeepMl,
             sampleOptions: b.sampleOptions,
           })),
@@ -262,8 +277,54 @@ export default function LabsBottleSplit() {
                     <input data-testid={`input-split-bottle-category-${i}`} value={b.category || ""} onChange={e => updateBottle(i, "category", e.target.value)} placeholder="Category" className="labs-input" />
                     <input data-testid={`input-split-bottle-country-${i}`} value={b.country || ""} onChange={e => updateBottle(i, "country", e.target.value)} placeholder="Country" className="labs-input" />
                     <input data-testid={`input-split-bottle-peat-${i}`} value={b.peatLevel || ""} onChange={e => updateBottle(i, "peatLevel", e.target.value)} placeholder="Peat Level" className="labs-input" />
+                    <input data-testid={`input-split-bottle-ppm-${i}`} type="number" step="0.1" value={b.ppm ?? ""} onChange={e => updateBottle(i, "ppm", e.target.value ? parseFloat(e.target.value) : null)} placeholder="PPM" className="labs-input" />
                     <input data-testid={`input-split-bottle-bottler-${i}`} value={b.bottler || ""} onChange={e => updateBottle(i, "bottler", e.target.value)} placeholder="Bottler" className="labs-input" />
+                    <input data-testid={`input-split-bottle-distilled-${i}`} value={b.distilledYear || ""} onChange={e => updateBottle(i, "distilledYear", e.target.value)} placeholder="Distilled Year" className="labs-input" />
+                    <input data-testid={`input-split-bottle-bottled-${i}`} value={b.bottledYear || ""} onChange={e => updateBottle(i, "bottledYear", e.target.value)} placeholder="Bottled Year" className="labs-input" />
+                    <input data-testid={`input-split-bottle-price-${i}`} type="number" step="0.01" value={b.price ?? ""} onChange={e => updateBottle(i, "price", e.target.value ? parseFloat(e.target.value) : null)} placeholder="Price (EUR)" className="labs-input" />
+                    <input data-testid={`input-split-bottle-wbscore-${i}`} type="number" step="0.1" value={b.wbScore ?? ""} onChange={e => updateBottle(i, "wbScore", e.target.value ? parseFloat(e.target.value) : null)} placeholder="WB Score" className="labs-input" />
                     <input data-testid={`input-split-bottle-whiskybase-${i}`} value={b.whiskybaseId || ""} onChange={e => updateBottle(i, "whiskybaseId", e.target.value)} placeholder="Whiskybase ID" className="labs-input" />
+                    <textarea data-testid={`input-split-bottle-notes-${i}`} value={b.notes || ""} onChange={e => updateBottle(i, "notes", e.target.value)} placeholder="Notes" className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
+                    <textarea data-testid={`input-split-bottle-summary-${i}`} value={b.hostSummary || ""} onChange={e => updateBottle(i, "hostSummary", e.target.value)} placeholder="Host Summary" className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
+                    <select data-testid={`input-split-bottle-flavor-${i}`} value={b.flavorProfile || ""} onChange={e => updateBottle(i, "flavorProfile", e.target.value)} className="labs-input" style={{ gridColumn: "1 / -1" }}>
+                      <option value="">Flavor Profile (auto)</option>
+                      <option value="smoky-peaty">Smoky & Peaty</option>
+                      <option value="fruity-sweet">Fruity & Sweet</option>
+                      <option value="rich-sherried">Rich & Sherried</option>
+                      <option value="light-floral">Light & Floral</option>
+                      <option value="spicy-complex">Spicy & Complex</option>
+                      <option value="maritime-coastal">Maritime & Coastal</option>
+                    </select>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <WhiskyImageUpload
+                        imageUrl={b.imagePreview || null}
+                        onFileSelected={async (file) => {
+                          const preview = URL.createObjectURL(file);
+                          const u = [...bottles];
+                          u[i] = { ...u[i], imageFile: file, imagePreview: preview };
+                          setBottles(u);
+                          try {
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            const res = await fetch("/api/bottle-splits/upload-image", { method: "POST", body: formData, headers: { "x-participant-id": pid } });
+                            if (res.ok) {
+                              const { imageUrl } = await res.json();
+                              const u2 = [...bottles];
+                              u2[i] = { ...u2[i], imagePreview: imageUrl };
+                              setBottles(u2);
+                            }
+                          } catch {}
+                        }}
+                        onImageDeleted={() => {
+                          const u = [...bottles];
+                          u[i] = { ...u[i], imageFile: null, imagePreview: undefined };
+                          setBottles(u);
+                        }}
+                        variant="labs"
+                        size="sm"
+                        testIdPrefix={`split-bottle-image-${i}`}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
