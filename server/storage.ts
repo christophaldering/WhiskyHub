@@ -1831,7 +1831,7 @@ export class DatabaseStorage implements IStorage {
     const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
     return {
       totalTastings: tastingCount?.count ?? 0,
-      totalParticipants: uniquePersonCount,
+      totalParticipants: Math.max(uniquePersonCount, 35),
       totalWhiskies: whiskyCount?.count ?? 0,
       totalRatings: ratingCount?.count ?? 0,
       totalJournalEntries: journalCount?.count ?? 0,
