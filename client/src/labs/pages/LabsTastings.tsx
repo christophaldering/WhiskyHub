@@ -257,7 +257,7 @@ export default function LabsTastings() {
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w45" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w70 labs-skeleton--mt8" />
         </div>
-      ) : filtered.length === 0 && invitations.length === 0 ? (
+      ) : filtered.length === 0 && invitations.length === 0 && (searchQuery || timeFilter) ? (
         <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
           <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
             <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
@@ -273,15 +273,49 @@ export default function LabsTastings() {
           <p className="labs-empty-sub">
             {searchQuery
               ? "Versuche einen anderen Suchbegriff."
-              : timeFilter
-              ? `Keine ${timeFilter === "live" ? "Live" : "geplanten"} Tastings gefunden.`
-              : "Starte ein eigenes Tasting oder tritt einem bei — allein oder mit Freunden."}
+              : `Keine ${timeFilter === "live" ? "Live" : "geplanten"} Tastings gefunden.`}
           </p>
-          {!searchQuery && !timeFilter && (
-            <button className="labs-empty-action" onClick={() => navigate("/labs/host")} data-testid="button-tastings-create">
-              Tasting starten
-            </button>
-          )}
+        </div>
+      ) : filtered.length === 0 && invitations.length === 0 ? (
+        <div className="labs-mode-guide labs-fade-in" data-testid="labs-tastings-empty">
+          <div className="labs-mode-guide-grid">
+            <div className="labs-mode-guide-item" data-testid="guide-join">
+              <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
+                <Users className="w-4 h-4 labs-icon-accent" />
+              </div>
+              <div className="labs-mode-guide-text">
+                <span className="labs-mode-guide-label">Join</span>
+                <span className="labs-mode-guide-desc">Tritt einem Tasting bei, das jemand für dich erstellt hat.</span>
+              </div>
+            </div>
+            <div className="labs-mode-guide-item" data-testid="guide-solo">
+              <div className="labs-mode-guide-icon labs-action-bar-icon--surface">
+                <PenLine className="w-4 h-4 labs-icon-text-secondary" />
+              </div>
+              <div className="labs-mode-guide-text">
+                <span className="labs-mode-guide-label">Solo</span>
+                <span className="labs-mode-guide-desc">Trainiere deinen Gaumen allein — in deinem eigenen Tempo.</span>
+              </div>
+            </div>
+            <div className="labs-mode-guide-item" data-testid="guide-host">
+              <div className="labs-mode-guide-icon labs-action-bar-icon--success">
+                <Crown className="w-4 h-4 labs-icon-success" />
+              </div>
+              <div className="labs-mode-guide-text">
+                <span className="labs-mode-guide-label">Host</span>
+                <span className="labs-mode-guide-desc">Lade Freunde zu einer Blindverkostung ein und vergleicht eure Bewertungen.</span>
+              </div>
+            </div>
+            <div className="labs-mode-guide-item" data-testid="guide-share">
+              <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
+                <Share2 className="w-4 h-4 labs-icon-accent" />
+              </div>
+              <div className="labs-mode-guide-text">
+                <span className="labs-mode-guide-label">Share</span>
+                <span className="labs-mode-guide-desc">Organisiere ein Bottle Sharing — jeder bringt etwas mit.</span>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>
