@@ -755,6 +755,9 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
   useEffect(() => {
     if (needsAuthRedirect) {
+      try {
+        sessionStorage.setItem("returnTo", location);
+      } catch {}
       window.location.replace("/labs/home");
       return;
     }

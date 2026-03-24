@@ -6,7 +6,7 @@ import { ChevronRight, ChevronLeft, Share2 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
 import { tastingHistoryApi } from "@/lib/api";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import i18n from "i18next";
 
 function getTimeGreetingKey(): string {
@@ -155,9 +155,20 @@ function HubPage() {
 }
 
 export default function LabsHome() {
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, openAuthDialog } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!currentParticipant) {
+      try {
+        const returnTo = sessionStorage.getItem("returnTo");
+        if (returnTo) {
+          openAuthDialog("signin");
+        }
+      } catch {}
+    }
+  }, [currentParticipant, openAuthDialog]);
 
   if (currentParticipant) {
     return <HubPage />;

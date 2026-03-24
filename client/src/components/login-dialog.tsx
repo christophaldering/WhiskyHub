@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { setSessionAndSync } from "@/lib/session";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { useLocation } from "wouter";
 
 const scrollInputIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
   const el = e.currentTarget;
@@ -26,6 +27,19 @@ interface LoginDialogProps {
 export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const { t } = useTranslation();
   const { authDialogTab } = useAppStore();
+  const [, navigate] = useLocation();
+
+  const handleLoginSuccess = useCallback(() => {
+    let returnTo: string | null = null;
+    try {
+      returnTo = sessionStorage.getItem("returnTo");
+      sessionStorage.removeItem("returnTo");
+    } catch {}
+    onClose();
+    if (returnTo && returnTo.startsWith("/labs/")) {
+      navigate(returnTo);
+    }
+  }, [onClose, navigate]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
@@ -102,7 +116,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setSessionAndSync("log", participant.name, participant.id, participant.role, participant.photoUrl);
           try { localStorage.setItem("casksense_participant_id", participant.id); } catch {}
           window.dispatchEvent(new Event("session-change"));
-          onClose();
+          handleLoginSuccess();
         }
       } catch (e: any) {
         if (e.code === "EMAIL_VERIFICATION_EXPIRED" || (e.message && e.message.includes("nicht rechtzeitig bestätigt"))) {
@@ -146,7 +160,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setSessionAndSync("log", participant.name, participant.id, participant.role, participant.photoUrl);
           try { localStorage.setItem("casksense_participant_id", participant.id); } catch {}
           window.dispatchEvent(new Event("session-change"));
-          onClose();
+          handleLoginSuccess();
         }
       } catch (e: any) {
         setError(e.message || "Failed to join");
@@ -171,7 +185,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       window.dispatchEvent(new Event("session-change"));
       setVerifyMode(false);
       setPendingParticipant(null);
-      onClose();
+      handleLoginSuccess();
     } catch (e: any) {
       setVerifyError(e.message || t('verify.invalidCode'));
     } finally {
@@ -348,7 +362,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         window.dispatchEvent(new Event("session-change"));
         setConsentGate(false);
         setPendingLoginParticipant(null);
-        onClose();
+        handleLoginSuccess();
       } catch (e: any) {
         setError(e.message || "Failed to save consent");
       } finally {
