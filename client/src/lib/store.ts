@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { setTheme as setCSTheme } from "@/lib/themeVars";
 
 export type SessionStatus = 'draft' | 'open' | 'closed' | 'reveal' | 'archived';
 export type RevealAct = 'act1' | 'act2' | 'act3' | 'act4';
@@ -61,6 +62,7 @@ function applyTheme(theme: Theme) {
   } else {
     root.classList.remove('light');
   }
+  setCSTheme(theme === "dark" ? "dark-warm" : "light-warm");
 }
 
 export const useAppStore = create<AppState>()(
