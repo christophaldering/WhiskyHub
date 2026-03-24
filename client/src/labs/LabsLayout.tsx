@@ -622,6 +622,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/labs/tastings",
   "/labs/taste",
   "/labs/circle",
+  "/labs/history",
 ];
 
 function isPublicLabsRoute(path: string): boolean {

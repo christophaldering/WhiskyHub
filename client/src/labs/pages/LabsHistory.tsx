@@ -11,7 +11,7 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import {
   Search, Wine, Trophy, Calendar, BarChart3,
   ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
-  Lock, LogIn, MapPin, Flame, Droplets, TrendingUp,
+  LogIn, MapPin, Flame, Droplets, TrendingUp,
   Loader2, UserCheck, Users,
 } from "lucide-react";
 import {
@@ -70,27 +70,12 @@ function LabsHistoryList() {
   const lang = i18n.language;
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("number-desc");
-  const session = useSession();
   const pid = getParticipantId();
   const queryClient = useQueryClient();
-
-  const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({
-    queryKey: ["my-communities", pid],
-    queryFn: async () => {
-      if (!pid) return { communities: [] };
-      const res = await fetch("/api/communities/mine", { headers: { "x-participant-id": pid } });
-      if (!res.ok) return { communities: [] };
-      return res.json();
-    },
-    enabled: !!pid,
-  });
-
-  const isMember = session.role === "admin" || (myCommunities?.communities?.length ?? 0) > 0;
 
   const { data: tastingsData, isLoading, isError, refetch } = useQuery<{ tastings: EnrichedTasting[]; total: number }>({
     queryKey: ["historical-tastings-enriched", search],
     queryFn: () => fetchJSON(`/api/historical/tastings?limit=200&enriched=true&search=${encodeURIComponent(search)}`, pid || undefined),
-    enabled: isMember,
   });
 
   const { data: analytics } = useQuery<AnalyticsData>({
@@ -204,20 +189,7 @@ function LabsHistoryList() {
         </div>
       </Link>
 
-      {!isMember && !commLoading && analytics && (
-        <div className="labs-card" style={{ padding: "20px 16px", marginBottom: 16, textAlign: "center" }}>
-          <Lock style={{ width: 24, height: 24, color: "var(--labs-text-muted)", margin: "0 auto 8px", display: "block" }} strokeWidth={1.5} />
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>
-            {t("m2.historical.memberListTitle", "Tasting List — Community Members Only")}
-          </p>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-            {t("m2.historical.memberListDesc", "Join the community to browse individual tasting details and full archives.")}
-          </p>
-        </div>
-      )}
-
-      {isMember && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: "1 1 200px", minWidth: 0 }}>
             <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)" }} />
             <input
@@ -243,7 +215,7 @@ function LabsHistoryList() {
             </select>
           </div>
         </div>
-      )}
+      </div>
 
       {isLoading && (
         <div style={{ padding: "16px 0" }}>
@@ -260,7 +232,7 @@ function LabsHistoryList() {
         </div>
       )}
 
-      {!isLoading && !isError && isMember && sorted.length === 0 && (
+      {!isLoading && !isError && sorted.length === 0 && (
         <div className="labs-card" style={{ textAlign: "center", padding: "48px 16px" }}>
           <Archive style={{ width: 40, height: 40, color: "var(--labs-text-muted)", margin: "0 auto 12px", display: "block" }} strokeWidth={1.2} />
           <p style={{ color: "var(--labs-text)", fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{t("m2.historical.emptyTitle", "No historical tastings found")}</p>
@@ -270,7 +242,7 @@ function LabsHistoryList() {
         </div>
       )}
 
-      {!isLoading && !isError && isMember && sorted.length > 0 && (
+      {!isLoading && !isError && sorted.length > 0 && (
         <>
           <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8 }}>{sorted.length} tastings</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
