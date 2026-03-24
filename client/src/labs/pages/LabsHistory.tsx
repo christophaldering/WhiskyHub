@@ -374,7 +374,13 @@ function LabsHistoryInsights() {
   }
 
   const topWhiskies = analytics.topWhiskies.slice(0, 20);
-  const regionData = Object.entries(analytics.regionBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, value]) => ({ name, value }));
+  const normalizedRegionBreakdown: Record<string, number> = {};
+  for (const [name, value] of Object.entries(analytics.regionBreakdown)) {
+    const normalized = name.replace(/lands$/i, "land").replace(/islands$/i, "island").replace(/^the\s+/i, "").trim();
+    const key = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    normalizedRegionBreakdown[key] = (normalizedRegionBreakdown[key] ?? 0) + value;
+  }
+  const regionData = Object.entries(normalizedRegionBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, value]) => ({ name, value }));
   const caskData = Object.entries(analytics.caskBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name, value }));
   const smokyTotal = analytics.smokyBreakdown.smoky + analytics.smokyBreakdown.nonSmoky + analytics.smokyBreakdown.unknown;
   const smokyPieData = [
@@ -389,7 +395,7 @@ function LabsHistoryInsights() {
     ? Math.round(topWhiskies.reduce((sum, w) => sum + (w.normalizedTotal ?? (w.totalScore ?? 0) * 10), 0) / topWhiskies.length).toString()
     : "\u2014";
 
-  const topRegions = Object.entries(analytics.regionBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const topRegions = Object.entries(normalizedRegionBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const topCasks = Object.entries(analytics.caskBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   const profileData = [
@@ -454,7 +460,7 @@ function LabsHistoryInsights() {
       <SectionHeader icon={MapPin} title="Best-Performing Regions" />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-regions">
         {regionData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={Math.max(regionData.length * 32, 120)}>
             <BarChart data={regionData} layout="vertical" margin={{ left: 80, right: 16, top: 4, bottom: 4 }}>
               <XAxis type="number" tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="name" tick={{ fill: "var(--labs-text)", fontSize: 12 }} axisLine={false} tickLine={false} width={76} />
