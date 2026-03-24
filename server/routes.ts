@@ -15114,22 +15114,6 @@ Rules:
         }, overallScores, noseScores, tasteScores, finishScores, true);
       }
 
-      const curatedEntries = await storage.getCuratedDatabaseEntries();
-      for (const je of curatedEntries) {
-        if (!je.whiskyName) continue;
-        const key = `${je.whiskyName.toLowerCase()}::${(je.distillery || "").toLowerCase()}`;
-        const scores = je.personalScore != null && je.personalScore > 0 ? [je.personalScore] : [];
-        const jePrice = je.price != null ? parseFloat(String(je.price)) : null;
-        mergeIntoMap(key, {
-          id: je.id, name: je.whiskyName, distillery: je.distillery, region: je.region,
-          country: je.country, category: je.category, age: je.age, abv: je.abv,
-          caskType: je.caskType, imageUrl: je.imageUrl,
-          peatLevel: je.peatLevel, wbScore: je.wbScore,
-          price: jePrice != null && !isNaN(jePrice) ? jePrice : null,
-          vintage: je.vintage,
-        }, scores, [], [], [], false);
-      }
-
       const allCollectionItems = await storage.getAllCollectionItems();
       for (const ci of allCollectionItems) {
         if (!ci.name) continue;

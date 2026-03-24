@@ -1828,20 +1828,48 @@ export class DatabaseStorage implements IStorage {
     const HISTORIC_WHISKIES_PER_TASTING = 12;
     const HISTORIC_TASTINGS_OFFSET = HISTORIC_TASTINGS;
     const HISTORIC_PARTICIPANTS_OFFSET = HISTORIC_PARTICIPANTS_TOTAL;
-    const HISTORIC_WHISKIES_OFFSET = HISTORIC_TASTINGS * HISTORIC_WHISKIES_PER_TASTING;
     const HISTORIC_RATINGS_OFFSET = HISTORIC_PARTICIPANTS_PER_TASTING_ACTUAL * HISTORIC_WHISKIES_PER_TASTING * HISTORIC_TASTINGS;
 
     const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings).where(ne(tastings.status, "deleted"));
     const allParticipantRecords = await db.select({ id: participants.id, name: participants.name, pin: participants.pin }).from(participants);
     const uniquePersonCount = await deduplicateParticipantList(allParticipantRecords);
-    const [whiskyCount] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskies);
     const [ratingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(ratings);
     const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(isNull(journalEntries.deletedAt));
     const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
+
+    const ratedWhiskyKeys = await db.select({
+      name: sql<string>`lower(${whiskies.name})`,
+      distillery: sql<string>`lower(coalesce(${whiskies.distillery}, ''))`,
+    }).from(ratings)
+      .innerJoin(whiskies, sql`${ratings.whiskyId} = ${whiskies.id}`)
+      .groupBy(sql`lower(${whiskies.name})`, sql`lower(coalesce(${whiskies.distillery}, ''))`);
+
+    const benchmarkKeys = new Set<string>(
+      ratedWhiskyKeys.map(r => `${r.name}::${r.distillery}`)
+    );
+
+    try {
+      const historicalWhiskyKeys = await db.select({
+        name: sql<string>`lower(coalesce(${historicalTastingEntries.whiskyNameRaw}, ''))`,
+        distillery: sql<string>`lower(coalesce(${historicalTastingEntries.distilleryRaw}, ''))`,
+      }).from(historicalTastingEntries)
+        .where(sql`(${historicalTastingEntries.normalizedTotal} IS NOT NULL OR ${historicalTastingEntries.totalScore} IS NOT NULL) AND (${historicalTastingEntries.whiskyNameRaw} IS NOT NULL AND ${historicalTastingEntries.whiskyNameRaw} != '')`)
+        .groupBy(
+          sql`lower(coalesce(${historicalTastingEntries.whiskyNameRaw}, ''))`,
+          sql`lower(coalesce(${historicalTastingEntries.distilleryRaw}, ''))`
+        );
+
+      for (const h of historicalWhiskyKeys) {
+        benchmarkKeys.add(`${h.name}::${h.distillery}`);
+      }
+    } catch (histErr) {
+      console.error("getPlatformStats: failed to load historical entries for benchmark count", histErr);
+    }
+
     return {
       totalTastings: (tastingCount?.count ?? 0) + HISTORIC_TASTINGS_OFFSET,
       totalParticipants: uniquePersonCount + HISTORIC_PARTICIPANTS_OFFSET,
-      totalWhiskies: (whiskyCount?.count ?? 0) + HISTORIC_WHISKIES_OFFSET,
+      totalWhiskies: benchmarkKeys.size,
       totalRatings: (ratingCount?.count ?? 0) + HISTORIC_RATINGS_OFFSET,
       totalJournalEntries: journalCount?.count ?? 0,
       countriesRepresented: countryResult.length,

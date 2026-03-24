@@ -671,7 +671,7 @@ const resources = {
           tastings: "Tastings hosted",
           ratings: "Drams rated",
           participants: "Participants",
-          whiskies: "Whiskies in DB",
+          whiskies: "Whiskies benchmarked",
           tagline: "Real numbers. Built by every tasting.",
         },
         cta: {
@@ -7279,7 +7279,7 @@ const resources = {
           tastings: "Tastings durchgeführt",
           ratings: "Drams verkostet",
           participants: "Teilnehmende",
-          whiskies: "Whiskies in der DB",
+          whiskies: "Whiskys im Benchmark",
           tagline: "Echte Zahlen. Aufgebaut von jedem Tasting.",
         },
         cta: {
