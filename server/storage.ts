@@ -1823,12 +1823,13 @@ export class DatabaseStorage implements IStorage {
 
   async getPlatformStats() {
     const HISTORIC_TASTINGS = 32;
-    const HISTORIC_PARTICIPANTS_PER_TASTING = 35;
+    const HISTORIC_PARTICIPANTS_TOTAL = 35;
+    const HISTORIC_PARTICIPANTS_PER_TASTING_ACTUAL = 15;
     const HISTORIC_WHISKIES_PER_TASTING = 12;
     const HISTORIC_TASTINGS_OFFSET = HISTORIC_TASTINGS;
-    const HISTORIC_PARTICIPANTS_OFFSET = HISTORIC_TASTINGS * HISTORIC_PARTICIPANTS_PER_TASTING;
+    const HISTORIC_PARTICIPANTS_OFFSET = HISTORIC_PARTICIPANTS_TOTAL;
     const HISTORIC_WHISKIES_OFFSET = HISTORIC_TASTINGS * HISTORIC_WHISKIES_PER_TASTING;
-    const HISTORIC_RATINGS_OFFSET = HISTORIC_TASTINGS * HISTORIC_PARTICIPANTS_PER_TASTING * HISTORIC_WHISKIES_PER_TASTING;
+    const HISTORIC_RATINGS_OFFSET = HISTORIC_PARTICIPANTS_PER_TASTING_ACTUAL * HISTORIC_WHISKIES_PER_TASTING * HISTORIC_TASTINGS;
 
     const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings).where(ne(tastings.status, "deleted"));
     const allParticipantRecords = await db.select({ id: participants.id, name: participants.name, pin: participants.pin }).from(participants);
