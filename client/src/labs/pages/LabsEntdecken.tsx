@@ -186,15 +186,6 @@ export default function LabsEntdecken() {
 
   const prevWhiskyCountRef = useRef<number | null>(null);
   const [countAnimating, setCountAnimating] = useState(false);
-  useEffect(() => {
-    if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
-      setCountAnimating(true);
-      const timer = setTimeout(() => setCountAnimating(false), 300);
-      prevWhiskyCountRef.current = whiskies.length;
-      return () => clearTimeout(timer);
-    }
-    prevWhiskyCountRef.current = whiskies.length;
-  }, [whiskies.length]);
 
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number>(0);
@@ -284,6 +275,16 @@ export default function LabsEntdecken() {
     });
     return result;
   }, [whiskiesRaw, filters, activeFilterCount, sort, sortDirection]);
+
+  useEffect(() => {
+    if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
+      setCountAnimating(true);
+      const timer = setTimeout(() => setCountAnimating(false), 300);
+      prevWhiskyCountRef.current = whiskies.length;
+      return () => clearTimeout(timer);
+    }
+    prevWhiskyCountRef.current = whiskies.length;
+  }, [whiskies.length]);
 
   const { data: tastingsData, isLoading: tastingsLoading } = useQuery({
     queryKey: ["discovery-tastings", pid],

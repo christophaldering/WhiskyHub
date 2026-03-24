@@ -287,8 +287,10 @@ function useFriendOnlineNotifications(): number {
 
     const check = async () => {
       try {
+        const headers = pidHeaders();
+        if (!headers["x-participant-id"]) return;
         const res = await fetch(`/api/participants/${pid}/friends/online`, {
-          headers: pidHeaders(),
+          headers,
         });
         if (cancelled) return;
         if (!res.ok) {
