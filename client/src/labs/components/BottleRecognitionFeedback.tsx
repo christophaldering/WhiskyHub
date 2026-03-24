@@ -215,6 +215,15 @@ export default function BottleRecognitionFeedback({ result, participantId, onCon
         {fields.map(f => {
           const val = String(result[f.key] || "");
           if (!val) return null;
+          const isName = f.key === "whiskyName";
+          if (isName) {
+            return (
+              <div key={f.key} className="flex flex-col py-1">
+                <span className="text-[13px]" style={{ color: "var(--labs-text-secondary)" }}>{t(f.labelKey, f.fallback)}</span>
+                <span data-testid={`text-recognition-${f.key}`} className="text-sm font-medium" style={{ color: "var(--labs-text)", marginTop: 2 }}>{val}</span>
+              </div>
+            );
+          }
           return (
             <div key={f.key} className="flex justify-between py-1">
               <span className="text-[13px]" style={{ color: "var(--labs-text-secondary)" }}>{t(f.labelKey, f.fallback)}</span>
