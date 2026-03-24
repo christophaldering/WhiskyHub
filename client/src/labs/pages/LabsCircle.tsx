@@ -564,7 +564,7 @@ export default function LabsCircle() {
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-1.5 mb-5">
+        <div className="labs-auto-grid mb-5" style={{ "--grid-min": "70px", gap: "0.375rem" } as React.CSSProperties}>
           {categories.map((cat) => {
             const isActive = lbCategory === cat.key;
             return (

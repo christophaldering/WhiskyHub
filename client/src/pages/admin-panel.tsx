@@ -872,7 +872,7 @@ export default function AdminPanel() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
         <Card data-testid="stat-total-participants">
           <CardContent className="p-4 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
@@ -1609,7 +1609,7 @@ export default function AdminPanel() {
           ) : analyticsData ? (
             <div className="space-y-6" data-testid="analytics-content">
               {/* Summary Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="analytics-summary">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-testid="analytics-summary">
                 <Card>
                   <CardContent className="p-4 text-center">
                     <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />

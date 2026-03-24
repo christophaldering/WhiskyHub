@@ -223,7 +223,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
   const collectionThemeStep = (
     <div key="collection-theme" className="space-y-4">
       <p className="text-sm text-muted-foreground">{t("curation.collectionThemeDesc")}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {COLLECTION_THEME_KEYS.map(key => (
           <Button
             key={key}
@@ -333,7 +333,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
     sourceStep,
     <div key="theme" className="space-y-4">
       <p className="text-sm text-muted-foreground">{t("curation.step1Desc")}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {THEME_KEYS.map(key => (
           <Button
             key={key}
@@ -392,7 +392,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("curation.flightSizeLabel")}</Label>
           <Select value={config.flightSize} onValueChange={(v) => setConfig(p => ({ ...p, flightSize: v }))}>
@@ -609,7 +609,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("curation.flightSizeLabel")}</Label>
           <Select value={config.flightSize} onValueChange={(v) => setConfig(p => ({ ...p, flightSize: v }))}>

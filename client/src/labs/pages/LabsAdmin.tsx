@@ -1080,7 +1080,7 @@ function SessionsTab({ pid }: { pid: string }) {
           <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{userData?.name || "User"}</span>
           {userData?.email && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{userData.email}</span>}
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="labs-auto-grid mb-4" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
           <div className="labs-card p-3 text-center">
             <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{userData?.sessions || 0}</div>
             <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Sessions</div>
@@ -1157,7 +1157,7 @@ function SessionsTab({ pid }: { pid: string }) {
         <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No data available.</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="labs-auto-grid mb-4" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
             <div className="labs-card p-3 text-center">
               <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total">{summary.totalSessions}</div>
               <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Sessions</div>
@@ -1734,7 +1734,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 
   return (
     <div data-testid="labs-admin-analytics-tab">
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="labs-auto-grid mb-4" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
         {[
           { label: "Total Ratings", value: (analytics.totalRatings as number) || 0 },
           { label: "Total Whiskies", value: (analytics.totalWhiskies as number) || 0 },
@@ -1809,7 +1809,7 @@ function HistoricalImportTab({ pid }: { pid: string }) {
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg uppercase" style={{ background: `${statusColor(latestRun.status)}20`, color: statusColor(latestRun.status) }}>{latestRun.status}</span>
               {latestRun.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{new Date(latestRun.createdAt).toLocaleString()}</span>}
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem" } as React.CSSProperties}>
               {[{ label: "Rows Read", value: latestRun.rowsRead ?? 0 }, { label: "Imported", value: latestRun.rowsImported ?? 0 }, { label: "Skipped", value: latestRun.rowsSkipped ?? 0 }].map(s => (
                 <div key={s.label} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                   <div className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{s.value}</div>
@@ -1831,7 +1831,7 @@ function HistoricalImportTab({ pid }: { pid: string }) {
       {dryRunResult && (
         <div className="labs-card p-4 mb-3" style={{ borderColor: "var(--labs-accent)" }}>
           <div className="flex items-center gap-1.5 mb-2.5"><Play className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Dry-Run Results</span><span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>DRY RUN</span></div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="labs-auto-grid" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
             {[{ l: "Rows Read", v: dryRunResult.rowsRead }, { l: "Would Import", v: dryRunResult.rowsImported }, { l: "Tastings", v: dryRunResult.tastingsCreated }, { l: "Entries", v: dryRunResult.entriesCreated }].map(s => (
               <div key={s.l} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                 <div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{s.v as number}</div>

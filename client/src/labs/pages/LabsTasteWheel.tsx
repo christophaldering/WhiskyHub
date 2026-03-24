@@ -114,7 +114,7 @@ export default function LabsTasteWheel() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="grid grid-cols-3 gap-3 labs-fade-in">
+          <div className="labs-auto-grid labs-fade-in" style={{ "--grid-min": "120px" } as React.CSSProperties}>
             <div className="labs-card p-3 text-center" data-testid="stat-total-mentions">
               <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{totalMentions}</p>
               <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Mentions</p>
@@ -191,7 +191,7 @@ export default function LabsTasteWheel() {
                   <X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="labs-auto-grid" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
                 {selectedCatData.subcategories.map(sub => {
                   const count = subFreqs[selectedCatData.id]?.[sub.id] || 0;
                   const maxInCat = Math.max(...selectedCatData.subcategories.map(s => subFreqs[selectedCatData.id]?.[s.id] || 0), 1);

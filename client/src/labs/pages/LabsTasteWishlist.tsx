@@ -276,11 +276,11 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
           <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Whisky Name *</label>
           <input value={whiskyName} onChange={(e) => setWhiskyName(e.target.value)} placeholder="e.g. Lagavulin 16" style={inputStyle} required data-testid="input-labs-whisky-name" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Distillery</label><input value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-labs-distillery" /></div>
           <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Region</label><input value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle} data-testid="input-labs-region" /></div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Age</label><input value={age} onChange={(e) => setAge(e.target.value)} style={inputStyle} data-testid="input-labs-age" /></div>
           <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>ABV</label><input value={abv} onChange={(e) => setAbv(e.target.value)} style={inputStyle} data-testid="input-labs-abv" /></div>
           <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Cask</label><input value={caskType} onChange={(e) => setCaskType(e.target.value)} style={inputStyle} data-testid="input-labs-cask" /></div>

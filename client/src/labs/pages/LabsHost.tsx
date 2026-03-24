@@ -3365,7 +3365,7 @@ function ParticipantStatusSection({
                   </button>
                   {isExpanded && (
                     <div
-                      className="px-4 pb-3 pt-1 grid grid-cols-2 gap-1.5"
+                      className="px-4 pb-3 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5"
                       style={{ borderTop: `1px solid var(--labs-border-subtle)` }}
                     >
                       {(participants || []).map((p: any) => {
@@ -5140,7 +5140,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             onChange={e => setEditTastingFields({ ...editTastingFields, title: e.target.value })}
             data-testid="labs-edit-tasting-title"
           />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input
               className="labs-input"
               type="date"
@@ -5561,7 +5561,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="labs-auto-grid mb-6" style={{ "--grid-min": "120px" } as React.CSSProperties}>
         <div className="labs-card p-4 text-center">
           <Wine className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" data-testid="labs-host-whisky-count">{whiskyCount}</p>

@@ -71,7 +71,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
         placeholder="Name"
         data-testid={`input-whisky-name-${whisky.id}`}
       />
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <input
           className="labs-input text-sm"
           value={distillery}
@@ -399,7 +399,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               placeholder="Description (optional)"
               data-testid="input-meta-description"
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 className="labs-input text-sm"
                 type="date"
@@ -803,7 +803,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-6 labs-stagger-1">
+      <div className="labs-auto-grid mb-6 labs-stagger-1" style={{ "--grid-min": "120px" } as React.CSSProperties}>
         <div className="labs-card p-3 text-center">
           <Wine className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-whisky-count">

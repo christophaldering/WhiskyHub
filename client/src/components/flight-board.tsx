@@ -351,7 +351,7 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
         </div>
       )}
       {blindState.showMeta ? (
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           {blindState.showName && whisky.distillery && (
             <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{whisky.distillery}</p></div>
           )}

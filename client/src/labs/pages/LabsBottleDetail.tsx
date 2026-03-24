@@ -152,7 +152,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
       {infoItems.length > 0 && (
         <div className="labs-card p-4 mb-6 labs-fade-in labs-stagger-2" data-testid="labs-bottle-info">
           <p className="labs-section-label">Bottle Info</p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          <div className="labs-auto-grid" style={{ "--grid-min": "160px", gap: "0.75rem" } as React.CSSProperties}>
             {infoItems.map((item) => (
               <div key={item.label}>
                 <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{item.label}</p>
@@ -177,7 +177,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
                   </span>
                 </div>
               </div>
-              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                 {avgNose && <DimensionBar label="Nose" value={avgNose} />}
                 {avgTaste && <DimensionBar label="Taste" value={avgTaste} />}
                 {avgFinish && <DimensionBar label="Finish" value={avgFinish} />}
@@ -531,7 +531,7 @@ function RatingDistributionChart({ values, ...rest }: { values: number[]; "data-
           style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}
           data-testid="labs-distribution-stats"
         >
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          <div className="labs-auto-grid" style={{ "--grid-min": "120px", gap: "0.75rem" } as React.CSSProperties}>
             <StatItem label="Mean" value={stats.mean.toFixed(1)} accent />
             <StatItem label="Median" value={stats.median.toFixed(1)} accent />
             <StatItem label="Std Dev" value={stats.stdDev.toFixed(2)} />

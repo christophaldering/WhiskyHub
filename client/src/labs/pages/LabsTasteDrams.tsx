@@ -562,11 +562,11 @@ export default function LabsTasteDrams() {
               <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <EditField label="Region" value={editForm.region} onChange={(v) => setEditForm({ ...editForm, region: v })} testId="input-labs-edit-region" />
             <EditField label="Age" value={editForm.age} onChange={(v) => setEditForm({ ...editForm, age: v })} testId="input-labs-edit-age" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <EditField label="ABV" value={editForm.abv} onChange={(v) => setEditForm({ ...editForm, abv: v })} testId="input-labs-edit-abv" />
             <EditField label="Cask Type" value={editForm.caskType} onChange={(v) => setEditForm({ ...editForm, caskType: v })} testId="input-labs-edit-caskType" />
           </div>
@@ -577,7 +577,7 @@ export default function LabsTasteDrams() {
               <EditTextarea label="Notes" value={editStructured.generalNotes} onChange={(v) => setEditStructured({ ...editStructured, generalNotes: v })} testId="input-labs-edit-general-notes" />
               <div>
                 <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Sub-Scores</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="labs-auto-grid" style={{ "--grid-min": "70px", gap: "0.5rem" } as React.CSSProperties}>
                   {(["nose", "taste", "finish"] as const).map((dim) => (
                     <div key={dim}>
                       <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
@@ -656,7 +656,7 @@ export default function LabsTasteDrams() {
                 <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: statsExpanded ? "rotate(180deg)" : "rotate(0)" }} />
               </button>
               {statsExpanded && (
-                <div className="grid grid-cols-4 gap-2" style={{ marginTop: 8 }} data-testid="labs-drams-overview">
+                <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem", marginTop: 8 } as React.CSSProperties} data-testid="labs-drams-overview">
                   {[
                     { value: allItems.length, label: "Total" },
                     { value: journal.filter((e: any) => e.status !== "draft").length, label: "Solo" },
@@ -1177,7 +1177,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
         <ScrollText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
         <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-text)" }}>Historical Appearances</span>
       </div>
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="labs-auto-grid mb-3" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
         <div className="labs-card p-2.5 text-center">
           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{data.count}</div>
           <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Appearances</div>

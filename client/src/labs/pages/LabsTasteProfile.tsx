@@ -235,7 +235,7 @@ export default function LabsTasteProfile() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="grid grid-cols-3 gap-3 labs-fade-in labs-stagger-1" data-testid="section-snapshot">
+          <div className="labs-auto-grid labs-fade-in labs-stagger-1" style={{ "--grid-min": "120px" } as React.CSSProperties} data-testid="section-snapshot">
             <div className="labs-card p-4 text-center" data-testid="card-your-style">
               <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Your Style</p>
               <p className="text-sm font-semibold" style={{ color: styleLabel ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
@@ -345,7 +345,7 @@ export default function LabsTasteProfile() {
                 <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 Rating Style
               </h2>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="labs-auto-grid" style={{ "--grid-min": "100px" } as React.CSSProperties}>
                 {[
                   { label: "Mean", value: Number(whiskyProfile.ratingStyle.meanScore).toFixed(1) },
                   { label: "StdDev", value: Number(whiskyProfile.ratingStyle.stdDev).toFixed(2) },

@@ -178,7 +178,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {photos.map((photo) => (
           <div key={photo.id} className="group relative rounded-lg overflow-hidden border bg-card shadow-sm" data-testid={`card-photo-${photo.id}`}>
             <img

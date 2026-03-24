@@ -317,7 +317,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
           {tasting.blindMode && (tasting.status === "open" || tasting.status === "draft") && (
             <div className="space-y-3 p-4 bg-amber-500/5 rounded-lg border border-amber-500/20" data-testid="div-blind-guesses">
               <h4 className="text-xs font-serif font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">{t('evaluation.blindGuesses')}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{t('evaluation.guessAbv')}</Label>
                   <Input
@@ -348,7 +348,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
           {tasting.blindMode && (tasting.status === "reveal" || tasting.status === "archived") && existingRating && (existingRating.guessAbv || existingRating.guessAge) && (
             <div className="space-y-2 p-4 bg-secondary/20 rounded-lg border border-border/30" data-testid="div-blind-results">
               <h4 className="text-xs font-serif font-bold text-muted-foreground uppercase tracking-widest">{t('evaluation.blindResults')}</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 {existingRating.guessAbv != null && (
                   <div>
                     <span className="text-muted-foreground text-xs">{t('evaluation.guessAbv')}</span>

@@ -628,7 +628,7 @@ export default function LabsTasteCollection() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" style={{ color: "var(--labs-text-secondary)" }}>
                       {item.caskType && <div><span style={{ color: "var(--labs-text-muted)" }}>Cask:</span> {item.caskType}</div>}
                       {item.bottlingSeries && <div><span style={{ color: "var(--labs-text-muted)" }}>Series:</span> {item.bottlingSeries}</div>}
                       {item.size && <div><span style={{ color: "var(--labs-text-muted)" }}>Size:</span> {item.size}</div>}
@@ -1037,7 +1037,7 @@ function SyncResultDialog({ result, onClose }: { result: { added: number; update
     <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }} data-testid="dialog-sync-result">
       <div className="labs-card" style={{ maxWidth: 480, width: "90%", padding: 24, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
         <h3 className="labs-h3 mb-3" style={{ color: "var(--labs-text)" }}>Sync Complete</h3>
-        <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           {result.added > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-success)", fontWeight: 700 }}>+{result.added}</span> <span style={{ color: "var(--labs-text-muted)" }}>added</span></div>}
           {result.updated > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-info)", fontWeight: 700 }}>{result.updated}</span> <span style={{ color: "var(--labs-text-muted)" }}>updated</span></div>}
           {result.removed > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-danger)", fontWeight: 700 }}>-{result.removed}</span> <span style={{ color: "var(--labs-text-muted)" }}>removed</span></div>}
