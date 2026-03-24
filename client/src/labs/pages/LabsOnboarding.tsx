@@ -41,6 +41,23 @@ function GlencairnTriple({ size = 32 }: { size?: number }) {
   );
 }
 
+function BottleSharingIcon({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke={ACCENT_GOLD} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 6h4v2l1 3v6c0 1.5-.8 2.5-1.5 3L12 21.5 10.5 20C9.8 19.5 9 18.5 9 17V12l1-3V6Z" />
+      <line x1="10.5" y1="21.5" x2="13.5" y2="21.5" />
+      <line x1="10" y1="24" x2="14" y2="24" />
+      <line x1="12" y1="21.5" x2="12" y2="24" />
+      <path d="M18 6h4v2l1 3v6c0 1.5-.8 2.5-1.5 3L20 21.5 18.5 20c-.7-.5-1.5-1.5-1.5-3V12l1-3V6Z" />
+      <line x1="18.5" y1="21.5" x2="21.5" y2="21.5" />
+      <line x1="18" y1="24" x2="22" y2="24" />
+      <line x1="20" y1="21.5" x2="20" y2="24" />
+      <path d="M14 13l4-2" strokeDasharray="2 1.5" />
+      <path d="M14 16l4-2" strokeDasharray="2 1.5" />
+    </svg>
+  );
+}
+
 function TicketIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke={ACCENT_GOLD} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -100,6 +117,14 @@ export default function LabsOnboarding() {
       testId: "card-onboard-host",
       action: "navigate",
       href: "/labs/host",
+    },
+    {
+      icon: <BottleSharingIcon size={32} />,
+      titleKey: "onboarding.bottleSharing.title",
+      subtitleKey: "onboarding.bottleSharing.subtitle",
+      testId: "card-onboard-bottle-sharing",
+      action: "navigate",
+      href: "/labs/bottle-sharing",
     },
     {
       icon: <TicketIcon size={32} />,

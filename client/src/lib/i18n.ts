@@ -401,6 +401,10 @@ const resources = {
           title: "Host a tasting",
           subtitle: "Run a blind round. Reveal together.",
         },
+        bottleSharing: {
+          title: "Share Bottles",
+          subtitle: "Split a bottle. Track your shares.",
+        },
         join: {
           title: "Join a tasting",
           subtitle: "Got a code? Join instantly.",
@@ -6994,6 +6998,10 @@ const resources = {
         host: {
           title: "Tasting leiten",
           subtitle: "Blind verkosten. Gemeinsam aufdecken.",
+        },
+        bottleSharing: {
+          title: "Flaschenteilung",
+          subtitle: "Flasche teilen. Anteile verfolgen.",
         },
         join: {
           title: "Tasting beitreten",
