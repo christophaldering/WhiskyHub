@@ -173,7 +173,7 @@ export default function LabsAdmin() {
         message="Please sign in to access admin features."
       />
     ) : (
-      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in text-center" data-testid="labs-admin-access-denied">
+      <div className="labs-page labs-fade-in text-center" data-testid="labs-admin-access-denied">
         <Shield className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--labs-accent)" }} />
         <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Access Denied</p>
         <p className="text-sm mt-2" style={{ color: "var(--labs-text-muted)" }}>You don't have admin privileges.</p>
@@ -191,7 +191,7 @@ export default function LabsAdmin() {
 
   if (isError || !data) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto text-center">
+      <div className="labs-page text-center">
         <AlertTriangle className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--labs-danger)" }} />
         <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Access Denied</p>
         <button onClick={() => refetch()} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-retry">Retry</button>

@@ -255,7 +255,7 @@ export default function LabsTasteCollection() {
 
   if (!session.signedIn) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-collection">
+      <div className="labs-page" data-testid="labs-taste-collection">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Collection</h1>
@@ -271,7 +271,7 @@ export default function LabsTasteCollection() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" style={{ paddingBottom: selectMode ? 140 : 80 }} data-testid="labs-taste-collection">
+    <div className="labs-page" style={{ paddingBottom: selectMode ? 140 : 80 }} data-testid="labs-taste-collection">
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

@@ -208,7 +208,7 @@ export default function LabsCommunityDetail() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div className="labs-page">
         <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>Loading...</p>
       </div>
     );
@@ -216,7 +216,7 @@ export default function LabsCommunityDetail() {
 
   if (!community) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+      <div className="labs-page labs-fade-in">
         <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }}>
           <ChevronLeft className="w-4 h-4" /> Communities
         </button>
@@ -253,7 +253,7 @@ export default function LabsCommunityDetail() {
   }));
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="community-detail-page">
+    <div className="labs-page labs-fade-in" data-testid="community-detail-page">
       <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="btn-back-communities">
         <ChevronLeft className="w-4 h-4" /> Communities
       </button>

@@ -20,7 +20,7 @@ export default function LabsMethod() {
   const { t } = useTranslation();
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-method-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-method-page">
       <BackLink href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-method">
           <ChevronLeft className="w-4 h-4" /> {t("rabbitHole.title", "Rabbit Hole")}

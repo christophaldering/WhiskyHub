@@ -184,7 +184,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
   };
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+    <div className="labs-page labs-fade-in">
       <BackLink href="/labs/circle" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-invite">
           <ChevronLeft className="w-4 h-4" /> Circle

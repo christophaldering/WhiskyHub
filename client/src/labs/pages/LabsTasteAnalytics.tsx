@@ -322,7 +322,7 @@ export default function LabsTasteAnalytics() {
   const pct = Math.min((totalRatings / THRESHOLD) * 100, 100);
 
   return (
-    <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }} data-testid="labs-taste-analytics">
+    <div className="labs-page" data-testid="labs-taste-analytics">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button style={{
           display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",

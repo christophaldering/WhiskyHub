@@ -58,7 +58,7 @@ export default function LabsTasteWishlist() {
 
   if (!participantId) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div className="labs-page">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
@@ -82,7 +82,7 @@ export default function LabsTasteWishlist() {
   });
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-wishlist-page">
+    <div className="labs-page" data-testid="labs-wishlist-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

@@ -160,7 +160,7 @@ export default function LabsTasteProfile() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div className="labs-page">
         <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back">
             <ChevronLeft className="w-4 h-4" /> Taste
@@ -211,7 +211,7 @@ export default function LabsTasteProfile() {
   ];
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-profile">
+    <div className="labs-page" data-testid="labs-taste-profile">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-profile">
           <ChevronLeft className="w-4 h-4" /> Taste

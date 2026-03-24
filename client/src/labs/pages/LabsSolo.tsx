@@ -484,7 +484,7 @@ export default function LabsSolo() {
   }
 
   return (
-    <div className="labs-solo-container" style={{ position: "relative" }}>
+    <div className="labs-page" style={{ position: "relative" }}>
       {content}
       {draftSavedFlash && (
         <div

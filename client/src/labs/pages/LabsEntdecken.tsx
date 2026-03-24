@@ -195,7 +195,7 @@ export default function LabsEntdecken() {
   ];
 
   return (
-    <div className="px-5 py-6 pb-24 max-w-2xl mx-auto" data-testid="labs-entdecken-page">
+    <div className="labs-page" data-testid="labs-entdecken-page">
       <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-entdecken">
           <ChevronLeft className="w-4 h-4" /> Home

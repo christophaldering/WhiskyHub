@@ -137,7 +137,7 @@ export default function LabsCollectionAnalysis() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
+      <div className="labs-page">
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
           <div className="labs-spinner" style={{ margin: "0 auto" }} />
         </div>
@@ -147,7 +147,7 @@ export default function LabsCollectionAnalysis() {
 
   if (error) {
     return (
-      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
+      <div className="labs-page">
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center", color: "#e06060" }}>Failed to load collection</div>
       </div>
     );
@@ -157,7 +157,7 @@ export default function LabsCollectionAnalysis() {
 
   if (items.length === 0) {
     return (
-      <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }}>
+      <div className="labs-page">
         <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button style={{
             display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
@@ -261,7 +261,7 @@ export default function LabsCollectionAnalysis() {
   const sectionLabel = { fontSize: 11, fontWeight: 700 as const, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs };
 
   return (
-    <div style={{ padding: `${SP.lg}px ${SP.lg}px`, maxWidth: 672, margin: "0 auto" }} data-testid="labs-collection-analysis">
+    <div className="labs-page" data-testid="labs-collection-analysis">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button style={{
           display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",

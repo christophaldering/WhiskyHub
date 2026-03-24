@@ -298,7 +298,7 @@ export default function LabsBottleSharing() {
 
   if (showWizard) {
     return (
-      <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+      <div className="labs-page labs-fade-in">
         <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-sharing-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
           <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
         </button>
@@ -784,7 +784,7 @@ export default function LabsBottleSharing() {
   }
 
   return (
-    <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page labs-fade-in">
       <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-bs-back-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
         <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
       </button>

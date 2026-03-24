@@ -87,7 +87,7 @@ export default function LabsTasteDownloads() {
   }, [participantId, setLoading, toast]);
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-downloads-page">
+    <div className="labs-page" data-testid="labs-taste-downloads-page">
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="flex items-center gap-3 mb-1">

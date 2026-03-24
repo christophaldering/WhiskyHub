@@ -139,7 +139,7 @@ export default function LabsTastings() {
   }
 
   return (
-    <div className="labs-page-wide labs-fade-in">
+    <div className="labs-page labs-fade-in">
       <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-tastings">
           <ChevronLeft className="w-4 h-4" /> Home

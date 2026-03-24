@@ -98,7 +98,7 @@ export default function LabsDistilleries() {
   [search, country, sortBy, distilleries]);
 
   return (
-    <div className="px-5 py-6 mx-auto" style={{ maxWidth: view === "map" ? 1000 : 600 }} data-testid="labs-discover-distilleries-page">
+    <div className="labs-page" style={view === "map" ? { maxWidth: 1000 } : undefined} data-testid="labs-discover-distilleries-page">
       <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}

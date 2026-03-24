@@ -271,7 +271,7 @@ export default function LabsJoin() {
 
   if (showGuestName) {
     return (
-      <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+      <div className="labs-page labs-fade-in">
         <div className="text-center mb-8">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -360,7 +360,7 @@ export default function LabsJoin() {
 
   if (showLogin) {
     return (
-      <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+      <div className="labs-page labs-fade-in">
         <div className="text-center mb-8">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -460,7 +460,7 @@ export default function LabsJoin() {
   }
 
   return (
-    <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+    <div className="labs-page labs-fade-in">
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

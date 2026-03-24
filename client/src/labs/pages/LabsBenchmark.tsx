@@ -229,7 +229,7 @@ export default function LabsBenchmark() {
 
   if (!hasAccess) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div className="labs-page">
         <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Taste</button>
         </BackLink>
@@ -251,7 +251,7 @@ export default function LabsBenchmark() {
   });
 
   return (
-    <div className="px-5 py-6 max-w-[900px] mx-auto" data-testid="labs-benchmark">
+    <div className="labs-page" data-testid="labs-benchmark">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-benchmark">
           <ChevronLeft className="w-4 h-4" /> Taste

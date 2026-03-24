@@ -125,7 +125,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
 
   if (status === "feedback" && aiResult) {
     return (
-      <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)", minHeight: 400 }}>
+      <div className="labs-fade-in" style={{ minHeight: 400 }}>
         <BottleRecognitionFeedback
           result={aiResult}
           participantId={participantId}
@@ -139,7 +139,6 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
   if (status === "identifying") {
     return (
       <div className="labs-fade-in" style={{
-        padding: "var(--labs-space-xl) var(--labs-space-md)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -163,7 +162,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
 
   if (status === "error") {
     return (
-      <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
+      <div className="labs-fade-in">
         <div className="labs-card" style={{
           padding: "var(--labs-space-xl)",
           display: "flex",
@@ -201,7 +200,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
 
   if (status === "barcode") {
     return (
-      <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
+      <div className="labs-fade-in">
         <button
           onClick={() => { setStatus("idle"); setBarcodeValue(""); }}
           data-testid="solo-barcode-back-btn"
@@ -263,7 +262,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
   }
 
   return (
-    <div className="labs-fade-in" style={{ padding: "var(--labs-space-xl) var(--labs-space-md)" }}>
+    <div className="labs-fade-in">
       <input
         ref={fileRef}
         type="file"

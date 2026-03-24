@@ -1018,7 +1018,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
     const participantCount = Array.isArray(participants) ? participants.length : 0;
 
     return (
-      <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in" style={{ position: "relative" }}>
+      <div className="labs-page labs-fade-in" style={{ position: "relative" }}>
         {revealFlash && (
           <div className="labs-reveal-flash" data-testid="reveal-flash-overlay-guided" />
         )}
@@ -1072,7 +1072,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   }
 
   return (
-    <div className="px-5 py-4 max-w-2xl mx-auto labs-fade-in" style={{ position: "relative" }}>
+    <div className="labs-page labs-fade-in" style={{ position: "relative" }}>
       {revealFlash && (
         <div className="labs-reveal-flash" data-testid="reveal-flash-overlay" />
       )}

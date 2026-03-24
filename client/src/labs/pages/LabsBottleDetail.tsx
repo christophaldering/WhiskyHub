@@ -99,7 +99,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto">
+    <div className="labs-page">
       <button
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4 labs-fade-in"
         onClick={goBackToExplore}

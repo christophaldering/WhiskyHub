@@ -879,7 +879,7 @@ export default function LabsConnoisseur() {
   }
 
   return (
-    <div className="px-5 py-6 pb-24 max-w-2xl mx-auto" data-testid="labs-connoisseur">
+    <div className="labs-page" data-testid="labs-connoisseur">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-connoisseur">
           <ChevronLeft className="w-4 h-4" /> {t("common.back", "Back")}

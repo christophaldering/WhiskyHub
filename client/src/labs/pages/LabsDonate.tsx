@@ -10,7 +10,7 @@ export default function LabsDonate() {
   const { t } = useTranslation();
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-donate-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-donate-page">
       <button
         onClick={goBackToAbout}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

@@ -79,7 +79,7 @@ export default function LabsCommunity() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-community-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-community-page">
       <button
         onClick={goBackToCircle}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

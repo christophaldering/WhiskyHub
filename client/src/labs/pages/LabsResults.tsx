@@ -1036,7 +1036,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   };
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in">
+    <div className="labs-page labs-fade-in">
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

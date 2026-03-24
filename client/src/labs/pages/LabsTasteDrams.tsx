@@ -342,7 +342,7 @@ export default function LabsTasteDrams() {
 
   if (viewState === "trash") {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-drams-trash">
+      <div className="labs-page" data-testid="labs-drams-trash">
         <div className="flex items-center justify-between mb-5">
           <button onClick={() => setViewState("list")} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-from-trash">
             <ChevronLeft className="w-4 h-4" /> Drams
@@ -425,7 +425,7 @@ export default function LabsTasteDrams() {
 
   if (viewState === "detail" && selectedEntry) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-dram-detail">
+      <div className="labs-page" data-testid="labs-dram-detail">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-drams">
             <ChevronLeft className="w-4 h-4" /> Drams
@@ -530,7 +530,7 @@ export default function LabsTasteDrams() {
 
   if (viewState === "edit" && selectedEntry) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-dram-edit">
+      <div className="labs-page" data-testid="labs-dram-edit">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-labs-cancel-edit">
             <ChevronLeft className="w-4 h-4" /> Cancel
@@ -617,8 +617,8 @@ export default function LabsTasteDrams() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
-      <div style={{ padding: "20px 20px 0" }}>
+    <div className="labs-page" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
+      <div>
         <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3" style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="button-labs-back-taste">
           <ChevronLeft className="w-4 h-4" /> My Whisky
         </button>

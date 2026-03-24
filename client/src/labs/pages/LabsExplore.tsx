@@ -230,7 +230,7 @@ export default function LabsExplore() {
   const searchPlaceholder = t("explore.searchDatabase", "Search by name, distillery, region\u2026");
 
   return (
-    <div className="labs-page-wide">
+    <div className="labs-page">
       <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-explore">
           <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Discover")}

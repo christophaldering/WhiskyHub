@@ -211,7 +211,7 @@ export default function LabsBottleSplit() {
 
   if (showWizard) {
     return (
-      <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+      <div className="labs-page labs-fade-in">
         <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-split-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
           <ChevronLeft className="w-4 h-4" />Zurück
         </button>
@@ -434,7 +434,7 @@ export default function LabsBottleSplit() {
   ];
 
   return (
-    <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page labs-fade-in">
       <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-splits-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
         <ChevronLeft className="w-4 h-4" />Home
       </button>

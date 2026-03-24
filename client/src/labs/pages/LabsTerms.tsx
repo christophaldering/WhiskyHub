@@ -9,7 +9,7 @@ export default function LabsTerms() {
   const { t } = useTranslation();
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-terms-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-terms-page">
       <button
         onClick={goBackToAbout}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

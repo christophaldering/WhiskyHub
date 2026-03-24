@@ -311,7 +311,7 @@ export default function LabsMakingOf() {
 
   if (!session.signedIn || !session.pid) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
+      <div className="labs-page labs-fade-in" data-testid="labs-makingof-page">
         <BackBtn />
         <AuthGateMessage
           icon={<Lock className="w-10 h-10 opacity-30" style={{ color: "var(--labs-text-muted)" }} />}
@@ -325,7 +325,7 @@ export default function LabsMakingOf() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-makingof-page">
+      <div className="labs-page" data-testid="labs-makingof-page">
         <BackBtn />
         <div className="text-center py-16">
           <div className="w-8 h-8 mx-auto rounded-full border-[3px] animate-spin" style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }} />
@@ -336,7 +336,7 @@ export default function LabsMakingOf() {
 
   if (error || !data) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
+      <div className="labs-page labs-fade-in" data-testid="labs-makingof-page">
         <BackBtn />
         <div className="text-center py-16">
           <Wine className="w-10 h-10 mx-auto mb-4 opacity-40" style={{ color: "var(--labs-text-muted)" }} />
@@ -361,7 +361,7 @@ export default function LabsMakingOf() {
   );
 
   return (
-    <div className="px-5 py-6 pb-16 max-w-2xl mx-auto labs-fade-in" data-testid="labs-makingof-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-makingof-page">
       <BackBtn />
 
       <div className="text-center mt-4 mb-8">

@@ -121,7 +121,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
   if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="labs-spinner" size={24} /></div>;
 
   if (!sharing) return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page">
       <button onClick={() => navigate("/labs/bottle-sharing")} data-testid="button-sharing-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}><ArrowLeft size={16} />{t("bottleSharing.back")}</button>
       <p style={{ textAlign: "center", color: "var(--labs-text-muted)", marginTop: 40 }}>Sharing not found or access denied.</p>
     </div>
@@ -138,7 +138,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
   ];
 
   return (
-    <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page labs-fade-in">
       <button onClick={() => navigate("/labs/bottle-sharing")} data-testid="button-sharing-view-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />{t("bottleSharing.back")}
       </button>

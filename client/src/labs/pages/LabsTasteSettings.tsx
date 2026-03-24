@@ -178,7 +178,7 @@ export default function LabsTasteSettings() {
 
   if (!currentParticipant) {
     return (
-      <div className="px-5 py-6 max-w-2xl mx-auto">
+      <div className="labs-page">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-profile"><ChevronLeft className="w-4 h-4" /> Profile</button>
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Settings</h1>
@@ -201,7 +201,7 @@ export default function LabsTasteSettings() {
   const selectStyle: React.CSSProperties = { ...inputStyle, appearance: "none", WebkitAppearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a7e6d' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 };
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto flex flex-col gap-6" data-testid="labs-taste-settings">
+    <div className="labs-page flex flex-col gap-6" data-testid="labs-taste-settings">
       <div className="flex items-center gap-3">
         <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-profile"><ChevronLeft className="w-4 h-4" /> Profile</button>
         <div>

@@ -524,7 +524,7 @@ export default function LabsTaste() {
     ?.slice(0, 3) || [];
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto">
+    <div className="labs-page">
       <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-taste">
           <ChevronLeft className="w-4 h-4" /> Home

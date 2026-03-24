@@ -619,7 +619,7 @@ export default function LabsHistory() {
   const goBack = useLabsBack("/labs/entdecken");
 
   return (
-    <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-history-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-history-page">
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"

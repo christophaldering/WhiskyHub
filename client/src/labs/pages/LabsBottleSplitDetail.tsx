@@ -77,7 +77,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="labs-spinner" size={24} /></div>;
 
   if (!split) return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page">
       <button onClick={() => navigate("/labs/splits")} data-testid="button-split-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />Zurück
       </button>
@@ -218,7 +218,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   ];
 
   return (
-    <div className="labs-fade-in" style={{ maxWidth: 600, margin: "0 auto", padding: "var(--labs-space-md)" }}>
+    <div className="labs-page labs-fade-in">
       <button onClick={() => navigate("/labs/splits")} data-testid="button-split-detail-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />Zurück
       </button>

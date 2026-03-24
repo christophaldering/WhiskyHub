@@ -13,7 +13,7 @@ export default function LabsGuide() {
   const { t } = useTranslation();
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-discover-guide-page">
+    <div className="labs-page" data-testid="labs-discover-guide-page">
       <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-guide">
           <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}

@@ -207,7 +207,7 @@ export default function LabsTasteCompare() {
   }
 
   return (
-    <div className="px-5 py-6 max-w-2xl mx-auto" data-testid="labs-taste-compare">
+    <div className="labs-page" data-testid="labs-taste-compare">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-compare">
           <ChevronLeft className="w-4 h-4" /> Taste

@@ -2791,8 +2791,8 @@ function CreateTastingForm() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto labs-fade-in" style={{ paddingBottom: 0 }}>
-      <div className="px-5 pt-6">
+    <div className="labs-page labs-fade-in" style={{ paddingBottom: 0 }}>
+      <div>
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
@@ -5036,7 +5036,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   }
 
   return (
-    <div className="px-5 py-6 max-w-3xl mx-auto labs-fade-in">
+    <div className="labs-page labs-fade-in">
       <div className="flex items-center gap-2 -ml-2 mb-4">
         <button
           onClick={showBackToCompanion ? () => setForceDesktopView(false) : goBack}

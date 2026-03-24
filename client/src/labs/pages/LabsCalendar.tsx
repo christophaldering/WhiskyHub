@@ -161,7 +161,7 @@ export default function LabsCalendar() {
   }, [filteredEvents]);
 
   return (
-    <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-calendar-page">
+    <div className="labs-page labs-fade-in" data-testid="labs-calendar-page">
       <button
         onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
