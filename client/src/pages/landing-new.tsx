@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, useInView } from "framer-motion";
-import { ChevronRight, Wine, Users, Mic, SplitSquareVertical } from "lucide-react";
+import { ChevronRight, Wine, Users, Mic, SplitSquareVertical, Sun, Moon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
+import { useAppStore } from "@/lib/store";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 const ACCENT = "#c8a97e";
