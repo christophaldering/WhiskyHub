@@ -4,6 +4,7 @@ import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { tryAutoResume, getSession } from "@/lib/session";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
@@ -24,9 +25,8 @@ function getExistingParticipantId(storeParticipantId: string | null): string | n
 }
 
 function isUserAuthenticated(): boolean {
-  try {
-    if (sessionStorage.getItem("session_signed_in") === "1") return true;
-  } catch {}
+  const session = getSession();
+  if (session.signedIn) return true;
   try {
     const storeUser = useAppStore.getState().currentParticipant;
     if (storeUser?.id) return true;
@@ -50,7 +50,15 @@ async function ensureParticipantId(): Promise<string> {
   const existing = getExistingParticipantId(getStoreParticipantId());
   if (existing) return existing;
 
-  if (isUserAuthenticated()) {
+  await tryAutoResume();
+
+  const session = getSession();
+  if (session.pid) return session.pid;
+
+  const afterResume = getExistingParticipantId(getStoreParticipantId());
+  if (afterResume) return afterResume;
+
+  if (session.signedIn) {
     for (let attempt = 0; attempt < 3; attempt++) {
       await delay(500);
       const retried = getExistingParticipantId(getStoreParticipantId());

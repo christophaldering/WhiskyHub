@@ -429,6 +429,24 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
     (async () => {
       try {
+        const marker = await storage.getAppSetting("solo_dram_reassign_30badcb0");
+        if (!marker) {
+          const { db } = await import("./db");
+          const { journalEntries } = await import("@shared/schema");
+          const { eq } = await import("drizzle-orm");
+          await db.update(journalEntries)
+            .set({ participantId: "38f152c2-a4b7-49a1-bbf8-b0093cd3cd44" })
+            .where(eq(journalEntries.id, "30badcb0-5cd0-4a86-bafa-27056b8072e2"));
+          await storage.setAppSetting("solo_dram_reassign_30badcb0", "true");
+          log("Reassigned orphaned solo dram 30badcb0 to correct user participant", "startup");
+        }
+      } catch (e: any) {
+        log(`Solo dram reassignment skipped: ${e.message}`, "startup");
+      }
+    })();
+
+    (async () => {
+      try {
         const purged = await storage.purgeExpiredJournalEntries(30);
         if (purged > 0) log(`Purged ${purged} expired soft-deleted journal entries (>30 days)`, "startup");
       } catch (e: any) {
