@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, whiskyApi } from "@/lib/api";
 import {
   Share2, Plus, Users, ChevronRight, ChevronLeft, Eye, EyeOff, Lock, Globe,
   UsersRound, Trash2, Sparkles, Wand2, Edit3, Upload, Loader2, ChevronDown,
@@ -12,6 +12,7 @@ import {
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { friendsApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 type WizardStep = "bottles" | "visibility" | "review";
 type Visibility = "public" | "private" | "group";
@@ -36,6 +37,8 @@ interface BottleEntry {
   price?: number | null;
   hostNotes?: string;
   hostSummary?: string;
+  imageUrl?: string;
+  imageFile?: File;
 }
 
 const REGION_KEYS = ["islay", "speyside", "highland", "lowland", "campbeltown", "islands", "ireland", "japan", "usa", "world"] as const;
@@ -108,7 +111,12 @@ export default function LabsBottleSharing() {
     step === "visibility" && visibility === "group" ? selectedCommunityIds.size > 0 : true;
 
   const addBottle = () => setBottles([...bottles, { name: "" }]);
-  const removeBottle = (i: number) => setBottles(bottles.filter((_, idx) => idx !== i));
+  const removeBottle = (i: number) => {
+    if (bottles[i].imageUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(bottles[i].imageUrl!);
+    }
+    setBottles(bottles.filter((_, idx) => idx !== i));
+  };
   const updateBottle = (i: number, field: keyof BottleEntry, val: any) => {
     const u = [...bottles]; u[i] = { ...u[i], [field]: val }; setBottles(u);
   };
@@ -137,7 +145,7 @@ export default function LabsBottleSharing() {
       const tasting = await res.json();
       for (let i = 0; i < validBottles.length; i++) {
         const b = validBottles[i];
-        await fetch("/api/whiskies", {
+        const whiskyRes = await fetch("/api/whiskies", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({
@@ -162,6 +170,14 @@ export default function LabsBottleSharing() {
             sortOrder: i,
           }),
         });
+        if (whiskyRes.ok && b.imageFile) {
+          try {
+            const whisky = await whiskyRes.json();
+            await whiskyApi.uploadImage(whisky.id, b.imageFile);
+          } catch (imgErr) {
+            console.error("Failed to upload image for bottle:", b.name, imgErr);
+          }
+        }
       }
       navigate(`/labs/bottle-sharing/${tasting.id}`);
     } catch (e) {
@@ -346,8 +362,35 @@ export default function LabsBottleSharing() {
                         )}
                       </div>
                     </div>
+                    <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+                      <WhiskyImageUpload
+                        imageUrl={b.imageUrl}
+                        onFileSelected={(file: File) => {
+                          const preview = URL.createObjectURL(file);
+                          const updated = [...bottles];
+                          if (updated[i].imageUrl?.startsWith("blob:")) {
+                            URL.revokeObjectURL(updated[i].imageUrl!);
+                          }
+                          updated[i] = { ...updated[i], imageFile: file, imageUrl: preview };
+                          setBottles(updated);
+                        }}
+                        onImageDeleted={() => {
+                          const updated = [...bottles];
+                          if (updated[i].imageUrl?.startsWith("blob:")) {
+                            URL.revokeObjectURL(updated[i].imageUrl!);
+                          }
+                          updated[i] = { ...updated[i], imageFile: undefined, imageUrl: undefined };
+                          setBottles(updated);
+                        }}
+                        variant="labs"
+                        size="sm"
+                        testIdPrefix={`bottle-image-${i}`}
+                      />
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        <input data-testid={`input-bottle-name-${i}`} value={b.name} onChange={e => updateBottle(i, "name", e.target.value)} placeholder="Name *" className="labs-input" />
+                      </div>
+                    </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      <input data-testid={`input-bottle-name-${i}`} value={b.name} onChange={e => updateBottle(i, "name", e.target.value)} placeholder="Name *" className="labs-input" style={{ gridColumn: "1 / -1" }} />
                       <input data-testid={`input-bottle-distillery-${i}`} value={b.distillery || ""} onChange={e => updateBottle(i, "distillery", e.target.value)} placeholder="Distillery" className="labs-input" />
                       <input data-testid={`input-bottle-region-${i}`} value={b.region || ""} onChange={e => updateBottle(i, "region", e.target.value)} placeholder="Region" className="labs-input" />
                       <input data-testid={`input-bottle-age-${i}`} value={b.age || ""} onChange={e => updateBottle(i, "age", e.target.value)} placeholder="Age" className="labs-input" />
