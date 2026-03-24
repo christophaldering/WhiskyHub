@@ -1822,6 +1822,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPlatformStats() {
+    const HISTORIC_TASTINGS = 32;
+    const HISTORIC_PARTICIPANTS_PER_TASTING = 35;
+    const HISTORIC_WHISKIES_PER_TASTING = 12;
+    const HISTORIC_TASTINGS_OFFSET = HISTORIC_TASTINGS;
+    const HISTORIC_PARTICIPANTS_OFFSET = HISTORIC_TASTINGS * HISTORIC_PARTICIPANTS_PER_TASTING;
+    const HISTORIC_WHISKIES_OFFSET = HISTORIC_TASTINGS * HISTORIC_WHISKIES_PER_TASTING;
+    const HISTORIC_RATINGS_OFFSET = HISTORIC_TASTINGS * HISTORIC_PARTICIPANTS_PER_TASTING * HISTORIC_WHISKIES_PER_TASTING;
+
     const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings).where(ne(tastings.status, "deleted"));
     const allParticipantRecords = await db.select({ id: participants.id, name: participants.name, pin: participants.pin }).from(participants);
     const uniquePersonCount = await deduplicateParticipantList(allParticipantRecords);
@@ -1830,10 +1838,10 @@ export class DatabaseStorage implements IStorage {
     const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(isNull(journalEntries.deletedAt));
     const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
     return {
-      totalTastings: tastingCount?.count ?? 0,
-      totalParticipants: 35 + uniquePersonCount,
-      totalWhiskies: whiskyCount?.count ?? 0,
-      totalRatings: ratingCount?.count ?? 0,
+      totalTastings: (tastingCount?.count ?? 0) + HISTORIC_TASTINGS_OFFSET,
+      totalParticipants: uniquePersonCount + HISTORIC_PARTICIPANTS_OFFSET,
+      totalWhiskies: (whiskyCount?.count ?? 0) + HISTORIC_WHISKIES_OFFSET,
+      totalRatings: (ratingCount?.count ?? 0) + HISTORIC_RATINGS_OFFSET,
       totalJournalEntries: journalCount?.count ?? 0,
       countriesRepresented: countryResult.length,
     };
