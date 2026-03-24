@@ -47,9 +47,13 @@ export default function LabsEntdecken() {
   const [expandedFilter, setExpandedFilter] = useState<EntdeckenFilterDimension | null>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  const filterPanelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inChips = filterDropdownRef.current?.contains(target);
+      const inPanel = filterPanelRef.current?.contains(target);
+      if (!inChips && !inPanel) {
         setExpandedFilter(null);
         setFilterSearch("");
       }
@@ -157,6 +161,101 @@ export default function LabsEntdecken() {
     });
     setExpandedFilter(null);
   }, []);
+
+  const clearDimensionFilter = useCallback((dim: EntdeckenFilterDimension) => {
+    setFilters(prev => ({ ...prev, [dim]: new Set() }));
+  }, []);
+
+  const removeSingleFilter = useCallback((dim: EntdeckenFilterDimension, value: string) => {
+    setFilters(prev => {
+      const newSet = new Set(prev[dim]);
+      newSet.delete(value);
+      return { ...prev, [dim]: newSet };
+    });
+  }, []);
+
+  const allActiveFilters = useMemo(() => {
+    const result: { dim: EntdeckenFilterDimension; value: string; label: string }[] = [];
+    for (const dimDef of ENTDECKEN_FILTER_DIMENSIONS) {
+      for (const val of filters[dimDef.key]) {
+        result.push({ dim: dimDef.key, value: val, label: val });
+      }
+    }
+    return result;
+  }, [filters]);
+
+  const prevWhiskyCountRef = useRef<number | null>(null);
+  const [countAnimating, setCountAnimating] = useState(false);
+  useEffect(() => {
+    if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
+      setCountAnimating(true);
+      const timer = setTimeout(() => setCountAnimating(false), 300);
+      prevWhiskyCountRef.current = whiskies.length;
+      return () => clearTimeout(timer);
+    }
+    prevWhiskyCountRef.current = whiskies.length;
+  }, [whiskies.length]);
+
+  const dragStartY = useRef<number | null>(null);
+  const dragCurrentY = useRef<number>(0);
+  const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isScrollable = target.closest('[style*="overflow"]') || target.closest('.filter-dropdown-panel > div:last-child');
+    if (isScrollable) {
+      const scrollEl = isScrollable as HTMLElement;
+      if (scrollEl.scrollTop > 0) return;
+    }
+    dragStartY.current = e.touches[0].clientY;
+  }, []);
+  const handleSheetTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    const dy = e.touches[0].clientY - dragStartY.current;
+    dragCurrentY.current = dy;
+    if (dy > 0 && filterPanelRef.current) {
+      filterPanelRef.current.style.transform = `translateY(${dy}px)`;
+      filterPanelRef.current.style.transition = 'none';
+    }
+  }, []);
+  const handleSheetTouchEnd = useCallback(() => {
+    if (dragStartY.current === null) return;
+    const dy = dragCurrentY.current;
+    if (filterPanelRef.current) {
+      filterPanelRef.current.style.transition = 'transform 200ms ease';
+      if (dy > 100) {
+        filterPanelRef.current.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+          setExpandedFilter(null);
+          setFilterSearch("");
+          if (filterPanelRef.current) {
+            filterPanelRef.current.style.transform = '';
+            filterPanelRef.current.style.transition = '';
+          }
+        }, 200);
+      } else {
+        filterPanelRef.current.style.transform = 'translateY(0)';
+        setTimeout(() => {
+          if (filterPanelRef.current) {
+            filterPanelRef.current.style.transform = '';
+            filterPanelRef.current.style.transition = '';
+          }
+        }, 200);
+      }
+    }
+    dragStartY.current = null;
+    dragCurrentY.current = 0;
+  }, []);
+
+  const chipsScrollRef = useRef<HTMLDivElement>(null);
+  const [chipsCanScroll, setChipsCanScroll] = useState(false);
+  useEffect(() => {
+    const el = chipsScrollRef.current;
+    if (!el) return;
+    const checkScroll = () => setChipsCanScroll(el.scrollWidth > el.clientWidth + 10);
+    checkScroll();
+    const obs = new ResizeObserver(checkScroll);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [filterValues]);
 
   const whiskies = useMemo(() => {
     if (!Array.isArray(whiskiesRaw)) return [];
@@ -308,7 +407,7 @@ export default function LabsEntdecken() {
               />
             </div>
 
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 {t("discover.sortLabel", "Sortieren")}
               </div>
@@ -371,8 +470,14 @@ export default function LabsEntdecken() {
               </div>
             </div>
 
+            <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {t("discover.filterLabel", "Filter")}
+              </div>
+            </div>
+
             <div ref={filterDropdownRef} style={{ position: "relative", marginBottom: 10 }}>
-              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+              <div ref={chipsScrollRef} className={`filter-chips-scroll${!chipsCanScroll ? " no-fade" : ""}`}>
                 {ENTDECKEN_FILTER_DIMENSIONS.map(dim => {
                   const dimValues = filterValues[dim.key] || [];
                   if (dimValues.length === 0) return null;
@@ -389,18 +494,18 @@ export default function LabsEntdecken() {
                       data-testid={`filter-chip-${dim.key}`}
                       style={{
                         minHeight: 44,
-                        padding: "0 14px",
+                        padding: "0 16px",
                         borderRadius: 22,
                         border: isActive ? "1.5px solid var(--labs-accent)" : "1px solid var(--labs-border)",
                         cursor: "pointer",
                         background: isActive ? "var(--labs-accent)" : "var(--labs-surface)",
-                        color: isActive ? "var(--labs-on-accent)" : "var(--labs-text-muted)",
-                        fontSize: 12,
-                        fontWeight: isActive ? 600 : 400,
+                        color: isActive ? "var(--labs-on-accent)" : "var(--labs-text)",
+                        fontSize: 14,
+                        fontWeight: isActive ? 600 : 500,
                         fontFamily: "inherit",
                         display: "flex",
                         alignItems: "center",
-                        gap: 4,
+                        gap: 6,
                         whiteSpace: "nowrap",
                         flexShrink: 0,
                         transition: "all 150ms",
@@ -410,132 +515,188 @@ export default function LabsEntdecken() {
                         ? selectedValues.join(", ")
                         : t(dim.labelKey, dim.fallback)}
                       {isActive && selectedValues.length > 2 && (
-                        <span style={{ fontSize: 10, opacity: 0.9, fontWeight: 700, background: "rgba(255,255,255,0.2)", borderRadius: 8, padding: "1px 5px" }}>
+                        <span style={{ fontSize: 11, opacity: 0.9, fontWeight: 700, background: "rgba(255,255,255,0.25)", borderRadius: 10, padding: "2px 7px" }}>
                           {selectedValues.length}
                         </span>
                       )}
-                      <ChevronDown className="w-3 h-3" style={{ opacity: 0.6, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                      <ChevronDown className="w-3.5 h-3.5" style={{ opacity: 0.6, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
                     </button>
                   );
                 })}
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    data-testid="filter-reset-all"
-                    style={{
-                      minHeight: 44,
-                      padding: "0 14px",
-                      borderRadius: 22,
-                      border: "1px solid var(--labs-border)",
-                      cursor: "pointer",
-                      background: "transparent",
-                      color: "var(--labs-text-muted)",
-                      fontSize: 11,
-                      fontFamily: "inherit",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <X className="w-3 h-3" />
-                    {t("discover.resetFilters", "Reset All")}
-                  </button>
-                )}
               </div>
+
+              {allActiveFilters.length > 0 && (
+                <div className="filter-active-tags" data-testid="filter-active-tags">
+                  {allActiveFilters.map(af => (
+                    <button
+                      key={`${af.dim}-${af.value}`}
+                      className="filter-active-tag"
+                      onClick={() => removeSingleFilter(af.dim, af.value)}
+                      data-testid={`filter-tag-${af.dim}-${af.value}`}
+                    >
+                      {af.label}
+                      <X className="w-3 h-3" style={{ opacity: 0.7 }} />
+                    </button>
+                  ))}
+                  {activeFilterCount > 1 && (
+                    <button
+                      className="filter-active-tag"
+                      onClick={clearAllFilters}
+                      data-testid="filter-reset-all"
+                      style={{ background: "transparent", border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}
+                    >
+                      {t("discover.resetFilters", "Reset All")}
+                      <X className="w-3 h-3" style={{ opacity: 0.7 }} />
+                    </button>
+                  )}
+                </div>
+              )}
 
               {expandedFilter && (filterValues[expandedFilter] || []).length > 0 && (() => {
                 const dimOptions = filterValues[expandedFilter] || [];
-                const showSearch = dimOptions.length > 8;
-                const filteredOptions = showSearch && filterSearch
+                const filteredOptions = filterSearch
                   ? dimOptions.filter(v => v.toLowerCase().includes(filterSearch.toLowerCase()))
                   : dimOptions;
                 const counts = filterValueCounts[expandedFilter] || {};
+                const dimLabel = ENTDECKEN_FILTER_DIMENSIONS.find(d => d.key === expandedFilter);
+                const dimSelectedCount = filters[expandedFilter].size;
+                const useAlphaGroups = (expandedFilter === "distillery" || expandedFilter === "region") && dimOptions.length > 15;
+                const groupedOptions = useAlphaGroups
+                  ? filteredOptions.reduce<Record<string, string[]>>((acc, val) => {
+                      const letter = val.charAt(0).toUpperCase();
+                      if (!acc[letter]) acc[letter] = [];
+                      acc[letter].push(val);
+                      return acc;
+                    }, {})
+                  : null;
+                const sortedLetters = groupedOptions ? Object.keys(groupedOptions).sort() : [];
+
+                const renderOption = (val: string) => {
+                  const isSelected = filters[expandedFilter!].has(val);
+                  const count = counts[val] || 0;
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => toggleFilter(expandedFilter!, val)}
+                      data-testid={`filter-option-${expandedFilter}-${val}`}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "10px 14px",
+                        border: "none",
+                        cursor: "pointer",
+                        background: isSelected ? "rgba(var(--labs-accent-rgb, 139,90,43), 0.08)" : "transparent",
+                        color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
+                        fontSize: 14,
+                        fontFamily: "inherit",
+                        textAlign: "left",
+                        minHeight: 44,
+                        transition: "background 100ms",
+                      }}
+                    >
+                      <span style={{
+                        width: 20, height: 20, borderRadius: 4,
+                        border: isSelected ? "none" : "1.5px solid var(--labs-border)",
+                        background: isSelected ? "var(--labs-accent)" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>
+                        {isSelected && <Check className="w-3 h-3" style={{ color: "var(--labs-on-accent)" }} />}
+                      </span>
+                      <span style={{ flex: 1 }}>{val}</span>
+                      <span style={{ fontSize: 12, color: "var(--labs-text-muted)", opacity: 0.6 }}>({count})</span>
+                    </button>
+                  );
+                };
+
                 return (
                   <>
                     <div className="filter-bottom-sheet-overlay" onClick={() => { setExpandedFilter(null); setFilterSearch(""); }} />
                     <div
+                      ref={filterPanelRef}
                       data-testid={`filter-dropdown-${expandedFilter}`}
                       className="filter-dropdown-panel"
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        zIndex: 20,
-                        marginTop: 4,
-                        background: "var(--labs-surface)",
-                        border: "1px solid var(--labs-border)",
-                        borderRadius: 12,
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                        maxHeight: 320,
-                        overflowY: "auto",
-                        padding: "4px 0",
-                      }}
+                      onTouchStart={handleSheetTouchStart}
+                      onTouchMove={handleSheetTouchMove}
+                      onTouchEnd={handleSheetTouchEnd}
                     >
-                      {showSearch && (
-                        <div style={{ padding: "8px 10px 4px", position: "sticky", top: 0, background: "var(--labs-surface)", zIndex: 1 }}>
-                          <div style={{ position: "relative" }}>
-                            <Search className="w-3.5 h-3.5" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
-                            <input
-                              value={filterSearch}
-                              onChange={e => setFilterSearch(e.target.value)}
-                              placeholder={t("discover.filterSearchPlaceholder", "Search...")}
-                              data-testid={`filter-search-${expandedFilter}`}
-                              autoFocus
+                      <div className="filter-dropdown-header">
+                        <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)" }}>
+                          {dimLabel ? t(dimLabel.labelKey, dimLabel.fallback) : expandedFilter}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          {dimSelectedCount > 0 && (
+                            <button
+                              onClick={() => clearDimensionFilter(expandedFilter)}
+                              data-testid={`filter-reset-${expandedFilter}`}
                               style={{
-                                width: "100%",
-                                height: 34,
-                                borderRadius: 8,
-                                border: "1px solid var(--labs-border)",
-                                background: "var(--labs-bg)",
-                                color: "var(--labs-text)",
-                                fontSize: 13,
-                                padding: "0 10px 0 28px",
-                                outline: "none",
-                                fontFamily: "inherit",
-                                boxSizing: "border-box",
+                                border: "none", background: "transparent", cursor: "pointer",
+                                color: "var(--labs-accent)", fontSize: 13, fontWeight: 500, fontFamily: "inherit",
+                                padding: "4px 8px", borderRadius: 6,
                               }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {filteredOptions.map(val => {
-                        const isSelected = filters[expandedFilter].has(val);
-                        const count = counts[val] || 0;
-                        return (
+                            >
+                              {t("discover.resetDimension", "Reset")}
+                            </button>
+                          )}
                           <button
-                            key={val}
-                            onClick={() => toggleFilter(expandedFilter, val)}
-                            data-testid={`filter-option-${expandedFilter}-${val}`}
+                            onClick={() => { setExpandedFilter(null); setFilterSearch(""); }}
+                            data-testid={`filter-done-${expandedFilter}`}
                             style={{
-                              width: "100%",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              padding: "10px 14px",
-                              border: "none",
-                              cursor: "pointer",
-                              background: isSelected ? "rgba(var(--labs-accent-rgb, 139,90,43), 0.08)" : "transparent",
-                              color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
-                              fontSize: 14,
-                              fontFamily: "inherit",
-                              textAlign: "left",
-                              minHeight: 44,
+                              border: "none", cursor: "pointer",
+                              background: "var(--labs-accent)", color: "var(--labs-on-accent)",
+                              fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+                              padding: "6px 14px", borderRadius: 8, minHeight: 36,
                             }}
                           >
-                            <span style={{ flex: 1 }}>{val}</span>
-                            <span style={{ fontSize: 12, color: "var(--labs-text-muted)", opacity: 0.7 }}>({count})</span>
-                            {isSelected && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />}
+                            {t("discover.filterDone", "Done")}
                           </button>
-                        );
-                      })}
-                      {filteredOptions.length === 0 && (
-                        <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center" }}>
-                          {t("discover.noFilterResults", "No matches")}
                         </div>
-                      )}
+                      </div>
+
+                      <div style={{ padding: "8px 12px 4px", position: "sticky", top: 52, background: "var(--labs-surface)", zIndex: 2 }}>
+                        <div style={{ position: "relative" }}>
+                          <Search className="w-3.5 h-3.5" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                          <input
+                            value={filterSearch}
+                            onChange={e => setFilterSearch(e.target.value)}
+                            placeholder={t("discover.filterSearchPlaceholder", "Search...")}
+                            data-testid={`filter-search-${expandedFilter}`}
+                            autoFocus={typeof window !== "undefined" && window.innerWidth > 768}
+                            style={{
+                              width: "100%",
+                              height: 38,
+                              borderRadius: 10,
+                              border: "1px solid var(--labs-border)",
+                              background: "var(--labs-bg)",
+                              color: "var(--labs-text)",
+                              fontSize: 14,
+                              padding: "0 12px 0 32px",
+                              outline: "none",
+                              fontFamily: "inherit",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ overflowY: "auto", maxHeight: "calc(70vh - 120px)" }}>
+                        {useAlphaGroups && groupedOptions ? (
+                          sortedLetters.map(letter => (
+                            <div key={letter}>
+                              <div className="filter-section-letter" data-testid={`filter-letter-${letter}`}>{letter}</div>
+                              {groupedOptions[letter].map(renderOption)}
+                            </div>
+                          ))
+                        ) : (
+                          filteredOptions.map(renderOption)
+                        )}
+                        {filteredOptions.length === 0 && (
+                          <div style={{ padding: "16px 14px", fontSize: 14, color: "var(--labs-text-muted)", textAlign: "center" }}>
+                            {t("discover.noFilterResults", "No matches")}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 );
@@ -544,6 +705,7 @@ export default function LabsEntdecken() {
 
             <div
               data-testid="text-whisky-count"
+              className={countAnimating ? "whisky-count-animate" : ""}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -552,7 +714,7 @@ export default function LabsEntdecken() {
                 padding: "0 2px",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              <span className="whisky-count-transition" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
                 {whiskies.length} {t("discover.whiskies", "Whiskies")}
               </span>
               {activeFilterCount > 0 && (

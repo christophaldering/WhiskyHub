@@ -2085,14 +2085,98 @@
   display: none;
 }
 
-@media (max-width: 640px) {
+.filter-chips-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+}
+
+.filter-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chips-scroll.no-fade {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.filter-active-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  animation: labsFadeIn 200ms ease;
+}
+
+.filter-active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--labs-accent);
+  background: rgba(var(--labs-accent-rgb, 139,90,43), 0.08);
+  color: var(--labs-accent);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 150ms;
+  min-height: 32px;
+}
+
+.filter-active-tag:hover {
+  background: rgba(var(--labs-accent-rgb, 139,90,43), 0.15);
+}
+
+.filter-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  position: sticky;
+  top: 0;
+  background: var(--labs-surface);
+  z-index: 2;
+  border-bottom: 1px solid var(--labs-border);
+}
+
+.filter-section-letter {
+  padding: 6px 14px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--labs-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  background: var(--labs-surface);
+  z-index: 1;
+  border-bottom: 1px solid rgba(var(--labs-accent-rgb, 139,90,43), 0.1);
+}
+
+.filter-dropdown-panel .filter-section-letter {
+  top: 90px;
+}
+
+.whisky-count-transition {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+@media (max-width: 768px) {
   .filter-bottom-sheet-overlay {
     display: block;
     position: fixed;
     inset: 0;
     z-index: 18;
-    background: rgba(0, 0, 0, 0.3);
-    animation: labsFadeIn 150ms ease;
+    background: rgba(0, 0, 0, 0.35);
+    animation: labsFadeIn 200ms ease;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 
   .filter-dropdown-panel {
@@ -2103,20 +2187,51 @@
     top: auto !important;
     margin-top: 0 !important;
     z-index: 25 !important;
-    border-radius: 16px 16px 0 0 !important;
-    max-height: 60vh !important;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18) !important;
-    animation: labsSlideUp 200ms ease;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 70vh !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2) !important;
+    animation: labsSlideUp 250ms cubic-bezier(0.32, 0.72, 0, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
 
   .filter-dropdown-panel::before {
     content: "";
     display: block;
-    width: 32px;
-    height: 4px;
-    border-radius: 2px;
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
     background: var(--labs-border);
-    margin: 8px auto 4px;
+    margin: 10px auto 4px;
+  }
+
+  .filter-dropdown-header {
+    padding: 14px 16px 10px;
+  }
+
+  .filter-section-letter {
+    padding: 8px 16px 6px;
+  }
+
+  .filter-dropdown-panel .filter-section-letter {
+    top: 100px;
+  }
+}
+
+@media (min-width: 769px) {
+  .filter-dropdown-panel {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 20;
+    margin-top: 6px !important;
+    background: var(--labs-surface);
+    border: 1px solid var(--labs-border);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+    max-height: 400px;
+    overflow-y: auto;
+    animation: labsFadeIn 150ms ease;
   }
 }
 
@@ -2127,4 +2242,14 @@
   to {
     transform: translateY(0);
   }
+}
+
+@keyframes labsCountPulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.whisky-count-animate {
+  animation: labsCountPulse 300ms ease;
 }
