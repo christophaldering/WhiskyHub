@@ -39,6 +39,7 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
 
 function LangSwitch() {
   const { i18n } = useTranslation();
+  const { theme, toggleTheme } = useAppStore();
   const isDE = i18n.language?.startsWith("de");
 
   const switchLang = (lang: string) => {
@@ -57,7 +58,7 @@ function LangSwitch() {
         zIndex: 10,
         display: "flex",
         alignItems: "center",
-        gap: 2,
+        gap: 12,
         fontFamily: font.body,
         fontSize: 12,
         fontWeight: 500,
@@ -66,36 +67,57 @@ function LangSwitch() {
       data-testid="lang-switch"
     >
       <button
-        onClick={() => switchLang("de")}
+        onClick={toggleTheme}
         style={{
-          padding: "6px 10px",
-          borderRadius: "8px 0 0 8px",
-          border: `1px solid ${isDE ? ACCENT + "50" : v.border}`,
-          borderRight: "none",
-          background: isDE ? `${ACCENT}12` : "transparent",
-          color: isDE ? ACCENT : v.muted,
+          padding: "6px 8px",
+          borderRadius: 8,
+          border: `1px solid ${v.border}`,
+          background: "transparent",
+          color: v.muted,
           cursor: "pointer",
           transition: "all 0.2s",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
-        data-testid="button-lang-de"
+        aria-label="Toggle theme"
+        data-testid="button-theme-toggle"
       >
-        DE
+        {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
       </button>
-      <button
-        onClick={() => switchLang("en")}
-        style={{
-          padding: "6px 10px",
-          borderRadius: "0 8px 8px 0",
-          border: `1px solid ${!isDE ? ACCENT + "50" : v.border}`,
-          background: !isDE ? `${ACCENT}12` : "transparent",
-          color: !isDE ? ACCENT : v.muted,
-          cursor: "pointer",
-          transition: "all 0.2s",
-        }}
-        data-testid="button-lang-en"
-      >
-        EN
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <button
+          onClick={() => switchLang("de")}
+          style={{
+            padding: "6px 10px",
+            borderRadius: "8px 0 0 8px",
+            border: `1px solid ${isDE ? ACCENT + "50" : v.border}`,
+            borderRight: "none",
+            background: isDE ? `${ACCENT}12` : "transparent",
+            color: isDE ? ACCENT : v.muted,
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          data-testid="button-lang-de"
+        >
+          DE
+        </button>
+        <button
+          onClick={() => switchLang("en")}
+          style={{
+            padding: "6px 10px",
+            borderRadius: "0 8px 8px 0",
+            border: `1px solid ${!isDE ? ACCENT + "50" : v.border}`,
+            background: !isDE ? `${ACCENT}12` : "transparent",
+            color: !isDE ? ACCENT : v.muted,
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          data-testid="button-lang-en"
+        >
+          EN
+        </button>
+      </div>
     </div>
   );
 }
