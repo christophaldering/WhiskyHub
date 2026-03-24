@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { KeyRound, User, Wine, PenLine, Crown, Settings } from "lucide-react";
+import { KeyRound, User, Wine, PenLine, Crown, Settings, Sun, Moon } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import { NAV_VERSION, LANDING_VERSION } from "@/lib/config";
 import { v } from "@/lib/themeVars";
+import { useAppStore } from "@/lib/store";
 
 const HERO_BG_ENABLED = false;
 const HERO_BG_URL = "/images/landing-hero.jpg";
@@ -50,6 +51,7 @@ const btnSubtle = {
 
 export default function Landing() {
   const { t } = useTranslation();
+  const { theme, toggleTheme } = useAppStore();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [session, setSession] = useState(() => getSession());
 
@@ -80,30 +82,64 @@ export default function Landing() {
         position: "relative",
       }}
     >
-      <button
-        onClick={() => setSheetOpen(true)}
+      <div
         style={{
           position: "absolute",
           top: "1rem",
           right: "1rem",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          padding: "6px 10px",
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          color: session.signedIn ? v.sessionSigned : v.sessionUnsigned,
-          opacity: session.signedIn ? 1 : 0.7,
-          transition: "opacity 0.2s, color 0.2s",
-          fontFamily: "system-ui, sans-serif",
-          fontSize: 13,
-          fontWeight: 500,
-          borderRadius: 8,
+          gap: 4,
         }}
-        data-testid="button-session-key"
-        aria-label="Tasting"
       >
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "6px 8px",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            color: v.subtleText,
+            opacity: 0.7,
+            transition: "opacity 0.2s, color 0.2s",
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 8,
+          }}
+          data-testid="button-theme-toggle"
+          aria-label={theme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
+        >
+          {theme === "dark" ? (
+            <Sun style={{ width: 15, height: 15 }} strokeWidth={1.8} />
+          ) : (
+            <Moon style={{ width: 15, height: 15 }} strokeWidth={1.8} />
+          )}
+        </button>
+        <button
+          onClick={() => setSheetOpen(true)}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "6px 10px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            color: session.signedIn ? v.sessionSigned : v.sessionUnsigned,
+            opacity: session.signedIn ? 1 : 0.7,
+            transition: "opacity 0.2s, color 0.2s",
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 8,
+          }}
+          data-testid="button-session-key"
+          aria-label="Tasting"
+        >
         {session.signedIn ? (
           <>
             <User style={{ width: 16, height: 16 }} strokeWidth={2} />
@@ -115,7 +151,8 @@ export default function Landing() {
             <span>{t("landingPage.signIn")}</span>
           </>
         )}
-      </button>
+        </button>
+      </div>
 
       <SessionSheet
         open={sheetOpen}
