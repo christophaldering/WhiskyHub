@@ -342,7 +342,7 @@ export default function LabsBenchmark() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>Results</h2>
-                    <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>{extractedEntries.length} entries</span>
+                    <span className="labs-badge labs-badge-accent">{extractedEntries.length} entries</span>
                     {fileName && <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}><FileText className="w-3 h-3" />{fileName}</span>}
                   </div>
                 </div>

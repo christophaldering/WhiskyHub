@@ -8,6 +8,7 @@ import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation, Link } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import type { JournalEntry } from "@shared/schema";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
 import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
@@ -479,7 +480,7 @@ export default function LabsTasteDrams() {
               </h2>
               {selectedEntry.distillery && <div className="text-sm mt-1" style={{ color: "var(--labs-text-secondary)" }}>{selectedEntry.distillery}</div>}
               <div className="flex items-center gap-2 mt-1">
-                {selectedEntry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 11 }}>Setting up</span>}
+                {selectedEntry.status === "draft" && <span className={getStatusConfig("draft").cssClass}>{t(getStatusConfig("draft").labelKey, getStatusConfig("draft").fallbackLabel)}</span>}
                 {selectedEntry.createdAt && (
                   <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
                     <Calendar className="w-3 h-3" />{new Date(selectedEntry.createdAt).toLocaleDateString()}
@@ -876,7 +877,7 @@ export default function LabsTasteDrams() {
                         {entry.distillery && <div style={{ fontSize: 13, color: "var(--labs-text-secondary, var(--labs-text-muted))", marginBottom: 6 }} className="truncate">{entry.distillery}</div>}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {entry.status === "draft" && (
-                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>
+                            <span className={getStatusConfig("draft").cssClass} data-testid={`labs-badge-draft-${entry.id}`}>{t(getStatusConfig("draft").labelKey, getStatusConfig("draft").fallbackLabel)}</span>
                           )}
                           {entry.source === "tasting" && (
                             <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }}>Tasting</span>

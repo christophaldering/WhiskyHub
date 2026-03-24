@@ -11,6 +11,7 @@ import {
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix } from "@/lib/utils";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
@@ -825,25 +826,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           border-radius: 2px;
           transition: width 0.5s ease;
         }
-        .cockpit-badge-live {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 12px;
-          border-radius: 20px;
-          background: var(--labs-success-muted);
-          color: var(--labs-success);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-        }
-        .cockpit-live-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: var(--labs-success);
-          animation: pulse 2s infinite;
-        }
         .cockpit-dram-row {
           display: flex;
           align-items: center;
@@ -1112,9 +1094,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             </h2>
 
             {isLive && (
-              <span className="cockpit-badge-live" data-testid="cockpit-badge-live">
-                <span className="cockpit-live-dot" />
-                LIVE
+              <span className="labs-status-chip labs-status-chip--live" data-testid="cockpit-badge-live">
+                <span className="labs-status-live-dot" />
+                {t("tastingStatus.open", "Live")}
               </span>
             )}
           </div>
@@ -1226,15 +1208,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               <div className="cockpit-lineup-sidebar" data-testid="cockpit-lineup-sidebar">
                 {/* Session status badge */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 10,
-                    background: status === "open" ? "var(--labs-success-muted)" : status === "reveal" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                    color: status === "open" ? "var(--labs-success)" : status === "reveal" ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                  }} data-testid="cockpit-sidebar-status">
-                    {status === "open" && <span className="cockpit-live-dot" />}
+                  <span className={getStatusConfig(status).cssClass} data-testid="cockpit-sidebar-status">
+                    {status === "open" && <span className="labs-status-live-dot" />}
                     {status === "archived" && <Lock style={{ width: 10, height: 10 }} />}
-                    {isDraft ? "Draft" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : status === "archived" ? "Archived" : "Completed"}
+                    {t(getStatusConfig(status).labelKey, getStatusConfig(status).fallbackLabel)}
                   </span>
                   <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>
                     {whiskies.length} Drams
@@ -1328,8 +1305,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 )}
               </div>
             )}
-            {isBlind && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10 }}><EyeOff style={{ width: 10, height: 10 }} /> Blind</span>}
-            {isGuided && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10 }}><SkipForward style={{ width: 10, height: 10 }} /> Guided</span>}
+            {isBlind && <span className="labs-badge labs-badge-accent"><EyeOff style={{ width: 12, height: 12 }} /> Blind</span>}
+            {isGuided && <span className="labs-badge labs-badge-accent"><SkipForward style={{ width: 12, height: 12 }} /> Guided</span>}
           </div>
         </div>
 
@@ -1958,12 +1935,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             <Radio style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
             Controls
           </div>
-          <span style={{
-            fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 10,
-            background: status === "open" ? "var(--labs-success-muted)" : status === "reveal" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-            color: status === "open" ? "var(--labs-success)" : status === "reveal" ? "var(--labs-accent)" : "var(--labs-text-muted)",
-          }}>
-            {isDraft ? "Setting up" : status === "open" ? "Live" : status === "reveal" ? "Reveal" : status === "closed" ? "Closed" : "Completed"}
+          <span className={getStatusConfig(status).cssClass}>
+            {status === "open" && <span className="labs-status-live-dot" />}
+            {t(getStatusConfig(status).labelKey, getStatusConfig(status).fallbackLabel)}
           </span>
         </div>
         <div className="cockpit-card-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>

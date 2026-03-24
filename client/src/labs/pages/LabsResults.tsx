@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId, pidHeaders } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadBlob } from "@/lib/download";
@@ -1023,12 +1024,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const AgreementBadge = ({ stdDev, count }: { stdDev: number | null; count: number }) => {
     if (stdDev == null || count < 2) return null;
     if (stdDev <= 5) return (
-      <span className="labs-badge labs-badge-success text-[11px]" data-testid="badge-consensus">
+      <span className="labs-badge labs-badge-success" data-testid="badge-consensus">
         <Target className="w-3 h-3" /> Consensus
       </span>
     );
     if (stdDev > 10) return (
-      <span className="labs-badge labs-badge-danger text-[11px]" data-testid="badge-debated">
+      <span className="labs-badge labs-badge-danger" data-testid="badge-debated">
         <MessageCircle className="w-3 h-3" /> Debated
       </span>
     );
@@ -1063,7 +1064,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
               </p>
           {tasting.guidedMode && (
             <span
-              className="labs-badge text-[11px]"
+              className="labs-badge"
               style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
               data-testid="results-guided-badge"
             >
@@ -1072,12 +1073,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
           )}
           {tasting.status === "archived" && (
             <span
-              className="labs-badge text-[11px] flex items-center gap-1"
-              style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+              className={getStatusConfig("archived").cssClass}
               data-testid="results-archived-badge"
             >
               <Lock className="w-3 h-3" />
-              Archived
+              {t(getStatusConfig("archived").labelKey, getStatusConfig("archived").fallbackLabel)}
             </span>
           )}
             </div>
@@ -1414,7 +1414,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   )}
 
                   {w.caskType && (
-                    <span className="labs-badge labs-badge-accent text-[11px]">{w.caskType}</span>
+                    <span className="labs-badge labs-badge-accent">{w.caskType}</span>
                   )}
 
                   {pid && (

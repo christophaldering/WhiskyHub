@@ -39,18 +39,12 @@ import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
+import { useTranslation } from "react-i18next";
 
 interface LabsTastingDetailProps {
   params: { id: string };
 }
-
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: "Setting up", className: "labs-badge-info" },
-  open: { label: "Live", className: "labs-badge-success" },
-  closed: { label: "Closed", className: "labs-badge-accent" },
-  reveal: { label: "Reveal", className: "labs-badge-accent" },
-  archived: { label: "Completed", className: "labs-badge-info" },
-};
 
 function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
   whisky: Record<string, unknown>;
@@ -114,6 +108,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
 }
 
 export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
+  const { t } = useTranslation();
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
@@ -324,7 +319,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const isCompleted = tasting?.status === "archived" || tasting?.status === "closed";
   const isReveal = tasting?.status === "reveal";
   const isDraft = tasting?.status === "draft";
-  const status = STATUS_CONFIG[tasting?.status] || STATUS_CONFIG.draft;
+  const statusCfg = getStatusConfig(tasting?.status);
 
   if (isError) {
     return (
@@ -387,8 +382,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 placeholder="Tasting title"
                 data-testid="input-meta-title"
               />
-              <span className={`labs-badge ${status.className} flex-shrink-0`} data-testid="labs-detail-status">
-                {status.label}
+              <span className={`${statusCfg.cssClass} flex-shrink-0`} data-testid="labs-detail-status">
+                {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
               </span>
             </div>
             <textarea
@@ -440,8 +435,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                     <Pencil className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
                   </button>
                 )}
-                <span className={`labs-badge ${status.className}`} data-testid="labs-detail-status">
-                  {status.label}
+                <span className={statusCfg.cssClass} data-testid="labs-detail-status">
+                  {isLive && <span className="labs-status-live-dot" />}
+                  {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
                 </span>
               </div>
             </div>
@@ -469,12 +465,16 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   {String(tasting.location ?? "")}
                 </span>
               )}
-              {tasting.hostName && (
+              {isHost ? (
+                <span className="flex items-center gap-1.5 labs-tasting-role-text" data-testid="labs-detail-host">
+                  {t("tastingStatus.yourTasting", "Your Tasting")}
+                </span>
+              ) : tasting.hostName ? (
                 <span className="flex items-center gap-1.5" data-testid="labs-detail-host">
                   <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
                   {stripGuestSuffix(tasting.hostName)}
                 </span>
-              )}
+              ) : null}
             </div>
           </>
         )}

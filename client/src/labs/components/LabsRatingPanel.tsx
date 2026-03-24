@@ -644,7 +644,7 @@ export default function LabsRatingPanel({
           {t("m2.rating.overall", "Overall")}
           {scale !== 100 && <ScaleBadge max={scaleInfo.max} />}
           {overrideActive && !overallGated && (
-            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 2, fontSize: 11 }} data-testid="badge-override">
+            <span className="labs-badge labs-badge-accent" style={{ marginLeft: 2 }} data-testid="badge-override">
               {t("m2.rating.manual", "Manual")}
             </span>
           )}

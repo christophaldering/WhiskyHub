@@ -339,13 +339,7 @@ function isFieldRevealed(rv: ReturnType<typeof getRevealState> | null, fieldOrGr
   return fields.some(f => rv.revealedFields.has(f));
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Setting up", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
-  open: { label: "Live", color: "var(--labs-success)", bg: "var(--labs-success-muted)" },
-  closed: { label: "Closed", color: "var(--labs-accent)", bg: "var(--labs-accent-muted)" },
-  reveal: { label: "Reveal", color: "var(--labs-info)", bg: "var(--labs-info-muted)" },
-  archived: { label: "Completed", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
-};
+import { getStatusConfig } from "@/labs/utils/statusConfig";
 
 type DimKey = "nose" | "taste" | "finish";
 
@@ -1134,7 +1128,7 @@ function MobileCompanion({
   onSwitchToManage?: () => void;
 }) {
   const goBack = useLabsBack("/labs/tastings");
-  const statusCfg = STATUS_CONFIG[(tasting.status as string)] || STATUS_CONFIG.draft;
+  const statusCfg = getStatusConfig(tasting.status as string);
   const whiskyCount = whiskies.length;
   const participantCount = participants.length;
   const ratingCount = ratings.length;
@@ -1470,14 +1464,9 @@ function MobileCompanion({
               </button>
             </div>
           )}
-          <span className="labs-badge flex-shrink-0" style={{ background: statusCfg.bg, color: statusCfg.color }}>
-            {isLive && (
-              <span style={{
-                width: 6, height: 6, borderRadius: 3, background: statusCfg.color,
-                display: "inline-block", marginRight: 4, animation: "pulse 2s infinite",
-              }} />
-            )}
-            {statusCfg.label}
+          <span className={statusCfg.cssClass} style={{ flexShrink: 0 }}>
+            {isLive && <span className="labs-status-live-dot" />}
+            {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -5024,7 +5013,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     );
   }
 
-  const statusCfg = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
+  const statusCfg = getStatusConfig(tasting.status);
   const whiskyCount = whiskies?.length || 0;
   const participantCount = participants?.length || 0;
   const ratingCount = ratings?.length || 0;
@@ -5142,11 +5131,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             </button>
           )}
           <span
-            className="labs-badge"
-            style={{ background: statusCfg.bg, color: statusCfg.color }}
+            className={statusCfg.cssClass}
             data-testid="labs-host-status"
           >
-            {statusCfg.label}
+            {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
           </span>
         </div>
       </div>

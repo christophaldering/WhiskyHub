@@ -7,14 +7,11 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
+import { useTranslation } from "react-i18next";
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live";
-
-const STATUS_CONFIG: Record<string, { label: string; cssClass: string }> = {
-  draft: { label: "Setting up", cssClass: "labs-badge-info" },
-  open: { label: "Live", cssClass: "labs-badge-success" },
-};
 
 function formatTastingDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
@@ -40,6 +37,7 @@ function formatTastingDate(dateStr: string | null | undefined): string {
 }
 
 export default function LabsTastings() {
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
@@ -328,7 +326,7 @@ export default function LabsTastings() {
               </div>
               <div className="labs-invitations-list">
                 {invitations.map((tasting: any) => {
-                  const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
+                  const statusCfg = getStatusConfig(tasting.status);
                   const isLive = tasting.status === "open";
                   const formattedDate = formatTastingDate(tasting.date);
                   const isAccepting = acceptingInvite === tasting.id;
@@ -350,12 +348,12 @@ export default function LabsTastings() {
                               {String(tasting.title ?? "")}
                             </span>
                             <div className="labs-tasting-card-badges">
-                              <span className="labs-tasting-badge labs-tasting-badge--invite" data-testid={`labs-tasting-invite-badge-${tasting.id}`}>
-                                Eingeladen
+                              <span className="labs-tasting-badge--invite" data-testid={`labs-tasting-invite-badge-${tasting.id}`}>
+                                {t("tastingStatus.invited", "Invited")}
                               </span>
-                              <span className={`labs-badge ${status.cssClass} labs-tasting-status-badge`} data-testid={`labs-tasting-status-${tasting.id}`}>
-                                {isLive && <span className="labs-tasting-live-dot animate-pulse" />}
-                                {status.label}
+                              <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
+                                {isLive && <span className="labs-status-live-dot" />}
+                                {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
                               </span>
                             </div>
                           </div>
@@ -395,7 +393,7 @@ export default function LabsTastings() {
           {filtered.length > 0 && (
             <div className="labs-grouped-list labs-fade-in labs-stagger-3">
               {filtered.map((tasting: any) => {
-                const status = STATUS_CONFIG[tasting.status] || STATUS_CONFIG.draft;
+                const statusCfg = getStatusConfig(tasting.status);
                 const isHost = tasting.hostId === currentParticipant?.id;
                 const isLive = tasting.status === "open";
                 const formattedDate = formatTastingDate(tasting.date);
@@ -412,23 +410,22 @@ export default function LabsTastings() {
                             {String(tasting.title ?? "")}
                           </span>
                           <div className="labs-tasting-card-badges">
-                            {isHost && (
-                              <span className="labs-tasting-badge labs-tasting-badge--host" data-testid={`labs-tasting-host-badge-${tasting.id}`}>
-                                Host
-                              </span>
-                            )}
-                            <span className={`labs-badge ${status.cssClass} labs-tasting-status-badge`} data-testid={`labs-tasting-status-${tasting.id}`}>
-                              {isLive && <span className="labs-tasting-live-dot animate-pulse" />}
-                              {status.label}
+                            <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
+                              {isLive && <span className="labs-status-live-dot" />}
+                              {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
                             </span>
                           </div>
                         </div>
-                        {tasting.hostName && (isAdmin || !isHost) && (
-                          <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
-                            <Crown className="labs-tasting-card-host-icon" />
-                            <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
-                          </div>
-                        )}
+                        <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
+                          {isHost ? (
+                            <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
+                          ) : tasting.hostName && (isAdmin || !isHost) ? (
+                            <>
+                              <Crown className="labs-tasting-card-host-icon" />
+                              <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                            </>
+                          ) : null}
+                        </div>
                         <div className="labs-tasting-card-meta">
                           {formattedDate && (
                             <span className="labs-tasting-card-meta-item">

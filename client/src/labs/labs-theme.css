@@ -1640,21 +1640,62 @@
   flex-shrink: 0;
 }
 
-.labs-tasting-badge {
-  font-size: 11px;
+.labs-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.labs-status-chip--draft {
+  background: var(--labs-info-muted);
+  color: var(--labs-info);
+}
+
+.labs-status-chip--live {
+  background: var(--labs-success-muted);
+  color: var(--labs-success);
+}
+
+.labs-status-chip--closed {
+  background: var(--labs-accent-muted);
+  color: var(--labs-accent);
+}
+
+.labs-status-chip--reveal {
+  background: var(--labs-accent-muted);
+  color: var(--labs-accent);
+}
+
+.labs-status-chip--archived {
+  background: var(--labs-surface);
+  color: var(--labs-text-muted);
+}
+
+.labs-status-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  animation: pulse 2s infinite;
 }
 
 .labs-tasting-badge--invite {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
   background: var(--labs-warning-muted, #fef3c7);
   color: var(--labs-warning, #d97706);
-}
-
-.labs-tasting-badge--host {
-  background: var(--labs-accent-muted);
-  color: var(--labs-accent);
 }
 
 .labs-tasting-badge--historical {
@@ -1662,17 +1703,10 @@
   color: var(--labs-success);
 }
 
-.labs-tasting-status-badge {
-  font-size: 11px;
-  padding: 2px 6px;
-}
-
-.labs-tasting-live-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  display: inline-block;
+.labs-tasting-role-text {
+  font-size: 12px;
+  color: var(--labs-text-muted);
+  font-weight: 500;
 }
 
 .labs-tasting-card-host {

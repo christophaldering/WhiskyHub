@@ -7,6 +7,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs/components/FlavorTagStrip";
@@ -1121,16 +1122,15 @@ export default function LabsLive({ params }: LabsLiveProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className="labs-badge"
-            style={{
-              background: tasting.status === "open" ? "var(--labs-success-muted)" : "var(--labs-accent-muted)",
-              color: tasting.status === "open" ? "var(--labs-success)" : "var(--labs-accent)",
-            }}
-            data-testid="labs-live-status"
-          >
-            {tasting.status === "open" ? "● Live" : tasting.status === "draft" ? "Setting up" : tasting.status === "archived" ? "Completed" : tasting.status}
-          </span>
+          {(() => {
+            const sc = getStatusConfig(tasting.status);
+            return (
+              <span className={sc.cssClass} data-testid="labs-live-status">
+                {tasting.status === "open" && <span className="labs-status-live-dot" />}
+                {t(sc.labelKey, sc.fallbackLabel)}
+              </span>
+            );
+          })()}
           {totalWhiskies > 0 && (
             <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
               {totalWhiskies} {totalWhiskies === 1 ? "dram" : "drams"}
@@ -1411,7 +1411,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
                       Overall
                       {overrideActive && (
-                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8, fontSize: 11 }}>
+                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8 }}>
                           Manual
                         </span>
                       )}

@@ -83,7 +83,7 @@ function NavItem({ icon: Icon, label, description, href, testId, badge, locked }
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{description}</div>
         </div>
         {badge != null && (
-          <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>{badge}</span>
+          <span className="labs-badge labs-badge-accent">{badge}</span>
         )}
         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
       </div>

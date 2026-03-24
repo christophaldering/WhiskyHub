@@ -91,7 +91,7 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
           <span className="labs-serif" style={{ fontSize: 14, fontWeight: 600 }}>{title}</span>
-          <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>{entries.length}</span>
+          <span className="labs-badge labs-badge-accent">{entries.length}</span>
         </div>
         {open
           ? <ChevronUp style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />

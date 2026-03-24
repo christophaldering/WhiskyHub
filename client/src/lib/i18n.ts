@@ -169,6 +169,16 @@ const resources = {
         ultraRecapDesc: "Your ratings have been submitted. In Anonymous Guest mode, no ranking is shown.",
         standardHint: "Your progress is saved on this device so you can continue later.",
       },
+      tastingStatus: {
+        draft: "Draft",
+        open: "Live",
+        closed: "Evaluation Complete",
+        reveal: "Reveal",
+        archived: "Completed",
+        yourTasting: "Your Tasting",
+        hostedBy: "Hosted by {{name}}",
+        invited: "Invited",
+      },
       sessions: {
         createNew: "Create New Tasting",
         titleLabel: "Title",
@@ -6766,6 +6776,16 @@ const resources = {
         ultraRecapTitle: "Danke!",
         ultraRecapDesc: "Deine Bewertungen wurden übermittelt. Im Anonymer-Gast-Modus wird kein Ranking angezeigt.",
         standardHint: "Dein Fortschritt wird auf diesem Gerät gespeichert, damit du später fortsetzen kannst.",
+      },
+      tastingStatus: {
+        draft: "Entwurf",
+        open: "Live",
+        closed: "Auswertung beendet",
+        reveal: "Enthüllung",
+        archived: "Abgeschlossen",
+        yourTasting: "Dein Tasting",
+        hostedBy: "Hosted von {{name}}",
+        invited: "Eingeladen",
       },
       sessions: {
         createNew: "Neues Tasting erstellen",
