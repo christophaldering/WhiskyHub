@@ -2080,3 +2080,51 @@
     animation: none;
   }
 }
+
+.filter-bottom-sheet-overlay {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .filter-bottom-sheet-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 18;
+    background: rgba(0, 0, 0, 0.3);
+    animation: labsFadeIn 150ms ease;
+  }
+
+  .filter-dropdown-panel {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    margin-top: 0 !important;
+    z-index: 25 !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 60vh !important;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18) !important;
+    animation: labsSlideUp 200ms ease;
+  }
+
+  .filter-dropdown-panel::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--labs-border);
+    margin: 8px auto 4px;
+  }
+}
+
+@keyframes labsSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

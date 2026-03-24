@@ -10,7 +10,7 @@ import {
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, Sparkles, BarChart3,
   Info, Heart, Flame, Globe, History, Archive,
-  X, ChevronDown, Check,
+  X, ChevronDown, Check, ArrowUp, ArrowDown,
 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 
@@ -35,6 +35,8 @@ export default function LabsEntdecken() {
   const [activeTab, setActiveTab] = useState<DiscoveryTab>("whiskys");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("avg");
+  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
+  const [filterSearch, setFilterSearch] = useState("");
   const [filters, setFilters] = useState<Record<EntdeckenFilterDimension, Set<string>>>({
     region: new Set(),
     distillery: new Set(),
@@ -49,6 +51,7 @@ export default function LabsEntdecken() {
     const handleClickOutside = (e: MouseEvent) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
         setExpandedFilter(null);
+        setFilterSearch("");
       }
     };
     if (expandedFilter) {
@@ -112,6 +115,29 @@ export default function LabsEntdecken() {
     };
   }, [whiskiesRaw]);
 
+  const filterValueCounts = useMemo(() => {
+    if (!Array.isArray(whiskiesRaw) || whiskiesRaw.length === 0) return {} as Record<EntdeckenFilterDimension, Record<string, number>>;
+    const result: Record<string, Record<string, number>> = {};
+    const dims: EntdeckenFilterDimension[] = ["region", "distillery", "category", "country", "peatLevel"];
+    for (const dim of dims) {
+      result[dim] = {};
+      const otherFiltersMatch = (w: any) => {
+        for (const d of dims) {
+          if (d === dim) continue;
+          if (filters[d].size > 0 && (!w[d] || !filters[d].has(w[d]))) return false;
+        }
+        return true;
+      };
+      for (const w of whiskiesRaw) {
+        if (!w[dim]) continue;
+        if (otherFiltersMatch(w)) {
+          result[dim][w[dim]] = (result[dim][w[dim]] || 0) + 1;
+        }
+      }
+    }
+    return result as Record<EntdeckenFilterDimension, Record<string, number>>;
+  }, [whiskiesRaw, filters]);
+
   const activeFilterCount = useMemo(() => {
     return Object.values(filters).reduce((sum, set) => sum + set.size, 0);
   }, [filters]);
@@ -134,16 +160,31 @@ export default function LabsEntdecken() {
 
   const whiskies = useMemo(() => {
     if (!Array.isArray(whiskiesRaw)) return [];
-    if (activeFilterCount === 0) return whiskiesRaw;
-    return whiskiesRaw.filter((w: any) => {
-      if (filters.region.size > 0 && (!w.region || !filters.region.has(w.region))) return false;
-      if (filters.distillery.size > 0 && (!w.distillery || !filters.distillery.has(w.distillery))) return false;
-      if (filters.category.size > 0 && (!w.category || !filters.category.has(w.category))) return false;
-      if (filters.country.size > 0 && (!w.country || !filters.country.has(w.country))) return false;
-      if (filters.peatLevel.size > 0 && (!w.peatLevel || !filters.peatLevel.has(w.peatLevel))) return false;
-      return true;
+    let result = [...whiskiesRaw];
+    if (activeFilterCount > 0) {
+      result = result.filter((w: any) => {
+        if (filters.region.size > 0 && (!w.region || !filters.region.has(w.region))) return false;
+        if (filters.distillery.size > 0 && (!w.distillery || !filters.distillery.has(w.distillery))) return false;
+        if (filters.category.size > 0 && (!w.category || !filters.category.has(w.category))) return false;
+        if (filters.country.size > 0 && (!w.country || !filters.country.has(w.country))) return false;
+        if (filters.peatLevel.size > 0 && (!w.peatLevel || !filters.peatLevel.has(w.peatLevel))) return false;
+        return true;
+      });
+    }
+    const dir = sortDirection === "asc" ? 1 : -1;
+    result.sort((a: any, b: any) => {
+      if (sort === "avg") {
+        return dir * ((b.avgScore ?? b.avgOverall ?? 0) - (a.avgScore ?? a.avgOverall ?? 0));
+      } else if (sort === "most") {
+        return dir * ((b.tastingCount ?? b.ratingCount ?? 0) - (a.tastingCount ?? a.ratingCount ?? 0));
+      } else {
+        const nameA = (a.name || a.whiskeyName || "").toLowerCase();
+        const nameB = (b.name || b.whiskeyName || "").toLowerCase();
+        return dir * nameA.localeCompare(nameB);
+      }
     });
-  }, [whiskiesRaw, filters, activeFilterCount]);
+    return result;
+  }, [whiskiesRaw, filters, activeFilterCount, sort, sortDirection]);
 
   const { data: tastingsData, isLoading: tastingsLoading } = useQuery({
     queryKey: ["discovery-tastings", pid],
@@ -244,7 +285,7 @@ export default function LabsEntdecken() {
 
         {activeTab === "whiskys" && (
           <div>
-            <div style={{ position: "relative", marginBottom: 8 }}>
+            <div style={{ position: "relative", marginBottom: 10 }}>
               <Search className="w-4 h-4" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
               <input
                 value={search}
@@ -267,22 +308,89 @@ export default function LabsEntdecken() {
               />
             </div>
 
-            <div ref={filterDropdownRef} style={{ position: "relative", marginBottom: 8 }}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {t("discover.sortLabel", "Sortieren")}
+              </div>
+              <div
+                data-testid="sort-segmented-control"
+                style={{
+                  display: "flex",
+                  background: "var(--labs-surface)",
+                  borderRadius: 10,
+                  border: "1px solid var(--labs-border)",
+                  overflow: "hidden",
+                  padding: 2,
+                }}
+              >
+                {[
+                  ["avg", t("discover.sortAvg", "Avg Score")],
+                  ["most", t("discover.sortMost", "Most Tastings")],
+                  ["alpha", t("discover.sortAlpha", "A-Z")],
+                ].map(([id, label]) => {
+                  const isActive = sort === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        if (sort === id) {
+                          setSortDirection(prev => prev === "desc" ? "asc" : "desc");
+                        } else {
+                          setSort(id as string);
+                          setSortDirection(id === "alpha" ? "asc" : "desc");
+                        }
+                      }}
+                      data-testid={`sort-${id}`}
+                      style={{
+                        flex: 1,
+                        minHeight: 44,
+                        border: "none",
+                        cursor: "pointer",
+                        borderRadius: 8,
+                        background: isActive ? "var(--labs-accent)" : "transparent",
+                        color: isActive ? "var(--labs-on-accent)" : "var(--labs-text-muted)",
+                        fontSize: 12,
+                        fontWeight: isActive ? 700 : 400,
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 3,
+                        transition: "all 150ms",
+                      }}
+                    >
+                      {label}
+                      {isActive && (
+                        sortDirection === "desc"
+                          ? <ArrowDown className="w-3 h-3" />
+                          : <ArrowUp className="w-3 h-3" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div ref={filterDropdownRef} style={{ position: "relative", marginBottom: 10 }}>
               <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                 {ENTDECKEN_FILTER_DIMENSIONS.map(dim => {
                   const dimValues = filterValues[dim.key] || [];
                   if (dimValues.length === 0) return null;
                   const isActive = filters[dim.key].size > 0;
                   const isExpanded = expandedFilter === dim.key;
+                  const selectedValues = Array.from(filters[dim.key]);
                   return (
                     <button
                       key={dim.key}
-                      onClick={() => setExpandedFilter(isExpanded ? null : dim.key)}
+                      onClick={() => {
+                        setExpandedFilter(isExpanded ? null : dim.key);
+                        setFilterSearch("");
+                      }}
                       data-testid={`filter-chip-${dim.key}`}
                       style={{
-                        height: 32,
-                        padding: "0 10px",
-                        borderRadius: 16,
+                        minHeight: 44,
+                        padding: "0 14px",
+                        borderRadius: 22,
                         border: isActive ? "1.5px solid var(--labs-accent)" : "1px solid var(--labs-border)",
                         cursor: "pointer",
                         background: isActive ? "var(--labs-accent)" : "var(--labs-surface)",
@@ -298,8 +406,14 @@ export default function LabsEntdecken() {
                         transition: "all 150ms",
                       }}
                     >
-                      {t(dim.labelKey, dim.fallback)}
-                      {isActive && <span style={{ fontSize: 10, opacity: 0.8 }}>({filters[dim.key].size})</span>}
+                      {isActive && selectedValues.length <= 2
+                        ? selectedValues.join(", ")
+                        : t(dim.labelKey, dim.fallback)}
+                      {isActive && selectedValues.length > 2 && (
+                        <span style={{ fontSize: 10, opacity: 0.9, fontWeight: 700, background: "rgba(255,255,255,0.2)", borderRadius: 8, padding: "1px 5px" }}>
+                          {selectedValues.length}
+                        </span>
+                      )}
                       <ChevronDown className="w-3 h-3" style={{ opacity: 0.6, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
                     </button>
                   );
@@ -309,9 +423,9 @@ export default function LabsEntdecken() {
                     onClick={clearAllFilters}
                     data-testid="filter-reset-all"
                     style={{
-                      height: 32,
-                      padding: "0 10px",
-                      borderRadius: 16,
+                      minHeight: 44,
+                      padding: "0 14px",
+                      borderRadius: 22,
                       border: "1px solid var(--labs-border)",
                       cursor: "pointer",
                       background: "transparent",
@@ -331,155 +445,185 @@ export default function LabsEntdecken() {
                 )}
               </div>
 
-              {expandedFilter && (filterValues[expandedFilter] || []).length > 0 && (
-                <div
-                  data-testid={`filter-dropdown-${expandedFilter}`}
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    zIndex: 20,
-                    marginTop: 4,
-                    background: "var(--labs-surface)",
-                    border: "1px solid var(--labs-border)",
-                    borderRadius: 12,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                    maxHeight: 240,
-                    overflowY: "auto",
-                    padding: "4px 0",
-                  }}
-                >
-                  {(filterValues[expandedFilter] || []).map(val => {
-                    const isSelected = filters[expandedFilter].has(val);
-                    return (
-                      <button
-                        key={val}
-                        onClick={() => toggleFilter(expandedFilter, val)}
-                        data-testid={`filter-option-${expandedFilter}-${val}`}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "10px 14px",
-                          border: "none",
-                          cursor: "pointer",
-                          background: isSelected ? "rgba(var(--labs-accent-rgb, 139,90,43), 0.08)" : "transparent",
-                          color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
-                          fontSize: 14,
-                          fontFamily: "inherit",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span>{val}</span>
-                        {isSelected && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />}
-                      </button>
-                    );
-                  })}
-                </div>
+              {expandedFilter && (filterValues[expandedFilter] || []).length > 0 && (() => {
+                const dimOptions = filterValues[expandedFilter] || [];
+                const showSearch = dimOptions.length > 8;
+                const filteredOptions = showSearch && filterSearch
+                  ? dimOptions.filter(v => v.toLowerCase().includes(filterSearch.toLowerCase()))
+                  : dimOptions;
+                const counts = filterValueCounts[expandedFilter] || {};
+                return (
+                  <>
+                    <div className="filter-bottom-sheet-overlay" onClick={() => { setExpandedFilter(null); setFilterSearch(""); }} />
+                    <div
+                      data-testid={`filter-dropdown-${expandedFilter}`}
+                      className="filter-dropdown-panel"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                        marginTop: 4,
+                        background: "var(--labs-surface)",
+                        border: "1px solid var(--labs-border)",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                        maxHeight: 320,
+                        overflowY: "auto",
+                        padding: "4px 0",
+                      }}
+                    >
+                      {showSearch && (
+                        <div style={{ padding: "8px 10px 4px", position: "sticky", top: 0, background: "var(--labs-surface)", zIndex: 1 }}>
+                          <div style={{ position: "relative" }}>
+                            <Search className="w-3.5 h-3.5" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                            <input
+                              value={filterSearch}
+                              onChange={e => setFilterSearch(e.target.value)}
+                              placeholder={t("discover.filterSearchPlaceholder", "Search...")}
+                              data-testid={`filter-search-${expandedFilter}`}
+                              autoFocus
+                              style={{
+                                width: "100%",
+                                height: 34,
+                                borderRadius: 8,
+                                border: "1px solid var(--labs-border)",
+                                background: "var(--labs-bg)",
+                                color: "var(--labs-text)",
+                                fontSize: 13,
+                                padding: "0 10px 0 28px",
+                                outline: "none",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {filteredOptions.map(val => {
+                        const isSelected = filters[expandedFilter].has(val);
+                        const count = counts[val] || 0;
+                        return (
+                          <button
+                            key={val}
+                            onClick={() => toggleFilter(expandedFilter, val)}
+                            data-testid={`filter-option-${expandedFilter}-${val}`}
+                            style={{
+                              width: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "10px 14px",
+                              border: "none",
+                              cursor: "pointer",
+                              background: isSelected ? "rgba(var(--labs-accent-rgb, 139,90,43), 0.08)" : "transparent",
+                              color: isSelected ? "var(--labs-accent)" : "var(--labs-text)",
+                              fontSize: 14,
+                              fontFamily: "inherit",
+                              textAlign: "left",
+                              minHeight: 44,
+                            }}
+                          >
+                            <span style={{ flex: 1 }}>{val}</span>
+                            <span style={{ fontSize: 12, color: "var(--labs-text-muted)", opacity: 0.7 }}>({count})</span>
+                            {isSelected && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />}
+                          </button>
+                        );
+                      })}
+                      {filteredOptions.length === 0 && (
+                        <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center" }}>
+                          {t("discover.noFilterResults", "No matches")}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div
+              data-testid="text-whisky-count"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+                padding: "0 2px",
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+                {whiskies.length} {t("discover.whiskies", "Whiskies")}
+              </span>
+              {activeFilterCount > 0 && (
+                <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+                  {t("discover.filteredFrom", "von")} {whiskiesRaw.length}
+                </span>
               )}
             </div>
 
-            {activeFilterCount > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                {ENTDECKEN_FILTER_DIMENSIONS.map(dim =>
-                  Array.from(filters[dim.key]).map(val => (
-                    <span
-                      key={`${dim.key}-${val}`}
-                      data-testid={`active-filter-${dim.key}-${val}`}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                        height: 26,
-                        padding: "0 8px",
-                        borderRadius: 13,
-                        background: "var(--labs-accent)",
-                        color: "var(--labs-on-accent)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {val}
-                      <button
-                        onClick={() => toggleFilter(dim.key, val)}
-                        data-testid={`remove-filter-${dim.key}-${val}`}
-                        style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", color: "inherit" }}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))
-                )}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-              {[
-                ["avg", t("discover.sortAvg", "Avg Score")],
-                ["most", t("discover.sortMost", "Most Tastings")],
-                ["alpha", t("discover.sortAlpha", "A-Z")],
-              ].map(([id, label]) => (
+            {whiskies.map((w: any, i: number) => {
+              const score = (w.avgScore ?? w.avgOverall) ? Math.round(w.avgScore ?? w.avgOverall) : null;
+              const scoreColor = score != null
+                ? score > 85 ? "#D4A017" : score > 75 ? "#A0A0A0" : "var(--labs-text-muted)"
+                : "var(--labs-text-muted)";
+              const scoreBg = score != null
+                ? score > 85 ? "rgba(212, 160, 23, 0.12)" : score > 75 ? "rgba(160, 160, 160, 0.12)" : "rgba(128,128,128,0.08)"
+                : "transparent";
+              const scoreBorder = score != null
+                ? score > 85 ? "rgba(212, 160, 23, 0.3)" : score > 75 ? "rgba(160, 160, 160, 0.25)" : "rgba(128,128,128,0.15)"
+                : "transparent";
+              return (
                 <button
-                  key={id}
-                  onClick={() => setSort(id as string)}
-                  data-testid={`sort-${id}`}
+                  key={i}
+                  onClick={() => w.id && navigate(`/labs/explore/bottles/${w.id}`)}
+                  data-testid={`whisky-card-${w.id || i}`}
                   style={{
-                    height: 36,
-                    padding: "0 14px",
-                    borderRadius: 18,
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "12px 0",
+                    background: "none",
                     border: "none",
+                    borderBottomWidth: 1,
+                    borderBottomStyle: "solid",
+                    borderBottomColor: "var(--labs-border)",
                     cursor: "pointer",
-                    background: sort === id ? "var(--labs-accent)" : "var(--labs-surface)",
-                    color: sort === id ? "var(--labs-on-accent)" : "var(--labs-text-muted)",
-                    fontSize: 12,
-                    fontWeight: sort === id ? 700 : 400,
-                    fontFamily: "inherit",
+                    textAlign: "left",
+                    gap: 10,
                   }}
                 >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {whiskies.map((w: any, i: number) => (
-              <button
-                key={i}
-                onClick={() => w.id && navigate(`/labs/explore/bottles/${w.id}`)}
-                data-testid={`whisky-card-${w.id || i}`}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "12px 0",
-                  borderBottom: "1px solid var(--labs-border)",
-                  background: "none",
-                  border: "none",
-                  borderBottomWidth: 1,
-                  borderBottomStyle: "solid",
-                  borderBottomColor: "var(--labs-border)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  gap: 10,
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || w.whiskeyName}</div>
-                  <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` \u00b7 ${w.region}` : ""}</div>
-                  {w.tastingCount > 0 && (
-                    <div style={{ fontSize: 11, color: "var(--labs-phase-palate)", marginTop: 2 }}>
-                      {t("discover.crossLinkTastings", "Tastings")}: {w.tastingCount}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || w.whiskeyName}</div>
+                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` \u00b7 ${w.region}` : ""}</div>
+                    {w.tastingCount > 0 && (
+                      <div style={{ fontSize: 11, color: "var(--labs-phase-palate)", marginTop: 2 }}>
+                        {t("discover.crossLinkTastings", "Tastings")}: {w.tastingCount}
+                      </div>
+                    )}
+                  </div>
+                  {score != null && (
+                    <div
+                      data-testid={`score-badge-${w.id || i}`}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        border: `2px solid ${scoreBorder}`,
+                        background: scoreBg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 700, color: scoreColor }}>{score}</span>
                     </div>
                   )}
-                </div>
-                {w.avgScore && (
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>
-                    {Math.round(w.avgScore)}
-                  </span>
-                )}
-                <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
-              </button>
-            ))}
+                  <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+                </button>
+              );
+            })}
             {whiskies.length === 0 && (
               <div style={{ textAlign: "center", padding: 32, color: "var(--labs-text-muted)", fontSize: 14 }}>
                 {(search || activeFilterCount > 0) ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
