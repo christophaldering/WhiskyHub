@@ -1,15 +1,18 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { tryAutoResume, getSession } from "@/lib/session";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
+import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
+import { saveSoloDraft, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
 type Step = "capture" | "form" | "rating" | "done";
 
@@ -100,6 +103,42 @@ export default function LabsSolo() {
   const [initToken, setInitToken] = useState(0);
   const [fromCollection, setFromCollection] = useState(false);
   const [addToCollection, setAddToCollection] = useState(true);
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
+  const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
+  const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
+  const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
+
+  const hasUnsavedRef = useRef(false);
+
+  const showDraftFlash = useCallback(() => {
+    setDraftSavedFlash(true);
+    if (draftFlashTimer.current) clearTimeout(draftFlashTimer.current);
+    draftFlashTimer.current = setTimeout(() => setDraftSavedFlash(false), 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (draftFlashTimer.current) clearTimeout(draftFlashTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  useEffect(() => {
+    hasUnsavedRef.current = step === "form" || step === "rating";
+  }, [step]);
 
   const initParticipant = useCallback(() => {
     const token = Date.now();
@@ -128,37 +167,80 @@ export default function LabsSolo() {
     initParticipant();
   }, [initParticipant]);
 
+  const handleResumeDraft = useCallback(() => {
+    if (!resumeDraft) return;
+    setWhisky(resumeDraft.whisky);
+    setFromCollection(resumeDraft.fromCollection);
+    setRatingMode(resumeDraft.ratingMode);
+    setRatingPhaseIndex(resumeDraft.ratingPhaseIndex);
+    if (resumeDraft.ratingData?.scores) {
+      setRatingInitialData(resumeDraft.ratingData as RatingData);
+    }
+    setStep(resumeDraft.step);
+    setResumeDraft(null);
+  }, [resumeDraft]);
+
+  const handleDiscardDraft = useCallback(() => {
+    clearSoloDraft();
+    setResumeDraft(null);
+  }, []);
+
+  const handleRatingChange = useCallback((draft: RatingFlowDraftState) => {
+    setRatingMode(draft.mode);
+    setRatingPhaseIndex(draft.phaseIndex);
+    saveSoloDraft({
+      step: "rating",
+      whisky,
+      ratingMode: draft.mode,
+      ratingPhaseIndex: draft.phaseIndex,
+      ratingData: draft.data,
+      fromCollection,
+    });
+    showDraftFlash();
+  }, [whisky, fromCollection, showDraftFlash]);
+
   const handleCaptured = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
     setStep("form");
-  }, []);
+    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    showDraftFlash();
+  }, [showDraftFlash]);
 
   const handleManual = useCallback(() => {
     setWhisky(null);
     setFromCollection(false);
     setAddToCollection(true);
     setStep("form");
-  }, []);
+    saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    showDraftFlash();
+  }, [showDraftFlash]);
 
   const handleBarcode = useCallback((barcode: string) => {
-    setWhisky({ name: barcode, distillery: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode });
+    const w: CapturedWhisky = { name: barcode, distillery: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
+    setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
     setStep("form");
-  }, []);
+    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    showDraftFlash();
+  }, [showDraftFlash]);
 
   const handleCollectionSelect = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
     setFromCollection(true);
     setStep("rating");
-  }, []);
+    saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: true });
+    showDraftFlash();
+  }, [showDraftFlash]);
 
   const handleFormSubmit = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
     setStep("rating");
-  }, []);
+    saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection });
+    showDraftFlash();
+  }, [fromCollection, showDraftFlash]);
 
   const handleRatingDone = useCallback(async (data: RatingData) => {
     setRatingResult(data);
@@ -205,6 +287,8 @@ export default function LabsSolo() {
         return;
       }
 
+      clearSoloDraft();
+      hasUnsavedRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setStep("done");
     } catch {
@@ -245,6 +329,9 @@ export default function LabsSolo() {
     setSaveError(false);
     setFromCollection(false);
     setAddToCollection(true);
+    setRatingMode(null);
+    setRatingPhaseIndex(0);
+    setRatingInitialData(undefined);
     setStep("capture");
   }, [saveToCollectionIfNeeded]);
 
@@ -293,15 +380,27 @@ export default function LabsSolo() {
     );
   } else if (step === "capture") {
     content = (
-      <SoloCaptureScreen
-        participantId={participantId}
-        isAuthenticated={isUserAuthenticated()}
-        onManual={handleManual}
-        onCaptured={handleCaptured}
-        onBarcode={handleBarcode}
-        onCollectionSelect={handleCollectionSelect}
-        onBack={goBack}
-      />
+      <>
+        {resumeDraft && (
+          <div style={{ padding: "0 var(--labs-space-md)" }}>
+            <ResumeRatingBanner
+              whiskyName={resumeDraft.whisky?.name || ""}
+              step={resumeDraft.ratingPhaseIndex}
+              onResume={handleResumeDraft}
+              onDiscard={handleDiscardDraft}
+            />
+          </div>
+        )}
+        <SoloCaptureScreen
+          participantId={participantId}
+          isAuthenticated={isUserAuthenticated()}
+          onManual={handleManual}
+          onCaptured={handleCaptured}
+          onBarcode={handleBarcode}
+          onCollectionSelect={handleCollectionSelect}
+          onBack={goBack}
+        />
+      </>
     );
   } else if (step === "form") {
     content = (
@@ -309,7 +408,18 @@ export default function LabsSolo() {
         initial={whisky || undefined}
         fromAI={whisky?.fromAI}
         onSubmit={handleFormSubmit}
-        onBack={() => setStep("capture")}
+        onBack={() => { setStep("capture"); clearSoloDraft(); }}
+        onChange={(w) => {
+          setWhisky(prev => ({ ...prev, ...w } as CapturedWhisky));
+          saveSoloDraft({
+            step: "form",
+            whisky: { ...whisky, ...w } as CapturedWhisky,
+            ratingMode: null,
+            ratingPhaseIndex: 0,
+            ratingData: {},
+            fromCollection: false,
+          });
+        }}
       />
     );
   } else if (step === "rating") {
@@ -322,8 +432,12 @@ export default function LabsSolo() {
             cask: whisky?.cask || "",
             blind: false,
           }}
+          initialData={ratingInitialData}
+          initialMode={ratingMode}
+          initialPhaseIndex={ratingPhaseIndex}
           onDone={handleRatingDone}
-          onBack={() => setStep("form")}
+          onBack={() => { setStep("form"); clearSoloDraft(); }}
+          onChange={handleRatingChange}
         />
         {saveError && (
           <div className="labs-card" style={{
@@ -370,8 +484,34 @@ export default function LabsSolo() {
   }
 
   return (
-    <div className="labs-solo-container">
+    <div className="labs-solo-container" style={{ position: "relative" }}>
       {content}
+      {draftSavedFlash && (
+        <div
+          data-testid="draft-saved-indicator"
+          style={{
+            position: "fixed",
+            top: 60,
+            right: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 12px",
+            borderRadius: 20,
+            background: "rgba(34,197,94,0.12)",
+            border: "1px solid rgba(34,197,94,0.25)",
+            color: "var(--labs-success, #22c55e)",
+            fontSize: 12,
+            fontWeight: 600,
+            zIndex: 50,
+            animation: "labsFadeIn 200ms ease both",
+            pointerEvents: "none",
+          }}
+        >
+          <Check style={{ width: 14, height: 14 }} />
+          {t("v2.draftSaved", "Draft saved")}
+        </div>
+      )}
     </div>
   );
 }

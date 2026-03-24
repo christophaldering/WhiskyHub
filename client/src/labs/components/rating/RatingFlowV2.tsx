@@ -6,6 +6,12 @@ import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
 import QuickRating from "./QuickRating";
 
+export interface RatingFlowDraftState {
+  mode: "guided" | "compact" | "quick" | null;
+  phaseIndex: number;
+  data: Partial<RatingData>;
+}
+
 interface RatingFlowV2Props {
   whisky: {
     name?: string;
@@ -15,16 +21,19 @@ interface RatingFlowV2Props {
     flavorProfile?: string;
   };
   initialData?: RatingData;
+  initialMode?: "guided" | "compact" | "quick" | null;
+  initialPhaseIndex?: number;
   onDone: (data: RatingData) => void;
   onBack: () => void;
+  onChange?: (draft: RatingFlowDraftState) => void;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: RatingFlowV2Props) {
+export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange }: RatingFlowV2Props) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(null);
-  const [step, setStep] = useState<Step>("mode");
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(initialMode ?? null);
+  const [step, setStep] = useState<Step>(initialMode ? "rating" : "mode");
 
   const modeLabels = useMemo(() => ({
     modeQ: t("v2.ratingModeQ", "Wie moechtest du bewerten?"),
@@ -99,11 +108,16 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
   const handleModeSelect = useCallback((m: "guided" | "compact" | "quick") => {
     setMode(m);
     setStep("rating");
-  }, []);
+    onChange?.({ mode: m, phaseIndex: 0, data: initialData ?? {} });
+  }, [onChange, initialData]);
 
   const handleRatingDone = useCallback((data: RatingData) => {
     onDone(data);
   }, [onDone]);
+
+  const handleChange = useCallback((phaseIndex: number, data: Partial<RatingData>) => {
+    onChange?.({ mode, phaseIndex, data });
+  }, [mode, onChange]);
 
   if (step === "mode") {
     return (
@@ -121,8 +135,10 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
         labels={guidedLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
+        initialPhaseIndex={initialPhaseIndex}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
+        onChange={handleChange}
       />
     );
   }
@@ -135,6 +151,7 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
         initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
+        onChange={handleChange}
       />
     );
   }
@@ -144,8 +161,10 @@ export default function RatingFlowV2({ whisky, initialData, onDone, onBack }: Ra
       <QuickRating
         labels={quickLabels}
         whisky={{ ...whisky, blind: whisky.blind ?? false }}
+        initialData={initialData}
         onDone={handleRatingDone}
         onBack={() => setStep("mode")}
+        onChange={handleChange}
       />
     );
   }

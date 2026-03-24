@@ -30,13 +30,15 @@ interface QuickRatingProps {
     cask?: string;
     blind?: boolean;
   };
+  initialData?: RatingData;
   onDone: (data: RatingData) => void;
   onBack: () => void;
+  onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
 }
 
-export default function QuickRating({ labels, whisky, onDone, onBack }: QuickRatingProps) {
-  const [score, setScore] = useState(75);
-  const [note, setNote] = useState("");
+export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange }: QuickRatingProps) {
+  const [score, setScore] = useState(initialData?.scores?.overall ?? 75);
+  const [note, setNote] = useState(initialData?.notes?.overall ?? "");
 
   const handleSave = () => {
     const defaultScore = 75;
@@ -107,7 +109,10 @@ export default function QuickRating({ labels, whisky, onDone, onBack }: QuickRat
       }}>
         <ScoreInput
           value={score}
-          onChange={setScore}
+          onChange={(v) => {
+            setScore(v);
+            onChange?.(0, { scores: { nose: 75, palate: 75, finish: 75, overall: v }, notes: { nose: "", palate: "", finish: "", overall: note } });
+          }}
           phaseId="overall"
           labels={labels}
         />
@@ -121,7 +126,10 @@ export default function QuickRating({ labels, whisky, onDone, onBack }: QuickRat
           data-testid="input-quick-note"
           type="text"
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => {
+            setNote(e.target.value);
+            onChange?.(0, { scores: { nose: 75, palate: 75, finish: 75, overall: score }, notes: { nose: "", palate: "", finish: "", overall: e.target.value } });
+          }}
           placeholder={labels.notePH}
           style={{
             width: "100%",

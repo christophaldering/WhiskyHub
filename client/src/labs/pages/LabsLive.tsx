@@ -18,11 +18,13 @@ import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import DramCarousel from "@/labs/components/DramCarousel";
 import { ResumeOrSkipBanner } from "@/labs/components/ResumeRatingBanner";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import type { Tasting } from "@shared/schema";
+import { saveGroupDraft, loadGroupDraft, clearGroupDraft } from "@/lib/draftStorage";
 
 const VOICE_MEMOS_ENABLED = false;
 
@@ -143,6 +145,12 @@ function GuidedStepView({
   const prevWhiskyIndexRef = useRef(whiskyIndex);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editRatingMode, setEditRatingMode] = useState<"edit" | "retaste" | null>(null);
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (draftFlashTimer.current) clearTimeout(draftFlashTimer.current); };
+  }, []);
 
   useEffect(() => {
     if (whiskyIndex !== prevWhiskyIndexRef.current) {
@@ -171,6 +179,40 @@ function GuidedStepView({
   const hostMaxIndex = whiskyIndex;
   const activeWhisky = allWhiskies[localIndex] ?? whisky;
   const viewingHostDram = localIndex === whiskyIndex;
+
+  const guidedDraft = useMemo(() => {
+    if (!activeWhisky?.id || !tastingId) return null;
+    return loadGroupDraft(tastingId, activeWhisky.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tastingId, activeWhisky?.id, dramTransitionKey]);
+
+  const guidedDirtyRef = useRef(false);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (guidedDirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  const handleGuidedDraftChange = useCallback((draft: RatingFlowDraftState) => {
+    if (!activeWhisky?.id) return;
+    guidedDirtyRef.current = true;
+    saveGroupDraft({
+      tastingId,
+      whiskyId: activeWhisky.id,
+      ratingMode: draft.mode,
+      ratingPhaseIndex: draft.phaseIndex,
+      ratingData: draft.data,
+    });
+    setDraftSavedFlash(true);
+    if (draftFlashTimer.current) clearTimeout(draftFlashTimer.current);
+    draftFlashTimer.current = setTimeout(() => setDraftSavedFlash(false), 2000);
+  }, [tastingId, activeWhisky?.id]);
 
   const revealStep = viewingHostDram
     ? (tasting.guidedRevealStep ?? 0)
@@ -451,7 +493,9 @@ function GuidedStepView({
                 tags: { nose: chips, palate: [], finish: [], overall: [] },
                 notes: { nose: cleanNotes, palate: "", finish: "", overall: "" },
               };
-            })() : undefined}
+            })() : (!myRating && guidedDraft?.ratingData?.scores ? guidedDraft.ratingData as RatingData : undefined)}
+            initialMode={!myRating && guidedDraft?.ratingMode ? guidedDraft.ratingMode : undefined}
+            initialPhaseIndex={!myRating && guidedDraft ? guidedDraft.ratingPhaseIndex : undefined}
             onDone={async (data: RatingData) => {
               if (!currentParticipant || !activeWhisky) return;
               const computeOv = (s: { nose: number; palate: number; finish: number }) =>
@@ -484,6 +528,8 @@ function GuidedStepView({
                   overall: eff,
                   notes: combined,
                 });
+                clearGroupDraft(tastingId, activeWhisky.id);
+                guidedDirtyRef.current = false;
                 setFlowSaved(true);
               } catch (err: any) {
                 setSaveError(err?.message || "Save failed");
@@ -493,6 +539,7 @@ function GuidedStepView({
               setFlowSaved(false);
               setDramTransitionKey(k => k + 1);
             }}
+            onChange={handleGuidedDraftChange}
           />
 
           {flowSaved && viewingHostDram && (
@@ -620,6 +667,33 @@ function GuidedStepView({
           </div>
         </div>
       )}
+
+      {draftSavedFlash && (
+        <div
+          data-testid="guided-draft-saved-indicator"
+          style={{
+            position: "fixed",
+            top: 60,
+            right: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 12px",
+            borderRadius: 20,
+            background: "rgba(34,197,94,0.12)",
+            border: "1px solid rgba(34,197,94,0.25)",
+            color: "var(--labs-success, #22c55e)",
+            fontSize: 12,
+            fontWeight: 600,
+            zIndex: 50,
+            animation: "labsFadeIn 200ms ease both",
+            pointerEvents: "none",
+          }}
+        >
+          <Check style={{ width: 14, height: 14 }} />
+          Draft saved
+        </div>
+      )}
     </div>
   );
 }
@@ -693,6 +767,19 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [calibrationOpen, setCalibrationOpen] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
 
+  const hasUnsavedLiveRef = useRef(false);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedLiveRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   const { data: allTastingRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
     queryFn: () => ratingApi.getForTasting(tastingId),
@@ -751,6 +838,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
       setSaveError(null);
+      hasUnsavedLiveRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, currentWhisky?.id] });
     },
     onError: (err: any) => {
@@ -763,6 +851,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
     (newScores: typeof scores, newNotes: string) => {
       if (!currentParticipant || !currentWhisky || !tasting) return;
       if (tasting.status !== "open" && tasting.status !== "draft") return;
+      hasUnsavedLiveRef.current = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const s = tastingStatusRef2.current;

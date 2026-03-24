@@ -284,10 +284,19 @@ export async function signOut(): Promise<void> {
   const offlineKeys = [
     "m2_solo_logs", "simple_manual_logs", "simple_feedback",
     "simple_score_details", "casksense_remember_name",
+    "casksense_solo_draft",
   ];
   for (const k of offlineKeys) {
     try { localStorage.removeItem(k); } catch {}
   }
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("casksense_group_draft_")) keysToRemove.push(key);
+    }
+    for (const key of keysToRemove) localStorage.removeItem(key);
+  } catch {}
   window.dispatchEvent(new Event("session-change"));
 }
 

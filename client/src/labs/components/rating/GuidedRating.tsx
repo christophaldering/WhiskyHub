@@ -50,8 +50,10 @@ interface GuidedRatingProps {
     flavorProfile?: string;
   };
   initialData?: RatingData;
+  initialPhaseIndex?: number;
   onDone: (data: RatingData) => void;
   onBack: () => void;
+  onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -77,8 +79,8 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
   return map[id];
 }
 
-export default function GuidedRating({ labels, whisky, initialData, onDone, onBack }: GuidedRatingProps) {
-  const [phaseIndex, setPhaseIndex] = useState(0);
+export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange }: GuidedRatingProps) {
+  const [phaseIndex, setPhaseIndex] = useState(initialPhaseIndex ?? 0);
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
@@ -107,7 +109,9 @@ export default function GuidedRating({ labels, whisky, initialData, onDone, onBa
 
     if (prefersReducedMotion) {
       if (phaseIndex < 3) {
-        setPhaseIndex((p) => p + 1);
+        const nextIdx = phaseIndex + 1;
+        setPhaseIndex(nextIdx);
+        onChange?.(nextIdx, { scores, tags, notes });
       } else {
         onDone({ scores, tags, notes });
       }
@@ -120,38 +124,51 @@ export default function GuidedRating({ labels, whisky, initialData, onDone, onBa
       setVisibleContent(false);
       setTimeout(() => {
         if (phaseIndex < 3) {
-          setPhaseIndex((p) => p + 1);
+          const nextIdx = phaseIndex + 1;
+          setPhaseIndex(nextIdx);
           setVisibleContent(true);
+          onChange?.(nextIdx, { scores, tags, notes });
         } else {
           onDone({ scores, tags, notes });
         }
       }, 100);
     }, 300);
-  }, [phaseIndex, scores, tags, notes, onDone]);
+  }, [phaseIndex, scores, tags, notes, onDone, onChange]);
 
   const goTo = useCallback((i: number) => {
     setVisibleContent(false);
     setTimeout(() => {
       setPhaseIndex(i);
       setVisibleContent(true);
+      onChange?.(i, { scores, tags, notes });
     }, 120);
-  }, []);
+  }, [scores, tags, notes, onChange]);
 
   const handleScoreChange = useCallback((v: number) => {
-    setScores((prev) => ({ ...prev, [currentPhase]: v }));
-  }, [currentPhase]);
+    setScores((prev) => {
+      const next = { ...prev, [currentPhase]: v };
+      onChange?.(phaseIndex, { scores: next, tags, notes });
+      return next;
+    });
+  }, [currentPhase, phaseIndex, tags, notes, onChange]);
 
   const handleTagToggle = useCallback((tag: string) => {
     setTags((prev) => {
       const curr = prev[currentPhase];
       const next = curr.includes(tag) ? curr.filter((t) => t !== tag) : [...curr, tag];
-      return { ...prev, [currentPhase]: next };
+      const updated = { ...prev, [currentPhase]: next };
+      onChange?.(phaseIndex, { scores, tags: updated, notes });
+      return updated;
     });
-  }, [currentPhase]);
+  }, [currentPhase, phaseIndex, scores, notes, onChange]);
 
   const handleNoteChange = useCallback((val: string) => {
-    setNotes((prev) => ({ ...prev, [currentPhase]: val }));
-  }, [currentPhase]);
+    setNotes((prev) => {
+      const next = { ...prev, [currentPhase]: val };
+      onChange?.(phaseIndex, { scores, tags, notes: next });
+      return next;
+    });
+  }, [currentPhase, phaseIndex, scores, tags, onChange]);
 
   const nextPhaseLabel = phaseIndex < 3 ? phaseLabel(PHASES[phaseIndex + 1], labels) : "";
 

@@ -41,6 +41,7 @@ interface CompactRatingProps {
   initialData?: RatingData;
   onDone: (data: RatingData) => void;
   onBack: () => void;
+  onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -60,7 +61,7 @@ function getBandColor(score: number): string {
   return "rgba(200,180,160,0.5)";
 }
 
-export default function CompactRating({ labels, whisky, initialData, onDone, onBack }: CompactRatingProps) {
+export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange }: CompactRatingProps) {
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
@@ -181,7 +182,13 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
 
             {isOpen && (
               <div style={{ borderTop: "1px solid var(--labs-border)", padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
-                <ScoreInput value={scores[pid]} onChange={(v) => setScores((p) => ({ ...p, [pid]: v }))} phaseId={pid} labels={scoreLabels} />
+                <ScoreInput value={scores[pid]} onChange={(v) => {
+                  setScores((p) => {
+                    const next = { ...p, [pid]: v };
+                    onChange?.(0, { scores: next, tags, notes });
+                    return next;
+                  });
+                }} phaseId={pid} labels={scoreLabels} />
                 {pid !== "overall" && (
                   <FlavorTags
                     phaseId={pid}
@@ -194,7 +201,9 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                       setTags((prev) => {
                         const curr = prev[pid];
                         const next = curr.includes(tag) ? curr.filter((t) => t !== tag) : [...curr, tag];
-                        return { ...prev, [pid]: next };
+                        const updated = { ...prev, [pid]: next };
+                        onChange?.(0, { scores, tags: updated, notes });
+                        return updated;
                       });
                     }}
                     labels={flavorLabels}
