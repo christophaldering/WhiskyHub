@@ -91,7 +91,7 @@ export default function LabsEntdecken() {
   const { data: whiskiesRaw = [] } = useQuery({
     queryKey: ["discovery-whiskies", search, sort, pid],
     queryFn: async () => {
-      const res = await fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: pid ? { "x-participant-id": pid } : {} });
+      const res = await fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) } });
       if (!res.ok) return [];
       return res.json();
     },
@@ -289,7 +289,7 @@ export default function LabsEntdecken() {
   const { data: tastingsData, isLoading: tastingsLoading } = useQuery({
     queryKey: ["discovery-tastings", pid],
     queryFn: async () => {
-      const headers = pid ? { "x-participant-id": pid } : {};
+      const headers = { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) };
       const [ownRes, histRes, insRes, unifiedRes] = await Promise.all([
         fetch("/api/tastings", { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
         fetch("/api/historical/tastings", { headers }).then(r => r.ok ? r.json() : null).catch(() => null),

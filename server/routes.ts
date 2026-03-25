@@ -15244,82 +15244,206 @@ Rules:
       const requester = requesterId ? await storage.getParticipant(requesterId) : null;
       const isAuthenticated = !!requester;
 
+      const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+      const minMax = (arr: number[]) => arr.length > 0 ? { min: Math.min(...arr), max: Math.max(...arr) } : null;
+
       const allWhiskies = await storage.getActiveWhiskies();
-      const whisky = allWhiskies.find(w => w.id === whiskyId);
+      const allTastings = await storage.getAllTastings();
+      const tastingScaleExplore = new Map(allTastings.map(t => [t.id, t.ratingScale ?? 100]));
 
-      if (whisky) {
-        const whiskyRatings = await storage.getRatingsForWhisky(whiskyId);
-        const allTastings = await storage.getAllTastings();
-        const tastingScaleExplore = new Map(allTastings.map(t => [t.id, t.ratingScale ?? 100]));
+      let foundWhisky: typeof allWhiskies[0] | null = null;
+      let histEntry: any = null;
+      let journalEntry: any = null;
+      let collectionItem: any = null;
+      let whiskyName = "";
+      let whiskyDistillery = "";
 
-        const tasting = allTastings.find(t => t.id === whisky.tastingId);
-        const exploreNorm = (r: typeof whiskyRatings[0]) => 100 / (tastingScaleExplore.get(r.tastingId) ?? 100);
+      foundWhisky = allWhiskies.find(w => w.id === whiskyId) || null;
 
-        const noseScores = whiskyRatings.map(r => r.normalizedNose ?? r.nose * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
-        const tasteScores = whiskyRatings.map(r => r.normalizedTaste ?? r.taste * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
-        const finishScores = whiskyRatings.map(r => r.normalizedFinish ?? r.finish * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
-        const overallScores = whiskyRatings.map(r => r.normalizedScore ?? r.overall * exploreNorm(r)).filter((v): v is number => v != null && v > 0);
+      if (foundWhisky) {
+        whiskyName = (foundWhisky.name || "").toLowerCase().trim();
+        whiskyDistillery = (foundWhisky.distillery || "").toLowerCase().trim();
+      } else if (whiskyId.startsWith("hist-")) {
+        const numericId = whiskyId.slice(5);
+        if (numericId) {
+          histEntry = await storage.getHistoricalTastingEntryById(numericId);
+          if (histEntry) {
+            whiskyName = (histEntry.whiskyNameRaw || histEntry.distilleryRaw || "").toLowerCase().trim();
+            whiskyDistillery = (histEntry.distilleryRaw || "").toLowerCase().trim();
+          }
+        }
+      }
 
-        const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
-        const minMax = (arr: number[]) => arr.length > 0 ? { min: Math.min(...arr), max: Math.max(...arr) } : null;
+      if (!foundWhisky && !histEntry) {
+        journalEntry = await storage.getJournalEntryById(whiskyId);
+        if (journalEntry) {
+          whiskyName = (journalEntry.whiskyName || journalEntry.title || "").toLowerCase().trim();
+          whiskyDistillery = (journalEntry.distillery || "").toLowerCase().trim();
+        }
+      }
 
-        const scoreDistribution = new Array(10).fill(0);
-        for (const s of overallScores) {
-          const bucket = Math.min(Math.max(Math.ceil(s / 10) - 1, 0), 9);
-          scoreDistribution[bucket]++;
+      if (!foundWhisky && !histEntry && !journalEntry) {
+        collectionItem = await storage.getCollectionItemById(whiskyId);
+        if (collectionItem) {
+          whiskyName = (collectionItem.name || "").toLowerCase().trim();
+          whiskyDistillery = (collectionItem.distillery || "").toLowerCase().trim();
+        }
+      }
+
+      if (!foundWhisky && !histEntry && !journalEntry && !collectionItem) {
+        return res.status(404).json({ message: "Whisky not found" });
+      }
+
+      const crossNoseScores: number[] = [];
+      const crossTasteScores: number[] = [];
+      const crossFinishScores: number[] = [];
+      const crossOverallScores: number[] = [];
+      let primaryRatings: any[] = [];
+      let relatedTastings: any[] = [];
+      let hasNonStandardScale = false;
+      let tastingContext: any = null;
+
+      const sameNameWhiskies = allWhiskies.filter(w =>
+        (w.name || "").toLowerCase().trim() === whiskyName &&
+        (w.distillery || "").toLowerCase().trim() === whiskyDistillery
+      );
+
+      if (sameNameWhiskies.length > 0) {
+        const allRatingsData = await storage.getAllRatings();
+        const sameNameIds = new Set(sameNameWhiskies.map(w => w.id));
+        const relevantRatings = allRatingsData.filter(r => sameNameIds.has(r.whiskyId));
+        const exploreNorm = (r: typeof relevantRatings[0]) => 100 / (tastingScaleExplore.get(r.tastingId) ?? 100);
+
+        for (const r of relevantRatings) {
+          const n = r.normalizedNose ?? r.nose * exploreNorm(r);
+          const t = r.normalizedTaste ?? r.taste * exploreNorm(r);
+          const f = r.normalizedFinish ?? r.finish * exploreNorm(r);
+          const o = r.normalizedScore ?? r.overall * exploreNorm(r);
+          if (n != null && n > 0) crossNoseScores.push(n);
+          if (t != null && t > 0) crossTasteScores.push(t);
+          if (f != null && f > 0) crossFinishScores.push(f);
+          if (o != null && o > 0) crossOverallScores.push(o);
         }
 
-        const dimensionAvg: Record<string, number | null> = {
-          nose: avg(noseScores),
-          palate: avg(tasteScores),
-          finish: avg(finishScores),
-          overall: avg(overallScores),
-        };
+        if (foundWhisky && isAuthenticated) {
+          const primaryWhiskyRatings = relevantRatings.filter(r => r.whiskyId === foundWhisky!.id);
+          primaryRatings = primaryWhiskyRatings.map(r => ({
+            id: r.id,
+            participantId: r.participantId,
+            nose: r.normalizedNose ?? r.nose * exploreNorm(r),
+            taste: r.normalizedTaste ?? r.taste * exploreNorm(r),
+            finish: r.normalizedFinish ?? r.finish * exploreNorm(r),
+            overall: r.normalizedScore ?? r.overall * exploreNorm(r),
+          }));
+        }
+      }
 
-        const sameNameWhiskies = allWhiskies.filter(w =>
-          w.id !== whiskyId &&
-          (w.name || "").toLowerCase() === (whisky.name || "").toLowerCase() &&
-          (w.distillery || "").toLowerCase() === (whisky.distillery || "").toLowerCase()
-        );
-        const relatedTastingIds = [whisky.tastingId, ...sameNameWhiskies.map(w => w.tastingId)].filter(Boolean);
-        const relatedTastings = allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => ({
-          id: t.id, title: t.title, date: t.date, status: t.status,
-        }));
-        const relatedScales = new Set(allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => t.ratingScale ?? 100));
-        const hasNonStandardScale = relatedScales.size > 1 || (relatedScales.size === 1 && !relatedScales.has(100));
+      const relatedTastingIds = sameNameWhiskies.map(w => w.tastingId).filter(Boolean);
+      relatedTastings = allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => ({
+        id: t.id, title: t.title, date: t.date, status: t.status,
+      }));
+      const relatedScales = new Set(allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => t.ratingScale ?? 100));
+      hasNonStandardScale = relatedScales.size > 1 || (relatedScales.size === 1 && !relatedScales.has(100));
+
+      const allCollectionItems = await storage.getAllCollectionItems();
+      for (const ci of allCollectionItems) {
+        if (!ci.name) continue;
+        if (ci.name.toLowerCase().trim() === whiskyName && (ci.distillery || "").toLowerCase().trim() === whiskyDistillery) {
+          if (ci.personalRating != null && ci.personalRating > 0) {
+            crossOverallScores.push(ci.personalRating);
+          }
+        }
+      }
+
+      if (journalEntry) {
+        if (journalEntry.personalScore != null && journalEntry.personalScore > 0) {
+          crossOverallScores.push(journalEntry.personalScore);
+        }
+      }
+
+      try {
+        const allHistEntries = await storage.getAllHistoricalTastingEntries();
+        for (const he of allHistEntries) {
+          if (!he.whiskyNameRaw && !he.distilleryRaw) continue;
+          const hName = (he.whiskyNameRaw || he.distilleryRaw || "").toLowerCase().trim();
+          const hDist = (he.distilleryRaw || "").toLowerCase().trim();
+          if (hName === whiskyName && hDist === whiskyDistillery) {
+            if (he.normalizedTotal != null) crossOverallScores.push(he.normalizedTotal);
+            else if (he.totalScore != null) crossOverallScores.push(he.totalScore * 10);
+            if (he.normalizedNose != null) crossNoseScores.push(he.normalizedNose);
+            if (he.normalizedTaste != null) crossTasteScores.push(he.normalizedTaste);
+            if (he.normalizedFinish != null) crossFinishScores.push(he.normalizedFinish);
+          }
+        }
+      } catch (histErr) {
+        console.error("Labs detail: failed to load historical entries for aggregation", histErr);
+      }
+
+      const scoreDistribution = new Array(10).fill(0);
+      for (const s of crossOverallScores) {
+        const bucket = Math.min(Math.max(Math.ceil(s / 10) - 1, 0), 9);
+        scoreDistribution[bucket]++;
+      }
+
+      const dimensionAvg: Record<string, number | null> = {
+        nose: avg(crossNoseScores),
+        palate: avg(crossTasteScores),
+        finish: avg(crossFinishScores),
+        overall: avg(crossOverallScores),
+      };
+
+      const aggregated = {
+        avgNose: avg(crossNoseScores),
+        avgTaste: avg(crossTasteScores),
+        avgFinish: avg(crossFinishScores),
+        avgOverall: avg(crossOverallScores),
+        ratingCount: crossOverallScores.length,
+        overallRange: minMax(crossOverallScores),
+      };
+
+      if (foundWhisky) {
+        const tasting = allTastings.find(t => t.id === foundWhisky!.tastingId);
+        tastingContext = isAuthenticated && tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null;
 
         return res.json({
-          ...whisky,
-          ratings: isAuthenticated
-            ? whiskyRatings.map(r => ({
-                id: r.id,
-                participantId: r.participantId,
-                nose: r.normalizedNose ?? r.nose * exploreNorm(r),
-                taste: r.normalizedTaste ?? r.taste * exploreNorm(r),
-                finish: r.normalizedFinish ?? r.finish * exploreNorm(r),
-                overall: r.normalizedScore ?? r.overall * exploreNorm(r),
-              }))
-            : [],
-          aggregated: {
-            avgNose: avg(noseScores),
-            avgTaste: avg(tasteScores),
-            avgFinish: avg(finishScores),
-            avgOverall: avg(overallScores),
-            ratingCount: whiskyRatings.length,
-            overallRange: minMax(overallScores),
-          },
+          ...foundWhisky,
+          ratings: primaryRatings,
+          aggregated,
           scoreDistribution,
           dimensionAvg,
-          tastingContext: isAuthenticated && tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
+          tastingContext,
           relatedTastings: isAuthenticated ? relatedTastings : [],
           hasNonStandardScale,
         });
       }
 
-      const journalEntry = await storage.getJournalEntryById(whiskyId);
+      if (histEntry) {
+        const name = histEntry.whiskyNameRaw || histEntry.distilleryRaw || "";
+        const dist = histEntry.distilleryRaw || "";
+
+        return res.json({
+          id: whiskyId,
+          name,
+          distillery: dist || null,
+          region: histEntry.normalizedRegion || histEntry.regionRaw || null,
+          country: histEntry.normalizedCountry || histEntry.countryRaw || null,
+          category: histEntry.normalizedType || histEntry.typeRaw || null,
+          age: histEntry.ageRaw || null,
+          abv: histEntry.alcoholRaw || null,
+          caskType: histEntry.normalizedCask || histEntry.caskRaw || null,
+          imageUrl: null,
+          source: "historical",
+          ratings: [],
+          aggregated,
+          scoreDistribution,
+          dimensionAvg,
+          tastingContext: null,
+          relatedTastings: isAuthenticated ? relatedTastings : [],
+          hasNonStandardScale,
+        });
+      }
+
       if (journalEntry) {
-        const scores = journalEntry.personalScore != null && journalEntry.personalScore > 0 ? [journalEntry.personalScore] : [];
-        const avgScore = scores.length > 0 ? parseFloat(scores[0].toFixed(1)) : null;
         return res.json({
           id: journalEntry.id,
           name: journalEntry.whiskyName || journalEntry.title,
@@ -15333,24 +15457,16 @@ Rules:
           imageUrl: journalEntry.imageUrl || null,
           source: "journal",
           ratings: [],
-          aggregated: {
-            avgNose: null,
-            avgTaste: null,
-            avgFinish: null,
-            avgOverall: avgScore,
-            ratingCount: scores.length,
-            overallRange: avgScore != null ? { min: avgScore, max: avgScore } : null,
-          },
+          aggregated,
+          scoreDistribution,
+          dimensionAvg,
           tastingContext: null,
-          relatedTastings: [],
-          hasNonStandardScale: false,
+          relatedTastings: isAuthenticated ? relatedTastings : [],
+          hasNonStandardScale,
         });
       }
 
-      const collectionItem = await storage.getCollectionItemById(whiskyId);
       if (collectionItem) {
-        const scores = collectionItem.personalRating != null && collectionItem.personalRating > 0 ? [collectionItem.personalRating] : [];
-        const avgScore = scores.length > 0 ? parseFloat(scores[0].toFixed(1)) : null;
         return res.json({
           id: collectionItem.id,
           name: collectionItem.name,
@@ -15364,17 +15480,12 @@ Rules:
           imageUrl: collectionItem.imageUrl || null,
           source: "collection",
           ratings: [],
-          aggregated: {
-            avgNose: null,
-            avgTaste: null,
-            avgFinish: null,
-            avgOverall: avgScore,
-            ratingCount: scores.length,
-            overallRange: avgScore != null ? { min: avgScore, max: avgScore } : null,
-          },
+          aggregated,
+          scoreDistribution,
+          dimensionAvg,
           tastingContext: null,
-          relatedTastings: [],
-          hasNonStandardScale: false,
+          relatedTastings: isAuthenticated ? relatedTastings : [],
+          hasNonStandardScale,
         });
       }
 
