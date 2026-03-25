@@ -13748,10 +13748,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
 
         const { db: dbInst } = await import("./db");
         const { historicalTastings: htTable, historicalTastingEntries: hteTable } = await import("@shared/schema");
-        const { inArray } = await import("drizzle-orm");
-        const publicTastings = await dbInst.select({ id: htTable.id }).from(htTable)
-          .where(inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]));
-        const publicIds = publicTastings.map(t => t.id);
+        const allTastings = await dbInst.select({ id: htTable.id }).from(htTable);
+        const allTastingIds = allTastings.map(t => t.id);
         interface PublicEntry {
           normalizedRegion: string | null;
           normalizedIsSmoky: boolean | null;
@@ -13761,7 +13759,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           whiskyNameRaw: string | null;
         }
         let allEntries: PublicEntry[] = [];
-        if (publicIds.length > 0) {
+        if (allTastingIds.length > 0) {
+          const { inArray } = await import("drizzle-orm");
           allEntries = await dbInst.select({
             normalizedRegion: hteTable.normalizedRegion,
             normalizedIsSmoky: hteTable.normalizedIsSmoky,
@@ -13769,7 +13768,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
             totalScore: hteTable.totalScore,
             distilleryRaw: hteTable.distilleryRaw,
             whiskyNameRaw: hteTable.whiskyNameRaw,
-          }).from(hteTable).where(inArray(hteTable.historicalTastingId, publicIds));
+          }).from(hteTable).where(inArray(hteTable.historicalTastingId, allTastingIds));
         }
         const regionBreakdown: Record<string, number> = {};
         let smoky = 0, nonSmoky = 0, unknownSmoky = 0;
@@ -13812,7 +13811,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           .slice(0, 20);
 
         res.json({
-          totalTastings: publicTastings.length,
+          totalTastings: allTastings.length,
           totalEntries: allEntries.length,
           topWhiskies,
           regionBreakdown,
@@ -13831,15 +13830,14 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     try {
       const { db: dbInst } = await import("./db");
       const { historicalTastings: htTable, historicalTastingEntries: hteTable } = await import("@shared/schema");
-      const { inArray, eq } = await import("drizzle-orm");
-      const publicTastings = await dbInst.select({ id: htTable.id }).from(htTable)
-        .where(inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]));
-      const publicIds = publicTastings.map(t => t.id);
+      const { inArray } = await import("drizzle-orm");
+      const allTastings = await dbInst.select({ id: htTable.id }).from(htTable);
+      const allTastingIds = allTastings.map(t => t.id);
       let allEntries: any[];
-      if (publicIds.length === 0) {
+      if (allTastingIds.length === 0) {
         allEntries = [];
       } else {
-        allEntries = await dbInst.select().from(hteTable).where(inArray(hteTable.historicalTastingId, publicIds));
+        allEntries = await dbInst.select().from(hteTable).where(inArray(hteTable.historicalTastingId, allTastingIds));
       }
 
       const regionBreakdown: Record<string, number> = {};
@@ -13878,6 +13876,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         .slice(0, 15);
 
       res.json({
+        totalTastings: allTastings.length,
+        totalWhiskies: allEntries.length,
         totalEntries: allEntries.length,
         topDistilleries: topWhiskies,
         regionBreakdown,
@@ -14991,8 +14991,37 @@ Rules:
       const search = (req.query.search as string || "").toLowerCase().trim();
       const region = (req.query.region as string || "").toLowerCase().trim();
 
-      const allWhiskies = await storage.getActiveWhiskies();
-      const allRatingsData = await storage.getAllRatings();
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
+      const isMember = isAdmin || communityIds.length > 0;
+
+      let allWhiskies: Awaited<ReturnType<typeof storage.getActiveWhiskies>>;
+      let allRatingsData: Awaited<ReturnType<typeof storage.getAllRatings>>;
+
+      if (isMember) {
+        allWhiskies = await storage.getActiveWhiskies();
+        allRatingsData = await storage.getAllRatings();
+      } else {
+        const { db: dbInst } = await import("./db");
+        const { tastings: tastingsTable, whiskies: whiskiesTable, ratings: ratingsTable } = await import("@shared/schema");
+        const { and, inArray } = await import("drizzle-orm");
+        const publicTastings = await dbInst.select({ id: tastingsTable.id }).from(tastingsTable)
+          .where(and(
+            inArray(tastingsTable.visibility, ["public", "group"]),
+            inArray(tastingsTable.status, ["open", "closed", "reveal", "archived"])
+          ));
+        const publicTastingIds = publicTastings.map(t => t.id);
+        if (publicTastingIds.length > 0) {
+          allWhiskies = await dbInst.select().from(whiskiesTable)
+            .where(inArray(whiskiesTable.tastingId, publicTastingIds));
+          const whiskyIds = allWhiskies.map(w => w.id);
+          allRatingsData = whiskyIds.length > 0
+            ? await dbInst.select().from(ratingsTable).where(inArray(ratingsTable.whiskyId, whiskyIds))
+            : [];
+        } else {
+          allWhiskies = [];
+          allRatingsData = [];
+        }
+      }
 
       interface ExploreWhiskyEntry {
         id: string;
@@ -15114,7 +15143,7 @@ Rules:
         }, overallScores, noseScores, tasteScores, finishScores, true);
       }
 
-      const allCollectionItems = await storage.getAllCollectionItems();
+      const allCollectionItems = isMember ? await storage.getAllCollectionItems() : [];
       for (const ci of allCollectionItems) {
         if (!ci.name) continue;
         const key = `${ci.name.toLowerCase()}::${(ci.distillery || "").toLowerCase()}`;
@@ -15128,7 +15157,20 @@ Rules:
       }
 
       try {
-        const allHistEntries = await storage.getAllHistoricalTastingEntries();
+        let allHistEntries: Awaited<ReturnType<typeof storage.getAllHistoricalTastingEntries>>;
+        if (isMember) {
+          allHistEntries = await storage.getAllHistoricalTastingEntries();
+        } else {
+          const { db: dbInst } = await import("./db");
+          const { historicalTastings: htTable } = await import("@shared/schema");
+          const { inArray } = await import("drizzle-orm");
+          const visibleHistTastings = await dbInst.select({ id: htTable.id }).from(htTable)
+            .where(inArray(htTable.visibilityLevel, ["public_full", "public_aggregated", "community_only"]));
+          const visibleIds = visibleHistTastings.map(t => t.id);
+          allHistEntries = visibleIds.length > 0
+            ? await storage.getAllHistoricalTastingEntries(visibleIds)
+            : [];
+        }
         for (const he of allHistEntries) {
           if (!he.whiskyNameRaw && !he.distilleryRaw) continue;
           const name = he.whiskyNameRaw || he.distilleryRaw || "";
