@@ -684,6 +684,7 @@ function FilterDropdown({ label, icon, options, selected, onToggle, searchPlaceh
   multi?: boolean;
   renderLabel?: (opt: FilterOption) => string;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -783,6 +784,7 @@ function FilterDropdown({ label, icon, options, selected, onToggle, searchPlaceh
 }
 
 function AdminActivityFilterBar({ filters, onChange, pid, hideTasting }: { filters: ActivityFilters; onChange: (f: ActivityFilters) => void; pid: string; hideTasting?: boolean }) {
+  const { t } = useTranslation();
   const { data: options } = useFilterOptions(pid);
 
   const hasFilters = filters.userIds.length > 0 || filters.hostIds.length > 0 || !!filters.tastingId || !!filters.communityId;
