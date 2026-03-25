@@ -33,6 +33,8 @@ interface ExploreWhisky {
   scoreVariance: number | null;
 }
 
+type StatTab = "rankings" | "comparisons" | "analysis";
+
 function StatCard({ children, title, subtitle, icon: Icon, testId }: {
   children: React.ReactNode;
   title: string;
@@ -44,23 +46,20 @@ function StatCard({ children, title, subtitle, icon: Icon, testId }: {
     <div
       className="labs-card labs-fade-in"
       style={{
-        padding: 20,
+        padding: 24,
         borderRadius: 16,
         background: "var(--labs-surface-elevated)",
         border: "1px solid var(--labs-border)",
-        minWidth: 280,
-        maxWidth: 340,
-        flex: "0 0 auto",
-        scrollSnapAlign: "start",
+        width: "100%",
       }}
       data-testid={testId}
     >
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <Icon style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
-          <h3 className="labs-serif" style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>{title}</h3>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <Icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
+          <h3 className="labs-serif" style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>{title}</h3>
         </div>
-        <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>{subtitle}</p>
+        <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: 0 }}>{subtitle}</p>
       </div>
       {children}
     </div>
@@ -69,22 +68,55 @@ function StatCard({ children, title, subtitle, icon: Icon, testId }: {
 
 function NoData({ message }: { message: string }) {
   return (
-    <p style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", padding: "16px 0", margin: 0 }}>
+    <p style={{ fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", padding: "20px 0", margin: 0 }}>
       {message}
     </p>
   );
 }
 
+const RANK_COLORS: Record<number, string> = {
+  1: "#FFD700",
+  2: "#C0C0C0",
+  3: "#CD7F32",
+};
+
 function WhiskyRow({ w, rank, extra }: { w: ExploreWhisky; rank?: number; extra?: React.ReactNode }) {
+  const isTopThree = rank != null && rank <= 3;
+  const rankColor = rank != null ? RANK_COLORS[rank] : undefined;
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: isTopThree ? "8px 10px" : "4px 0",
+      borderRadius: isTopThree ? 10 : 0,
+      background: isTopThree ? "var(--labs-surface-elevated)" : "transparent",
+      border: isTopThree ? `1px solid ${rankColor}22` : "none",
+    }}>
       {rank != null && (
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>{rank}</span>
+        <span style={{
+          fontSize: 14,
+          fontWeight: 800,
+          color: rankColor || "var(--labs-text-muted)",
+          width: 22,
+          textAlign: "center",
+          flexShrink: 0,
+          textShadow: isTopThree ? `0 0 8px ${rankColor}44` : "none",
+        }}>{rank}</span>
       )}
-      <WhiskyImage imageUrl={w.imageUrl} name={w.name} size={30} />
+      <WhiskyImage imageUrl={w.imageUrl} name={w.name} size={isTopThree ? 36 : 32} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name}</p>
-        <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>{w.distillery || w.region || ""}</p>
+        <p style={{
+          fontSize: isTopThree ? 14 : 13,
+          fontWeight: 600,
+          color: "var(--labs-text)",
+          margin: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}>{w.name}</p>
+        <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>{w.distillery || w.region || ""}</p>
       </div>
       {extra}
     </div>
@@ -94,21 +126,21 @@ function WhiskyRow({ w, rank, extra }: { w: ExploreWhisky; rank?: number; extra?
 function BarRow({ label, value, maxValue, count }: { label: string; value: number; maxValue: number; count?: number }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)" }}>{value.toFixed(1)}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{value.toFixed(1)}</span>
       </div>
-      <div style={{ height: 6, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden" }}>
+      <div style={{ height: 7, borderRadius: 4, background: "var(--labs-border)", overflow: "hidden" }}>
         <div style={{
           height: "100%",
-          borderRadius: 3,
+          borderRadius: 4,
           background: "var(--labs-accent)",
           width: `${Math.max(5, (value / maxValue) * 100)}%`,
           transition: "width 0.4s ease-out",
         }} />
       </div>
       {count != null && (
-        <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{count} whiskies</span>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{count} whiskies</span>
       )}
     </div>
   );
@@ -116,9 +148,53 @@ function BarRow({ label, value, maxValue, count }: { label: string; value: numbe
 
 function ScoreBadge({ score }: { score: number }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-      <Star style={{ width: 11, height: 11, color: "var(--labs-accent)", fill: "var(--labs-accent)" }} />
-      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-accent)" }}>{score.toFixed(1)}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <Star style={{ width: 13, height: 13, color: "var(--labs-accent)", fill: "var(--labs-accent)" }} />
+      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{score.toFixed(1)}</span>
+    </div>
+  );
+}
+
+function TabNavigation({ activeTab, onTabChange, tabs }: {
+  activeTab: StatTab;
+  onTabChange: (tab: StatTab) => void;
+  tabs: { key: StatTab; label: string }[];
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        overflowX: "auto",
+        scrollbarWidth: "none",
+        paddingBottom: 4,
+        marginBottom: 16,
+      }}
+      data-testid="statistics-tab-navigation"
+    >
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          onClick={() => onTabChange(tab.key)}
+          style={{
+            padding: "8px 18px",
+            borderRadius: 20,
+            border: activeTab === tab.key ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+            background: activeTab === tab.key ? "var(--labs-accent)" : "transparent",
+            color: activeTab === tab.key ? "#fff" : "var(--labs-text-muted)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            transition: "all 0.2s ease",
+            fontFamily: "inherit",
+          }}
+          data-testid={`tab-${tab.key}`}
+        >
+          {tab.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -126,6 +202,7 @@ function ScoreBadge({ score }: { score: number }) {
 export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisky[] }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<StatTab>("rankings");
 
   const MIN_RATINGS = 3;
   const rated = useMemo(() => whiskies.filter(w => w.avgOverall != null && w.avgOverall > 0 && w.ratingCount >= MIN_RATINGS), [whiskies]);
@@ -357,6 +434,18 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
 
   const ToggleIcon = expanded ? ChevronUp : ChevronDown;
 
+  const tabs: { key: StatTab; label: string }[] = [
+    { key: "rankings", label: t("exploreStats.tabRankings", "Rankings") },
+    { key: "comparisons", label: t("exploreStats.tabComparisons", "Comparisons") },
+    { key: "analysis", label: t("exploreStats.tabAnalysis", "Analysis") },
+  ];
+
+  const gridStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+    gap: 16,
+  };
+
   return (
     <div style={{ marginBottom: 20 }} data-testid="section-explore-statistics">
       <button
@@ -382,234 +471,236 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
       </button>
 
       {expanded && (
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            overflowX: "auto",
-            paddingBottom: 8,
-            scrollbarWidth: "none",
-            WebkitOverflowScrolling: "touch",
-            scrollSnapType: "x mandatory",
-            marginTop: 8,
-          }}
-          data-testid="statistics-scroll-container"
-        >
-          <StatCard title={t("exploreStats.topRated", "Top Rated")} subtitle={t("exploreStats.topRatedSub", "Highest rated whiskies (min. 3 ratings)")} icon={Star} testId="stat-card-top-rated">
-            {!hasEnoughData ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {topRated.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <ScoreBadge score={w.avgOverall!} />
-                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>{w.ratingCount} ratings</p>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
+        <div style={{ marginTop: 8 }} data-testid="statistics-scroll-container">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} tabs={tabs} />
 
-          <StatCard title={t("exploreStats.hiddenGems", "Hidden Gems")} subtitle={t("exploreStats.hiddenGemsSub", "High scores, few ratings (≤5)")} icon={Gem} testId="stat-card-hidden-gems">
-            {hiddenGems.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {hiddenGems.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <ScoreBadge score={w.avgOverall!} />
-                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>{w.ratingCount} ratings</p>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.priceValue", "Best Value")} subtitle={t("exploreStats.priceValueSub", "Best score-to-price ratio")} icon={DollarSign} testId="stat-card-price-value">
-            {priceValue.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {priceValue.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <ScoreBadge score={w.avgOverall!} />
-                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>€{w.price?.toFixed(0)}</p>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.mostTasted", "Most Tasted")} subtitle={t("exploreStats.mostTastedSub", "Whiskies with most ratings")} icon={Users} testId="stat-card-most-tasted">
-            {mostTasted.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {mostTasted.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)" }}>{w.ratingCount}</span>
-                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>ratings</p>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.divisive", "Divisive Drams")} subtitle={t("exploreStats.divisiveSub", "Most polarizing whiskies")} icon={Zap} testId="stat-card-divisive">
-            {divisiveDrams.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {divisiveDrams.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <ScoreBadge score={w.avgOverall!} />
-                      <p style={{ fontSize: 10, color: "var(--labs-accent)", fontWeight: 600, margin: 0 }}>
-                        Var: {w.scoreVariance?.toFixed(1)}
-                      </p>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.distilleryRanking", "Distillery Ranking")} subtitle={t("exploreStats.distilleryRankingSub", "By average score (min. 3 whiskies)")} icon={Award} testId="stat-card-distillery-ranking">
-            {distilleryRanking.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {distilleryRanking.map((d, i) => {
-                  const maxScore = Math.max(...distilleryRanking.map(x => x.avgScore), 1);
-                  return <BarRow key={d.name} label={`${i + 1}. ${d.name}`} value={d.avgScore} maxValue={maxScore} count={d.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.regionRanking", "Region Ranking")} subtitle={t("exploreStats.regionRankingSub", "Average score by region")} icon={BarChart3} testId="stat-card-region-ranking">
-            {regionRanking.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {regionRanking.map((r) => {
-                  const maxScore = Math.max(...regionRanking.map(x => x.avgScore), 1);
-                  return <BarRow key={r.region} label={r.region} value={r.avgScore} maxValue={maxScore} count={r.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.caskTypeRanking", "Cask Type Ranking")} subtitle={t("exploreStats.caskTypeRankingSub", "Average score by cask type")} icon={Wine} testId="stat-card-cask-ranking">
-            {caskTypeRanking.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {caskTypeRanking.map((c) => {
-                  const maxScore = Math.max(...caskTypeRanking.map(x => x.avgScore), 1);
-                  return <BarRow key={c.cask} label={c.cask} value={c.avgScore} maxValue={maxScore} count={c.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.peatVsScore", "Peat Level vs. Score")} subtitle={t("exploreStats.peatVsScoreSub", "Scores by peat level")} icon={Flame} testId="stat-card-peat-score">
-            {peatVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {peatVsScore.map((p) => {
-                  const maxScore = Math.max(...peatVsScore.map(x => x.avgScore), 1);
-                  return <BarRow key={p.level} label={p.level} value={p.avgScore} maxValue={maxScore} count={p.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.ageVsScore", "Age vs. Score")} subtitle={t("exploreStats.ageVsScoreSub", "Scores by age band")} icon={Calendar} testId="stat-card-age-score">
-            {ageVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {ageVsScore.map((a) => {
-                  const maxScore = Math.max(...ageVsScore.map(x => x.avgScore), 1);
-                  return <BarRow key={a.band} label={a.band} value={a.avgScore} maxValue={maxScore} count={a.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.abvVsScore", "ABV vs. Score")} subtitle={t("exploreStats.abvVsScoreSub", "Scores by ABV band")} icon={Percent} testId="stat-card-abv-score">
-            {abvVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {abvVsScore.map((a) => {
-                  const maxScore = Math.max(...abvVsScore.map(x => x.avgScore), 1);
-                  return <BarRow key={a.band} label={a.band} value={a.avgScore} maxValue={maxScore} count={a.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
-
-          <StatCard title={t("exploreStats.noseTasteFinish", "Nose / Taste / Finish")} subtitle={t("exploreStats.noseTasteFinishSub", "Top whiskies per dimension")} icon={Eye} testId="stat-card-dimension-breakdown">
-            {noseTopWhiskies.length === 0 && tasteTopWhiskies.length === 0 && finishTopWhiskies.length === 0 ? (
-              <NoData message={noDataMsg} />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {noseTopWhiskies.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 6px" }}>👃 {t("exploreStats.bestNose", "Best Nose")}</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {noseTopWhiskies.slice(0, 3).map((w) => (
-                        <WhiskyRow key={w.id} w={w} extra={
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgNose?.toFixed(1)}</span>
-                        } />
-                      ))}
-                    </div>
+          {activeTab === "rankings" && (
+            <div style={gridStyle} data-testid="statistics-grid-rankings">
+              <StatCard title={t("exploreStats.topRated", "Top Rated")} subtitle={t("exploreStats.topRatedSub", "Highest rated whiskies (min. 3 ratings)")} icon={Star} testId="stat-card-top-rated">
+                {!hasEnoughData ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {topRated.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <ScoreBadge score={w.avgOverall!} />
+                          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>{w.ratingCount} ratings</p>
+                        </div>
+                      } />
+                    ))}
                   </div>
                 )}
-                {tasteTopWhiskies.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 6px" }}>👅 {t("exploreStats.bestTaste", "Best Taste")}</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {tasteTopWhiskies.slice(0, 3).map((w) => (
-                        <WhiskyRow key={w.id} w={w} extra={
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgTaste?.toFixed(1)}</span>
-                        } />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {finishTopWhiskies.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 6px" }}>✨ {t("exploreStats.bestFinish", "Best Finish")}</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {finishTopWhiskies.slice(0, 3).map((w) => (
-                        <WhiskyRow key={w.id} w={w} extra={
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgFinish?.toFixed(1)}</span>
-                        } />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </StatCard>
+              </StatCard>
 
-          <StatCard title={t("exploreStats.wbVsCommunity", "Whiskybase vs. Community")} subtitle={t("exploreStats.wbVsCommunitySub", "External vs. community scores")} icon={TrendingUp} testId="stat-card-wb-community">
-            {wbVsCommunity.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {wbVsCommunity.map((w, i) => (
-                  <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>WB: {w.wbScore?.toFixed(0)}</div>
-                      <div style={{ fontSize: 11, color: w.delta > 0 ? "#10b981" : "#ef4444", fontWeight: 600 }}>
-                        {w.delta > 0 ? "+" : ""}{w.delta.toFixed(1)}
+              <StatCard title={t("exploreStats.hiddenGems", "Hidden Gems")} subtitle={t("exploreStats.hiddenGemsSub", "High scores, few ratings (≤5)")} icon={Gem} testId="stat-card-hidden-gems">
+                {hiddenGems.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {hiddenGems.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <ScoreBadge score={w.avgOverall!} />
+                          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>{w.ratingCount} ratings</p>
+                        </div>
+                      } />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.priceValue", "Best Value")} subtitle={t("exploreStats.priceValueSub", "Best score-to-price ratio")} icon={DollarSign} testId="stat-card-price-value">
+                {priceValue.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {priceValue.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <ScoreBadge score={w.avgOverall!} />
+                          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>€{w.price?.toFixed(0)}</p>
+                        </div>
+                      } />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.mostTasted", "Most Tasted")} subtitle={t("exploreStats.mostTastedSub", "Whiskies with most ratings")} icon={Users} testId="stat-card-most-tasted">
+                {mostTasted.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {mostTasted.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-text)" }}>{w.ratingCount}</span>
+                          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>ratings</p>
+                        </div>
+                      } />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.divisive", "Divisive Drams")} subtitle={t("exploreStats.divisiveSub", "Most polarizing whiskies")} icon={Zap} testId="stat-card-divisive">
+                {divisiveDrams.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {divisiveDrams.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <ScoreBadge score={w.avgOverall!} />
+                          <p style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 600, margin: 0 }}>
+                            Var: {w.scoreVariance?.toFixed(1)}
+                          </p>
+                        </div>
+                      } />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          )}
+
+          {activeTab === "comparisons" && (
+            <div style={gridStyle} data-testid="statistics-grid-comparisons">
+              <StatCard title={t("exploreStats.distilleryRanking", "Distillery Ranking")} subtitle={t("exploreStats.distilleryRankingSub", "By average score (min. 3 whiskies)")} icon={Award} testId="stat-card-distillery-ranking">
+                {distilleryRanking.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {distilleryRanking.map((d, i) => {
+                      const maxScore = Math.max(...distilleryRanking.map(x => x.avgScore), 1);
+                      return <BarRow key={d.name} label={`${i + 1}. ${d.name}`} value={d.avgScore} maxValue={maxScore} count={d.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.regionRanking", "Region Ranking")} subtitle={t("exploreStats.regionRankingSub", "Average score by region")} icon={BarChart3} testId="stat-card-region-ranking">
+                {regionRanking.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {regionRanking.map((r) => {
+                      const maxScore = Math.max(...regionRanking.map(x => x.avgScore), 1);
+                      return <BarRow key={r.region} label={r.region} value={r.avgScore} maxValue={maxScore} count={r.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.caskTypeRanking", "Cask Type Ranking")} subtitle={t("exploreStats.caskTypeRankingSub", "Average score by cask type")} icon={Wine} testId="stat-card-cask-ranking">
+                {caskTypeRanking.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {caskTypeRanking.map((c) => {
+                      const maxScore = Math.max(...caskTypeRanking.map(x => x.avgScore), 1);
+                      return <BarRow key={c.cask} label={c.cask} value={c.avgScore} maxValue={maxScore} count={c.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          )}
+
+          {activeTab === "analysis" && (
+            <div style={gridStyle} data-testid="statistics-grid-analysis">
+              <StatCard title={t("exploreStats.peatVsScore", "Peat Level vs. Score")} subtitle={t("exploreStats.peatVsScoreSub", "Scores by peat level")} icon={Flame} testId="stat-card-peat-score">
+                {peatVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {peatVsScore.map((p) => {
+                      const maxScore = Math.max(...peatVsScore.map(x => x.avgScore), 1);
+                      return <BarRow key={p.level} label={p.level} value={p.avgScore} maxValue={maxScore} count={p.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.ageVsScore", "Age vs. Score")} subtitle={t("exploreStats.ageVsScoreSub", "Scores by age band")} icon={Calendar} testId="stat-card-age-score">
+                {ageVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {ageVsScore.map((a) => {
+                      const maxScore = Math.max(...ageVsScore.map(x => x.avgScore), 1);
+                      return <BarRow key={a.band} label={a.band} value={a.avgScore} maxValue={maxScore} count={a.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.abvVsScore", "ABV vs. Score")} subtitle={t("exploreStats.abvVsScoreSub", "Scores by ABV band")} icon={Percent} testId="stat-card-abv-score">
+                {abvVsScore.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {abvVsScore.map((a) => {
+                      const maxScore = Math.max(...abvVsScore.map(x => x.avgScore), 1);
+                      return <BarRow key={a.band} label={a.band} value={a.avgScore} maxValue={maxScore} count={a.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.noseTasteFinish", "Nose / Taste / Finish")} subtitle={t("exploreStats.noseTasteFinishSub", "Top whiskies per dimension")} icon={Eye} testId="stat-card-dimension-breakdown">
+                {noseTopWhiskies.length === 0 && tasteTopWhiskies.length === 0 && finishTopWhiskies.length === 0 ? (
+                  <NoData message={noDataMsg} />
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {noseTopWhiskies.length > 0 && (
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>👃 {t("exploreStats.bestNose", "Best Nose")}</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {noseTopWhiskies.slice(0, 3).map((w) => (
+                            <WhiskyRow key={w.id} w={w} extra={
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgNose?.toFixed(1)}</span>
+                            } />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  } />
-                ))}
-              </div>
-            )}
-          </StatCard>
+                    )}
+                    {tasteTopWhiskies.length > 0 && (
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>👅 {t("exploreStats.bestTaste", "Best Taste")}</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {tasteTopWhiskies.slice(0, 3).map((w) => (
+                            <WhiskyRow key={w.id} w={w} extra={
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgTaste?.toFixed(1)}</span>
+                            } />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {finishTopWhiskies.length > 0 && (
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>✨ {t("exploreStats.bestFinish", "Best Finish")}</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {finishTopWhiskies.slice(0, 3).map((w) => (
+                            <WhiskyRow key={w.id} w={w} extra={
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgFinish?.toFixed(1)}</span>
+                            } />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </StatCard>
 
-          <StatCard title={t("exploreStats.vintageAnalysis", "Vintage Analysis")} subtitle={t("exploreStats.vintageAnalysisSub", "Best distillation years")} icon={Calendar} testId="stat-card-vintage">
-            {vintageAnalysis.length === 0 ? <NoData message={noDataMsg} /> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {vintageAnalysis.map((v) => {
-                  const maxScore = Math.max(...vintageAnalysis.map(x => x.avgScore), 1);
-                  return <BarRow key={v.year} label={v.year} value={v.avgScore} maxValue={maxScore} count={v.count} />;
-                })}
-              </div>
-            )}
-          </StatCard>
+              <StatCard title={t("exploreStats.wbVsCommunity", "Whiskybase vs. Community")} subtitle={t("exploreStats.wbVsCommunitySub", "External vs. community scores")} icon={TrendingUp} testId="stat-card-wb-community">
+                {wbVsCommunity.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {wbVsCommunity.map((w, i) => (
+                      <WhiskyRow key={w.id} w={w} rank={i + 1} extra={
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>WB: {w.wbScore?.toFixed(0)}</div>
+                          <div style={{ fontSize: 12, color: w.delta > 0 ? "#10b981" : "#ef4444", fontWeight: 600 }}>
+                            {w.delta > 0 ? "+" : ""}{w.delta.toFixed(1)}
+                          </div>
+                        </div>
+                      } />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+
+              <StatCard title={t("exploreStats.vintageAnalysis", "Vintage Analysis")} subtitle={t("exploreStats.vintageAnalysisSub", "Best distillation years")} icon={Calendar} testId="stat-card-vintage">
+                {vintageAnalysis.length === 0 ? <NoData message={noDataMsg} /> : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {vintageAnalysis.map((v) => {
+                      const maxScore = Math.max(...vintageAnalysis.map(x => x.avgScore), 1);
+                      return <BarRow key={v.year} label={v.year} value={v.avgScore} maxValue={maxScore} count={v.count} />;
+                    })}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          )}
         </div>
       )}
     </div>
