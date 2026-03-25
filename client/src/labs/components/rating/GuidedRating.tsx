@@ -402,8 +402,9 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         display: "flex",
         justifyContent: "center",
         padding: `0 ${SP.md}px`,
+        boxSizing: "border-box",
       }}>
-        <div style={{ display: "flex", gap: SP.sm, width: "100%", maxWidth: 672 }}>
+        <div style={{ display: "flex", gap: SP.sm, width: "100%", maxWidth: 672, minWidth: 0 }}>
           <button
             data-testid="rating-back-btn"
             onClick={() => {
@@ -421,6 +422,8 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
               fontFamily: FONT.body,
               fontSize: 15,
               cursor: "pointer",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             {phaseIndex > 0 ? phaseLabel(PHASES[phaseIndex - 1], labels) : "\u2190"}
@@ -430,6 +433,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
             onClick={handleNext}
             style={{
               flex: 1,
+              minWidth: 0,
               height: 56,
               background: accent,
               color: "#1a1a1a",
@@ -439,6 +443,9 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
               fontWeight: 700,
               fontFamily: FONT.body,
               cursor: "pointer",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {phaseIndex < 3
