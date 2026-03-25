@@ -25,6 +25,15 @@ type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 type SortBy = "date" | "score" | "name" | "saved";
 type SortDirection = "asc" | "desc";
 
+interface DramEntry extends JournalEntry {
+  source: "solo" | "tasting" | "casksense";
+  tastingTitle?: string;
+  noseScore?: number | null;
+  tasteScore?: number | null;
+  finishScore?: number | null;
+  savedAt?: string | Date | null;
+}
+
 const FILTERS: { key: FilterValue; label: string }[] = [
   { key: "all", label: "All" },
   { key: "solo", label: "Solo" },
@@ -52,6 +61,46 @@ function isJsonScoreString(value: string): boolean {
 function cleanTasteNotes(value: string): string {
   if (!value) return "";
   return isJsonScoreString(value) ? "" : value;
+}
+
+function splitRatingNotes(notes: string | null | undefined): {
+  noseNotes: string | null;
+  tasteNotes: string | null;
+  finishNotes: string | null;
+  body: string | null;
+} {
+  if (!notes || !notes.trim()) return { noseNotes: null, tasteNotes: null, finishNotes: null, body: null };
+
+  const hasStructuredTags = /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(notes);
+  if (!hasStructuredTags) {
+    return { noseNotes: null, tasteNotes: null, finishNotes: null, body: notes.trim() };
+  }
+
+  let remaining = notes;
+  let noseContent: string | null = null;
+  let tasteContent: string | null = null;
+  let finishContent: string | null = null;
+
+  for (const dim of ["NOSE", "TASTE", "FINISH"]) {
+    const rx = new RegExp(`\\[${dim}]\\s*(.+?)\\s*\\[\\/${dim}]`, "si");
+    const m = remaining.match(rx);
+    if (m) {
+      const content = m[1].trim();
+      if (dim === "NOSE") noseContent = content;
+      else if (dim === "TASTE") tasteContent = content;
+      else if (dim === "FINISH") finishContent = content;
+    }
+  }
+
+  remaining = remaining.replace(/\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\].*?\[\/\1\]/gsi, "");
+  const bodyText = remaining.trim() || null;
+
+  return {
+    noseNotes: notes,
+    tasteNotes: tasteContent,
+    finishNotes: finishContent,
+    body: bodyText,
+  };
 }
 
 function parseNoseNotes(raw: string) {
@@ -88,7 +137,7 @@ export default function LabsTasteDrams() {
   const goBackToTaste = useBackNavigation("/labs/taste");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
-  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<DramEntry | null>(null);
   const [viewState, setViewState] = useState<ViewState>("list");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
@@ -127,23 +176,32 @@ export default function LabsTasteDrams() {
   const tastingWhiskies = useMemo(() => {
     if (!tastingHistory?.tastings) return [];
     return tastingHistory.tastings.flatMap((tasting: any) =>
-      (tasting.whiskies || []).map((w: any) => ({
-        id: `tw-${tasting.id}-${w.id}`,
-        title: w.name || w.whiskyName || "—",
-        whiskyName: w.name || w.whiskyName || null,
-        distillery: w.distillery || null,
-        region: w.region || null,
-        age: w.age ? String(w.age) : null,
-        abv: w.abv ? String(w.abv) : null,
-        caskType: w.caskType || null,
-        personalScore: w.overall ?? w.personalScore ?? null,
-        createdAt: tasting.date || tasting.createdAt,
-        savedAt: w.myRating?.updatedAt || w.myRating?.createdAt || tasting.date || tasting.createdAt,
-        source: "tasting" as const,
-        tastingTitle: tasting.title,
-        body: null, noseNotes: null, tasteNotes: null, finishNotes: null,
-        imageUrl: w.imageUrl || null,
-      }))
+      (tasting.whiskies || []).map((w: any) => {
+        const parsedNotes = splitRatingNotes(w.myRating?.notes);
+        return {
+          id: `tw-${tasting.id}-${w.id}`,
+          title: w.name || w.whiskyName || "—",
+          whiskyName: w.name || w.whiskyName || null,
+          distillery: w.distillery || null,
+          region: w.region || null,
+          age: w.age ? String(w.age) : null,
+          abv: w.abv ? String(w.abv) : null,
+          caskType: w.caskType || null,
+          personalScore: w.myRating?.overall ?? w.overall ?? w.personalScore ?? null,
+          noseScore: w.myRating?.nose ?? null,
+          tasteScore: w.myRating?.taste ?? null,
+          finishScore: w.myRating?.finish ?? null,
+          createdAt: tasting.date || tasting.createdAt,
+          savedAt: w.myRating?.updatedAt || w.myRating?.createdAt || tasting.date || tasting.createdAt,
+          source: "tasting" as const,
+          tastingTitle: tasting.title,
+          noseNotes: parsedNotes.noseNotes,
+          tasteNotes: parsedNotes.tasteNotes,
+          finishNotes: parsedNotes.finishNotes,
+          body: parsedNotes.body,
+          imageUrl: w.imageUrl || null,
+        };
+      })
     );
   }, [tastingHistory]);
 
@@ -505,20 +563,58 @@ export default function LabsTasteDrams() {
             </div>
           )}
 
-          {selectedEntry.noseNotes && (
-            /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(selectedEntry.noseNotes)
-              ? <ParsedNotesSection raw={selectedEntry.noseNotes} />
-              : <NoteSection label="Nose" value={selectedEntry.noseNotes} />
-          )}
-          {selectedEntry.tasteNotes && !isJsonScoreString(selectedEntry.tasteNotes) && <NoteSection label="Taste" value={selectedEntry.tasteNotes} />}
-          {selectedEntry.finishNotes && <NoteSection label="Finish" value={selectedEntry.finishNotes} />}
-          {selectedEntry.body && <NoteSection label="Notes" value={selectedEntry.body} />}
+          {(() => {
+            const hasStructuredTags = selectedEntry.noseNotes && /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(selectedEntry.noseNotes);
+            const hasIndividualScores = selectedEntry.noseScore != null || selectedEntry.tasteScore != null || selectedEntry.finishScore != null;
+            const hasEmbeddedScores = selectedEntry.noseNotes && /\[SCORES\]/i.test(selectedEntry.noseNotes);
+            const showScoreBoxes = hasIndividualScores && !hasEmbeddedScores;
 
-          <VoiceMemoSection url={(selectedEntry as any).voiceMemoUrl} transcript={(selectedEntry as any).voiceMemoTranscript} duration={(selectedEntry as any).voiceMemoDuration} />
+            return (
+              <>
+                {showScoreBoxes && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEntry.noseScore != null && (
+                        <div data-testid="score-nose" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
+                          <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.noseScore).toFixed(0)}</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Nose</div>
+                        </div>
+                      )}
+                      {selectedEntry.tasteScore != null && (
+                        <div data-testid="score-taste" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
+                          <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.tasteScore).toFixed(0)}</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste</div>
+                        </div>
+                      )}
+                      {selectedEntry.finishScore != null && (
+                        <div data-testid="score-finish" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
+                          <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.finishScore).toFixed(0)}</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Finish</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {hasStructuredTags && <ParsedNotesSection raw={selectedEntry.noseNotes!} />}
+                {!hasStructuredTags && (
+                  <>
+                    {selectedEntry.noseNotes && (
+                      <NoteSection label={selectedEntry.source === "tasting" ? "Notes" : "Nose"} value={selectedEntry.noseNotes} />
+                    )}
+                    {selectedEntry.tasteNotes && !isJsonScoreString(selectedEntry.tasteNotes) && <NoteSection label="Taste" value={selectedEntry.tasteNotes} />}
+                    {selectedEntry.finishNotes && <NoteSection label="Finish" value={selectedEntry.finishNotes} />}
+                  </>
+                )}
+                {selectedEntry.body && <NoteSection label="Notes" value={selectedEntry.body} />}
+              </>
+            );
+          })()}
 
-          {(selectedEntry as any).tastingTitle && (
+          <VoiceMemoSection url={selectedEntry.voiceMemoUrl} transcript={selectedEntry.voiceMemoTranscript} duration={selectedEntry.voiceMemoDuration} />
+
+          {selectedEntry.tastingTitle && (
             <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>
-              <Wine className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} /> From tasting: {(selectedEntry as any).tastingTitle}
+              <Wine className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} /> From tasting: {selectedEntry.tastingTitle}
             </div>
           )}
 
