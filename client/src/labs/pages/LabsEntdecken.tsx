@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -611,7 +612,7 @@ export default function LabsEntdecken() {
                   );
                 };
 
-                return (
+                const panelContent = (
                   <>
                     <div className="filter-bottom-sheet-overlay" onClick={() => { setExpandedFilter(null); setFilterSearch(""); }} />
                     <div
@@ -701,6 +702,8 @@ export default function LabsEntdecken() {
                     </div>
                   </>
                 );
+                const isMobileView = typeof window !== "undefined" && window.innerWidth <= 768;
+                return isMobileView ? createPortal(panelContent, document.body) : panelContent;
               })()}
             </div>
 
