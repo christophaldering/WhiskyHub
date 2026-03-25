@@ -23,6 +23,9 @@ interface CompactLabels {
   palate: string;
   finishLabel: string;
   overall: string;
+  note: string;
+  noteSub: string;
+  notePH: string;
   save: string;
   done: string;
   error: string;
@@ -209,6 +212,40 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                     labels={flavorLabels}
                   />
                 )}
+                <div style={{ marginTop: SP.md }}>
+                  <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: SP.xs, fontFamily: FONT.body }}>
+                    {labels.noteSub}
+                  </div>
+                  <textarea
+                    data-testid={`compact-notes-${pid}`}
+                    value={notes[pid]}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNotes((prev) => {
+                        const next = { ...prev, [pid]: val };
+                        onChange?.(0, { scores, tags, notes: next });
+                        return next;
+                      });
+                    }}
+                    placeholder={`${phaseLbl(pid, labels)}: ${labels.notePH}`}
+                    rows={2}
+                    style={{
+                      width: "100%",
+                      padding: SP.md,
+                      fontFamily: FONT.serif,
+                      fontStyle: "italic",
+                      fontSize: 15,
+                      color: "var(--labs-text)",
+                      background: "var(--labs-input-bg)",
+                      border: "1px solid var(--labs-border)",
+                      borderRadius: RADIUS.md,
+                      outline: "none",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                      minHeight: TOUCH_MIN,
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>

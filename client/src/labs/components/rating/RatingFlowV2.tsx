@@ -67,7 +67,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     noteSub: t("v2.ratingNoteSub", "Optional -- deine eigenen Worte."),
     notePH: t("v2.ratingNotePH", "Was faellt dir auf..."),
     save: t("v2.ratingSave", "speichern"),
-    finish2: t("v2.ratingFinish2", "Bewertung abschliessen"),
+    finish2: t("v2.ratingFinish2", "Bewertung speichern"),
     error: t("v2.ratingError", "Fehler beim Speichern"),
     nose: t("v2.ratingNose", "Nase"),
     palate: t("v2.ratingPalate", "Gaumen"),
