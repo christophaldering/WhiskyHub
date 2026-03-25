@@ -287,7 +287,7 @@ const isSimilarWhisky = (
   return false;
 };
 
-function getRevealState(tasting: any, whiskyCount: number) {
+function getRevealState(tasting: any, whiskyCount: number, t: (key: string, opts?: any) => string) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
   try {
     if (tasting.revealOrder) {
@@ -301,13 +301,13 @@ function getRevealState(tasting: any, whiskyCount: number) {
   const allRevealed = whiskyCount > 0 && revealIndex >= whiskyCount - 1 && revealStep >= maxSteps;
 
   const FIELD_LABELS: Record<string, string> = {
-    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-    region: "Region", country: "Country", category: "Category",
-    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
-    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled",
-    bottledYear: "Bottled", hostNotes: "Notes",
-    hostSummary: "Summary", price: "Price", ppm: "PPM",
-    wbId: "WB-ID", wbScore: "WB Score",
+    name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
+    region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
+    caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
+    bottler: t("labs.host.fieldBottler"), vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"),
+    bottledYear: t("labs.host.fieldBottled"), hostNotes: t("labs.host.fieldNotes"),
+    hostSummary: t("labs.host.fieldSummary"), price: t("labs.host.fieldPrice"), ppm: t("labs.host.fieldPpm"),
+    wbId: t("labs.host.fieldWbId"), wbScore: t("labs.host.fieldWbScore"),
   };
   const stepLabels = stepGroups.map((group: string[]) => {
     const labels = group.map(f => FIELD_LABELS[f] || f);
@@ -315,14 +315,15 @@ function getRevealState(tasting: any, whiskyCount: number) {
     return labels.slice(0, 2).join(" & ") + " +";
   });
 
-  let nextLabel = "Reveal Next";
+  let nextLabelKey = "revealNext";
+  let nextLabelParam: string | undefined;
   if (allRevealed) {
-    nextLabel = "All Revealed";
+    nextLabelKey = "allDramsRevealed";
   } else if (revealStep < maxSteps) {
     const lbl = stepLabels[revealStep];
-    nextLabel = lbl ? `Reveal ${lbl}` : "Reveal Next";
+    if (lbl) { nextLabelKey = "revealLabel"; nextLabelParam = lbl; } else { nextLabelKey = "revealNext"; }
   } else {
-    nextLabel = "Next Dram";
+    nextLabelKey = "nextDram";
   }
 
   const revealedFields = new Set<string>();
@@ -330,7 +331,7 @@ function getRevealState(tasting: any, whiskyCount: number) {
     for (const f of stepGroups[s]) revealedFields.add(f);
   }
 
-  return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabel, revealedFields, stepGroups };
+  return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabelKey, nextLabelParam, revealedFields, stepGroups };
 }
 
 function isFieldRevealed(rv: ReturnType<typeof getRevealState> | null, fieldOrGroup: string | string[]): boolean {
@@ -357,6 +358,7 @@ function HostRatingPanel({
   ratingScale: number;
   blindMode: boolean;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -501,7 +503,7 @@ function HostRatingPanel({
     return (
       <div className="labs-card p-5 text-center" data-testid="host-rating-empty">
         <Star className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>No whiskies to rate yet.</p>
+        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.noWhiskiesToRate")}</p>
       </div>
     );
   }
@@ -517,12 +519,12 @@ function HostRatingPanel({
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Star className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Host Rating</span>
+          <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("labs.host.hostRating")}</span>
         </div>
         {saving && (
           <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
             <Loader2 className="w-3 h-3 animate-spin" />
-            Saving...
+            {t("labs.host.saving")}
           </span>
         )}
       </div>
@@ -705,14 +707,14 @@ function PrintMaterialsSection({
     const found = participants.find((p: Record<string, unknown>) =>
       (p.participantId || p.id) === tasting.hostId
     );
-    return (((found?.participant as Record<string, unknown>)?.name as string) || (found?.name as string) || (currentParticipant as Record<string, unknown>)?.name as string) || "Host";
+    return (((found?.participant as Record<string, unknown>)?.name as string) || (found?.name as string) || (currentParticipant as Record<string, unknown>)?.name as string) || t("m2.host.title");
   };
 
   const handleGenerateMenu = async () => {
     setGenerating("menu");
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
-        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string),
+        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || t("labs.host.anonymous")) as string),
         photoUrl: ((p.participant as Record<string, unknown>)?.photoUrl || p.photoUrl || null) as string | null,
       }));
       const hostName = resolveHostName();
@@ -752,7 +754,7 @@ function PrintMaterialsSection({
     try {
       const pList = participants.map((p: Record<string, unknown>) => ({
         id: (p.participantId || p.id) as string,
-        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string),
+        name: stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || t("labs.host.anonymous")) as string),
       }));
       if (pList.length === 0) return;
       const type = blindMode ? "blind" : "tasting";
@@ -855,7 +857,7 @@ function PrintMaterialsSection({
         data-testid="toggle-print-materials"
       >
         <Printer className="w-4 h-4" />
-        Print & Materials
+        {t("labs.host.printMaterials")}
         <ChevronDown
           className="w-4 h-4 absolute right-3"
           style={{ color: "var(--labs-text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.25s ease" }}
@@ -865,11 +867,11 @@ function PrintMaterialsSection({
       {expanded && (
         <div style={{ paddingTop: 12, animation: "toolsSlideDown 0.2s ease" }} className="space-y-4">
           <div className="labs-card p-4">
-            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Tasting Menu Card</p>
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>{t("labs.host.tastingMenuCard")}</p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Orientation</p>
+                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.orientation")}</p>
                 <div className="flex gap-1">
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "portrait" ? "ring-1" : ""}`}
@@ -877,7 +879,7 @@ function PrintMaterialsSection({
                     onClick={() => setOrientation("portrait")}
                     data-testid="print-orientation-portrait"
                   >
-                    Portrait
+                    {t("labs.host.portrait")}
                   </button>
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "landscape" ? "ring-1" : ""}`}
@@ -885,12 +887,12 @@ function PrintMaterialsSection({
                     onClick={() => setOrientation("landscape")}
                     data-testid="print-orientation-landscape"
                   >
-                    Landscape
+                    {t("labs.host.landscape")}
                   </button>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Content Mode</p>
+                <p className="text-[11px] mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.contentMode")}</p>
                 <div className="flex gap-1">
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${!blindMode ? "ring-1" : ""}`}
@@ -898,7 +900,7 @@ function PrintMaterialsSection({
                     onClick={() => setBlindMode(false)}
                     data-testid="print-mode-open"
                   >
-                    Open
+                    {t("labs.host.contentOpen")}
                   </button>
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${blindMode ? "ring-1" : ""}`}
@@ -906,7 +908,7 @@ function PrintMaterialsSection({
                     onClick={() => setBlindMode(true)}
                     data-testid="print-mode-blind"
                   >
-                    Blind
+                    {t("labs.host.contentBlind")}
                   </button>
                 </div>
               </div>
@@ -918,8 +920,8 @@ function PrintMaterialsSection({
                   <Image className="w-3.5 h-3.5 flex-shrink-0" style={{ color: coverImageUrl ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
                   <span className="text-xs" style={{ color: coverImageUrl ? "var(--labs-text-secondary)" : "var(--labs-text-muted)" }}>
                     {coverImageUrl
-                      ? "Cover image will be included on the menu card."
-                      : "Add a cover image above — or generate one with AI."}
+                      ? t("labs.host.coverIncluded")
+                      : t("labs.host.addCoverOrAi")}
                   </span>
                 </div>
                 <button
@@ -930,7 +932,7 @@ function PrintMaterialsSection({
                   data-testid="print-ai-cover"
                 >
                   {aiCoverLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />}
-                  {aiCoverLoading ? "Generating..." : "AI Cover"}
+                  {aiCoverLoading ? t("labs.host.generatingEllipsis") : t("labs.host.aiCover")}
                 </button>
               </div>
             </div>
@@ -942,23 +944,23 @@ function PrintMaterialsSection({
               data-testid="print-generate-menu"
             >
               {generating === "menu" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              {generating === "menu" ? "Generating..." : "Generate Menu Card"}
+              {generating === "menu" ? t("labs.host.generatingEllipsis") : t("labs.host.generateMenuCard")}
             </button>
           </div>
 
           <div className="labs-card p-4">
-            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Bewertungsbögen</p>
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>{t("labs.host.ratingSheets")}</p>
 
             <div className="mb-3 rounded-lg p-3" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }}>
-              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text)" }}>Personalisierte Sheets</p>
+              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text)" }}>{t("labs.host.personalizedSheets")}</p>
               <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                Individuelle Bögen mit QR-Codes für jeden Teilnehmer
+                {t("labs.host.personalizedSheetsDesc")}
               </p>
 
               {participants.length > 0 && (
                 <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
                   {participants.map((p: Record<string, unknown>, idx: number) => {
-                    const pName = stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || "Unknown") as string);
+                    const pName = stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || t("labs.host.anonymous")) as string);
                     return (
                       <div
                         key={(p.participantId || p.id) as string}
@@ -984,7 +986,7 @@ function PrintMaterialsSection({
 
               {participants.length === 0 && (
                 <p className="text-[11px] italic mb-2" style={{ color: "var(--labs-text-muted)" }} data-testid="print-no-participants-hint">
-                  Noch keine Teilnehmer — lade Gäste ein, um personalisierte Sheets zu erstellen
+                  {t("labs.host.noParticipantsHint")}
                 </p>
               )}
 
@@ -995,12 +997,12 @@ function PrintMaterialsSection({
                 data-testid="print-generate-sheets"
               >
                 {generating === "sheets" ? <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /> : <Download className="w-4 h-4 flex-shrink-0" />}
-                <span className="truncate">{generating === "sheets" ? "Wird erstellt..." : `Alle Sheets herunterladen (${participants.length})`}</span>
+                <span className="truncate">{generating === "sheets" ? t("labs.host.creatingSheets") : t("labs.host.downloadAllSheets", { count: participants.length })}</span>
               </button>
             </div>
 
             <div className="rounded-lg p-3" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }}>
-              <p className="text-xs font-medium mb-2" style={{ color: "var(--labs-text)" }}>Generische Sheets</p>
+              <p className="text-xs font-medium mb-2" style={{ color: "var(--labs-text)" }}>{t("labs.host.genericSheets")}</p>
               <div className="flex flex-wrap gap-2 min-w-0">
                 <div className="flex-1 min-w-[120px]">
                   <button
@@ -1010,10 +1012,10 @@ function PrintMaterialsSection({
                     data-testid="print-generate-master-sheet"
                   >
                     {generating === "master" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                    Master Sheet
+                    {t("labs.host.masterSheet")}
                   </button>
                   <p className="text-[10px] mt-1 text-center" style={{ color: "var(--labs-text-muted)" }}>
-                    Generisches Sheet ohne Namen — für den Host oder spontane Gäste
+                    {t("labs.host.masterSheetDesc")}
                   </p>
                 </div>
                 <div className="flex-1 min-w-[120px]">
@@ -1024,10 +1026,10 @@ function PrintMaterialsSection({
                     data-testid="print-generate-blank-sheet"
                   >
                     {generating === "blank" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                    Blanko Sheet
+                    {t("labs.host.blankoSheet")}
                   </button>
                   <p className="text-[10px] mt-1 text-center" style={{ color: "var(--labs-text-muted)" }}>
-                    Leere Vorlage ohne Whisky-Daten
+                    {t("labs.host.blankoSheetDesc")}
                   </p>
                 </div>
               </div>
@@ -1035,9 +1037,9 @@ function PrintMaterialsSection({
           </div>
 
           <div className="labs-card p-4">
-            <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Tasting Mat</p>
+            <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>{t("labs.host.tastingMat")}</p>
             <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-              A4 landscape mat with {whiskyCount} numbered positions for your lineup
+              {t("labs.host.tastingMatDesc", { count: whiskyCount })}
             </p>
             <button
               className="labs-btn-secondary text-sm flex items-center gap-2 w-full justify-center"
@@ -1046,7 +1048,7 @@ function PrintMaterialsSection({
               data-testid="print-generate-mat"
             >
               {generating === "mat" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {generating === "mat" ? "Generating..." : "Download Tasting Mat"}
+              {generating === "mat" ? t("labs.host.generatingEllipsis") : t("labs.host.downloadTastingMat")}
             </button>
           </div>
 
@@ -1098,7 +1100,7 @@ function PrintMaterialsSection({
             data-testid="settings-paper-scan"
           >
             <ScanLine className="w-4 h-4" />
-            Paper Sheet Scanner
+            {t("labs.host.paperScanner")}
           </button>
         </div>
       )}
@@ -1453,7 +1455,7 @@ function MobileCompanion({
                 onClick={() => setMobileEditTitle((tasting.title as string) || "")}
                 data-testid="labs-mobile-title"
               >
-                {(tasting.title as string) || "Untitled Tasting"}
+                {(tasting.title as string) || t("m2.host.untitledTasting", "Untitled Tasting")}
               </h1>
               <button
                 className="labs-btn-ghost p-1 flex-shrink-0"
@@ -1471,9 +1473,9 @@ function MobileCompanion({
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {[
-            { value: whiskyCount, label: "Drams" },
-            { value: participantCount, label: "Guests" },
-            { value: ratingCount, label: "Ratings" },
+            { value: whiskyCount, label: t("m2.host.drams", "Drams") },
+            { value: participantCount, label: t("m2.host.guests", "Guests") },
+            { value: ratingCount, label: t("m2.host.ratings", "Ratings") },
           ].map(({ value, label }) => (
             <div key={label} style={{ flex: 1, background: "var(--labs-surface-elevated)", borderRadius: 10, padding: 10, textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{value}</div>
@@ -1708,7 +1710,7 @@ function MobileCompanion({
                   <textarea
                     className="labs-input w-full"
                     rows={2}
-                    placeholder="Or paste whisky names, menu text..."
+                    placeholder={t("labs.host.pasteText")}
                     value={mobileAiText}
                     onChange={e => setMobileAiText(e.target.value)}
                     style={{ resize: "none", fontSize: 13 }}
@@ -1729,7 +1731,7 @@ function MobileCompanion({
                   data-testid="mobile-ai-import-analyze"
                 >
                   {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : mobileAiFiles.some(isExcelFile) ? <Upload className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                  {mobileAiLoading ? "Importing..." : mobileAiFiles.some(isExcelFile) ? "Import Excel" : "Analyze with AI"}
+                  {mobileAiLoading ? t("labs.host.importingEllipsis") : mobileAiFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
                 </button>
 
                 {mobileAiError && (
@@ -1797,7 +1799,7 @@ function MobileCompanion({
               <div className="flex gap-1.5 items-center">
                 <input
                   className="labs-input"
-                  placeholder="WB #"
+                  placeholder={t("labs.host.wbPlaceholder")}
                   value={mobileWbId}
                   onChange={e => { setMobileWbId(e.target.value.replace(/[^0-9]/g, "")); setMobileWbResult(""); }}
                   onKeyDown={e => { if (e.key === "Enter" && mobileWbId.trim()) handleMobileWbLookup(); }}
@@ -1815,7 +1817,7 @@ function MobileCompanion({
                 </button>
                 <input
                   className="labs-input flex-1"
-                  placeholder="Whisky name..."
+                  placeholder={t("labs.host.whiskyNamePlaceholder")}
                   value={mobileWhiskyName}
                   onChange={e => setMobileWhiskyName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleMobileAdd()}
@@ -1877,7 +1879,7 @@ function MobileCompanion({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
                         <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                          {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
+                          {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails")}
                         </p>
                       </div>
                       <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); }} data-testid={`mobile-edit-whisky-${w.id}`}>
@@ -1898,7 +1900,7 @@ function MobileCompanion({
 
       {tasting.guidedMode && isLive && activeWhisky && (
         <div className="labs-card p-4 mb-4">
-          <p className="labs-section-label">Current Dram</p>
+          <p className="labs-section-label">{t("labs.host.currentDram")}</p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>
@@ -1915,17 +1917,17 @@ function MobileCompanion({
       {(() => {
         const showBlindReveal = tasting.blindMode && !tasting.guidedMode && (isLive || tasting.status === "reveal");
         if (!showBlindReveal || whiskyCount === 0) return null;
-        const rv = getRevealState(tasting, whiskyCount);
+        const rv = getRevealState(tasting, whiskyCount, t);
         const currentWhisky = whiskies[rv.revealIndex];
         return (
           <div className="labs-card p-4 mb-4" data-testid="mobile-reveal-state">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <p className="labs-section-label mb-0" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Eye className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} />
-                Reveal Progress
+                {t("labs.host.revealProgress")}
               </p>
               <span className="labs-badge" style={{ background: rv.allRevealed ? "var(--labs-success-muted)" : "var(--labs-info-muted)", color: rv.allRevealed ? "var(--labs-success)" : "var(--labs-info)", fontSize: 11 }}>
-                {rv.allRevealed ? "Complete" : `Dram ${rv.revealIndex + 1} of ${whiskyCount}`}
+                {rv.allRevealed ? t("labs.host.allDramsRevealed") : t("labs.host.dramOfTotal", { current: rv.revealIndex + 1, total: whiskyCount })}
               </span>
             </div>
 
@@ -1943,7 +1945,7 @@ function MobileCompanion({
                   </p>
                   {isFieldRevealed(rv, ["distillery", "age", "abv"]) && (
                     <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                      {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
+                      {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails")}
                     </p>
                   )}
                 </div>
@@ -2027,12 +2029,12 @@ function MobileCompanion({
             data-testid="mobile-next-dram"
           >
             {guidedAdvanceMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <SkipForward className="w-5 h-5" />}
-            {guidedIdx < 0 ? "Start First Dram" : guidedIdx >= whiskyCount - 1 ? "All Drams Done" : "Next Dram"}
+            {guidedIdx < 0 ? t("labs.host.startTasting") : guidedIdx >= whiskyCount - 1 ? t("labs.host.done") : t("labs.host.nextDram")}
           </button>
         )}
 
         {(isLive || tasting.status === "reveal") && tasting.blindMode && !tasting.guidedMode && whiskyCount > 0 && (() => {
-          const rv = getRevealState(tasting, whiskyCount);
+          const rv = getRevealState(tasting, whiskyCount, t);
           return (
             <button
               className="labs-btn-primary flex items-center justify-center gap-2 w-full"
@@ -2042,7 +2044,7 @@ function MobileCompanion({
               data-testid="mobile-reveal"
             >
               {revealMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eye className="w-5 h-5" />}
-              {rv.nextLabel}
+              {t(`labs.host.${rv.nextLabelKey}`, rv.nextLabelParam ? { label: rv.nextLabelParam } : {})}
             </button>
           );
         })()}
@@ -2130,7 +2132,7 @@ function MobileCompanion({
       </div>
 
       {!isDraft && whiskyCount > 0 && (() => {
-        const rv = tasting.blindMode && !tasting.guidedMode ? getRevealState(tasting, whiskyCount) : null;
+        const rv = tasting.blindMode && !tasting.guidedMode ? getRevealState(tasting, whiskyCount, t) : null;
         return (
           <div className="mt-4">
             <button
@@ -2173,8 +2175,8 @@ function MobileCompanion({
                       <p className="text-sm font-medium truncate">{showName ? (w.name || `Whisky ${i + 1}`) : `Dram ${String.fromCharCode(65 + i)}`}</p>
                       <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                         {showDetails
-                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details")
-                          : (isHidden ? "Hidden" : "Partially revealed")}
+                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails"))
+                          : (isHidden ? t("m2.host.hidden", "Hidden") : t("m2.host.partiallyRevealed", "Partially revealed"))}
                       </p>
                     </div>
                     {isDramLocked(w.id) && (
@@ -2268,14 +2270,14 @@ const REVEAL_ALL_FIELDS = [
   "hostNotes", "hostSummary", "image",
 ] as const;
 
-const REVEAL_FIELD_LABELS: Record<string, string> = {
-  name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-  region: "Region", country: "Country", category: "Category",
-  caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
-  vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
-  hostNotes: "Notes", hostSummary: "Summary", image: "Image",
-  ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
-};
+const getRevealFieldLabels = (t: (key: string) => string): Record<string, string> => ({
+  name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
+  region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
+  caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), bottler: t("labs.host.fieldBottler"),
+  vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
+  hostNotes: t("labs.host.fieldNotes"), hostSummary: t("labs.host.fieldSummary"), image: t("labs.host.fieldImage"),
+  ppm: t("labs.host.fieldPpm"), price: t("labs.host.fieldPrice"), wbId: t("labs.host.fieldWbId"), wbScore: t("labs.host.fieldWbScore"),
+});
 
 const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
   classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
@@ -2297,6 +2299,8 @@ function CustomRevealEditor({ steps, onChange }: {
   steps: string[][];
   onChange: (steps: string[][]) => void;
 }) {
+  const { t } = useTranslation();
+  const REVEAL_FIELD_LABELS = getRevealFieldLabels(t);
   const [dragFrom, setDragFrom] = useState<{ step: number; field: number } | null>(null);
   const [dragOverStep, setDragOverStep] = useState<number | null>(null);
 
@@ -2435,7 +2439,7 @@ function CustomRevealEditor({ steps, onChange }: {
                       background: "none", border: "none", cursor: "pointer",
                       padding: 0, color: "var(--labs-text-muted)", fontSize: 11, lineHeight: 1,
                     }}
-                    title="Split into own step"
+                    title={t("labs.host.splitIntoStep")}
                     data-testid={`reveal-split-${field}`}
                   >
                     <X style={{ width: 10, height: 10 }} />
@@ -2451,7 +2455,7 @@ function CustomRevealEditor({ steps, onChange }: {
                     borderRadius: 4, marginLeft: 2,
                     transition: "background 0.15s, transform 0.1s",
                   }}
-                  title="Remove from reveal order"
+                  title={t("labs.host.removeFromReveal")}
                   data-testid={`reveal-remove-${field}`}
                 >
                   <X style={{ width: 12, height: 12 }} />
@@ -2464,7 +2468,7 @@ function CustomRevealEditor({ steps, onChange }: {
             <button
               type="button"
               onClick={() => mergeStepUp(sIdx)}
-              title="Merge with previous step"
+              title={t("labs.host.mergeWithPrevious")}
               style={{
                 background: "none", border: "none", cursor: "pointer",
                 padding: "2px", color: "var(--labs-text-muted)", flexShrink: 0,
@@ -2537,7 +2541,7 @@ function CustomRevealEditor({ steps, onChange }: {
         {steps.map((step, i) => (
           <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
             <span style={{ fontWeight: 700, color: "var(--labs-accent)", minWidth: 44, flexShrink: 0, fontSize: 11 }}>
-              Step {i + 1}:
+              {t("labs.host.revealStepN", { n: i + 1 })}:
             </span>
             <span style={{ color: "var(--labs-text)" }}>
               {step.map(f => REVEAL_FIELD_LABELS[f] || f).join(" & ")}
@@ -2775,7 +2779,7 @@ function CreateTastingForm() {
     return (
       <AuthGateMessage
         icon={<Wine className="w-12 h-12" style={{ color: "var(--labs-text-muted)" }} />}
-        message="Sign in to host a tasting"
+        message={t("m2.host.signInToHost", "Sign in to host a tasting")}
       />
     );
   }
@@ -2819,11 +2823,11 @@ function CreateTastingForm() {
 
       <div className="space-y-5">
         <div>
-          <label className="labs-section-label" htmlFor="tasting-title">Title *</label>
+          <label className="labs-section-label" htmlFor="tasting-title">{t("m2.host.titleLabel")} *</label>
           <input
             id="tasting-title"
             className="labs-input"
-            placeholder="e.g. Highland Evening, Spring Tasting..."
+            placeholder={t("labs.host.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={200}
@@ -2833,7 +2837,7 @@ function CreateTastingForm() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
-            <label className="labs-section-label" htmlFor="tasting-date">Date</label>
+            <label className="labs-section-label" htmlFor="tasting-date">{t("m2.host.dateLabel")}</label>
             <input
               id="tasting-date"
               type="date"
@@ -2844,7 +2848,7 @@ function CreateTastingForm() {
             />
           </div>
           <div>
-            <label className="labs-section-label" htmlFor="tasting-time">Time</label>
+            <label className="labs-section-label" htmlFor="tasting-time">{t("labs.host.timeLabel")}</label>
             <input
               id="tasting-time"
               type="time"
@@ -2855,11 +2859,11 @@ function CreateTastingForm() {
             />
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <label className="labs-section-label" htmlFor="tasting-location">Location</label>
+            <label className="labs-section-label" htmlFor="tasting-location">{t("labs.host.locationPlaceholder")}</label>
             <input
               id="tasting-location"
               className="labs-input"
-              placeholder="Optional"
+              placeholder={t("m2.host.optional", "Optional")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               data-testid="labs-host-input-location"
@@ -2875,7 +2879,7 @@ function CreateTastingForm() {
           <textarea
             id="tasting-description"
             className="labs-input"
-            placeholder="Optional notes for your guests..."
+            placeholder={t("labs.host.descriptionPlaceholder")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -2888,8 +2892,8 @@ function CreateTastingForm() {
           checked={blindMode}
           onChange={setBlindMode}
           icon={<EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-          label="Blind Tasting"
-          description="Hide whisky details until reveal"
+          label={t("labs.host.blindTasting")}
+          description={t("labs.host.blindTastingDesc")}
           testId="labs-host-toggle-blind"
         />
 
@@ -2902,11 +2906,11 @@ function CreateTastingForm() {
             <LabsSegmentedSelect
               value={revealOrder}
               options={[
-                { value: "classic", label: "Classic", desc: "Name then details" },
-                { value: "photo-first", label: "Photo First", desc: "Photo then name" },
-                { value: "details-first", label: "Details", desc: "Details then name" },
-                { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
-                { value: "custom", label: "Custom", desc: "Your own order" },
+                { value: "classic", label: t("labs.host.revealClassic"), desc: t("labs.host.revealClassicDesc") },
+                { value: "photo-first", label: t("labs.host.revealPhotoFirst"), desc: t("labs.host.revealPhotoFirstDesc") },
+                { value: "details-first", label: t("labs.host.revealDetails"), desc: t("labs.host.revealDetailsDesc") },
+                { value: "one-by-one", label: t("labs.host.revealOneByOne"), desc: t("labs.host.revealOneByOneDesc") },
+                { value: "custom", label: t("labs.host.revealCustom"), desc: t("labs.host.revealCustomDesc") },
               ]}
               onChange={(val: string | number) => {
                 const v = String(val);
@@ -2937,15 +2941,15 @@ function CreateTastingForm() {
         <div>
           <label className="labs-section-label">
             <Gauge className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-            Rating Scale
+            {t("labs.host.ratingScale")}
           </label>
           <LabsSegmentedSelect
             value={ratingScale}
             options={[
-              { value: 5, label: "5", desc: "Simple 5-star" },
-              { value: 10, label: "10", desc: "Classic 10-point" },
-              { value: 20, label: "20", desc: "Detailed 20-point" },
-              { value: 100, label: "100", desc: "Professional 100-point" },
+              { value: 5, label: "5", desc: t("labs.host.simple") },
+              { value: 10, label: "10", desc: t("labs.host.classic") },
+              { value: 20, label: "20", desc: t("labs.host.detailed") },
+              { value: 100, label: "100", desc: t("labs.host.pro") },
             ]}
             onChange={setRatingScale}
           />
@@ -2955,10 +2959,10 @@ function CreateTastingForm() {
           <div>
             <label className="labs-section-label flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-              Target Communities (optional)
+              {t("labs.host.targetCommunities")}
             </label>
             <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
-              Share this tasting with specific communities
+              {t("labs.host.targetCommunitiesDesc")}
             </p>
             <div className="labs-card" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)" }}>
               {myCommunities.map((c: any) => (
@@ -3012,18 +3016,18 @@ function CreateTastingForm() {
                   }
                 }}
                 icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label="Host Controls the Pace"
-                description="Guide all guests through each dram together"
+                label={t("labs.host.hostControlsPace")}
+                description={t("labs.host.hostControlsPaceDesc")}
                 testId="labs-host-toggle-guided"
               />
 
               <div>
                 <label className="labs-section-label">
                   <Globe className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  How Guests Join
+                  {t("labs.host.howGuestsJoin")}
                 </label>
                 <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  Choose whether guests need an account or can join instantly
+                  {t("labs.host.guestAccountDesc")}
                 </p>
                 <LabsSegmentedSelect
                   value={guestMode}
@@ -3038,17 +3042,17 @@ function CreateTastingForm() {
               <div>
                 <label className="labs-section-label">
                   <Sliders className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  Tasting Experience
+                  {t("labs.host.tastingExperience")}
                 </label>
                 <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  How guests navigate through the whiskies
+                  {t("labs.host.expFreeDesc")}
                 </p>
                 <LabsSegmentedSelect
                   value={sessionUiMode}
                   options={[
-                    { value: "flow", label: "Free Tasting", desc: guidedMode ? "Not available with Host Controls" : "Explore all drams freely", disabled: guidedMode },
-                    { value: "focus", label: "One at a Time", desc: "Focus on one dram" },
-                    { value: "journal", label: "Dram Notes", desc: "Step-by-step guided notes" },
+                    { value: "flow", label: t("labs.host.expFree"), desc: guidedMode ? t("labs.host.expFreeDisabled") : t("labs.host.expFreeDesc"), disabled: guidedMode },
+                    { value: "focus", label: t("labs.host.expOneAtATime"), desc: t("labs.host.expOneAtATimeDesc") },
+                    { value: "journal", label: t("labs.host.expDram"), desc: t("labs.host.expDramDesc") },
                   ]}
                   onChange={(val: string | number) => {
                     const v = String(val);
@@ -3064,40 +3068,40 @@ function CreateTastingForm() {
               <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
                 <label className="labs-section-label">
                   <MessageCircle className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  Group Discussion
+                  {t("labs.host.groupDiscussion")}
                 </label>
                 <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-                  Let guests share thoughts and comments on each whisky
+                  {t("labs.host.enableDiscussionDesc")}
                 </p>
                 <LabsToggle
                   checked={reflectionEnabled}
                   onChange={setReflectionEnabled}
                   icon={<MessageCircle className="w-5 h-5" style={{ color: reflectionEnabled ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                  label="Enable Discussion Round"
-                  description="Add a discussion phase after tasting"
+                  label={t("labs.host.enableDiscussion")}
+                  description={t("labs.host.enableDiscussionDesc")}
                   testId="labs-host-toggle-reflection"
                 />
                 {reflectionEnabled && (
                   <div className="space-y-4 mt-4">
                     <div>
-                      <label className="labs-section-label" style={{ fontSize: 11 }}>Discussion Format</label>
+                      <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.discussionFormat")}</label>
                       <LabsSegmentedSelect
                         value={reflectionMode}
                         options={[
-                          { value: "standard", label: "Standard", desc: "Pre-set questions" },
-                          { value: "custom", label: "Custom", desc: "Your own questions" },
+                          { value: "standard", label: t("labs.host.discussionStandard"), desc: t("labs.host.discussionStandardDesc") },
+                          { value: "custom", label: t("labs.host.discussionCustom"), desc: t("labs.host.discussionCustomDesc") },
                         ]}
                         onChange={setReflectionMode}
                       />
                     </div>
                     <div>
-                      <label className="labs-section-label" style={{ fontSize: 11 }}>Show Names in Discussion</label>
+                      <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
                       <LabsSegmentedSelect
                         value={reflectionVisibility}
                         options={[
-                          { value: "named", label: "Named", desc: "Names shown" },
-                          { value: "anonymous", label: "Anonymous", desc: "Names hidden" },
-                          { value: "optional", label: "Optional", desc: "Guest decides" },
+                          { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
+                          { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
+                          { value: "optional", label: t("labs.host.namesOptional"), desc: t("labs.host.namesOptionalDesc") },
                         ]}
                         onChange={setReflectionVisibility}
                       />
@@ -3116,11 +3120,11 @@ function CreateTastingForm() {
                   className="labs-input"
                   value={videoLink}
                   onChange={(e) => setVideoLink(e.target.value)}
-                  placeholder="https://zoom.us/j/..."
+                  placeholder={t("m2.host.videoLinkPlaceholder")}
                   data-testid="labs-host-input-video"
                 />
                 <p className="text-xs mt-1" style={{ color: "var(--labs-text-secondary)" }}>
-                  Add a Zoom, Teams or Google Meet link for remote guests
+                  {t("m2.host.videoLinkDesc")}
                 </p>
               </div>
             </div>
@@ -3187,7 +3191,7 @@ function CreateTastingForm() {
           ) : (
             <Plus className="w-4 h-4" />
           )}
-          {submitting ? "Creating..." : "Create & Add Whiskies"}
+          {submitting ? t("labs.host.savingEllipsis") : t("m2.host.createAndAddWhiskies", "Create & Add Whiskies")}
         </button>
       </div>
     </div>
@@ -3207,6 +3211,7 @@ function ParticipantStatusSection({
   whiskyCount: number;
   tasting?: any;
 }) {
+  const { t } = useTranslation();
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
 
   const sortedParticipants = [...(participants || [])].sort((a: any, b: any) => {
@@ -3229,7 +3234,7 @@ function ParticipantStatusSection({
   const statusGroups = [
     {
       key: "done",
-      label: "Rated All",
+      label: t("labs.host.ratedAll"),
       icon: CheckCircle2,
       color: "var(--labs-success)",
       bg: "var(--labs-success-muted)",
@@ -3237,7 +3242,7 @@ function ParticipantStatusSection({
     },
     {
       key: "progress",
-      label: "In Progress",
+      label: t("labs.host.inProgress"),
       icon: Clock,
       color: "var(--labs-accent)",
       bg: "var(--labs-accent-muted)",
@@ -3245,7 +3250,7 @@ function ParticipantStatusSection({
     },
     {
       key: "none",
-      label: "Not Started",
+      label: t("labs.host.notStarted"),
       icon: CircleDashed,
       color: "var(--labs-text-muted)",
       bg: "var(--labs-surface)",
@@ -3309,7 +3314,7 @@ function ParticipantStatusSection({
 
       {whiskyCount > 0 && (participants || []).length > 0 && (
         <div>
-          <h2 className="labs-section-label">Per-Whisky Completion</h2>
+          <h2 className="labs-section-label">{t("labs.host.perWhiskyCompletion")}</h2>
           <div className="space-y-2">
             {(whiskies || []).map((w: any, i: number) => {
               const whiskyRatings = (ratings || []).filter((r: any) => r.whiskyId === w.id);
@@ -3375,7 +3380,7 @@ function ParticipantStatusSection({
                               className="text-xs truncate"
                               style={{ color: hasRated ? "var(--labs-text-secondary)" : "var(--labs-text-muted)" }}
                             >
-                              {stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}
+                              {stripGuestSuffix((p.participant?.name || p.name || t("labs.host.anonymous")) as string)}
                             </span>
                           </div>
                         );
@@ -3409,6 +3414,7 @@ function GuidedTastingEngine({
   queryClient: any;
   tastingId: string;
 }) {
+  const { t } = useTranslation();
   const whiskyList = whiskies || [];
   const participantList = participants || [];
   const ratingList = ratings || [];
@@ -3420,11 +3426,11 @@ function GuidedTastingEngine({
   const activeWhisky = !isLobby && !isCompleted && whiskyList[guidedIndex] ? whiskyList[guidedIndex] : null;
 
   const GUIDED_FIELD_LABELS: Record<string, string> = {
-    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-    region: "Region", country: "Country", category: "Category",
-    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
-    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
-    hostNotes: "Notes", hostSummary: "Summary", price: "Price",
+    name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
+    region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
+    caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
+    bottler: t("labs.host.fieldBottler"), vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
+    hostNotes: t("labs.host.fieldNotes"), hostSummary: t("labs.host.fieldSummary"), price: t("labs.host.fieldPrice"),
   };
   let parsedRevealOrder = REVEAL_DEFAULT_ORDER;
   try {
@@ -3530,13 +3536,13 @@ function GuidedTastingEngine({
           style={{ background: stateBg, color: stateColor }}
           data-testid="guided-state-badge"
         >
-          {isLobby ? "Waiting" : isCompleted ? "Done" : `Reveal: ${revealLabels[revealStep] || revealStep}`}
+          {isLobby ? t("labs.host.waiting") : isCompleted ? t("labs.host.done") : `${t("labs.host.revealLabel", { label: revealLabels[revealStep] || revealStep })}`}
         </span>
       </div>
 
       {whiskyCount > 0 && (
         <div className="labs-card p-4" data-testid="guided-progress">
-          <p className="labs-section-label">Progress</p>
+          <p className="labs-section-label">{t("labs.host.progress")}</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {whiskyList.map((w: any, i: number) => {
               let dotBg = "var(--labs-border)";
@@ -3583,7 +3589,7 @@ function GuidedTastingEngine({
       )}
 
       <div className="labs-card p-4" data-testid="guided-controls">
-        <p className="labs-section-label">Controls</p>
+        <p className="labs-section-label">{t("labs.host.controls")}</p>
         <div className="flex flex-wrap gap-2">
           {isLobby && (
             <button
@@ -3604,7 +3610,7 @@ function GuidedTastingEngine({
               data-testid="guided-reveal"
             >
               {advanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-              {revealLabels[revealStep + 1] ? `Reveal ${revealLabels[revealStep + 1]}` : "Reveal Next"}
+              {revealLabels[revealStep + 1] ? t("labs.host.revealLabel", { label: revealLabels[revealStep + 1] }) : t("labs.host.revealNext")}
             </button>
           )}
           {!isLobby && !isCompleted && revealStep >= maxRevealStep && guidedIndex < whiskyCount - 1 && (
@@ -3658,7 +3664,7 @@ function GuidedTastingEngine({
 
       {activeWhisky && (
         <div className="labs-card p-4" data-testid="guided-current-dram">
-          <p className="labs-section-label">Current Dram</p>
+          <p className="labs-section-label">{t("labs.host.currentDram")}</p>
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -3674,7 +3680,7 @@ function GuidedTastingEngine({
                 <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                   {[activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null]
                     .filter(Boolean)
-                    .join(" · ") || "No additional details"}
+                    .join(" · ") || t("labs.host.noAdditionalDetails")}
                 </p>
               )}
             </div>
@@ -3792,12 +3798,12 @@ function TastingSetupSection({
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      setSaveStatus(err.message || "Save failed");
+      setSaveStatus(err.message || t("labs.host.saveFailed"));
       setTimeout(() => setSaveStatus(null), 3000);
-      throw new Error(err.message || "Save failed");
+      throw new Error(err.message || t("labs.host.saveFailed"));
     }
     queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-    setSaveStatus("Saved");
+    setSaveStatus(t("labs.host.savedStatus"));
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
@@ -3872,7 +3878,7 @@ function TastingSetupSection({
   return (
     <div data-testid="labs-tasting-setup-section">
       {saveStatus && (
-        <div className="flex items-center gap-2 mb-3" style={{ fontSize: 12, color: saveStatus === "Saved" ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
+        <div className="flex items-center gap-2 mb-3" style={{ fontSize: 12, color: saveStatus === t("labs.host.savedStatus") ? "var(--labs-success)" : "var(--labs-danger, #e74c3c)" }}>
           <Check className="w-3 h-3" />
           {saveStatus}
         </div>
@@ -3886,24 +3892,24 @@ function TastingSetupSection({
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Gauge className="w-3 h-3" />
-              Rating Scale
+              {t("labs.host.ratingScale")}
               {!isDraft && <Lock className="w-2.5 h-2.5" style={{ color: "var(--labs-text-muted)" }} />}
             </label>
             {isDraft ? (
               <LabsSegmentedSelect
                 value={(tasting.ratingScale as number) ?? 100}
                 options={[
-                  { value: 5, label: "5", desc: "Simple" },
-                  { value: 10, label: "10", desc: "Classic" },
-                  { value: 20, label: "20", desc: "Detailed" },
-                  { value: 100, label: "100", desc: "Pro" },
+                  { value: 5, label: "5", desc: t("labs.host.simple") },
+                  { value: 10, label: "10", desc: t("labs.host.classic") },
+                  { value: 20, label: "20", desc: t("labs.host.detailed") },
+                  { value: 100, label: "100", desc: t("labs.host.pro") },
                 ]}
                 onChange={handleChangeScale}
               />
             ) : (
               <div className="text-sm labs-card p-3" style={{ color: "var(--labs-text)" }}>
-                {(tasting.ratingScale as number) ?? 100}-point scale
-                <span className="text-xs ml-2" style={{ color: "var(--labs-text-muted)" }}>(locked while active)</span>
+                {t("labs.host.pointScale", { scale: (tasting.ratingScale as number) ?? 100 })}
+                <span className="text-xs ml-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.lockedWhileActive")}</span>
               </div>
             )}
           </div>
@@ -3912,8 +3918,8 @@ function TastingSetupSection({
             checked={!!tasting.blindMode}
             onChange={() => handleToggle("blindMode", !!tasting.blindMode)}
             icon={<EyeOff className="w-5 h-5" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-            label="Blind Tasting"
-            description="Hide whisky names until reveal"
+            label={t("labs.host.blindTasting")}
+            description={t("labs.host.blindTastingDesc")}
             testId="labs-settings-toggle-blind"
           />
 
@@ -3931,16 +3937,16 @@ function TastingSetupSection({
               <div>
                 <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
                   <Eye className="w-3 h-3" />
-                  Reveal Order
+                  {t("labs.host.revealOrder")}
                 </label>
                 <LabsSegmentedSelect
                   value={activeKey}
                   options={[
-                    { value: "classic", label: "Classic", desc: "Name then details" },
-                    { value: "photo-first", label: "Photo First", desc: "Photo then name" },
-                    { value: "details-first", label: "Details", desc: "Details then name" },
-                    { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
-                    { value: "custom", label: "Custom", desc: "Your own order" },
+                    { value: "classic", label: t("labs.host.revealClassic"), desc: t("labs.host.revealClassicDesc") },
+                    { value: "photo-first", label: t("labs.host.revealPhotoFirst"), desc: t("labs.host.revealPhotoFirstDesc") },
+                    { value: "details-first", label: t("labs.host.revealDetails"), desc: t("labs.host.revealDetailsDesc") },
+                    { value: "one-by-one", label: t("labs.host.revealOneByOne"), desc: t("labs.host.revealOneByOneDesc") },
+                    { value: "custom", label: t("labs.host.revealCustom"), desc: t("labs.host.revealCustomDesc") },
                   ]}
                   onChange={(val: string | number) => {
                     const key = String(val);
@@ -3983,22 +3989,22 @@ function TastingSetupSection({
               try { await patchDetails(patch); } catch {}
             }}
             icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-            label="Host Controls the Pace"
-            description="Guide all guests through each dram"
+            label={t("labs.host.hostControlsPace")}
+            description={t("labs.host.hostControlsPaceDesc")}
             testId="labs-settings-toggle-guided"
           />
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Sliders className="w-3 h-3" />
-              Tasting Experience
+              {t("labs.host.tastingExperience")}
             </label>
             <LabsSegmentedSelect
               value={(tasting.sessionUiMode as string) || "flow"}
               options={[
-                { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
-                { value: "focus", label: "One at a Time", desc: "Focus mode" },
-                { value: "journal", label: "Dram", desc: "Guided notes" },
+                { value: "flow", label: t("labs.host.expFree"), desc: tasting.guidedMode ? t("labs.host.expFreeDisabled") : t("labs.host.expFreeDesc"), disabled: !!tasting.guidedMode },
+                { value: "focus", label: t("labs.host.expOneAtATime"), desc: t("labs.host.expOneAtATimeDesc") },
+                { value: "journal", label: t("labs.host.expDram"), desc: t("labs.host.expDramDesc") },
               ]}
               onChange={handleChangeSessionUi}
             />
@@ -4007,33 +4013,33 @@ function TastingSetupSection({
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Globe className="w-3 h-3" />
-              How Guests Join
+              {t("labs.host.howGuestsJoin")}
             </label>
             <LabsSegmentedSelect
               value={(tasting.guestMode as string) || "standard"}
               options={[
-                { value: "standard", label: "Account", desc: "Saved ratings" },
-                { value: "ultra", label: "Instant", desc: "No sign-in" },
+                { value: "standard", label: t("labs.host.guestAccount"), desc: t("labs.host.guestAccountDesc") },
+                { value: "ultra", label: t("labs.host.guestInstant"), desc: t("labs.host.guestInstantDesc") },
               ]}
               onChange={handleChangeGuestMode}
             />
           </div>
 
           <div>
-            <p className="labs-section-label">What Guests See</p>
+            <p className="labs-section-label">{t("labs.host.whatGuestsSee")}</p>
           </div>
 
           <LabsToggle
             checked={!!tasting.showRanking}
             onChange={() => handleToggle("showRanking", !!tasting.showRanking)}
             icon={<BarChart3 className="w-5 h-5" style={{ color: tasting.showRanking ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-            label="Show Ranking"
-            description="Guests see how whiskies rank"
+            label={t("labs.host.showRanking")}
+            description={t("labs.host.showRankingDesc")}
             testId="labs-settings-toggle-ranking"
           />
           {tasting.blindMode && tasting.showRanking && (
             <p className="text-xs mt-1 px-1" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid="blind-ranking-hint">
-              Ranking wird Gästen erst nach dem Reveal angezeigt
+              {t("labs.host.blindRankingHint")}
             </p>
           )}
 
@@ -4041,8 +4047,8 @@ function TastingSetupSection({
             checked={!!tasting.showGroupAvg}
             onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)}
             icon={<Users className="w-5 h-5" style={{ color: tasting.showGroupAvg ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-            label="Show Group Scores"
-            description="Guests see average scores"
+            label={t("labs.host.showGroupScores")}
+            description={t("labs.host.showGroupScoresDesc")}
             testId="labs-settings-toggle-avg"
           />
 
@@ -4050,22 +4056,22 @@ function TastingSetupSection({
             checked={tasting.showReveal !== false}
             onChange={() => handleToggle("showReveal", tasting.showReveal !== false)}
             icon={<Eye className="w-5 h-5" style={{ color: tasting.showReveal !== false ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-            label="Show Results After Tasting"
-            description="Guests access results when done"
+            label={t("labs.host.showResultsAfter")}
+            description={t("labs.host.showResultsAfterDesc")}
             testId="labs-settings-toggle-reveal"
           />
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Star className="w-3 h-3" />
-              Rating Prompt
+              {t("labs.host.ratingPrompt")}
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={ratingPrompt}
                 onChange={e => setRatingPrompt(e.target.value)}
-                placeholder="e.g. Rate your overall impression"
+                placeholder={t("labs.host.ratingPromptPlaceholder")}
                 className="labs-input flex-1"
                 data-testid="labs-settings-rating-prompt"
               />
@@ -4075,49 +4081,49 @@ function TastingSetupSection({
                 disabled={savingPrompt}
                 data-testid="labs-settings-save-prompt"
               >
-                {savingPrompt ? "..." : "Save"}
+                {savingPrompt ? "..." : t("labs.host.save")}
               </button>
             </div>
           </div>
 
           <div>
-            <p className="labs-section-label">Extras</p>
+            <p className="labs-section-label">{t("labs.host.extras")}</p>
           </div>
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <MessageCircle className="w-3 h-3" />
-              Group Discussion
+              {t("labs.host.groupDiscussion")}
             </label>
             <LabsToggle
               checked={!!tasting.reflectionEnabled}
               onChange={handleToggleReflection}
               icon={<MessageCircle className="w-5 h-5" style={{ color: tasting.reflectionEnabled ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-              label="Enable Discussion Round"
-              description="Add a discussion phase after tasting"
+              label={t("labs.host.enableDiscussion")}
+              description={t("labs.host.enableDiscussionDesc")}
               testId="labs-settings-toggle-reflection"
             />
             {tasting.reflectionEnabled && (
               <div className="space-y-3 mt-3">
                 <div>
-                  <label className="labs-section-label" style={{ fontSize: 11 }}>Discussion Format</label>
+                  <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.discussionFormat")}</label>
                   <LabsSegmentedSelect
                     value={(tasting.reflectionMode as string) || "standard"}
                     options={[
-                      { value: "standard", label: "Standard", desc: "Pre-set questions" },
-                      { value: "custom", label: "Custom", desc: "Your own questions" },
+                      { value: "standard", label: t("labs.host.discussionStandard"), desc: t("labs.host.discussionStandardDesc") },
+                      { value: "custom", label: t("labs.host.discussionCustom"), desc: t("labs.host.discussionCustomDesc") },
                     ]}
                     onChange={handleChangeReflectionMode}
                   />
                 </div>
                 <div>
-                  <label className="labs-section-label" style={{ fontSize: 11 }}>Show Names</label>
+                  <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
                   <LabsSegmentedSelect
                     value={(tasting.reflectionVisibility as string) || "named"}
                     options={[
-                      { value: "named", label: "Named", desc: "Names shown" },
-                      { value: "anonymous", label: "Anonymous", desc: "Hidden" },
-                      { value: "optional", label: "Optional", desc: "Guest decides" },
+                      { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
+                      { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
+                      { value: "optional", label: t("labs.host.namesOptional"), desc: t("labs.host.namesOptionalDesc") },
                     ]}
                     onChange={handleChangeReflectionVis}
                   />
@@ -4136,7 +4142,7 @@ function TastingSetupSection({
                 type="url"
                 value={videoLinkLocal}
                 onChange={e => setVideoLinkLocal(e.target.value)}
-                placeholder="https://zoom.us/j/..."
+                placeholder={t("m2.host.videoLinkPlaceholder")}
                 className="labs-input flex-1"
                 data-testid="labs-settings-video-link"
               />
@@ -4146,7 +4152,7 @@ function TastingSetupSection({
                 disabled={savingVideo}
                 data-testid="labs-settings-save-video"
               >
-                {savingVideo ? "..." : "Save"}
+                {savingVideo ? "..." : t("labs.host.save")}
               </button>
             </div>
           </div>
@@ -4154,7 +4160,7 @@ function TastingSetupSection({
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Image className="w-3 h-3" />
-              Cover Image
+              {t("labs.host.coverImage")}
             </label>
             <label
               className="flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer text-sm"
@@ -4166,7 +4172,7 @@ function TastingSetupSection({
               data-testid="labs-settings-upload-cover"
             >
               <Upload className="w-4 h-4" />
-              {(tasting.coverImageUrl as string) ? "Change Cover" : "Upload Cover Image"}
+              {(tasting.coverImageUrl as string) ? t("labs.host.changeCover") : t("labs.host.uploadCover")}
               <input
                 type="file"
                 accept="image/*"
@@ -4789,7 +4795,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to save");
+        throw new Error(err.message || t("labs.host.failedToSave"));
       }
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       if (silent) {
@@ -4799,7 +4805,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       }
       return true;
     } catch (e: any) {
-      setEditTastingError(e.message || "Failed to save");
+      setEditTastingError(e.message || t("labs.host.failedToSave"));
       return false;
     } finally {
       if (!silent) setEditTastingSaving(false);
@@ -4861,7 +4867,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const handleShareSocial = (platform: string) => {
     if (!tasting) return;
-    const text = `Join my whisky tasting "${tasting.title}" on CaskSense!`;
+    const text = t("labs.host.shareJoinText", { title: tasting.title });
     const url = joinUrl;
     const encodedText = encodeURIComponent(text);
     const encodedUrl = encodeURIComponent(url);
@@ -4870,7 +4876,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
-      email: `mailto:?subject=${encodeURIComponent(`Join: ${tasting.title}`)}&body=${encodedText}%20${encodedUrl}`,
+      email: `mailto:?subject=${encodeURIComponent(t("labs.host.shareJoinSubject", { title: tasting.title }))}&body=${encodedText}%20${encodedUrl}`,
     };
     if (links[platform]) window.open(links[platform], "_blank");
   };
@@ -4880,7 +4886,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     try {
       await navigator.share({
         title: tasting.title,
-        text: `Join my whisky tasting "${tasting.title}" on CaskSense!`,
+        text: t("labs.host.shareJoinText", { title: tasting.title }),
         url: joinUrl,
       });
     } catch {}
@@ -4915,18 +4921,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     const email = emailInput.trim().toLowerCase();
     if (!email) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Invalid email address");
+      setEmailError(t("labs.host.invalidEmail"));
       setTimeout(() => setEmailError(null), 3000);
       return;
     }
     if (emailList.includes(email)) {
-      setEmailError("Already in the list");
+      setEmailError(t("labs.host.alreadyInList"));
       setTimeout(() => setEmailError(null), 3000);
       return;
     }
     const alreadyInvited = Array.isArray(existingInvites) && existingInvites.some((inv: { email?: string }) => inv.email?.toLowerCase() === email);
     if (alreadyInvited) {
-      setEmailError("Already invited");
+      setEmailError(t("labs.host.alreadyInvited"));
       setTimeout(() => setEmailError(null), 3000);
       return;
     }
@@ -4951,12 +4957,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setEmailList([]);
       setPersonalNote("");
       queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
-      setInviteFeedback({ type: "success", message: `Invitations sent to ${recipientCount} recipient${recipientCount !== 1 ? "s" : ""}` });
+      setInviteFeedback({ type: "success", message: t("labs.host.invitesSentCount", { count: recipientCount }) });
       setTimeout(() => { setInviteSent(false); setInviteFeedback(null); }, 5000);
     } catch (err) {
       console.error("Failed to send invites:", err);
       setInviteSent(false);
-      setInviteFeedback({ type: "error", message: "Failed to send invitations. Please try again." });
+      setInviteFeedback({ type: "error", message: t("labs.host.invitesFailed") });
       setTimeout(() => setInviteFeedback(null), 5000);
     } finally {
       setSendingInvites(false);
@@ -5058,7 +5064,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           data-testid="labs-host-back"
         >
           <ChevronLeft className="w-4 h-4" />
-          {showBackToCompanion ? "Zurück zur Session" : "Tastings"}
+          {showBackToCompanion ? t("labs.host.backToSession") : t("labs.host.tastings")}
         </button>
       </div>
 
@@ -5124,10 +5130,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               className="labs-btn-secondary"
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 13 }}
               data-testid="labs-host-cockpit-toggle"
-              title="Full-screen control panel for guiding your tasting — reveal whiskies, control pace, and manage participants"
+              title={t("labs.host.hostCockpitTooltip")}
             >
               <Gauge className="w-4 h-4" />
-              Host Cockpit
+              {t("labs.host.hostCockpit")}
             </button>
           )}
           <span
@@ -5143,11 +5149,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="labs-card p-4 mb-5 space-y-3" data-testid="labs-edit-tasting-form">
           <div className="flex items-center gap-2 mb-2">
             <Pencil className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Edit Tasting Details</span>
+            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.editTastingDetails")}</span>
           </div>
           <input
             className="labs-input w-full"
-            placeholder="Title"
+            placeholder={t("labs.host.titlePlaceholder")}
             value={editTastingFields.title || ""}
             onChange={e => setEditTastingFields({ ...editTastingFields, title: e.target.value })}
             data-testid="labs-edit-tasting-title"
@@ -5169,7 +5175,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             />
             <input
               className="labs-input"
-              placeholder="Location"
+              placeholder={t("labs.host.locationPlaceholder")}
               value={editTastingFields.location || ""}
               onChange={e => setEditTastingFields({ ...editTastingFields, location: e.target.value })}
               data-testid="labs-edit-tasting-location"
@@ -5178,7 +5184,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           <textarea
             className="labs-input w-full"
             rows={2}
-            placeholder="Description (optional)"
+            placeholder={t("labs.host.descriptionPlaceholder")}
             value={editTastingFields.description || ""}
             onChange={e => setEditTastingFields({ ...editTastingFields, description: e.target.value })}
             style={{ resize: "vertical" }}
@@ -5188,10 +5194,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             <div>
               <label className="labs-section-label flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                Target Communities (optional)
+                {t("labs.host.targetCommunities")}
               </label>
               <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                Share this tasting with specific communities
+                {t("labs.host.targetCommunitiesDesc")}
               </p>
               <div className="labs-card" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)" }}>
                 {editMyCommunities.map((c: any) => (
@@ -5230,7 +5236,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-edit-tasting-save"
             >
               {editTastingSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-              {editTastingSaving ? "Saving..." : "Save & Close"}
+              {editTastingSaving ? t("labs.host.savingEllipsis") : t("labs.host.saveClose")}
             </button>
           </div>
         </div>
@@ -5238,12 +5244,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {tasting.code && (
         <div className="mb-5">
-          <h2 className="labs-section-label">Invite & Share</h2>
+          <h2 className="labs-section-label">{t("labs.host.inviteShare")}</h2>
         <div className="labs-card p-4">
           <div className="mb-3">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
+                <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.joinCode")}</p>
                 <p
                   className="text-2xl font-bold tracking-widest"
                   style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
@@ -5260,7 +5266,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-host-copy-code"
               >
                 {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {codeCopied ? "Copied" : "Copy"}
+                {codeCopied ? t("labs.host.copied") : t("labs.host.copy")}
               </button>
               <button
                 className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
@@ -5276,7 +5282,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-host-toggle-email"
               >
                 <Mail className="w-3.5 h-3.5" />
-                Invite
+                {t("labs.host.invite")}
               </button>
               <button
                 className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
@@ -5284,7 +5290,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-host-toggle-social"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                Share
+                {t("labs.host.share")}
               </button>
             </div>
           </div>
@@ -5301,7 +5307,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="img-labs-host-qr"
               />
               <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                Scan to join this tasting
+                {t("labs.host.scanToJoin")}
               </p>
               <button
                 className="labs-btn-ghost flex items-center gap-1.5 text-xs mt-1"
@@ -5309,7 +5315,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-host-download-qr"
               >
                 <Download className="w-3.5 h-3.5" />
-                Download QR
+                {t("labs.host.downloadQr")}
               </button>
             </div>
           )}
@@ -5321,7 +5327,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             >
               <div className="flex items-center gap-2 mb-2">
                 <Share2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Share Tasting</span>
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.shareTasting")}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -5353,7 +5359,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     data-testid="labs-host-native-share"
                   >
                     <Share2 className="w-3 h-3" />
-                    Share
+                    {t("labs.host.share")}
                   </button>
                 )}
               </div>
@@ -5384,7 +5390,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             >
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Email Invitations</span>
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.emailInvitations")}</span>
               </div>
 
               {currentParticipant?.id && (
@@ -5410,7 +5416,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   value={emailInput}
                   onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
-                  placeholder="Enter email address"
+                  placeholder={t("labs.host.enterEmail")}
                   className="labs-input flex-1"
                   style={{
                     background: "var(--labs-surface)",
@@ -5473,7 +5479,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <textarea
                 value={personalNote}
                 onChange={e => setPersonalNote(e.target.value)}
-                placeholder="Add a personal note (optional)"
+                placeholder={t("labs.host.personalNote")}
                 rows={2}
                 style={{
                   width: "100%",
@@ -5492,7 +5498,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
               <div className="flex items-center justify-between">
                 <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                  {emailList.length} recipient{emailList.length !== 1 ? "s" : ""}
+                  {emailList.length} {emailList.length !== 1 ? t("labs.host.recipients") : t("labs.host.recipient")}
                 </span>
                 <button
                   className="labs-btn-primary flex items-center gap-2"
@@ -5508,7 +5514,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  {sendingInvites ? "Sending..." : inviteSent ? "Sent!" : "Send Invites"}
+                  {sendingInvites ? t("labs.host.sending") : inviteSent ? t("labs.host.sent") : t("labs.host.sendInvites")}
                 </button>
               </div>
 
@@ -5537,7 +5543,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           {Array.isArray(existingInvites) && existingInvites.length > 0 && (
             <div className="pt-3 mt-2 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
               <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                Previously Invited ({existingInvites.length})
+                {t("labs.host.previouslyInvited")} ({existingInvites.length})
               </span>
               <div className="space-y-1">
                 {existingInvites.map((inv: any, idx: number) => (
@@ -5550,7 +5556,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
                     <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
                       {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
-                      {inv.status === "accepted" ? "Joined" : "Sent"}
+                      {inv.status === "accepted" ? t("labs.host.joined") : t("labs.host.sent")}
                     </span>
                   </div>
                 ))}
@@ -5563,7 +5569,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {currentParticipant && (
         <div className="mb-6">
-          <h2 className="labs-section-label">Tasting Setup</h2>
+          <h2 className="labs-section-label">{t("labs.host.tastingSetup")}</h2>
           <TastingSetupSection
             tasting={tasting}
             tastingId={tastingId}
@@ -5710,10 +5716,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
         {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (() => {
           const whiskyCount = (whiskies || []).length;
-          const rv = getRevealState(tasting, whiskyCount);
+          const rv = getRevealState(tasting, whiskyCount, t);
           return (
             <div>
-              <h2 className="labs-section-label">Reveal Controls</h2>
+              <h2 className="labs-section-label">{t("labs.host.revealControls")}</h2>
               <div className="labs-card p-4 space-y-4">
                 <div className="flex flex-wrap gap-2">
                   {(tasting.status === "open" || tasting.status === "closed") && (
@@ -5736,7 +5742,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       data-testid="labs-host-reveal-next"
                     >
                       {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                      {rv.nextLabel}
+                      {t(`labs.host.${rv.nextLabelKey}`, rv.nextLabelParam ? { label: rv.nextLabelParam } : {})}
                     </button>
                   )}
                 </div>
@@ -5745,10 +5751,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                        {rv.allRevealed ? "All drams revealed" : `Dram ${rv.revealIndex + 1} of ${whiskyCount}`}
+                        {rv.allRevealed ? t("labs.host.allDramsRevealed") : t("labs.host.dramOfTotal", { current: rv.revealIndex + 1, total: whiskyCount })}
                       </span>
                       <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                        Step {Math.min(rv.revealStep, rv.maxSteps)}/{rv.maxSteps}
+                        {t("labs.host.stepOfTotal", { current: Math.min(rv.revealStep, rv.maxSteps), total: rv.maxSteps })}
                       </span>
                     </div>
                     <div className="flex gap-1 mb-1.5">
@@ -5923,7 +5929,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               }}
             >
               <Upload className="w-6 h-6" />
-              <p>Drop photos, PDFs, Excel or files here</p>
+              <p>{t("labs.host.dropFiles")}</p>
               <a
                 href="/CaskSense_Whisky_Import_Template.xlsx"
                 download
@@ -5986,7 +5992,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             <textarea
               className="labs-input w-full"
               rows={2}
-              placeholder="Or paste whisky names, tasting notes, menu text..."
+              placeholder={t("labs.host.pasteText")}
               value={aiImportText}
               onChange={e => setAiImportText(e.target.value)}
               style={{ resize: "vertical" }}
@@ -6001,7 +6007,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-ai-import-analyze"
               >
                 {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : aiImportFiles.some(isExcelFile) ? <Upload className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {aiImportLoading ? "Importing..." : aiImportFiles.some(isExcelFile) ? "Import Excel" : "Analyze"}
+                {aiImportLoading ? t("labs.host.importingEllipsis") : aiImportFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
               </button>
             </div>
 
@@ -6093,7 +6099,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <div className="flex items-center gap-1" style={{ position: "relative" }}>
                 <input
                   className="labs-input"
-                  placeholder="WB #"
+                  placeholder={t("labs.host.wbPlaceholder")}
                   value={wbLookupId}
                   onChange={e => { setWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setWbLookupResult(""); }}
                   onKeyDown={e => { if (e.key === "Enter" && wbLookupId.trim()) handleWbLookup(wbLookupId, "add"); }}
@@ -6104,7 +6110,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   className="labs-btn-ghost p-1.5"
                   onClick={() => handleWbLookup(wbLookupId, "add")}
                   disabled={!wbLookupId.trim() || wbLookupLoading}
-                  title="Lookup Whiskybase"
+                  title={t("labs.host.wbLookup")}
                   data-testid="labs-wb-lookup-btn"
                   style={{ color: wbLookupResult === "ok" ? "var(--labs-success)" : wbLookupResult && wbLookupResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
                 >
@@ -6113,7 +6119,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </div>
               <input
                 className="labs-input flex-1"
-                placeholder="Whisky name..."
+                placeholder={t("labs.host.whiskyNamePlaceholder")}
                 value={newWhiskyName}
                 onChange={(e) => setNewWhiskyName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !showExtendedFields && handleAddWhisky()}
@@ -6142,26 +6148,26 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
             {showExtendedFields && (
               <div className="grid grid-cols-2 gap-2">
-                <input className="labs-input" placeholder="Distillery" value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
-                <input className="labs-input" placeholder="ABV %" value={extFields.abv || ""} onChange={e => setExtFields({ ...extFields, abv: e.target.value })} data-testid="labs-ext-abv" />
-                <input className="labs-input" placeholder="Cask Type" value={extFields.caskType || ""} onChange={e => setExtFields({ ...extFields, caskType: e.target.value })} data-testid="labs-ext-cask" />
-                <input className="labs-input" placeholder="Age" value={extFields.age || ""} onChange={e => setExtFields({ ...extFields, age: e.target.value })} data-testid="labs-ext-age" />
-                <input className="labs-input" placeholder="Category" value={extFields.category || ""} onChange={e => setExtFields({ ...extFields, category: e.target.value })} data-testid="labs-ext-category" />
-                <input className="labs-input" placeholder="Country" value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
-                <input className="labs-input" placeholder="Region" value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
-                <input className="labs-input" placeholder="Bottler" value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
-                <input className="labs-input" placeholder="Distilled" value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
-                <input className="labs-input" placeholder="Bottled" value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
-                <input className="labs-input" placeholder="Price (EUR)" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
-                <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
-                <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
+                <input className="labs-input" placeholder={t("labs.host.fieldDistillery")} value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
+                <input className="labs-input" placeholder={t("m2.host.abvLabel")} value={extFields.abv || ""} onChange={e => setExtFields({ ...extFields, abv: e.target.value })} data-testid="labs-ext-abv" />
+                <input className="labs-input" placeholder={t("m2.host.caskTypeLabel")} value={extFields.caskType || ""} onChange={e => setExtFields({ ...extFields, caskType: e.target.value })} data-testid="labs-ext-cask" />
+                <input className="labs-input" placeholder={t("labs.host.fieldAge")} value={extFields.age || ""} onChange={e => setExtFields({ ...extFields, age: e.target.value })} data-testid="labs-ext-age" />
+                <input className="labs-input" placeholder={t("labs.host.fieldCategory")} value={extFields.category || ""} onChange={e => setExtFields({ ...extFields, category: e.target.value })} data-testid="labs-ext-category" />
+                <input className="labs-input" placeholder={t("labs.host.fieldCountry")} value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
+                <input className="labs-input" placeholder={t("labs.host.fieldRegion")} value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
+                <input className="labs-input" placeholder={t("labs.host.fieldBottler")} value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
+                <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
+                <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPeat")} value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPpm")} value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
                 <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
-                  <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskInfluence: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
-                  <option value="none">None (no ordering)</option>
+                  <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskInfluence: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
+                  <option value="none">{t("labs.host.flavorNone")}</option>
                   {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                 </select>
-                <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
-                <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
+                <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
+                <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
                 <div className="col-span-2">
                   <WhiskyImageUpload
                     imageUrl={extImagePreview}
@@ -6185,7 +6191,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
         {(() => {
           const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
-            ? getRevealState(tasting, whiskyCount) : null;
+            ? getRevealState(tasting, whiskyCount, t) : null;
           return whiskyCount === 0 ? (
           <div className="labs-card p-6 text-center">
             <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
@@ -6213,7 +6219,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <div className="flex gap-2 items-center mb-2">
                       <input
                         className="labs-input"
-                        placeholder="WB #"
+                        placeholder={t("labs.host.wbPlaceholder")}
                         value={editWbLookupId}
                         onChange={e => { setEditWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setEditWbLookupResult(""); }}
                         onKeyDown={e => { if (e.key === "Enter" && editWbLookupId.trim()) handleWbLookup(editWbLookupId, "edit"); }}
@@ -6224,7 +6230,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         className="labs-btn-ghost p-1.5"
                         onClick={() => handleWbLookup(editWbLookupId, "edit")}
                         disabled={!editWbLookupId.trim() || editWbLookupLoading}
-                        title="Lookup Whiskybase"
+                        title={t("labs.host.wbLookup")}
                         data-testid="labs-edit-wb-lookup-btn"
                         style={{ color: editWbLookupResult === "ok" ? "var(--labs-success)" : editWbLookupResult && editWbLookupResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
                       >
@@ -6281,25 +6287,25 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
-                      <input className="labs-input col-span-2" placeholder="Name" value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
-                      <input className="labs-input" placeholder="Distillery" value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
-                      <input className="labs-input" placeholder="ABV %" value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
-                      <input className="labs-input" placeholder="Cask Type" value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
-                      <input className="labs-input" placeholder="Age" value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
-                      <input className="labs-input" placeholder="Category" value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
-                      <input className="labs-input" placeholder="Country" value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
-                      <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
-                      <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
-                      <input className="labs-input" placeholder="Distilled" value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
-                      <input className="labs-input" placeholder="Bottled" value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
-                      <input className="labs-input" placeholder="Price (EUR)" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <input className="labs-input col-span-2" placeholder={t("labs.host.fieldName")} value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
+                      <input className="labs-input" placeholder={t("labs.host.fieldDistillery")} value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
+                      <input className="labs-input" placeholder={t("m2.host.abvLabel")} value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
+                      <input className="labs-input" placeholder={t("m2.host.caskTypeLabel")} value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldAge")} value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldCategory")} value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldCountry")} value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldRegion")} value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldBottler")} value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
+                      <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
+                      <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
                       <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
-                        <option value="auto">{`Auto${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (detected: ${lbl})` : ""; })()}`}</option>
-                        <option value="none">None (no ordering)</option>
+                        <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
+                        <option value="none">{t("labs.host.flavorNone")}</option>
                         {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                       </select>
-                      <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
-                      <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
+                      <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
+                      <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
                     </div>
                     <WhiskyImageUpload
                       whiskyId={w.id}
@@ -6310,9 +6316,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       testIdPrefix={`labs-edit-image-${w.id}`}
                     />
                     <div className="flex gap-2 justify-end">
-                      <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>Cancel</button>
+                      <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>{t("labs.host.cancel")}</button>
                       <button className="labs-btn-primary text-sm" onClick={() => handleSaveEditWhisky(w.id)} disabled={updateWhiskyMutation.isPending} data-testid="labs-edit-whisky-save">
-                        {updateWhiskyMutation.isPending ? "Saving..." : "Save"}
+                        {updateWhiskyMutation.isPending ? t("labs.host.saving") : t("labs.host.save")}
                       </button>
                     </div>
                   </div>
@@ -6372,8 +6378,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       </p>
                       <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                         {rvShowDetails
-                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || "No details")
-                          : (rvHidden ? "Hidden" : rvActive ? "Partially revealed" : "No details")}
+                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails"))
+                          : (rvHidden ? t("m2.host.hidden", "Hidden") : rvActive ? t("m2.host.partiallyRevealed", "Partially revealed") : t("labs.host.noAdditionalDetails"))}
                       </p>
                     </div>
                     <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
@@ -6503,7 +6509,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {currentParticipant && whiskyCount > 0 && (
         <div className="mt-6 mb-6">
-          <h2 className="labs-section-label">Host Rating</h2>
+          <h2 className="labs-section-label">{t("labs.host.hostRating")}</h2>
           <HostRatingPanel
             whiskies={whiskies}
             tastingId={tastingId}
@@ -6516,7 +6522,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {(tasting.status === "closed" || tasting.status === "archived") && (
         <div className="mb-6">
-          <h2 className="labs-section-label">AI Narrative</h2>
+          <h2 className="labs-section-label">{t("labs.host.aiNarrative")}</h2>
           <div className="labs-card p-4">
             {tasting.aiNarrative || aiNarrative ? (
               <div>
@@ -6546,7 +6552,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   data-testid="labs-host-generate-narrative"
                 >
                   {narrativeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  {narrativeLoading ? "Generating..." : "Generate Narrative"}
+                  {narrativeLoading ? t("labs.host.generatingEllipsis") : t("labs.host.generateNarrative")}
                 </button>
               </div>
             )}
@@ -6588,7 +6594,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {currentParticipant && (
         <div className="mb-6">
-          <h2 className="labs-section-label">Tools</h2>
+          <h2 className="labs-section-label">{t("labs.host.tools")}</h2>
           <div className="labs-card p-4 space-y-3">
             {whiskyCount > 0 && (
               <PrintMaterialsSection
@@ -6616,7 +6622,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-host-duplicate"
             >
               <Copy className="w-4 h-4" />
-              {topDuplicating ? "Duplicating..." : "Duplicate Tasting"}
+              {topDuplicating ? t("labs.host.duplicating") : t("labs.host.duplicateTasting")}
             </button>
 
             <button
@@ -6625,7 +6631,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-host-transfer-host"
             >
               <ArrowRightLeft className="w-4 h-4" />
-              Transfer Host
+              {t("labs.host.transferHost")}
             </button>
 
             {showDesktopTransfer && (
@@ -6635,11 +6641,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-desktop-transfer-panel"
               >
                 <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                  Select a participant to take over as the new host. You will lose host privileges.
+                  {t("labs.host.transferHostDesc")}
                 </p>
                 {desktopTransferGuests.length === 0 ? (
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    No other participants available.
+                    {t("labs.host.noOtherParticipants")}
                   </p>
                 ) : (
                   <div className="space-y-1">
@@ -6661,7 +6667,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           style={{ accentColor: "var(--labs-accent)" }}
                         />
                         <span className="text-sm" style={{ color: "var(--labs-text)" }}>
-                          {stripGuestSuffix(tp.participant?.name || "Anonymous")}
+                          {stripGuestSuffix(tp.participant?.name || t("labs.host.anonymous"))}
                         </span>
                       </label>
                     ))}
@@ -6680,7 +6686,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       disabled={desktopTransferring}
                       data-testid="labs-desktop-transfer-confirm"
                     >
-                      {desktopTransferring ? "Transferring..." : "Transfer Host"}
+                      {desktopTransferring ? t("labs.host.transferring") : t("labs.host.transferHost")}
                     </button>
                     <button
                       className="labs-btn-ghost text-sm"
