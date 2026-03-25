@@ -2206,7 +2206,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 18;
+    z-index: 45;
     background: rgba(0, 0, 0, 0.35);
     animation: labsFadeIn 200ms ease;
     backdrop-filter: blur(2px);
@@ -2220,7 +2220,7 @@
     right: 0 !important;
     top: auto !important;
     margin-top: 0 !important;
-    z-index: 25 !important;
+    z-index: 50 !important;
     border-radius: 20px 20px 0 0 !important;
     max-height: 70vh !important;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2) !important;
