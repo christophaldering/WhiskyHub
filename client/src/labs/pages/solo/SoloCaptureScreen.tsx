@@ -19,7 +19,7 @@ interface Props {
   participantId: string;
   isAuthenticated: boolean;
   onManual: () => void;
-  onCaptured: (w: CapturedWhisky) => void;
+  onCaptured: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBarcode: (barcode: string) => void;
   onCollectionSelect: (w: CapturedWhisky) => void;
   onBack: () => void;
@@ -35,6 +35,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
   const [barcodeValue, setBarcodeValue] = useState("");
   const [aiResult, setAiResult] = useState<BottleRecognitionResult | null>(null);
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null);
 
   const handleCollectionPickerSelect = (selected: SelectedWhisky) => {
     const captured: CapturedWhisky = {
@@ -57,6 +58,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCapturedFile(file);
     setStatus("identifying");
     setErrorMsg("");
 
@@ -115,11 +117,12 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
       age: data.age,
       abv: data.abv,
       fromAI: true,
-    });
+    }, capturedFile);
   };
 
   const handleFeedbackDismiss = () => {
     setAiResult(null);
+    setCapturedFile(null);
     setStatus("idle");
   };
 

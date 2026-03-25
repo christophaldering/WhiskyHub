@@ -7,12 +7,13 @@ import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 interface Props {
   initial?: Partial<CapturedWhisky>;
   fromAI?: boolean;
+  initialImageFile?: File | null;
   onSubmit: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBack: () => void;
   onChange?: (w: Partial<CapturedWhisky>) => void;
 }
 
-export default function SoloWhiskyForm({ initial, fromAI, onSubmit, onBack, onChange }: Props) {
+export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSubmit, onBack, onChange }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState(initial?.name || "");
   const [distillery, setDistillery] = useState(initial?.distillery || "");
@@ -20,8 +21,16 @@ export default function SoloWhiskyForm({ initial, fromAI, onSubmit, onBack, onCh
   const [cask, setCask] = useState(initial?.cask || "");
   const [age, setAge] = useState(initial?.age || "");
   const [abv, setAbv] = useState(initial?.abv || "");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(initialImageFile || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    initialImageFile ? URL.createObjectURL(initialImageFile) : null
+  );
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, []);
 
   const mountedRef = useRef(false);
   useEffect(() => {

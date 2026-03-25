@@ -200,10 +200,11 @@ export default function LabsSolo() {
     showDraftFlash();
   }, [whisky, fromCollection, showDraftFlash]);
 
-  const handleCaptured = useCallback((w: CapturedWhisky) => {
+  const handleCaptured = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
+    setSoloImageFile(imageFile || null);
     setStep("form");
     saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
     showDraftFlash();
@@ -213,6 +214,7 @@ export default function LabsSolo() {
     setWhisky(null);
     setFromCollection(false);
     setAddToCollection(true);
+    setSoloImageFile(null);
     setStep("form");
     saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
     showDraftFlash();
@@ -223,6 +225,7 @@ export default function LabsSolo() {
     setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
+    setSoloImageFile(null);
     setStep("form");
     saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
     showDraftFlash();
@@ -238,7 +241,7 @@ export default function LabsSolo() {
 
   const handleFormSubmit = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
-    if (imageFile) setSoloImageFile(imageFile);
+    setSoloImageFile(imageFile ?? null);
     setStep("rating");
     saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection });
     showDraftFlash();
@@ -421,6 +424,7 @@ export default function LabsSolo() {
       <SoloWhiskyForm
         initial={whisky || undefined}
         fromAI={whisky?.fromAI}
+        initialImageFile={soloImageFile}
         onSubmit={handleFormSubmit}
         onBack={() => { setStep("capture"); clearSoloDraft(); }}
         onChange={(w) => {
