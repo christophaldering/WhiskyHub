@@ -7,8 +7,10 @@ import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { Users, ChevronLeft, Plus, ChevronRight, Mail, Check, X } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useTranslation } from "react-i18next";
 
 export default function LabsCommunity() {
+  const { t } = useTranslation();
   const goBackToCircle = useBackNavigation("/labs/circle");
   const { currentParticipant } = useAppStore();
   const session = getSession();
@@ -108,7 +110,7 @@ export default function LabsCommunity() {
           data-testid="btn-create-community"
         >
           <Plus className="w-3.5 h-3.5" />
-          {showCreate ? "Cancel" : "Create"}
+          {showCreate ? t("common.cancel") : t("m2.community.createCommunity")}
         </button>
       </div>
       <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
@@ -119,11 +121,11 @@ export default function LabsCommunity() {
         <div className="labs-card mb-6" style={{ padding: "var(--labs-space-md)" }} data-testid="create-community-form">
           <div className="space-y-3">
             <div>
-              <label className="labs-label">Name</label>
+              <label className="labs-label">{t("common.name")}</label>
               <input
                 type="text"
                 className="labs-input w-full"
-                placeholder="e.g. Weekend Tasters"
+                placeholder={t("m2.community.namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={100}
@@ -131,10 +133,10 @@ export default function LabsCommunity() {
               />
             </div>
             <div>
-              <label className="labs-label">Description (optional)</label>
+              <label className="labs-label">{t("m2.community.descOptional")}</label>
               <textarea
                 className="labs-input w-full"
-                placeholder="What is this community about?"
+                placeholder={t("m2.community.descPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={500}
@@ -154,7 +156,7 @@ export default function LabsCommunity() {
               }}
               data-testid="btn-submit-community"
             >
-              {creating ? "Creating..." : "Create Community"}
+              {creating ? t("m2.community.creating") : t("m2.community.createCommunity")}
             </button>
           </div>
         </div>
@@ -208,7 +210,7 @@ export default function LabsCommunity() {
 
       {isLoading ? (
         <div className="text-center py-10">
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading...</p>
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("common.loading")}</p>
         </div>
       ) : communities.length === 0 ? (
         <div className="text-center py-10" data-testid="empty-communities">

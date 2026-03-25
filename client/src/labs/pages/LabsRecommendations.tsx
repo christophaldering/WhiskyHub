@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
@@ -117,6 +118,7 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 export default function LabsRecommendations() {
+  const { t } = useTranslation();
   const session = useSession();
   const [activeFactors, setActiveFactors] = useState<Record<FactorKey, boolean>>({ region: true, cask: true, peat: true, community: true });
   const [infoOpen, setInfoOpen] = useState(false);
@@ -153,7 +155,7 @@ export default function LabsRecommendations() {
     return (
       <AuthGateMessage
         icon={<Sparkles className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to get personalized whisky recommendations"
+        message={t("labs.recommendations.authGate", "Sign in to get personalized whisky recommendations")}
       />
     );
   }
@@ -162,18 +164,18 @@ export default function LabsRecommendations() {
     <div className="labs-page" data-testid="labs-recommendations">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-recommendations">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> {t("labs.recommendations.backTaste", "Taste")}
         </button>
       </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-recommendations-title">
-          Recommendations
+          {t("labs.recommendations.title", "Recommendations")}
         </h1>
       </div>
       <p className="text-sm mb-5 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        Whiskies you might enjoy based on your taste profile
+        {t("labs.recommendations.subtitle", "Whiskies you might enjoy based on your taste profile")}
       </p>
 
       {isLoading ? (
@@ -181,20 +183,20 @@ export default function LabsRecommendations() {
       ) : !hasRatings ? (
         <div className="labs-empty labs-fade-in">
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>Rate some whiskies first to get personalized recommendations</p>
+          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>{t("labs.recommendations.emptyHint", "Rate some whiskies first to get personalized recommendations")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="labs-card p-4 labs-fade-in">
             <div className="flex items-center justify-between mb-3">
-              <span className="labs-section-label" style={{ marginBottom: 0 }}>Recommendation Factors</span>
+              <span className="labs-section-label" style={{ marginBottom: 0 }}>{t("labs.recommendations.factors", "Recommendation Factors")}</span>
               <button onClick={() => setInfoOpen(!infoOpen)} className="labs-btn-ghost" style={{ padding: 4 }} data-testid="button-info-toggle">
                 <Info className="w-4 h-4" />
               </button>
             </div>
             {infoOpen && (
               <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.6 }}>
-                Toggle factors on/off to adjust recommendations. Each factor has a default weight that influences the match score.
+                {t("labs.recommendations.factorsInfo", "Toggle factors on/off to adjust recommendations. Each factor has a default weight that influences the match score.")}
               </p>
             )}
             <div className="flex flex-wrap gap-2">
@@ -222,7 +224,7 @@ export default function LabsRecommendations() {
 
           {recommendations.length === 0 ? (
             <div className="labs-card p-6 text-center labs-fade-in">
-              <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>No recommendations found with current filters. Try enabling more factors.</p>
+              <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>{t("labs.recommendations.noResults", "No recommendations found with current filters. Try enabling more factors.")}</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -258,13 +260,13 @@ export default function LabsRecommendations() {
                       </div>
                       {rec.reasons.length > 0 && (
                         <div style={{ marginTop: 6, fontSize: 11, color: "var(--labs-text-muted)", borderLeft: "2px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)", paddingLeft: 8, lineHeight: 1.5 }}>
-                          Match: {rec.reasons.join(" · ")}
+                          {t("labs.recommendations.match", "Match:")} {rec.reasons.join(" · ")}
                         </div>
                       )}
                       {rec.communityScore && rec.communityRaters && rec.communityRaters >= 2 && (
                         <div style={{ marginTop: 4, fontSize: 11, color: "var(--labs-text-muted)" }}>
                           <Users style={{ width: 10, height: 10, display: "inline", verticalAlign: "text-bottom", marginRight: 3 }} />
-                          Community: {rec.communityScore.toFixed(1)} ({rec.communityRaters} ratings)
+                          {t("labs.recommendations.communityRating", "Community: {{score}} ({{count}} ratings)", { score: rec.communityScore.toFixed(1), count: rec.communityRaters })}
                         </div>
                       )}
                     </div>

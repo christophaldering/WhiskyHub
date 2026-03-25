@@ -10,6 +10,7 @@ import {
   BookOpen, Heart, GlassWater, BarChart3, Newspaper, MoreHorizontal,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useTranslation } from "react-i18next";
 
 interface ExtractedEntry {
   whiskyName: string;
@@ -53,12 +54,12 @@ const LIBRARY_CATEGORIES: { key: LibraryTab; icon: typeof BookOpen }[] = [
   { key: "other", icon: MoreHorizontal },
 ];
 
-const TAB_LABELS: Record<LibraryTab, string> = {
-  import: "Import",
-  tasting_notes: "Tasting Notes",
-  analysis: "Analysis",
-  article: "Articles",
-  other: "Other",
+const TAB_LABEL_KEYS: Record<LibraryTab, string> = {
+  import: "benchmark.tabImport",
+  tasting_notes: "benchmark.tabTastingNotes",
+  analysis: "benchmark.tabAnalysis",
+  article: "benchmark.tabArticles",
+  other: "benchmark.tabOther",
 };
 
 function EditField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
@@ -95,6 +96,7 @@ function EditArea({ label, value, onChange }: { label: string; value: string; on
 }
 
 export default function LabsBenchmark() {
+  const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid || "";
   const queryClient = useQueryClient();
@@ -132,7 +134,7 @@ export default function LabsBenchmark() {
       let url = `/api/benchmark?participantId=${pid}`;
       if (categoryFilter) url += `&category=${categoryFilter}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to load saved entries");
+      if (!res.ok) throw new Error(t("benchmark.analysisFailed"));
       return res.json();
     },
     enabled: !!pid && hasAccess && isLibraryTab,
@@ -167,13 +169,13 @@ export default function LabsBenchmark() {
       const result = await benchmarkApi.analyze(file, pid);
       const entries = (result.entries || []).map((entry: ExtractedEntry) => ({ ...entry, selected: true, addToDb: false }));
       setExtractedEntries(entries);
-      if (entries.length === 0) { setError("No whisky data found in this file."); } else {
+      if (entries.length === 0) { setError(t("benchmark.noDataFound")); } else {
         setShowClassify(true);
         const sels: Record<number, ClassifyAction[]> = {};
         entries.forEach((_: ExtractedEntry, i: number) => { sels[i] = ["library"]; });
         setClassifySelections(sels);
       }
-    } catch (err: unknown) { setError((err as Error).message || "Analysis failed"); } finally {
+    } catch (err: unknown) { setError((err as Error).message || t("benchmark.analysisFailed")); } finally {
       setAnalyzing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -222,7 +224,7 @@ export default function LabsBenchmark() {
     return (
       <AuthGateMessage
         icon={<Brain className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to use the benchmark tool"
+        message={t("benchmark.loginRequired")}
       />
     );
   }
@@ -235,7 +237,7 @@ export default function LabsBenchmark() {
         </BackLink>
         <div className="labs-empty" data-testid="text-access-denied">
           <AlertCircle className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>This feature is available for hosts and admins only.</p>
+          <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.taste.benchmarkHostOnly")}</p>
         </div>
       </div>
     );
@@ -265,7 +267,7 @@ export default function LabsBenchmark() {
             Benchmark
           </h1>
         </div>
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>AI-powered tasting note extraction & library</p>
+        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.benchmarkSubtitle")}</p>
         {aiDisabled && (
           <div className="labs-card mt-3" style={{ padding: 12, borderColor: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--labs-accent)" }}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" /> AI features are currently disabled by your admin.
@@ -288,7 +290,7 @@ export default function LabsBenchmark() {
             }}
           >
             <Icon style={{ width: 14, height: 14 }} />
-            {TAB_LABELS[key]}
+            {t(TAB_LABEL_KEYS[key])}
           </button>
         ))}
       </div>
@@ -300,7 +302,7 @@ export default function LabsBenchmark() {
               <div style={{ width: 64, height: 64, borderRadius: "50%", background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <Brain className="w-8 h-8" style={{ color: "var(--labs-accent)" }} />
               </div>
-              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-accent)" }}>Upload & Extract</h2>
+              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-accent)" }}>{t("m2.taste.benchmarkUpload")}</h2>
               <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 400, margin: "0 auto" }}>
                 Upload tasting notes, reviews, or articles. AI will extract whisky data automatically.
               </p>
@@ -317,7 +319,7 @@ export default function LabsBenchmark() {
                 style={{ padding: "10px 20px", opacity: (analyzing || aiDisabled) ? 0.5 : 1, display: "inline-flex", alignItems: "center", gap: 8 }}
                 data-testid="button-upload"
               >
-                {analyzing ? (<><Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> Analyzing...</>) : (<><Upload className="w-4 h-4" /> Select File</>)}
+                {analyzing ? (<><Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> {t("m2.taste.benchmarkAnalyzing")}</>) : (<><Upload className="w-4 h-4" /> {t("m2.taste.benchmarkSelectFile")}</>)}
               </button>
             </div>
 
@@ -341,7 +343,7 @@ export default function LabsBenchmark() {
               <div className="labs-fade-in" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
-                    <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>Results</h2>
+                    <h2 className="labs-h3" style={{ color: "var(--labs-accent)" }}>{t("m2.taste.benchmarkResults")}</h2>
                     <span className="labs-badge labs-badge-accent">{extractedEntries.length} entries</span>
                     {fileName && <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}><FileText className="w-3 h-3" />{fileName}</span>}
                   </div>
@@ -393,23 +395,23 @@ export default function LabsBenchmark() {
                       {expandedIdx === idx && (
                         <div style={{ padding: "4px 12px 12px", borderTop: "1px solid var(--labs-border)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
-                            <EditField label="Whisky Name" value={entry.whiskyName} onChange={val => updateEntry(idx, "whiskyName", val)} />
-                            <EditField label="Distillery" value={entry.distillery || ""} onChange={val => updateEntry(idx, "distillery", val)} />
-                            <EditField label="Region" value={entry.region || ""} onChange={val => updateEntry(idx, "region", val)} />
-                            <EditField label="Country" value={entry.country || ""} onChange={val => updateEntry(idx, "country", val)} />
-                            <EditField label="Age" value={entry.age || ""} onChange={val => updateEntry(idx, "age", val)} />
-                            <EditField label="ABV" value={entry.abv || ""} onChange={val => updateEntry(idx, "abv", val)} />
-                            <EditField label="Cask Type" value={entry.caskType || ""} onChange={val => updateEntry(idx, "caskType", val)} />
-                            <EditField label="Category" value={entry.category || ""} onChange={val => updateEntry(idx, "category", val)} />
-                            <EditField label="Score" value={entry.score?.toString() || ""} onChange={val => updateEntry(idx, "score", val ? parseFloat(val) : null)} />
-                            <EditField label="Score Scale" value={entry.scoreScale || ""} onChange={val => updateEntry(idx, "scoreScale", val)} />
-                            <EditField label="Source Author" value={entry.sourceAuthor || ""} onChange={val => updateEntry(idx, "sourceAuthor", val)} />
+                            <EditField label={t("benchmark.field.whiskyName")} value={entry.whiskyName} onChange={val => updateEntry(idx, "whiskyName", val)} />
+                            <EditField label={t("benchmark.field.distillery")} value={entry.distillery || ""} onChange={val => updateEntry(idx, "distillery", val)} />
+                            <EditField label={t("benchmark.field.region")} value={entry.region || ""} onChange={val => updateEntry(idx, "region", val)} />
+                            <EditField label={t("benchmark.field.country")} value={entry.country || ""} onChange={val => updateEntry(idx, "country", val)} />
+                            <EditField label={t("benchmark.field.age")} value={entry.age || ""} onChange={val => updateEntry(idx, "age", val)} />
+                            <EditField label={t("benchmark.field.abv")} value={entry.abv || ""} onChange={val => updateEntry(idx, "abv", val)} />
+                            <EditField label={t("benchmark.field.caskType")} value={entry.caskType || ""} onChange={val => updateEntry(idx, "caskType", val)} />
+                            <EditField label={t("benchmark.field.category")} value={entry.category || ""} onChange={val => updateEntry(idx, "category", val)} />
+                            <EditField label={t("benchmark.field.score")} value={entry.score?.toString() || ""} onChange={val => updateEntry(idx, "score", val ? parseFloat(val) : null)} />
+                            <EditField label={t("benchmark.field.scoreScale")} value={entry.scoreScale || ""} onChange={val => updateEntry(idx, "scoreScale", val)} />
+                            <EditField label={t("benchmark.field.sourceAuthor")} value={entry.sourceAuthor || ""} onChange={val => updateEntry(idx, "sourceAuthor", val)} />
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8, marginTop: 8 }}>
-                            <EditArea label="Nose Notes" value={entry.noseNotes || ""} onChange={val => updateEntry(idx, "noseNotes", val)} />
-                            <EditArea label="Taste Notes" value={entry.tasteNotes || ""} onChange={val => updateEntry(idx, "tasteNotes", val)} />
-                            <EditArea label="Finish Notes" value={entry.finishNotes || ""} onChange={val => updateEntry(idx, "finishNotes", val)} />
-                            <EditArea label="Overall Notes" value={entry.overallNotes || ""} onChange={val => updateEntry(idx, "overallNotes", val)} />
+                            <EditArea label={t("benchmark.field.noseNotes")} value={entry.noseNotes || ""} onChange={val => updateEntry(idx, "noseNotes", val)} />
+                            <EditArea label={t("benchmark.field.tasteNotes")} value={entry.tasteNotes || ""} onChange={val => updateEntry(idx, "tasteNotes", val)} />
+                            <EditArea label={t("benchmark.field.finishNotes")} value={entry.finishNotes || ""} onChange={val => updateEntry(idx, "finishNotes", val)} />
+                            <EditArea label={t("benchmark.field.overallNotes")} value={entry.overallNotes || ""} onChange={val => updateEntry(idx, "overallNotes", val)} />
                           </div>
                         </div>
                       )}
@@ -419,9 +421,9 @@ export default function LabsBenchmark() {
 
                 {showClassify && (
                   <div className="labs-card p-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <h3 className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>Classify & Save</h3>
+                    <h3 className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{t("m2.taste.benchmarkClassify")}</h3>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Category:</span>
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.benchmarkCategory")}:</span>
                       {(["tasting_notes", "analysis", "article", "other"] as const).map(cat => (
                         <button
                           key={cat} onClick={() => setClassifyCategory(cat)} data-testid={`category-${cat}`}
@@ -432,7 +434,7 @@ export default function LabsBenchmark() {
                             color: classifyCategory === cat ? "var(--labs-bg)" : "var(--labs-text-muted)",
                           }}
                         >
-                          {TAB_LABELS[cat]}
+                          {t(TAB_LABEL_KEYS[cat])}
                         </button>
                       ))}
                     </div>
@@ -442,7 +444,7 @@ export default function LabsBenchmark() {
                       style={{ padding: "10px 20px", opacity: isSaving ? 0.5 : 1, display: "inline-flex", alignItems: "center", gap: 8 }}
                       data-testid="button-classify-save"
                     >
-                      {isSaving ? (<><Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> Saving...</>) : (<><Save className="w-4 h-4" /> Save Selected</>)}
+                      {isSaving ? (<><Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> {t("m2.taste.benchmarkSaving")}</>) : (<><Save className="w-4 h-4" /> {t("m2.taste.benchmarkSaveSelected")}</>)}
                     </button>
                   </div>
                 )}
@@ -456,7 +458,7 @@ export default function LabsBenchmark() {
             <div style={{ position: "relative", width: 256 }}>
               <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
               <input
-                placeholder="Search saved entries..."
+                placeholder={t("benchmark.searchSaved")}
                 value={searchDb}
                 onChange={e => setSearchDb(e.target.value)}
                 data-testid="input-search-saved"
@@ -470,14 +472,14 @@ export default function LabsBenchmark() {
             {loadingSaved ? (
               <div className="text-center py-8"><Loader2 className="w-6 h-6 mx-auto" style={{ animation: "spin 1s linear infinite", color: "var(--labs-text-muted)" }} /></div>
             ) : filteredSaved.length === 0 ? (
-              <p className="text-sm text-center py-8" style={{ color: "var(--labs-text-muted)" }}>No saved entries found</p>
+              <p className="text-sm text-center py-8" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.benchmarkNoSaved")}</p>
             ) : (
               <div style={{ border: "1px solid var(--labs-border)", borderRadius: 10, overflow: "hidden" }}>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "var(--labs-surface-elevated)", borderBottom: "1px solid var(--labs-border)" }}>
-                        {["Name", "Distillery", "Region", "Score", "Source", "Uploaded By", "Date", ""].map(h => (
+                        {[t("benchmark.field.whiskyName"), t("benchmark.field.distillery"), t("benchmark.field.region"), t("benchmark.field.score"), t("benchmark.field.sourceAuthor"), t("benchmark.uploadedBy"), t("benchmark.uploadedAt"), ""].map(h => (
                           <th key={h} style={{ textAlign: "left", padding: 8, fontWeight: 500, color: "var(--labs-text-muted)" }}>{h}</th>
                         ))}
                       </tr>

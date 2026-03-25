@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
@@ -14,22 +15,23 @@ interface ActivityItem {
   details: Record<string, unknown>;
 }
 
-function relTime(ts: string): string {
-  const diff = Date.now() - new Date(ts).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hrs = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hrs < 24) return `${hrs}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 export default function LabsActivity() {
+  const { t } = useTranslation();
   const goBackToCircle = useBackNavigation("/labs/circle");
   const session = getSession();
   const pid = session.pid;
+
+  function relTime(ts: string): string {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return t("labs.activity.justNow", "just now");
+    if (mins < 60) return t("labs.activity.mAgo", "{{m}}m ago", { m: mins });
+    if (hrs < 24) return t("labs.activity.hAgo", "{{h}}h ago", { h: hrs });
+    if (days < 7) return t("labs.activity.dAgo", "{{d}}d ago", { d: days });
+    return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
 
   const { data, isLoading } = useQuery<{ activities: ActivityItem[] }>({
     queryKey: ["friend-activity", pid],
@@ -48,23 +50,23 @@ export default function LabsActivity() {
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-activity-back"
       >
-        <ChevronLeft className="w-4 h-4" /> Circle
+        <ChevronLeft className="w-4 h-4" /> {t("labs.activity.backCircle", "Circle")}
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-activity-title">
-          Activity Feed
+          {t("labs.activity.title", "Activity Feed")}
         </h1>
       </div>
       <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-        See what your friends are up to
+        {t("labs.activity.subtitle", "See what your friends are up to")}
       </p>
 
       {!pid && (
         <AuthGateMessage
           icon={<Activity className="w-10 h-10" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />}
-          message="Sign in to see your friends' activity."
+          message={t("labs.activity.authGate", "Sign in to see your friends' activity.")}
           className="labs-empty"
           compact
         />
@@ -86,9 +88,9 @@ export default function LabsActivity() {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--labs-accent-muted)" }}>
             <Activity className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
           </div>
-          <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>No activity yet</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>{t("labs.activity.noActivity", "No activity yet")}</p>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-            Add friends to see their activity here
+            {t("labs.activity.noActivityDesc", "Add friends to see their activity here")}
           </p>
         </div>
       )}
@@ -115,7 +117,7 @@ export default function LabsActivity() {
                 </div>
                 {a.type === "journal" ? (
                   <div>
-                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>logged a dram</p>
+                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.activity.loggedDram", "logged a dram")}</p>
                     <p className="text-xs font-medium truncate mt-0.5" style={{ color: "var(--labs-text)" }}>
                       {String(a.details.title ?? "")}
                     </p>
@@ -130,7 +132,7 @@ export default function LabsActivity() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>joined a tasting</p>
+                    <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.activity.joinedTasting", "joined a tasting")}</p>
                     <p className="text-xs font-medium mt-0.5" style={{ color: "var(--labs-text)" }}>
                       {a.details.title as string}
                     </p>

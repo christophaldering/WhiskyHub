@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
@@ -36,6 +37,7 @@ function computeFlavorFrequencies(entries: JournalEntry[]) {
 }
 
 export default function LabsTasteWheel() {
+  const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function LabsTasteWheel() {
     return (
       <AuthGateMessage
         icon={<CircleDot className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to explore your flavor categories"
+        message={t("labs.wheel.authGate", "Sign in to explore your flavor categories")}
       />
     );
   }
@@ -91,18 +93,18 @@ export default function LabsTasteWheel() {
     <div className="labs-page" data-testid="labs-taste-wheel">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-wheel">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> {t("labs.wheel.backTaste", "Taste")}
         </button>
       </BackLink>
 
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-wheel-title">
-        Flavor Wheel
+        {t("labs.wheel.title", "Flavor Wheel")}
       </h1>
       <p className="text-sm mb-1 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        Aroma categories extracted from your tasting notes
+        {t("labs.wheel.subtitle", "Aroma categories extracted from your tasting notes")}
       </p>
       <p className="text-xs mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }} data-testid="text-source-count">
-        Sources: {journalEntries?.length || 0} drams, {ratingNotes?.length || 0} rating notes
+        {t("labs.wheel.sources", "Sources: {{drams}} drams, {{notes}} rating notes", { drams: journalEntries?.length || 0, notes: ratingNotes?.length || 0 })}
       </p>
 
       {isLoading ? (
@@ -110,27 +112,27 @@ export default function LabsTasteWheel() {
       ) : !hasData ? (
         <div className="labs-empty labs-fade-in">
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>Add tasting notes to populate your flavor wheel</p>
+          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>{t("labs.wheel.emptyHint", "Add tasting notes to populate your flavor wheel")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="labs-auto-grid labs-fade-in" style={{ "--grid-min": "120px" } as React.CSSProperties}>
             <div className="labs-card p-3 text-center" data-testid="stat-total-mentions">
               <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{totalMentions}</p>
-              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Mentions</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.wheel.totalMentions", "Total Mentions")}</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-top-category">
               <p className="labs-h2" style={{ color: topCategory?.color }}>{topCategory ? locName(topCategory) : "—"}</p>
-              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Top Category</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.wheel.topCategory", "Top Category")}</p>
             </div>
             <div className="labs-card p-3 text-center" data-testid="stat-unique-flavor">
               <p className="labs-h2" style={{ color: "var(--labs-accent)" }}>{mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}</p>
-              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Most Unique</p>
+              <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.wheel.mostUnique", "Most Unique")}</p>
             </div>
           </div>
 
           <div className="labs-card p-5 labs-fade-in labs-stagger-1">
-            <h2 className="labs-h3 mb-4" style={{ color: "var(--labs-text)" }}>Flavor Distribution</h2>
+            <h2 className="labs-h3 mb-4" style={{ color: "var(--labs-text)" }}>{t("labs.wheel.flavorDistribution", "Flavor Distribution")}</h2>
             <div style={{ height: 380 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -152,7 +154,7 @@ export default function LabsTasteWheel() {
                     return (
                       <div style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 8, padding: "6px 10px" }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{data.name}</p>
-                        <p style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{data.actualValue} mentions</p>
+                        <p style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("labs.wheel.mentions", "{{count}} mentions", { count: data.actualValue })}</p>
                       </div>
                     );
                   }} />

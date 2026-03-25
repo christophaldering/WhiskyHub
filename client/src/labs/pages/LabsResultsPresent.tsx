@@ -13,6 +13,7 @@ import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import { stripGuestSuffix } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface LabsResultsPresentProps {
   params: { id: string };
@@ -110,6 +111,7 @@ function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: Re
 function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRatings }: {
   tasting: any; whiskyCount: number; participantCount: number; totalRatings: number;
 }) {
+  const { t } = useTranslation();
   const hasCover = !!tasting.coverImageUrl;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
@@ -134,7 +136,7 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
           style={{ fontSize: "clamp(30px, 5vw, 60px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12, lineHeight: 1.05, maxWidth: 900 }}
           data-testid="present-title"
         >
-          {tasting.title || "Tasting Results"}
+          {tasting.title || t("m2.results.tastingResults")}
         </motion.h1>
 
         <motion.div
@@ -177,12 +179,13 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
 }
 
 function LineupSlide({ whiskies, blindMode }: { whiskies: any[]; blindMode: boolean }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <SectionLabel icon={<Wine style={{ width: 14, height: 14 }} />}>Tonight's Lineup</SectionLabel>
+        <SectionLabel icon={<Wine style={{ width: 14, height: 14 }} />}>{t("m2.results.tonightsLineup")}</SectionLabel>
         <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
-          {whiskies.length} {whiskies.length === 1 ? "Whisky" : "Whiskies"} Tasted
+          {whiskies.length} {whiskies.length === 1 ? t("m2.results.whiskyTasted") : t("m2.results.whiskiesTasted")}
         </h2>
       </motion.div>
 
@@ -213,13 +216,14 @@ function LineupSlide({ whiskies, blindMode }: { whiskies: any[]; blindMode: bool
 }
 
 function TastersSlide({ participants, totalRatings, whiskyCount }: { participants: any[]; totalRatings: number; whiskyCount: number }) {
+  const { t } = useTranslation();
   const names = participants.map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <SectionLabel icon={<Users style={{ width: 14, height: 14 }} />}>The Tasters</SectionLabel>
+        <SectionLabel icon={<Users style={{ width: 14, height: 14 }} />}>{t("m2.results.theTasters")}</SectionLabel>
         <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
-          {names.length} Palates, One Mission
+          {names.length} {t("m2.results.palatesOneMission")}
         </h2>
       </motion.div>
 
@@ -251,17 +255,17 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
       >
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{totalRatings}</div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ratings Given</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.ratingsGiven")}</div>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{whiskyCount}</div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Whiskies Explored</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.whiskiesExplored")}</div>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
             {names.length > 0 ? Math.round(totalRatings / names.length * 10) / 10 : 0}
           </div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Avg per Taster</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.avgPerTaster")}</div>
         </div>
       </motion.div>
     </div>
@@ -269,12 +273,13 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
 }
 
 function FunStatsSlide({ stats }: { stats: Array<{ icon: React.ReactNode; label: string; value: string; sub?: string }> }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <SectionLabel icon={<Sparkles style={{ width: 14, height: 14 }} />}>Highlights</SectionLabel>
+        <SectionLabel icon={<Sparkles style={{ width: 14, height: 14 }} />}>{t("m2.results.highlights")}</SectionLabel>
         <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 36px", textAlign: "center" }}>
-          By the Numbers
+          {t("m2.results.byTheNumbers")}
         </h2>
       </motion.div>
 
@@ -441,6 +446,7 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
 }
 
 function WinnerRevealSlide({ whisky, maxScore }: { whisky: any; maxScore: number }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px", position: "relative", overflow: "hidden" }}>
       <style>{`
@@ -478,7 +484,7 @@ function WinnerRevealSlide({ whisky, maxScore }: { whisky: any; maxScore: number
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-        <SectionLabel>Tonight's Winner</SectionLabel>
+        <SectionLabel>{t("m2.results.tonightsWinner")}</SectionLabel>
       </motion.div>
 
       <motion.div
@@ -684,6 +690,7 @@ function OutroSlide({ tasting, tastingId }: { tasting: any; tastingId: string })
 
 
 export default function LabsResultsPresent({ params }: LabsResultsPresentProps) {
+  const { t } = useTranslation();
   const tastingId = params.id;
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
@@ -946,8 +953,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--labs-bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <Wine style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />
-        <p style={{ color: "var(--labs-text-muted)" }}>{!tasting ? "Tasting not found" : "Presentation not available yet"}</p>
-        <button className="labs-btn-secondary" onClick={() => navigate(`/labs/results/${tastingId}`)} data-testid="present-back-btn">Back to Results</button>
+        <p style={{ color: "var(--labs-text-muted)" }}>{!tasting ? t("m2.results.tastingNotFound") : t("m2.results.notAvailableYet")}</p>
+        <button className="labs-btn-secondary" onClick={() => navigate(`/labs/results/${tastingId}`)} data-testid="present-back-btn">{t("m2.results.backToResults")}</button>
       </div>
     );
   }
@@ -958,15 +965,15 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   const slide = slides[currentSlide];
 
   const actLabel = (() => {
-    const t = slide.type;
-    if (t === "title" || t === "lineup" || t === "tasters" || t === "funstats") return "Intro";
-    if (t === "whisky") return "Tasting";
-    if (t === "transition") {
+    const st = slide.type;
+    if (st === "title" || st === "lineup" || st === "tasters" || st === "funstats") return t("m2.results.slideIntro");
+    if (st === "whisky") return t("m2.results.slideTasting");
+    if (st === "transition") {
       const title = slide.data?.title || "";
-      return title.includes("Winner") ? "Reveal" : "Tasting";
+      return title.includes("Winner") ? t("m2.results.slideReveal") : t("m2.results.slideTasting");
     }
-    if (t === "winner" || t === "podium") return "Reveal";
-    return "Finale";
+    if (st === "winner" || st === "podium") return t("m2.results.slideReveal");
+    return t("m2.results.slideFinale");
   })();
 
   return (
@@ -1003,7 +1010,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
               backdropFilter: "blur(8px)",
             }}
             data-testid="present-exit-btn"
-            aria-label="Exit presentation"
+            aria-label={t("m2.results.exitPresentation")}
           >
             <X style={{ width: 14, height: 14 }} />
           </button>

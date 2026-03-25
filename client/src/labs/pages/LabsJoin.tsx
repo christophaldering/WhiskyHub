@@ -6,6 +6,7 @@ import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, inviteApi } from "@/lib/api";
 import { signIn } from "@/lib/session";
+import { useTranslation } from "react-i18next";
 
 interface PendingTasting {
   id: string;
@@ -22,6 +23,7 @@ interface MyInvite {
 }
 
 export default function LabsJoin() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
   const session = useSession();
@@ -413,7 +415,7 @@ export default function LabsJoin() {
             <input
               className="labs-input"
               type="password"
-              placeholder="Your PIN"
+              placeholder={t("m2.join.pinPlaceholder")}
               value={loginPin}
               onChange={(e) => setLoginPin(e.target.value)}
               onKeyDown={handleLoginKeyDown}
@@ -506,7 +508,7 @@ export default function LabsJoin() {
           </div>
           {invitesLoading ? (
             <div className="labs-card p-4 text-center">
-              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Loading invitations...</span>
+              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.join.loadingInvitations")}</span>
             </div>
           ) : (
             <>
@@ -552,7 +554,7 @@ export default function LabsJoin() {
                     </div>
                     <div className="flex-shrink-0">
                       {acceptingInviteId === invite.inviteId ? (
-                        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Joining...</span>
+                        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.join.joining")}</span>
                       ) : (
                         <ArrowRight className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                       )}
@@ -582,7 +584,7 @@ export default function LabsJoin() {
         </label>
         <input
           className="labs-input text-center text-lg tracking-widest font-semibold"
-          placeholder="ABC123"
+          placeholder={t("m2.join.codePlaceholder")}
           value={code}
           onChange={(e) => {
             setCode(e.target.value.toUpperCase());

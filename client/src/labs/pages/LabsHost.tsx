@@ -5993,7 +5993,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-ai-import-text"
             />
             <div className="flex gap-2 justify-end">
-              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); setAiImportError(""); setAiImportSummary(null); }}>Cancel</button>
+              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); setAiImportError(""); setAiImportSummary(null); }}>{t("m2.host.cancel")}</button>
               <button
                 className="labs-btn-primary text-sm flex items-center gap-1.5"
                 onClick={handleAiImport}

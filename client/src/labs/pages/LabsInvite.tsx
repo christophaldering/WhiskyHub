@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ interface LabsInviteProps {
 }
 
 export default function LabsInvite({ params }: LabsInviteProps) {
+  const { t } = useTranslation();
   const routeParams = useParams<{ token: string }>();
   const token = params?.token || routeParams?.token || "";
   const [, navigate] = useLocation();
@@ -48,7 +50,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               className="w-8 h-8 animate-spin mx-auto mb-4"
               style={{ color: "var(--labs-accent)" }}
             />
-            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading invitation...</p>
+            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("labs.invite.loading", "Loading invitation...")}</p>
           </div>
         </div>
       );
@@ -68,17 +70,17 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               className="labs-h3 mb-2"
               style={{ color: "var(--labs-text)" }}
             >
-              Invitation Not Found
+              {t("labs.invite.notFound", "Invitation Not Found")}
             </h2>
             <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-              This invitation link may have expired or already been used.
+              {t("labs.invite.notFoundDesc", "This invitation link may have expired or already been used.")}
             </p>
             <button
               className="labs-btn-primary"
               onClick={goBack}
               data-testid="button-labs-invite-home"
             >
-              Go to Tastings
+              {t("labs.invite.goToTastings", "Go to Tastings")}
             </button>
           </div>
         </div>
@@ -97,10 +99,10 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               className="labs-h3 mb-2"
               style={{ color: "var(--labs-text)" }}
             >
-              Tasting Invitation
+              {t("labs.invite.tastingInvitation", "Tasting Invitation")}
             </h2>
             <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>
-              You've been invited to a tasting session. Please sign in to accept.
+              {t("labs.invite.signInToAccept", "You've been invited to a tasting session. Please sign in to accept.")}
             </p>
             {data.invite.tastingTitle && (
               <p className="text-base font-semibold mb-6" style={{ color: "var(--labs-accent)" }}>
@@ -112,7 +114,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               onClick={() => navigate("/labs")}
               data-testid="button-labs-invite-signin"
             >
-              Sign In
+              {t("labs.invite.signIn", "Sign In")}
             </button>
           </div>
         </div>
@@ -131,10 +133,10 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               className="labs-h3 mb-2"
               style={{ color: "var(--labs-text)" }}
             >
-              Invitation Accepted!
+              {t("labs.invite.accepted", "Invitation Accepted!")}
             </h2>
             <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-              Redirecting to the tasting...
+              {t("labs.invite.redirecting", "Redirecting to the tasting...")}
             </p>
           </div>
         </div>
@@ -153,17 +155,17 @@ export default function LabsInvite({ params }: LabsInviteProps) {
               className="labs-h3 mb-2"
               style={{ color: "var(--labs-text)" }}
             >
-              Could Not Accept
+              {t("labs.invite.couldNotAccept", "Could Not Accept")}
             </h2>
             <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-              Something went wrong while accepting this invitation.
+              {t("labs.invite.couldNotAcceptDesc", "Something went wrong while accepting this invitation.")}
             </p>
             <button
               className="labs-btn-primary"
               onClick={() => acceptMutation.mutate()}
               data-testid="button-labs-invite-retry"
             >
-              Try Again
+              {t("labs.invite.tryAgain", "Try Again")}
             </button>
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
             className="w-8 h-8 animate-spin mx-auto mb-4"
             style={{ color: "var(--labs-accent)" }}
           />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Accepting invitation...</p>
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("labs.invite.accepting", "Accepting invitation...")}</p>
         </div>
       </div>
     );
@@ -187,7 +189,7 @@ export default function LabsInvite({ params }: LabsInviteProps) {
     <div className="labs-page labs-fade-in">
       <BackLink href="/labs/circle" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-invite">
-          <ChevronLeft className="w-4 h-4" /> Circle
+          <ChevronLeft className="w-4 h-4" /> {t("labs.invite.backCircle", "Circle")}
         </button>
       </BackLink>
       {renderContent()}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
@@ -49,10 +50,10 @@ interface WhiskyProfileData {
 
 type CompareMode = "none" | "friends" | "platform";
 
-function getStabilityInfo(n: number) {
-  if (n >= 15) return { level: "stable", label: "High", color: "var(--labs-success)" };
-  if (n >= 5) return { level: "tendency", label: "Medium", color: "var(--labs-accent)" };
-  return { level: "preliminary", label: "Low", color: "var(--labs-text-muted)" };
+function getStabilityInfo(n: number, t: (key: string, fallback: string) => string) {
+  if (n >= 15) return { level: "stable", label: t("labs.profile.stabilityHigh", "High"), color: "var(--labs-success)" };
+  if (n >= 5) return { level: "tendency", label: t("labs.profile.stabilityMedium", "Medium"), color: "var(--labs-accent)" };
+  return { level: "preliminary", label: t("labs.profile.stabilityLow", "Low"), color: "var(--labs-text-muted)" };
 }
 
 function deriveStyle(region: Record<string, BreakdownEntry>, peat: Record<string, BreakdownEntry>): string | null {
@@ -115,7 +116,7 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
                 </div>
                 <div style={{ textAlign: "right", minWidth: 50 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{Number(data.avgScore).toFixed(1)}</div>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(data.count ?? 0)} rated</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(data.count ?? 0)} {t("labs.profile.rated", "rated")}</div>
                 </div>
               </div>
             );
@@ -127,6 +128,7 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
 }
 
 export default function LabsTasteProfile() {
+  const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid;
   const [compareMode, setCompareMode] = useState<CompareMode>("none");
@@ -153,7 +155,7 @@ export default function LabsTasteProfile() {
     return (
       <AuthGateMessage
         icon={<Activity className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to see your flavor fingerprint"
+        message={t("labs.profile.authGate", "Sign in to see your flavor fingerprint")}
       />
     );
   }
@@ -163,7 +165,7 @@ export default function LabsTasteProfile() {
       <div className="labs-page">
         <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back">
-            <ChevronLeft className="w-4 h-4" /> Taste
+            <ChevronLeft className="w-4 h-4" /> {t("labs.profile.backTaste", "Taste")}
           </button>
         </BackLink>
         <div className="labs-card p-8 text-center">
@@ -176,7 +178,7 @@ export default function LabsTasteProfile() {
   const totalRatings = profile?.ratedWhiskies?.length || 0;
   const hasData = totalRatings > 0 || (profile?.sources?.journalEntries || 0) > 0;
   const nRatings = whiskyProfile?.ratingStyle?.nRatings || totalRatings;
-  const stabilityInfo = getStabilityInfo(nRatings);
+  const stabilityInfo = getStabilityInfo(nRatings, t);
   const styleLabel = profile ? deriveStyle(profile.regionBreakdown || {}, profile.peatBreakdown || {}) : null;
   const sweetSpotLabel = profile ? deriveSweetSpot(profile.regionBreakdown || {}, profile.caskBreakdown || {}) : null;
 
@@ -205,51 +207,51 @@ export default function LabsTasteProfile() {
   const peatEntries = profile?.peatBreakdown ? Object.entries(profile.peatBreakdown).sort((a, b) => b[1].avgScore - a[1].avgScore) : [];
 
   const compareModes = [
-    { key: "none", label: "Just Me" },
-    { key: "friends", label: "Friends" },
-    { key: "platform", label: "Global" },
+    { key: "none", label: t("labs.profile.justMe", "Just Me") },
+    { key: "friends", label: t("labs.profile.friends", "Friends") },
+    { key: "platform", label: t("labs.profile.global", "Global") },
   ];
 
   return (
     <div className="labs-page" data-testid="labs-taste-profile">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-profile">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> {t("labs.profile.backTaste", "Taste")}
         </button>
       </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-profile-title">
-          CaskSense Profile
+          {t("labs.profile.title", "CaskSense Profile")}
         </h1>
       </div>
       <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        Your flavor fingerprint based on {nRatings} ratings
+        {t("labs.profile.subtitle", "Your flavor fingerprint based on {{count}} ratings", { count: nRatings })}
       </p>
 
       {!hasData ? (
         <div className="labs-empty labs-fade-in">
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>Rate some whiskies to build your profile</p>
+          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>{t("labs.profile.emptyHint", "Rate some whiskies to build your profile")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="labs-auto-grid labs-fade-in labs-stagger-1" style={{ "--grid-min": "120px" } as React.CSSProperties} data-testid="section-snapshot">
             <div className="labs-card p-4 text-center" data-testid="card-your-style">
-              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Your Style</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.profile.yourStyle", "Your Style")}</p>
               <p className="text-sm font-semibold" style={{ color: styleLabel ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
-                {styleLabel || "Building..."}
+                {styleLabel || t("labs.profile.building", "Building...")}
               </p>
             </div>
             <div className="labs-card p-4 text-center" data-testid="card-sweet-spot">
-              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Sweet Spot</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.profile.sweetSpot", "Sweet Spot")}</p>
               <p className="text-sm font-semibold" style={{ color: sweetSpotLabel ? "var(--labs-text)" : "var(--labs-text-muted)" }}>
-                {sweetSpotLabel || "Building..."}
+                {sweetSpotLabel || t("labs.profile.building", "Building...")}
               </p>
             </div>
             <div className="labs-card p-4 text-center" data-testid="card-stability">
-              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Stability</p>
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.profile.stability", "Stability")}</p>
               <span style={{
                 display: "inline-block", padding: "2px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 500,
                 border: `1px solid ${stabilityInfo.color}`, color: stabilityInfo.color,
@@ -262,7 +264,7 @@ export default function LabsTasteProfile() {
           <div className="labs-fade-in labs-stagger-2" data-testid="section-benchmark-controls">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>Benchmark against</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{t("labs.profile.benchmarkAgainst", "Benchmark against")}</span>
             </div>
             <div style={{ display: "inline-flex", borderRadius: 8, border: "1px solid var(--labs-border)", overflow: "hidden" }}>
               {compareModes.map((opt, i) => (
@@ -286,9 +288,9 @@ export default function LabsTasteProfile() {
 
           {radarData.length > 0 && (
             <div className="labs-card p-5 labs-fade-in labs-stagger-3" data-testid="section-radar">
-              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>Taste Radar</h2>
+              <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>{t("labs.profile.tasteRadar", "Taste Radar")}</h2>
               <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>
-                Your flavor profile across all dimensions
+                {t("labs.profile.radarDesc", "Your flavor profile across all dimensions")}
               </p>
               <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -310,13 +312,13 @@ export default function LabsTasteProfile() {
               {whiskyProfile?.comparisonData && (
                 <p className="text-xs text-center mt-2" style={{ color: "var(--labs-text-muted)" }} data-testid="text-comparison-basis">
                   {whiskyProfile.comparisonData.mode === "friends"
-                    ? `Based on ${whiskyProfile.comparisonData.nFriends || 0} friends, ${whiskyProfile.comparisonData.nRatings} ratings`
-                    : `Based on ${whiskyProfile.comparisonData.nParticipants || 0} tasters, ${whiskyProfile.comparisonData.nRatings} ratings`}
+                    ? t("labs.profile.basisFriends", "Based on {{friends}} friends, {{ratings}} ratings", { friends: whiskyProfile.comparisonData.nFriends || 0, ratings: whiskyProfile.comparisonData.nRatings })
+                    : t("labs.profile.basisPlatform", "Based on {{tasters}} tasters, {{ratings}} ratings", { tasters: whiskyProfile.comparisonData.nParticipants || 0, ratings: whiskyProfile.comparisonData.nRatings })}
                 </p>
               )}
               {whiskyProfile?.confidence && Object.keys(whiskyProfile.confidence).length > 0 && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }} data-testid="section-confidence">
-                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-muted)" }}>Confidence per Dimension</p>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.profile.confidenceDimension", "Confidence per Dimension")}</p>
                   <div className="flex flex-wrap gap-2">
                     {dims.map(dim => {
                       const conf = whiskyProfile.confidence[dim];
@@ -343,14 +345,14 @@ export default function LabsTasteProfile() {
             <div className="labs-card p-5 labs-fade-in labs-stagger-3" data-testid="section-rating-style">
               <h2 className="labs-h3 mb-3 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
                 <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                Rating Style
+                {t("labs.profile.ratingStyle", "Rating Style")}
               </h2>
               <div className="labs-auto-grid" style={{ "--grid-min": "100px" } as React.CSSProperties}>
                 {[
-                  { label: "Mean", value: Number(whiskyProfile.ratingStyle.meanScore).toFixed(1) },
-                  { label: "StdDev", value: Number(whiskyProfile.ratingStyle.stdDev).toFixed(2) },
-                  { label: "Range", value: `${String(whiskyProfile.ratingStyle.scaleRange?.min ?? "?")}–${String(whiskyProfile.ratingStyle.scaleRange?.max ?? "?")}` },
-                  { label: "Count", value: String(whiskyProfile.ratingStyle.nRatings || 0) },
+                  { label: t("labs.profile.mean", "Mean"), value: Number(whiskyProfile.ratingStyle.meanScore).toFixed(1) },
+                  { label: t("labs.profile.stdDev", "StdDev"), value: Number(whiskyProfile.ratingStyle.stdDev).toFixed(2) },
+                  { label: t("labs.profile.range", "Range"), value: `${String(whiskyProfile.ratingStyle.scaleRange?.min ?? "?")}–${String(whiskyProfile.ratingStyle.scaleRange?.max ?? "?")}` },
+                  { label: t("labs.profile.count", "Count"), value: String(whiskyProfile.ratingStyle.nRatings || 0) },
                 ].map(s => (
                   <div key={s.label} style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 6px", textAlign: "center" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
@@ -360,7 +362,7 @@ export default function LabsTasteProfile() {
               </div>
               {whiskyProfile.ratingStyle.systematicDeviation && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 4 }}>Avg Delta vs Platform</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 4 }}>{t("labs.profile.avgDeltaPlatform", "Avg Delta vs Platform")}</div>
                   <div style={{
                     fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums",
                     color: whiskyProfile.ratingStyle.systematicDeviation.avgDelta >= 0 ? "var(--labs-success)" : "var(--labs-danger)",
@@ -369,29 +371,29 @@ export default function LabsTasteProfile() {
                     {Number(whiskyProfile.ratingStyle.systematicDeviation.avgDelta).toFixed(1)}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                    Compared across {String(whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared ?? 0)} whiskies
+                    {t("labs.profile.comparedAcross", "Compared across {{count}} whiskies", { count: String(whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared ?? 0) })}
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          <BreakdownSection title="By Region" icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
-          <BreakdownSection title="By Cask Type" icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
-          <BreakdownSection title="By Peat Level" icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
+          <BreakdownSection title={t("labs.profile.byRegion", "By Region")} icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
+          <BreakdownSection title={t("labs.profile.byCaskType", "By Cask Type")} icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
+          <BreakdownSection title={t("labs.profile.byPeatLevel", "By Peat Level")} icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
 
           {whiskyProfile?.whiskyComparison && whiskyProfile.whiskyComparison.length > 0 && (
             <div className="labs-card p-5 labs-fade-in" data-testid="section-whisky-comparison">
               <h2 className="labs-h3 mb-1 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
                 <Globe className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                Your Scores vs Platform
+                {t("labs.profile.scoresVsPlatform", "Your Scores vs Platform")}
               </h2>
-              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>How your scores compare to the platform average</p>
+              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("labs.profile.scoresVsDesc", "How your scores compare to the platform average")}</p>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
                     <tr>
-                      {["Whisky", "You", "Platform", "Delta"].map(h => (
+                      {[t("labs.profile.whisky", "Whisky"), t("labs.profile.you", "You"), t("labs.profile.platform", "Platform"), t("labs.profile.delta", "Delta")].map(h => (
                         <th key={h} style={{
                           textAlign: h === "Whisky" ? "left" : "right", padding: "6px 4px",
                           color: "var(--labs-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--labs-border)",

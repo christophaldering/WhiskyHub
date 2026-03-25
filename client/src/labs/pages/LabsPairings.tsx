@@ -8,6 +8,7 @@ import {
   ChevronDown, Utensils,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useTranslation } from "react-i18next";
 
 interface Suggestion {
   name: string;
@@ -57,6 +58,7 @@ interface TastingItem {
 }
 
 export default function LabsPairings() {
+  const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid;
   const [selectedId, setSelectedId] = useState("");
@@ -80,7 +82,7 @@ export default function LabsPairings() {
     return (
       <AuthGateMessage
         icon={<Utensils className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to get AI pairing suggestions"
+        message={t("m2.taste.pairings.signIn")}
       />
     );
   }
@@ -105,7 +107,7 @@ export default function LabsPairings() {
 
       <div className="labs-card p-4 mb-4 labs-fade-in">
         <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
-          Select Tasting
+          {t("m2.taste.pairings.selectTasting")}
         </label>
         <div style={{ position: "relative" }}>
           <select
@@ -118,9 +120,9 @@ export default function LabsPairings() {
               outline: "none", appearance: "none", WebkitAppearance: "none", cursor: "pointer", fontFamily: "inherit",
             }}
           >
-            <option value="" disabled>Choose a tasting...</option>
-            {tL && <option value="" disabled>Loading...</option>}
-            {!tL && tastings?.map(t => <option key={t.id} value={t.id}>{t.title || t.name || t.id}</option>)}
+            <option value="" disabled>{t("m2.taste.pairings.chooseTasting")}</option>
+            {tL && <option value="" disabled>{t("common.loading")}</option>}
+            {!tL && tastings?.map(item => <option key={item.id} value={item.id}>{item.title || item.name || item.id}</option>)}
           </select>
           <ChevronDown style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
         </div>
@@ -177,7 +179,7 @@ export default function LabsPairings() {
       {!selectedId && pid && !tL && (
         <div className="labs-empty labs-fade-in" style={{ paddingTop: 40 }}>
           <Sparkles className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
-          <p className="labs-serif" style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>Select a tasting to get AI suggestions</p>
+          <p className="labs-serif" style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.taste.pairings.selectForSuggestions")}</p>
         </div>
       )}
     </div>

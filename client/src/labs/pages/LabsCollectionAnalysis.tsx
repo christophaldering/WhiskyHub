@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
@@ -85,7 +86,7 @@ function StatCard({ icon: Icon, label, value, testId }: { icon: React.ElementTyp
   );
 }
 
-function ExpandableList({ items, limit = 5 }: { items: { label: string; count: number }[]; limit?: number }) {
+function ExpandableList({ items, limit = 5, t }: { items: { label: string; count: number }[]; limit?: number; t: (key: string, fallback: string, opts?: any) => string }) {
   const th = useAppleTheme();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? items : items.slice(0, limit);
@@ -107,7 +108,7 @@ function ExpandableList({ items, limit = 5 }: { items: { label: string; count: n
           data-testid="button-expand-list"
         >
           {expanded ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
-          {expanded ? "Less" : `+${items.length - limit} more`}
+          {expanded ? t("labs.collection.less", "Less") : t("labs.collection.nMore", "+{{count}} more", { count: items.length - limit })}
         </button>
       )}
     </div>
@@ -115,6 +116,7 @@ function ExpandableList({ items, limit = 5 }: { items: { label: string; count: n
 }
 
 export default function LabsCollectionAnalysis() {
+  const { t } = useTranslation();
   const th = useAppleTheme();
   const session = useSession();
   const pid = session.pid;
@@ -130,7 +132,7 @@ export default function LabsCollectionAnalysis() {
     return (
       <AuthGateMessage
         icon={<Library style={{ width: 48, height: 48, color: th.gold }} />}
-        message="Sign in to analyze your collection"
+        message={t("labs.collection.authGate", "Sign in to analyze your collection")}
       />
     );
   }
@@ -148,7 +150,7 @@ export default function LabsCollectionAnalysis() {
   if (error) {
     return (
       <div className="labs-page">
-        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center", color: "#e06060" }}>Failed to load collection</div>
+        <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center", color: "#e06060" }}>{t("labs.collection.loadFailed", "Failed to load collection")}</div>
       </div>
     );
   }
@@ -163,13 +165,13 @@ export default function LabsCollectionAnalysis() {
             display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
             color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
           }} data-testid="button-back-empty">
-            <ChevronLeft style={{ width: 16, height: 16 }} /> Taste
+            <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
           </button>
         </BackLink>
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
           <Library style={{ width: 40, height: 40, marginBottom: SP.md, color: th.faint }} />
-          <p style={{ fontFamily: "Playfair Display, serif", color: th.text, fontSize: 16, fontWeight: 600 }}>No Collection Yet</p>
-          <p style={{ color: th.muted, fontSize: 13, marginTop: SP.sm }}>Import your Whiskybase collection to unlock detailed analytics.</p>
+          <p style={{ fontFamily: "Playfair Display, serif", color: th.text, fontSize: 16, fontWeight: 600 }}>{t("labs.collection.noCollection", "No Collection Yet")}</p>
+          <p style={{ color: th.muted, fontSize: 13, marginTop: SP.sm }}>{t("labs.collection.noCollectionDesc", "Import your Whiskybase collection to unlock detailed analytics.")}</p>
         </div>
       </div>
     );
@@ -267,7 +269,7 @@ export default function LabsCollectionAnalysis() {
           display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
           color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
         }} data-testid="button-back-collection">
-          <ChevronLeft style={{ width: 16, height: 16 }} /> Taste
+          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
         </button>
       </BackLink>
 
@@ -275,26 +277,26 @@ export default function LabsCollectionAnalysis() {
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>
           <Library style={{ width: 20, height: 20, color: th.gold }} />
           <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
-            Collection Analysis
+            {t("labs.collection.title", "Collection Analysis")}
           </h1>
         </div>
         <p style={{ fontSize: 14, color: th.muted }}>
-          Deep insights into your {total} bottles
+          {t("labs.collection.subtitle", "Deep insights into your {{count}} bottles", { count: total })}
         </p>
       </div>
 
       <div style={cardStyle} data-testid="card-collection-overview">
-        <p style={sectionLabel}>Overview</p>
+        <p style={sectionLabel}>{t("labs.collection.overview", "Overview")}</p>
         <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md, marginTop: SP.md }}>
-          <StatCard icon={Package} label="Bottles" value={total} testId="stat-total-bottles" />
-          <StatCard icon={DollarSign} label="Total Value" value={paidCount > 0 ? `€${totalPaid.toLocaleString("de-DE", { maximumFractionDigits: 0 })}` : "—"} testId="stat-total-value" />
-          <StatCard icon={DollarSign} label="Avg Price" value={paidCount > 0 ? `€${avgPrice.toFixed(0)}` : "—"} testId="stat-avg-price" />
+          <StatCard icon={Package} label={t("labs.collection.bottles", "Bottles")} value={total} testId="stat-total-bottles" />
+          <StatCard icon={DollarSign} label={t("labs.collection.totalValue", "Total Value")} value={paidCount > 0 ? `€${totalPaid.toLocaleString("de-DE", { maximumFractionDigits: 0 })}` : "—"} testId="stat-total-value" />
+          <StatCard icon={DollarSign} label={t("labs.collection.avgPrice", "Avg Price")} value={paidCount > 0 ? `€${avgPrice.toFixed(0)}` : "—"} testId="stat-avg-price" />
         </div>
         <div style={{ display: "flex", gap: SP.sm }}>
           {[
-            { label: "Open", count: statusCounts.open, color: th.green, id: "open" },
-            { label: "Sealed", count: statusCounts.closed, color: th.gold, id: "closed" },
-            { label: "Empty", count: statusCounts.empty, color: th.faint, id: "empty" },
+            { label: t("labs.collection.open", "Open"), count: statusCounts.open, color: th.green, id: "open" },
+            { label: t("labs.collection.sealed", "Sealed"), count: statusCounts.closed, color: th.gold, id: "closed" },
+            { label: t("labs.collection.empty", "Empty"), count: statusCounts.empty, color: th.faint, id: "empty" },
           ].map(s => (
             <div key={s.id} style={{ flex: 1, padding: "10px 12px", borderRadius: 14, background: withAlpha(s.color, 0.12), textAlign: "center" }} data-testid={`stat-status-${s.id}`}>
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.count}</div>
@@ -305,41 +307,41 @@ export default function LabsCollectionAnalysis() {
       </div>
 
       <div style={cardStyle} data-testid="card-collection-regions">
-        <p style={sectionLabel}>Regions & Distilleries</p>
-        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Where your bottles come from</p>
+        <p style={sectionLabel}>{t("labs.collection.regionsDistilleries", "Regions & Distilleries")}</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.regionsDesc", "Where your bottles come from")}</p>
         <HBar entries={regionEntries} color={th.gold} testIdPrefix="bar-region" />
         {distilleryList.length > 0 && (
           <div style={{ marginTop: SP.md }}>
-            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>Top Distilleries</p>
-            <ExpandableList items={distilleryList} limit={7} />
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>{t("labs.collection.topDistilleries", "Top Distilleries")}</p>
+            <ExpandableList items={distilleryList} limit={7} t={t} />
           </div>
         )}
       </div>
 
       <div style={cardStyle} data-testid="card-collection-age">
-        <p style={sectionLabel}>Age Distribution</p>
-        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>How old are the whiskies in your collection?</p>
+        <p style={sectionLabel}>{t("labs.collection.ageDistribution", "Age Distribution")}</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.ageDesc", "How old are the whiskies in your collection?")}</p>
         <HBar entries={ageEntries} color={th.phases.nose.accent} testIdPrefix="bar-age" />
       </div>
 
       {caskEntries.length > 0 && (
         <div style={cardStyle} data-testid="card-collection-cask">
-          <p style={sectionLabel}>Cask Types</p>
-          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Which cask types dominate your collection?</p>
+          <p style={sectionLabel}>{t("labs.collection.caskTypes", "Cask Types")}</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.caskDesc", "Which cask types dominate your collection?")}</p>
           <HBar entries={caskEntries} color={th.gold} testIdPrefix="bar-cask" />
         </div>
       )}
 
       {top10Valuable.length > 0 && (
         <div style={cardStyle} data-testid="card-collection-price">
-          <p style={sectionLabel}>Price Analysis</p>
-          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Your most valuable bottles</p>
+          <p style={sectionLabel}>{t("labs.collection.priceAnalysis", "Price Analysis")}</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.priceDesc", "Your most valuable bottles")}</p>
           <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md }}>
-            <StatCard icon={DollarSign} label="Lowest" value={`€${Math.min(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-min-price" />
-            <StatCard icon={DollarSign} label="Highest" value={`€${Math.max(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-max-price" />
-            <StatCard icon={DollarSign} label="Median" value={`€${valuableItems.sort((a, b) => a.price - b.price)[Math.floor(valuableItems.length / 2)]?.price.toFixed(0) || "—"}`} testId="stat-median-price" />
+            <StatCard icon={DollarSign} label={t("labs.collection.lowest", "Lowest")} value={`€${Math.min(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-min-price" />
+            <StatCard icon={DollarSign} label={t("labs.collection.highest", "Highest")} value={`€${Math.max(...valuableItems.map(i => i.price)).toFixed(0)}`} testId="stat-max-price" />
+            <StatCard icon={DollarSign} label={t("labs.collection.median", "Median")} value={`€${valuableItems.sort((a, b) => a.price - b.price)[Math.floor(valuableItems.length / 2)]?.price.toFixed(0) || "—"}`} testId="stat-median-price" />
           </div>
-          <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>Most Valuable Bottles</p>
+          <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>{t("labs.collection.mostValuable", "Most Valuable Bottles")}</p>
           {top10Valuable.map((item, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${th.border}`, fontSize: 13 }} data-testid={`row-valuable-${i}`}>
               <span style={{ color: th.text, flex: 1, marginRight: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
@@ -351,12 +353,12 @@ export default function LabsCollectionAnalysis() {
 
       {ratingPairs.length > 0 && (
         <div style={cardStyle} data-testid="card-collection-ratings">
-          <p style={sectionLabel}>Rating Comparison</p>
-          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>Your ratings vs. community</p>
+          <p style={sectionLabel}>{t("labs.collection.ratingComparison", "Rating Comparison")}</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.ratingsDesc", "Your ratings vs. community")}</p>
           <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", marginBottom: SP.md }}>
-            <StatCard icon={Star} label="Rated" value={ratingPairs.length} testId="stat-rated-count" />
-            <StatCard icon={Star} label="Your Avg" value={(ratingPairs.reduce((s, r) => s + r.personal, 0) / ratingPairs.length).toFixed(1)} testId="stat-avg-personal" />
-            <StatCard icon={Star} label="Avg Delta" value={`${avgDelta > 0 ? "+" : ""}${avgDelta.toFixed(1)}`} testId="stat-avg-delta" />
+            <StatCard icon={Star} label={t("labs.collection.rated", "Rated")} value={ratingPairs.length} testId="stat-rated-count" />
+            <StatCard icon={Star} label={t("labs.collection.yourAvg", "Your Avg")} value={(ratingPairs.reduce((s, r) => s + r.personal, 0) / ratingPairs.length).toFixed(1)} testId="stat-avg-personal" />
+            <StatCard icon={Star} label={t("labs.collection.avgDelta", "Avg Delta")} value={`${avgDelta > 0 ? "+" : ""}${avgDelta.toFixed(1)}`} testId="stat-avg-delta" />
           </div>
           {ratingPairs.slice(0, 10).map((r, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${th.border}`, fontSize: 12, gap: SP.sm }} data-testid={`row-rating-${i}`}>
@@ -374,7 +376,7 @@ export default function LabsCollectionAnalysis() {
           ))}
           {overrated.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: th.green, marginBottom: 6 }}>Your Hidden Gems ↑</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: th.green, marginBottom: 6 }}>{t("labs.collection.hiddenGems", "Your Hidden Gems ↑")}</p>
               {overrated.map((r, i) => (
                 <div key={i} style={{ fontSize: 12, color: th.text, padding: "3px 0" }}>
                   {r.name} <span style={{ color: th.green }}>+{(r.personal - r.community).toFixed(1)}</span>
@@ -384,7 +386,7 @@ export default function LabsCollectionAnalysis() {
           )}
           {underrated.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "#e06060", marginBottom: 6 }}>Community Rates Higher ↓</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#e06060", marginBottom: 6 }}>{t("labs.collection.communityHigher", "Community Rates Higher ↓")}</p>
               {underrated.map((r, i) => (
                 <div key={i} style={{ fontSize: 12, color: th.text, padding: "3px 0" }}>
                   {r.name} <span style={{ color: "#e06060" }}>{(r.personal - r.community).toFixed(1)}</span>
@@ -396,15 +398,15 @@ export default function LabsCollectionAnalysis() {
       )}
 
       <div style={cardStyle} data-testid="card-collection-abv">
-        <p style={sectionLabel}>ABV Distribution</p>
-        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>The strength spectrum of your collection</p>
+        <p style={sectionLabel}>{t("labs.collection.abvDistribution", "ABV Distribution")}</p>
+        <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.abvDesc", "The strength spectrum of your collection")}</p>
         <HBar entries={abvEntries} color={th.phases.nose.accent} testIdPrefix="bar-abv" />
       </div>
 
       {vintageEntries.length > 0 && (
         <div style={cardStyle} data-testid="card-collection-vintage">
-          <p style={sectionLabel}>Vintage Timeline</p>
-          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>When were your whiskies distilled?</p>
+          <p style={sectionLabel}>{t("labs.collection.vintageTimeline", "Vintage Timeline")}</p>
+          <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.collection.vintageDesc", "When were your whiskies distilled?")}</p>
           <HBar entries={vintageEntries} color={th.green} testIdPrefix="bar-vintage" />
         </div>
       )}

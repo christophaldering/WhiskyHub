@@ -26,61 +26,61 @@ type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions"
 const ADMIN_GROUPS = [
   {
     id: "nutzer",
-    label: "Nutzer",
+    labelKey: "admin.groupUsers",
     icon: Users,
     tabs: [
-      { id: "participants", label: "Teilnehmer" },
-      { id: "online",       label: "Online" },
-      { id: "sessions",     label: "Sessions" },
-      { id: "activity",     label: "Aktivit\u00e4t" },
+      { id: "participants", labelKey: "admin.tabParticipants" },
+      { id: "online",       labelKey: "admin.tabOnline" },
+      { id: "sessions",     labelKey: "admin.tabSessions" },
+      { id: "activity",     labelKey: "admin.tabActivity" },
     ],
   },
   {
     id: "tastings",
-    label: "Tastings",
+    labelKey: "admin.groupTastings",
     icon: Wine,
     tabs: [
-      { id: "tastings",     label: "Tastings" },
-      { id: "historical",   label: "Archiv-Import" },
+      { id: "tastings",     labelKey: "admin.tabTastings" },
+      { id: "historical",   labelKey: "admin.tabArchiveImport" },
     ],
   },
   {
     id: "communities-group",
-    label: "Communities",
+    labelKey: "admin.groupCommunities",
     icon: Globe,
     tabs: [
-      { id: "communities",  label: "Communities" },
+      { id: "communities",  labelKey: "admin.tabCommunities" },
     ],
   },
   {
     id: "inhalt",
-    label: "Inhalt",
+    labelKey: "admin.groupContent",
     icon: FileText,
     tabs: [
-      { id: "aromas",       label: "Aromen" },
-      { id: "changelog",    label: "Changelog" },
-      { id: "making-of",    label: "Making Of" },
+      { id: "aromas",       labelKey: "admin.tabAromas" },
+      { id: "changelog",    labelKey: "admin.tabChangelog" },
+      { id: "making-of",    labelKey: "admin.tabMakingOf" },
     ],
   },
   {
     id: "tools",
-    label: "KI & Tools",
+    labelKey: "admin.groupAiTools",
     icon: Sparkles,
     tabs: [
-      { id: "ai",           label: "KI-Status" },
-      { id: "newsletter",   label: "Newsletter" },
-      { id: "feedback",     label: "Feedback" },
+      { id: "ai",           labelKey: "admin.tabAiStatus" },
+      { id: "newsletter",   labelKey: "admin.tabNewsletter" },
+      { id: "feedback",     labelKey: "admin.tabFeedback" },
     ],
   },
   {
     id: "system",
-    label: "System",
+    labelKey: "admin.groupSystem",
     icon: Settings,
     tabs: [
-      { id: "settings",     label: "Einstellungen" },
-      { id: "cleanup",      label: "Aufr\u00e4umen" },
-      { id: "analytics",    label: "Analytics" },
-      { id: "trash",        label: "Papierkorb" },
+      { id: "settings",     labelKey: "admin.tabSettings" },
+      { id: "cleanup",      labelKey: "admin.tabCleanup" },
+      { id: "analytics",    labelKey: "admin.tabAnalytics" },
+      { id: "trash",        labelKey: "admin.tabTrash" },
     ],
   },
 ] as const;
@@ -170,13 +170,13 @@ export default function LabsAdmin() {
     return !pid ? (
       <AuthGateMessage
         icon={<Shield className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Please sign in to access admin features."
+        message={t("admin.pleaseSignIn")}
       />
     ) : (
       <div className="labs-page labs-fade-in text-center" data-testid="labs-admin-access-denied">
         <Shield className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--labs-accent)" }} />
-        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Access Denied</p>
-        <p className="text-sm mt-2" style={{ color: "var(--labs-text-muted)" }}>You don't have admin privileges.</p>
+        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.accessDenied")}</p>
+        <p className="text-sm mt-2" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noAdminPrivileges")}</p>
       </div>
     );
   }
@@ -193,8 +193,8 @@ export default function LabsAdmin() {
     return (
       <div className="labs-page text-center">
         <AlertTriangle className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--labs-danger)" }} />
-        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Access Denied</p>
-        <button onClick={() => refetch()} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-retry">Retry</button>
+        <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.accessDenied")}</p>
+        <button onClick={() => refetch()} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-retry">{t("admin.retry")}</button>
       </div>
     );
   }
@@ -210,23 +210,23 @@ export default function LabsAdmin() {
                    color: "var(--labs-text-muted)", fontSize: 14,
                    minHeight: 44, padding: "0 0 8px" }}
           data-testid="labs-admin-back">
-          <ChevronLeft className="w-4 h-4" /> Home
+          <ChevronLeft className="w-4 h-4" /> {t("admin.home")}
         </button>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26,
                        fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
               data-testid="labs-admin-title">
-            Admin
+            {t("admin.adminPanel")}
           </h1>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
                       gap: 8, marginBottom: 0 }}>
           {[
-            { label: "Nutzer",   value: data.stats.totalParticipants, Icon: Users },
-            { label: "Hosts",    value: data.stats.totalHosts,        Icon: Crown },
-            { label: "Tastings", value: data.stats.totalTastings,     Icon: Wine  },
-            { label: "Admins",   value: data.stats.totalAdmins,       Icon: Shield },
+            { label: t("admin.statUsers", "Users"),     value: data.stats.totalParticipants, Icon: Users },
+            { label: t("admin.statHosts", "Hosts"),     value: data.stats.totalHosts,        Icon: Crown },
+            { label: t("admin.statTastings", "Tastings"), value: data.stats.totalTastings,   Icon: Wine  },
+            { label: t("admin.statAdmins", "Admins"),   value: data.stats.totalAdmins,       Icon: Shield },
           ].map(s => (
             <div key={s.label}
               style={{ background: "var(--labs-surface)",
@@ -291,7 +291,7 @@ export default function LabsAdmin() {
                   <GroupIcon style={{ width: 16, height: 16, flexShrink: 0,
                     color: isGroupActive
                       ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
-                  {group.label}
+                  {t(group.labelKey)}
                 </button>
 
                 {isGroupActive && (
@@ -318,7 +318,7 @@ export default function LabsAdmin() {
                             display: "block",
                             transition: "background 150ms, color 150ms",
                           }}>
-                          {tab.label}
+                          {t(tab.labelKey)}
                         </button>
                       );
                     })}
@@ -352,7 +352,7 @@ export default function LabsAdmin() {
                     border: "none", cursor: "pointer",
                     transition: "background 150ms, color 150ms",
                   }}>
-                  {group.label}
+                  {t(group.labelKey)}
                 </button>
               );
             })}
@@ -382,7 +382,7 @@ export default function LabsAdmin() {
                     cursor: "pointer",
                     transition: "all 150ms",
                   }}>
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </button>
               );
             })}
@@ -422,11 +422,11 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 
   const roleMutation = useMutation({
     mutationFn: ({ participantId, role }: { participantId: string; role: string }) => adminApi.updateRole(participantId, role, pid),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Role updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.roleUpdated") }); },
   });
   const deleteMutation = useMutation({
     mutationFn: (participantId: string) => adminApi.deleteParticipant(participantId, pid),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Participant deleted" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.participantDeleted") }); },
   });
 
   const filtered = data.participants.filter(p => {
@@ -440,18 +440,18 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       <div className="flex gap-2 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-participants" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("admin.searchParticipants")} style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-participants" />
         </div>
         <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={labsSelect} data-testid="labs-admin-select-filter-role">
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="host">Host</option>
-          <option value="user">User</option>
+          <option value="all">{t("admin.allRoles")}</option>
+          <option value="admin">{t("admin.roleAdmin")}</option>
+          <option value="host">{t("admin.roleHost")}</option>
+          <option value="user">{t("admin.roleUser")}</option>
         </select>
       </div>
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No results</div>
+          <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noResults") }</div>
         ) : filtered.map(p => (
           <div key={p.id} className="labs-card p-3.5" data-testid={`labs-admin-participant-${p.id}`}>
             <div className="flex justify-between items-center gap-2">
@@ -461,11 +461,11 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                    p.role === "host" ? <Crown className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} /> :
                    <User className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</span>
-                  {p.id === pid && <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>You</span>}
+                  {p.id === pid && <span className="text-[11px] px-1.5 rounded" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("m2.circle.you")}</span>}
                   {p.email?.endsWith("@casksense.local") && <span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("discover.testData", "TEST")}</span>}
                 </div>
                 <div className="text-[11px] mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--labs-text-muted)" }}>
-                  <span>{p.email || "No email"}</span>
+                  <span>{p.email || t("admin.noEmail")}</span>
                   {p.email && !p.email.endsWith("@casksense.local") && (
                     p.emailVerified ? (
                       <CheckCircle className="w-3 h-3 inline" style={{ color: "var(--labs-success)" }} />
@@ -473,18 +473,18 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                       <XCircle className="w-3 h-3 inline" style={{ color: "var(--labs-danger)" }} />
                     )
                   )}
-                  <span>· {p.hostedTastings} tastings hosted</span>
+                  <span>· {p.hostedTastings} {t("admin.hostedTastings")}</span>
                   {p.createdAt && <span>· {new Date(p.createdAt).toLocaleDateString()}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <select value={p.role} onChange={e => roleMutation.mutate({ participantId: p.id, role: e.target.value })} disabled={p.id === pid} style={{ ...labsSelect, padding: "4px 8px", fontSize: 11 }} data-testid={`labs-admin-select-role-${p.id}`}>
-                  <option value="user">User</option>
-                  <option value="host">Host</option>
-                  <option value="admin">Admin</option>
+                  <option value="user">{t("admin.roleUser")}</option>
+                  <option value="host">{t("admin.roleHost")}</option>
+                  <option value="admin">{t("admin.roleAdmin")}</option>
                 </select>
                 {p.id !== pid && (
-                  <button onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-participant-${p.id}`}>
+                  <button onClick={() => { if (confirm(t("admin.confirmDeleteParticipant", { name: p.name }))) deleteMutation.mutate(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-participant-${p.id}`}>
                     <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
                   </button>
                 )}
@@ -507,14 +507,14 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 
   const deleteMutation = useMutation({
     mutationFn: (tastingId: string) => adminApi.deleteTasting(tastingId, pid),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Tasting deleted" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.tastingDeleted") }); },
   });
   const toggleTestMutation = useMutation({
     mutationFn: async ({ id, isTestData }: { id: string; isTestData: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/tastings/${id}/test-flag`, { requesterId: pid, isTestData });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Test flag updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.testFlagUpdated") }); },
   });
 
   const filtered = data.tastings.filter(ta => {
@@ -537,15 +537,15 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       <div className="flex gap-2 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tastings..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-tastings" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("admin.searchTastings")} style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-tastings" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={labsSelect} data-testid="labs-admin-select-filter-status">
-          <option value="all">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="reveal">Reveal</option>
-          <option value="archived">Archived</option>
+          <option value="all">{t("admin.allStatuses")}</option>
+          <option value="draft">{t("admin.statusDraft")}</option>
+          <option value="open">{t("admin.statusOpen")}</option>
+          <option value="closed">{t("admin.statusClosed")}</option>
+          <option value="reveal">{t("admin.statusReveal")}</option>
+          <option value="archived">{t("admin.statusArchived")}</option>
         </select>
         <button
           onClick={() => setShowTestData(!showTestData)}
@@ -571,7 +571,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       </div>
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No results</div>
+          <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noResults") }</div>
         ) : filtered.map(tasting => (
           <div key={tasting.id} className="labs-card p-3.5" data-testid={`labs-admin-tasting-${tasting.id}`}>
             <div className="flex justify-between items-start gap-2">
@@ -592,7 +592,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                 <button onClick={() => toggleTestMutation.mutate({ id: tasting.id, isTestData: !tasting.isTestData })} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-toggle-test-${tasting.id}`}>
                   <FlaskConical className="w-3.5 h-3.5" style={{ color: tasting.isTestData ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
                 </button>
-                <button onClick={() => { if (confirm(`Delete "${tasting.title}"?`)) deleteMutation.mutate(tasting.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-tasting-${tasting.id}`}>
+                <button onClick={() => { if (confirm(t("admin.confirmDeleteTasting", { title: tasting.title }))) deleteMutation.mutate(tasting.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-tasting-${tasting.id}`}>
                   <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
                 </button>
               </div>
@@ -605,6 +605,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function OnlineTab() {
+  const { t } = useTranslation();
   const { data: onlineUsers = [], isLoading } = useQuery({
     queryKey: ["/api/admin/online-users"],
     queryFn: async () => { const res = await fetch("/api/admin/online-users?minutes=10"); if (!res.ok) throw new Error("Failed"); return res.json(); },
@@ -613,8 +614,8 @@ function OnlineTab() {
 
   const formatTime = (ts: string) => {
     const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
-    if (diffMin < 1) return "just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 1) return t("admin.justNow");
+    if (diffMin < 60) return t("admin.minutesAgo", { count: diffMin });
     return new Date(ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
 
@@ -623,17 +624,17 @@ function OnlineTab() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Wifi className="w-4 h-4" style={{ color: "var(--labs-success)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Online Users</span>
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.onlineUsers") }</span>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{onlineUsers.length}</span>
         </div>
         <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-          <Clock className="w-3 h-3" /> Auto-refresh 15s
+          <Clock className="w-3 h-3" /> {t("admin.autoRefresh")}
         </span>
       </div>
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
       ) : onlineUsers.length === 0 ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No users currently online.</div>
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noUsersOnline") }</div>
       ) : (
         <div className="space-y-2">
           {onlineUsers.map((u: Record<string, unknown>) => (
@@ -647,7 +648,7 @@ function OnlineTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{String(u.name ?? "")}</span>
-                  {u.role === "admin" && <span className="text-[11px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Admin</span>}
+                  {u.role === "admin" && <span className="text-[11px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>{t("admin.adminBadge")}</span>}
                 </div>
                 {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
               </div>
@@ -743,7 +744,7 @@ function FilterDropdown({ label, icon, options, selected, onToggle, searchPlaceh
           </div>
           <div className="overflow-y-auto flex-1" style={{ maxHeight: 220 }}>
             {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-center" style={{ color: "var(--labs-text-muted)" }}>No matches</div>
+              <div className="px-3 py-4 text-xs text-center" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noMatches")}</div>
             ) : filtered.map(opt => {
               const isSelected = selected.includes(opt.id);
               return (
@@ -806,40 +807,40 @@ function AdminActivityFilterBar({ filters, onChange, pid, hideTasting }: { filte
   return (
     <div className="flex items-center gap-1.5 flex-wrap mb-3" data-testid="admin-activity-filter-bar">
       <FilterDropdown
-        label="User"
+        label={t("admin.tabUser")}
         icon={<User className="w-3 h-3" />}
         options={options.users || []}
         selected={filters.userIds}
         onToggle={toggleUser}
-        searchPlaceholder="Search users..."
+        searchPlaceholder={t("admin.searchParticipants")}
       />
       <FilterDropdown
-        label="Host"
+        label={t("admin.tabHost")}
         icon={<Crown className="w-3 h-3" />}
         options={options.hosts || []}
         selected={filters.hostIds}
         onToggle={toggleHost}
-        searchPlaceholder="Search hosts..."
+        searchPlaceholder={t("admin.searchParticipants")}
       />
       {!hideTasting && (
         <FilterDropdown
-          label="Tasting"
+          label={t("admin.tabTasting")}
           icon={<Wine className="w-3 h-3" />}
-          options={(options.tastings || []).map((t: FilterOption) => ({ ...t, name: t.title || t.name }))}
+          options={(options.tastings || []).map((item: FilterOption) => ({ ...item, name: item.title || item.name }))}
           selected={filters.tastingId ? [filters.tastingId] : []}
           onToggle={toggleTasting}
-          searchPlaceholder="Search tastings..."
+          searchPlaceholder={t("admin.searchTastings")}
           multi={false}
           renderLabel={(o: FilterOption) => `${o.title || o.name}${o.date ? ` (${o.date})` : ""}`}
         />
       )}
       <FilterDropdown
-        label="Community"
+        label={t("admin.tabCommunity")}
         icon={<Users className="w-3 h-3" />}
         options={options.communities || []}
         selected={filters.communityId ? [filters.communityId] : []}
         onToggle={toggleCommunity}
-        searchPlaceholder="Search communities..."
+        searchPlaceholder={t("admin.searchParticipants")}
         multi={false}
       />
       {hasFilters && (
@@ -858,15 +859,16 @@ function AdminActivityFilterBar({ filters, onChange, pid, hideTasting }: { filte
 }
 
 function ActivityTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const [hours, setHours] = useState(24);
   const [roleFilter, setRoleFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [advFilters, setAdvFilters] = useState<ActivityFilters>(emptyFilters);
 
   const timeOpts = [
-    { hours: 1, label: "1h" }, { hours: 6, label: "6h" }, { hours: 12, label: "12h" },
-    { hours: 24, label: "24h" }, { hours: 168, label: "7d" }, { hours: 720, label: "30d" },
-    { hours: 0, label: "All" },
+    { hours: 1, label: t("admin.time1h") }, { hours: 6, label: t("admin.time6h") }, { hours: 12, label: t("admin.time12h") },
+    { hours: 24, label: t("admin.time24h") }, { hours: 168, label: t("admin.time7d") }, { hours: 720, label: t("admin.time30d") },
+    { hours: 0, label: t("admin.timeAll") },
   ];
 
   const allUserIds = [...new Set([...advFilters.userIds, ...advFilters.hostIds])];
@@ -895,7 +897,7 @@ function ActivityTab({ pid }: { pid: string }) {
   const formatRel = (ts: string) => {
     if (!ts) return "–";
     const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
-    if (diffMin < 1) return "now";
+    if (diffMin < 1) return t("admin.justNow");
     if (diffMin < 60) return `${diffMin}m`;
     const diffH = Math.floor(diffMin / 60);
     if (diffH < 24) return `${diffH}h`;
@@ -906,7 +908,7 @@ function ActivityTab({ pid }: { pid: string }) {
     <div data-testid="labs-admin-activity-tab">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-        <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>User Activity</span>
+        <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.userActivity")}</span>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{filtered.length}</span>
       </div>
       <div className="flex gap-1 flex-wrap mb-3">
@@ -917,22 +919,22 @@ function ActivityTab({ pid }: { pid: string }) {
       <div className="flex gap-2 mb-3">
         <div className="flex-1 relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name or email..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-activity" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("admin.nameOrEmail")} style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-input-search-activity" />
         </div>
         <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={labsSelect} data-testid="labs-admin-select-activity-role">
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="host">Host</option>
-          <option value="user">User</option>
+          <option value="all">{t("admin.allRoles")}</option>
+          <option value="admin">{t("admin.roleAdmin")}</option>
+          <option value="host">{t("admin.roleHost")}</option>
+          <option value="user">{t("admin.roleUser")}</option>
         </select>
       </div>
       <AdminActivityFilterBar filters={advFilters} onChange={setAdvFilters} pid={pid} />
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
       ) : isError ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-danger)" }}>Error loading activity data.</div>
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-danger)" }}>{t("admin.errorLoadingActivity")}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No users in selected period.</div>
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noUsersInPeriod")}</div>
       ) : (
         <div className="space-y-2">
           {filtered.map((u: Record<string, unknown>) => (
@@ -947,13 +949,13 @@ function ActivityTab({ pid }: { pid: string }) {
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatRel(u.lastSeenAt as string)}</div>
-                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>last seen</div>
+                  <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.lastSeen")}</div>
                 </div>
               </div>
               <div className="flex gap-3 mt-2.5 pt-2" style={{ borderTop: "1px solid var(--labs-border)" }}>
-                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><Wine className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.tastingCount as number} tastings</span>
-                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BarChart3 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.ratingCount as number} ratings</span>
-                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BookOpen className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.journalCount as number} drams</span>
+                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><Wine className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.tastingCount as number} {t("admin.tastingsLabel")}</span>
+                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BarChart3 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.ratingCount as number} {t("admin.ratingsLabel")}</span>
+                <span className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-text-secondary)" }}><BookOpen className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />{u.journalCount as number} {t("admin.dramsLabel")}</span>
               </div>
             </div>
           ))}
@@ -964,6 +966,7 @@ function ActivityTab({ pid }: { pid: string }) {
 }
 
 function SessionsTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [userSearch, setUserSearch] = useState("");
@@ -993,10 +996,10 @@ function SessionsTab({ pid }: { pid: string }) {
   });
 
   const rangeOpts: { value: typeof timeRange; label: string }[] = [
-    { value: "7d", label: "7 Days" },
-    { value: "30d", label: "30 Days" },
-    { value: "90d", label: "90 Days" },
-    { value: "all", label: "All Time" },
+    { value: "7d", label: t("admin.timeRange7d") },
+    { value: "30d", label: t("admin.timeRange30d") },
+    { value: "90d", label: t("admin.timeRange90d") },
+    { value: "all", label: t("admin.timeRangeAll") },
   ];
 
   const formatDuration = (min: number) => {
@@ -1022,12 +1025,12 @@ function SessionsTab({ pid }: { pid: string }) {
   const formatRelative = (ts: string | Date | null) => {
     if (!ts) return "–";
     const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
-    if (diffMin < 1) return "now";
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 1) return t("admin.justNow");
+    if (diffMin < 60) return t("admin.minutesAgo", { count: diffMin });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${diffH}h ago`;
+    if (diffH < 24) return t("admin.hoursAgo", { count: diffH });
     const diffD = Math.floor(diffH / 24);
-    return `${diffD}d ago`;
+    return t("admin.daysAgo", { count: diffD });
   };
 
   const filteredUsers = (summary?.topUsers || []).filter((u: { name: string; email: string }) => {
@@ -1061,7 +1064,7 @@ function SessionsTab({ pid }: { pid: string }) {
     return max;
   };
 
-  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayLabels = [t("admin.daySun"), t("admin.dayMon"), t("admin.dayTue"), t("admin.dayWed"), t("admin.dayThu"), t("admin.dayFri"), t("admin.daySat")];
 
   if (selectedUser) {
     const userData = (summary?.topUsers || []).find((u: { id: string }) => u.id === selectedUser);
@@ -1077,30 +1080,30 @@ function SessionsTab({ pid }: { pid: string }) {
         </button>
         <div className="flex items-center gap-2 mb-4">
           <User className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{userData?.name || "User"}</span>
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{userData?.name || t("admin.roleUser")}</span>
           {userData?.email && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{userData.email}</span>}
         </div>
         <div className="labs-auto-grid mb-4" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
           <div className="labs-card p-3 text-center">
             <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{userData?.sessions || 0}</div>
-            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Sessions</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sessions")}</div>
           </div>
           <div className="labs-card p-3 text-center">
             <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.totalMinutes || 0)}</div>
-            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Time</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalTime") }</div>
           </div>
           <div className="labs-card p-3 text-center">
             <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.sessions ? Math.round((userData.totalMinutes || 0) / userData.sessions) : 0)}</div>
-            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Avg Duration</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.avgDuration") }</div>
           </div>
         </div>
         {userSessionsLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
         ) : userSessions.length === 0 ? (
-          <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No sessions recorded.</div>
+          <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noSessions") }</div>
         ) : (
           <div className="space-y-1.5">
-            <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Session Timeline</div>
+            <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>{ t("admin.sessionTimeline") }</div>
             {userSessions.map((s: { id: string; startedAt: string; endedAt: string; durationMinutes: number; pageContext: string | null }) => (
               <div key={s.id} className="labs-card p-3 flex items-center gap-3" data-testid={`session-entry-${s.id}`}>
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.durationMinutes > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
@@ -1127,7 +1130,7 @@ function SessionsTab({ pid }: { pid: string }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Session Tracking</span>
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.sessionTracking")}</span>
         </div>
         <div className="flex gap-1">
           {rangeOpts.map(opt => (
@@ -1154,31 +1157,31 @@ function SessionsTab({ pid }: { pid: string }) {
       {summaryLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
       ) : !summary ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No data available.</div>
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noDataAvailable")}</div>
       ) : (
         <>
           <div className="labs-auto-grid mb-4" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
             <div className="labs-card p-3 text-center">
               <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total">{summary.totalSessions}</div>
-              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Sessions</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.totalSessions")}</div>
             </div>
             <div className="labs-card p-3 text-center">
               <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-users">{summary.uniqueUsers}</div>
-              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Active Users</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.activeUsers")}</div>
             </div>
             <div className="labs-card p-3 text-center">
               <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-avg">{formatDuration(summary.avgDurationMinutes)}</div>
-              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Avg Duration</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.avgDuration") }</div>
             </div>
             <div className="labs-card p-3 text-center">
               <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total-time">{formatDuration(summary.totalMinutes)}</div>
-              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Total Time</div>
+              <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalTime") }</div>
             </div>
           </div>
 
           {(summary.byHour || []).length > 0 && (
             <div className="labs-card p-3 mb-4">
-              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Activity by Hour</div>
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>{t("admin.activityByHour")}</div>
               <div className="overflow-x-auto">
                 <div style={{ display: "grid", gridTemplateColumns: "40px repeat(24, 1fr)", gap: 2 }}>
                   <div />
@@ -1199,7 +1202,7 @@ function SessionsTab({ pid }: { pid: string }) {
                               background: val === 0 ? "var(--labs-surface)" : `color-mix(in srgb, var(--labs-accent) ${Math.round(15 + intensity * 85)}%, transparent)`,
                               minWidth: 8,
                             }}
-                            title={`${dayLabels[dayIdx]} ${hourIdx}:00 - ${val} sessions`}
+                            title={`${dayLabels[dayIdx]} ${hourIdx}:00 - ${val} ${t("admin.sessionsLabel")}`}
                             data-testid={`heatmap-cell-${dayIdx}-${hourIdx}`}
                           />
                         );
@@ -1213,7 +1216,7 @@ function SessionsTab({ pid }: { pid: string }) {
 
           {(summary.byDay || []).length > 0 && (
             <div className="labs-card p-3 mb-4">
-              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>Daily Activity</div>
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>{t("admin.dailyActivity")}</div>
               <div className="flex items-end gap-0.5" style={{ height: 80 }}>
                 {summary.byDay.map((d: { date: string; sessions: number; uniqueUsers: number }) => {
                   const maxSessions = Math.max(...summary.byDay.map((x: { sessions: number }) => x.sessions), 1);
@@ -1223,7 +1226,7 @@ function SessionsTab({ pid }: { pid: string }) {
                       key={d.date}
                       className="flex-1 rounded-t-sm transition-all"
                       style={{ height: `${Math.max(height, 4)}%`, background: "var(--labs-accent)", opacity: 0.7 + (height / 100) * 0.3, minWidth: 3 }}
-                      title={`${d.date}: ${d.sessions} sessions, ${d.uniqueUsers} users`}
+                      title={`${d.date}: ${d.sessions} ${t("admin.sessionsLabel")}, ${d.uniqueUsers} ${t("admin.usersLabel")}`}
                       data-testid={`daily-bar-${d.date}`}
                     />
                   );
@@ -1243,10 +1246,10 @@ function SessionsTab({ pid }: { pid: string }) {
             </div>
             <div className="relative mb-2">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search users..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="sessions-search-users" />
+              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={t("admin.searchUsers")} style={{ ...labsInput, paddingLeft: 32 }} data-testid="sessions-search-users" />
             </div>
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No users found.</div>
+              <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noUsersFound") }</div>
             ) : (
               <div className="space-y-1.5">
                 {filteredUsers.map((u: { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: string | null }) => (
@@ -1262,8 +1265,8 @@ function SessionsTab({ pid }: { pid: string }) {
                       {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{u.sessions} sessions</div>
-                      <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{formatDuration(u.totalMinutes)} total</div>
+                      <div className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{u.sessions} {t("admin.sessionsLabel")}</div>
+                      <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{formatDuration(u.totalMinutes)} {t("admin.totalLabel")}</div>
                       <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{formatRelative(u.lastActive)}</div>
                     </div>
                     <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
@@ -1279,6 +1282,7 @@ function SessionsTab({ pid }: { pid: string }) {
 }
 
 function AITab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1316,8 +1320,8 @@ function AITab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/ai-settings", { participantId: pid, ai_master_disabled: md, ai_features_disabled: df });
       return res.json();
     },
-    onSuccess: () => { toast({ title: "AI settings saved" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-settings"] }); },
-    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); if (data) { setMasterDisabled(data.settings.ai_master_disabled); setDisabledFeatures(data.settings.ai_features_disabled || []); } },
+    onSuccess: () => { toast({ title: t("admin.aiSettingsSaved") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-settings"] }); },
+    onError: (err: Error) => { toast({ title: t("admin.errorGeneric"), description: err.message, variant: "destructive" }); if (data) { setMasterDisabled(data.settings.ai_master_disabled); setDisabledFeatures(data.settings.ai_features_disabled || []); } },
   });
 
   const quotaMutation = useMutation({
@@ -1326,10 +1330,10 @@ function AITab({ pid }: { pid: string }) {
       return res.json();
     },
     onSuccess: (result) => {
-      toast({ title: `Free quota set to ${result.quota === 0 ? "unlimited" : result.quota}` });
+      toast({ title: t("admin.quotaSet", { value: result.quota === 0 ? t("admin.unlimited") : String(result.quota) }) });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-usage"] });
     },
-    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
+    onError: (err: Error) => { toast({ title: t("admin.errorGeneric"), description: err.message, variant: "destructive" }); },
   });
 
   const save = (md: boolean | null, df: string[]) => saveMutation.mutate({ md, df });
@@ -1342,7 +1346,7 @@ function AITab({ pid }: { pid: string }) {
 
   const handleQuotaSave = () => {
     const val = parseInt(quotaInput, 10);
-    if (isNaN(val) || val < 0) { toast({ title: "Invalid quota value", variant: "destructive" }); return; }
+    if (isNaN(val) || val < 0) { toast({ title: t("admin.invalidQuota"), variant: "destructive" }); return; }
     quotaMutation.mutate(val);
   };
 
@@ -1357,19 +1361,19 @@ function AITab({ pid }: { pid: string }) {
       <div className="labs-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-4">
           <ShieldAlert className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-bold" style={{ color: "var(--labs-text)" }}>AI Kill Switch</span>
+          <span className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{ t("admin.aiKillSwitch") }</span>
         </div>
         <div className="p-3 rounded-lg mb-4 text-xs" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}>
           <div className="flex items-center gap-1.5 mb-1">
             <Shield className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
-            <span className="font-semibold" style={{ color: "var(--labs-accent)" }}>Admin Bypass</span>
+            <span className="font-semibold" style={{ color: "var(--labs-accent)" }}>{ t("admin.adminBypass") }</span>
           </div>
-          <span style={{ color: "var(--labs-text-muted)" }}>Als Admin behältst du immer Zugriff auf alle AI-Features über den Plattform-Key, auch wenn Features deaktiviert oder Limits erreicht sind.</span>
+          <span style={{ color: "var(--labs-text-muted)" }}>{ t("admin.adminBypassDesc") }</span>
         </div>
         <div className="flex items-center justify-between p-3.5 rounded-xl mb-4" style={{ border: `2px solid ${masterDisabled ? "var(--labs-danger)" : "var(--labs-success)"}`, background: masterDisabled ? "var(--labs-danger-muted)" : "var(--labs-success-muted)" }} data-testid="labs-admin-ai-master-toggle">
           <div>
-            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Master Kill Switch</div>
-            <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{masterDisabled ? "All AI features disabled (Admin bypass active)" : "AI features active"}</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.masterKillSwitch") }</div>
+            <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{masterDisabled ? t("admin.aiAllDisabled") : t("admin.aiFeaturesActive")}</div>
           </div>
           <ToggleSwitch on={!masterDisabled} onToggle={() => { const v = !masterDisabled; setMasterDisabled(v); save(v, disabledFeatures); }} testId="labs-admin-switch-ai-master" />
         </div>
@@ -1391,13 +1395,13 @@ function AITab({ pid }: { pid: string }) {
             );
           })}
         </div>
-        {saveMutation.isPending && <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-text-muted)" }}><Loader2 className="w-3 h-3 animate-spin" />Saving...</div>}
+        {saveMutation.isPending && <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-text-muted)" }}><Loader2 className="w-3 h-3 animate-spin" />{ t("admin.saving") }</div>}
       </div>
 
       <div className="labs-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <Hash className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>Freikontingent (Plattform-Key)</span>
+          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>{ t("admin.freeQuota") }</span>
         </div>
         <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
           Anzahl kostenloser AI-Anfragen pro User über den Plattform-Key. 0 = unbegrenzt. User mit eigenem API Key sind nicht betroffen.
@@ -1418,10 +1422,10 @@ function AITab({ pid }: { pid: string }) {
             style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }}
             data-testid="labs-admin-save-ai-quota"
           >
-            {quotaMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Speichern"}
+            {quotaMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : t("admin.save")}
           </button>
           <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-            Aktuell: {usageData?.quota === 0 ? "Unbegrenzt" : `${usageData?.quota ?? 20} Anfragen`}
+            { t("admin.currentQuota") }: {usageData?.quota === 0 ? t("admin.unlimited") : `${usageData?.quota ?? 20} ${t("admin.requests")}`}
           </span>
         </div>
       </div>
@@ -1429,13 +1433,13 @@ function AITab({ pid }: { pid: string }) {
       <div className="labs-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>AI-Nutzung pro User</span>
+          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>{ t("admin.aiUsagePerUser") }</span>
           <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>{usageList.length}</span>
         </div>
         {usageLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>
         ) : usageList.length === 0 ? (
-          <div className="text-center py-6 text-xs" style={{ color: "var(--labs-text-muted)" }}>Noch keine AI-Nutzung über den Plattform-Key.</div>
+          <div className="text-center py-6 text-xs" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noAiUsage") }</div>
         ) : (
           <div className="max-h-[300px] overflow-y-auto space-y-1.5">
             {usageList.map(u => {
@@ -1447,8 +1451,8 @@ function AITab({ pid }: { pid: string }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{u.name}</span>
-                      {u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>Own Key</span>}
-                      {overLimit && !u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>Limit</span>}
+                      {u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>{ t("admin.ownKey") }</span>}
+                      {overLimit && !u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>{ t("admin.limitReached") }</span>}
                     </div>
                     {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
                   </div>
@@ -1473,7 +1477,7 @@ function AITab({ pid }: { pid: string }) {
         <div className="labs-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Database className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} />
-            <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Audit Log</span>
+            <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.auditLog") }</span>
           </div>
           <div className="max-h-[300px] overflow-y-auto">
             {auditLog.map((entry: Record<string, unknown>, i: number) => (
@@ -1491,6 +1495,7 @@ function AITab({ pid }: { pid: string }) {
 }
 
 function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { masterDisabled: aiDisabled } = useAIStatus();
@@ -1511,8 +1516,8 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
     try {
       const result = await adminApi.generateNewsletter(pid, type);
       setSubject(result.subject || ""); setContentHtml(result.body || "");
-      toast({ title: "Newsletter generated" });
-    } catch (e: unknown) { toast({ title: "Error", description: (e as Error).message, variant: "destructive" }); }
+      toast({ title: t("admin.newsletterGenerated") });
+    } catch (e: unknown) { toast({ title: t("admin.errorGeneric"), description: (e as Error).message, variant: "destructive" }); }
     finally { setGenerating(false); }
   };
 
@@ -1521,10 +1526,10 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
     setSending(true);
     try {
       const result = await adminApi.sendNewsletter(pid, subject, contentHtml, Array.from(selectedIds));
-      toast({ title: `Newsletter sent to ${result.sent} recipients` });
+      toast({ title: t("admin.newsletterSentTo", { count: result.sent }) });
       setSubject(""); setContentHtml(""); setSelectedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ["/admin/newsletters"] });
-    } catch (e: unknown) { toast({ title: "Error", description: (e as Error).message, variant: "destructive" }); }
+    } catch (e: unknown) { toast({ title: t("admin.errorGeneric"), description: (e as Error).message, variant: "destructive" }); }
     finally { setSending(false); }
   };
 
@@ -1533,7 +1538,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
       <div className="labs-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Send className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Compose Newsletter</span>
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.composeNewsletter") }</span>
         </div>
         <div className="flex gap-2 mb-3">
           <button onClick={() => handleGenerate("welcome")} disabled={generating || aiDisabled} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text)", cursor: generating ? "wait" : "pointer" }} data-testid="labs-admin-generate-welcome">
@@ -1543,14 +1548,14 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
             {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} Update
           </button>
         </div>
-        <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject..." style={{ ...labsInput, marginBottom: 8 }} data-testid="labs-admin-newsletter-subject" />
-        <textarea value={contentHtml} onChange={e => setContentHtml(e.target.value)} placeholder="Newsletter content (HTML)..." rows={6} style={{ ...labsInput, resize: "vertical" as const }} data-testid="labs-admin-newsletter-content" />
+        <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder={t("admin.subject")} style={{ ...labsInput, marginBottom: 8 }} data-testid="labs-admin-newsletter-subject" />
+        <textarea value={contentHtml} onChange={e => setContentHtml(e.target.value)} placeholder={t("admin.newsletterContent")} rows={6} style={{ ...labsInput, resize: "vertical" as const }} data-testid="labs-admin-newsletter-content" />
         <div className="mt-3 rounded-lg p-3" style={{ border: "1px solid var(--labs-border)" }}>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Recipients ({selectedIds.size} selected)</span>
+            <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("admin.recipientsSelected", { count: selectedIds.size })}</span>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedIds(new Set(subscribers.map(s => s.id)))} className="text-[11px]" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-select-all-subscribers">Select subscribers</button>
-              <button onClick={() => setSelectedIds(new Set())} className="text-[11px]" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-clear-recipients">Clear</button>
+              <button onClick={() => setSelectedIds(new Set(subscribers.map(s => s.id)))} className="text-[11px]" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-select-all-subscribers">{ t("admin.selectSubscribers") }</button>
+              <button onClick={() => setSelectedIds(new Set())} className="text-[11px]" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-clear-recipients">{ t("admin.clear") }</button>
             </div>
           </div>
           <div className="max-h-[180px] overflow-y-auto">
@@ -1565,16 +1570,16 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
         </div>
         <button onClick={handleSend} disabled={!subject.trim() || !contentHtml.trim() || selectedIds.size === 0 || sending} className="w-full mt-3 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: subject.trim() && contentHtml.trim() && selectedIds.size > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)", color: "var(--labs-bg)", border: "none", cursor: sending ? "wait" : "pointer" }} data-testid="labs-admin-send-newsletter">
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-          {sending ? "Sending..." : "Send Newsletter"}
+          {sending ? t("admin.sending") : t("admin.sendNewsletter")}
         </button>
       </div>
       {(newsletters as Array<Record<string, unknown>>).length > 0 && (
         <div className="labs-card p-4">
-          <div className="flex items-center gap-2 mb-3"><Archive className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Archive</span></div>
+          <div className="flex items-center gap-2 mb-3"><Archive className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.archive") }</span></div>
           {(newsletters as Array<Record<string, unknown>>).map((nl) => (
             <div key={nl.id as string} className="py-2" style={{ borderBottom: "1px solid var(--labs-border)" }} data-testid={`labs-admin-newsletter-${nl.id}`}>
               <div className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{nl.subject as string}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Sent: {nl.sentAt ? new Date(nl.sentAt as string).toLocaleDateString() : "-"} · Recipients: {(nl.recipientCount as number) || 0}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.sent") }: {nl.sentAt ? new Date(nl.sentAt as string).toLocaleDateString() : "-"} · { t("admin.recipientsCount") }: {(nl.recipientCount as number) || 0}</div>
             </div>
           ))}
         </div>
@@ -1584,6 +1589,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
 }
 
 function ChangelogTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -1595,11 +1601,11 @@ function ChangelogTab({ pid }: { pid: string }) {
   const [visible, setVisible] = useState(true);
 
   const CATEGORIES = [
-    { value: "feature", label: "Feature", emoji: "\u{1F680}" },
-    { value: "improvement", label: "Improvement", emoji: "\u{1F527}" },
-    { value: "bugfix", label: "Bugfix", emoji: "\u{1F41B}" },
-    { value: "security", label: "Security", emoji: "\u{1F6E1}\u{FE0F}" },
-    { value: "design", label: "Design/UX", emoji: "\u{1F3A8}" },
+    { value: "feature", label: t("admin.catFeature"), emoji: "\u{1F680}" },
+    { value: "improvement", label: t("admin.catImprovement"), emoji: "\u{1F527}" },
+    { value: "bugfix", label: t("admin.catBugfix"), emoji: "\u{1F41B}" },
+    { value: "security", label: t("admin.catSecurity"), emoji: "\u{1F6E1}\u{FE0F}" },
+    { value: "design", label: t("admin.catDesign"), emoji: "\u{1F3A8}" },
   ];
 
   const { data: entries = [], isLoading } = useQuery({
@@ -1609,15 +1615,15 @@ function ChangelogTab({ pid }: { pid: string }) {
 
   const createMutation = useMutation({
     mutationFn: async () => { const res = await apiRequest("POST", "/api/admin/changelog", { participantId: pid, title, description, category, date, visible }); return res.json(); },
-    onSuccess: () => { toast({ title: "Entry created" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
+    onSuccess: () => { toast({ title: t("admin.entryCreated") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
   });
   const updateMutation = useMutation({
     mutationFn: async () => { const res = await apiRequest("PATCH", `/api/admin/changelog/${editingId}`, { participantId: pid, title, description, category, date, visible }); return res.json(); },
-    onSuccess: () => { toast({ title: "Entry updated" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
+    onSuccess: () => { toast({ title: t("admin.entryUpdated") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
   });
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { const res = await fetch(`/api/admin/changelog/${id}?participantId=${pid}`, { method: "DELETE" }); if (!res.ok) throw new Error("Delete failed"); return res.json(); },
-    onSuccess: () => { toast({ title: "Entry deleted" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); },
+    onSuccess: () => { toast({ title: t("admin.entryDeleted") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); },
   });
 
   const resetForm = () => { setShowForm(false); setEditingId(null); setTitle(""); setDescription(""); setCategory("feature"); setDate(new Date().toISOString().split("T")[0]); setVisible(true); };
@@ -1628,15 +1634,15 @@ function ChangelogTab({ pid }: { pid: string }) {
   return (
     <div data-testid="labs-admin-changelog-tab">
       <div className="flex justify-between items-center mb-4">
-        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{entries.length} entries</span>
+        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{entries.length} {t("admin.entries")}</span>
         <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-changelog-add">
           <MessageSquarePlus className="w-3 h-3" /> New Entry
         </button>
       </div>
       {showForm && (
         <div className="labs-card p-4 mb-4">
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title..." style={{ ...labsInput, marginBottom: 8 }} data-testid="labs-admin-changelog-title" />
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description..." rows={3} style={{ ...labsInput, resize: "vertical" as const, marginBottom: 8 }} data-testid="labs-admin-changelog-description" />
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("admin.titlePlaceholder")} style={{ ...labsInput, marginBottom: 8 }} data-testid="labs-admin-changelog-title" />
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t("admin.descriptionPlaceholder")} rows={3} style={{ ...labsInput, resize: "vertical" as const, marginBottom: 8 }} data-testid="labs-admin-changelog-description" />
           <div className="flex gap-2 flex-wrap mb-3">
             <select value={category} onChange={e => setCategory(e.target.value)} style={{ ...labsSelect, fontSize: 12 }} data-testid="labs-admin-changelog-category">
               {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
@@ -1647,8 +1653,8 @@ function ChangelogTab({ pid }: { pid: string }) {
             </label>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => editingId ? updateMutation.mutate() : createMutation.mutate()} disabled={!title || !description} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-changelog-save">{editingId ? "Update" : "Create"}</button>
-            <button onClick={resetForm} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer" }} data-testid="labs-admin-changelog-cancel">Cancel</button>
+            <button onClick={() => editingId ? updateMutation.mutate() : createMutation.mutate()} disabled={!title || !description} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-changelog-save">{editingId ? t("admin.update") : t("admin.create")}</button>
+            <button onClick={resetForm} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer" }} data-testid="labs-admin-changelog-cancel">{ t("admin.cancel") }</button>
           </div>
         </div>
       )}
@@ -1668,7 +1674,7 @@ function ChangelogTab({ pid }: { pid: string }) {
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => startEdit(entry)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`labs-admin-changelog-edit-${entry.id}`}><Eye className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} /></button>
-                  <button onClick={() => { if (confirm(`Delete "${entry.title}"?`)) deleteMutation.mutate(entry.id as string); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`labs-admin-changelog-delete-${entry.id}`}><Trash2 className="w-3 h-3" style={{ color: "var(--labs-danger)" }} /></button>
+                  <button onClick={() => { if (confirm(t("admin.confirmDeleteEntry", { title: entry.title as string }))) deleteMutation.mutate(entry.id as string); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`labs-admin-changelog-delete-${entry.id}`}><Trash2 className="w-3 h-3" style={{ color: "var(--labs-danger)" }} /></button>
                 </div>
               </div>
             </div>
@@ -1688,7 +1694,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => { for (const id of ids) await adminApi.deleteTasting(id, pid); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: `${selectedIds.size} tastings deleted` }); setSelectedIds(new Set()); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.tastingsDeleted", { count: selectedIds.size }) }); setSelectedIds(new Set()); },
   });
 
   const toggleId = (id: string) => setSelectedIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -1696,11 +1702,11 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
   return (
     <div data-testid="labs-admin-cleanup-tab">
       <div className="labs-card p-4">
-        <div className="flex items-center gap-2 mb-4"><Trash2 className="w-4 h-4" style={{ color: "var(--labs-danger)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Bulk Cleanup</span></div>
-        <div className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{testTastings.length} test tastings found · {selectedIds.size} selected</div>
+        <div className="flex items-center gap-2 mb-4"><Trash2 className="w-4 h-4" style={{ color: "var(--labs-danger)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.bulkCleanup")}</span></div>
+        <div className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("admin.testTastingsFound", { count: testTastings.length })} · {t("admin.selectedCount", { count: selectedIds.size })}</div>
         <div className="flex gap-2 mb-3">
-          <button onClick={() => setSelectedIds(new Set(testTastings.map(t => t.id)))} className="text-[11px]" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-cleanup-select-all">Select all test</button>
-          <button onClick={() => setSelectedIds(new Set())} className="text-[11px]" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-cleanup-clear">Clear</button>
+          <button onClick={() => setSelectedIds(new Set(testTastings.map(t => t.id)))} className="text-[11px]" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-cleanup-select-all">{t("admin.selectAllTest")}</button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-[11px]" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-cleanup-clear">{ t("admin.clear") }</button>
         </div>
         <div className="max-h-[300px] overflow-y-auto space-y-1 mb-3">
           {data.tastings.map(ta => (
@@ -1716,9 +1722,9 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
             </div>
           ))}
         </div>
-        <button onClick={() => { if (selectedIds.size > 0 && confirm(`Delete ${selectedIds.size} tastings?`)) deleteMutation.mutate(Array.from(selectedIds)); }} disabled={selectedIds.size === 0 || deleteMutation.isPending} className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: selectedIds.size > 0 ? "var(--labs-danger)" : "var(--labs-text-muted)", color: "var(--labs-bg)", border: "none", cursor: selectedIds.size > 0 ? "pointer" : "not-allowed" }} data-testid="labs-admin-cleanup-delete">
+        <button onClick={() => { if (selectedIds.size > 0 && confirm(t("admin.confirmDeleteMultiple", { count: selectedIds.size }))) deleteMutation.mutate(Array.from(selectedIds)); }} disabled={selectedIds.size === 0 || deleteMutation.isPending} className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: selectedIds.size > 0 ? "var(--labs-danger)" : "var(--labs-text-muted)", color: "var(--labs-bg)", border: "none", cursor: selectedIds.size > 0 ? "pointer" : "not-allowed" }} data-testid="labs-admin-cleanup-delete">
           {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-          Delete {selectedIds.size} Selected
+          {t("admin.deleteSelected", { count: selectedIds.size })}
         </button>
       </div>
     </div>
@@ -1726,20 +1732,21 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function AnalyticsTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({ queryKey: ["/admin/analytics", pid], queryFn: () => adminApi.getAnalytics(pid), enabled: !!pid });
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
-  if (!data) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No analytics data available.</div>;
+  if (!data) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noAnalyticsData")}</div>;
   const analytics = data as Record<string, unknown>;
 
   return (
     <div data-testid="labs-admin-analytics-tab">
       <div className="labs-auto-grid mb-4" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
         {[
-          { label: "Total Ratings", value: (analytics.totalRatings as number) || 0 },
-          { label: "Total Whiskies", value: (analytics.totalWhiskies as number) || 0 },
-          { label: "Total Tastings", value: (analytics.totalTastings as number) || 0 },
-          { label: "Total Participants", value: (analytics.totalParticipants as number) || 0 },
+          { label: t("admin.totalRatings"), value: (analytics.totalRatings as number) || 0 },
+          { label: t("admin.totalWhiskies"), value: (analytics.totalWhiskies as number) || 0 },
+          { label: t("admin.totalTastings"), value: (analytics.totalTastings as number) || 0 },
+          { label: t("admin.totalParticipants"), value: (analytics.totalParticipants as number) || 0 },
         ].map(s => (
           <div key={s.label} className="labs-card text-center py-3" data-testid={`labs-admin-analytics-${s.label.toLowerCase().replace(/\s/g, "-")}`}>
             <div className="labs-h2" style={{ color: "var(--labs-text)" }}>{s.value}</div>
@@ -1749,7 +1756,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
       </div>
       {(analytics.topWhiskies as Array<Record<string, unknown>>)?.length > 0 && (
         <div className="labs-card p-4 mb-3">
-          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>Top Whiskies</span>
+          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.topWhiskies")}</span>
           {(analytics.topWhiskies as Array<Record<string, unknown>>).slice(0, 10).map((w, i) => (
             <div key={(w.id as string) || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
               <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {String(w.name ?? "")}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{String(w.distillery)}</span>}</div>
@@ -1760,7 +1767,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
       )}
       {(analytics.regionCounts as Array<[string, number]>)?.length > 0 && (
         <div className="labs-card p-4">
-          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>Regions</span>
+          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.regions")}</span>
           {(analytics.regionCounts as Array<[string, number]>).map(([region, count]) => (
             <div key={region} className="flex items-center justify-between py-1">
               <span className="text-xs" style={{ color: "var(--labs-text)" }}>{region}</span>
@@ -1774,6 +1781,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 }
 
 function HistoricalImportTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [dryRunResult, setDryRunResult] = useState<Record<string, unknown> | null>(null);
 
@@ -1785,14 +1793,14 @@ function HistoricalImportTab({ pid }: { pid: string }) {
 
   const dryRunMutation = useMutation({
     mutationFn: async () => { const res = await fetch("/api/admin/historical/import?dryRun=true", { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" } }); if (!res.ok) throw new Error(await res.text()); return res.json(); },
-    onSuccess: (data: Record<string, unknown>) => { setDryRunResult(data); toast({ title: "Dry-run complete" }); },
-    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: (data: Record<string, unknown>) => { setDryRunResult(data); toast({ title: t("admin.dryRunComplete") }); },
+    onError: (e: Error) => toast({ title: t("admin.errorGeneric"), description: e.message, variant: "destructive" }),
   });
 
   const importMutation = useMutation({
     mutationFn: async () => { const res = await fetch("/api/admin/historical/import", { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" } }); if (!res.ok) throw new Error(await res.text()); return res.json(); },
-    onSuccess: () => { toast({ title: "Import complete" }); setDryRunResult(null); },
-    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { toast({ title: t("admin.importComplete") }); setDryRunResult(null); },
+    onError: (e: Error) => toast({ title: t("admin.errorGeneric"), description: e.message, variant: "destructive" }),
   });
 
   const latestRun = importRuns?.[0] || null;
@@ -1800,9 +1808,9 @@ function HistoricalImportTab({ pid }: { pid: string }) {
 
   return (
     <div data-testid="labs-admin-historical-tab">
-      <div className="flex items-center gap-2 mb-4"><FileArchive className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Historical Import</span></div>
+      <div className="flex items-center gap-2 mb-4"><FileArchive className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.historicalImport") }</span></div>
       <div className="labs-card p-4 mb-3">
-        <div className="text-sm font-semibold mb-2.5" style={{ color: "var(--labs-text)" }}>Latest Import Run</div>
+        <div className="text-sm font-semibold mb-2.5" style={{ color: "var(--labs-text)" }}>{ t("admin.latestImportRun") }</div>
         {runsLoading ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--labs-accent)" }} /></div> : latestRun ? (
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -1810,7 +1818,7 @@ function HistoricalImportTab({ pid }: { pid: string }) {
               {latestRun.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{new Date(latestRun.createdAt).toLocaleString()}</span>}
             </div>
             <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem" } as React.CSSProperties}>
-              {[{ label: "Rows Read", value: latestRun.rowsRead ?? 0 }, { label: "Imported", value: latestRun.rowsImported ?? 0 }, { label: "Skipped", value: latestRun.rowsSkipped ?? 0 }].map(s => (
+              {[{ label: t("admin.rowsRead"), value: latestRun.rowsRead ?? 0 }, { label: t("admin.imported"), value: latestRun.rowsImported ?? 0 }, { label: t("admin.skipped"), value: latestRun.rowsSkipped ?? 0 }].map(s => (
                 <div key={s.label} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                   <div className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{s.value}</div>
                   <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
@@ -1818,21 +1826,21 @@ function HistoricalImportTab({ pid }: { pid: string }) {
               ))}
             </div>
           </div>
-        ) : <div className="text-center py-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>No import runs yet.</div>}
+        ) : <div className="text-center py-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noImportRuns") }</div>}
       </div>
       <div className="flex gap-2 mb-3">
         <button onClick={() => dryRunMutation.mutate()} disabled={dryRunMutation.isPending} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text)", cursor: dryRunMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-dry-run">
-          {dryRunMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />} Dry-Run
+          {dryRunMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />} {t("admin.dryRun")}
         </button>
-        <button onClick={() => { if (confirm("Run full import?")) importMutation.mutate(); }} disabled={importMutation.isPending} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: importMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-full-import">
-          {importMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />} Full Import
+        <button onClick={() => { if (confirm(t("admin.confirmFullImport"))) importMutation.mutate(); }} disabled={importMutation.isPending} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: importMutation.isPending ? "not-allowed" : "pointer" }} data-testid="labs-admin-full-import">
+          {importMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />} {t("admin.fullImport")}
         </button>
       </div>
       {dryRunResult && (
         <div className="labs-card p-4 mb-3" style={{ borderColor: "var(--labs-accent)" }}>
-          <div className="flex items-center gap-1.5 mb-2.5"><Play className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Dry-Run Results</span><span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>DRY RUN</span></div>
+          <div className="flex items-center gap-1.5 mb-2.5"><Play className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.dryRunResults") }</span><span className="text-[11px] px-1.5 rounded font-semibold" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>DRY RUN</span></div>
           <div className="labs-auto-grid" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
-            {[{ l: "Rows Read", v: dryRunResult.rowsRead }, { l: "Would Import", v: dryRunResult.rowsImported }, { l: "Tastings", v: dryRunResult.tastingsCreated }, { l: "Entries", v: dryRunResult.entriesCreated }].map(s => (
+            {[{ l: t("admin.rowsRead"), v: dryRunResult.rowsRead }, { l: t("admin.wouldImport"), v: dryRunResult.rowsImported }, { l: t("admin.tastingsLabel"), v: dryRunResult.tastingsCreated }, { l: t("admin.entriesLabel"), v: dryRunResult.entriesCreated }].map(s => (
               <div key={s.l} className="text-center py-2 rounded-lg" style={{ background: "var(--labs-surface-elevated)" }}>
                 <div className="text-base font-bold" style={{ color: "var(--labs-text)" }}>{s.v as number}</div>
                 <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.l}</div>
@@ -1846,6 +1854,7 @@ function HistoricalImportTab({ pid }: { pid: string }) {
 }
 
 function CommunitiesTab({ pid, participants }: { pid: string; participants: AdminParticipant[] }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1875,24 +1884,24 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => { const res = await fetch(`/api/admin/communities/${id}`, { method: "PUT", headers: { "x-participant-id": pid, "Content-Type": "application/json" }, body: JSON.stringify(updates) }); if (!res.ok) throw new Error(await res.text()); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setEditingName(false); setEditingDescription(false); toast({ title: "Community updated" }); },
-    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setEditingName(false); setEditingDescription(false); toast({ title: t("admin.communityUpdated") }); },
+    onError: (err: Error) => { toast({ title: t("admin.errorGeneric"), description: err.message, variant: "destructive" }); },
   });
 
   const createMutation = useMutation({
     mutationFn: async ({ name, description }: { name: string; description: string }) => { const res = await fetch("/api/admin/communities", { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" }, body: JSON.stringify({ name, description: description || undefined }) }); if (!res.ok) { const err = await res.json().catch(() => ({ message: "Failed" })); throw new Error(err.message); } return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setShowCreateForm(false); setCreateName(""); setCreateDescription(""); toast({ title: "Community created" }); },
-    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setShowCreateForm(false); setCreateName(""); setCreateDescription(""); toast({ title: t("admin.communityCreated") }); },
+    onError: (err: Error) => { toast({ title: t("admin.errorGeneric"), description: err.message, variant: "destructive" }); },
   });
 
   const addMemberMutation = useMutation({
     mutationFn: async ({ communityId, participantId, role }: { communityId: string; participantId: string; role: string }) => { const res = await fetch(`/api/admin/communities/${communityId}/members`, { method: "POST", headers: { "x-participant-id": pid, "Content-Type": "application/json" }, body: JSON.stringify({ participantId, role }) }); if (!res.ok) throw new Error("Failed"); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setMemberSearch(""); setMemberSelectedId(null); toast({ title: "Member added" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); setMemberSearch(""); setMemberSelectedId(null); toast({ title: t("admin.memberAdded") }); },
   });
 
   const removeMemberMutation = useMutation({
     mutationFn: async ({ communityId, participantId: memberId }: { communityId: string; participantId: string }) => { const res = await fetch(`/api/admin/communities/${communityId}/members/${memberId}`, { method: "DELETE", headers: { "x-participant-id": pid } }); if (!res.ok) throw new Error("Failed"); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); toast({ title: "Member removed" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/communities"] }); toast({ title: t("admin.memberRemoved") }); },
   });
 
 
@@ -1934,16 +1943,16 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <div className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>{detail.description ? String(detail.description) : <span style={{ fontStyle: "italic", color: "var(--labs-text-muted)" }}>Keine Beschreibung</span>}</div>
+              <div className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>{detail.description ? String(detail.description) : <span style={{ fontStyle: "italic", color: "var(--labs-text-muted)" }}>{ t("admin.noDescription") }</span>}</div>
               <button onClick={() => { setEditDescriptionValue(String(detail.description ?? "")); setEditingDescription(true); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid="labs-admin-edit-community-description"><Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /></button>
             </div>
           )}
         </div>
         <div className="labs-card p-4 mb-3">
-          <div className="flex items-center gap-1.5 mb-3"><Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Members</span><span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>({members.length})</span></div>
+          <div className="flex items-center gap-1.5 mb-3"><Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.members") }</span><span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>({members.length})</span></div>
           <div className="flex gap-1.5 mb-3">
             <div className="flex-1 relative">
-              <input type="text" value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setMemberSelectedId(null); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="Search by name or email..." style={{ ...labsInput, fontSize: 12 }} data-testid="labs-admin-add-member-search" />
+              <input type="text" value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setMemberSelectedId(null); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder={t("admin.searchByNameOrEmail")} style={{ ...labsInput, fontSize: 12 }} data-testid="labs-admin-add-member-search" />
               {showDropdown && memberSearch.trim().length > 0 && !memberSelectedId && (() => {
                 const existingIds = new Set(members.map(m => m.participantId as string));
                 const filtered = participants.filter(p => !existingIds.has(p.id) && (p.name.toLowerCase().includes(memberSearch.toLowerCase()) || (p.email && p.email.toLowerCase().includes(memberSearch.toLowerCase())))).slice(0, 8);
@@ -1961,12 +1970,12 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
               })()}
             </div>
             <select value={memberRole} onChange={e => setMemberRole(e.target.value)} style={{ ...labsSelect, fontSize: 11 }} data-testid="labs-admin-add-member-role">
-              <option value="member">Member</option>
-              <option value="viewer">Viewer</option>
-              <option value="admin">Admin</option>
+              <option value="member">{t("admin.roleMember")}</option>
+              <option value="viewer">{t("admin.roleViewer")}</option>
+              <option value="admin">{t("admin.roleAdmin")}</option>
             </select>
             <button onClick={() => { if (memberSelectedId) addMemberMutation.mutate({ communityId: detail.id as string, participantId: memberSelectedId, role: memberRole }); }} disabled={!memberSelectedId} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: !memberSelectedId ? "not-allowed" : "pointer", opacity: !memberSelectedId ? 0.5 : 1 }} data-testid="labs-admin-add-member-btn">
-              <UserPlus className="w-3 h-3" /> Add
+              <UserPlus className="w-3 h-3" /> {t("m2.circle.addToggle")}
             </button>
           </div>
           <div className="space-y-1.5">
@@ -1979,7 +1988,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
                     <span className="text-[11px] font-semibold uppercase px-1.5 rounded" style={{ color: "var(--labs-text-muted)" }}>{m.role as string} · {m.status as string}</span>
                   </div>
                 </div>
-                <button onClick={() => { if (confirm("Remove this member?")) removeMemberMutation.mutate({ communityId: detail.id as string, participantId: m.participantId as string }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-remove-member-${m.participantId}`}>
+                <button onClick={() => { if (confirm(t("admin.confirmRemoveMember"))) removeMemberMutation.mutate({ communityId: detail.id as string, participantId: m.participantId as string }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-remove-member-${m.participantId}`}>
                   <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
                 </button>
               </div>
@@ -1993,7 +2002,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
   return (
     <div data-testid="labs-admin-communities-tab">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2"><Globe className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>Communities</span><span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({communities.length})</span></div>
+        <div className="flex items-center gap-2"><Globe className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.communitiesTitle") }</span><span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({communities.length})</span></div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-create-community-btn">
             <Plus className="w-3 h-3" /> Neue Community
@@ -2002,18 +2011,18 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
       </div>
       {showCreateForm && (
         <div className="labs-card p-4 mb-4" data-testid="labs-admin-create-community-form">
-          <div className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>Neue Community anlegen</div>
+          <div className="text-sm font-semibold mb-3" style={{ color: "var(--labs-text)" }}>{ t("admin.createCommunity") }</div>
           <div className="space-y-2 mb-3">
-            <input type="text" value={createName} onChange={e => setCreateName(e.target.value)} placeholder="Community-Name" style={{ ...labsInput, fontSize: 12 }} data-testid="labs-admin-create-community-name" />
-            {createName.trim() && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Slug: {createName.trim().toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}</div>}
-            <textarea value={createDescription} onChange={e => setCreateDescription(e.target.value)} placeholder="Beschreibung (optional)" rows={2} style={{ ...labsInput, fontSize: 12, resize: "vertical" }} data-testid="labs-admin-create-community-description" />
+            <input type="text" value={createName} onChange={e => setCreateName(e.target.value)} placeholder={t("admin.communityName")} style={{ ...labsInput, fontSize: 12 }} data-testid="labs-admin-create-community-name" />
+            {createName.trim() && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.slugLabel")}: {createName.trim().toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}</div>}
+            <textarea value={createDescription} onChange={e => setCreateDescription(e.target.value)} placeholder={t("admin.descriptionOptional")} rows={2} style={{ ...labsInput, fontSize: 12, resize: "vertical" }} data-testid="labs-admin-create-community-description" />
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => { if (createName.trim()) createMutation.mutate({ name: createName.trim(), description: createDescription.trim() }); }} disabled={!createName.trim() || createMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: !createName.trim() ? "not-allowed" : "pointer", opacity: !createName.trim() ? 0.5 : 1 }} data-testid="labs-admin-create-community-submit">
-              {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Anlegen
+              {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} {t("admin.create")}
             </button>
             <button onClick={() => { setShowCreateForm(false); setCreateName(""); setCreateDescription(""); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)", cursor: "pointer" }} data-testid="labs-admin-create-community-cancel">
-              Abbrechen
+              {t("admin.cancel")}
             </button>
           </div>
         </div>
@@ -2021,8 +2030,8 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
       {communities.length === 0 && !showCreateForm ? (
         <div className="text-center py-12" style={{ color: "var(--labs-text-muted)" }}>
           <Globe className="w-8 h-8 mx-auto mb-3 opacity-30" />
-          <div className="text-sm font-medium mb-1">No communities yet</div>
-          <div className="text-xs">Use the "Neue Community" button to get started.</div>
+          <div className="text-sm font-medium mb-1">{ t("admin.noCommunities") }</div>
+          <div className="text-xs">{t("admin.noCommunitiesDesc")}</div>
         </div>
       ) : communities.length > 0 ? (
         <div className="space-y-2">
@@ -2031,8 +2040,8 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1"><Globe className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /><span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{c.name as string}</span></div>
                 <div className="flex flex-wrap gap-2 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                  <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{(c.memberCount as number) ?? 0} members</span>
-                  <span className="flex items-center gap-1"><Archive className="w-2.5 h-2.5" />{(c.tastingCount as number) ?? 0} tastings</span>
+                  <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{(c.memberCount as number) ?? 0} {t("admin.members")}</span>
+                  <span className="flex items-center gap-1"><Archive className="w-2.5 h-2.5" />{(c.tastingCount as number) ?? 0} {t("admin.tastingsLabel")}</span>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
@@ -2045,6 +2054,7 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
 }
 
 function SettingsTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2055,7 +2065,7 @@ function SettingsTab({ pid }: { pid: string }) {
 
   const updateSetting = useMutation({
     mutationFn: async (updates: Record<string, string>) => { const res = await apiRequest("POST", "/api/admin/app-settings", { requesterId: pid, settings: updates }); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-app-settings"] }); toast({ title: "Settings saved" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-app-settings"] }); toast({ title: t("admin.settingsSaved") }); },
   });
 
   const [bannerText, setBannerText] = useState("");
@@ -2066,17 +2076,17 @@ function SettingsTab({ pid }: { pid: string }) {
   const toggleSetting = (key: string) => updateSetting.mutate({ [key]: String(settings[key] !== "true") });
 
   const items = [
-    { key: "whats_new_enabled", label: "What's New Banner", desc: "Show announcement banner" },
-    { key: "guest_mode_enabled", label: "Guest Mode", desc: "Allow guest access" },
-    { key: "registration_open", label: "Registration", desc: "Allow new registrations" },
-    { key: "maintenance_mode", label: "Maintenance Mode", desc: "Show maintenance page" },
-    { key: "friend_online_notifications", label: "Friend Online Notifications", desc: "Allow friend notifications" },
+    { key: "whats_new_enabled", label: t("admin.settWhatsNew"), desc: t("admin.settWhatsNewDesc") },
+    { key: "guest_mode_enabled", label: t("admin.settGuestMode"), desc: t("admin.settGuestModeDesc") },
+    { key: "registration_open", label: t("admin.settRegistration"), desc: t("admin.settRegistrationDesc") },
+    { key: "maintenance_mode", label: t("admin.settMaintenance"), desc: t("admin.settMaintenanceDesc") },
+    { key: "friend_online_notifications", label: t("admin.settFriendNotif"), desc: t("admin.settFriendNotifDesc") },
   ];
 
   return (
     <div data-testid="labs-admin-settings-tab">
       <div className="labs-card p-4">
-        <div className="flex items-center gap-2 mb-4"><Settings className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>App Settings</span></div>
+        <div className="flex items-center gap-2 mb-4"><Settings className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.appSettings") }</span></div>
         <div className="space-y-2">
           {items.map(item => (
             <div key={item.key} className="flex items-center justify-between p-3 rounded-lg" style={{ border: "1px solid var(--labs-border)" }} data-testid={`labs-admin-setting-${item.key}`}>
@@ -2090,8 +2100,8 @@ function SettingsTab({ pid }: { pid: string }) {
         </div>
         {settings.whats_new_enabled === "true" && (
           <div className="mt-3">
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--labs-text)" }}>Banner Text</label>
-            <input type="text" value={bannerText} onChange={e => setBannerText(e.target.value)} onBlur={() => updateSetting.mutate({ whats_new_text: bannerText })} placeholder="What's new message..." style={labsInput} data-testid="labs-admin-whats-new-text" />
+            <label className="text-xs font-medium block mb-1" style={{ color: "var(--labs-text)" }}>{ t("admin.bannerText") }</label>
+            <input type="text" value={bannerText} onChange={e => setBannerText(e.target.value)} onBlur={() => updateSetting.mutate({ whats_new_text: bannerText })} placeholder={t("admin.whatsNewPlaceholder")} style={labsInput} data-testid="labs-admin-whats-new-text" />
           </div>
         )}
       </div>
@@ -2100,13 +2110,14 @@ function SettingsTab({ pid }: { pid: string }) {
 }
 
 function MakingOfTab({ pid, participants }: { pid: string; participants: AdminParticipant[] }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
   const accessMutation = useMutation({
     mutationFn: ({ participantId, access }: { participantId: string; access: boolean }) => adminApi.updateMakingOfAccess(participantId, access, pid),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: "Making-Of access updated" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/admin/overview"] }); toast({ title: t("admin.makingOfAccessUpdated") }); },
   });
 
   const filtered = participants.filter(p => {
@@ -2118,7 +2129,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
 
   return (
     <div data-testid="labs-admin-makingof-tab">
-      <div className="flex items-center gap-2 mb-4"><BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>The Making of CaskSense</span></div>
+      <div className="flex items-center gap-2 mb-4"><BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.makingOfTitle") }</span></div>
 
       <a href="/labs/making-of" className="labs-card flex items-center justify-between p-4 mb-5" style={{ textDecoration: "none" }} data-testid="labs-admin-link-makingof">
         <div className="flex items-center gap-2.5">
@@ -2126,8 +2137,8 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
             <BookOpen className="w-5 h-5" style={{ color: "var(--labs-text)" }} />
           </div>
           <div>
-            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>View Making-Of Timeline</div>
-            <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>20 days · 1,625 commits · 168 features</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.viewMakingOfTimeline") }</div>
+            <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.makingOfStats") }</div>
           </div>
         </div>
         <ExternalLink className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
@@ -2136,17 +2147,17 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
       <div className="labs-card p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Access Control</div>
-            <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{accessCount} participants have access</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.accessControl") }</div>
+            <div className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{t("admin.participantsHaveAccess", { count: accessCount })}</div>
           </div>
         </div>
         <div className="relative mb-3">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search participants..." style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-search-makingof-access" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("admin.searchParticipants")} style={{ ...labsInput, paddingLeft: 32 }} data-testid="labs-admin-search-makingof-access" />
         </div>
         <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>No results</div>
+            <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noResults") }</div>
           ) : filtered.map(p => {
             const hasAccess = p.makingOfAccess || p.role === "admin";
             const isAdmin = p.role === "admin";
@@ -2159,7 +2170,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
                   <div className="min-w-0">
                     <div className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>{stripGuestSuffix(p.name)}</div>
                     <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                      {p.email || "No email"}{isAdmin && " · always has access"}
+                      {p.email || t("admin.noEmail")}{isAdmin && ` · ${t("admin.alwaysHasAccess")}`}
                     </div>
                   </div>
                 </div>
@@ -2174,6 +2185,7 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
 }
 
 function FeedbackTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { data: feedback = [], isLoading } = useQuery({ queryKey: ["/feedback", pid], queryFn: () => feedbackApi.getAll(pid), enabled: !!pid });
 
   const icons: Record<string, string> = { bug: "\u{1F41B}", feature: "\u{1F4A1}", improvement: "\u{1F527}", other: "\u{1F4DD}" };
@@ -2182,9 +2194,9 @@ function FeedbackTab({ pid }: { pid: string }) {
 
   return (
     <div data-testid="labs-admin-feedback-tab">
-      <div className="flex items-center gap-2 mb-4"><MessageSquarePlus className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>User Feedback</span><span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({(feedback as Array<Record<string, unknown>>).length})</span></div>
+      <div className="flex items-center gap-2 mb-4"><MessageSquarePlus className="w-4 h-4" style={{ color: "var(--labs-accent)" }} /><span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{ t("admin.userFeedback") }</span><span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({(feedback as Array<Record<string, unknown>>).length})</span></div>
       {(feedback as Array<Record<string, unknown>>).length === 0 ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>No feedback yet.</div>
+        <div className="text-center py-12 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noFeedback") }</div>
       ) : (
         <div className="space-y-2">
           {(feedback as Array<Record<string, unknown>>).map((fb) => (
@@ -2483,6 +2495,7 @@ type AdminTrashEntry = {
 };
 
 function AdminTrashTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2496,7 +2509,7 @@ function AdminTrashTab({ pid }: { pid: string }) {
     mutationFn: (id: string) => adminApi.restoreTrashEntry(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-trash"] });
-      toast({ title: "Entry restored" });
+      toast({ title: t("admin.entryRestored") });
     },
   });
 
@@ -2511,17 +2524,17 @@ function AdminTrashTab({ pid }: { pid: string }) {
   return (
     <div data-testid="labs-admin-trash-tab">
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>Papierkorb</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>{ t("admin.trash") }</h2>
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>
-          All soft-deleted drams across all users. Admin restores have no time limit.
+          {t("admin.trashDescription")}
         </p>
       </div>
 
       {trashEntries.length === 0 ? (
         <div style={{ padding: "48px 20px", textAlign: "center" }}>
           <Trash2 className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>No deleted entries</p>
-          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 4 }}>The trash is empty.</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{ t("admin.noDeletedEntries") }</p>
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 4 }}>{ t("admin.trashEmpty") }</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -2540,7 +2553,7 @@ function AdminTrashTab({ pid }: { pid: string }) {
                         <User className="w-3 h-3" /> {entry.participantName || entry.participantId}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Deleted {daysAgo === 0 ? "today" : `${daysAgo}d ago`}
+                        <Clock className="w-3 h-3" /> {t("admin.deletedLabel")} {daysAgo === 0 ? t("admin.today") : t("admin.daysAgo", { count: daysAgo })}
                       </span>
                       {entry.distillery && <span>{entry.distillery}</span>}
                     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -39,6 +40,7 @@ export default function LabsRevealMoment({
   price,
   onDismiss,
 }: RevealMomentProps) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
 
   useEffect(() => {
@@ -219,7 +221,7 @@ export default function LabsRevealMoment({
           transition: "opacity 0.5s ease 1s",
         }}
       >
-        Tap anywhere to continue
+        {t("labs.reveal.tapToContinue", "Tap anywhere to continue")}
       </div>
     </div>,
     document.body

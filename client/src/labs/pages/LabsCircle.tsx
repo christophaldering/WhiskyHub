@@ -14,6 +14,7 @@ import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidH
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import { toast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type Tab = "friends" | "leaderboard" | "sessions" | "activity" | "community";
 
@@ -28,15 +29,15 @@ interface OnlineFriend {
   photoUrl?: string | null;
 }
 
-function timeAgo(iso: string | undefined): string {
+function timeAgo(iso: string | undefined, t: (key: string, fallback: string, opts?: Record<string, unknown>) => string): string {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t("labs.activity.justNow", "just now");
+  if (mins < 60) return t("labs.activity.mAgo", "{{m}}m ago", { m: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return t("labs.activity.hAgo", "{{h}}h ago", { h: hours });
+  return t("labs.activity.dAgo", "{{d}}d ago", { d: Math.floor(hours / 24) });
 }
 
 interface LeaderboardEntry {
@@ -75,6 +76,7 @@ interface LeaderboardData {
 }
 
 export default function LabsCircle() {
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const session = getSession();
   const pid = currentParticipant?.id || session.pid;
@@ -218,13 +220,13 @@ export default function LabsCircle() {
       friendsApi.cheers(pid!, friendId, recipientParticipantId),
     onSuccess: (_data, { friendId }) => {
       setCheersCooldowns((prev) => ({ ...prev, [friendId]: Date.now() }));
-      toast({ title: "Cheers! 🥃", description: "Prost wurde gesendet!" });
+      toast({ title: t("m2.circle.cheersSuccess"), description: t("m2.circle.cheersSent") });
     },
     onError: (err: Error & { code?: string }) => {
       if (err.message?.includes("Cooldown")) {
-        toast({ title: "Cooldown aktiv", description: "Warte noch einen Moment, bevor du erneut anstoßen kannst." });
+        toast({ title: t("m2.circle.cooldownActive"), description: t("m2.circle.cooldownWait") });
       } else {
-        toast({ title: "Fehler", description: err.message });
+        toast({ title: t("m2.circle.errorTitle"), description: err.message });
       }
     },
   });
@@ -234,10 +236,10 @@ export default function LabsCircle() {
       friendsApi.inviteToTasting(pid!, friendId, tastingId, recipientParticipantId),
     onSuccess: () => {
       setInvitePickerFriend(null);
-      toast({ title: "Einladung gesendet!", description: "Dein Freund wurde zum Tasting eingeladen." });
+      toast({ title: t("m2.circle.inviteSent"), description: t("m2.circle.inviteSentDesc") });
     },
     onError: (err: Error) => {
-      toast({ title: "Fehler", description: err.message });
+      toast({ title: t("m2.circle.errorTitle"), description: err.message });
     },
   });
 
@@ -300,17 +302,17 @@ export default function LabsCircle() {
     return (
       <AuthGateMessage
         icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to see your friends, rankings and tastings."
+        message={t("m2.circle.signInPrompt")}
       />
     );
   }
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Users }> = [
-    { key: "friends", label: "Friends", icon: Users },
-    { key: "leaderboard", label: "Board", icon: Trophy },
-    { key: "sessions", label: "Sessions", icon: Wine },
-    { key: "activity", label: "Feed", icon: Activity },
-    { key: "community", label: "Community", icon: Globe },
+    { key: "friends", label: t("m2.circle.tabFriends"), icon: Users },
+    { key: "leaderboard", label: t("m2.circle.tabBoard"), icon: Trophy },
+    { key: "sessions", label: t("m2.circle.tabSessions"), icon: Wine },
+    { key: "activity", label: t("m2.circle.tabFeed"), icon: Activity },
+    { key: "community", label: t("m2.circle.tabCommunity"), icon: Globe },
   ];
 
   return (
@@ -355,12 +357,12 @@ export default function LabsCircle() {
               data-testid="labs-circle-add-friend-btn"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              {addFriendOpen ? "Cancel" : "Add"}
+              {addFriendOpen ? t("m2.circle.cancel") : t("m2.circle.addToggle")}
             </button>
           </div>
         </div>
         <p className="ty-sub" style={{ margin: "2px 0 0" }}>
-          Friends, rankings & tastings
+          {t("m2.circle.friendsRankingsSubtitle")}
         </p>
       </div>
 
@@ -449,7 +451,7 @@ export default function LabsCircle() {
       ("mostActive" in leaderboardData || "highestRated" in leaderboardData);
 
     if (!isStructured) {
-      return <EmptyState icon={Trophy} title="Noch keine Rangliste" description="Rangdaten erscheinen, sobald genug Bewertungen abgegeben wurden." />;
+      return <EmptyState icon={Trophy} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />;
     }
 
     const structured = leaderboardData as LeaderboardData;
@@ -468,30 +470,30 @@ export default function LabsCircle() {
     }> = [
       {
         key: "mostActive",
-        label: "Active",
-        subtitle: "Most ratings submitted",
+        label: t("m2.circle.lbMostActive"),
+        subtitle: t("m2.circle.lbMostActiveSub"),
         icon: Activity,
         entries: structured.mostActive || [],
-        format: (e) => `${e.ratingsCount || 0} ratings`,
+        format: (e) => `${e.ratingsCount || 0} ${t("m2.circle.ratings")}`,
         rankKey: "mostActive",
         statKey: "ratingsCount",
-        statFormat: (v) => `${v} ratings`,
+        statFormat: (v) => `${v} ${t("m2.circle.ratings")}`,
       },
       {
         key: "mostDetailed",
-        label: "Detailed",
-        subtitle: "Longest tasting notes",
+        label: t("m2.circle.lbMostDetailed"),
+        subtitle: t("m2.circle.lbMostDetailedSub"),
         icon: FileText,
         entries: structured.mostDetailed || [],
-        format: (e) => `${Math.round(e.avgNotesLength || 0)} chars`,
+        format: (e) => `${Math.round(e.avgNotesLength || 0)} ${t("m2.circle.chars")}`,
         rankKey: "mostDetailed",
         statKey: "avgNotesLength",
-        statFormat: (v) => `${Math.round(v)} chars avg`,
+        statFormat: (v) => `${Math.round(v)} ${t("m2.circle.chars")} avg`,
       },
       {
         key: "highestRated",
-        label: "Top Rated",
-        subtitle: "Highest average score",
+        label: t("m2.circle.lbHighestRated"),
+        subtitle: t("m2.circle.lbHighestRatedSub"),
         icon: Star,
         entries: structured.highestRated || [],
         format: (e) => typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "\u2014",
@@ -501,14 +503,14 @@ export default function LabsCircle() {
       },
       {
         key: "explorer",
-        label: "Explorer",
-        subtitle: "Greatest variety tasted",
+        label: t("m2.circle.lbExplorer"),
+        subtitle: t("m2.circle.lbExplorerSub"),
         icon: Compass,
         entries: structured.explorer || [],
-        format: (e) => `${e.uniqueWhiskies || 0} whiskies`,
+        format: (e) => `${e.uniqueWhiskies || 0} ${t("m2.circle.whiskies")}`,
         rankKey: "explorer",
         statKey: "uniqueWhiskies",
-        statFormat: (v) => `${v} whiskies`,
+        statFormat: (v) => `${v} ${t("m2.circle.whiskies")}`,
       },
     ];
 
@@ -524,7 +526,7 @@ export default function LabsCircle() {
     };
 
     const getNameDisplay = (entry: LeaderboardEntry) => {
-      if (entry.isSelf) return { text: "You", color: "var(--labs-accent)", suffix: " \u2605" };
+      if (entry.isSelf) return { text: t("m2.circle.you"), color: "var(--labs-accent)", suffix: " \u2605" };
       if (entry.isFriend) return { text: stripGuestSuffix(String(entry.name ?? "")), color: "var(--labs-text)", suffix: "" };
       return { text: String(entry.name ?? ""), color: "var(--labs-text-muted)", suffix: "" };
     };
@@ -597,7 +599,7 @@ export default function LabsCircle() {
         </p>
 
         {activeCat.entries.length === 0 ? (
-          <EmptyState icon={Trophy} title="Noch keine Rangliste" description="Rangdaten erscheinen, sobald genug Bewertungen abgegeben wurden." />
+          <EmptyState icon={Trophy} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />
         ) : (
           <div className="labs-grouped-list">
             {activeCat.entries.map((entry, i) => {
@@ -665,7 +667,7 @@ export default function LabsCircle() {
           <div className="labs-card p-4 mb-5 space-y-3" data-testid="labs-circle-add-friend-form">
             <input
               type="text"
-              placeholder="First name"
+              placeholder={t("m2.circle.firstNamePlaceholder")}
               value={friendFirstName}
               onChange={(e) => setFriendFirstName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
@@ -678,7 +680,7 @@ export default function LabsCircle() {
             />
             <input
               type="text"
-              placeholder="Last name (optional)"
+              placeholder={t("m2.circle.lastNamePlaceholder")}
               value={friendLastName}
               onChange={(e) => setFriendLastName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
@@ -691,7 +693,7 @@ export default function LabsCircle() {
             />
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t("m2.circle.emailPlaceholder")}
               value={friendEmail}
               onChange={(e) => setFriendEmail(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
@@ -722,7 +724,7 @@ export default function LabsCircle() {
               }}
               data-testid="labs-circle-submit-friend"
             >
-              {addFriendMutation.isPending ? "\u2026" : "Send Invite"}
+              {addFriendMutation.isPending ? "\u2026" : t("m2.circle.sendInvite")}
             </button>
           </div>
         )}
@@ -782,13 +784,13 @@ export default function LabsCircle() {
         )}
 
         {friendList.length === 0 && !addFriendOpen ? (
-          <EmptyState icon={Users} title="Dein Kreis ist noch still" description="Füge Freunde hinzu, um Notizen zu teilen und ihre Aktivitäten zu sehen." />
+          <EmptyState icon={Users} title={t("m2.circle.emptyTitle")} description={t("m2.circle.emptyDesc")} />
         ) : (
           <>
             <div className="mb-4">
               <p className="labs-section-label flex items-center gap-2 mb-2">
                 <Wifi className="w-3.5 h-3.5" style={{ color: onlineCount > 0 ? "var(--labs-success)" : "var(--labs-text-muted)" }} />
-                <span style={{ color: onlineCount > 0 ? "var(--labs-success)" : "var(--labs-text-muted)" }}>Online Now</span>
+                <span style={{ color: onlineCount > 0 ? "var(--labs-success)" : "var(--labs-text-muted)" }}>{t("m2.circle.online")}</span>
               </p>
               {onlineCount > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
@@ -906,11 +908,11 @@ export default function LabsCircle() {
                       </div>
                       {isOnline ? (
                         <p className="ty-caption mt-0.5 flex items-center gap-1" style={{ color: "var(--labs-success)" }}>
-                          Active {timeAgo(onlineInfo?.lastSeenAt)}
+                          {t("m2.circle.active")} {timeAgo(onlineInfo?.lastSeenAt, t)}
                         </p>
                       ) : isInvited ? (
                         <p className="ty-caption mt-0.5" style={{ color: "var(--labs-warning, #f59e0b)" }}>
-                          Not yet registered
+                          {t("m2.circle.notYetRegistered")}
                         </p>
                       ) : typeof friend.email === "string" && friend.email ? (
                         <p className="ty-caption truncate">
@@ -935,7 +937,7 @@ export default function LabsCircle() {
                               e.stopPropagation();
                               if (!isCheersOnCooldown(fid)) cheersMutation.mutate({ friendId: fid, recipientParticipantId: onlineInfo?.participantId });
                             }}
-                            title={isCheersOnCooldown(fid) ? "Cooldown – bitte warten" : "Cheers senden"}
+                            title={isCheersOnCooldown(fid) ? t("m2.circle.cooldownWaitTitle") : t("m2.circle.cheersSendTitle")}
                             data-testid={`labs-circle-cheers-${i}`}
                           >
                             <GlassWater className="w-3.5 h-3.5" />
@@ -953,7 +955,7 @@ export default function LabsCircle() {
                                 e.stopPropagation();
                                 if (onlineInfo) setInvitePickerFriend(onlineInfo);
                               }}
-                              title="Zum Tasting einladen"
+                              title={t("m2.circle.inviteToTasting")}
                               data-testid={`labs-circle-invite-${i}`}
                             >
                               <Send className="w-3.5 h-3.5" />
@@ -983,13 +985,13 @@ export default function LabsCircle() {
                           data-testid={`labs-circle-resend-invite-${fid}`}
                         >
                           {resendingInvite === fid ? (
-                            <>Sending…</>
+                            <>{t("m2.circle.sending")}</>
                           ) : resentSuccess === fid ? (
-                            <><Check className="w-3 h-3" /> Sent!</>
+                            <><Check className="w-3 h-3" /> {t("m2.circle.sent")}</>
                           ) : resentError === fid ? (
-                            <><X className="w-3 h-3" /> Failed</>
+                            <><X className="w-3 h-3" /> {t("m2.circle.failed")}</>
                           ) : (
-                            <><Send className="w-3 h-3" /> Resend</>
+                            <><Send className="w-3 h-3" /> {t("m2.circle.resend")}</>
                           )}
                         </button>
                       )}
@@ -1018,7 +1020,7 @@ export default function LabsCircle() {
                     <div className="mb-4">
                       <p className="labs-section-label flex items-center gap-2 mb-2">
                         <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                        <span style={{ color: "var(--labs-text-secondary)" }}>Offline</span>
+                        <span style={{ color: "var(--labs-text-secondary)" }}>{t("m2.circle.offline")}</span>
                         <span className="text-[11px] px-1.5 rounded-full" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{offlineRegistered.length}</span>
                       </p>
                       <div className="labs-grouped-list">
@@ -1030,7 +1032,7 @@ export default function LabsCircle() {
                     <div>
                       <p className="labs-section-label flex items-center gap-2 mb-2">
                         <Mail className="w-3.5 h-3.5" style={{ color: "var(--labs-warning, #f59e0b)" }} />
-                        <span style={{ color: "var(--labs-warning, #f59e0b)" }}>Invited</span>
+                        <span style={{ color: "var(--labs-warning, #f59e0b)" }}>{t("m2.circle.invited")}</span>
                         <span className="text-[11px] px-1.5 rounded-full" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))", color: "var(--labs-warning, #f59e0b)" }}>{invitedList.length}</span>
                       </p>
                       <div className="labs-grouped-list">
@@ -1069,7 +1071,7 @@ export default function LabsCircle() {
               </div>
             </div>
 
-            <p className="labs-section-label">Recent Sessions</p>
+            <p className="labs-section-label">{t("m2.circle.recentSessions")}</p>
             <div className="labs-grouped-list">
               {recentSharedSessions.map((s: Record<string, unknown>) => {
                 const sId = s.id as string;
@@ -1129,9 +1131,9 @@ export default function LabsCircle() {
             </div>
           </>
         ) : (
-          <EmptyState icon={Wine} title="Noch keine gemeinsamen Sessions" description="Abgeschlossene Sessions erscheinen hier, sobald ihr zusammen verkostet habt.">
+          <EmptyState icon={Wine} title={t("m2.circle.noSharedSessionsTitle")} description={t("m2.circle.noSharedSessionsDesc")}>
             <button className="labs-empty-action" onClick={() => navigate("/labs/join")} data-testid="labs-circle-empty-sessions-join">
-              Tasting beitreten
+              {t("hub.joinTasting")}
             </button>
           </EmptyState>
         )}
@@ -1149,7 +1151,7 @@ export default function LabsCircle() {
         : [];
 
     if (items.length === 0) {
-      return <EmptyState icon={Activity} title="Dein Kreis ist noch still" description="Füge Freunde hinzu, um ihre Tastings und Bewertungen hier zu sehen." />;
+      return <EmptyState icon={Activity} title={t("m2.circle.emptyTitle")} description={t("m2.circle.emptyDesc")} />;
     }
 
     return (
@@ -1179,27 +1181,27 @@ export default function LabsCircle() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="ty-ui truncate" style={{ display: "block" }}>
-                    {stripGuestSuffix(String(item.participantName || "Someone"))}
+                    {stripGuestSuffix(String(item.participantName || t("m2.circle.someone")))}
                   </span>
                   <p className="ty-caption truncate mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>
                     {isJournal ? (
                       whiskyName ? (
                         <>
-                          Logged: {String(whiskyName)}
+                          {t("m2.circle.loggedDram")}: {String(whiskyName)}
                           {score != null && (
                             <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
                               {typeof score === "number" ? Math.round(score * 10) / 10 : String(score)}/100
                             </span>
                           )}
                         </>
-                      ) : "Logged a dram"
+                      ) : t("m2.circle.loggedDramGeneric")
                     ) : (
-                      details.title ? `Joined: ${String(details.title)}` : "Participated in a tasting"
+                      details.title ? `${t("m2.circle.joinedTasting")}: ${String(details.title)}` : t("m2.circle.joinedTastingGeneric")
                     )}
                   </p>
                   {typeof item.timestamp === "string" && (
                     <p className="ty-caption mt-1">
-                      {formatRelativeTime(item.timestamp)}
+                      {formatRelativeTime(item.timestamp, t)}
                     </p>
                   )}
                 </div>
@@ -1212,7 +1214,7 @@ export default function LabsCircle() {
   }
 }
 
-function formatRelativeTime(timestamp: string): string {
+function formatRelativeTime(timestamp: string, t: (key: string, fallback: string, opts?: Record<string, unknown>) => string): string {
   const now = Date.now();
   const then = new Date(timestamp).getTime();
   const diffMs = now - then;
@@ -1220,11 +1222,11 @@ function formatRelativeTime(timestamp: string): string {
   const diffHrs = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffMin < 1) return t("labs.activity.justNow", "just now");
+  if (diffMin < 60) return t("labs.activity.mAgo", "{{m}}m ago", { m: diffMin });
+  if (diffHrs < 24) return t("labs.activity.hAgo", "{{h}}h ago", { h: diffHrs });
+  if (diffDays < 7) return t("labs.activity.dAgo", "{{d}}d ago", { d: diffDays });
+  return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function LoadingSkeleton({ count }: { count: number }) {
@@ -1303,7 +1305,7 @@ function FriendDetailSheet({
             </p>
             <p className="text-xs flex items-center justify-center gap-1.5 mt-1" style={{ color: "var(--labs-success)" }}>
               <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--labs-success)", animation: "pulse 2s infinite" }} />
-              Online {timeAgo(friend.lastSeenAt)}
+              {t("m2.circle.online")} {timeAgo(friend.lastSeenAt, t)}
             </p>
           </div>
         </div>
@@ -1347,7 +1349,7 @@ function FriendDetailSheet({
 
         {showInvitePicker && myActiveTastings.length > 0 && (
           <div className="mb-6">
-            <p className="labs-section-label mb-2">Tasting auswählen</p>
+            <p className="labs-section-label mb-2">{t("m2.circle.selectTasting")}</p>
             <div className="space-y-2">
               {myActiveTastings.map((t: Record<string, unknown>) => (
                 <button
@@ -1383,9 +1385,9 @@ function FriendDetailSheet({
               <Clock className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Last active</p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.circle.lastActive")}</p>
               <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
-                {friend.lastSeenAt ? new Date(friend.lastSeenAt).toLocaleString() : "Just now"}
+                {friend.lastSeenAt ? new Date(friend.lastSeenAt).toLocaleString() : t("m2.circle.justNow")}
               </p>
             </div>
           </div>
@@ -1396,7 +1398,7 @@ function FriendDetailSheet({
                 <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Contact</p>
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.circle.contact")}</p>
                 <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
                   {String(friend.email ?? "")}
                 </p>
@@ -1409,11 +1411,11 @@ function FriendDetailSheet({
               <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Shared tastings</p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.circle.sharedTastings")}</p>
               <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
                 {friendSessions.length > 0
-                  ? `${friendSessions.length} session${friendSessions.length > 1 ? "s" : ""} together`
-                  : "No shared sessions yet"}
+                  ? t("m2.circle.sessionsTogether", { count: friendSessions.length })
+                  : t("m2.circle.noSharedSessionsTitle")}
               </p>
             </div>
           </div>
@@ -1421,7 +1423,7 @@ function FriendDetailSheet({
 
         {friendSessions.length > 0 && (
           <div>
-            <p className="labs-section-label mb-2">Recent together</p>
+            <p className="labs-section-label mb-2">{ t("m2.circle.recentTogether") }</p>
             <div className="space-y-2">
               {friendSessions.slice(0, 3).map((s) => (
                 <div key={s.id as string} className="labs-card p-3 flex items-center gap-3">

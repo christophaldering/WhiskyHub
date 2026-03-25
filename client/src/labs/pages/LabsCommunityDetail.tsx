@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export default function LabsCommunityDetail() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/labs/community/:id");
   const communityId = params?.id;
   const goBack = useBackNavigation("/labs/community");
@@ -160,11 +162,11 @@ export default function LabsCommunityDetail() {
         email: inviteEmail.trim(),
         personalNote: inviteNote.trim() || undefined,
       });
-      setInviteSuccess(`Invitation sent to ${inviteEmail}`);
+      setInviteSuccess(t("m2.community.invitationSentTo", { email: inviteEmail }));
       setInviteEmail("");
       setInviteNote("");
     } catch (e: any) {
-      setInviteError(e.message || "Failed to send invite");
+      setInviteError(e.message || t("m2.community.failedToSendInvite"));
     } finally {
       setInviting(false);
     }
@@ -179,9 +181,9 @@ export default function LabsCommunityDetail() {
         participantId: friendParticipantId,
         personalNote: inviteNote.trim() || undefined,
       });
-      setInviteSuccess("Invitation sent!");
+      setInviteSuccess(t("m2.community.invitationSent"));
     } catch (e: any) {
-      setInviteError(e.message || "Failed to send invite");
+      setInviteError(e.message || t("m2.community.failedToSendInvite"));
     } finally {
       setInviting(false);
     }
@@ -201,7 +203,7 @@ export default function LabsCommunityDetail() {
     return (
       <AuthGateMessage
         icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to view community details."
+        message={t("m2.community.signInPrompt")}
       />
     );
   }
@@ -209,7 +211,7 @@ export default function LabsCommunityDetail() {
   if (isLoading) {
     return (
       <div className="labs-page">
-        <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>Loading...</p>
+        <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>{t("common.loading")}</p>
       </div>
     );
   }
@@ -234,9 +236,9 @@ export default function LabsCommunityDetail() {
   };
 
   const roleLabel = (role: string) => {
-    if (role === "admin") return "Admin";
-    if (role === "viewer") return "Viewer";
-    return "Member";
+    if (role === "admin") return t("m2.community.adminRole");
+    if (role === "viewer") return t("m2.community.viewerRole");
+    return t("m2.community.memberLabel");
   };
 
   const roleColor = (role: string) => {
@@ -282,7 +284,7 @@ export default function LabsCommunityDetail() {
               <button onClick={saveEdits} className="labs-btn-primary flex items-center gap-1" data-testid="btn-save-edit">
                 <Save className="w-4 h-4" /> Save
               </button>
-              <button onClick={() => setEditing(false)} className="labs-btn-ghost" data-testid="btn-cancel-edit">Cancel</button>
+              <button onClick={() => setEditing(false)} className="labs-btn-ghost" data-testid="btn-cancel-edit">{t("common.cancel")}</button>
             </div>
           </div>
         ) : (
@@ -336,7 +338,7 @@ export default function LabsCommunityDetail() {
             data-testid="btn-toggle-invite"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            {showInvite ? "Cancel" : "Invite Members"}
+            {showInvite ? t("common.cancel") : t("m2.community.inviteMembers")}
           </button>
 
           {showInvite && (
@@ -375,7 +377,7 @@ export default function LabsCommunityDetail() {
                   <input
                     type="email"
                     className="labs-input w-full"
-                    placeholder="Email address"
+                    placeholder={t("m2.community.emailPlaceholder")}
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     data-testid="input-invite-email"
@@ -383,7 +385,7 @@ export default function LabsCommunityDetail() {
                   <input
                     type="text"
                     className="labs-input w-full"
-                    placeholder="Personal note (optional)"
+                    placeholder={t("m2.community.notePlaceholder")}
                     value={inviteNote}
                     onChange={(e) => setInviteNote(e.target.value)}
                     maxLength={500}
@@ -400,7 +402,7 @@ export default function LabsCommunityDetail() {
                     }}
                     data-testid="btn-send-invite"
                   >
-                    {inviting ? "Sending..." : "Send Invitation"}
+                    {inviting ? t("m2.community.sendingInvite") : t("m2.community.sendInvitation")}
                   </button>
                 </div>
               )}
@@ -434,9 +436,9 @@ export default function LabsCommunityDetail() {
                                 email: f.email,
                                 personalNote: inviteNote.trim() || undefined,
                               });
-                              setInviteSuccess("Invitation sent!");
+                              setInviteSuccess(t("m2.community.invitationSent"));
                             } catch (e: any) {
-                              setInviteError(e.message || "Failed to send invite");
+                              setInviteError(e.message || t("m2.community.failedToSendInvite"));
                             } finally {
                               setInviting(false);
                             }
@@ -450,7 +452,7 @@ export default function LabsCommunityDetail() {
                               </span>
                               {isAlreadyMember && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: "var(--labs-surface)", color: "var(--labs-text-muted)" }} data-testid={`badge-already-member-${friendKey}`}>
-                                  already member
+                                  {t("m2.community.alreadyMember")}
                                 </span>
                               )}
                             </div>
@@ -465,7 +467,7 @@ export default function LabsCommunityDetail() {
                               }}
                               data-testid={`btn-invite-friend-${friendKey}`}
                             >
-                              {isAlreadyMember ? "Member" : "Invite"}
+                              {isAlreadyMember ? t("m2.community.memberLabel") : t("m2.community.inviteLabel")}
                             </button>
                           </div>
                         );
@@ -515,7 +517,7 @@ export default function LabsCommunityDetail() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
                   {stripGuestSuffix(m.participantName || "Unknown")}
-                  {m.participantId === pid && <span className="text-[10px] ml-1" style={{ color: "var(--labs-accent)" }}>(you)</span>}
+                  {m.participantId === pid && <span className="text-[10px] ml-1" style={{ color: "var(--labs-accent)" }}>({t("common.you")})</span>}
                 </p>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] flex items-center gap-0.5" style={{ color: roleColor(m.role) }}>
@@ -590,7 +592,7 @@ export default function LabsCommunityDetail() {
         {showAssignTasting && (
           <div className="labs-card p-4 mb-4 space-y-3" data-testid="assign-tasting-panel">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Tasting dieser Community zuordnen</span>
+              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("m2.community.assignTasting")}</span>
               <button className="labs-btn-ghost p-1" onClick={() => setShowAssignTasting(false)} data-testid="btn-close-assign-tasting">
                 <X className="w-4 h-4" />
               </button>
@@ -626,11 +628,11 @@ export default function LabsCommunityDetail() {
         )}
 
         {tastingsLoading ? (
-          <p className="text-sm text-center py-6" style={{ color: "var(--labs-text-muted)" }} data-testid="text-tastings-loading">Loading tastings...</p>
+          <p className="text-sm text-center py-6" style={{ color: "var(--labs-text-muted)" }} data-testid="text-tastings-loading">{t("m2.community.loadingTastings")}</p>
         ) : tastingsError ? (
           <div className="labs-card p-6 text-center" data-testid="text-tastings-error">
             <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-danger)", opacity: 0.5 }} />
-            <p className="text-sm" style={{ color: "var(--labs-danger)" }}>Failed to load tastings</p>
+            <p className="text-sm" style={{ color: "var(--labs-danger)" }}>{t("m2.community.failedLoadTastings")}</p>
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ["community-tastings", communityId] })}
               className="text-xs mt-2 underline"
@@ -643,7 +645,7 @@ export default function LabsCommunityDetail() {
         ) : !tastingsData || (tastingsData.upcoming.length === 0 && tastingsData.past.length === 0) ? (
           <div className="labs-card p-6 text-center" data-testid="text-no-tastings">
             <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
-            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Noch keine Tastings in dieser Community</p>
+            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("m2.community.noTastings")}</p>
           </div>
         ) : (
           <div className="space-y-4">

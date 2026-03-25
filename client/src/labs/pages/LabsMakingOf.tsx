@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useTranslation } from "react-i18next";
 import {
   Wine, GitCommit, Layers, Calendar, Code2, Languages,
   AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Lock, ChevronLeft,
@@ -102,6 +103,7 @@ function StatCard({ label, value, icon: Icon, testId, delay }: { label: string; 
 }
 
 function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const visible = useInView(ref as React.RefObject<HTMLElement>);
   const [expanded, setExpanded] = useState(false);
@@ -140,8 +142,8 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
             <p className="text-[11px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{chapter.dateRange}</p>
           </div>
           <div className="flex gap-3 text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-            <span>{chapter.stats.commits} commits</span>
-            <span>{chapter.stats.features} features</span>
+            <span>{chapter.stats.commits} {t("makingOf.statCommits")}</span>
+            <span>{chapter.stats.features} {t("makingOf.statFeatures")}</span>
           </div>
         </div>
 
@@ -156,7 +158,7 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
           data-testid={`labs-makingof-chapter-toggle-${index}`}
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          {expanded ? "Less" : "Milestones"}
+          {expanded ? t("makingOf.less") : t("makingOf.milestones")}
         </button>
 
         {expanded && (
@@ -291,6 +293,7 @@ function ChangelogCard({ entry, index }: { entry: ChangelogFeedItem; index: numb
 }
 
 export default function LabsMakingOf() {
+  const { t } = useTranslation();
   const session = getSession();
 
   const { data, isLoading, error } = useQuery<MakingOfData>({
@@ -301,7 +304,7 @@ export default function LabsMakingOf() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error((err as { message?: string }).message || "Failed to load");
+        throw new Error((err as { message?: string }).message || t("makingOf.failedToLoad"));
       }
       return res.json();
     },
@@ -340,7 +343,7 @@ export default function LabsMakingOf() {
         <BackBtn />
         <div className="text-center py-16">
           <Wine className="w-10 h-10 mx-auto mb-4 opacity-40" style={{ color: "var(--labs-text-muted)" }} />
-          <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Something went wrong</h3>
+          <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("makingOf.error")}</h3>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
             Could not load the Making-Of page. Please try again later.
           </p>
@@ -374,20 +377,20 @@ export default function LabsMakingOf() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        <StatCard label="Days" value={stats.totalDays} icon={Calendar} testId="labs-makingof-stat-days" delay={0} />
-        <StatCard label="Commits" value={stats.totalCommits} icon={GitCommit} testId="labs-makingof-stat-commits" delay={100} />
-        <StatCard label="Features" value={stats.featuresBuilt} icon={Layers} testId="labs-makingof-stat-features" delay={200} />
-        <StatCard label="Rollbacks" value={stats.rollbacksSurvived} icon={AlertTriangle} testId="labs-makingof-stat-rollbacks" delay={300} />
-        <StatCard label="Lines of Code" value={stats.linesOfCode} icon={Code2} testId="labs-makingof-stat-loc" delay={400} />
-        <StatCard label="Languages" value={stats.languages} icon={Languages} testId="labs-makingof-stat-langs" delay={500} />
+        <StatCard label={t("makingOf.statDays")} value={stats.totalDays} icon={Calendar} testId="labs-makingof-stat-days" delay={0} />
+        <StatCard label={t("makingOf.statCommits")} value={stats.totalCommits} icon={GitCommit} testId="labs-makingof-stat-commits" delay={100} />
+        <StatCard label={t("makingOf.statFeatures")} value={stats.featuresBuilt} icon={Layers} testId="labs-makingof-stat-features" delay={200} />
+        <StatCard label={t("makingOf.statRollbacks")} value={stats.rollbacksSurvived} icon={AlertTriangle} testId="labs-makingof-stat-rollbacks" delay={300} />
+        <StatCard label={t("makingOf.statLines")} value={stats.linesOfCode} icon={Code2} testId="labs-makingof-stat-loc" delay={400} />
+        <StatCard label={t("makingOf.statLanguages")} value={stats.languages} icon={Languages} testId="labs-makingof-stat-langs" delay={500} />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-10">
-        <StatCard label="Users" value={stats.registeredUsers} icon={Users} testId="labs-makingof-stat-users" delay={0} />
-        <StatCard label="Tastings" value={stats.totalTastings} icon={Wine} testId="labs-makingof-stat-tastings" delay={100} />
-        <StatCard label="Ratings" value={stats.totalRatings} icon={Star} testId="labs-makingof-stat-ratings" delay={200} />
-        <StatCard label="Whiskies" value={stats.whiskiesTasted} icon={Wine} testId="labs-makingof-stat-whiskies" delay={300} />
-        <StatCard label="Communities" value={stats.activeCommunities} icon={Globe} testId="labs-makingof-stat-communities" delay={400} />
+        <StatCard label={t("makingOf.statUsers")} value={stats.registeredUsers} icon={Users} testId="labs-makingof-stat-users" delay={0} />
+        <StatCard label={t("makingOf.statTastings")} value={stats.totalTastings} icon={Wine} testId="labs-makingof-stat-tastings" delay={100} />
+        <StatCard label={t("makingOf.statRatings")} value={stats.totalRatings} icon={Star} testId="labs-makingof-stat-ratings" delay={200} />
+        <StatCard label={t("makingOf.statWhiskies")} value={stats.whiskiesTasted} icon={Wine} testId="labs-makingof-stat-whiskies" delay={300} />
+        <StatCard label={t("makingOf.statCommunities")} value={stats.activeCommunities} icon={Globe} testId="labs-makingof-stat-communities" delay={400} />
       </div>
 
       {highestMilestones.length > 0 && (
@@ -403,7 +406,7 @@ export default function LabsMakingOf() {
         </>
       )}
 
-      <h2 className="labs-h3 mb-6" style={{ color: "var(--labs-text)" }}>The Journey</h2>
+      <h2 className="labs-h3 mb-6" style={{ color: "var(--labs-text)" }}>{t("makingOf.journey")}</h2>
 
       <div>
         {chapters.map((chapter, i) => (
