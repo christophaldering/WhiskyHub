@@ -19,6 +19,7 @@ import {
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
   BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, GripVertical, Pencil, X,
   FileText, RotateCcw, TrendingUp, ArrowUpRight, ArrowDownRight, Timer, MailCheck,
+  Download, Target, LogOut, ArrowLeft,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -1759,17 +1760,45 @@ function AnalyticsTab({ pid }: { pid: string }) {
   const [days, setDays] = useState<number>(0);
   const [sortCol, setSortCol] = useState<string>("totalDuration");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [section, setSection] = useState<string>("overview");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const { data: legacyData } = useQuery({ queryKey: ["/admin/analytics", pid], queryFn: () => adminApi.getAnalytics(pid), enabled: !!pid });
   const { data, isLoading } = useQuery({ queryKey: ["/admin/analytics/dashboard", pid, days], queryFn: () => adminApi.getAnalyticsDashboard(pid, days || undefined), enabled: !!pid });
+  const { data: pageViewData } = useQuery({ queryKey: ["/admin/analytics/page-views", pid, days], queryFn: () => adminApi.getAnalyticsPageViews(pid, days || undefined), enabled: !!pid && (section === "overview" || section === "pages") });
+  const { data: funnelData, isLoading: loadingFunnels } = useQuery({ queryKey: ["/admin/analytics/funnels", pid], queryFn: () => adminApi.getAnalyticsFunnels(pid), enabled: !!pid && section === "funnels" });
+  const { data: retentionData, isLoading: loadingRetention } = useQuery({ queryKey: ["/admin/analytics/retention", pid], queryFn: () => adminApi.getAnalyticsRetention(pid), enabled: !!pid && section === "retention" });
+  const { data: userDeepDive, isLoading: loadingDeepDive } = useQuery({ queryKey: ["/admin/analytics/user-deep-dive", pid, selectedUserId], queryFn: () => adminApi.getUserDeepDive(pid, selectedUserId!), enabled: !!pid && !!selectedUserId });
+
+  const handleCsvExport = (type: string) => {
+    const url = adminApi.exportCsv(pid, type, days || undefined);
+    window.open(url, "_blank");
+  };
+  const handleReportExport = () => {
+    const url = adminApi.exportPdf(pid, days || undefined);
+    window.open(url, "_blank");
+  };
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
   if (!data) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noAnalyticsData")}</div>;
+
+  if (selectedUserId) {
+    return (
+      <LabsUserDeepDive
+        data={userDeepDive}
+        loading={loadingDeepDive}
+        onBack={() => setSelectedUserId(null)}
+        pid={pid}
+        days={days}
+      />
+    );
+  }
 
   const d = data as any;
   const legacy = legacyData as any;
   const kpis = d.kpis || {};
   const engagement = d.engagementTable || [];
+  const pvd = pageViewData as any;
 
   const sorted = [...engagement].sort((a: any, b: any) => {
     const aVal = a[sortCol] ?? 0;
@@ -1787,7 +1816,15 @@ function AnalyticsTab({ pid }: { pid: string }) {
     { label: "7d", value: 7 },
     { label: "30d", value: 30 },
     { label: "90d", value: 90 },
-    { label: t("admin.allTime") || "All", value: 0 },
+    { label: t("admin.allTime") || "Alle", value: 0 },
+  ];
+
+  const sections = [
+    { id: "overview", label: "Overview" },
+    { id: "pages", label: t("admin.pagesNav") || "Seiten" },
+    { id: "engagement", label: "Engagement" },
+    { id: "funnels", label: "Funnel" },
+    { id: "retention", label: "Retention" },
   ];
 
   const tooltipStyle = { backgroundColor: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: "8px" };
@@ -1796,185 +1833,317 @@ function AnalyticsTab({ pid }: { pid: string }) {
 
   return (
     <div data-testid="labs-admin-analytics-tab" className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.dashboard") || "Dashboard"}</span>
-        </div>
-        <div className="flex gap-1" data-testid="analytics-time-filter">
-          {timeFilters.map(f => (
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div className="flex flex-wrap gap-1">
+          {sections.map(s => (
             <button
-              key={f.value}
-              onClick={() => setDays(f.value)}
+              key={s.id}
+              onClick={() => setSection(s.id)}
               className="px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
               style={{
-                background: days === f.value ? "var(--labs-accent)" : "var(--labs-surface-alt)",
-                color: days === f.value ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                background: section === s.id ? "var(--labs-accent)" : "var(--labs-surface-alt)",
+                color: section === s.id ? "var(--labs-bg)" : "var(--labs-text-muted)",
               }}
-              data-testid={`filter-${f.label.toLowerCase()}`}
+              data-testid={`section-${s.id}`}
             >
-              {f.label}
+              {s.label}
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="labs-auto-grid" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
-        <KpiCard id="active-today" label={t("admin.activeToday") || "Active Today"} value={kpis.activeToday ?? 0} icon={Users} />
-        <KpiCard id="active-7d" label={t("admin.active7d") || "Active 7d"} value={kpis.active7d ?? 0} icon={Activity} />
-        <KpiCard id="active-30d" label={t("admin.active30d") || "Active 30d"} value={kpis.active30d ?? 0} icon={TrendingUp} />
-        <KpiCard id="new-users-week" label={t("admin.newUsersWeek") || "New This Week"} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
-        <KpiCard id="avg-duration" label={t("admin.avgDuration") || "Avg Duration"} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
-        <KpiCard id="total-sessions" label={t("admin.totalSessions") || "Sessions"} value={kpis.totalSessions ?? 0} icon={Eye} />
-        <KpiCard
-          id="conversion-rate"
-          label={t("admin.conversionRate") || "Conversion"}
-          value={`${kpis.conversionRate ?? 0}%`}
-          icon={MailCheck}
-          sub={`${kpis.acceptedInvites ?? 0} / ${kpis.totalInvites ?? 0} ${t("admin.invites") || "invites"}`}
-        />
-        {legacy && (
-          <KpiCard id="total-ratings" label={t("admin.totalRatings")} value={legacy.totalRatings ?? 0} icon={Hash} />
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ChartCard title={t("admin.dauChart") || "Daily Active Users"}>
-          <div style={{ width: "100%", height: 200 }}>
-            <ResponsiveContainer>
-              <LineChart data={d.dauSeries || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
-                <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={false} name="DAU" />
-              </LineChart>
-            </ResponsiveContainer>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1" data-testid="analytics-time-filter">
+            {timeFilters.map(f => (
+              <button
+                key={f.value}
+                onClick={() => setDays(f.value)}
+                className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors"
+                style={{
+                  background: days === f.value ? "var(--labs-accent)" : "transparent",
+                  color: days === f.value ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                  border: days === f.value ? "none" : "1px solid var(--labs-border)",
+                }}
+                data-testid={`filter-${f.label.toLowerCase()}`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
-        </ChartCard>
-
-        <ChartCard title={t("admin.wauChart") || "Weekly Active Users"}>
-          <div style={{ width: "100%", height: 200 }}>
-            <ResponsiveContainer>
-              <LineChart data={d.wauSeries || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
-                <XAxis dataKey="week" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
-                <Line type="monotone" dataKey="count" stroke="#8b6914" strokeWidth={2} dot={false} name="WAU" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-
-        <ChartCard title={t("admin.topPages") || "Top Pages"}>
-          <div style={{ width: "100%", height: 200 }}>
-            <ResponsiveContainer>
-              <BarChart data={(d.topPages || []).slice(0, 8)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
-                <YAxis type="category" dataKey="page" tick={{ fontSize: 9, fill: "var(--labs-text-muted)" }} width={120} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
-                <Bar dataKey="count" fill="var(--labs-accent)" radius={[0, 4, 4, 0]} name="Visits" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-
-        <ChartCard title={t("admin.sessionDuration") || "Session Duration Distribution"}>
-          <div style={{ width: "100%", height: 200 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={d.durationDistribution || []} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {(d.durationDistribution || []).map((_: any, i: number) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-      </div>
-
-      {d.registrationSeries?.length > 0 && (
-        <ChartCard title={t("admin.registrations") || "New Registrations Over Time"}>
-          <div style={{ width: "100%", height: 180 }}>
-            <ResponsiveContainer>
-              <BarChart data={d.registrationSeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
-                <Bar dataKey="count" fill="#c4956a" radius={[4, 4, 0, 0]} name="New Users" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-      )}
-
-      {d.inviteConversion && (
-        <div className="labs-card p-4">
-          <span className="text-sm font-semibold block mb-2" style={{ color: "var(--labs-text)" }}>
-            {t("admin.inviteConversion") || "Invitation Conversion"}
-          </span>
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sent") || "Sent"}</span>
-              <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{d.inviteConversion.total}</div>
-            </div>
-            <div style={{ color: "var(--labs-text-muted)" }}>→</div>
-            <div>
-              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.accepted") || "Accepted"}</span>
-              <div className="labs-h3" style={{ color: "var(--labs-success, var(--labs-accent))" }}>{d.inviteConversion.accepted}</div>
-            </div>
-            <div className="ml-auto labs-card px-3 py-1.5" style={{ background: "var(--labs-surface-alt)" }}>
-              <span className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{d.inviteConversion.rate}%</span>
-            </div>
-          </div>
+          <button
+            onClick={() => handleCsvExport("engagement")}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors"
+            style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+            data-testid="button-export-csv"
+          >
+            <Download className="w-3 h-3" /> CSV
+          </button>
+          <button
+            onClick={handleReportExport}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors"
+            style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+            data-testid="button-export-report"
+          >
+            <FileText className="w-3 h-3" /> Report
+          </button>
         </div>
+      </div>
+
+      {section === "overview" && (
+        <>
+          <div className="labs-auto-grid" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
+            <KpiCard id="active-today" label={t("admin.activeToday") || "Active Today"} value={kpis.activeToday ?? 0} icon={Users} />
+            <KpiCard id="active-7d" label={t("admin.active7d") || "Active 7d"} value={kpis.active7d ?? 0} icon={Activity} />
+            <KpiCard id="active-30d" label={t("admin.active30d") || "Active 30d"} value={kpis.active30d ?? 0} icon={TrendingUp} />
+            <KpiCard id="new-users-week" label={t("admin.newUsersWeek") || "New This Week"} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
+            <KpiCard id="avg-duration" label={t("admin.avgDuration") || "Avg Duration"} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
+            <KpiCard id="total-sessions" label={t("admin.totalSessions") || "Sessions"} value={kpis.totalSessions ?? 0} icon={Eye} />
+            <KpiCard
+              id="conversion-rate"
+              label={t("admin.conversionRate") || "Conversion"}
+              value={`${kpis.conversionRate ?? 0}%`}
+              icon={MailCheck}
+              sub={`${kpis.acceptedInvites ?? 0} / ${kpis.totalInvites ?? 0} ${t("admin.invites") || "invites"}`}
+            />
+            {legacy && (
+              <KpiCard id="total-ratings" label={t("admin.totalRatings")} value={legacy.totalRatings ?? 0} icon={Hash} />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartCard title={t("admin.dauChart") || "Daily Active Users"}>
+              <div style={{ width: "100%", height: 200 }}>
+                <ResponsiveContainer>
+                  <LineChart data={d.dauSeries || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={false} name="DAU" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+
+            <ChartCard title={t("admin.wauChart") || "Weekly Active Users"}>
+              <div style={{ width: "100%", height: 200 }}>
+                <ResponsiveContainer>
+                  <LineChart data={d.wauSeries || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Line type="monotone" dataKey="count" stroke="#8b6914" strokeWidth={2} dot={false} name="WAU" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+
+            <ChartCard title={t("admin.topPages") || "Top Pages"}>
+              <div style={{ width: "100%", height: 200 }}>
+                <ResponsiveContainer>
+                  <BarChart data={(d.topPages || []).slice(0, 8)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                    <YAxis type="category" dataKey="page" tick={{ fontSize: 9, fill: "var(--labs-text-muted)" }} width={120} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Bar dataKey="count" fill="var(--labs-accent)" radius={[0, 4, 4, 0]} name="Visits" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+
+            <ChartCard title={t("admin.sessionDuration") || "Session Duration"}>
+              <div style={{ width: "100%", height: 200 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={d.durationDistribution || []} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {(d.durationDistribution || []).map((_: any, i: number) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+          </div>
+
+          {d.registrationSeries?.length > 0 && (
+            <ChartCard title={t("admin.registrations") || "Registrierungen"}>
+              <div style={{ width: "100%", height: 180 }}>
+                <ResponsiveContainer>
+                  <BarChart data={d.registrationSeries}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Bar dataKey="count" fill="#c4956a" radius={[4, 4, 0, 0]} name="New Users" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+          )}
+
+          {d.inviteConversion && (
+            <div className="labs-card p-4">
+              <span className="text-sm font-semibold block mb-2" style={{ color: "var(--labs-text)" }}>
+                {t("admin.inviteConversion") || "Einladungs-Conversion"}
+              </span>
+              <div className="flex items-center gap-6">
+                <div>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sent") || "Verschickt"}</span>
+                  <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{d.inviteConversion.total}</div>
+                </div>
+                <div style={{ color: "var(--labs-text-muted)" }}>→</div>
+                <div>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.accepted") || "Angenommen"}</span>
+                  <div className="labs-h3" style={{ color: "var(--labs-success, var(--labs-accent))" }}>{d.inviteConversion.accepted}</div>
+                </div>
+                <div className="ml-auto labs-card px-3 py-1.5" style={{ background: "var(--labs-surface-alt)" }}>
+                  <span className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{d.inviteConversion.rate}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {legacy?.topWhiskies?.length > 0 && (
+            <div className="labs-card p-4">
+              <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.topWhiskies")}</span>
+              {legacy.topWhiskies.slice(0, 10).map((w: any, i: number) => (
+                <div key={w.id || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                  <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery}</span>}</div>
+                  <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{Number(w.avgScore).toFixed(1)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {legacy?.regionCounts?.length > 0 && (
+            <div className="labs-card p-4">
+              <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.regions")}</span>
+              {legacy.regionCounts.map(([region, count]: [string, number]) => (
+                <div key={region} className="flex items-center justify-between py-1">
+                  <span className="text-xs" style={{ color: "var(--labs-text)" }}>{region}</span>
+                  <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {sorted.length > 0 && (
+      {section === "pages" && (
+        <LabsPagesSection pvd={pvd} tooltipStyle={tooltipStyle} tooltipLabelStyle={tooltipLabelStyle} tooltipItemStyle={tooltipItemStyle} onExport={() => handleCsvExport("pageviews")} />
+      )}
+
+      {section === "engagement" && (
+        <>
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button onClick={() => handleCsvExport("engagement")} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium" style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }} data-testid="button-export-engagement">
+              <Download className="w-3 h-3" /> Engagement CSV
+            </button>
+            <button onClick={() => handleCsvExport("sessions")} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium" style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }} data-testid="button-export-sessions">
+              <Download className="w-3 h-3" /> Sessions CSV
+            </button>
+          </div>
+          {sorted.length > 0 && (
+            <div className="labs-card p-4">
+              <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>
+                {t("admin.engagementTable") || "Nutzer-Engagement"}
+              </span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]" style={{ color: "var(--labs-text)" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                      {[
+                        { key: "name", label: t("admin.name") || "Name" },
+                        { key: "sessionCount", label: t("admin.sessions") || "Sessions" },
+                        { key: "totalDuration", label: t("admin.totalTime") || "Gesamt (min)" },
+                        { key: "avgDuration", label: t("admin.avgTime") || "Avg (min)" },
+                        { key: "ratingCount", label: t("admin.ratings") || "Ratings" },
+                        { key: "lastActivity", label: t("admin.lastActive") || "Letzte Aktivit." },
+                      ].map(col => (
+                        <th
+                          key={col.key}
+                          className="text-left py-1.5 px-1 cursor-pointer select-none"
+                          style={{ color: sortCol === col.key ? "var(--labs-accent)" : "var(--labs-text-muted)" }}
+                          onClick={() => toggleSort(col.key)}
+                          data-testid={`sort-${col.key}`}
+                        >
+                          {col.label} {sortCol === col.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                        </th>
+                      ))}
+                      <th className="py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((row: any) => (
+                      <tr key={row.id} style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                        <td className="py-1.5 px-1 font-medium">
+                          <div>{row.name}</div>
+                          <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{row.role}</div>
+                        </td>
+                        <td className="py-1.5 px-1">{row.sessionCount}</td>
+                        <td className="py-1.5 px-1 font-semibold">{row.totalDuration}</td>
+                        <td className="py-1.5 px-1">{row.avgDuration}</td>
+                        <td className="py-1.5 px-1">{row.ratingCount}</td>
+                        <td className="py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>
+                          {row.lastActivity ? new Date(row.lastActivity).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}
+                        </td>
+                        <td className="py-1.5 px-1">
+                          <button onClick={() => setSelectedUserId(row.id)} style={{ color: "var(--labs-accent)" }} data-testid={`button-deep-dive-${row.id}`}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {section === "funnels" && (
+        <LabsFunnelSection data={funnelData} loading={loadingFunnels} />
+      )}
+
+      {section === "retention" && (
+        <LabsRetentionSection data={retentionData} loading={loadingRetention} />
+      )}
+    </div>
+  );
+}
+
+function LabsPagesSection({ pvd, tooltipStyle, tooltipLabelStyle, tooltipItemStyle, onExport }: { pvd: any; tooltipStyle: any; tooltipLabelStyle: any; tooltipItemStyle: any; onExport: () => void }) {
+  if (!pvd) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>Keine Page-View-Daten vorhanden</div>;
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button onClick={onExport} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium" style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }} data-testid="button-export-pageviews">
+          <Download className="w-3 h-3" /> Page Views CSV
+        </button>
+      </div>
+      {pvd.topPages?.length > 0 && (
         <div className="labs-card p-4">
-          <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>
-            {t("admin.engagementTable") || "User Engagement"}
-          </span>
+          <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>Meistbesuchte Seiten</span>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]" style={{ color: "var(--labs-text)" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
-                  {[
-                    { key: "name", label: t("admin.name") || "Name" },
-                    { key: "sessionCount", label: t("admin.sessions") || "Sessions" },
-                    { key: "totalDuration", label: t("admin.totalTime") || "Total (min)" },
-                    { key: "avgDuration", label: t("admin.avgTime") || "Avg (min)" },
-                    { key: "ratingCount", label: t("admin.ratings") || "Ratings" },
-                    { key: "lastActivity", label: t("admin.lastActive") || "Last Active" },
-                  ].map(col => (
-                    <th
-                      key={col.key}
-                      className="text-left py-1.5 px-1 cursor-pointer select-none"
-                      style={{ color: sortCol === col.key ? "var(--labs-accent)" : "var(--labs-text-muted)" }}
-                      onClick={() => toggleSort(col.key)}
-                      data-testid={`sort-${col.key}`}
-                    >
-                      {col.label} {sortCol === col.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                    </th>
-                  ))}
+                  <th className="text-left py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>Seite</th>
+                  <th className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>Aufrufe</th>
+                  <th className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>Nutzer</th>
+                  <th className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>Dauer</th>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((row: any) => (
-                  <tr key={row.id} style={{ borderBottom: "1px solid var(--labs-border)" }}>
-                    <td className="py-1.5 px-1 font-medium">{row.name}</td>
-                    <td className="py-1.5 px-1">{row.sessionCount}</td>
-                    <td className="py-1.5 px-1">{row.totalDuration}</td>
-                    <td className="py-1.5 px-1">{row.avgDuration}</td>
-                    <td className="py-1.5 px-1">{row.ratingCount}</td>
-                    <td className="py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>
-                      {row.lastActivity ? new Date(row.lastActivity).toLocaleDateString() : "—"}
-                    </td>
+                {pvd.topPages.map((p: any, i: number) => (
+                  <tr key={i} style={{ borderBottom: "1px solid var(--labs-border)" }} data-testid={`top-page-row-${i}`}>
+                    <td className="py-1.5 px-1 font-mono text-[10px]">{p.page}</td>
+                    <td className="text-center py-1.5 px-1 font-semibold">{p.views}</td>
+                    <td className="text-center py-1.5 px-1">{p.uniqueUsers}</td>
+                    <td className="text-center py-1.5 px-1">{p.avgDuration}s</td>
                   </tr>
                 ))}
               </tbody>
@@ -1982,26 +2151,237 @@ function AnalyticsTab({ pid }: { pid: string }) {
           </div>
         </div>
       )}
-
-      {legacy?.topWhiskies?.length > 0 && (
+      {pvd.dwellTime?.length > 0 && (
+        <ChartCard title="Verweildauer pro Seite">
+          <div style={{ width: "100%", height: Math.max(200, pvd.dwellTime.length * 28) }}>
+            <ResponsiveContainer>
+              <BarChart data={pvd.dwellTime.slice(0, 15)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} />
+                <YAxis type="category" dataKey="page" tick={{ fontSize: 9, fill: "var(--labs-text-muted)" }} width={140} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: any) => [`${v}s`, "Dauer"]} />
+                <Bar dataKey="avgSeconds" fill="var(--labs-accent)" radius={[0, 4, 4, 0]} name="Sekunden" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+      )}
+      {pvd.exitPages?.length > 0 && (
         <div className="labs-card p-4">
-          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.topWhiskies")}</span>
-          {legacy.topWhiskies.slice(0, 10).map((w: any, i: number) => (
-            <div key={w.id || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
-              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery}</span>}</div>
-              <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{Number(w.avgScore).toFixed(1)}</span>
-            </div>
-          ))}
+          <div className="flex items-center gap-2 mb-3">
+            <LogOut className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+            <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Drop-off Seiten</span>
+          </div>
+          <div className="space-y-2">
+            {pvd.exitPages.slice(0, 10).map((p: any, i: number) => {
+              const max = pvd.exitPages[0]?.exits || 1;
+              return (
+                <div key={i} className="flex items-center gap-3" data-testid={`exit-page-${i}`}>
+                  <span className="text-[10px] font-mono w-[130px] truncate flex-shrink-0" style={{ color: "var(--labs-text)" }}>{p.page}</span>
+                  <div className="flex-1 rounded-full h-3 overflow-hidden" style={{ background: "var(--labs-surface-alt)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${(p.exits / max) * 100}%`, background: "var(--labs-accent)", opacity: 0.7 }} />
+                  </div>
+                  <span className="text-[10px] font-medium w-6 flex-shrink-0" style={{ color: "var(--labs-text)" }}>{p.exits}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {pvd.pageFlow?.length > 0 && (
+        <div className="labs-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+            <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Seitenfluss</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]" style={{ color: "var(--labs-text)" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                  <th className="text-left py-1.5" style={{ color: "var(--labs-text-muted)" }}>Von</th>
+                  <th className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>→</th>
+                  <th className="text-left py-1.5" style={{ color: "var(--labs-text-muted)" }}>Nach</th>
+                  <th className="text-right py-1.5" style={{ color: "var(--labs-text-muted)" }}>Anzahl</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pvd.pageFlow.slice(0, 20).map((f: any, i: number) => (
+                  <tr key={i} style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                    <td className="py-1.5 font-mono text-[10px]">{f.fromPage}</td>
+                    <td className="text-center" style={{ color: "var(--labs-text-muted)" }}>→</td>
+                    <td className="py-1.5 font-mono text-[10px]">{f.toPage}</td>
+                    <td className="text-right font-semibold text-[10px]">{f.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LabsFunnelSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
+  if (!data) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>Keine Funnel-Daten</div>;
+
+  const renderFunnel = (title: string, steps: any[]) => {
+    if (!steps?.length) return null;
+    const maxCount = steps[0]?.count || 1;
+    return (
+      <div className="labs-card p-4">
+        <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>{title}</span>
+        <div className="space-y-2">
+          {steps.map((step: any, i: number) => {
+            const prevCount = i > 0 ? steps[i - 1].count : step.count;
+            const dropOff = prevCount > 0 ? Math.round(((prevCount - step.count) / prevCount) * 100) : 0;
+            return (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px]" style={{ color: "var(--labs-text)" }}>{step.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text)" }}>{step.count}</span>
+                    {i > 0 && dropOff > 0 && (
+                      <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: "var(--labs-surface-alt)", color: "var(--labs-text-muted)" }}>
+                        -{dropOff}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full rounded-full h-2.5 overflow-hidden" style={{ background: "var(--labs-surface-alt)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${(step.count / maxCount) * 100}%`, background: "var(--labs-accent)" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {renderFunnel("Registrierungs-Funnel", data.registrationFunnel)}
+      {renderFunnel("Einladungs-Funnel", data.invitationFunnel)}
+    </div>
+  );
+}
+
+function LabsRetentionSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
+  if (!data?.cohorts?.length) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>Keine Retention-Daten</div>;
+
+  return (
+    <div className="labs-card p-4">
+      <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>Retention-Kohorten (12 Wochen)</span>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[10px]" style={{ color: "var(--labs-text)" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
+              <th className="text-left py-1.5 px-1 sticky left-0" style={{ color: "var(--labs-text-muted)", background: "var(--labs-surface)" }}>Kohorte</th>
+              <th className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>Nutzer</th>
+              {Array.from({ length: data.cohorts[0]?.weeks?.length || 0 }, (_, i) => (
+                <th key={i} className="text-center py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>W{i + 1}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.cohorts.map((cohort: any, ci: number) => (
+              <tr key={ci} style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                <td className="py-1.5 px-1 font-medium sticky left-0" style={{ background: "var(--labs-surface)" }}>{cohort.cohortWeek}</td>
+                <td className="text-center py-1.5 px-1 font-semibold">{cohort.size}</td>
+                {cohort.weeks?.map((pct: number, wi: number) => {
+                  const opacity = Math.max(0.1, pct / 100);
+                  return (
+                    <td key={wi} className="text-center py-1.5 px-1" style={{ background: `rgba(212, 165, 116, ${opacity})`, color: pct > 50 ? "var(--labs-bg)" : "var(--labs-text)" }}>
+                      {pct > 0 ? `${pct}%` : ""}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function LabsUserDeepDive({ data, loading, onBack, pid, days }: { data: any; loading: boolean; onBack: () => void; pid: string; days: number }) {
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
+  if (!data) return (
+    <div>
+      <button onClick={onBack} className="flex items-center gap-1 text-xs mb-4" style={{ color: "var(--labs-accent)" }} data-testid="button-deep-dive-back">
+        <ArrowLeft className="w-3.5 h-3.5" /> Zurueck
+      </button>
+      <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>Keine Daten fuer diesen Nutzer</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <button onClick={onBack} className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-accent)" }} data-testid="button-deep-dive-back">
+        <ArrowLeft className="w-3.5 h-3.5" /> Zurueck zur Liste
+      </button>
+
+      <div className="labs-card p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <User className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+          <div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{data.participant?.name || "Unknown"}</div>
+            <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{data.participant?.role} | {data.participant?.email || "—"}</div>
+          </div>
+        </div>
+        <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem" } as React.CSSProperties}>
+          <div className="text-center">
+            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{data.stats?.totalSessions || 0}</div>
+            <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>Sessions</div>
+          </div>
+          <div className="text-center">
+            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{data.stats?.totalDuration || 0}m</div>
+            <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>Gesamtdauer</div>
+          </div>
+          <div className="text-center">
+            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{data.stats?.totalPageViews || 0}</div>
+            <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>Page Views</div>
+          </div>
+          <div className="text-center">
+            <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{data.stats?.totalRatings || 0}</div>
+            <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>Ratings</div>
+          </div>
+        </div>
+      </div>
+
+      {data.sessions?.length > 0 && (
+        <div className="labs-card p-4">
+          <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>Session-Verlauf</span>
+          <div className="space-y-2">
+            {data.sessions.slice(0, 20).map((s: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                <div>
+                  <div className="text-[11px] font-medium" style={{ color: "var(--labs-text)" }}>
+                    {new Date(s.startedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  {s.entryPage && <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{s.entryPage} → {s.exitPage || "?"}</div>}
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] font-semibold" style={{ color: "var(--labs-accent)" }}>{s.durationMinutes}m</div>
+                  {s.pageCount > 0 && <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{s.pageCount} Seiten</div>}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {legacy?.regionCounts?.length > 0 && (
+      {data.topPages?.length > 0 && (
         <div className="labs-card p-4">
-          <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.regions")}</span>
-          {legacy.regionCounts.map(([region, count]: [string, number]) => (
-            <div key={region} className="flex items-center justify-between py-1">
-              <span className="text-xs" style={{ color: "var(--labs-text)" }}>{region}</span>
-              <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{count}</span>
+          <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>Top Seiten dieses Nutzers</span>
+          {data.topPages.slice(0, 10).map((p: any, i: number) => (
+            <div key={i} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid var(--labs-border)" }}>
+              <span className="text-[10px] font-mono" style={{ color: "var(--labs-text)" }}>{p.page}</span>
+              <span className="text-[10px] font-semibold" style={{ color: "var(--labs-accent)" }}>{p.views}</span>
             </div>
           ))}
         </div>
