@@ -179,6 +179,14 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         if (!controller.signal.aborted) {
           setWhiskyResults(data.slice(0, 5));
           setWhiskyLoading(false);
+          const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
+          if (pid) {
+            fetch("/api/analytics/search-log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "x-participant-id": pid },
+              body: JSON.stringify({ participantId: pid, query: debouncedQuery, resultCount: data.length, context: "global-search" }),
+            }).catch(() => {});
+          }
         }
       })
       .catch(() => {

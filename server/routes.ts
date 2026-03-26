@@ -1190,6 +1190,7 @@ export async function registerRoutes(
       if (filteredUserIds !== undefined && filteredUserIds.length === 0) {
         return res.json({
           totalSessions: 0, uniqueUsers: 0, avgDurationMinutes: 0, totalMinutes: 0,
+          avgDurationSeconds: 0, medianDurationSeconds: 0, totalSeconds: 0,
           byDay: [], byHour: [], topUsers: [],
         });
       }
@@ -10210,16 +10211,32 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const allSessions = await sessionsQuery;
       const filteredSessions = cutoff ? allSessions.filter(s => s.startedAt >= cutoff) : allSessions;
 
-      const totalDuration = filteredSessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
-      const avgDuration = filteredSessions.length > 0 ? Math.round(totalDuration / filteredSessions.length) : 0;
+      const getDurationSec = (s: any) => s.durationSeconds != null ? s.durationSeconds : (s.durationMinutes || 0) * 60;
+      const totalDurationSec = filteredSessions.reduce((sum, s) => sum + getDurationSec(s), 0);
+      const avgDurationSec = filteredSessions.length > 0 ? Math.round(totalDurationSec / filteredSessions.length) : 0;
+      const sortedDurations = filteredSessions.map(getDurationSec).sort((a, b) => a - b);
+      const medianDurationSec = sortedDurations.length > 0 ? sortedDurations[Math.floor(sortedDurations.length / 2)] : 0;
 
-      const durationBuckets = { short: 0, medium: 0, long: 0 };
+      const durationBuckets = { "0-30s": 0, "30s-1m": 0, "1-2m": 0, "2-5m": 0, "5-10m": 0, "10-20m": 0, "20-60m": 0, ">60m": 0 };
       for (const s of filteredSessions) {
-        const d = s.durationMinutes || 0;
-        if (d <= 5) durationBuckets.short++;
-        else if (d <= 20) durationBuckets.medium++;
-        else durationBuckets.long++;
+        const d = getDurationSec(s);
+        if (d <= 30) durationBuckets["0-30s"]++;
+        else if (d <= 60) durationBuckets["30s-1m"]++;
+        else if (d <= 120) durationBuckets["1-2m"]++;
+        else if (d <= 300) durationBuckets["2-5m"]++;
+        else if (d <= 600) durationBuckets["5-10m"]++;
+        else if (d <= 1200) durationBuckets["10-20m"]++;
+        else if (d <= 3600) durationBuckets["20-60m"]++;
+        else durationBuckets[">60m"]++;
       }
+
+      const dropOffThresholds = [30, 60, 120, 300, 600];
+      const dropOffCurve = dropOffThresholds.map(threshold => ({
+        seconds: threshold,
+        label: threshold < 60 ? `${threshold}s` : `${threshold / 60}m`,
+        usersRemaining: filteredSessions.filter(s => getDurationSec(s) >= threshold).length,
+        percentage: filteredSessions.length > 0 ? Math.round((filteredSessions.filter(s => getDurationSec(s) >= threshold).length / filteredSessions.length) * 100) : 0,
+      }));
 
       const allInvites = await dbInst.select().from(sessionInvites);
       const filteredInvites = cutoff ? allInvites.filter(i => i.createdAt && i.createdAt >= cutoff) : allInvites;
@@ -10284,7 +10301,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         }
         const u = sessionsByUser[s.participantId];
         u.count++;
-        u.totalDuration += s.durationMinutes || 0;
+        u.totalDuration += getDurationSec(s);
         if (!u.lastActivity || s.startedAt > u.lastActivity) u.lastActivity = s.startedAt;
       }
 
@@ -10314,12 +10331,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         .slice(0, 50);
 
       res.json({
-        kpis: { activeToday, active7d, active30d, newUsersWeek, avgDuration, totalSessions: filteredSessions.length, conversionRate, totalInvites, acceptedInvites },
-        durationDistribution: [
-          { label: "< 5 min", count: durationBuckets.short },
-          { label: "5-20 min", count: durationBuckets.medium },
-          { label: "> 20 min", count: durationBuckets.long },
-        ],
+        kpis: { activeToday, active7d, active30d, newUsersWeek, avgDurationSec: avgDurationSec, medianDurationSec, totalSessions: filteredSessions.length, conversionRate, totalInvites, acceptedInvites },
+        durationDistribution: Object.entries(durationBuckets).map(([label, count]) => ({ label, count })),
+        dropOffCurve,
         topPages,
         dauSeries,
         wauSeries,
@@ -10385,15 +10399,16 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const requester = await storage.getParticipant(requesterId);
       if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
 
-      const days = parseInt(req.query.days as string) || 30;
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const days = parseInt(req.query.days as string);
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
       const userId = req.query.userId as string | undefined;
 
       const { db: dbInst } = await import("./db");
       const { pageViews: pvTable } = await import("@shared/schema");
       const { sql: sqlTag, gte: gteOp, eq: eqOp, and: andOp, desc: descOp, asc: ascOp } = await import("drizzle-orm");
 
-      const conditions: any[] = [gteOp(pvTable.timestamp, cutoff)];
+      const conditions: any[] = [];
+      if (cutoff) conditions.push(gteOp(pvTable.timestamp, cutoff));
       if (userId) conditions.push(eqOp(pvTable.participantId, userId));
 
       const topPages = await dbInst.select({
@@ -10499,7 +10514,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const activityDays = await dbInst.select({
         day: sqlTag<string>`to_char(${uasTable.startedAt}, 'YYYY-MM-DD')`,
         sessions: sqlTag<number>`count(*)::int`,
-        totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
+        totalSeconds: sqlTag<number>`coalesce(sum(COALESCE(${uasTable.durationSeconds}, ${uasTable.durationMinutes} * 60)), 0)::int`,
       }).from(uasTable)
         .where(eqOp(uasTable.participantId, userId))
         .groupBy(sqlTag`to_char(${uasTable.startedAt}, 'YYYY-MM-DD')`)
@@ -10518,7 +10533,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         activityCalendar: activityDays,
         stats: {
           totalSessions: sessions.length,
-          totalDuration: sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+          totalDurationSec: sessions.reduce((sum, s) => sum + (s.durationSeconds != null ? s.durationSeconds : (s.durationMinutes || 0) * 60), 0),
           ratingCount: ratingCount[0]?.count || 0,
           journalCount: journalCount[0]?.count || 0,
           firstSeen: participant.createdAt,
@@ -10538,14 +10553,17 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const requester = await storage.getParticipant(requesterId);
       if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
 
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
       const { db: dbInst } = await import("./db");
       const { participants: pTable, profiles, tastingParticipants, ratings: ratingsTable, sessionInvites } = await import("@shared/schema");
-      const { sql: sqlTag } = await import("drizzle-orm");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
 
-      const [totalUsers] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable);
-      const [profilesFilled] = await dbInst.select({ count: sqlTag<number>`count(distinct ${profiles.participantId})::int` }).from(profiles);
-      const [joinedTasting] = await dbInst.select({ count: sqlTag<number>`count(distinct ${tastingParticipants.participantId})::int` }).from(tastingParticipants);
-      const [madeRating] = await dbInst.select({ count: sqlTag<number>`count(distinct ${ratingsTable.participantId})::int` }).from(ratingsTable);
+      const [totalUsers] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable).where(cutoff ? gteOp(pTable.createdAt, cutoff) : undefined);
+      const [profilesFilled] = await dbInst.select({ count: sqlTag<number>`count(distinct ${profiles.participantId})::int` }).from(profiles).where(cutoff ? gteOp(profiles.createdAt, cutoff) : undefined);
+      const [joinedTasting] = await dbInst.select({ count: sqlTag<number>`count(distinct ${tastingParticipants.participantId})::int` }).from(tastingParticipants).where(cutoff ? gteOp(tastingParticipants.joinedAt, cutoff) : undefined);
+      const [madeRating] = await dbInst.select({ count: sqlTag<number>`count(distinct ${ratingsTable.participantId})::int` }).from(ratingsTable).where(cutoff ? gteOp(ratingsTable.createdAt, cutoff) : undefined);
 
       const registrationFunnel = [
         { step: "Registered", count: totalUsers.count },
@@ -10587,6 +10605,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const requester = await storage.getParticipant(requesterId);
       if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
 
+      const days = parseInt(req.query.days as string) || 0;
+      const weeksBack = days > 0 ? Math.max(Math.ceil(days / 7), 4) : 12;
+
       const { db: dbInst } = await import("./db");
       const { sql: sqlTag } = await import("drizzle-orm");
 
@@ -10612,7 +10633,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           count(distinct a.participant_id)::int AS retained_users
         FROM cohort c
         LEFT JOIN activity a ON c.id = a.participant_id AND a.active_week >= c.cohort_week
-        WHERE c.cohort_week >= NOW() - INTERVAL '12 weeks'
+        WHERE c.cohort_week >= NOW() - (${weeksBack} || ' weeks')::interval
         GROUP BY c.cohort_week, week_number
         ORDER BY c.cohort_week, week_number
       `);
@@ -10669,24 +10690,25 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         const conditions: any[] = [];
         if (cutoff) conditions.push(gteOp(uasTable.startedAt, cutoff));
 
+        const secExpr = sqlTag`COALESCE(${uasTable.durationSeconds}, ${uasTable.durationMinutes} * 60)`;
         const data = await dbInst.select({
           participantId: uasTable.participantId,
           name: pTable.name,
           email: pTable.email,
           role: pTable.role,
           sessions: sqlTag<number>`count(*)::int`,
-          totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
-          avgMinutes: sqlTag<number>`coalesce(avg(${uasTable.durationMinutes}), 0)::int`,
+          totalSeconds: sqlTag<number>`coalesce(sum(${secExpr}), 0)::int`,
+          avgSeconds: sqlTag<number>`coalesce(avg(${secExpr}), 0)::int`,
           lastActivity: sqlTag<string>`max(${uasTable.endedAt})`,
         }).from(uasTable)
           .leftJoin(pTable, eqOp(uasTable.participantId, pTable.id))
           .where(conditions.length > 0 ? andOp(...conditions) : undefined)
           .groupBy(uasTable.participantId, pTable.name, pTable.email, pTable.role)
-          .orderBy(sqlTag`sum(${uasTable.durationMinutes}) desc`);
+          .orderBy(sqlTag`sum(${secExpr}) desc`);
 
-        csvContent = "Name,Email,Role,Sessions,TotalMinutes,AvgMinutes,LastActivity\n";
+        csvContent = "Name,Email,Role,Sessions,TotalSeconds,AvgSeconds,LastActivity\n";
         for (const row of data) {
-          csvContent += `"${(row.name || "").replace(/"/g, '""')}","${row.email || ""}","${row.role || ""}",${row.sessions},${row.totalMinutes},${row.avgMinutes},"${row.lastActivity || ""}"\n`;
+          csvContent += `"${(row.name || "").replace(/"/g, '""')}","${row.email || ""}","${row.role || ""}",${row.sessions},${row.totalSeconds},${row.avgSeconds},"${row.lastActivity || ""}"\n`;
         }
       } else if (type === "pageviews") {
         filename = "page-views.csv";
@@ -10709,13 +10731,14 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         if (cutoff) conditions.push(gteOp(uasTable.startedAt, cutoff));
         if (userId) conditions.push(eqOp(uasTable.participantId, userId));
 
+        const secExprSess = sqlTag`COALESCE(${uasTable.durationSeconds}, ${uasTable.durationMinutes} * 60)`;
         const data = await dbInst.select({
           id: uasTable.id,
           participantId: uasTable.participantId,
           name: pTable.name,
           startedAt: uasTable.startedAt,
           endedAt: uasTable.endedAt,
-          durationMinutes: uasTable.durationMinutes,
+          durationSeconds: sqlTag<number>`${secExprSess}::int`,
           entryPage: uasTable.entryPage,
           exitPage: uasTable.exitPage,
           pageCount: uasTable.pageCount,
@@ -10725,9 +10748,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           .orderBy(descOp(uasTable.startedAt))
           .limit(10000);
 
-        csvContent = "SessionId,ParticipantId,Name,StartedAt,EndedAt,DurationMinutes,EntryPage,ExitPage,PageCount\n";
+        csvContent = "SessionId,ParticipantId,Name,StartedAt,EndedAt,DurationSeconds,EntryPage,ExitPage,PageCount\n";
         for (const row of data) {
-          csvContent += `"${row.id}","${row.participantId}","${(row.name || "").replace(/"/g, '""')}","${row.startedAt?.toISOString() || ""}","${row.endedAt?.toISOString() || ""}",${row.durationMinutes},"${row.entryPage || ""}","${row.exitPage || ""}",${row.pageCount ?? 0}\n`;
+          csvContent += `"${row.id}","${row.participantId}","${(row.name || "").replace(/"/g, '""')}","${row.startedAt?.toISOString() || ""}","${row.endedAt?.toISOString() || ""}",${row.durationSeconds},"${row.entryPage || ""}","${row.exitPage || ""}",${row.pageCount ?? 0}\n`;
         }
       } else if (type === "funnels") {
         filename = "funnels.csv";
@@ -10746,6 +10769,151 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         csvContent += `"Registration","Made rating",${madeR.count}\n`;
         csvContent += `"Invitation","Invite sent",${totalI.count}\n`;
         csvContent += `"Invitation","Invite accepted",${acceptedI.count}\n`;
+      } else if (type === "feature-adoption") {
+        filename = "feature-adoption.csv";
+        const { participants: pTable2, ratings: ratTable, journalEntries: jeTable2, wishlistEntries: wlTable2, whiskyFriends: wfTable2, whiskyGroups: wgTable2, voiceMemos: vmTable2 } = await import("@shared/schema");
+        const { gte: gteOp2 } = await import("drizzle-orm");
+        const [totalR] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable2);
+        const totalUsers = totalR.count;
+
+        const featureQueries = [
+          { name: "Rating", table: ratTable, col: ratTable.participantId, dateCol: ratTable.createdAt },
+          { name: "Journal", table: jeTable2, col: jeTable2.participantId, dateCol: jeTable2.createdAt },
+          { name: "Wishlist", table: wlTable2, col: wlTable2.participantId, dateCol: wlTable2.createdAt },
+          { name: "Freundschaft", table: wfTable2, col: wfTable2.participantId, dateCol: wfTable2.createdAt },
+          { name: "Gruppe", table: wgTable2, col: wgTable2.ownerId, dateCol: wgTable2.createdAt },
+          { name: "Voice Memo", table: vmTable2, col: vmTable2.participantId, dateCol: vmTable2.createdAt },
+        ];
+        csvContent = "Feature,AdoptedUsers,TotalUsers,AdoptionRate\n";
+        for (const fq of featureQueries) {
+          const [r] = await dbInst.select({ count: sqlTag<number>`count(distinct ${fq.col})::int` }).from(fq.table).where(cutoff ? gteOp2(fq.dateCol, cutoff!) : undefined);
+          const rate = totalUsers > 0 ? Math.round((r.count / totalUsers) * 100) : 0;
+          csvContent += `"${fq.name}",${r.count},${totalUsers},${rate}%\n`;
+        }
+      } else if (type === "notifications") {
+        filename = "notification-engagement.csv";
+        const { notifications: nTable } = await import("@shared/schema");
+        const allNotifs = await dbInst.select().from(nTable);
+        const byType: Record<string, { total: number; read: number }> = {};
+        for (const n of allNotifs) {
+          const tp = n.type || "unknown";
+          if (!byType[tp]) byType[tp] = { total: 0, read: 0 };
+          byType[tp].total++;
+          let readByArr: string[] = [];
+          try { readByArr = JSON.parse(n.readBy || "[]"); } catch {}
+          if (readByArr.length > 0) byType[tp].read++;
+        }
+
+        csvContent = "Type,Total,Read,ReadRate\n";
+        for (const [tp, data] of Object.entries(byType)) {
+          const rate = data.total > 0 ? Math.round((data.read / data.total) * 100) : 0;
+          csvContent += `"${tp}",${data.total},${data.read},${rate}%\n`;
+        }
+      } else if (type === "search") {
+        filename = "search-analytics.csv";
+        const { searchLogs: slTable } = await import("@shared/schema");
+        const conditions: any[] = [];
+        if (cutoff) conditions.push(gteOp(slTable.createdAt, cutoff));
+
+        const sData = await dbInst.select({
+          query: slTable.query,
+          searches: sqlTag<number>`count(*)::int`,
+          avgResults: sqlTag<number>`coalesce(avg(${slTable.resultCount}), 0)::int`,
+        }).from(slTable)
+          .where(conditions.length > 0 ? andOp(...conditions) : undefined)
+          .groupBy(slTable.query)
+          .orderBy(sqlTag`count(*) desc`)
+          .limit(500);
+
+        csvContent = "Query,Searches,AvgResults\n";
+        for (const row of sData) {
+          csvContent += `"${(row.query || "").replace(/"/g, '""')}",${row.searches},${row.avgResults}\n`;
+        }
+      } else if (type === "acquisition") {
+        filename = "utm-acquisition.csv";
+        const { utmVisits: utmTable } = await import("@shared/schema");
+        const conditions: any[] = [];
+        if (cutoff) conditions.push(gteOp(utmTable.createdAt, cutoff));
+
+        const uData = await dbInst.select({
+          source: utmTable.utmSource,
+          medium: utmTable.utmMedium,
+          campaign: utmTable.utmCampaign,
+          visits: sqlTag<number>`count(*)::int`,
+          uniqueVisitors: sqlTag<number>`count(distinct ${utmTable.participantId})::int`,
+        }).from(utmTable)
+          .where(conditions.length > 0 ? andOp(...conditions) : undefined)
+          .groupBy(utmTable.utmSource, utmTable.utmMedium, utmTable.utmCampaign)
+          .orderBy(sqlTag`count(*) desc`)
+          .limit(500);
+
+        csvContent = "Source,Medium,Campaign,Visits,UniqueVisitors\n";
+        for (const row of uData) {
+          csvContent += `"${row.source || ""}","${row.medium || ""}","${row.campaign || ""}",${row.visits},${row.uniqueVisitors}\n`;
+        }
+      } else if (type === "activation-funnel") {
+        filename = "activation-funnel.csv";
+        const result = await dbInst.execute(sqlTag`
+          WITH user_steps AS (
+            SELECT
+              p.id,
+              p.created_at AS registered_at,
+              (SELECT min(created_at) FROM profiles WHERE participant_id = p.id) AS profile_at,
+              (SELECT min(created_at) FROM ratings WHERE participant_id = p.id) AS first_rating_at,
+              (SELECT min(created_at) FROM journal_entries WHERE participant_id = p.id) AS first_journal_at,
+              (SELECT min(created_at) FROM whisky_friends WHERE participant_id = p.id) AS first_friend_at,
+              (SELECT started_at FROM user_activity_sessions WHERE participant_id = p.id ORDER BY started_at OFFSET 1 LIMIT 1) AS second_visit_at
+            FROM participants p
+            WHERE p.created_at IS NOT NULL
+              ${cutoff ? sqlTag`AND p.created_at >= ${cutoff}` : sqlTag``}
+          )
+          SELECT
+            count(*)::int AS registered,
+            count(profile_at)::int AS profile_filled,
+            count(first_rating_at)::int AS first_rating,
+            count(first_journal_at)::int AS first_journal,
+            count(first_friend_at)::int AS first_friend,
+            count(second_visit_at)::int AS second_visit,
+            coalesce(percentile_cont(0.5) within group (order by extract(epoch from (profile_at - registered_at))), 0)::int AS median_reg_to_profile,
+            coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_rating_at - profile_at))), 0)::int AS median_profile_to_rating,
+            coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_journal_at - first_rating_at))), 0)::int AS median_rating_to_journal,
+            coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_friend_at - first_journal_at))), 0)::int AS median_journal_to_friend,
+            coalesce(percentile_cont(0.5) within group (order by extract(epoch from (second_visit_at - registered_at))), 0)::int AS median_reg_to_second_visit
+          FROM user_steps
+        `);
+        const r = ((result as any).rows || result)[0] || {};
+        csvContent = "Step,Count,MedianSecondsFromPrevStep\n";
+        csvContent += `"Registrierung",${r.registered || 0},0\n`;
+        csvContent += `"Profil ausgefüllt",${r.profile_filled || 0},${r.median_reg_to_profile || 0}\n`;
+        csvContent += `"Erstes Rating",${r.first_rating || 0},${r.median_profile_to_rating || 0}\n`;
+        csvContent += `"Erster Journal-Eintrag",${r.first_journal || 0},${r.median_rating_to_journal || 0}\n`;
+        csvContent += `"Erste Freundschaft",${r.first_friend || 0},${r.median_journal_to_friend || 0}\n`;
+        csvContent += `"Zweiter Besuch",${r.second_visit || 0},${r.median_reg_to_second_visit || 0}\n`;
+      } else if (type === "cohorts") {
+        filename = "cohort-content-velocity.csv";
+        const velocityResult = await dbInst.execute(sqlTag`
+          WITH user_ratings AS (
+            SELECT participant_id, created_at,
+              ROW_NUMBER() OVER (PARTITION BY participant_id ORDER BY created_at) AS rn
+            FROM ratings
+          )
+          SELECT rn AS milestone,
+            count(distinct participant_id)::int AS users_reached,
+            coalesce(percentile_cont(0.5) within group (
+              order by extract(epoch from (ur.created_at - p.created_at))
+            ), 0)::int AS median_seconds_from_signup
+          FROM user_ratings ur
+          JOIN participants p ON p.id = ur.participant_id
+          WHERE rn IN (1, 2, 5, 10)
+            ${cutoff ? sqlTag`AND p.created_at >= ${cutoff}` : sqlTag``}
+          GROUP BY rn
+          ORDER BY rn
+        `);
+        const vRows = (velocityResult as any).rows || velocityResult;
+        csvContent = "Milestone,UsersReached,MedianSecondsFromSignup\n";
+        for (const row of vRows) {
+          csvContent += `${row.milestone},${row.users_reached},${row.median_seconds_from_signup}\n`;
+        }
       } else if (type === "retention") {
         filename = "retention.csv";
         const retResult = await dbInst.execute(sqlTag`
@@ -10812,10 +10980,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const sessionConditions: any[] = [];
       if (cutoff) sessionConditions.push(gteOp(uasTable.startedAt, cutoff));
+      const pdfSecExpr = sqlTag`COALESCE(${uasTable.durationSeconds}, ${uasTable.durationMinutes} * 60)`;
       const [sessionStats] = await dbInst.select({
         total: sqlTag<number>`count(*)::int`,
-        avgDuration: sqlTag<number>`coalesce(avg(${uasTable.durationMinutes}), 0)::int`,
-        totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
+        avgDurationSec: sqlTag<number>`coalesce(avg(${pdfSecExpr}), 0)::int`,
+        totalSeconds: sqlTag<number>`coalesce(sum(${pdfSecExpr}), 0)::int`,
       }).from(uasTable).where(sessionConditions.length > 0 ? gteOp(uasTable.startedAt, cutoff!) : undefined);
 
       const topPages = await dbInst.select({
@@ -10848,8 +11017,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
                   ["Active 30d (MAU)", String(active30d)],
                   ["New Users (7d)", String(newUsersWeek)],
                   ["Total Sessions", String(sessionStats?.total || 0)],
-                  ["Avg Session Duration", `${sessionStats?.avgDuration || 0} min`],
-                  ["Total Time Spent", `${sessionStats?.totalMinutes || 0} min`],
+                  ["Avg Session Duration", `${sessionStats?.avgDurationSec || 0}s`],
+                  ["Total Time Spent", `${sessionStats?.totalSeconds || 0}s`],
                 ] as [string, string][]).map(([metric, value]) =>
                   new TableRow({ children: [
                     new TableCell({ children: [new Paragraph(metric)] }),
@@ -10885,6 +11054,513 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       res.send(Buffer.from(buffer));
     } catch (e: any) {
       console.error("Analytics PDF export error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // FEATURE ADOPTION ANALYTICS
+  // ============================================================
+
+  app.get("/api/admin/analytics/feature-adoption", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { participants: pTable, ratings: ratingsTable, journalEntries: jeTable, wishlistEntries: wlTable, whiskyFriends: wfTable, whiskyGroups: wgTable, aiUsageLog: aiTable, userActivitySessions: uasTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
+
+      const [totalUsersR] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable);
+      const totalUsers = totalUsersR.count;
+
+      const [ratingUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${ratingsTable.participantId})::int` }).from(ratingsTable).where(cutoff ? gteOp(ratingsTable.createdAt, cutoff) : undefined);
+      const [journalUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${jeTable.participantId})::int` }).from(jeTable).where(cutoff ? gteOp(jeTable.createdAt, cutoff) : undefined);
+      const [wishlistUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${wlTable.participantId})::int` }).from(wlTable).where(cutoff ? gteOp(wlTable.createdAt, cutoff) : undefined);
+      const [friendUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${wfTable.participantId})::int` }).from(wfTable).where(cutoff ? gteOp(wfTable.createdAt, cutoff) : undefined);
+      const { whiskyGroupMembers: wgmTable } = await import("@shared/schema");
+      const [groupUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${wgmTable.friendId})::int` }).from(wgmTable).where(cutoff ? gteOp(wgmTable.addedAt, cutoff) : undefined);
+
+      const features = [
+        { feature: "Rating", users: ratingUsers.count, percentage: totalUsers > 0 ? Math.round((ratingUsers.count / totalUsers) * 100) : 0 },
+        { feature: "Journal", users: journalUsers.count, percentage: totalUsers > 0 ? Math.round((journalUsers.count / totalUsers) * 100) : 0 },
+        { feature: "Wishlist", users: wishlistUsers.count, percentage: totalUsers > 0 ? Math.round((wishlistUsers.count / totalUsers) * 100) : 0 },
+        { feature: "Freundschaft", users: friendUsers.count, percentage: totalUsers > 0 ? Math.round((friendUsers.count / totalUsers) * 100) : 0 },
+        { feature: "Gruppe", users: groupUsers.count, percentage: totalUsers > 0 ? Math.round((groupUsers.count / totalUsers) * 100) : 0 },
+      ];
+
+      const aiFeatures = await dbInst.select({
+        featureId: aiTable.featureId,
+        uses: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${aiTable.participantId})::int`,
+      }).from(aiTable)
+        .where(cutoff ? gteOp(aiTable.createdAt, cutoff) : undefined)
+        .groupBy(aiTable.featureId)
+        .orderBy(sqlTag`count(*) desc`);
+
+      const { voiceMemos: vmTable } = await import("@shared/schema");
+      const [voiceMemoUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${vmTable.participantId})::int` }).from(vmTable).where(cutoff ? gteOp(vmTable.createdAt, cutoff) : undefined);
+      features.push(
+        { feature: "Voice Memo", users: voiceMemoUsers.count, percentage: totalUsers > 0 ? Math.round((voiceMemoUsers.count / totalUsers) * 100) : 0 },
+      );
+
+      const [bottleRecogUsers] = await dbInst.select({ count: sqlTag<number>`count(distinct ${aiTable.participantId})::int` })
+        .from(aiTable)
+        .where(cutoff
+          ? sqlTag`${aiTable.featureId} IN ('journal_identify', 'whisky_autofill', 'scan_sheet', 'rating-card-scan') AND ${aiTable.createdAt} >= ${cutoff}`
+          : sqlTag`${aiTable.featureId} IN ('journal_identify', 'whisky_autofill', 'scan_sheet', 'rating-card-scan')`);
+      features.push(
+        { feature: "Flaschenerkennung", users: bottleRecogUsers.count, percentage: totalUsers > 0 ? Math.round((bottleRecogUsers.count / totalUsers) * 100) : 0 },
+      );
+
+      const featureTrends = await dbInst.execute(sqlTag`
+        SELECT 'rating' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM ratings ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        UNION ALL
+        SELECT 'journal' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM journal_entries ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        UNION ALL
+        SELECT 'wishlist' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM wishlist_entries ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        UNION ALL
+        SELECT 'voice_memo' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM voice_memos ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        UNION ALL
+        SELECT 'friend' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM whisky_friends ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        UNION ALL
+        SELECT 'group' AS feature, to_char(created_at, 'YYYY-MM-DD') AS day, count(*)::int AS count
+        FROM whisky_groups ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        ORDER BY day
+      `);
+      const trendRows = (featureTrends as any).rows || featureTrends;
+
+      const dwellCorrelation = await dbInst.execute(sqlTag`
+        WITH feature_users AS (
+          SELECT DISTINCT participant_id, 'Rating' AS feature FROM ratings ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+          UNION SELECT DISTINCT participant_id, 'Journal' FROM journal_entries ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+          UNION SELECT DISTINCT participant_id, 'Wishlist' FROM wishlist_entries ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+          UNION SELECT DISTINCT participant_id, 'Voice Memo' FROM voice_memos ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+          UNION SELECT DISTINCT participant_id, 'Freundschaft' FROM whisky_friends ${cutoff ? sqlTag`WHERE created_at >= ${cutoff}` : sqlTag``}
+          UNION SELECT DISTINCT friend_id, 'Gruppe' FROM whisky_group_members ${cutoff ? sqlTag`WHERE added_at >= ${cutoff}` : sqlTag``}
+        ),
+        user_dwell AS (
+          SELECT participant_id,
+            COALESCE(avg(COALESCE(duration_seconds, duration_minutes * 60)), 0)::int AS avg_dwell_sec
+          FROM user_activity_sessions
+          ${cutoff ? sqlTag`WHERE started_at >= ${cutoff}` : sqlTag``}
+          GROUP BY participant_id
+        )
+        SELECT fu.feature,
+          count(*)::int AS users,
+          COALESCE(avg(ud.avg_dwell_sec), 0)::int AS avg_dwell_seconds
+        FROM feature_users fu
+        LEFT JOIN user_dwell ud ON fu.participant_id = ud.participant_id
+        GROUP BY fu.feature
+        ORDER BY avg_dwell_seconds DESC
+      `);
+      const dwellRows = (dwellCorrelation as any).rows || dwellCorrelation;
+
+      res.json({ features, aiFeatures, featureTrends: trendRows, totalUsers, dwellCorrelation: dwellRows });
+    } catch (e: any) {
+      console.error("Analytics feature-adoption error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // ENHANCED ACTIVATION FUNNEL
+  // ============================================================
+
+  app.get("/api/admin/analytics/activation-funnel", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoffFunnel = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
+
+      const result = await dbInst.execute(sqlTag`
+        WITH user_steps AS (
+          SELECT
+            p.id,
+            p.created_at AS registered_at,
+            (SELECT min(created_at) FROM profiles WHERE participant_id = p.id) AS profile_at,
+            (SELECT min(created_at) FROM ratings WHERE participant_id = p.id) AS first_rating_at,
+            (SELECT min(created_at) FROM journal_entries WHERE participant_id = p.id) AS first_journal_at,
+            (SELECT min(created_at) FROM whisky_friends WHERE participant_id = p.id) AS first_friend_at,
+            (SELECT started_at FROM user_activity_sessions WHERE participant_id = p.id ORDER BY started_at OFFSET 1 LIMIT 1) AS second_visit_at
+          FROM participants p
+          WHERE p.created_at IS NOT NULL
+            ${cutoffFunnel ? sqlTag`AND p.created_at >= ${cutoffFunnel}` : sqlTag``}
+        )
+        SELECT
+          count(*)::int AS registered,
+          count(profile_at)::int AS profile_filled,
+          count(first_rating_at)::int AS first_rating,
+          count(first_journal_at)::int AS first_journal,
+          count(first_friend_at)::int AS first_friend,
+          count(second_visit_at)::int AS second_visit,
+          coalesce(percentile_cont(0.5) within group (order by extract(epoch from (profile_at - registered_at))), 0)::int AS median_reg_to_profile,
+          coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_rating_at - profile_at))), 0)::int AS median_profile_to_rating,
+          coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_journal_at - first_rating_at))), 0)::int AS median_rating_to_journal,
+          coalesce(percentile_cont(0.5) within group (order by extract(epoch from (first_friend_at - first_journal_at))), 0)::int AS median_journal_to_friend,
+          coalesce(percentile_cont(0.5) within group (order by extract(epoch from (second_visit_at - registered_at))), 0)::int AS median_reg_to_second_visit
+        FROM user_steps
+      `);
+
+      const r = ((result as any).rows || result)[0] || {};
+
+      const funnel = [
+        { step: "Registrierung", count: r.registered || 0, medianSeconds: 0 },
+        { step: "Profil ausgefüllt", count: r.profile_filled || 0, medianSeconds: r.median_reg_to_profile || 0 },
+        { step: "Erstes Rating", count: r.first_rating || 0, medianSeconds: r.median_profile_to_rating || 0 },
+        { step: "Erster Journal-Eintrag", count: r.first_journal || 0, medianSeconds: r.median_rating_to_journal || 0 },
+        { step: "Erste Freundschaft", count: r.first_friend || 0, medianSeconds: r.median_journal_to_friend || 0 },
+        { step: "Zweiter Besuch", count: r.second_visit || 0, medianSeconds: r.median_reg_to_second_visit || 0 },
+      ];
+
+      res.json({ funnel });
+    } catch (e: any) {
+      console.error("Analytics activation-funnel error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // COHORT ANALYSIS WITH CONTENT VELOCITY
+  // ============================================================
+
+  app.get("/api/admin/analytics/cohorts", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoffCohort = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
+
+      const velocityResult = await dbInst.execute(sqlTag`
+        WITH user_ratings AS (
+          SELECT participant_id, created_at,
+            ROW_NUMBER() OVER (PARTITION BY participant_id ORDER BY created_at) AS rn
+          FROM ratings
+        )
+        SELECT rn AS milestone,
+          count(distinct participant_id)::int AS users_reached,
+          coalesce(percentile_cont(0.5) within group (
+            order by extract(epoch from (ur.created_at - p.created_at))
+          ), 0)::int AS median_seconds_from_signup
+        FROM user_ratings ur
+        JOIN participants p ON p.id = ur.participant_id
+        WHERE rn IN (1, 2, 5, 10)
+          ${cutoffCohort ? sqlTag`AND p.created_at >= ${cutoffCohort}` : sqlTag``}
+        GROUP BY rn
+        ORDER BY rn
+      `);
+      const velocityRows = (velocityResult as any).rows || velocityResult;
+
+      res.json({ contentVelocity: velocityRows });
+    } catch (e: any) {
+      console.error("Analytics cohorts error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // NOTIFICATION ENGAGEMENT
+  // ============================================================
+
+  app.get("/api/admin/analytics/notifications", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { notifications: nTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
+
+      const conditions: any[] = [];
+      if (cutoff) conditions.push(gteOp(nTable.createdAt, cutoff));
+
+      const allNotifs = await dbInst.select().from(nTable)
+        .where(conditions.length > 0 ? gteOp(nTable.createdAt, cutoff!) : undefined);
+
+      const byType: Record<string, { total: number; read: number }> = {};
+      let totalNotifs = 0;
+      let totalRead = 0;
+
+      for (const n of allNotifs) {
+        const type = n.type || "unknown";
+        if (!byType[type]) byType[type] = { total: 0, read: 0 };
+        byType[type].total++;
+        totalNotifs++;
+
+        let readByArr: string[] = [];
+        try { readByArr = JSON.parse(n.readBy || "[]"); } catch {}
+        if (readByArr.length > 0) {
+          byType[type].read++;
+          totalRead++;
+        }
+      }
+
+      const readRateByType = Object.entries(byType).map(([type, data]) => ({
+        type,
+        total: data.total,
+        read: data.read,
+        readRate: data.total > 0 ? Math.round((data.read / data.total) * 100) : 0,
+      }));
+
+      const returnCorrelation = await dbInst.execute(sqlTag`
+        WITH notif_reads AS (
+          SELECT n.id AS notif_id, n.type, n.created_at AS notif_at, n.read_by,
+            jsonb_array_elements_text(
+              CASE WHEN n.read_by IS NOT NULL AND n.read_by != '[]'
+                THEN n.read_by::jsonb ELSE '[]'::jsonb END
+            ) AS reader_id
+          FROM notifications n
+          WHERE n.read_by IS NOT NULL AND n.read_by != '[]'
+            ${cutoff ? sqlTag`AND n.created_at >= ${cutoff}` : sqlTag``}
+        ),
+        return_sessions AS (
+          SELECT nr.notif_id, nr.reader_id,
+            (SELECT count(*) FROM user_activity_sessions uas
+             WHERE uas.participant_id = nr.reader_id
+               AND uas.started_at >= nr.notif_at
+               AND uas.started_at <= nr.notif_at + INTERVAL '30 minutes'
+            )::int AS return_count
+          FROM notif_reads nr
+        )
+        SELECT
+          count(distinct notif_id)::int AS notifs_with_readers,
+          count(distinct CASE WHEN return_count > 0 THEN notif_id END)::int AS notifs_with_return,
+          CASE WHEN count(distinct notif_id) > 0
+            THEN round(count(distinct CASE WHEN return_count > 0 THEN notif_id END)::numeric / count(distinct notif_id) * 100)::int
+            ELSE 0 END AS return_rate_pct
+        FROM return_sessions
+      `);
+      const returnRows = (returnCorrelation as any).rows || returnCorrelation;
+      const returnData = returnRows[0] || { notifs_with_readers: 0, notifs_with_return: 0, return_rate_pct: 0 };
+
+      res.json({
+        totalNotifications: totalNotifs,
+        totalRead,
+        overallReadRate: totalNotifs > 0 ? Math.round((totalRead / totalNotifs) * 100) : 0,
+        byType: readRateByType,
+        returnCorrelation: {
+          notifsWithReaders: returnData.notifs_with_readers,
+          notifsWithReturn: returnData.notifs_with_return,
+          returnRatePct: returnData.return_rate_pct,
+        },
+      });
+    } catch (e: any) {
+      console.error("Analytics notifications error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // SEARCH TRACKING
+  // ============================================================
+
+  app.post("/api/analytics/search-log", async (req, res) => {
+    try {
+      const { participantId, query, resultCount, context } = req.body;
+      if (!participantId || !query) return res.status(400).json({ message: "participantId and query required" });
+
+      const { db: dbInst } = await import("./db");
+      const { searchLogs } = await import("@shared/schema");
+
+      await dbInst.insert(searchLogs).values({
+        participantId,
+        query: query.trim().toLowerCase(),
+        resultCount: resultCount ?? 0,
+        context: context || null,
+      });
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/search", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { searchLogs: slTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
+
+      const conditions = cutoff ? gteOp(slTable.createdAt, cutoff) : undefined;
+
+      const topSearches = await dbInst.select({
+        query: slTable.query,
+        count: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${slTable.participantId})::int`,
+        avgResults: sqlTag<number>`coalesce(avg(${slTable.resultCount}), 0)::int`,
+      }).from(slTable)
+        .where(conditions)
+        .groupBy(slTable.query)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(30);
+
+      const nullResults = await dbInst.select({
+        query: slTable.query,
+        count: sqlTag<number>`count(*)::int`,
+      }).from(slTable)
+        .where(cutoff
+          ? sqlTag`${slTable.createdAt} >= ${cutoff} AND ${slTable.resultCount} = 0`
+          : sqlTag`${slTable.resultCount} = 0`
+        )
+        .groupBy(slTable.query)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(20);
+
+      const [totalStats] = await dbInst.select({
+        total: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${slTable.participantId})::int`,
+        nullResultCount: sqlTag<number>`count(*) filter (where ${slTable.resultCount} = 0)::int`,
+      }).from(slTable).where(conditions);
+
+      res.json({
+        topSearches,
+        nullResults,
+        totalSearches: totalStats?.total || 0,
+        uniqueSearchUsers: totalStats?.uniqueUsers || 0,
+        nullResultSearches: totalStats?.nullResultCount || 0,
+      });
+    } catch (e: any) {
+      console.error("Analytics search error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // UTM & ACQUISITION TRACKING
+  // ============================================================
+
+  app.post("/api/analytics/utm", async (req, res) => {
+    try {
+      const { participantId, utmSource, utmMedium, utmCampaign, referrer, landingPage } = req.body;
+
+      const { db: dbInst } = await import("./db");
+      const { utmVisits } = await import("@shared/schema");
+
+      await dbInst.insert(utmVisits).values({
+        participantId: participantId || null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        referrer: referrer || null,
+        landingPage: landingPage || null,
+      });
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/acquisition", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { utmVisits: utmTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
+
+      const conditions = cutoff ? gteOp(utmTable.createdAt, cutoff) : undefined;
+
+      const bySource = await dbInst.select({
+        source: sqlTag<string>`COALESCE(${utmTable.utmSource}, 'direct')`,
+        visits: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${utmTable.participantId})::int`,
+      }).from(utmTable)
+        .where(conditions)
+        .groupBy(sqlTag`COALESCE(${utmTable.utmSource}, 'direct')`)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(20);
+
+      const byMedium = await dbInst.select({
+        medium: sqlTag<string>`COALESCE(${utmTable.utmMedium}, 'none')`,
+        visits: sqlTag<number>`count(*)::int`,
+      }).from(utmTable)
+        .where(conditions)
+        .groupBy(sqlTag`COALESCE(${utmTable.utmMedium}, 'none')`)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(10);
+
+      const byCampaign = await dbInst.select({
+        campaign: sqlTag<string>`COALESCE(${utmTable.utmCampaign}, 'none')`,
+        visits: sqlTag<number>`count(*)::int`,
+      }).from(utmTable)
+        .where(conditions)
+        .groupBy(sqlTag`COALESCE(${utmTable.utmCampaign}, 'none')`)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(10);
+
+      const byReferrer = await dbInst.select({
+        referrer: sqlTag<string>`COALESCE(${utmTable.referrer}, 'direct')`,
+        visits: sqlTag<number>`count(*)::int`,
+      }).from(utmTable)
+        .where(conditions)
+        .groupBy(sqlTag`COALESCE(${utmTable.referrer}, 'direct')`)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(15);
+
+      const [totalR] = await dbInst.select({
+        total: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${utmTable.participantId})::int`,
+      }).from(utmTable).where(conditions);
+
+      res.json({
+        bySource,
+        byMedium,
+        byCampaign,
+        byReferrer,
+        totalVisits: totalR?.total || 0,
+        uniqueVisitors: totalR?.uniqueUsers || 0,
+      });
+    } catch (e: any) {
+      console.error("Analytics acquisition error:", e);
       res.status(500).json({ message: e.message });
     }
   });

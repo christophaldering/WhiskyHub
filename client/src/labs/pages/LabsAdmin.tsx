@@ -26,6 +26,18 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 
+function formatDurationGlobal(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  }
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas" | "trash";
 
 const ADMIN_GROUPS = [
@@ -1002,11 +1014,15 @@ function SessionsTab({ pid }: { pid: string }) {
     { value: "all", label: t("admin.timeRangeAll") },
   ];
 
-  const formatDuration = (min: number) => {
-    if (min < 1) return "<1m";
-    if (min < 60) return `${min}m`;
-    const h = Math.floor(min / 60);
-    const m = min % 60;
+  const formatDuration = (sec: number) => {
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
@@ -1089,11 +1105,11 @@ function SessionsTab({ pid }: { pid: string }) {
             <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sessions")}</div>
           </div>
           <div className="labs-card p-3 text-center">
-            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.totalMinutes || 0)}</div>
+            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.totalSeconds || (userData?.totalMinutes || 0) * 60)}</div>
             <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalTime") }</div>
           </div>
           <div className="labs-card p-3 text-center">
-            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.sessions ? Math.round((userData.totalMinutes || 0) / userData.sessions) : 0)}</div>
+            <div className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{formatDuration(userData?.sessions ? Math.round((userData?.totalSeconds || (userData?.totalMinutes || 0) * 60) / userData.sessions) : 0)}</div>
             <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.avgDuration") }</div>
           </div>
         </div>
@@ -1104,9 +1120,9 @@ function SessionsTab({ pid }: { pid: string }) {
         ) : (
           <div className="space-y-1.5">
             <div className="text-xs font-semibold mb-2" style={{ color: "var(--labs-text-secondary)" }}>{ t("admin.sessionTimeline") }</div>
-            {userSessions.map((s: { id: string; startedAt: string; endedAt: string; durationMinutes: number; pageContext: string | null }) => (
+            {userSessions.map((s: { id: string; startedAt: string; endedAt: string; durationMinutes: number; durationSeconds?: number; pageContext: string | null }) => (
               <div key={s.id} className="labs-card p-3 flex items-center gap-3" data-testid={`session-entry-${s.id}`}>
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.durationMinutes > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: (s.durationSeconds ?? s.durationMinutes) > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatDate(s.startedAt)}</span>
@@ -1116,7 +1132,7 @@ function SessionsTab({ pid }: { pid: string }) {
                   </div>
                   {s.pageContext && <div className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{s.pageContext}</div>}
                 </div>
-                <div className="text-xs font-semibold flex-shrink-0" style={{ color: "var(--labs-accent)" }}>{formatDuration(s.durationMinutes)}</div>
+                <div className="text-xs font-semibold flex-shrink-0" style={{ color: "var(--labs-accent)" }}>{formatDuration(s.durationSeconds != null ? s.durationSeconds : (s.durationMinutes || 0) * 60)}</div>
               </div>
             ))}
           </div>
@@ -1170,11 +1186,11 @@ function SessionsTab({ pid }: { pid: string }) {
               <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.activeUsers")}</div>
             </div>
             <div className="labs-card p-3 text-center">
-              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-avg">{formatDuration(summary.avgDurationMinutes)}</div>
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-avg">{formatDuration(summary.avgDurationSeconds ?? (summary.avgDurationMinutes || 0) * 60)}</div>
               <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.avgDuration") }</div>
             </div>
             <div className="labs-card p-3 text-center">
-              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total-time">{formatDuration(summary.totalMinutes)}</div>
+              <div className="text-xl font-bold" style={{ color: "var(--labs-accent)" }} data-testid="sessions-stat-total-time">{formatDuration(summary.totalSeconds ?? (summary.totalMinutes || 0) * 60)}</div>
               <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalTime") }</div>
             </div>
           </div>
@@ -1252,7 +1268,7 @@ function SessionsTab({ pid }: { pid: string }) {
               <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noUsersFound") }</div>
             ) : (
               <div className="space-y-1.5">
-                {filteredUsers.map((u: { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: string | null }) => (
+                {filteredUsers.map((u: { id: string; name: string; email: string; sessions: number; totalMinutes: number; totalSeconds?: number; lastActive: string | null }) => (
                   <button
                     key={u.id}
                     onClick={() => setSelectedUser(u.id)}
@@ -1266,7 +1282,7 @@ function SessionsTab({ pid }: { pid: string }) {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{u.sessions} {t("admin.sessionsLabel")}</div>
-                      <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{formatDuration(u.totalMinutes)} {t("admin.totalLabel")}</div>
+                      <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{formatDuration(u.totalSeconds ?? (u.totalMinutes || 0) * 60)} {t("admin.totalLabel")}</div>
                       <div className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{formatRelative(u.lastActive)}</div>
                     </div>
                     <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
@@ -1894,7 +1910,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
             <KpiCard id="active-7d" label={t("admin.active7d", "Active 7d")} value={kpis.active7d ?? 0} icon={Activity} />
             <KpiCard id="active-30d" label={t("admin.active30d", "Active 30d")} value={kpis.active30d ?? 0} icon={TrendingUp} />
             <KpiCard id="new-users-week" label={t("admin.newUsersWeek", "New This Week")} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
-            <KpiCard id="avg-duration" label={t("admin.avgDuration", "Avg Duration")} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
+            <KpiCard id="avg-duration" label={t("admin.avgDuration", "Avg Duration")} value={formatDurationGlobal(kpis.avgDurationSec ?? (kpis.avgDuration ?? 0) * 60)} icon={Timer} />
             <KpiCard id="total-sessions" label={t("admin.totalSessions", "Sessions")} value={kpis.totalSessions ?? 0} icon={Eye} />
             <KpiCard
               id="conversion-rate"
@@ -2057,8 +2073,8 @@ function AnalyticsTab({ pid }: { pid: string }) {
                       {[
                         { key: "name", label: t("admin.name", "Name") },
                         { key: "sessionCount", label: t("admin.sessions", "Sessions") },
-                        { key: "totalDuration", label: t("admin.totalTime", "Total (min)") },
-                        { key: "avgDuration", label: t("admin.avgTime", "Avg (min)") },
+                        { key: "totalDuration", label: t("admin.totalTime", "Total") },
+                        { key: "avgDuration", label: t("admin.avgTime", "Avg") },
                         { key: "ratingCount", label: t("admin.ratings", "Ratings") },
                         { key: "lastActivity", label: t("admin.lastActive", "Last Active") },
                       ].map(col => (
@@ -2083,8 +2099,8 @@ function AnalyticsTab({ pid }: { pid: string }) {
                           <div className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{row.role}</div>
                         </td>
                         <td className="py-1.5 px-1">{row.sessionCount}</td>
-                        <td className="py-1.5 px-1 font-semibold">{row.totalDuration}</td>
-                        <td className="py-1.5 px-1">{row.avgDuration}</td>
+                        <td className="py-1.5 px-1 font-semibold">{formatDurationGlobal(row.totalDuration || 0)}</td>
+                        <td className="py-1.5 px-1">{formatDurationGlobal(row.avgDuration || 0)}</td>
                         <td className="py-1.5 px-1">{row.ratingCount}</td>
                         <td className="py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>
                           {row.lastActivity ? new Date(row.lastActivity).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}
@@ -2143,7 +2159,7 @@ function LabsPagesSection({ pvd, tooltipStyle, tooltipLabelStyle, tooltipItemSty
                     <td className="py-1.5 px-1 font-mono text-[10px]">{p.page}</td>
                     <td className="text-center py-1.5 px-1 font-semibold">{p.views}</td>
                     <td className="text-center py-1.5 px-1">{p.uniqueUsers}</td>
-                    <td className="text-center py-1.5 px-1">{p.avgDuration}s</td>
+                    <td className="text-center py-1.5 px-1">{formatDurationGlobal(p.avgDuration || 0)}</td>
                   </tr>
                 ))}
               </tbody>

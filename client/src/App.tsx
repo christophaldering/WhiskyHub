@@ -247,6 +247,7 @@ if (typeof document !== "undefined") {
 
 function RouteTracker() {
   const [location] = useLocation();
+  const utmSentRef = useRef(false);
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -257,6 +258,34 @@ function RouteTracker() {
     incrementNavIdx();
     trackPageView(location);
   }, [location]);
+  useEffect(() => {
+    if (utmSentRef.current) return;
+    utmSentRef.current = true;
+    const FIRST_VISIT_KEY = "cs_first_visit_tracked";
+    if (localStorage.getItem(FIRST_VISIT_KEY)) return;
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get("utm_source");
+    const referrer = document.referrer || "";
+    const isExternal = referrer && !referrer.includes(window.location.hostname);
+    const body: Record<string, string> = {
+      landingPage: location,
+      referrer,
+    };
+    if (utmSource) body.utmSource = utmSource;
+    const utmMedium = params.get("utm_medium");
+    const utmCampaign = params.get("utm_campaign");
+    if (utmMedium) body.utmMedium = utmMedium;
+    if (utmCampaign) body.utmCampaign = utmCampaign;
+    if (!utmSource && !isExternal) body.utmSource = "direct";
+    const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
+    if (pid) body.participantId = pid;
+    localStorage.setItem(FIRST_VISIT_KEY, "1");
+    fetch("/api/analytics/utm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+  }, []);
   return null;
 }
 

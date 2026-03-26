@@ -1012,6 +1012,7 @@ export const userActivitySessions = pgTable("user_activity_sessions", {
   startedAt: timestamp("started_at").notNull().defaultNow(),
   endedAt: timestamp("ended_at").notNull().defaultNow(),
   durationMinutes: integer("duration_minutes").notNull().default(0),
+  durationSeconds: integer("duration_seconds"),
   pageContext: text("page_context"),
   entryPage: text("entry_page"),
   exitPage: text("exit_page"),
@@ -1036,3 +1037,32 @@ export const pageViews = pgTable("page_views", {
   index("idx_page_views_normalized_path").on(table.normalizedPath),
 ]);
 export type PageView = typeof pageViews.$inferSelect;
+
+// --- Search Logs (tracking search queries) ---
+export const searchLogs = pgTable("search_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  query: text("query").notNull(),
+  resultCount: integer("result_count").notNull().default(0),
+  context: text("context"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_search_logs_participant").on(table.participantId),
+  index("idx_search_logs_created").on(table.createdAt),
+]);
+export type SearchLog = typeof searchLogs.$inferSelect;
+
+// --- UTM Visits (acquisition tracking) ---
+export const utmVisits = pgTable("utm_visits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  referrer: text("referrer"),
+  landingPage: text("landing_page"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_utm_visits_created").on(table.createdAt),
+]);
+export type UtmVisit = typeof utmVisits.$inferSelect;

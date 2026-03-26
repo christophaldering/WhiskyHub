@@ -3002,8 +3002,9 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     if (existing) {
       const durationMs = now.getTime() - new Date(existing.startedAt).getTime();
+      const durationSeconds = Math.round(durationMs / 1000);
       const durationMinutes = Math.round(durationMs / 60000);
-      const updateData: Record<string, any> = { endedAt: now, durationMinutes };
+      const updateData: Record<string, any> = { endedAt: now, durationMinutes, durationSeconds };
       if (pageContext) {
         updateData.exitPage = pageContext;
         updateData.pageContext = pageContext;
@@ -3018,6 +3019,7 @@ export class DatabaseStorage implements IStorage {
         startedAt: now,
         endedAt: now,
         durationMinutes: 0,
+        durationSeconds: 0,
         pageContext: pageContext || null,
         entryPage: pageContext || null,
         exitPage: pageContext || null,
@@ -3038,7 +3040,7 @@ export class DatabaseStorage implements IStorage {
     if (filters.participantId) conditions.push(eq(userActivitySessions.participantId, filters.participantId));
     if (filters.from) conditions.push(gte(userActivitySessions.startedAt, filters.from));
     if (filters.to) conditions.push(sql`${userActivitySessions.startedAt} <= ${filters.to}`);
-    if (filters.minDuration) conditions.push(gte(userActivitySessions.durationMinutes, filters.minDuration));
+    if (filters.minDuration) conditions.push(sql`COALESCE(${userActivitySessions.durationSeconds}, ${userActivitySessions.durationMinutes} * 60) >= ${filters.minDuration}`);
 
     let query = db.select().from(userActivitySessions);
     if (conditions.length > 0) query = query.where(and(...conditions)) as typeof query;
@@ -3051,11 +3053,12 @@ export class DatabaseStorage implements IStorage {
   async getActivitySummary(from?: Date, to?: Date, userIds?: string[]): Promise<{
     totalSessions: number;
     uniqueUsers: number;
-    avgDurationMinutes: number;
-    totalMinutes: number;
+    avgDurationSeconds: number;
+    medianDurationSeconds: number;
+    totalSeconds: number;
     byDay: { date: string; sessions: number; uniqueUsers: number }[];
     byHour: { hour: number; sessions: number }[];
-    topUsers: { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: Date | null }[];
+    topUsers: { id: string; name: string; email: string; sessions: number; totalSeconds: number; lastActive: Date | null }[];
   }> {
     const conditions = [];
     if (from) conditions.push(gte(userActivitySessions.startedAt, from));
@@ -3065,11 +3068,14 @@ export class DatabaseStorage implements IStorage {
     }
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+    const secExpr = sql`COALESCE(${userActivitySessions.durationSeconds}, ${userActivitySessions.durationMinutes} * 60)`;
+
     const [totals] = await db.select({
       totalSessions: sql<number>`count(*)::int`,
       uniqueUsers: sql<number>`count(distinct ${userActivitySessions.participantId})::int`,
-      avgDuration: sql<number>`coalesce(avg(${userActivitySessions.durationMinutes}), 0)::int`,
-      totalMinutes: sql<number>`coalesce(sum(${userActivitySessions.durationMinutes}), 0)::int`,
+      avgDuration: sql<number>`coalesce(avg(${secExpr}), 0)::int`,
+      medianDuration: sql<number>`coalesce(percentile_cont(0.5) within group (order by ${secExpr}), 0)::int`,
+      totalSeconds: sql<number>`coalesce(sum(${secExpr}), 0)::int`,
     }).from(userActivitySessions).where(whereClause);
 
     const byDay = await db.select({
@@ -3092,7 +3098,7 @@ export class DatabaseStorage implements IStorage {
       name: participants.name,
       email: participants.email,
       sessions: sql<number>`count(*)::int`,
-      totalMinutes: sql<number>`coalesce(sum(${userActivitySessions.durationMinutes}), 0)::int`,
+      totalSeconds: sql<number>`coalesce(sum(${secExpr}), 0)::int`,
       lastActive: sql<Date | null>`max(${userActivitySessions.endedAt})`,
     }).from(userActivitySessions)
       .leftJoin(participants, eq(userActivitySessions.participantId, participants.id))
@@ -3104,11 +3110,12 @@ export class DatabaseStorage implements IStorage {
     return {
       totalSessions: totals?.totalSessions || 0,
       uniqueUsers: totals?.uniqueUsers || 0,
-      avgDurationMinutes: totals?.avgDuration || 0,
-      totalMinutes: totals?.totalMinutes || 0,
+      avgDurationSeconds: totals?.avgDuration || 0,
+      medianDurationSeconds: totals?.medianDuration || 0,
+      totalSeconds: totals?.totalSeconds || 0,
       byDay: byDay as { date: string; sessions: number; uniqueUsers: number }[],
       byHour: byHour as { hour: number; sessions: number }[],
-      topUsers: topUsers as { id: string; name: string; email: string; sessions: number; totalMinutes: number; lastActive: Date | null }[],
+      topUsers: topUsers as { id: string; name: string; email: string; sessions: number; totalSeconds: number; lastActive: Date | null }[],
     };
   }
 

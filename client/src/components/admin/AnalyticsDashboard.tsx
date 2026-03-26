@@ -8,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   BarChart3, Users, Clock, TrendingUp, Activity, Download, FileText,
   ChevronDown, ChevronRight, ArrowLeft, Eye, LogOut, UserPlus,
-  Target, Loader2, Calendar
+  Target, Loader2, Calendar, Bell, Search, Globe, Zap
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, AreaChart, Area
+  ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie
 } from "recharts";
 
 interface AnalyticsDashboardProps {
@@ -26,6 +26,25 @@ const PERIOD_OPTIONS = [
   { value: "90", label: "90 Tage" },
   { value: "0", label: "Gesamt" },
 ];
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function formatMedianTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+  return `${Math.round(seconds / 86400)}d`;
+}
 
 function KpiCard({ icon: Icon, label, value, sub, color = "text-primary" }: { icon: any; label: string; value: string | number; sub?: string; color?: string }) {
   return (
@@ -60,14 +79,14 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
   });
 
   const { data: funnelData, isLoading: loadingFunnels } = useQuery({
-    queryKey: ["/admin/analytics/funnels", currentParticipantId],
-    queryFn: () => adminApi.getAnalyticsFunnels(currentParticipantId),
+    queryKey: ["/admin/analytics/funnels", currentParticipantId, days],
+    queryFn: () => adminApi.getAnalyticsFunnels(currentParticipantId, daysNum),
     enabled: !!currentParticipantId && activeSection === "funnels",
   });
 
   const { data: retentionData, isLoading: loadingRetention } = useQuery({
-    queryKey: ["/admin/analytics/retention", currentParticipantId],
-    queryFn: () => adminApi.getAnalyticsRetention(currentParticipantId),
+    queryKey: ["/admin/analytics/retention", currentParticipantId, days],
+    queryFn: () => adminApi.getAnalyticsRetention(currentParticipantId, daysNum),
     enabled: !!currentParticipantId && activeSection === "retention",
   });
 
@@ -75,6 +94,42 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
     queryKey: ["/admin/analytics/user-deep-dive", currentParticipantId, selectedUserId],
     queryFn: () => adminApi.getUserDeepDive(currentParticipantId, selectedUserId!),
     enabled: !!currentParticipantId && !!selectedUserId,
+  });
+
+  const { data: featureData, isLoading: loadingFeatures } = useQuery({
+    queryKey: ["/admin/analytics/feature-adoption", currentParticipantId, days],
+    queryFn: () => adminApi.getFeatureAdoption(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "features",
+  });
+
+  const { data: activationData, isLoading: loadingActivation } = useQuery({
+    queryKey: ["/admin/analytics/activation-funnel", currentParticipantId, days],
+    queryFn: () => adminApi.getActivationFunnel(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "activation",
+  });
+
+  const { data: cohortData, isLoading: loadingCohorts } = useQuery({
+    queryKey: ["/admin/analytics/cohorts", currentParticipantId, days],
+    queryFn: () => adminApi.getCohorts(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "retention",
+  });
+
+  const { data: notifData, isLoading: loadingNotifs } = useQuery({
+    queryKey: ["/admin/analytics/notifications", currentParticipantId, days],
+    queryFn: () => adminApi.getNotificationEngagement(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "notifications",
+  });
+
+  const { data: searchData, isLoading: loadingSearch } = useQuery({
+    queryKey: ["/admin/analytics/search", currentParticipantId, days],
+    queryFn: () => adminApi.getSearchAnalytics(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "search",
+  });
+
+  const { data: acquisitionData, isLoading: loadingAcquisition } = useQuery({
+    queryKey: ["/admin/analytics/acquisition", currentParticipantId, days],
+    queryFn: () => adminApi.getAcquisition(currentParticipantId, daysNum),
+    enabled: !!currentParticipantId && activeSection === "acquisition",
   });
 
   const handleCsvExport = (type: string) => {
@@ -103,8 +158,13 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
     { id: "overview", label: "Overview" },
     { id: "pages", label: "Seiten & Navigation" },
     { id: "engagement", label: "Nutzer-Engagement" },
+    { id: "features", label: "Feature-Adoption" },
+    { id: "activation", label: "Aktivierung" },
     { id: "funnels", label: "Funnel-Analyse" },
-    { id: "retention", label: "Retention" },
+    { id: "retention", label: "Retention & Kohorten" },
+    { id: "notifications", label: "Benachrichtigungen" },
+    { id: "search", label: "Suche" },
+    { id: "acquisition", label: "Akquisition" },
   ];
 
   return (
@@ -134,7 +194,15 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={() => handleCsvExport("engagement")} data-testid="button-export-csv">
+          <Button variant="outline" size="sm" onClick={() => {
+            const typeMap: Record<string, string> = {
+              overview: "engagement", pages: "pageviews", engagement: "engagement",
+              features: "feature-adoption", activation: "activation-funnel", funnels: "funnels",
+              retention: "cohorts", notifications: "notifications", search: "search",
+              acquisition: "acquisition",
+            };
+            handleCsvExport(typeMap[activeSection] || "engagement");
+          }} data-testid="button-export-csv">
             <Download className="w-3.5 h-3.5 mr-1" /> CSV
           </Button>
           <Button variant="outline" size="sm" onClick={handlePdfExport} data-testid="button-export-pdf">
@@ -174,12 +242,32 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
             />
           )}
 
+          {activeSection === "features" && (
+            <FeatureAdoptionSection data={featureData} loading={loadingFeatures} />
+          )}
+
+          {activeSection === "activation" && (
+            <ActivationFunnelSection data={activationData} loading={loadingActivation} />
+          )}
+
           {activeSection === "funnels" && (
             <FunnelSection data={funnelData} loading={loadingFunnels} />
           )}
 
           {activeSection === "retention" && (
-            <RetentionSection data={retentionData} loading={loadingRetention} />
+            <RetentionSection data={retentionData} loading={loadingRetention} cohortData={cohortData} loadingCohorts={loadingCohorts} />
+          )}
+
+          {activeSection === "notifications" && (
+            <NotificationSection data={notifData} loading={loadingNotifs} />
+          )}
+
+          {activeSection === "search" && (
+            <SearchSection data={searchData} loading={loadingSearch} />
+          )}
+
+          {activeSection === "acquisition" && (
+            <AcquisitionSection data={acquisitionData} loading={loadingAcquisition} />
           )}
         </>
       )}
@@ -191,11 +279,12 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
   const kpis = dashboard?.kpis || {};
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" data-testid="kpi-cards">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3" data-testid="kpi-cards">
         <KpiCard icon={Users} label="DAU" value={kpis.activeToday || 0} sub="Heute aktiv" color="text-green-500" />
         <KpiCard icon={Users} label="WAU" value={kpis.active7d || 0} sub="7 Tage" color="text-blue-500" />
         <KpiCard icon={Users} label="MAU" value={kpis.active30d || 0} sub="30 Tage" color="text-purple-500" />
-        <KpiCard icon={Clock} label="Ø Verweildauer" value={`${kpis.avgDuration || 0}m`} sub="pro Session" />
+        <KpiCard icon={Clock} label="Ø Verweildauer" value={formatDuration(kpis.avgDurationSec || 0)} sub="pro Session" />
+        <KpiCard icon={Clock} label="Median" value={formatDuration(kpis.medianDurationSec || 0)} sub="Verweildauer" color="text-cyan-500" />
         <KpiCard icon={UserPlus} label="Neue Nutzer" value={kpis.newUsersWeek || 0} sub="letzte 7 Tage" color="text-amber-500" />
       </div>
 
@@ -204,6 +293,45 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <KpiCard icon={Target} label="Conversion" value={`${kpis.conversionRate || 0}%`} sub={`${kpis.acceptedInvites || 0}/${kpis.totalInvites || 0} Einladungen`} />
         <KpiCard icon={TrendingUp} label="Ø Seiten/Session" value={dashboard?.engagementTable?.length > 0 ? Math.round((dashboard.engagementTable.reduce((s: number, e: any) => s + (e.sessionCount || 0), 0) / dashboard.engagementTable.length) || 0) : 0} />
       </div>
+
+      {dashboard?.durationDistribution?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Sitzungsdauer-Verteilung
+            </h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={dashboard.durationDistribution}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 12 }} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} name="Sessions" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {dashboard?.dropOffCurve?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-red-500" /> Drop-off-Kurve
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">Wie viele Nutzer sind nach X Sekunden noch da</p>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={dashboard.dropOffCurve}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} unit="%" />
+                <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v: any) => [`${v}%`, "Noch aktiv"]} />
+                <Line type="monotone" dataKey="percentage" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ fill: "hsl(var(--destructive))" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {dashboard?.dauSeries?.length > 0 && (
         <Card>
@@ -326,7 +454,7 @@ function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; 
                       <td className="py-2 pr-2 font-mono text-xs">{p.page}</td>
                       <td className="text-center py-2 px-2 font-bold">{p.views}</td>
                       <td className="text-center py-2 px-2">{p.uniqueUsers}</td>
-                      <td className="text-center py-2 px-2">{p.avgDuration}s</td>
+                      <td className="text-center py-2 px-2">{formatDuration(p.avgDuration || 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -347,10 +475,32 @@ function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; 
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 10 }} label={{ value: "Sekunden", position: "bottom", fontSize: 10 }} />
                 <YAxis type="category" dataKey="page" tick={{ fontSize: 9 }} width={140} />
-                <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v: any) => [`${v}s`, "Ø Verweildauer"]} />
+                <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v: any) => [formatDuration(v), "Ø Verweildauer"]} />
                 <Bar dataKey="avgSeconds" fill="hsl(var(--primary))" radius={[0, 2, 2, 0]} name="Ø Sekunden" />
               </BarChart>
             </ResponsiveContainer>
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-1 cursor-pointer hover:text-primary" data-testid="dwell-sort-page">Seite</th>
+                    <th className="text-right py-1 cursor-pointer hover:text-primary" data-testid="dwell-sort-avg">Ø Sek.</th>
+                    <th className="text-right py-1 cursor-pointer hover:text-primary" data-testid="dwell-sort-median">Median Sek.</th>
+                    <th className="text-right py-1" data-testid="dwell-sort-views">Aufrufe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...pageViewData.dwellTime].sort((a: any, b: any) => b.avgSeconds - a.avgSeconds).map((d: any, i: number) => (
+                    <tr key={i} className="border-b border-muted" data-testid={`dwell-row-${i}`}>
+                      <td className="py-1 font-mono truncate max-w-[200px]">{d.page}</td>
+                      <td className="text-right py-1">{formatDuration(d.avgSeconds)}</td>
+                      <td className="text-right py-1">{formatDuration(d.medianSeconds)}</td>
+                      <td className="text-right py-1">{d.views}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -463,7 +613,7 @@ function EngagementSection({ dashboard, onSelectUser, onExport, onSessionExport 
                   <th className="text-left py-2 pr-2">Name</th>
                   <SortHeader field="sessionCount">Sessions</SortHeader>
                   <SortHeader field="totalDuration">Gesamt</SortHeader>
-                  <SortHeader field="avgDuration">Ø Min</SortHeader>
+                  <SortHeader field="avgDuration">Ø Dauer</SortHeader>
                   <SortHeader field="ratingCount">Ratings</SortHeader>
                   <th className="py-2 px-2 text-center">Letzte Aktivität</th>
                   <th className="py-2 px-2"></th>
@@ -477,8 +627,8 @@ function EngagementSection({ dashboard, onSelectUser, onExport, onSessionExport 
                       <div className="text-[10px] text-muted-foreground">{u.role}</div>
                     </td>
                     <td className="text-center py-2 px-2">{u.sessionCount}</td>
-                    <td className="text-center py-2 px-2 font-bold">{u.totalDuration}m</td>
-                    <td className="text-center py-2 px-2">{u.avgDuration}m</td>
+                    <td className="text-center py-2 px-2 font-bold">{formatDuration(u.totalDuration || 0)}</td>
+                    <td className="text-center py-2 px-2">{formatDuration(u.avgDuration || 0)}</td>
                     <td className="text-center py-2 px-2">{u.ratingCount}</td>
                     <td className="text-center py-2 px-2 text-xs text-muted-foreground">
                       {u.lastActivity ? new Date(u.lastActivity).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
@@ -552,58 +702,490 @@ function FunnelSection({ data, loading }: { data: any; loading: boolean }) {
   );
 }
 
-function RetentionSection({ data, loading }: { data: any; loading: boolean }) {
+function FeatureAdoptionSection({ data, loading }: { data: any; loading: boolean }) {
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
-  if (!data?.cohorts?.length) return <p className="text-center text-muted-foreground py-8">Keine Retention-Daten</p>;
+  if (!data) return <p className="text-center text-muted-foreground py-8">Keine Feature-Daten</p>;
 
-  const maxWeek = Math.max(...data.cohorts.map((c: any) => c.weeks?.length || 0), 0);
-  const weekHeaders = Array.from({ length: Math.min(maxWeek, 13) }, (_, i) => i);
+  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4">
+          <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-500" /> Feature-Adoption ({data.totalUsers} Nutzer gesamt)
+          </h3>
+          <div className="space-y-3">
+            {data.features?.map((f: any, i: number) => (
+              <div key={f.feature} data-testid={`feature-adoption-${f.feature.toLowerCase()}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">{f.feature}</span>
+                  <span className="text-xs">
+                    <span className="font-bold">{f.users}</span>
+                    <span className="text-muted-foreground ml-1">({f.percentage}%)</span>
+                  </span>
+                </div>
+                <div className="bg-muted rounded-full h-4 overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${f.percentage}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {data.aiFeatures?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-purple-500" /> AI-Feature-Nutzung
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-xs">
+                    <th className="text-left py-2">Feature</th>
+                    <th className="text-center py-2">Nutzungen</th>
+                    <th className="text-center py-2">Nutzer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.aiFeatures.map((f: any) => (
+                    <tr key={f.featureId} className="border-b border-muted/30" data-testid={`ai-feature-${f.featureId}`}>
+                      <td className="py-2 font-mono text-xs">{f.featureId}</td>
+                      <td className="text-center py-2 font-bold">{f.uses}</td>
+                      <td className="text-center py-2">{f.uniqueUsers}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.dwellCorrelation?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-500" /> Feature ↔ Verweildauer
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-xs">
+                    <th className="text-left py-2">Feature</th>
+                    <th className="text-center py-2">Nutzer</th>
+                    <th className="text-center py-2">Ø Verweildauer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.dwellCorrelation.map((d: any) => (
+                    <tr key={d.feature} className="border-b border-muted/30" data-testid={`dwell-${d.feature.toLowerCase()}`}>
+                      <td className="py-2 font-medium">{d.feature}</td>
+                      <td className="text-center py-2">{d.users}</td>
+                      <td className="text-center py-2 font-bold">{formatDuration(d.avg_dwell_seconds || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.featureTrends?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3">Feature-Nutzung über Zeit</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={(() => {
+                const byDay: Record<string, any> = {};
+                for (const row of data.featureTrends) {
+                  if (!byDay[row.day]) byDay[row.day] = { day: row.day };
+                  byDay[row.day][row.feature] = row.count;
+                }
+                return Object.values(byDay).sort((a: any, b: any) => a.day.localeCompare(b.day));
+              })()}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={(v: string) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="rating" stroke="#22c55e" strokeWidth={2} dot={false} name="Ratings" />
+                <Line type="monotone" dataKey="journal" stroke="#3b82f6" strokeWidth={2} dot={false} name="Journal" />
+                <Line type="monotone" dataKey="wishlist" stroke="#f59e0b" strokeWidth={2} dot={false} name="Wishlist" />
+                <Line type="monotone" dataKey="voice_memo" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Voice Memo" />
+                <Line type="monotone" dataKey="friend" stroke="#06b6d4" strokeWidth={2} dot={false} name="Freunde" />
+                <Line type="monotone" dataKey="group" stroke="#ef4444" strokeWidth={2} dot={false} name="Gruppen" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function ActivationFunnelSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (!data?.funnel) return <p className="text-center text-muted-foreground py-8">Keine Aktivierungsdaten</p>;
+
+  const funnel = data.funnel;
+  const maxCount = funnel[0]?.count || 1;
 
   return (
     <Card>
       <CardContent className="p-4">
-        <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4" /> Kohortenbasierte Retention
+        <h3 className="font-serif font-semibold text-sm mb-4 flex items-center gap-2">
+          <Target className="w-4 h-4 text-green-500" /> Aktivierungs-Funnel
         </h3>
-        <p className="text-xs text-muted-foreground mb-4">Nutzer gruppiert nach Registrierungswoche. Prozent = Wiederkehrrate.</p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs" data-testid="retention-table">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 pr-2 font-medium">Kohorte</th>
-                <th className="text-center py-2 px-1 font-medium">Größe</th>
-                {weekHeaders.map(w => (
-                  <th key={w} className="text-center py-2 px-1 font-medium">W{w}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.cohorts.map((cohort: any) => (
-                <tr key={cohort.cohortWeek} className="border-b border-muted/30" data-testid={`retention-row-${cohort.cohortWeek}`}>
-                  <td className="py-1.5 pr-2 font-mono">{cohort.cohortWeek?.slice(5) || "?"}</td>
-                  <td className="text-center py-1.5 px-1 font-bold">{cohort.size}</td>
-                  {weekHeaders.map(w => {
-                    const pct = cohort.weeks?.[w] ?? 0;
-                    const intensity = Math.min(pct / 100, 1);
-                    return (
-                      <td
-                        key={w}
-                        className="text-center py-1.5 px-1"
-                        style={{
-                          backgroundColor: pct > 0 ? `hsla(var(--primary), ${intensity * 0.4 + 0.05})` : undefined,
-                        }}
-                      >
-                        {pct > 0 ? `${pct}%` : "-"}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {funnel.map((step: any, i: number) => {
+            const prevCount = i > 0 ? funnel[i - 1].count : step.count;
+            const dropOff = prevCount > 0 ? Math.round(((prevCount - step.count) / prevCount) * 100) : 0;
+            return (
+              <div key={i} data-testid={`activation-step-${i}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium">{step.step}</span>
+                    {step.medianSeconds > 0 && (
+                      <span className="text-[10px] text-muted-foreground">Median: {formatMedianTime(step.medianSeconds)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold">{step.count}</span>
+                    {i > 0 && dropOff > 0 && (
+                      <Badge variant="outline" className="text-[10px] text-red-500 border-red-500/30">-{dropOff}%</Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-muted rounded-full h-6 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(step.count / maxCount) * 100}%`, backgroundColor: `hsl(${180 - (i * 25)}, 60%, 50%)` }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RetentionSection({ data, loading, cohortData, loadingCohorts }: { data: any; loading: boolean; cohortData: any; loadingCohorts: boolean }) {
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+
+  const maxWeek = data?.cohorts?.length > 0 ? Math.max(...data.cohorts.map((c: any) => c.weeks?.length || 0), 0) : 0;
+  const weekHeaders = Array.from({ length: Math.min(maxWeek, 13) }, (_, i) => i);
+
+  return (
+    <div className="space-y-6">
+      {data?.cohorts?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Kohortenbasierte Retention
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">Nutzer gruppiert nach Registrierungswoche. Prozent = Wiederkehrrate.</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs" data-testid="retention-table">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 pr-2 font-medium">Kohorte</th>
+                    <th className="text-center py-2 px-1 font-medium">Größe</th>
+                    {weekHeaders.map(w => (
+                      <th key={w} className="text-center py-2 px-1 font-medium">W{w}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.cohorts.map((cohort: any) => (
+                    <tr key={cohort.cohortWeek} className="border-b border-muted/30" data-testid={`retention-row-${cohort.cohortWeek}`}>
+                      <td className="py-1.5 pr-2 font-mono">{cohort.cohortWeek?.slice(5) || "?"}</td>
+                      <td className="text-center py-1.5 px-1 font-bold">{cohort.size}</td>
+                      {weekHeaders.map(w => {
+                        const pct = cohort.weeks?.[w] ?? 0;
+                        const intensity = Math.min(pct / 100, 1);
+                        return (
+                          <td
+                            key={w}
+                            className="text-center py-1.5 px-1"
+                            style={{
+                              backgroundColor: pct > 0 ? `hsla(var(--primary), ${intensity * 0.4 + 0.05})` : undefined,
+                            }}
+                          >
+                            {pct > 0 ? `${pct}%` : "-"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {cohortData?.contentVelocity?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-500" /> Content-Velocity
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">Wie schnell erstellen aktive Nutzer ihren n-ten Eintrag (Ratings)</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-xs">
+                    <th className="text-left py-2">Meilenstein</th>
+                    <th className="text-center py-2">Nutzer erreicht</th>
+                    <th className="text-center py-2">Median-Zeit ab Registrierung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cohortData.contentVelocity.map((v: any) => (
+                    <tr key={v.milestone} className="border-b border-muted/30" data-testid={`velocity-${v.milestone}`}>
+                      <td className="py-2 font-medium">Rating #{v.milestone}</td>
+                      <td className="text-center py-2 font-bold">{v.users_reached}</td>
+                      <td className="text-center py-2">{formatMedianTime(v.median_seconds_from_signup)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!data?.cohorts?.length && !loadingCohorts && (
+        <p className="text-center text-muted-foreground py-8">Keine Retention-Daten</p>
+      )}
+    </div>
+  );
+}
+
+function NotificationSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (!data) return <p className="text-center text-muted-foreground py-8">Keine Benachrichtigungsdaten</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <KpiCard icon={Bell} label="Gesamt" value={data.totalNotifications || 0} />
+        <KpiCard icon={Eye} label="Gelesen" value={data.totalRead || 0} color="text-green-500" />
+        <KpiCard icon={Target} label="Leserate" value={`${data.overallReadRate || 0}%`} color="text-blue-500" />
+      </div>
+
+      {data.returnCorrelation && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" /> Rückkehr-Korrelation (30 Min.)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-xl font-bold" data-testid="text-notifs-with-readers">{data.returnCorrelation.notifsWithReaders}</div>
+                <div className="text-xs text-muted-foreground">Gelesene Benachrichtigungen</div>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-xl font-bold text-green-600" data-testid="text-notifs-with-return">{data.returnCorrelation.notifsWithReturn}</div>
+                <div className="text-xs text-muted-foreground">Mit Rückkehr (&le;30 Min.)</div>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-xl font-bold text-blue-600" data-testid="text-return-rate">{data.returnCorrelation.returnRatePct}%</div>
+                <div className="text-xs text-muted-foreground">Rückkehrrate</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.byType?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Bell className="w-4 h-4" /> Leserate nach Typ
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-xs">
+                    <th className="text-left py-2">Typ</th>
+                    <th className="text-center py-2">Gesamt</th>
+                    <th className="text-center py-2">Gelesen</th>
+                    <th className="text-center py-2">Leserate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.byType.map((t: any) => (
+                    <tr key={t.type} className="border-b border-muted/30" data-testid={`notif-type-${t.type}`}>
+                      <td className="py-2 font-medium capitalize">{t.type}</td>
+                      <td className="text-center py-2">{t.total}</td>
+                      <td className="text-center py-2 font-bold text-green-600">{t.read}</td>
+                      <td className="text-center py-2">
+                        <Badge variant={t.readRate >= 50 ? "default" : "outline"} className="text-xs">{t.readRate}%</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function SearchSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (!data) return <p className="text-center text-muted-foreground py-8">Keine Suchdaten</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <KpiCard icon={Search} label="Suchen gesamt" value={data.totalSearches || 0} />
+        <KpiCard icon={Users} label="Suchende Nutzer" value={data.uniqueSearchUsers || 0} color="text-blue-500" />
+        <KpiCard icon={Target} label="Null-Ergebnis" value={data.nullResultSearches || 0} sub="Suchen ohne Treffer" color="text-red-500" />
+      </div>
+
+      {data.topSearches?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Search className="w-4 h-4" /> Meistgesuchte Begriffe
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-xs">
+                    <th className="text-left py-2">Suchbegriff</th>
+                    <th className="text-center py-2">Suchen</th>
+                    <th className="text-center py-2">Nutzer</th>
+                    <th className="text-center py-2">Ø Ergebnisse</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.topSearches.map((s: any, i: number) => (
+                    <tr key={i} className="border-b border-muted/30" data-testid={`search-term-${i}`}>
+                      <td className="py-2 font-mono text-xs">{s.query}</td>
+                      <td className="text-center py-2 font-bold">{s.count}</td>
+                      <td className="text-center py-2">{s.uniqueUsers}</td>
+                      <td className="text-center py-2">{s.avgResults}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.nullResults?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Search className="w-4 h-4 text-red-500" /> Null-Ergebnis-Suchen
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">Was Nutzer suchen und nicht finden</p>
+            <div className="space-y-2">
+              {data.nullResults.map((s: any, i: number) => {
+                const max = data.nullResults[0]?.count || 1;
+                return (
+                  <div key={i} className="flex items-center gap-3" data-testid={`null-search-${i}`}>
+                    <span className="text-xs font-mono w-[140px] truncate flex-shrink-0">{s.query}</span>
+                    <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
+                      <div className="bg-red-500/40 h-full rounded-full" style={{ width: `${(s.count / max) * 100}%` }} />
+                    </div>
+                    <span className="text-xs font-medium w-8 flex-shrink-0">{s.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function AcquisitionSection({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (!data) return <p className="text-center text-muted-foreground py-8">Keine Akquisitionsdaten</p>;
+
+  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6"];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <KpiCard icon={Globe} label="Besuche gesamt" value={data.totalVisits || 0} />
+        <KpiCard icon={Users} label="Eindeutige Besucher" value={data.uniqueVisitors || 0} color="text-blue-500" />
+      </div>
+
+      {data.bySource?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4" /> Traffic nach Quelle
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={data.bySource} dataKey="visits" nameKey="source" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {data.bySource.map((_: any, i: number) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-muted-foreground text-xs">
+                      <th className="text-left py-2">Quelle</th>
+                      <th className="text-center py-2">Besuche</th>
+                      <th className="text-center py-2">Nutzer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.bySource.map((s: any, i: number) => (
+                      <tr key={i} className="border-b border-muted/30" data-testid={`source-${s.source}`}>
+                        <td className="py-2 font-mono text-xs">{s.source}</td>
+                        <td className="text-center py-2 font-bold">{s.visits}</td>
+                        <td className="text-center py-2">{s.uniqueUsers}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.byReferrer?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-serif font-semibold text-sm mb-3">Top Referrer</h3>
+            <div className="space-y-2">
+              {data.byReferrer.slice(0, 10).map((r: any, i: number) => {
+                const max = data.byReferrer[0]?.visits || 1;
+                return (
+                  <div key={i} className="flex items-center gap-3" data-testid={`referrer-${i}`}>
+                    <span className="text-xs font-mono w-[180px] truncate flex-shrink-0">{r.referrer}</span>
+                    <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
+                      <div className="bg-blue-500/40 h-full rounded-full" style={{ width: `${(r.visits / max) * 100}%` }} />
+                    </div>
+                    <span className="text-xs font-medium w-8 flex-shrink-0">{r.visits}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
@@ -627,6 +1209,7 @@ function UserDeepDiveView({ data, loading, onBack, participantId, days }: { data
 
   const user = data.user;
   const stats = data.stats;
+  const getDurationSec = (s: any) => s.durationSeconds != null ? s.durationSeconds : (s.durationMinutes || 0) * 60;
 
   return (
     <div className="space-y-6" data-testid="user-deep-dive">
@@ -660,7 +1243,7 @@ function UserDeepDiveView({ data, loading, onBack, participantId, days }: { data
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard icon={Activity} label="Sessions" value={stats.totalSessions} />
-        <KpiCard icon={Clock} label="Gesamtdauer" value={`${stats.totalDuration}m`} />
+        <KpiCard icon={Clock} label="Gesamtdauer" value={formatDuration(stats.totalDurationSec || 0)} />
         <KpiCard icon={BarChart3} label="Ratings" value={stats.ratingCount} />
         <KpiCard icon={FileText} label="Journal" value={stats.journalCount} />
       </div>
@@ -704,13 +1287,14 @@ function UserDeepDiveView({ data, loading, onBack, participantId, days }: { data
             </h3>
             <div className="flex flex-wrap gap-1">
               {data.activityCalendar.slice(-90).map((d: any) => {
-                const intensity = Math.min((d.totalMinutes || 0) / 30, 1);
+                const totalSec = d.totalSeconds || (d.totalMinutes || 0) * 60;
+                const intensity = Math.min(totalSec / 1800, 1);
                 return (
                   <div
                     key={d.day}
                     className="w-3 h-3 rounded-sm border border-border/30"
                     style={{ backgroundColor: intensity > 0 ? `hsla(var(--primary), ${intensity * 0.7 + 0.1})` : undefined }}
-                    title={`${d.day}: ${d.sessions} Sessions, ${d.totalMinutes}min`}
+                    title={`${d.day}: ${d.sessions} Sessions, ${formatDuration(totalSec)}`}
                   />
                 );
               })}
@@ -738,7 +1322,7 @@ function UserDeepDiveView({ data, loading, onBack, participantId, days }: { data
                         {new Date(session.startedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                       <span className="text-xs text-muted-foreground ml-2">
-                        {session.durationMinutes}min · {session.pageCount || 0} Seiten
+                        {formatDuration(getDurationSec(session))} · {session.pageCount || 0} Seiten
                       </span>
                     </div>
                   </div>
@@ -756,7 +1340,7 @@ function UserDeepDiveView({ data, loading, onBack, participantId, days }: { data
                           </span>
                           <span className="font-mono flex-1 truncate">{pv.pagePath}</span>
                           {pv.durationSeconds != null && (
-                            <span className="text-muted-foreground flex-shrink-0">{pv.durationSeconds}s</span>
+                            <span className="text-muted-foreground flex-shrink-0">{formatDuration(pv.durationSeconds)}</span>
                           )}
                         </div>
                       ))}

@@ -769,10 +769,46 @@ export const adminApi = {
   },
   getUserDeepDive: (requesterId: string, userId: string) =>
     fetchJSON(`/admin/analytics/user-deep-dive/${userId}?requesterId=${requesterId}`),
-  getAnalyticsFunnels: (requesterId: string) =>
-    fetchJSON(`/admin/analytics/funnels?requesterId=${requesterId}`),
-  getAnalyticsRetention: (requesterId: string) =>
-    fetchJSON(`/admin/analytics/retention?requesterId=${requesterId}`),
+  getAnalyticsFunnels: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/funnels?${params}`);
+  },
+  getAnalyticsRetention: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/retention?${params}`);
+  },
+  getFeatureAdoption: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/feature-adoption?${params}`);
+  },
+  getActivationFunnel: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/activation-funnel?${params}`);
+  },
+  getCohorts: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/cohorts?${params}`);
+  },
+  getNotificationEngagement: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/notifications?${params}`);
+  },
+  getSearchAnalytics: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/search?${params}`);
+  },
+  getAcquisition: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return fetchJSON(`/admin/analytics/acquisition?${params}`);
+  },
   exportCsv: (requesterId: string, type: string, days?: number, userId?: string) => {
     const params = new URLSearchParams({ requesterId, type });
     if (days) params.set("days", String(days));
