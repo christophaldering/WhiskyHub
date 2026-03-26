@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
@@ -18,8 +18,12 @@ import {
   MessageSquarePlus, Rocket, AlertTriangle,
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
   BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, GripVertical, Pencil, X,
-  FileText, RotateCcw,
+  FileText, RotateCcw, TrendingUp, ArrowUpRight, ArrowDownRight, Timer, MailCheck,
 } from "lucide-react";
+import {
+  ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+} from "recharts";
 
 type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas" | "trash";
 
@@ -1733,44 +1737,275 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
   );
 }
 
+const CHART_COLORS = ["#d4a574", "#8b6914", "#c4956a", "#a67c52", "#e8c49a", "#7a5c3a"];
+
+function KpiCard({ id, label, value, icon: Icon, sub }: { id: string; label: string; value: string | number; icon: React.ElementType; sub?: string }) {
+  return (
+    <div className="labs-card p-3 flex flex-col gap-1" data-testid={`kpi-${id}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+        <span className="text-[11px] uppercase tracking-wide" style={{ color: "var(--labs-text-muted)" }}>{label}</span>
+      </div>
+      <div className="labs-h2" style={{ color: "var(--labs-text)" }}>{value}</div>
+      {sub && <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>{sub}</span>}
+    </div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="labs-card p-4">
+      <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>{title}</span>
+      {children}
+    </div>
+  );
+}
+
 function AnalyticsTab({ pid }: { pid: string }) {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery({ queryKey: ["/admin/analytics", pid], queryFn: () => adminApi.getAnalytics(pid), enabled: !!pid });
+  const [days, setDays] = useState<number>(0);
+  const [sortCol, setSortCol] = useState<string>("totalDuration");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const { data: legacyData } = useQuery({ queryKey: ["/admin/analytics", pid], queryFn: () => adminApi.getAnalytics(pid), enabled: !!pid });
+  const { data, isLoading } = useQuery({ queryKey: ["/admin/analytics/dashboard", pid, days], queryFn: () => adminApi.getAnalyticsDashboard(pid, days || undefined), enabled: !!pid });
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--labs-accent)" }} /></div>;
   if (!data) return <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("admin.noAnalyticsData")}</div>;
-  const analytics = data as Record<string, unknown>;
+
+  const d = data as any;
+  const legacy = legacyData as any;
+  const kpis = d.kpis || {};
+  const engagement = d.engagementTable || [];
+
+  const sorted = [...engagement].sort((a: any, b: any) => {
+    const aVal = a[sortCol] ?? 0;
+    const bVal = b[sortCol] ?? 0;
+    if (aVal === bVal) return 0;
+    return sortDir === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+  });
+
+  const toggleSort = (col: string) => {
+    if (sortCol === col) setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const timeFilters = [
+    { label: "7d", value: 7 },
+    { label: "30d", value: 30 },
+    { label: "90d", value: 90 },
+    { label: t("admin.allTime") || "All", value: 0 },
+  ];
+
+  const tooltipStyle = { backgroundColor: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: "8px" };
+  const tooltipLabelStyle = { color: "var(--labs-text)" };
+  const tooltipItemStyle = { color: "var(--labs-accent)" };
 
   return (
-    <div data-testid="labs-admin-analytics-tab">
-      <div className="labs-auto-grid mb-4" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
-        {[
-          { label: t("admin.totalRatings"), value: (analytics.totalRatings as number) || 0 },
-          { label: t("admin.totalWhiskies"), value: (analytics.totalWhiskies as number) || 0 },
-          { label: t("admin.totalTastings"), value: (analytics.totalTastings as number) || 0 },
-          { label: t("admin.totalParticipants"), value: (analytics.totalParticipants as number) || 0 },
-        ].map(s => (
-          <div key={s.label} className="labs-card text-center py-3" data-testid={`labs-admin-analytics-${s.label.toLowerCase().replace(/\s/g, "-")}`}>
-            <div className="labs-h2" style={{ color: "var(--labs-text)" }}>{s.value}</div>
-            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{s.label}</div>
-          </div>
-        ))}
+    <div data-testid="labs-admin-analytics-tab" className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>{t("admin.dashboard") || "Dashboard"}</span>
+        </div>
+        <div className="flex gap-1" data-testid="analytics-time-filter">
+          {timeFilters.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setDays(f.value)}
+              className="px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
+              style={{
+                background: days === f.value ? "var(--labs-accent)" : "var(--labs-surface-alt)",
+                color: days === f.value ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              }}
+              data-testid={`filter-${f.label.toLowerCase()}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
-      {(analytics.topWhiskies as Array<Record<string, unknown>>)?.length > 0 && (
-        <div className="labs-card p-4 mb-3">
+
+      <div className="labs-auto-grid" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
+        <KpiCard id="active-today" label={t("admin.activeToday") || "Active Today"} value={kpis.activeToday ?? 0} icon={Users} />
+        <KpiCard id="active-7d" label={t("admin.active7d") || "Active 7d"} value={kpis.active7d ?? 0} icon={Activity} />
+        <KpiCard id="active-30d" label={t("admin.active30d") || "Active 30d"} value={kpis.active30d ?? 0} icon={TrendingUp} />
+        <KpiCard id="new-users-week" label={t("admin.newUsersWeek") || "New This Week"} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
+        <KpiCard id="avg-duration" label={t("admin.avgDuration") || "Avg Duration"} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
+        <KpiCard id="total-sessions" label={t("admin.totalSessions") || "Sessions"} value={kpis.totalSessions ?? 0} icon={Eye} />
+        <KpiCard
+          id="conversion-rate"
+          label={t("admin.conversionRate") || "Conversion"}
+          value={`${kpis.conversionRate ?? 0}%`}
+          icon={MailCheck}
+          sub={`${kpis.acceptedInvites ?? 0} / ${kpis.totalInvites ?? 0} ${t("admin.invites") || "invites"}`}
+        />
+        {legacy && (
+          <KpiCard id="total-ratings" label={t("admin.totalRatings")} value={legacy.totalRatings ?? 0} icon={Hash} />
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ChartCard title={t("admin.dauChart") || "Daily Active Users"}>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer>
+              <LineChart data={d.dauSeries || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={false} name="DAU" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+
+        <ChartCard title={t("admin.wauChart") || "Weekly Active Users"}>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer>
+              <LineChart data={d.wauSeries || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                <XAxis dataKey="week" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                <Line type="monotone" dataKey="count" stroke="#8b6914" strokeWidth={2} dot={false} name="WAU" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+
+        <ChartCard title={t("admin.topPages") || "Top Pages"}>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer>
+              <BarChart data={(d.topPages || []).slice(0, 8)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                <YAxis type="category" dataKey="page" tick={{ fontSize: 9, fill: "var(--labs-text-muted)" }} width={120} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                <Bar dataKey="count" fill="var(--labs-accent)" radius={[0, 4, 4, 0]} name="Visits" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+
+        <ChartCard title={t("admin.sessionDuration") || "Session Duration Distribution"}>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={d.durationDistribution || []} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {(d.durationDistribution || []).map((_: any, i: number) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+      </div>
+
+      {d.registrationSeries?.length > 0 && (
+        <ChartCard title={t("admin.registrations") || "New Registrations Over Time"}>
+          <div style={{ width: "100%", height: 180 }}>
+            <ResponsiveContainer>
+              <BarChart data={d.registrationSeries}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} tickFormatter={(v: string) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                <Bar dataKey="count" fill="#c4956a" radius={[4, 4, 0, 0]} name="New Users" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+      )}
+
+      {d.inviteConversion && (
+        <div className="labs-card p-4">
+          <span className="text-sm font-semibold block mb-2" style={{ color: "var(--labs-text)" }}>
+            {t("admin.inviteConversion") || "Invitation Conversion"}
+          </span>
+          <div className="flex items-center gap-6">
+            <div>
+              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sent") || "Sent"}</span>
+              <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{d.inviteConversion.total}</div>
+            </div>
+            <div style={{ color: "var(--labs-text-muted)" }}>→</div>
+            <div>
+              <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.accepted") || "Accepted"}</span>
+              <div className="labs-h3" style={{ color: "var(--labs-success, var(--labs-accent))" }}>{d.inviteConversion.accepted}</div>
+            </div>
+            <div className="ml-auto labs-card px-3 py-1.5" style={{ background: "var(--labs-surface-alt)" }}>
+              <span className="text-lg font-bold" style={{ color: "var(--labs-accent)" }}>{d.inviteConversion.rate}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sorted.length > 0 && (
+        <div className="labs-card p-4">
+          <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>
+            {t("admin.engagementTable") || "User Engagement"}
+          </span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]" style={{ color: "var(--labs-text)" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                  {[
+                    { key: "name", label: t("admin.name") || "Name" },
+                    { key: "sessionCount", label: t("admin.sessions") || "Sessions" },
+                    { key: "totalDuration", label: t("admin.totalTime") || "Total (min)" },
+                    { key: "avgDuration", label: t("admin.avgTime") || "Avg (min)" },
+                    { key: "ratingCount", label: t("admin.ratings") || "Ratings" },
+                    { key: "lastActivity", label: t("admin.lastActive") || "Last Active" },
+                  ].map(col => (
+                    <th
+                      key={col.key}
+                      className="text-left py-1.5 px-1 cursor-pointer select-none"
+                      style={{ color: sortCol === col.key ? "var(--labs-accent)" : "var(--labs-text-muted)" }}
+                      onClick={() => toggleSort(col.key)}
+                      data-testid={`sort-${col.key}`}
+                    >
+                      {col.label} {sortCol === col.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((row: any) => (
+                  <tr key={row.id} style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                    <td className="py-1.5 px-1 font-medium">{row.name}</td>
+                    <td className="py-1.5 px-1">{row.sessionCount}</td>
+                    <td className="py-1.5 px-1">{row.totalDuration}</td>
+                    <td className="py-1.5 px-1">{row.avgDuration}</td>
+                    <td className="py-1.5 px-1">{row.ratingCount}</td>
+                    <td className="py-1.5 px-1" style={{ color: "var(--labs-text-muted)" }}>
+                      {row.lastActivity ? new Date(row.lastActivity).toLocaleDateString() : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {legacy?.topWhiskies?.length > 0 && (
+        <div className="labs-card p-4">
           <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.topWhiskies")}</span>
-          {(analytics.topWhiskies as Array<Record<string, unknown>>).slice(0, 10).map((w, i) => (
-            <div key={(w.id as string) || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
-              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {String(w.name ?? "")}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{String(w.distillery)}</span>}</div>
+          {legacy.topWhiskies.slice(0, 10).map((w: any, i: number) => (
+            <div key={w.id || i} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--labs-border)" }}>
+              <div><span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{i + 1}. {w.name}</span>{w.distillery && <span className="text-[11px] ml-1.5" style={{ color: "var(--labs-text-muted)" }}>{w.distillery}</span>}</div>
               <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{Number(w.avgScore).toFixed(1)}</span>
             </div>
           ))}
         </div>
       )}
-      {(analytics.regionCounts as Array<[string, number]>)?.length > 0 && (
+
+      {legacy?.regionCounts?.length > 0 && (
         <div className="labs-card p-4">
           <span className="text-sm font-semibold block mb-2.5" style={{ color: "var(--labs-text)" }}>{t("admin.regions")}</span>
-          {(analytics.regionCounts as Array<[string, number]>).map(([region, count]) => (
+          {legacy.regionCounts.map(([region, count]: [string, number]) => (
             <div key={region} className="flex items-center justify-between py-1">
               <span className="text-xs" style={{ color: "var(--labs-text)" }}>{region}</span>
               <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{count}</span>

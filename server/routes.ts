@@ -10174,6 +10174,165 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.get("/api/admin/analytics/dashboard", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 0;
+      const now = new Date();
+      const cutoff = days > 0 ? new Date(now.getTime() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { participants: pTable, userActivitySessions, sessionInvites, ratings: ratingsTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte, and, isNotNull } = await import("drizzle-orm");
+
+      const allParticipants = await dbInst.select({
+        id: pTable.id,
+        name: pTable.name,
+        lastSeenAt: pTable.lastSeenAt,
+        createdAt: pTable.createdAt,
+        role: pTable.role,
+      }).from(pTable);
+
+      const todayCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const weekCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const activeToday = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= todayCutoff).length;
+      const active7d = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= weekCutoff).length;
+      const active30d = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= monthCutoff).length;
+      const newUsersWeek = allParticipants.filter(p => p.createdAt && p.createdAt >= weekCutoff).length;
+
+      let sessionsQuery = dbInst.select().from(userActivitySessions);
+      const allSessions = await sessionsQuery;
+      const filteredSessions = cutoff ? allSessions.filter(s => s.startedAt >= cutoff) : allSessions;
+
+      const totalDuration = filteredSessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+      const avgDuration = filteredSessions.length > 0 ? Math.round(totalDuration / filteredSessions.length) : 0;
+
+      const durationBuckets = { short: 0, medium: 0, long: 0 };
+      for (const s of filteredSessions) {
+        const d = s.durationMinutes || 0;
+        if (d <= 5) durationBuckets.short++;
+        else if (d <= 20) durationBuckets.medium++;
+        else durationBuckets.long++;
+      }
+
+      const allInvites = await dbInst.select().from(sessionInvites);
+      const filteredInvites = cutoff ? allInvites.filter(i => i.createdAt && i.createdAt >= cutoff) : allInvites;
+      const totalInvites = filteredInvites.length;
+      const acceptedInvites = filteredInvites.filter(i => i.status === "accepted" || i.acceptedAt != null).length;
+      const conversionRate = totalInvites > 0 ? Math.round((acceptedInvites / totalInvites) * 100) : 0;
+
+      const pageContextCounts: Record<string, number> = {};
+      for (const s of filteredSessions) {
+        if (s.pageContext) {
+          const page = s.pageContext.replace(/\/[a-f0-9-]{36}/g, "/:id").replace(/\/\d+/g, "/:n");
+          pageContextCounts[page] = (pageContextCounts[page] || 0) + 1;
+        }
+      }
+      const topPages = Object.entries(pageContextCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([page, count]) => ({ page, count }));
+
+      const dauMap: Record<string, Set<string>> = {};
+      for (const s of filteredSessions) {
+        const day = s.startedAt.toISOString().slice(0, 10);
+        if (!dauMap[day]) dauMap[day] = new Set();
+        dauMap[day].add(s.participantId);
+      }
+      const dauSeries = Object.entries(dauMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-90)
+        .map(([date, users]) => ({ date, count: users.size }));
+
+      const wauMap: Record<string, Set<string>> = {};
+      for (const s of filteredSessions) {
+        const d = s.startedAt;
+        const weekStart = new Date(d);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekKey = weekStart.toISOString().slice(0, 10);
+        if (!wauMap[weekKey]) wauMap[weekKey] = new Set();
+        wauMap[weekKey].add(s.participantId);
+      }
+      const wauSeries = Object.entries(wauMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-52)
+        .map(([week, users]) => ({ week, count: users.size }));
+
+      const regMap: Record<string, number> = {};
+      for (const p of allParticipants) {
+        if (p.createdAt && (!cutoff || p.createdAt >= cutoff)) {
+          const day = p.createdAt.toISOString().slice(0, 10);
+          regMap[day] = (regMap[day] || 0) + 1;
+        }
+      }
+      const registrationSeries = Object.entries(regMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-90)
+        .map(([date, count]) => ({ date, count }));
+
+      const pMap = new Map(allParticipants.map(p => [p.id, p]));
+      const sessionsByUser: Record<string, { count: number; totalDuration: number; lastActivity: Date | null }> = {};
+      for (const s of filteredSessions) {
+        if (!sessionsByUser[s.participantId]) {
+          sessionsByUser[s.participantId] = { count: 0, totalDuration: 0, lastActivity: null };
+        }
+        const u = sessionsByUser[s.participantId];
+        u.count++;
+        u.totalDuration += s.durationMinutes || 0;
+        if (!u.lastActivity || s.startedAt > u.lastActivity) u.lastActivity = s.startedAt;
+      }
+
+      const allRatings = await dbInst.select({
+        participantId: ratingsTable.participantId,
+      }).from(ratingsTable);
+      const ratingsByUser: Record<string, number> = {};
+      for (const r of allRatings) {
+        ratingsByUser[r.participantId] = (ratingsByUser[r.participantId] || 0) + 1;
+      }
+
+      const engagementTable = Object.entries(sessionsByUser)
+        .map(([pid, data]) => {
+          const p = pMap.get(pid);
+          return {
+            id: pid,
+            name: p?.name || "Unknown",
+            role: p?.role || "user",
+            sessionCount: data.count,
+            totalDuration: data.totalDuration,
+            avgDuration: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
+            lastActivity: data.lastActivity?.toISOString() || null,
+            ratingCount: ratingsByUser[pid] || 0,
+          };
+        })
+        .sort((a, b) => b.totalDuration - a.totalDuration)
+        .slice(0, 50);
+
+      res.json({
+        kpis: { activeToday, active7d, active30d, newUsersWeek, avgDuration, totalSessions: filteredSessions.length, conversionRate, totalInvites, acceptedInvites },
+        durationDistribution: [
+          { label: "< 5 min", count: durationBuckets.short },
+          { label: "5-20 min", count: durationBuckets.medium },
+          { label: "> 20 min", count: durationBuckets.long },
+        ],
+        topPages,
+        dauSeries,
+        wauSeries,
+        registrationSeries,
+        engagementTable,
+        inviteConversion: { total: totalInvites, accepted: acceptedInvites, rate: conversionRate },
+      });
+    } catch (e: any) {
+      console.error("Admin analytics dashboard error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ============================================================
   // NEWSLETTER MANAGEMENT (admin-only)
   // ============================================================
