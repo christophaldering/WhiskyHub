@@ -7,7 +7,7 @@ import { tastingApi, whiskyApi } from "@/lib/api";
 import {
   Share2, Plus, Users, ChevronRight, ChevronLeft, Eye, EyeOff, Lock, Globe,
   UsersRound, Trash2, Sparkles, Wand2, Edit3, Upload, Loader2, ChevronDown,
-  ChevronUp, FileSpreadsheet, Image, MessageSquare, Wine, Check, X
+  ChevronUp, FileSpreadsheet, Image, MessageSquare, Wine, Check, X, BarChart3
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { friendsApi } from "@/lib/api";
@@ -120,15 +120,15 @@ export default function LabsBottleSharing() {
             {t("authGate.preview.sharingWelcome", "Bottle-Sharing")}
           </h1>
           <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 380, margin: "0 auto" }}>
-            {t("authGate.preview.sharingSubtitle", "Share your bottles with the community.")}
+            {t("authGate.preview.sharingSubtitle", "Organize joint tastings of special bottles.")}
           </p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
           {[
-            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Share bottles", descFb: "Put your bottles together and share them with the community." },
-            { icon: <Eye className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Blind or open", descFb: "Choose whether bottles are visible or tasted as a surprise." },
-            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Rate together", descFb: "Rate nose, palate and finish — and compare your results." },
+            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Organize joint tastings of special bottles", descFb: "Bring together rare and special bottles for a shared tasting experience." },
+            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Share experiences with your circle", descFb: "Invite friends and enjoy unique whiskies together." },
+            { icon: <BarChart3 className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Manage participants and ratings", descFb: "Keep track of who's joining and compare everyone's scores." },
           ].map((feat, i) => (
             <div
               key={i}
