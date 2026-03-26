@@ -424,12 +424,144 @@ export default function LabsAdmin() {
   );
 }
 
+interface ParticipantActivityData {
+  overview: { registeredAt: string | null; lastSeenAt: string | null; totalSessions: number; totalTimeSeconds: number };
+  recentSessions: Array<{ id: string; startedAt: string; endedAt: string; durationSeconds: number; entryPage: string | null; exitPage: string | null; pageCount: number }>;
+  tastings: Array<{ tastingId: string; title: string; code: string; date: string; role: string; ratingsCount: number }>;
+  topPages: Array<{ normalizedPath: string; viewCount: number; totalSeconds: number }>;
+  searchCount: number;
+  aiUsageCount: number;
+}
+
+function ParticipantDetailPanel({ participantId, pid }: { participantId: string; pid: string }) {
+  const { t } = useTranslation();
+  const { data, isLoading, isError } = useQuery<ParticipantActivityData>({
+    queryKey: ["/admin/participant-activity", participantId],
+    queryFn: () => adminApi.getParticipantActivity(pid, participantId),
+    enabled: !!participantId,
+  });
+
+  if (isLoading) return (
+    <div className="p-4 flex items-center justify-center gap-2" style={{ color: "var(--labs-text-muted)" }}>
+      <Loader2 className="w-4 h-4 animate-spin" /> {t("admin.detailLoading")}
+    </div>
+  );
+  if (isError || !data) return (
+    <div className="p-4 text-center text-sm" style={{ color: "var(--labs-danger)" }}>{t("admin.detailError")}</div>
+  );
+
+  const fmtDur = (sec: number) => {
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+    return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+  };
+
+  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString() : "–";
+  const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString() : "–";
+
+  return (
+    <div className="border-t pt-3 mt-3 space-y-4" style={{ borderColor: "var(--labs-border)" }} data-testid={`labs-admin-participant-detail-${participantId}`}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="labs-card p-2.5 text-center">
+          <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailRegistered")}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-registered-date">{fmtDate(data.overview.registeredAt)}</div>
+        </div>
+        <div className="labs-card p-2.5 text-center">
+          <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailLastSeen")}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-last-seen">{fmtDateTime(data.overview.lastSeenAt)}</div>
+        </div>
+        <div className="labs-card p-2.5 text-center">
+          <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailTotalSessions")}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-total-sessions">{data.overview.totalSessions}</div>
+        </div>
+        <div className="labs-card p-2.5 text-center">
+          <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailTotalTime")}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-total-time">{fmtDur(data.overview.totalTimeSeconds)}</div>
+        </div>
+      </div>
+
+      {data.recentSessions.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold mb-1.5" style={{ color: "var(--labs-text)" }}>{t("admin.detailRecentSessions")}</div>
+          <div className="space-y-1">
+            {data.recentSessions.map((s) => (
+              <div key={s.id} className="labs-card p-2 flex items-center gap-2 text-[11px] flex-wrap" data-testid={`row-session-${s.id}`}>
+                <Clock className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                <span style={{ color: "var(--labs-text)" }}>{fmtDateTime(s.startedAt)}</span>
+                <span style={{ color: "var(--labs-accent)" }}>{fmtDur(s.durationSeconds)}</span>
+                <span style={{ color: "var(--labs-text-muted)" }}>{s.pageCount} {t("admin.detailPages")}</span>
+                {s.entryPage && <span className="truncate max-w-[100px]" style={{ color: "var(--labs-text-muted)" }} title={s.entryPage}>→ {s.entryPage}</span>}
+                {s.exitPage && <span className="truncate max-w-[100px]" style={{ color: "var(--labs-text-muted)" }} title={s.exitPage}>⇥ {s.exitPage}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.tastings.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold mb-1.5" style={{ color: "var(--labs-text)" }}>{t("admin.detailTastings")}</div>
+          <div className="space-y-1">
+            {data.tastings.map((tst) => (
+              <div key={tst.tastingId} className="labs-card p-2 flex items-center gap-2 text-[11px]" data-testid={`row-tasting-${tst.tastingId}`}>
+                <Wine className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                <span className="font-medium truncate" style={{ color: "var(--labs-text)" }}>{tst.title}</span>
+                <span style={{ color: "var(--labs-text-muted)" }}>{tst.code}</span>
+                <span className="text-[10px] px-1 rounded" style={{
+                  background: tst.role === "host" ? "var(--labs-info)" : "var(--labs-accent-muted)",
+                  color: tst.role === "host" ? "#fff" : "var(--labs-accent)",
+                }}>{tst.role === "host" ? t("admin.roleHost") : t("admin.detailParticipantRole")}</span>
+                <span style={{ color: "var(--labs-text-muted)" }}>{tst.ratingsCount} {t("admin.detailRatings")}</span>
+                <span style={{ color: "var(--labs-text-muted)" }}>{tst.date}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.topPages.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold mb-1.5" style={{ color: "var(--labs-text)" }}>{t("admin.detailTopPages")}</div>
+          <div className="space-y-1">
+            {data.topPages.map((pg, i) => (
+              <div key={pg.normalizedPath} className="labs-card p-2 flex items-center gap-2 text-[11px]" data-testid={`row-page-${i}`}>
+                <Globe className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                <span className="font-medium truncate flex-1" style={{ color: "var(--labs-text)" }}>{pg.normalizedPath}</span>
+                <span style={{ color: "var(--labs-accent)" }}>{pg.viewCount}×</span>
+                <span style={{ color: "var(--labs-text-muted)" }}>{fmtDur(pg.totalSeconds)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <div className="labs-card p-2.5 flex items-center gap-2 flex-1">
+          <Search className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+          <div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailSearches")}</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-search-count">{data.searchCount}</div>
+          </div>
+        </div>
+        <div className="labs-card p-2.5 flex items-center gap-2 flex-1">
+          <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+          <div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.detailAiUsage")}</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid="text-ai-count">{data.aiUsageCount}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const roleMutation = useMutation({
     mutationFn: ({ participantId, role }: { participantId: string; role: string }) => adminApi.updateRole(participantId, role, pid),
@@ -465,7 +597,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
           <div className="text-center py-8 text-sm" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noResults") }</div>
         ) : filtered.map(p => (
           <div key={p.id} className="labs-card p-3.5" data-testid={`labs-admin-participant-${p.id}`}>
-            <div className="flex justify-between items-center gap-2">
+            <div className="flex justify-between items-center gap-2 cursor-pointer" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} data-testid={`button-expand-participant-${p.id}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   {p.role === "admin" ? <Shield className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} /> :
@@ -489,18 +621,22 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <select value={p.role} onChange={e => roleMutation.mutate({ participantId: p.id, role: e.target.value })} disabled={p.id === pid} style={{ ...labsSelect, padding: "4px 8px", fontSize: 11 }} data-testid={`labs-admin-select-role-${p.id}`}>
+                <select value={p.role} onChange={e => { e.stopPropagation(); roleMutation.mutate({ participantId: p.id, role: e.target.value }); }} disabled={p.id === pid} style={{ ...labsSelect, padding: "4px 8px", fontSize: 11 }} onClick={e => e.stopPropagation()} data-testid={`labs-admin-select-role-${p.id}`}>
                   <option value="user">{t("admin.roleUser")}</option>
                   <option value="host">{t("admin.roleHost")}</option>
                   <option value="admin">{t("admin.roleAdmin")}</option>
                 </select>
                 {p.id !== pid && (
-                  <button onClick={() => { if (confirm(t("admin.confirmDeleteParticipant", { name: p.name }))) deleteMutation.mutate(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-participant-${p.id}`}>
+                  <button onClick={e => { e.stopPropagation(); if (confirm(t("admin.confirmDeleteParticipant", { name: p.name }))) deleteMutation.mutate(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid={`labs-admin-delete-participant-${p.id}`}>
                     <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
                   </button>
                 )}
+                <ChevronRight className="w-3.5 h-3.5 transition-transform" style={{ color: "var(--labs-text-muted)", transform: expandedId === p.id ? "rotate(90deg)" : "rotate(0deg)" }} />
               </div>
             </div>
+            {expandedId === p.id && (
+              <ParticipantDetailPanel participantId={p.id} pid={pid} />
+            )}
           </div>
         ))}
       </div>

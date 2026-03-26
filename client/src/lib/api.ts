@@ -769,6 +769,8 @@ export const adminApi = {
   },
   getUserDeepDive: (requesterId: string, userId: string) =>
     fetchJSON(`/admin/analytics/user-deep-dive/${userId}?requesterId=${requesterId}`),
+  getParticipantActivity: (requesterId: string, participantId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/activity?requesterId=${requesterId}`),
   getAnalyticsFunnels: (requesterId: string, days?: number) => {
     const params = new URLSearchParams({ requesterId });
     if (days) params.set("days", String(days));

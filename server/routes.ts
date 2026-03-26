@@ -9457,6 +9457,121 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.get("/api/admin/participants/:id/activity", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const targetId = req.params.id;
+      const target = await storage.getParticipant(targetId);
+      if (!target) return res.status(404).json({ message: "Participant not found" });
+
+      const { db: dbInst } = await import("./db");
+      const { userActivitySessions, pageViews, ratings: ratingsTable, tastingParticipants, tastings: tastingsTable, aiUsageLog, searchLogs } = await import("@shared/schema");
+      const { eq: eqOp, desc: descOp, sql: sqlTag } = await import("drizzle-orm");
+
+      const sessions = await dbInst.select().from(userActivitySessions)
+        .where(eqOp(userActivitySessions.participantId, targetId))
+        .orderBy(descOp(userActivitySessions.startedAt));
+
+      const getDurationSec = (s: typeof sessions[number]) => s.durationSeconds != null ? s.durationSeconds : (s.durationMinutes || 0) * 60;
+      const totalTimeSec = sessions.reduce((sum, s) => sum + getDurationSec(s), 0);
+      const recentSessions = sessions.slice(0, 10).map(s => ({
+        id: s.id,
+        startedAt: s.startedAt,
+        endedAt: s.endedAt,
+        durationSeconds: getDurationSec(s),
+        entryPage: s.entryPage,
+        exitPage: s.exitPage,
+        pageCount: s.pageCount || 0,
+      }));
+
+      const tastingParts = await dbInst.select({
+        tastingId: tastingParticipants.tastingId,
+        joinedAt: tastingParticipants.joinedAt,
+      }).from(tastingParticipants)
+        .where(eqOp(tastingParticipants.participantId, targetId));
+
+      const hostedTastings = await dbInst.select({
+        id: tastingsTable.id,
+        title: tastingsTable.title,
+        code: tastingsTable.code,
+        date: tastingsTable.date,
+      }).from(tastingsTable)
+        .where(eqOp(tastingsTable.hostId, targetId));
+
+      const hostedIds = new Set(hostedTastings.map(t => t.id));
+      const joinedTastingIds = [...new Set([
+        ...tastingParts.map(tp => tp.tastingId),
+        ...hostedTastings.map(t => t.id),
+      ])];
+
+      const tastingDetails: Array<{ tastingId: string; title: string; code: string; date: string; role: string; ratingsCount: number }> = [];
+      for (const tid of joinedTastingIds) {
+        const hosted = hostedTastings.find(h => h.id === tid);
+        let tasting: { id: string; title: string; code: string; date: string } | undefined = hosted;
+        if (!tasting) {
+          const t = await storage.getTasting(tid);
+          if (t) tasting = { id: t.id, title: t.title, code: t.code, date: t.date };
+        }
+        if (!tasting) continue;
+
+        const ratingsForTasting = await dbInst.select({ id: ratingsTable.id })
+          .from(ratingsTable)
+          .where(sqlTag`${ratingsTable.tastingId} = ${tid} AND ${ratingsTable.participantId} = ${targetId}`);
+
+        tastingDetails.push({
+          tastingId: tasting.id,
+          title: tasting.title,
+          code: tasting.code,
+          date: tasting.date,
+          role: hostedIds.has(tid) ? "host" : "participant",
+          ratingsCount: ratingsForTasting.length,
+        });
+      }
+
+      const topPages = await dbInst.select({
+        normalizedPath: pageViews.normalizedPath,
+        viewCount: sqlTag<number>`count(*)::int`,
+        totalSeconds: sqlTag<number>`coalesce(sum(${pageViews.durationSeconds}), 0)::int`,
+      }).from(pageViews)
+        .where(eqOp(pageViews.participantId, targetId))
+        .groupBy(pageViews.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(15);
+
+      const [searchCountResult] = await dbInst.select({
+        count: sqlTag<number>`count(*)::int`,
+      }).from(searchLogs)
+        .where(eqOp(searchLogs.participantId, targetId));
+
+      const [aiCountResult] = await dbInst.select({
+        count: sqlTag<number>`count(*)::int`,
+      }).from(aiUsageLog)
+        .where(eqOp(aiUsageLog.participantId, targetId));
+
+      res.json({
+        overview: {
+          registeredAt: target.createdAt,
+          lastSeenAt: target.lastSeenAt,
+          totalSessions: sessions.length,
+          totalTimeSeconds: totalTimeSec,
+        },
+        recentSessions,
+        tastings: tastingDetails,
+        topPages,
+        searchCount: searchCountResult?.count || 0,
+        aiUsageCount: aiCountResult?.count || 0,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.patch("/api/admin/participants/:id/experience-level", async (req, res) => {
     try {
       const requesterId = req.body.requesterId as string;
