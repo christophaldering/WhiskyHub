@@ -34,10 +34,24 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     try {
       returnTo = sessionStorage.getItem("returnTo");
       sessionStorage.removeItem("returnTo");
+      sessionStorage.removeItem("returnFrom");
     } catch {}
     onClose();
     if (returnTo && returnTo.startsWith("/labs/")) {
       navigate(returnTo);
+    }
+  }, [onClose, navigate]);
+
+  const handleClose = useCallback(() => {
+    let returnFrom: string | null = null;
+    try {
+      returnFrom = sessionStorage.getItem("returnFrom");
+      sessionStorage.removeItem("returnFrom");
+      sessionStorage.removeItem("returnTo");
+    } catch {}
+    onClose();
+    if (returnFrom && returnFrom.startsWith("/labs/")) {
+      navigate(returnFrom);
     }
   }, [onClose, navigate]);
   const [name, setName] = useState("");
@@ -298,7 +312,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     };
 
     return (
-      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-destructive flex items-center gap-2">
@@ -370,7 +384,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       }
     };
     return (
-      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
@@ -416,7 +430,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
 
   if (verifyMode && pendingParticipant) {
     return (
-      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
@@ -486,7 +500,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
 
   if (forgotPinMode) {
     return (
-      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
@@ -615,7 +629,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-primary text-center">{t('login.welcome')}</DialogTitle>

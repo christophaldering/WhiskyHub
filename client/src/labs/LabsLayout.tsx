@@ -720,6 +720,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   }, []);
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
+  const prevLocationRef = useRef<string>(location);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   const onlineFriendsCount = useFriendOnlineNotifications();
@@ -760,11 +761,14 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     if (needsAuthRedirect) {
       try {
         sessionStorage.setItem("returnTo", location);
+        const prev = prevLocationRef.current;
+        const origin = prev !== location && isPublicLabsRoute(prev) ? prev : "/labs/home";
+        sessionStorage.setItem("returnFrom", origin);
       } catch {}
       window.location.replace("/labs/home");
       return;
     }
-
+    prevLocationRef.current = location;
   }, [location, needsAuthRedirect]);
 
   const handleButtonHaptic = useCallback((e: React.MouseEvent | React.TouchEvent) => {
