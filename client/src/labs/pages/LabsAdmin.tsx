@@ -1816,12 +1816,12 @@ function AnalyticsTab({ pid }: { pid: string }) {
     { label: "7d", value: 7 },
     { label: "30d", value: 30 },
     { label: "90d", value: 90 },
-    { label: t("admin.allTime") || "Alle", value: 0 },
+    { label: t("admin.allTime", "All"), value: 0 },
   ];
 
   const sections = [
     { id: "overview", label: "Overview" },
-    { id: "pages", label: t("admin.pagesNav") || "Seiten" },
+    { id: "pages", label: t("admin.pagesNav", "Pages") },
     { id: "engagement", label: "Engagement" },
     { id: "funnels", label: "Funnel" },
     { id: "retention", label: "Retention" },
@@ -1890,18 +1890,18 @@ function AnalyticsTab({ pid }: { pid: string }) {
       {section === "overview" && (
         <>
           <div className="labs-auto-grid" style={{ "--grid-min": "140px", gap: "0.5rem" } as React.CSSProperties}>
-            <KpiCard id="active-today" label={t("admin.activeToday") || "Active Today"} value={kpis.activeToday ?? 0} icon={Users} />
-            <KpiCard id="active-7d" label={t("admin.active7d") || "Active 7d"} value={kpis.active7d ?? 0} icon={Activity} />
-            <KpiCard id="active-30d" label={t("admin.active30d") || "Active 30d"} value={kpis.active30d ?? 0} icon={TrendingUp} />
-            <KpiCard id="new-users-week" label={t("admin.newUsersWeek") || "New This Week"} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
-            <KpiCard id="avg-duration" label={t("admin.avgDuration") || "Avg Duration"} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
-            <KpiCard id="total-sessions" label={t("admin.totalSessions") || "Sessions"} value={kpis.totalSessions ?? 0} icon={Eye} />
+            <KpiCard id="active-today" label={t("admin.activeToday", "Active Today")} value={kpis.activeToday ?? 0} icon={Users} />
+            <KpiCard id="active-7d" label={t("admin.active7d", "Active 7d")} value={kpis.active7d ?? 0} icon={Activity} />
+            <KpiCard id="active-30d" label={t("admin.active30d", "Active 30d")} value={kpis.active30d ?? 0} icon={TrendingUp} />
+            <KpiCard id="new-users-week" label={t("admin.newUsersWeek", "New This Week")} value={kpis.newUsersWeek ?? 0} icon={UserPlus} />
+            <KpiCard id="avg-duration" label={t("admin.avgDuration", "Avg Duration")} value={`${kpis.avgDuration ?? 0} min`} icon={Timer} />
+            <KpiCard id="total-sessions" label={t("admin.totalSessions", "Sessions")} value={kpis.totalSessions ?? 0} icon={Eye} />
             <KpiCard
               id="conversion-rate"
-              label={t("admin.conversionRate") || "Conversion"}
+              label={t("admin.conversionRate", "Conversion")}
               value={`${kpis.conversionRate ?? 0}%`}
               icon={MailCheck}
-              sub={`${kpis.acceptedInvites ?? 0} / ${kpis.totalInvites ?? 0} ${t("admin.invites") || "invites"}`}
+              sub={`${kpis.acceptedInvites ?? 0} / ${kpis.totalInvites ?? 0} ${t("admin.invites", "invites")}`}
             />
             {legacy && (
               <KpiCard id="total-ratings" label={t("admin.totalRatings")} value={legacy.totalRatings ?? 0} icon={Hash} />
@@ -1909,7 +1909,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard title={t("admin.dauChart") || "Daily Active Users"}>
+            <ChartCard title={t("admin.dauChart", "Daily Active Users")}>
               <div style={{ width: "100%", height: 200 }}>
                 <ResponsiveContainer>
                   <LineChart data={d.dauSeries || []}>
@@ -1923,7 +1923,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
               </div>
             </ChartCard>
 
-            <ChartCard title={t("admin.wauChart") || "Weekly Active Users"}>
+            <ChartCard title={t("admin.wauChart", "Weekly Active Users")}>
               <div style={{ width: "100%", height: 200 }}>
                 <ResponsiveContainer>
                   <LineChart data={d.wauSeries || []}>
@@ -1937,7 +1937,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
               </div>
             </ChartCard>
 
-            <ChartCard title={t("admin.topPages") || "Top Pages"}>
+            <ChartCard title={t("admin.topPages", "Top Pages")}>
               <div style={{ width: "100%", height: 200 }}>
                 <ResponsiveContainer>
                   <BarChart data={(d.topPages || []).slice(0, 8)} layout="vertical">
@@ -1951,7 +1951,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
               </div>
             </ChartCard>
 
-            <ChartCard title={t("admin.sessionDuration") || "Session Duration"}>
+            <ChartCard title={t("admin.sessionDuration", "Session Duration")}>
               <div style={{ width: "100%", height: 200 }}>
                 <ResponsiveContainer>
                   <PieChart>
@@ -1968,7 +1968,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
           </div>
 
           {d.registrationSeries?.length > 0 && (
-            <ChartCard title={t("admin.registrations") || "Registrierungen"}>
+            <ChartCard title={t("admin.registrations", "Registrations")}>
               <div style={{ width: "100%", height: 180 }}>
                 <ResponsiveContainer>
                   <BarChart data={d.registrationSeries}>
@@ -1986,16 +1986,16 @@ function AnalyticsTab({ pid }: { pid: string }) {
           {d.inviteConversion && (
             <div className="labs-card p-4">
               <span className="text-sm font-semibold block mb-2" style={{ color: "var(--labs-text)" }}>
-                {t("admin.inviteConversion") || "Einladungs-Conversion"}
+                {t("admin.inviteConversion", "Invitation Conversion")}
               </span>
               <div className="flex items-center gap-6">
                 <div>
-                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sent") || "Verschickt"}</span>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.sent", "Sent")}</span>
                   <div className="labs-h3" style={{ color: "var(--labs-text)" }}>{d.inviteConversion.total}</div>
                 </div>
                 <div style={{ color: "var(--labs-text-muted)" }}>→</div>
                 <div>
-                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.accepted") || "Angenommen"}</span>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("admin.accepted", "Accepted")}</span>
                   <div className="labs-h3" style={{ color: "var(--labs-success, var(--labs-accent))" }}>{d.inviteConversion.accepted}</div>
                 </div>
                 <div className="ml-auto labs-card px-3 py-1.5" style={{ background: "var(--labs-surface-alt)" }}>
@@ -2048,19 +2048,19 @@ function AnalyticsTab({ pid }: { pid: string }) {
           {sorted.length > 0 && (
             <div className="labs-card p-4">
               <span className="text-sm font-semibold block mb-3" style={{ color: "var(--labs-text)" }}>
-                {t("admin.engagementTable") || "Nutzer-Engagement"}
+                {t("admin.engagementTable", "User Engagement")}
               </span>
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]" style={{ color: "var(--labs-text)" }}>
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
                       {[
-                        { key: "name", label: t("admin.name") || "Name" },
-                        { key: "sessionCount", label: t("admin.sessions") || "Sessions" },
-                        { key: "totalDuration", label: t("admin.totalTime") || "Gesamt (min)" },
-                        { key: "avgDuration", label: t("admin.avgTime") || "Avg (min)" },
-                        { key: "ratingCount", label: t("admin.ratings") || "Ratings" },
-                        { key: "lastActivity", label: t("admin.lastActive") || "Letzte Aktivit." },
+                        { key: "name", label: t("admin.name", "Name") },
+                        { key: "sessionCount", label: t("admin.sessions", "Sessions") },
+                        { key: "totalDuration", label: t("admin.totalTime", "Total (min)") },
+                        { key: "avgDuration", label: t("admin.avgTime", "Avg (min)") },
+                        { key: "ratingCount", label: t("admin.ratings", "Ratings") },
+                        { key: "lastActivity", label: t("admin.lastActive", "Last Active") },
                       ].map(col => (
                         <th
                           key={col.key}
