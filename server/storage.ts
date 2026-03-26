@@ -60,6 +60,8 @@ import {
   type InsertWhiskyGallery, type WhiskyGalleryPhoto,
   userActivitySessions,
   type UserActivitySession,
+  pageViews,
+  type PageView,
   flavourCategories,
   flavourDescriptors,
   type InsertFlavourCategory, type FlavourCategory,
@@ -527,6 +529,11 @@ export interface IStorage {
   createBottleSplitClaim(data: InsertBottleSplitClaim): Promise<BottleSplitClaim>;
   updateBottleSplitClaim(id: string, data: Partial<{ status: string }>): Promise<BottleSplitClaim | undefined>;
   deleteBottleSplitClaim(id: string): Promise<void>;
+
+  // Page Views
+  createPageViews(views: Array<{ participantId: string; sessionId?: string; pagePath: string; normalizedPath: string; referrerPath?: string; timestamp: Date; durationSeconds?: number }>): Promise<void>;
+  getPageViewsForSession(sessionId: string): Promise<PageView[]>;
+  getPageViewsForParticipant(participantId: string, from?: Date, to?: Date, limit?: number): Promise<PageView[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2996,8 +3003,14 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const durationMs = now.getTime() - new Date(existing.startedAt).getTime();
       const durationMinutes = Math.round(durationMs / 60000);
+      const updateData: Record<string, any> = { endedAt: now, durationMinutes };
+      if (pageContext) {
+        updateData.exitPage = pageContext;
+        updateData.pageContext = pageContext;
+        updateData.pageCount = sql`COALESCE(${userActivitySessions.pageCount}, 0) + 1`;
+      }
       await db.update(userActivitySessions)
-        .set({ endedAt: now, durationMinutes })
+        .set(updateData)
         .where(eq(userActivitySessions.id, existing.id));
     } else {
       await db.insert(userActivitySessions).values({
@@ -3006,6 +3019,9 @@ export class DatabaseStorage implements IStorage {
         endedAt: now,
         durationMinutes: 0,
         pageContext: pageContext || null,
+        entryPage: pageContext || null,
+        exitPage: pageContext || null,
+        pageCount: 1,
       });
     }
   }
@@ -3406,6 +3422,34 @@ export class DatabaseStorage implements IStorage {
         eq(historicalPersonalRatings.participantId, participantId)
       )).limit(1);
     return result;
+  }
+
+  async createPageViews(views: Array<{ participantId: string; sessionId?: string; pagePath: string; normalizedPath: string; referrerPath?: string; timestamp: Date; durationSeconds?: number }>): Promise<void> {
+    if (views.length === 0) return;
+    await db.insert(pageViews).values(views.map(v => ({
+      participantId: v.participantId,
+      sessionId: v.sessionId || null,
+      pagePath: v.pagePath,
+      normalizedPath: v.normalizedPath,
+      referrerPath: v.referrerPath || null,
+      timestamp: v.timestamp,
+      durationSeconds: v.durationSeconds ?? null,
+    })));
+  }
+
+  async getPageViewsForSession(sessionId: string): Promise<PageView[]> {
+    return db.select().from(pageViews)
+      .where(eq(pageViews.sessionId, sessionId))
+      .orderBy(asc(pageViews.timestamp));
+  }
+
+  async getPageViewsForParticipant(participantId: string, from?: Date, to?: Date, limit?: number): Promise<PageView[]> {
+    const conditions = [eq(pageViews.participantId, participantId)];
+    if (from) conditions.push(gte(pageViews.timestamp, from));
+    if (to) conditions.push(sql`${pageViews.timestamp} <= ${to}`);
+    let query = db.select().from(pageViews).where(and(...conditions)).orderBy(desc(pageViews.timestamp));
+    if (limit) query = query.limit(limit) as typeof query;
+    return query;
   }
 }
 

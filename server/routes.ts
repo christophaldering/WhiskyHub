@@ -10334,6 +10334,553 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
   });
 
   // ============================================================
+  // PAGE VIEW TRACKING
+  // ============================================================
+
+  app.post("/api/track/page-views", async (req, res) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const { views } = req.body;
+      if (!Array.isArray(views) || views.length === 0) return res.json({ ok: true });
+      const MAX_BATCH = 50;
+      const batch = views.slice(0, MAX_BATCH);
+      const normalizePath = (p: string) => (p || "/").replace(/\/[a-f0-9-]{36}/g, "/:id").replace(/\/\d+/g, "/:n");
+
+      const { db: dbInst } = await import("./db");
+      const { userActivitySessions: uasTable } = await import("@shared/schema");
+      const { eq: eqOp, gte: gteOp, and: andOp, desc: descOp } = await import("drizzle-orm");
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const [activeSession] = await dbInst.select({ id: uasTable.id }).from(uasTable)
+        .where(andOp(eqOp(uasTable.participantId, participantId), gteOp(uasTable.endedAt, fiveMinAgo)))
+        .orderBy(descOp(uasTable.endedAt))
+        .limit(1);
+      const sessionId = activeSession?.id || null;
+
+      const pageViewData = batch.map((v: any) => ({
+        participantId,
+        sessionId,
+        pagePath: v.pagePath || "/",
+        normalizedPath: normalizePath(v.pagePath || "/"),
+        referrerPath: v.referrerPath || null,
+        timestamp: new Date(v.timestamp || Date.now()),
+        durationSeconds: typeof v.durationSeconds === "number" ? v.durationSeconds : null,
+      }));
+      storage.createPageViews(pageViewData).catch(e => console.error("Page view tracking error:", e));
+      storage.upsertActivitySession(participantId, batch[batch.length - 1]?.pagePath).catch(() => {});
+      res.json({ ok: true, tracked: pageViewData.length });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // ADVANCED ANALYTICS ENDPOINTS (admin-only)
+  // ============================================================
+
+  app.get("/api/admin/analytics/page-views", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 30;
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const userId = req.query.userId as string | undefined;
+
+      const { db: dbInst } = await import("./db");
+      const { pageViews: pvTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp, eq: eqOp, and: andOp, desc: descOp, asc: ascOp } = await import("drizzle-orm");
+
+      const conditions: any[] = [gteOp(pvTable.timestamp, cutoff)];
+      if (userId) conditions.push(eqOp(pvTable.participantId, userId));
+
+      const topPages = await dbInst.select({
+        page: pvTable.normalizedPath,
+        views: sqlTag<number>`count(*)::int`,
+        uniqueUsers: sqlTag<number>`count(distinct ${pvTable.participantId})::int`,
+        avgDuration: sqlTag<number>`coalesce(avg(${pvTable.durationSeconds}), 0)::int`,
+      }).from(pvTable)
+        .where(andOp(...conditions))
+        .groupBy(pvTable.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(30);
+
+      const exitPages = await dbInst.select({
+        page: pvTable.normalizedPath,
+        exits: sqlTag<number>`count(*)::int`,
+      }).from(pvTable)
+        .where(andOp(
+          ...conditions,
+          sqlTag`${pvTable.id} IN (
+            SELECT DISTINCT ON (${pvTable.sessionId}) ${pvTable.id}
+            FROM ${pvTable}
+            WHERE ${pvTable.sessionId} IS NOT NULL
+            ORDER BY ${pvTable.sessionId}, ${pvTable.timestamp} DESC
+          )`
+        ))
+        .groupBy(pvTable.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(15);
+
+      const pageFlow = await dbInst.select({
+        fromPage: pvTable.referrerPath,
+        toPage: pvTable.normalizedPath,
+        count: sqlTag<number>`count(*)::int`,
+      }).from(pvTable)
+        .where(andOp(...conditions, sqlTag`${pvTable.referrerPath} IS NOT NULL`))
+        .groupBy(pvTable.referrerPath, pvTable.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(50);
+
+      const dwellTime = await dbInst.select({
+        page: pvTable.normalizedPath,
+        avgSeconds: sqlTag<number>`coalesce(avg(${pvTable.durationSeconds}), 0)::int`,
+        medianSeconds: sqlTag<number>`coalesce(percentile_cont(0.5) within group (order by ${pvTable.durationSeconds}), 0)::int`,
+        views: sqlTag<number>`count(*)::int`,
+      }).from(pvTable)
+        .where(andOp(...conditions, sqlTag`${pvTable.durationSeconds} IS NOT NULL AND ${pvTable.durationSeconds} > 0`))
+        .groupBy(pvTable.normalizedPath)
+        .orderBy(sqlTag`avg(${pvTable.durationSeconds}) desc`)
+        .limit(20);
+
+      res.json({ topPages, exitPages, pageFlow, dwellTime });
+    } catch (e: any) {
+      console.error("Analytics page-views error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/user-deep-dive/:userId", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const userId = req.params.userId;
+      const participant = await storage.getParticipant(userId);
+      if (!participant) return res.status(404).json({ message: "User not found" });
+
+      const { db: dbInst } = await import("./db");
+      const { pageViews: pvTable, userActivitySessions: uasTable, ratings: ratingsTable, journalEntries: jeTable } = await import("@shared/schema");
+      const { sql: sqlTag, eq: eqOp, desc: descOp, asc: ascOp } = await import("drizzle-orm");
+
+      const sessions = await dbInst.select().from(uasTable)
+        .where(eqOp(uasTable.participantId, userId))
+        .orderBy(descOp(uasTable.startedAt))
+        .limit(100);
+
+      const sessionIds = sessions.map(s => s.id);
+      let sessionPageViews: Record<string, any[]> = {};
+      if (sessionIds.length > 0) {
+        const { inArray: inArrayOp } = await import("drizzle-orm");
+        const pvs = await dbInst.select().from(pvTable)
+          .where(inArrayOp(pvTable.sessionId, sessionIds))
+          .orderBy(ascOp(pvTable.timestamp));
+        for (const pv of pvs) {
+          if (pv.sessionId) {
+            if (!sessionPageViews[pv.sessionId]) sessionPageViews[pv.sessionId] = [];
+            sessionPageViews[pv.sessionId].push(pv);
+          }
+        }
+      }
+
+      const topPages = await dbInst.select({
+        page: pvTable.normalizedPath,
+        views: sqlTag<number>`count(*)::int`,
+      }).from(pvTable)
+        .where(eqOp(pvTable.participantId, userId))
+        .groupBy(pvTable.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(15);
+
+      const activityDays = await dbInst.select({
+        day: sqlTag<string>`to_char(${uasTable.startedAt}, 'YYYY-MM-DD')`,
+        sessions: sqlTag<number>`count(*)::int`,
+        totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
+      }).from(uasTable)
+        .where(eqOp(uasTable.participantId, userId))
+        .groupBy(sqlTag`to_char(${uasTable.startedAt}, 'YYYY-MM-DD')`)
+        .orderBy(sqlTag`to_char(${uasTable.startedAt}, 'YYYY-MM-DD')`);
+
+      const ratingCount = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(ratingsTable).where(eqOp(ratingsTable.participantId, userId));
+      const journalCount = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(jeTable).where(eqOp(jeTable.participantId, userId));
+
+      res.json({
+        user: { id: participant.id, name: participant.name, email: participant.email, role: participant.role, createdAt: participant.createdAt, lastSeenAt: participant.lastSeenAt },
+        sessions: sessions.map(s => ({
+          ...s,
+          pageViews: sessionPageViews[s.id] || [],
+        })),
+        topPages,
+        activityCalendar: activityDays,
+        stats: {
+          totalSessions: sessions.length,
+          totalDuration: sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+          ratingCount: ratingCount[0]?.count || 0,
+          journalCount: journalCount[0]?.count || 0,
+          firstSeen: participant.createdAt,
+          lastSeen: participant.lastSeenAt,
+        },
+      });
+    } catch (e: any) {
+      console.error("Analytics user deep-dive error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/funnels", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const { db: dbInst } = await import("./db");
+      const { participants: pTable, profiles, tastingParticipants, ratings: ratingsTable, sessionInvites } = await import("@shared/schema");
+      const { sql: sqlTag } = await import("drizzle-orm");
+
+      const [totalUsers] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable);
+      const [profilesFilled] = await dbInst.select({ count: sqlTag<number>`count(distinct ${profiles.participantId})::int` }).from(profiles);
+      const [joinedTasting] = await dbInst.select({ count: sqlTag<number>`count(distinct ${tastingParticipants.participantId})::int` }).from(tastingParticipants);
+      const [madeRating] = await dbInst.select({ count: sqlTag<number>`count(distinct ${ratingsTable.participantId})::int` }).from(ratingsTable);
+
+      const registrationFunnel = [
+        { step: "Registered", count: totalUsers.count },
+        { step: "Profile filled", count: profilesFilled.count },
+        { step: "Joined tasting", count: joinedTasting.count },
+        { step: "Made rating", count: madeRating.count },
+      ];
+
+      const [totalInvites] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(sessionInvites);
+      const [acceptedInvites] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(sessionInvites).where(sqlTag`${sessionInvites.status} = 'accepted' OR ${sessionInvites.acceptedAt} IS NOT NULL`);
+      const [invitedParticipated] = await dbInst.select({
+        count: sqlTag<number>`count(distinct si.recipient_email)::int`,
+      }).from(sqlTag`session_invites si JOIN participants p ON lower(p.email) = lower(si.recipient_email) JOIN tasting_participants tp ON tp.participant_id = p.id AND tp.tasting_id = si.tasting_id WHERE si.status = 'accepted'`);
+      const [invitedRated] = await dbInst.select({
+        count: sqlTag<number>`count(distinct si.recipient_email)::int`,
+      }).from(sqlTag`session_invites si JOIN participants p ON lower(p.email) = lower(si.recipient_email) JOIN tasting_participants tp ON tp.participant_id = p.id AND tp.tasting_id = si.tasting_id JOIN whiskies w ON w.tasting_id = si.tasting_id JOIN ratings r ON r.whisky_id = w.id AND r.participant_id = p.id WHERE si.status = 'accepted'`);
+
+      const inviteFunnel = [
+        { step: "Invite sent", count: totalInvites.count },
+        { step: "Invite accepted", count: acceptedInvites.count },
+        { step: "Participated", count: invitedParticipated.count },
+        { step: "Made rating", count: invitedRated.count },
+      ];
+
+      res.json({
+        registration: registrationFunnel,
+        invitation: inviteFunnel,
+      });
+    } catch (e: any) {
+      console.error("Analytics funnels error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/retention", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
+
+      const cohorts = await dbInst.execute(sqlTag`
+        WITH cohort AS (
+          SELECT
+            p.id,
+            date_trunc('week', p.created_at) AS cohort_week
+          FROM participants p
+          WHERE p.created_at IS NOT NULL
+        ),
+        activity AS (
+          SELECT
+            participant_id,
+            date_trunc('week', started_at) AS active_week
+          FROM user_activity_sessions
+          GROUP BY participant_id, date_trunc('week', started_at)
+        )
+        SELECT
+          to_char(c.cohort_week, 'YYYY-MM-DD') AS cohort_week,
+          count(distinct c.id)::int AS cohort_size,
+          extract(days from (a.active_week - c.cohort_week))::int / 7 AS week_number,
+          count(distinct a.participant_id)::int AS retained_users
+        FROM cohort c
+        LEFT JOIN activity a ON c.id = a.participant_id AND a.active_week >= c.cohort_week
+        WHERE c.cohort_week >= NOW() - INTERVAL '12 weeks'
+        GROUP BY c.cohort_week, week_number
+        ORDER BY c.cohort_week, week_number
+      `);
+
+      const rows = (cohorts as any).rows || cohorts;
+      const cohortMap: Record<string, { cohortWeek: string; cohortSize: number; weeks: Record<number, number> }> = {};
+      for (const r of rows) {
+        const week = r.cohort_week;
+        if (!cohortMap[week]) {
+          cohortMap[week] = { cohortWeek: week, cohortSize: r.cohort_size, weeks: {} };
+        }
+        if (r.week_number != null) {
+          cohortMap[week].weeks[r.week_number] = r.retained_users;
+        }
+      }
+
+      res.json({ cohorts: Object.values(cohortMap) });
+    } catch (e: any) {
+      console.error("Analytics retention error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/export/csv", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const type = req.query.type as string || "engagement";
+      const days = parseInt(req.query.days as string) || 30;
+      const userId = req.query.userId as string | undefined;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { pageViews: pvTable, userActivitySessions: uasTable, participants: pTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp, eq: eqOp, and: andOp, desc: descOp } = await import("drizzle-orm");
+
+      let csvContent = "";
+      let filename = "export.csv";
+
+      if (type === "engagement") {
+        filename = "user-engagement.csv";
+        const conditions: any[] = [];
+        if (cutoff) conditions.push(gteOp(uasTable.startedAt, cutoff));
+
+        const data = await dbInst.select({
+          participantId: uasTable.participantId,
+          name: pTable.name,
+          email: pTable.email,
+          role: pTable.role,
+          sessions: sqlTag<number>`count(*)::int`,
+          totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
+          avgMinutes: sqlTag<number>`coalesce(avg(${uasTable.durationMinutes}), 0)::int`,
+          lastActivity: sqlTag<string>`max(${uasTable.endedAt})`,
+        }).from(uasTable)
+          .leftJoin(pTable, eqOp(uasTable.participantId, pTable.id))
+          .where(conditions.length > 0 ? andOp(...conditions) : undefined)
+          .groupBy(uasTable.participantId, pTable.name, pTable.email, pTable.role)
+          .orderBy(sqlTag`sum(${uasTable.durationMinutes}) desc`);
+
+        csvContent = "Name,Email,Role,Sessions,TotalMinutes,AvgMinutes,LastActivity\n";
+        for (const row of data) {
+          csvContent += `"${(row.name || "").replace(/"/g, '""')}","${row.email || ""}","${row.role || ""}",${row.sessions},${row.totalMinutes},${row.avgMinutes},"${row.lastActivity || ""}"\n`;
+        }
+      } else if (type === "pageviews") {
+        filename = "page-views.csv";
+        const conditions: any[] = [];
+        if (cutoff) conditions.push(gteOp(pvTable.timestamp, cutoff));
+        if (userId) conditions.push(eqOp(pvTable.participantId, userId));
+
+        const data = await dbInst.select().from(pvTable)
+          .where(conditions.length > 0 ? andOp(...conditions) : undefined)
+          .orderBy(descOp(pvTable.timestamp))
+          .limit(10000);
+
+        csvContent = "ParticipantId,SessionId,PagePath,NormalizedPath,ReferrerPath,Timestamp,DurationSeconds\n";
+        for (const row of data) {
+          csvContent += `"${row.participantId}","${row.sessionId || ""}","${row.pagePath}","${row.normalizedPath}","${row.referrerPath || ""}","${row.timestamp?.toISOString() || ""}",${row.durationSeconds ?? ""}\n`;
+        }
+      } else if (type === "sessions") {
+        filename = "sessions.csv";
+        const conditions: any[] = [];
+        if (cutoff) conditions.push(gteOp(uasTable.startedAt, cutoff));
+        if (userId) conditions.push(eqOp(uasTable.participantId, userId));
+
+        const data = await dbInst.select({
+          id: uasTable.id,
+          participantId: uasTable.participantId,
+          name: pTable.name,
+          startedAt: uasTable.startedAt,
+          endedAt: uasTable.endedAt,
+          durationMinutes: uasTable.durationMinutes,
+          entryPage: uasTable.entryPage,
+          exitPage: uasTable.exitPage,
+          pageCount: uasTable.pageCount,
+        }).from(uasTable)
+          .leftJoin(pTable, eqOp(uasTable.participantId, pTable.id))
+          .where(conditions.length > 0 ? andOp(...conditions) : undefined)
+          .orderBy(descOp(uasTable.startedAt))
+          .limit(10000);
+
+        csvContent = "SessionId,ParticipantId,Name,StartedAt,EndedAt,DurationMinutes,EntryPage,ExitPage,PageCount\n";
+        for (const row of data) {
+          csvContent += `"${row.id}","${row.participantId}","${(row.name || "").replace(/"/g, '""')}","${row.startedAt?.toISOString() || ""}","${row.endedAt?.toISOString() || ""}",${row.durationMinutes},"${row.entryPage || ""}","${row.exitPage || ""}",${row.pageCount ?? 0}\n`;
+        }
+      } else if (type === "funnels") {
+        filename = "funnels.csv";
+        const { participants: pTable, profiles: profilesTable, tastingParticipants: tpTable, ratings: ratingsTableF, sessionInvites: siTable } = await import("@shared/schema");
+        const [totalU] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(pTable);
+        const [profilesF] = await dbInst.select({ count: sqlTag<number>`count(distinct ${profilesTable.participantId})::int` }).from(profilesTable);
+        const [joinedT] = await dbInst.select({ count: sqlTag<number>`count(distinct ${tpTable.participantId})::int` }).from(tpTable);
+        const [madeR] = await dbInst.select({ count: sqlTag<number>`count(distinct ${ratingsTableF.participantId})::int` }).from(ratingsTableF);
+        const [totalI] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(siTable);
+        const [acceptedI] = await dbInst.select({ count: sqlTag<number>`count(*)::int` }).from(siTable).where(sqlTag`${siTable.status} = 'accepted' OR ${siTable.acceptedAt} IS NOT NULL`);
+
+        csvContent = "Funnel,Step,Count\n";
+        csvContent += `"Registration","Registered",${totalU.count}\n`;
+        csvContent += `"Registration","Profile filled",${profilesF.count}\n`;
+        csvContent += `"Registration","Joined tasting",${joinedT.count}\n`;
+        csvContent += `"Registration","Made rating",${madeR.count}\n`;
+        csvContent += `"Invitation","Invite sent",${totalI.count}\n`;
+        csvContent += `"Invitation","Invite accepted",${acceptedI.count}\n`;
+      } else if (type === "retention") {
+        filename = "retention.csv";
+        const retResult = await dbInst.execute(sqlTag`
+          WITH cohort AS (
+            SELECT p.id, date_trunc('week', p.created_at) AS cohort_week
+            FROM participants p WHERE p.created_at IS NOT NULL
+          ),
+          activity AS (
+            SELECT participant_id, date_trunc('week', started_at) AS active_week
+            FROM user_activity_sessions GROUP BY participant_id, date_trunc('week', started_at)
+          )
+          SELECT
+            to_char(c.cohort_week, 'YYYY-MM-DD') AS cohort_week,
+            count(distinct c.id)::int AS cohort_size,
+            extract(days from (a.active_week - c.cohort_week))::int / 7 AS week_number,
+            count(distinct a.participant_id)::int AS retained_users
+          FROM cohort c
+          LEFT JOIN activity a ON c.id = a.participant_id AND a.active_week >= c.cohort_week
+          WHERE c.cohort_week >= NOW() - INTERVAL '12 weeks'
+          GROUP BY c.cohort_week, week_number
+          ORDER BY c.cohort_week, week_number
+        `);
+        const retRows = (retResult as any).rows || retResult;
+        csvContent = "CohortWeek,CohortSize,WeekNumber,RetainedUsers,RetentionRate\n";
+        for (const r of retRows) {
+          const rate = r.cohort_size > 0 ? Math.round((r.retained_users / r.cohort_size) * 100) : 0;
+          csvContent += `"${r.cohort_week}",${r.cohort_size},${r.week_number ?? ""},${r.retained_users},${rate}%\n`;
+        }
+      }
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(csvContent);
+    } catch (e: any) {
+      console.error("Analytics CSV export error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics/export/pdf", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || (req.query.requesterId as string);
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const days = parseInt(req.query.days as string) || 30;
+      const cutoff = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+      const { db: dbInst } = await import("./db");
+      const { participants: pTable, userActivitySessions: uasTable, ratings: ratingsTable, sessionInvites, pageViews: pvTable } = await import("@shared/schema");
+      const { sql: sqlTag, gte: gteOp } = await import("drizzle-orm");
+
+      const allParticipants = await dbInst.select({ id: pTable.id, lastSeenAt: pTable.lastSeenAt, createdAt: pTable.createdAt }).from(pTable);
+      const now = new Date();
+      const todayCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const weekCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const activeToday = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= todayCutoff).length;
+      const active7d = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= weekCutoff).length;
+      const active30d = allParticipants.filter(p => p.lastSeenAt && p.lastSeenAt >= monthCutoff).length;
+      const newUsersWeek = allParticipants.filter(p => p.createdAt && p.createdAt >= weekCutoff).length;
+
+      const sessionConditions: any[] = [];
+      if (cutoff) sessionConditions.push(gteOp(uasTable.startedAt, cutoff));
+      const [sessionStats] = await dbInst.select({
+        total: sqlTag<number>`count(*)::int`,
+        avgDuration: sqlTag<number>`coalesce(avg(${uasTable.durationMinutes}), 0)::int`,
+        totalMinutes: sqlTag<number>`coalesce(sum(${uasTable.durationMinutes}), 0)::int`,
+      }).from(uasTable).where(sessionConditions.length > 0 ? gteOp(uasTable.startedAt, cutoff!) : undefined);
+
+      const topPages = await dbInst.select({
+        page: pvTable.normalizedPath,
+        views: sqlTag<number>`count(*)::int`,
+      }).from(pvTable)
+        .where(cutoff ? gteOp(pvTable.timestamp, cutoff) : undefined)
+        .groupBy(pvTable.normalizedPath)
+        .orderBy(sqlTag`count(*) desc`)
+        .limit(10);
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({ text: "Analytics Report", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+            new Paragraph({ text: `Generated: ${new Date().toLocaleDateString("de-DE")} | Period: ${days > 0 ? `Last ${days} days` : "All time"}`, alignment: AlignmentType.CENTER }),
+            new Paragraph({ text: "" }),
+            new Paragraph({ text: "Key Performance Indicators", heading: HeadingLevel.HEADING_2 }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({ children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Metric", bold: true })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Value", bold: true })] })] }),
+                ]}),
+                ...([
+                  ["Active Today (DAU)", String(activeToday)],
+                  ["Active 7d (WAU)", String(active7d)],
+                  ["Active 30d (MAU)", String(active30d)],
+                  ["New Users (7d)", String(newUsersWeek)],
+                  ["Total Sessions", String(sessionStats?.total || 0)],
+                  ["Avg Session Duration", `${sessionStats?.avgDuration || 0} min`],
+                  ["Total Time Spent", `${sessionStats?.totalMinutes || 0} min`],
+                ] as [string, string][]).map(([metric, value]) =>
+                  new TableRow({ children: [
+                    new TableCell({ children: [new Paragraph(metric)] }),
+                    new TableCell({ children: [new Paragraph(value)] }),
+                  ]})
+                ),
+              ],
+            }),
+            new Paragraph({ text: "" }),
+            new Paragraph({ text: "Top Pages", heading: HeadingLevel.HEADING_2 }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({ children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Page", bold: true })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Views", bold: true })] })] }),
+                ]}),
+                ...topPages.map((p: any) =>
+                  new TableRow({ children: [
+                    new TableCell({ children: [new Paragraph(p.page)] }),
+                    new TableCell({ children: [new Paragraph(String(p.views))] }),
+                  ]})
+                ),
+              ],
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      res.setHeader("Content-Disposition", 'attachment; filename="analytics-report.docx"');
+      res.send(Buffer.from(buffer));
+    } catch (e: any) {
+      console.error("Analytics PDF export error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
   // NEWSLETTER MANAGEMENT (admin-only)
   // ============================================================
 

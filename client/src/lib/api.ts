@@ -761,6 +761,29 @@ export const adminApi = {
   },
   getTrash: () => fetchJSON(`/admin/trash`),
   restoreTrashEntry: (id: string) => fetchJSON(`/admin/trash/${id}/restore`, { method: "POST" }),
+  getAnalyticsPageViews: (requesterId: string, days?: number, userId?: string) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    if (userId) params.set("userId", userId);
+    return fetchJSON(`/admin/analytics/page-views?${params}`);
+  },
+  getUserDeepDive: (requesterId: string, userId: string) =>
+    fetchJSON(`/admin/analytics/user-deep-dive/${userId}?requesterId=${requesterId}`),
+  getAnalyticsFunnels: (requesterId: string) =>
+    fetchJSON(`/admin/analytics/funnels?requesterId=${requesterId}`),
+  getAnalyticsRetention: (requesterId: string) =>
+    fetchJSON(`/admin/analytics/retention?requesterId=${requesterId}`),
+  exportCsv: (requesterId: string, type: string, days?: number, userId?: string) => {
+    const params = new URLSearchParams({ requesterId, type });
+    if (days) params.set("days", String(days));
+    if (userId) params.set("userId", userId);
+    return `/api/admin/analytics/export/csv?${params}`;
+  },
+  exportPdf: (requesterId: string, days?: number) => {
+    const params = new URLSearchParams({ requesterId });
+    if (days) params.set("days", String(days));
+    return `/api/admin/analytics/export/pdf?${params}`;
+  },
 };
 
 export const tastingPhotoApi = {
@@ -790,6 +813,19 @@ export const feedbackApi = {
     fetchJSON("/feedback", { method: "POST", body: JSON.stringify(data) }),
   getAll: (participantId: string) =>
     fetchJSON(`/feedback?participantId=${participantId}`),
+};
+
+export const trackingApi = {
+  sendPageViews: (views: Array<{ pagePath: string; referrerPath?: string; timestamp: number; durationSeconds?: number; sessionId?: string }>) => {
+    const pid = getParticipantId();
+    if (!pid || views.length === 0) return Promise.resolve();
+    return fetch(`${API_BASE}/track/page-views`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-participant-id": pid },
+      body: JSON.stringify({ views }),
+      keepalive: true,
+    }).catch(() => {});
+  },
 };
 
 export const notificationApi = {

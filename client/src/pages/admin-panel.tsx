@@ -9,6 +9,7 @@ import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
+import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,18 +130,6 @@ interface JournalEntryAdmin {
   body: string | null;
   imageUrl: string | null;
   createdAt: string | null;
-}
-
-interface AnalyticsData {
-  totalRatings: number;
-  totalWhiskies: number;
-  totalTastings: number;
-  totalParticipants: number;
-  scoreDistribution: { range: string; count: number }[];
-  topWhiskies: { id: string; name: string; distillery: string | null; tastingTitle: string; avgScore: number; ratingCount: number }[];
-  participantStats: { id: string; name: string; count: number; avgScore: number; stdDev: number; minScore: number; maxScore: number }[];
-  regionCounts: [string, number][];
-  tastingsPerMonth: [string, number][];
 }
 
 const roleIcon = (role: string) => {
@@ -644,12 +633,6 @@ export default function AdminPanel() {
     enabled: !!currentParticipant,
   });
 
-  const { data: analyticsData, isLoading: isLoadingAnalytics } = useQuery<AnalyticsData>({
-    queryKey: ["admin-analytics", currentParticipant?.id],
-    queryFn: () => adminApi.getAnalytics(currentParticipant!.id),
-    enabled: !!currentParticipant,
-  });
-
   const { data: suggestionsData } = useQuery<EncyclopediaSuggestion[]>({
     queryKey: ["encyclopedia-suggestions"],
     queryFn: async () => {
@@ -847,10 +830,6 @@ export default function AdminPanel() {
       (j.whiskyName?.toLowerCase().includes(q))
     );
   });
-
-  const maxDistribution = analyticsData?.scoreDistribution
-    ? Math.max(...analyticsData.scoreDistribution.map(d => d.count), 1)
-    : 1;
 
   return (
     <motion.div
@@ -1600,188 +1579,7 @@ export default function AdminPanel() {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics">
-          {isLoadingAnalytics ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : analyticsData ? (
-            <div className="space-y-6" data-testid="analytics-content">
-              {/* Summary Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-testid="analytics-summary">
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
-                    <div className="text-2xl font-bold font-serif">{analyticsData.totalRatings}</div>
-                    <div className="text-xs text-muted-foreground">Total Ratings</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Wine className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-                    <div className="text-2xl font-bold font-serif">{analyticsData.totalWhiskies}</div>
-                    <div className="text-xs text-muted-foreground">Total Whiskies</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-                    <div className="text-2xl font-bold font-serif">{analyticsData.totalTastings}</div>
-                    <div className="text-xs text-muted-foreground">Total Tastings</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-green-500" />
-                    <div className="text-2xl font-bold font-serif">{analyticsData.totalParticipants}</div>
-                    <div className="text-xs text-muted-foreground">Total Participants</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Score Distribution */}
-              {analyticsData.scoreDistribution.length > 0 && (
-                <Card data-testid="analytics-score-distribution">
-                  <CardContent className="p-4">
-                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-primary" />
-                      Score Distribution
-                    </h3>
-                    <div className="space-y-2">
-                      {analyticsData.scoreDistribution.map(d => (
-                        <div key={d.range} className="flex items-center gap-3" data-testid={`score-range-${d.range}`}>
-                          <span className="text-xs text-muted-foreground w-12 text-right flex-shrink-0">{d.range}</span>
-                          <div className="flex-1 bg-muted rounded-full h-5 overflow-hidden">
-                            <div
-                              className="bg-primary/70 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${(d.count / maxDistribution) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium w-8 flex-shrink-0">{d.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Top 20 Whiskies */}
-              {analyticsData.topWhiskies.length > 0 && (
-                <Card data-testid="analytics-top-whiskies">
-                  <CardContent className="p-4">
-                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-primary" />
-                      Top 20 Whiskies
-                    </h3>
-                    <div className="space-y-2">
-                      {analyticsData.topWhiskies.map((w, i) => (
-                        <div key={w.id} className="flex items-center gap-3 py-1.5 border-b border-muted/50 last:border-0" data-testid={`top-whisky-${w.id}`}>
-                          <span className="text-xs text-muted-foreground w-6 text-right font-medium">#{i + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-serif font-medium text-sm truncate">{w.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {w.distillery && `${w.distillery} · `}{w.tastingTitle}
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="font-semibold text-sm text-primary">{w.avgScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">{w.ratingCount} ratings</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Participant Stats */}
-              {analyticsData.participantStats.length > 0 && (
-                <Card data-testid="analytics-participant-stats">
-                  <CardContent className="p-4">
-                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-primary" />
-                      Participant Stats
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b text-muted-foreground text-xs">
-                            <th className="text-left py-2 pr-2">Name</th>
-                            <th className="text-center py-2 px-2">Ratings</th>
-                            <th className="text-center py-2 px-2">Avg Score</th>
-                            <th className="text-center py-2 px-2">Std Dev</th>
-                            <th className="text-center py-2 px-2">Min</th>
-                            <th className="text-center py-2 px-2">Max</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {analyticsData.participantStats.map(ps => (
-                            <tr key={ps.id} className="border-b border-muted/50" data-testid={`participant-stat-${ps.id}`}>
-                              <td className="py-2 pr-2 font-medium font-serif">{ps.name}</td>
-                              <td className="text-center py-2 px-2">{ps.count}</td>
-                              <td className="text-center py-2 px-2 font-semibold text-primary">{ps.avgScore.toFixed(1)}</td>
-                              <td className="text-center py-2 px-2 text-muted-foreground">{ps.stdDev.toFixed(1)}</td>
-                              <td className="text-center py-2 px-2">{ps.minScore}</td>
-                              <td className="text-center py-2 px-2">{ps.maxScore}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Region Breakdown */}
-              {analyticsData.regionCounts.length > 0 && (
-                <Card data-testid="analytics-regions">
-                  <CardContent className="p-4">
-                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-primary" />
-                      Region Breakdown
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {analyticsData.regionCounts.map(([region, count]) => (
-                        <div key={region} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2" data-testid={`region-${region}`}>
-                          <span className="text-sm font-medium">{region}</span>
-                          <span className="text-sm font-bold text-primary">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Tastings per Month */}
-              {analyticsData.tastingsPerMonth.length > 0 && (
-                <Card data-testid="analytics-timeline">
-                  <CardContent className="p-4">
-                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      Tastings per Month
-                    </h3>
-                    <div className="space-y-1">
-                      {analyticsData.tastingsPerMonth.map(([month, count]) => (
-                        <div key={month} className="flex items-center gap-3" data-testid={`month-${month}`}>
-                          <span className="text-xs text-muted-foreground w-20 flex-shrink-0">{month}</span>
-                          <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
-                            <div
-                              className="bg-blue-500/70 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${(count / Math.max(...analyticsData.tastingsPerMonth.map(m => m[1]), 1)) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium w-6 flex-shrink-0">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">No analytics data available</p>
-          )}
+          <AnalyticsDashboard currentParticipantId={currentParticipant?.id || ""} />
         </TabsContent>
 
         <TabsContent value="newsletter">

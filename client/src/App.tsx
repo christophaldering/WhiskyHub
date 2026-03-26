@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
 import { pushRoute, incrementNavIdx, saveScrollPosition, getScrollPosition, consumeBackNavigation } from "@/lib/navStack";
+import { trackingApi } from "@/lib/api";
 
 window.addEventListener("unhandledrejection", (event) => {
   const msg = String(event.reason?.message || event.reason || "");
@@ -194,6 +195,56 @@ function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
   return null;
 }
 
+const pageViewBuffer: Array<{ pagePath: string; referrerPath?: string; timestamp: number; durationSeconds?: number }> = [];
+let lastPagePath: string | null = null;
+let lastPageTimestamp: number = Date.now();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let lastBufferIndex: number = -1;
+
+function flushPageViews() {
+  if (pageViewBuffer.length === 0) return;
+  const batch = pageViewBuffer.splice(0, pageViewBuffer.length);
+  lastBufferIndex = -1;
+  trackingApi.sendPageViews(batch);
+}
+
+function setDurationOnLastEntry() {
+  if (lastBufferIndex >= 0 && lastBufferIndex < pageViewBuffer.length) {
+    const entry = pageViewBuffer[lastBufferIndex];
+    if (entry && !entry.durationSeconds) {
+      entry.durationSeconds = Math.round((Date.now() - lastPageTimestamp) / 1000);
+    }
+  }
+}
+
+function trackPageView(path: string) {
+  const now = Date.now();
+  if (lastPagePath && lastPagePath !== path) {
+    setDurationOnLastEntry();
+  }
+  pageViewBuffer.push({ pagePath: path, referrerPath: lastPagePath || undefined, timestamp: now });
+  lastBufferIndex = pageViewBuffer.length - 1;
+  lastPagePath = path;
+  lastPageTimestamp = now;
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushPageViews, 7000);
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      setDurationOnLastEntry();
+      flushPageViews();
+    } else if (document.visibilityState === "visible") {
+      lastPageTimestamp = Date.now();
+    }
+  });
+  window.addEventListener("beforeunload", () => {
+    setDurationOnLastEntry();
+    flushPageViews();
+  });
+}
+
 function RouteTracker() {
   const [location] = useLocation();
   useEffect(() => {
@@ -204,6 +255,7 @@ function RouteTracker() {
   useEffect(() => {
     pushRoute(location);
     incrementNavIdx();
+    trackPageView(location);
   }, [location]);
   return null;
 }

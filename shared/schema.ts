@@ -1013,5 +1013,26 @@ export const userActivitySessions = pgTable("user_activity_sessions", {
   endedAt: timestamp("ended_at").notNull().defaultNow(),
   durationMinutes: integer("duration_minutes").notNull().default(0),
   pageContext: text("page_context"),
+  entryPage: text("entry_page"),
+  exitPage: text("exit_page"),
+  pageCount: integer("page_count").default(0),
 });
 export type UserActivitySession = typeof userActivitySessions.$inferSelect;
+
+// --- Page Views (granular page tracking) ---
+export const pageViews = pgTable("page_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  sessionId: varchar("session_id"),
+  pagePath: text("page_path").notNull(),
+  normalizedPath: text("normalized_path").notNull(),
+  referrerPath: text("referrer_path"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  durationSeconds: integer("duration_seconds"),
+}, (table) => [
+  index("idx_page_views_participant").on(table.participantId),
+  index("idx_page_views_session").on(table.sessionId),
+  index("idx_page_views_timestamp").on(table.timestamp),
+  index("idx_page_views_normalized_path").on(table.normalizedPath),
+]);
+export type PageView = typeof pageViews.$inferSelect;
