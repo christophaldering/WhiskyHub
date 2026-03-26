@@ -10629,7 +10629,16 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         }
       }
 
-      res.json({ cohorts: Object.values(cohortMap) });
+      const result = Object.values(cohortMap).map(c => {
+        const maxWeek = Math.max(...Object.keys(c.weeks).map(Number), 0);
+        const weeksArray = Array.from({ length: maxWeek + 1 }, (_, i) => {
+          const retained = c.weeks[i] ?? 0;
+          return c.cohortSize > 0 ? Math.round((retained / c.cohortSize) * 100) : 0;
+        });
+        return { cohortWeek: c.cohortWeek, size: c.cohortSize, weeks: weeksArray };
+      });
+
+      res.json({ cohorts: result });
     } catch (e: any) {
       console.error("Analytics retention error:", e);
       res.status(500).json({ message: e.message });

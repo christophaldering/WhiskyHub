@@ -556,8 +556,8 @@ function RetentionSection({ data, loading }: { data: any; loading: boolean }) {
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!data?.cohorts?.length) return <p className="text-center text-muted-foreground py-8">Keine Retention-Daten</p>;
 
-  const maxWeek = Math.max(...data.cohorts.flatMap((c: any) => Object.keys(c.weeks).map(Number)), 0);
-  const weekHeaders = Array.from({ length: Math.min(maxWeek + 1, 13) }, (_, i) => i);
+  const maxWeek = Math.max(...data.cohorts.map((c: any) => c.weeks?.length || 0), 0);
+  const weekHeaders = Array.from({ length: Math.min(maxWeek, 13) }, (_, i) => i);
 
   return (
     <Card>
@@ -581,10 +581,9 @@ function RetentionSection({ data, loading }: { data: any; loading: boolean }) {
               {data.cohorts.map((cohort: any) => (
                 <tr key={cohort.cohortWeek} className="border-b border-muted/30" data-testid={`retention-row-${cohort.cohortWeek}`}>
                   <td className="py-1.5 pr-2 font-mono">{cohort.cohortWeek?.slice(5) || "?"}</td>
-                  <td className="text-center py-1.5 px-1 font-bold">{cohort.cohortSize}</td>
+                  <td className="text-center py-1.5 px-1 font-bold">{cohort.size}</td>
                   {weekHeaders.map(w => {
-                    const retained = cohort.weeks[w] ?? 0;
-                    const pct = cohort.cohortSize > 0 ? Math.round((retained / cohort.cohortSize) * 100) : 0;
+                    const pct = cohort.weeks?.[w] ?? 0;
                     const intensity = Math.min(pct / 100, 1);
                     return (
                       <td
@@ -594,7 +593,7 @@ function RetentionSection({ data, loading }: { data: any; loading: boolean }) {
                           backgroundColor: pct > 0 ? `hsla(var(--primary), ${intensity * 0.4 + 0.05})` : undefined,
                         }}
                       >
-                        {retained > 0 ? `${pct}%` : "-"}
+                        {pct > 0 ? `${pct}%` : "-"}
                       </td>
                     );
                   })}
