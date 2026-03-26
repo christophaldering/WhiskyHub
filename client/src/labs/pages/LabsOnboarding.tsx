@@ -84,11 +84,34 @@ interface CardData {
   href?: string;
 }
 
+const ONBOARDING_SEEN_KEY = "casksense_onboarding_seen";
+
+function getToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function hasSeenOnboardingToday(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDING_SEEN_KEY) === getToday();
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingSeen(): void {
+  try {
+    localStorage.setItem(ONBOARDING_SEEN_KEY, getToday());
+  } catch {}
+}
+
 export default function LabsOnboarding() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [joinOpen, setJoinOpen] = useState(false);
   const [code, setCode] = useState("");
+
+  const [alreadySeen] = useState(() => hasSeenOnboardingToday());
 
   const completeOnboarding = useCallback((dest: string) => {
     navigate(dest);
@@ -100,6 +123,18 @@ export default function LabsOnboarding() {
       completeOnboarding(`/labs/join/${trimmed}`);
     }
   }, [code, completeOnboarding]);
+
+  useEffect(() => {
+    if (alreadySeen) {
+      navigate("/labs/tastings", { replace: true });
+    } else {
+      markOnboardingSeen();
+    }
+  }, [alreadySeen, navigate]);
+
+  if (alreadySeen) {
+    return null;
+  }
 
   const cards: CardData[] = [
     {
