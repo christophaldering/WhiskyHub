@@ -117,18 +117,18 @@ export default function LabsBottleSharing() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <Share2 className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
           <h1 className="labs-serif" style={{ fontSize: 22, color: "var(--labs-text)", marginBottom: 6 }} data-testid="text-preview-sharing-title">
-            {t("authGate.preview.sharingWelcome", "Bottle Sharing")}
+            {t("authGate.preview.sharingWelcome", "Bottle-Sharing")}
           </h1>
           <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 380, margin: "0 auto" }}>
-            {t("authGate.preview.sharingSubtitle", "Share special bottles with friends -- everyone brings something, everyone tastes everything.")}
+            {t("authGate.preview.sharingSubtitle", "Share your bottles with the community.")}
           </p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
           {[
-            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Organize a round", descFb: "List the bottles, invite your circle, pick a date." },
-            { icon: <Eye className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Blind or open", descFb: "Reveal bottles upfront or keep it a surprise." },
-            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Rate together", descFb: "Compare your scores and discover new favorites." },
+            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Share bottles", descFb: "Put your bottles together and share them with the community." },
+            { icon: <Eye className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Blind or open", descFb: "Choose whether bottles are visible or tasted as a surprise." },
+            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Rate together", descFb: "Rate nose, palate and finish — and compare your results." },
           ].map((feat, i) => (
             <div
               key={i}
