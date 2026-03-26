@@ -419,6 +419,7 @@ function useIncomingNotificationPolling() {
 }
 
 function LabsNotificationBell() {
+  const { t } = useTranslation();
   const [count] = useState(() => {
     try {
       const stored = localStorage.getItem("cs_notif_count");
@@ -475,10 +476,10 @@ function LabsNotificationBell() {
             data-testid="labs-notification-dropdown"
           >
             <div className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
-              Notifications
+              {t("ui.notifications")}
             </div>
             <div className="text-xs text-center py-3" style={{ color: "var(--labs-text-secondary)" }}>
-              No new notifications
+              {t("ui.noNewNotifications")}
             </div>
           </div>
         </>
@@ -886,7 +887,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               cursor: "pointer",
             }}
             data-testid="labs-theme-toggle"
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={theme === "dark" ? t("ui.switchToLight") : t("ui.switchToDark")}
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>

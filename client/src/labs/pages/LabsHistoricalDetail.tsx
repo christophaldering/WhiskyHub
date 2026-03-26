@@ -101,7 +101,7 @@ function WhiskyCard({ entry, t, isTied, myRating }: { entry: HistoricalEntry; t:
   const rank = entry.totalRank;
   const isTop3 = rank != null && rank <= 3;
   const isWinner = rank === 1;
-  const title = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || t("m2.historicalDetail.unknownWhisky", "Unknown Whisky");
+  const title = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || t("historicalDetailUi.unknownWhisky", "Unknown Whisky");
   const details: string[] = [];
   if (entry.regionRaw) details.push(entry.regionRaw);
   if (entry.ageRaw) details.push(`${entry.ageRaw}y`);
@@ -304,7 +304,7 @@ function PersonalRatingEditor({ entry, existingRating, pid, tastingId }: {
     },
   });
 
-  const whiskyLabel = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || "Unknown Whisky";
+  const whiskyLabel = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || t("historicalDetailUi.unknownWhisky");
 
   const SliderRow = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
     <div style={{ marginBottom: 12 }}>
@@ -336,7 +336,7 @@ function PersonalRatingEditor({ entry, existingRating, pid, tastingId }: {
       <SliderRow label={t("m2.historicalDetail.nose", "Nose")} value={nose} onChange={setNose} />
       <SliderRow label={t("m2.historicalDetail.taste", "Taste")} value={taste} onChange={setTaste} />
       <SliderRow label={t("m2.historicalDetail.finish", "Finish")} value={finish} onChange={setFinish} />
-      <SliderRow label="Overall" value={overall} onChange={setOverall} />
+      <SliderRow label={t("cockpitUi.overall")} value={overall} onChange={setOverall} />
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -493,7 +493,7 @@ export default function LabsHistoricalDetail() {
         data-testid="button-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        History
+        {t("historicalDetailUi.history")}
       </button>
 
       {isLoading && (

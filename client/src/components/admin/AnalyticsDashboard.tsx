@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,12 +20,12 @@ interface AnalyticsDashboardProps {
   currentParticipantId: string;
 }
 
-const PERIOD_OPTIONS = [
-  { value: "1", label: "24h" },
-  { value: "7", label: "7 Tage" },
-  { value: "30", label: "30 Tage" },
-  { value: "90", label: "90 Tage" },
-  { value: "0", label: "Gesamt" },
+const PERIOD_OPTIONS_KEYS = [
+  { value: "1", labelKey: "analyticsUi.period24h" },
+  { value: "7", labelKey: "analyticsUi.period7Days" },
+  { value: "30", labelKey: "analyticsUi.period30Days" },
+  { value: "90", labelKey: "analyticsUi.period90Days" },
+  { value: "0", labelKey: "analyticsUi.periodAll" },
 ];
 
 function formatDuration(seconds: number): string {
@@ -60,6 +61,7 @@ function KpiCard({ icon: Icon, label, value, sub, color = "text-primary" }: { ic
 }
 
 export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDashboardProps) {
+  const { t } = useTranslation();
   const [days, setDays] = useState("30");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("overview");
@@ -155,16 +157,16 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
   }
 
   const sections = [
-    { id: "overview", label: "Overview" },
-    { id: "pages", label: "Seiten & Navigation" },
-    { id: "engagement", label: "Nutzer-Engagement" },
-    { id: "features", label: "Feature-Adoption" },
-    { id: "activation", label: "Aktivierung" },
-    { id: "funnels", label: "Funnel-Analyse" },
-    { id: "retention", label: "Retention & Kohorten" },
-    { id: "notifications", label: "Benachrichtigungen" },
-    { id: "search", label: "Suche" },
-    { id: "acquisition", label: "Akquisition" },
+    { id: "overview", label: t("analyticsUi.overview") },
+    { id: "pages", label: t("analyticsUi.pagesNavigation") },
+    { id: "engagement", label: t("analyticsUi.userEngagement") },
+    { id: "features", label: t("analyticsUi.featureAdoption") },
+    { id: "activation", label: t("analyticsUi.activation") },
+    { id: "funnels", label: t("analyticsUi.funnelAnalysis") },
+    { id: "retention", label: t("analyticsUi.retentionCohorts") },
+    { id: "notifications", label: t("analyticsUi.notificationsTab") },
+    { id: "search", label: t("analyticsUi.searchTab") },
+    { id: "acquisition", label: t("analyticsUi.acquisition") },
   ];
 
   return (
@@ -189,8 +191,8 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PERIOD_OPTIONS.map(o => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              {PERIOD_OPTIONS_KEYS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{t(o.labelKey)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -206,7 +208,7 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
             <Download className="w-3.5 h-3.5 mr-1" /> CSV
           </Button>
           <Button variant="outline" size="sm" onClick={handlePdfExport} data-testid="button-export-pdf">
-            <FileText className="w-3.5 h-3.5 mr-1" /> Report
+            <FileText className="w-3.5 h-3.5 mr-1" /> {t("analyticsUi.report")}
           </Button>
         </div>
       </div>
@@ -276,29 +278,30 @@ export default function AnalyticsDashboard({ currentParticipantId }: AnalyticsDa
 }
 
 function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashboard: any; pageViewData: any; loadingPageViews: boolean }) {
+  const { t } = useTranslation();
   const kpis = dashboard?.kpis || {};
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3" data-testid="kpi-cards">
-        <KpiCard icon={Users} label="DAU" value={kpis.activeToday || 0} sub="Heute aktiv" color="text-green-500" />
-        <KpiCard icon={Users} label="WAU" value={kpis.active7d || 0} sub="7 Tage" color="text-blue-500" />
-        <KpiCard icon={Users} label="MAU" value={kpis.active30d || 0} sub="30 Tage" color="text-purple-500" />
-        <KpiCard icon={Clock} label="Ø Verweildauer" value={formatDuration(kpis.avgDurationSec || 0)} sub="pro Session" />
-        <KpiCard icon={Clock} label="Median" value={formatDuration(kpis.medianDurationSec || 0)} sub="Verweildauer" color="text-cyan-500" />
-        <KpiCard icon={UserPlus} label="Neue Nutzer" value={kpis.newUsersWeek || 0} sub="letzte 7 Tage" color="text-amber-500" />
+        <KpiCard icon={Users} label={t("analyticsUi.dau")} value={kpis.activeToday || 0} sub={t("analyticsUi.activeToday")} color="text-green-500" />
+        <KpiCard icon={Users} label={t("analyticsUi.wau")} value={kpis.active7d || 0} sub={t("analyticsUi.period7Days")} color="text-blue-500" />
+        <KpiCard icon={Users} label={t("analyticsUi.mau")} value={kpis.active30d || 0} sub={t("analyticsUi.period30Days")} color="text-purple-500" />
+        <KpiCard icon={Clock} label={t("analyticsUi.avgDuration")} value={formatDuration(kpis.avgDurationSec || 0)} sub={t("analyticsUi.avgDuration")} />
+        <KpiCard icon={Clock} label={t("analyticsUi.median")} value={formatDuration(kpis.medianDurationSec || 0)} sub={t("analyticsUi.avgDuration")} color="text-cyan-500" />
+        <KpiCard icon={UserPlus} label={t("analyticsUi.newUsers")} value={kpis.newUsersWeek || 0} sub={t("analyticsUi.last7Days")} color="text-amber-500" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <KpiCard icon={Activity} label="Sessions" value={kpis.totalSessions || 0} />
-        <KpiCard icon={Target} label="Conversion" value={`${kpis.conversionRate || 0}%`} sub={`${kpis.acceptedInvites || 0}/${kpis.totalInvites || 0} Einladungen`} />
-        <KpiCard icon={TrendingUp} label="Ø Seiten/Session" value={dashboard?.engagementTable?.length > 0 ? Math.round((dashboard.engagementTable.reduce((s: number, e: any) => s + (e.sessionCount || 0), 0) / dashboard.engagementTable.length) || 0) : 0} />
+        <KpiCard icon={Activity} label={t("analyticsUi.sessions")} value={kpis.totalSessions || 0} />
+        <KpiCard icon={Target} label={t("analyticsUi.conversion")} value={`${kpis.conversionRate || 0}%`} sub={`${kpis.acceptedInvites || 0}/${kpis.totalInvites || 0}`} />
+        <KpiCard icon={TrendingUp} label={t("analyticsUi.avgPagesPerSession")} value={dashboard?.engagementTable?.length > 0 ? Math.round((dashboard.engagementTable.reduce((s: number, e: any) => s + (e.sessionCount || 0), 0) / dashboard.engagementTable.length) || 0) : 0} />
       </div>
 
       {dashboard?.durationDistribution?.length > 0 && (
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Sitzungsdauer-Verteilung
+              <Clock className="w-4 h-4" /> {t("analyticsUi.sessionDurationDistribution")}
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={dashboard.durationDistribution}>
@@ -317,9 +320,9 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-red-500" /> Drop-off-Kurve
+              <TrendingUp className="w-4 h-4 text-red-500" /> {t("analyticsUi.dropOffCurve")}
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">Wie viele Nutzer sind nach X Sekunden noch da</p>
+            <p className="text-xs text-muted-foreground mb-3">{t("analyticsUi.dropOffDesc")}</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={dashboard.dropOffCurve}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -337,7 +340,7 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" /> DAU/WAU Trend
+              <TrendingUp className="w-4 h-4 text-primary" /> {t("analyticsUi.dauWauTrend")}
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={dashboard.dauSeries}>
@@ -356,7 +359,7 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-amber-500" /> Registrierungen
+              <UserPlus className="w-4 h-4 text-amber-500" /> {t("analyticsUi.registrations")}
             </h3>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={dashboard.registrationSeries}>
@@ -375,7 +378,7 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <Eye className="w-4 h-4 text-blue-500" /> Top Seiten
+              <Eye className="w-4 h-4 text-blue-500" /> {t("analyticsUi.topPages")}
             </h3>
             <ResponsiveContainer width="100%" height={Math.max(200, dashboard.topPages.length * 28)}>
               <BarChart data={dashboard.topPages.slice(0, 10)} layout="vertical">
@@ -394,20 +397,20 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <Target className="w-4 h-4 text-green-500" /> Einladungs-Conversion
+              <Target className="w-4 h-4 text-green-500" /> {t("analyticsUi.inviteConversion")}
             </h3>
             <div className="flex items-center gap-4">
               <div className="flex-1 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Verschickt</span>
+                  <span>{t("analyticsUi.invitesSent")}</span>
                   <span className="font-bold">{dashboard.inviteConversion.total}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Angenommen</span>
+                  <span>{t("analyticsUi.invitesAccepted")}</span>
                   <span className="font-bold text-green-600">{dashboard.inviteConversion.accepted}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Conversion Rate</span>
+                  <span>{t("analyticsUi.conversionRate")}</span>
                   <span className="font-bold text-primary">{dashboard.inviteConversion.rate}%</span>
                 </div>
               </div>
@@ -423,6 +426,7 @@ function OverviewSection({ dashboard, pageViewData, loadingPageViews }: { dashbo
 }
 
 function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; loading: boolean; onExport: () => void }) {
+  const { t } = useTranslation();
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!pageViewData) return <p className="text-center text-muted-foreground py-8">Keine Page-View-Daten vorhanden</p>;
 
@@ -437,15 +441,15 @@ function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; 
       {pageViewData.topPages?.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-serif font-semibold text-sm mb-3">Meistbesuchte Seiten</h3>
+            <h3 className="font-serif font-semibold text-sm mb-3">{t("analyticsUi.mostVisitedPages")}</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground text-xs">
-                    <th className="text-left py-2 pr-2">Seite</th>
-                    <th className="text-center py-2 px-2">Aufrufe</th>
-                    <th className="text-center py-2 px-2">Nutzer</th>
-                    <th className="text-center py-2 px-2">Ø Dauer</th>
+                    <th className="text-left py-2 pr-2">{t("analyticsUi.page")}</th>
+                    <th className="text-center py-2 px-2">{t("analyticsUi.views")}</th>
+                    <th className="text-center py-2 px-2">{t("analyticsUi.users")}</th>
+                    <th className="text-center py-2 px-2">{t("analyticsUi.avgDurationCol")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -468,7 +472,7 @@ function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; 
         <Card>
           <CardContent className="p-4">
             <h3 className="font-serif font-semibold text-sm mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Verweildauer pro Seite
+              <Clock className="w-4 h-4" /> {t("analyticsUi.dwellTimePerPage")}
             </h3>
             <ResponsiveContainer width="100%" height={Math.max(200, pageViewData.dwellTime.length * 28)}>
               <BarChart data={pageViewData.dwellTime.slice(0, 15)} layout="vertical">
@@ -611,11 +615,11 @@ function EngagementSection({ dashboard, onSelectUser, onExport, onSessionExport 
               <thead>
                 <tr className="border-b text-muted-foreground text-xs">
                   <th className="text-left py-2 pr-2">Name</th>
-                  <SortHeader field="sessionCount">Sessions</SortHeader>
-                  <SortHeader field="totalDuration">Gesamt</SortHeader>
-                  <SortHeader field="avgDuration">Ø Dauer</SortHeader>
-                  <SortHeader field="ratingCount">Ratings</SortHeader>
-                  <th className="py-2 px-2 text-center">Letzte Aktivität</th>
+                  <SortHeader field="sessionCount">{t("analyticsUi.sessions")}</SortHeader>
+                  <SortHeader field="totalDuration">{t("analyticsUi.totalDuration")}</SortHeader>
+                  <SortHeader field="avgDuration">{t("analyticsUi.avgDurationCol")}</SortHeader>
+                  <SortHeader field="ratingCount">{t("resultsUi.ratings")}</SortHeader>
+                  <th className="py-2 px-2 text-center">{t("analyticsUi.last7Days")}</th>
                   <th className="py-2 px-2"></th>
                 </tr>
               </thead>
@@ -966,14 +970,15 @@ function RetentionSection({ data, loading, cohortData, loadingCohorts }: { data:
 
 function NotificationSection({ data, loading }: { data: any; loading: boolean }) {
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
-  if (!data) return <p className="text-center text-muted-foreground py-8">Keine Benachrichtigungsdaten</p>;
+  const { t } = useTranslation();
+  if (!data) return <p className="text-center text-muted-foreground py-8">{t("analyticsUi.noPageViewData")}</p>;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <KpiCard icon={Bell} label="Gesamt" value={data.totalNotifications || 0} />
-        <KpiCard icon={Eye} label="Gelesen" value={data.totalRead || 0} color="text-green-500" />
-        <KpiCard icon={Target} label="Leserate" value={`${data.overallReadRate || 0}%`} color="text-blue-500" />
+        <KpiCard icon={Bell} label={t("analyticsUi.total")} value={data.totalNotifications || 0} />
+        <KpiCard icon={Eye} label={t("analyticsUi.read")} value={data.totalRead || 0} color="text-green-500" />
+        <KpiCard icon={Target} label={t("analyticsUi.readRate")} value={`${data.overallReadRate || 0}%`} color="text-blue-500" />
       </div>
 
       {data.returnCorrelation && (

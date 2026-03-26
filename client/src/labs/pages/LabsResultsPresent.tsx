@@ -20,7 +20,7 @@ interface LabsResultsPresentProps {
 }
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
-const MEDAL_LABELS = ["Gold", "Silver", "Bronze"];
+const MEDAL_LABELS_KEYS = ["resultsUi.gold", "resultsUi.silver", "resultsUi.bronze"];
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -160,9 +160,9 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
           style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}
         >
           {[
-            { icon: <Wine style={{ width: 18, height: 18 }} />, value: whiskyCount, label: "Whiskies" },
-            { icon: <Users style={{ width: 18, height: 18 }} />, value: participantCount, label: "Tasters" },
-            { icon: <Star style={{ width: 18, height: 18 }} />, value: totalRatings, label: "Ratings" },
+            { icon: <Wine style={{ width: 18, height: 18 }} />, value: whiskyCount, label: t("resultsUi.whiskies") },
+            { icon: <Users style={{ width: 18, height: 18 }} />, value: participantCount, label: t("resultsUi.tasters") },
+            { icon: <Star style={{ width: 18, height: 18 }} />, value: totalRatings, label: t("resultsUi.ratings") },
           ].map((s, i) => (
             <GlassCard key={i} style={{ padding: "16px 28px", textAlign: "center" }}>
               <div style={{ color: "var(--labs-accent)", marginBottom: 6, display: "flex", justifyContent: "center" }}>{s.icon}</div>
@@ -339,6 +339,7 @@ function TransitionSlide({ title, subtitle, icon }: { title: string; subtitle?: 
 function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
   whisky: any; rank: number; totalWhiskies: number; maxScore: number;
 }) {
+  const { t } = useTranslation();
   const isTop3 = rank <= 3;
   const stdDev = whisky.overallStdDev;
   const isConsensus = stdDev != null && whisky.ratingCount >= 2 && stdDev <= 5;
@@ -382,16 +383,16 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              #{rank} of {totalWhiskies}
+              #{rank} {t("ui.of")} {totalWhiskies}
             </span>
             {isConsensus && (
               <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-success)", background: "var(--labs-success-muted)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
-                <Target style={{ width: 10, height: 10 }} /> Consensus
+                <Target style={{ width: 10, height: 10 }} /> {t("resultsUi.consensus")}
               </span>
             )}
             {isDebated && (
               <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-danger)", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
-                <MessageCircle style={{ width: 10, height: 10 }} /> Debated
+                <MessageCircle style={{ width: 10, height: 10 }} /> {t("resultsUi.debated")}
               </span>
             )}
           </div>
@@ -430,14 +431,14 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
               <LabsScoreRing score={whisky.avgOverall ?? 0} maxScore={maxScore} size={90} strokeWidth={6} showValue />
             </motion.div>
             <div style={{ flex: 1 }}>
-              <DimBar label="Nose" value={whisky.avgNose} maxScore={maxScore} delay={450} />
-              <DimBar label="Taste" value={whisky.avgTaste} maxScore={maxScore} delay={550} />
-              <DimBar label="Finish" value={whisky.avgFinish} maxScore={maxScore} delay={650} />
+              <DimBar label={t("resultsUi.nose")} value={whisky.avgNose} maxScore={maxScore} delay={450} />
+              <DimBar label={t("resultsUi.taste")} value={whisky.avgTaste} maxScore={maxScore} delay={550} />
+              <DimBar label={t("resultsUi.finish")} value={whisky.avgFinish} maxScore={maxScore} delay={650} />
             </div>
           </div>
 
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-            <Users style={{ width: 11, height: 11 }} /> {whisky.ratingCount} {whisky.ratingCount === 1 ? "rating" : "ratings"}
+            <Users style={{ width: 11, height: 11 }} /> {whisky.ratingCount} {whisky.ratingCount === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}
           </div>
         </motion.div>
       </div>
@@ -524,6 +525,7 @@ function WinnerRevealSlide({ whisky, maxScore }: { whisky: any; maxScore: number
 }
 
 function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
+  const { t } = useTranslation();
   const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
   const podiumHeights = [170, 220, 140];
   const displayOrder = top3.length >= 3 ? [1, 0, 2] : top3.map((_, i) => i);
@@ -581,7 +583,7 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
                   {actualRank + 1}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  {MEDAL_LABELS[actualRank]}
+                  {t(MEDAL_LABELS_KEYS[actualRank])}
                 </span>
               </div>
             </motion.div>
@@ -804,7 +806,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     if (funStats.length > 0) s.push({ type: "funstats" });
 
     if (sorted.length > 3) {
-      s.push({ type: "transition", data: { title: "The Tasting", subtitle: "From the lineup to the leaderboard — let's see how they ranked.", icon: <Eye style={{ width: 44, height: 44 }} /> } });
+      s.push({ type: "transition", data: { title: t("resultsUi.theTasting"), subtitle: t("resultsUi.theTastingDesc"), icon: <Eye style={{ width: 44, height: 44 }} /> } });
     }
 
     const reversed = [...sorted].reverse();
@@ -814,7 +816,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     });
 
     if (sorted.length >= 3) {
-      s.push({ type: "transition", data: { title: "And the Winner is…", subtitle: "The moment you've been waiting for.", icon: <Trophy style={{ width: 44, height: 44 }} /> } });
+      s.push({ type: "transition", data: { title: t("resultsUi.andTheWinnerIs"), subtitle: t("resultsUi.andTheWinnerIsDesc"), icon: <Trophy style={{ width: 44, height: 44 }} /> } });
       s.push({ type: "winner", data: { whisky: sorted[0] } });
       s.push({ type: "podium", data: { top3: sorted.slice(0, 3) } });
     }
@@ -1022,7 +1024,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             backdropFilter: "blur(8px)", letterSpacing: "0.04em",
           }} data-testid="present-live-indicator">
             <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
-            LIVE
+            {t("resultsUi.live")}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>

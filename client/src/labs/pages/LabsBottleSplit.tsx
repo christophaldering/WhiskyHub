@@ -217,7 +217,7 @@ export default function LabsBottleSplit() {
           <span style={{ fontSize: 11, color: "var(--labs-text-muted)", whiteSpace: "nowrap" }}>{remainingMl}ml frei</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "var(--labs-text-muted)" }}>
-          <span>{s.claimCount || 0} Claims</span>
+          <span>{s.claimCount || 0} {t("bottleSplitUi.claims")}</span>
           {minPrice > 0 && <span>{minPrice === maxPrice ? `${minPrice}€` : `${minPrice}–${maxPrice}€`}</span>}
         </div>
       </button>
@@ -264,36 +264,36 @@ export default function LabsBottleSplit() {
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <input data-testid={`input-split-bottle-name-${i}`} value={b.name} onChange={e => updateBottle(i, "name", e.target.value)} placeholder="Name *" className="labs-input" style={{ gridColumn: "1 / -1" }} />
-                  <input data-testid={`input-split-bottle-distillery-${i}`} value={b.distillery || ""} onChange={e => updateBottle(i, "distillery", e.target.value)} placeholder="Distillery" className="labs-input" />
-                  <input data-testid={`input-split-bottle-region-${i}`} value={b.region || ""} onChange={e => updateBottle(i, "region", e.target.value)} placeholder="Region" className="labs-input" />
+                  <input data-testid={`input-split-bottle-name-${i}`} value={b.name} onChange={e => updateBottle(i, "name", e.target.value)} placeholder={t("bottleSplitUi.namePlaceholder")} className="labs-input" style={{ gridColumn: "1 / -1" }} />
+                  <input data-testid={`input-split-bottle-distillery-${i}`} value={b.distillery || ""} onChange={e => updateBottle(i, "distillery", e.target.value)} placeholder={t("bottleSplitUi.distilleryPlaceholder")} className="labs-input" />
+                  <input data-testid={`input-split-bottle-region-${i}`} value={b.region || ""} onChange={e => updateBottle(i, "region", e.target.value)} placeholder={t("bottleSplitUi.regionPlaceholder")} className="labs-input" />
                 </div>
 
                 {expandedBottle === i && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
-                    <input data-testid={`input-split-bottle-age-${i}`} value={b.age || ""} onChange={e => updateBottle(i, "age", e.target.value)} placeholder="Age" className="labs-input" />
-                    <input data-testid={`input-split-bottle-abv-${i}`} type="number" step="0.1" value={b.abv ?? ""} onChange={e => updateBottle(i, "abv", e.target.value ? parseFloat(e.target.value) : null)} placeholder="ABV %" className="labs-input" />
-                    <input data-testid={`input-split-bottle-cask-${i}`} value={b.caskInfluence || ""} onChange={e => updateBottle(i, "caskInfluence", e.target.value)} placeholder="Cask" className="labs-input" />
-                    <input data-testid={`input-split-bottle-category-${i}`} value={b.category || ""} onChange={e => updateBottle(i, "category", e.target.value)} placeholder="Category" className="labs-input" />
-                    <input data-testid={`input-split-bottle-country-${i}`} value={b.country || ""} onChange={e => updateBottle(i, "country", e.target.value)} placeholder="Country" className="labs-input" />
-                    <input data-testid={`input-split-bottle-peat-${i}`} value={b.peatLevel || ""} onChange={e => updateBottle(i, "peatLevel", e.target.value)} placeholder="Peat Level" className="labs-input" />
-                    <input data-testid={`input-split-bottle-ppm-${i}`} type="number" step="0.1" value={b.ppm ?? ""} onChange={e => updateBottle(i, "ppm", e.target.value ? parseFloat(e.target.value) : null)} placeholder="PPM" className="labs-input" />
-                    <input data-testid={`input-split-bottle-bottler-${i}`} value={b.bottler || ""} onChange={e => updateBottle(i, "bottler", e.target.value)} placeholder="Bottler" className="labs-input" />
-                    <input data-testid={`input-split-bottle-distilled-${i}`} value={b.distilledYear || ""} onChange={e => updateBottle(i, "distilledYear", e.target.value)} placeholder="Distilled Year" className="labs-input" />
-                    <input data-testid={`input-split-bottle-bottled-${i}`} value={b.bottledYear || ""} onChange={e => updateBottle(i, "bottledYear", e.target.value)} placeholder="Bottled Year" className="labs-input" />
-                    <input data-testid={`input-split-bottle-price-${i}`} type="number" step="0.01" value={b.price ?? ""} onChange={e => updateBottle(i, "price", e.target.value ? parseFloat(e.target.value) : null)} placeholder="Price (EUR)" className="labs-input" />
-                    <input data-testid={`input-split-bottle-wbscore-${i}`} type="number" step="0.1" value={b.wbScore ?? ""} onChange={e => updateBottle(i, "wbScore", e.target.value ? parseFloat(e.target.value) : null)} placeholder="WB Score" className="labs-input" />
-                    <input data-testid={`input-split-bottle-whiskybase-${i}`} value={b.whiskybaseId || ""} onChange={e => updateBottle(i, "whiskybaseId", e.target.value)} placeholder="Whiskybase ID" className="labs-input" />
-                    <textarea data-testid={`input-split-bottle-notes-${i}`} value={b.notes || ""} onChange={e => updateBottle(i, "notes", e.target.value)} placeholder="Notes" className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
-                    <textarea data-testid={`input-split-bottle-summary-${i}`} value={b.hostSummary || ""} onChange={e => updateBottle(i, "hostSummary", e.target.value)} placeholder="Host Summary" className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
+                    <input data-testid={`input-split-bottle-age-${i}`} value={b.age || ""} onChange={e => updateBottle(i, "age", e.target.value)} placeholder={t("bottleSplitUi.agePlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-abv-${i}`} type="number" step="0.1" value={b.abv ?? ""} onChange={e => updateBottle(i, "abv", e.target.value ? parseFloat(e.target.value) : null)} placeholder={t("bottleSplitUi.abvPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-cask-${i}`} value={b.caskInfluence || ""} onChange={e => updateBottle(i, "caskInfluence", e.target.value)} placeholder={t("bottleSplitUi.caskPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-category-${i}`} value={b.category || ""} onChange={e => updateBottle(i, "category", e.target.value)} placeholder={t("bottleSplitUi.categoryPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-country-${i}`} value={b.country || ""} onChange={e => updateBottle(i, "country", e.target.value)} placeholder={t("bottleSplitUi.countryPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-peat-${i}`} value={b.peatLevel || ""} onChange={e => updateBottle(i, "peatLevel", e.target.value)} placeholder={t("bottleSplitUi.peatLevelPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-ppm-${i}`} type="number" step="0.1" value={b.ppm ?? ""} onChange={e => updateBottle(i, "ppm", e.target.value ? parseFloat(e.target.value) : null)} placeholder={t("bottleSplitUi.ppmPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-bottler-${i}`} value={b.bottler || ""} onChange={e => updateBottle(i, "bottler", e.target.value)} placeholder={t("bottleSplitUi.bottlerPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-distilled-${i}`} value={b.distilledYear || ""} onChange={e => updateBottle(i, "distilledYear", e.target.value)} placeholder={t("bottleSplitUi.distilledYearPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-bottled-${i}`} value={b.bottledYear || ""} onChange={e => updateBottle(i, "bottledYear", e.target.value)} placeholder={t("bottleSplitUi.bottledYearPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-price-${i}`} type="number" step="0.01" value={b.price ?? ""} onChange={e => updateBottle(i, "price", e.target.value ? parseFloat(e.target.value) : null)} placeholder={t("bottleSplitUi.pricePlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-wbscore-${i}`} type="number" step="0.1" value={b.wbScore ?? ""} onChange={e => updateBottle(i, "wbScore", e.target.value ? parseFloat(e.target.value) : null)} placeholder={t("bottleSplitUi.wbScorePlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-whiskybase-${i}`} value={b.whiskybaseId || ""} onChange={e => updateBottle(i, "whiskybaseId", e.target.value)} placeholder={t("bottleSplitUi.whiskybaseIdPlaceholder")} className="labs-input" />
+                    <textarea data-testid={`input-split-bottle-notes-${i}`} value={b.notes || ""} onChange={e => updateBottle(i, "notes", e.target.value)} placeholder={t("bottleSplitUi.notesPlaceholder")} className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
+                    <textarea data-testid={`input-split-bottle-summary-${i}`} value={b.hostSummary || ""} onChange={e => updateBottle(i, "hostSummary", e.target.value)} placeholder={t("bottleSplitUi.hostSummaryPlaceholder")} className="labs-input" rows={2} style={{ resize: "none", gridColumn: "1 / -1" }} />
                     <select data-testid={`input-split-bottle-flavor-${i}`} value={b.flavorProfile || ""} onChange={e => updateBottle(i, "flavorProfile", e.target.value)} className="labs-input" style={{ gridColumn: "1 / -1" }}>
-                      <option value="">Flavor Profile (auto)</option>
-                      <option value="smoky-peaty">Smoky & Peaty</option>
-                      <option value="fruity-sweet">Fruity & Sweet</option>
-                      <option value="rich-sherried">Rich & Sherried</option>
-                      <option value="light-floral">Light & Floral</option>
-                      <option value="spicy-complex">Spicy & Complex</option>
-                      <option value="maritime-coastal">Maritime & Coastal</option>
+                      <option value="">{t("bottleSplitUi.flavorProfileAuto")}</option>
+                      <option value="smoky-peaty">{t("bottleSplitUi.smokyPeaty")}</option>
+                      <option value="fruity-sweet">{t("bottleSplitUi.fruitySweetOpt")}</option>
+                      <option value="rich-sherried">{t("bottleSplitUi.richSherried")}</option>
+                      <option value="light-floral">{t("bottleSplitUi.lightFloral")}</option>
+                      <option value="spicy-complex">{t("bottleSplitUi.spicyComplex")}</option>
+                      <option value="maritime-coastal">{t("bottleSplitUi.maritimeCoastal")}</option>
                     </select>
                     <div style={{ gridColumn: "1 / -1" }}>
                       <WhiskyImageUpload
@@ -330,7 +330,7 @@ export default function LabsBottleSplit() {
               </div>
             ))}
             <button onClick={addBottle} data-testid="button-add-split-bottle" className="labs-btn-outline" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              <Plus size={18} />Flasche hinzufügen
+              <Plus size={18} />{t("bottleSplitUi.addBottle")}
             </button>
           </div>
         )}
@@ -511,7 +511,7 @@ export default function LabsBottleSplit() {
       </div>
 
       <button data-testid="button-create-split" onClick={() => setShowWizard(true)} className="labs-btn-primary" style={{ width: "100%", marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <Plus size={18} />Neuen Split erstellen
+        <Plus size={18} />{t("bottleSplitUi.createNewSplit")}
       </button>
 
       <div style={{ display: "flex", background: "var(--labs-bg-card)", borderRadius: 10, padding: 3, marginBottom: "var(--labs-space-lg)", border: "1px solid var(--labs-border)" }} data-testid="splits-tabs">

@@ -221,7 +221,7 @@ export default function LabsRevealMoment({
           transition: "opacity 0.5s ease 1s",
         }}
       >
-        {t("labs.reveal.tapToContinue", "Tap anywhere to continue")}
+        {t("revealUi.tapToContinue")}
       </div>
     </div>,
     document.body

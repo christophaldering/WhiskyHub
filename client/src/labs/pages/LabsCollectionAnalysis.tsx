@@ -18,9 +18,9 @@ for (const d of distilleries) {
 }
 
 function deriveRegion(distillery: string | null): string {
-  if (!distillery) return "Unknown";
+  if (!distillery) return "__unknown__";
   const lower = distillery.toLowerCase().trim();
-  let found = "Other";
+  let found = "__other__";
   distilleryRegionMap.forEach((region, name) => {
     if (lower.includes(name) || name.includes(lower)) found = region;
   });
@@ -201,7 +201,8 @@ export default function LabsCollectionAnalysis() {
       valuableItems.push({ name: item.name, price: item.pricePaid, currency: item.currency || "EUR" });
     }
 
-    const region = deriveRegion(item.distillery);
+    const rawRegion = deriveRegion(item.distillery);
+    const region = rawRegion === "__unknown__" ? t("resultsUi.unknown") : rawRegion === "__other__" ? t("resultsUi.other") : rawRegion;
     regionCounts.set(region, (regionCounts.get(region) || 0) + 1);
 
     if (item.distillery) distilleryCounts.set(item.distillery, (distilleryCounts.get(item.distillery) || 0) + 1);

@@ -58,7 +58,7 @@ const REVEAL_PRESETS: Record<RevealPresetKey, { labelKey: string; fallbackLabel:
   },
 };
 
-function getRevealState(tasting: any, whiskyCount: number) {
+function getRevealState(tasting: any, whiskyCount: number, translate?: (key: string) => string) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
   try {
     if (tasting.revealOrder) {
@@ -72,31 +72,36 @@ function getRevealState(tasting: any, whiskyCount: number) {
   const allRevealed = whiskyCount > 0 && revealIndex >= whiskyCount - 1 && revealStep >= maxSteps;
 
   const FIELD_LABELS: Record<string, string> = {
-    name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-    region: "Region", country: "Country", category: "Category",
-    caskInfluence: "Cask", peatLevel: "Peat", image: "Image",
-    bottler: "Bottler", vintage: "Vintage", distilledYear: "Distilled",
-    bottledYear: "Bottled", hostNotes: "Notes",
-    hostSummary: "Summary", price: "Price", ppm: "PPM",
-    wbId: "WB-ID", wbScore: "WB Score",
+    name: "cockpitUi.fieldName", distillery: "cockpitUi.fieldDistillery", age: "cockpitUi.fieldAge", abv: "cockpitUi.fieldAbv",
+    region: "cockpitUi.fieldRegion", country: "cockpitUi.fieldCountry", category: "cockpitUi.fieldCategory",
+    caskInfluence: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", image: "cockpitUi.fieldImage",
+    bottler: "cockpitUi.fieldBottler", vintage: "cockpitUi.fieldVintage", distilledYear: "cockpitUi.fieldDistilled",
+    bottledYear: "cockpitUi.fieldBottled", hostNotes: "cockpitUi.fieldNotes",
+    hostSummary: "cockpitUi.fieldSummary", price: "cockpitUi.fieldPrice", ppm: "cockpitUi.fieldPpm",
+    wbId: "cockpitUi.fieldWbId", wbScore: "cockpitUi.fieldWbScore",
   };
+  const tr = translate || ((k: string) => k);
   const stepLabels = stepGroups.map((group: string[]) => {
-    const labels = group.map(f => FIELD_LABELS[f] || f);
+    const labels = group.map(f => tr(FIELD_LABELS[f] || f));
     if (labels.length <= 2) return labels.join(" & ");
     return labels.slice(0, 2).join(" & ") + " +";
   });
 
-  let nextLabel = "Reveal Next";
+  let nextLabelKey = "cockpitUi.revealNext";
+  let nextLabelParams: Record<string, string> = {};
   if (allRevealed) {
-    nextLabel = "All Revealed";
+    nextLabelKey = "cockpitUi.allRevealed";
   } else if (revealStep < maxSteps) {
     const lbl = stepLabels[revealStep];
-    nextLabel = lbl ? `Reveal ${lbl}` : "Reveal Next";
+    if (lbl) {
+      nextLabelKey = "cockpitUi.revealNextField";
+      nextLabelParams = { field: lbl };
+    }
   } else {
-    nextLabel = "Next Dram";
+    nextLabelKey = "cockpitUi.nextDram";
   }
 
-  return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabel, stepGroups };
+  return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabelKey, nextLabelParams, stepGroups };
 }
 
 function getGuestVisibility(tasting: any, stepGroups: string[][], isGuided: boolean) {
@@ -124,12 +129,12 @@ function getGuestVisibility(tasting: any, stepGroups: string[][], isGuided: bool
 }
 
 const REVEAL_FIELD_LABELS: Record<string, string> = {
-  name: "Name", distillery: "Distillery", age: "Age", abv: "ABV",
-  region: "Region", country: "Country", category: "Category",
-  caskInfluence: "Cask", peatLevel: "Peat", bottler: "Bottler",
-  vintage: "Vintage", distilledYear: "Distilled", bottledYear: "Bottled",
-  hostNotes: "Notes", hostSummary: "Summary", image: "Image",
-  ppm: "PPM", price: "Price", wbId: "WB-ID", wbScore: "WB Score",
+  name: "cockpitUi.fieldName", distillery: "cockpitUi.fieldDistillery", age: "cockpitUi.fieldAge", abv: "cockpitUi.fieldAbv",
+  region: "cockpitUi.fieldRegion", country: "cockpitUi.fieldCountry", category: "cockpitUi.fieldCategory",
+  caskInfluence: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", bottler: "cockpitUi.fieldBottler",
+  vintage: "cockpitUi.fieldVintage", distilledYear: "cockpitUi.fieldDistilled", bottledYear: "cockpitUi.fieldBottled",
+  hostNotes: "cockpitUi.fieldNotes", hostSummary: "cockpitUi.fieldSummary", image: "cockpitUi.fieldImage",
+  ppm: "cockpitUi.fieldPpm", price: "cockpitUi.fieldPrice", wbId: "cockpitUi.fieldWbId", wbScore: "cockpitUi.fieldWbScore",
 };
 
 interface LabsHostCockpitProps {
@@ -251,7 +256,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     refetchInterval: POLL_NORMAL,
   });
 
-  function pName(p: any) { return stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"); }
+  function pName(p: any) { return stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || t("ui.anonymous")); }
   function pId(p: any) { return p.participantId || p.id; }
 
   const updateStatusMut = useMutation({
@@ -482,7 +487,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
 
-  const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length) : null;
+  const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length, t) : null;
   const optimisticTasting = useMemo(() => {
     if (!tasting) return tasting;
     const t = { ...tasting };
@@ -1314,13 +1319,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           {!isLive && isDraft ? (
             <div style={{ textAlign: "center", padding: "28px 20px", color: "var(--labs-text-muted)" }}>
               <Clock style={{ width: 28, height: 28, margin: "0 auto 10px", display: "block", opacity: 0.6 }} />
-              <div style={{ fontSize: 14, fontWeight: 600 }}>Session not started</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{t("cockpitUi.sessionNotStarted")}</div>
               <div style={{ fontSize: 12, marginTop: 4, opacity: 0.8 }}>Guests will see a waiting screen.</div>
             </div>
           ) : isLive && isGuided && guidedIdx < 0 ? (
             <div style={{ textAlign: "center", padding: "28px 20px", color: "var(--labs-text-muted)" }}>
               <Radio style={{ width: 28, height: 28, margin: "0 auto 10px", display: "block", animation: "pulse 2s infinite" }} />
-              <div style={{ fontSize: 14, fontWeight: 600 }}>Waiting for first dram</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{t("cockpitUi.waitingForFirstDram")}</div>
               <div style={{ fontSize: 12, marginTop: 4, opacity: 0.8 }}>Press "Start First Dram" to begin.</div>
             </div>
           ) : activeWhisky ? (
@@ -1449,10 +1454,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     : [];
                   const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
                   const dims: { label: string; key: string }[] = [
-                    { label: "Nose", key: "nose" },
-                    { label: "Taste", key: "taste" },
-                    { label: "Finish", key: "finish" },
-                    { label: "Overall", key: "overall" },
+                    { label: t("cockpitUi.nose"), key: "nose" },
+                    { label: t("cockpitUi.taste"), key: "taste" },
+                    { label: t("cockpitUi.finish"), key: "finish" },
+                    { label: t("cockpitUi.overall"), key: "overall" },
                   ];
                   const avgs = dims.map(d => {
                     const validRatings = whiskyRatings.filter((r: any) => r[d.key] != null);
@@ -1477,7 +1482,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         );
                       })}
                       <div data-testid="guest-rated-counter" style={{ fontSize: 10, color: "var(--labs-text-muted)", textAlign: "right", marginTop: 2 }}>
-                        {ratedCount > 0 ? `${ratedCount}/${totalParticipants} rated` : "No ratings yet"}
+                        {ratedCount > 0 ? `${ratedCount}/${totalParticipants} ${t("ui.rated")}` : t("cockpitUi.noRatingsYet")}
                       </div>
                     </div>
                   );
@@ -1537,7 +1542,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 {rv.stepGroups.map((group: string[], sIdx: number) => {
                   const state = gv.stepStates[sIdx] || "hidden";
                   const pillState = state === "revealed" ? "done" : state === "next" ? "active" : "pending";
-                  const label = group.map(f => REVEAL_FIELD_LABELS[f] || f);
+                  const label = group.map(f => t(REVEAL_FIELD_LABELS[f] || f));
                   const shortLabel = label.length <= 2 ? label.join(" & ") : label[0] + ` +${label.length - 1}`;
                   return (
                     <span key={sIdx} className="cockpit-stage-pill" data-state={pillState} data-testid={`stage-pill-${sIdx}`}>
@@ -1553,7 +1558,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   const state = gv.stepStates[sIdx] || "hidden";
                   const isRevealed = state === "revealed";
                   const isCurrent = state === "next";
-                  const fieldLabels = group.map(f => REVEAL_FIELD_LABELS[f] || f).join(", ");
+                  const fieldLabels = group.map(f => t(REVEAL_FIELD_LABELS[f] || f)).join(", ");
                   const fieldValueMap: Record<string, string> = {
                     name: activeWhisky?.name || "", distillery: activeWhisky?.distillery || "",
                     age: activeWhisky?.age ? `${activeWhisky.age}y` : "", abv: activeWhisky?.abv ? `${activeWhisky.abv}%` : "",
@@ -1813,7 +1818,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 : revealConfirmed
                   ? <CheckCircle2 style={{ width: 14, height: 14, color: "var(--labs-success)" }} />
                   : <Eye style={{ width: 14, height: 14 }} />}
-              {revealConfirmed ? "Sent!" : (rv?.nextLabel || "Reveal Next")}
+              {revealConfirmed ? t("analyticsUi.sent") : (rv ? t(rv.nextLabelKey, rv.nextLabelParams) : t("cockpitUi.revealNext"))}
             </button>
           ) : (
             <div style={{ textAlign: "center", fontSize: 12, color: "var(--labs-success)", fontWeight: 600, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -1831,7 +1836,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             </button>
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setConfirmEnd(false)} className="cockpit-action-btn cockpit-action-secondary" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={() => setConfirmEnd(false)} className="cockpit-action-btn cockpit-action-secondary" style={{ flex: 1 }}>{t("ui.cancel")}</button>
               <button onClick={handleEndSession} className="cockpit-action-btn cockpit-action-danger" style={{ flex: 1 }} data-testid="cockpit-confirm-end">
                 <Lock style={{ width: 14, height: 14 }} />
                 End Session
@@ -1892,7 +1897,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               Full restart (delete ratings)
             </button>
             <button onClick={() => setRestartDialog(false)} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-cancel">
-              Cancel
+              {t("ui.cancel")}
             </button>
           </div>
         )}
@@ -2073,7 +2078,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       {avgScore !== null && (
                         <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{avgScore}</span>
                       )}
-                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}>{ratedCount}/{totalParticipants} rated</span>
+                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}>{ratedCount}/{totalParticipants} {t("ui.rated")}</span>
                       {isLive && (
                         <button
                           onClick={e => { e.stopPropagation(); toggleDramLock(w.id); }}
@@ -2088,7 +2093,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           data-testid={`cockpit-lock-${w.id}`}
                         >
                           <Lock style={{ width: 9, height: 9 }} />
-                          {isDramLocked(w.id) ? "Locked" : "Lock"}
+                          {isDramLocked(w.id) ? t("cockpitUi.locked") : t("cockpitUi.lock")}
                         </button>
                       )}
                     </div>
@@ -2199,7 +2204,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               data-testid="cockpit-wizard-toggle"
             >
               <Sliders style={{ width: 10, height: 10 }} />
-              {cockpitWizard ? "Wizard" : "Compact"}
+              {cockpitWizard ? t("cockpitUi.wizard") : t("cockpitUi.compact")}
             </button>
             {saving && (
               <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
@@ -2214,8 +2219,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           {isDraft ? (
             <div style={{ padding: 24, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="rating-draft-placeholder">
               <Star style={{ width: 24, height: 24, color: "var(--labs-border)", marginBottom: 8 }} />
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Rating not available yet</div>
-              <div>Start the tasting to begin rating.</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t("cockpitUi.ratingNotAvailable")}</div>
+              <div>{t("cockpitUi.startTastingToRate")}</div>
             </div>
           ) : (
           <>

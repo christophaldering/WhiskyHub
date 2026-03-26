@@ -43,14 +43,15 @@ interface FlavorTagsProps {
   };
 }
 
-function detectProfile(region?: string, cask?: string): { id: FlavorProfileId; label: string } | null {
+function detectProfile(region?: string, cask?: string, t?: (key: string) => string): { id: FlavorProfileId; label: string } | null {
   const r = (region || "").toLowerCase();
   const c = (cask || "").toLowerCase();
-  if (r.includes("islay") || r.includes("island")) return { id: "peated-maritime", label: "Peated & Maritime" };
-  if (c.includes("sherry") || c.includes("px")) return { id: "sherried-rich", label: "Sherried & Rich" };
-  if (r.includes("speyside")) return { id: "speyside-fruity", label: "Speyside & Fruity" };
-  if (r.includes("highland")) return { id: "highland-elegant", label: "Highland & Elegant" };
-  if (c.includes("bourbon")) return { id: "bourbon-classic", label: "Bourbon & Classic" };
+  const tr = t || ((k: string) => k);
+  if (r.includes("islay") || r.includes("island")) return { id: "peated-maritime", label: tr("ratingUi.peatedMaritime") };
+  if (c.includes("sherry") || c.includes("px")) return { id: "sherried-rich", label: tr("ratingUi.sherriedRich") };
+  if (r.includes("speyside")) return { id: "speyside-fruity", label: tr("ratingUi.speysideFruity") };
+  if (r.includes("highland")) return { id: "highland-elegant", label: tr("ratingUi.highlandElegant") };
+  if (c.includes("bourbon")) return { id: "bourbon-classic", label: tr("ratingUi.bourbonClassic") };
   return null;
 }
 
@@ -172,9 +173,9 @@ export default function FlavorTags({
       blind
     );
     if (profileId) return profileId;
-    const detected = detectProfile(whiskyRegion, whiskyCask);
+    const detected = detectProfile(whiskyRegion, whiskyCask, t);
     return detected?.id || null;
-  }, [blind, whiskyRegion, whiskyCask, whiskyFlavorProfile]);
+  }, [blind, whiskyRegion, whiskyCask, whiskyFlavorProfile, t]);
 
   const profileLabel = useMemo(() => {
     if (blind) return null;
@@ -186,9 +187,9 @@ export default function FlavorTags({
       const found = FLAVOR_PROFILES.find((p) => p.id === profileId);
       if (found) return found.en;
     }
-    const det = detectProfile(whiskyRegion, whiskyCask);
+    const det = detectProfile(whiskyRegion, whiskyCask, t);
     return det?.label || null;
-  }, [blind, whiskyRegion, whiskyCask, whiskyFlavorProfile]);
+  }, [blind, whiskyRegion, whiskyCask, whiskyFlavorProfile, t]);
 
   const sortedCategories = useMemo(() => getSortedCategories(profile), [profile]);
 
@@ -248,7 +249,7 @@ export default function FlavorTags({
     { id: "journey", label: t("m2.taste.rating.toolJourney", "Journey"), icon: "🔄" },
     { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
     { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-    { id: "radar", label: "Radar", icon: "⬡" },
+    { id: "radar", label: t("ratingUi.radar"), icon: "⬡" },
     { id: "describe", label: t("m2.taste.rating.toolDescribe", "Describe"), icon: "✏️" },
   ];
 

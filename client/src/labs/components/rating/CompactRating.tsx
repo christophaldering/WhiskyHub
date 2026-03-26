@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
 import ScoreInput from "./ScoreInput";
@@ -65,6 +66,7 @@ function getBandColor(score: number): string {
 }
 
 export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange }: CompactRatingProps) {
+  const { t } = useTranslation();
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
@@ -125,7 +127,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
           >
             {overallAvg}
           </div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>avg</div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>{t("ratingUi.avg")}</div>
         </div>
       </div>
 

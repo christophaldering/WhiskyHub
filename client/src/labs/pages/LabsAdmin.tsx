@@ -1973,11 +1973,11 @@ function AnalyticsTab({ pid }: { pid: string }) {
   ];
 
   const sections = [
-    { id: "overview", label: "Overview" },
+    { id: "overview", label: t("adminUi.overviewTab") },
     { id: "pages", label: t("admin.pagesNav", "Pages") },
-    { id: "engagement", label: "Engagement" },
-    { id: "funnels", label: "Funnel" },
-    { id: "retention", label: "Retention" },
+    { id: "engagement", label: t("adminUi.engagementTab") },
+    { id: "funnels", label: t("adminUi.funnelTab") },
+    { id: "retention", label: t("adminUi.retentionTab") },
   ];
 
   const tooltipStyle = { backgroundColor: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: "8px" };

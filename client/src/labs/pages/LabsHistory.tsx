@@ -253,7 +253,7 @@ function LabsHistoryList() {
 
       {!isLoading && !isError && sorted.length > 0 && (
         <>
-          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8 }}>{sorted.length} tastings</div>
+          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8 }}>{sorted.length} {t("ui.tastings")}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sorted.map(tasting => {
               const winnerLabel = [tasting.winnerDistillery, tasting.winnerName].filter(Boolean).join(" \u2014 ");
@@ -375,9 +375,9 @@ function LabsHistoryInsights() {
   if (isError || !analytics) {
     return (
       <div className="labs-card" style={{ textAlign: "center", padding: "48px 16px" }}>
-        <p style={{ color: "var(--labs-danger)", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Could not load insights</p>
+        <p style={{ color: "var(--labs-danger)", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{t("historyUi.couldNotLoadInsights")}</p>
         <button onClick={() => refetch()} className="labs-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <RefreshCw size={13} /> Retry
+          <RefreshCw size={13} /> {t("ui.retry")}
         </button>
       </div>
     );
@@ -422,9 +422,9 @@ function LabsHistoryInsights() {
     <>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         {[
-          { icon: Wine, value: analytics.totalTastings, label: "Tastings" },
-          { icon: Droplets, value: analytics.totalEntries, label: "Whiskies" },
-          { icon: TrendingUp, value: avgScore !== "\u2014" ? `${avgScore}/100` : "\u2014", label: "Avg Score" },
+          { icon: Wine, value: analytics.totalTastings, label: t("ui.tastings") },
+          { icon: Droplets, value: analytics.totalEntries, label: t("tastingDetail.whiskies") },
+          { icon: TrendingUp, value: avgScore !== "\u2014" ? `${avgScore}/100` : "\u2014", label: t("historyUi.avgScore") },
         ].map(({ icon: Icon, value, label }) => (
           <div key={label} className="labs-card" style={{ flex: "1 1 100px", padding: "14px 12px", textAlign: "center" }}>
             <Icon size={16} color="var(--labs-accent)" style={{ marginBottom: 6, display: "block", margin: "0 auto 6px" }} />
@@ -434,7 +434,7 @@ function LabsHistoryInsights() {
         ))}
       </div>
 
-      <SectionHeader icon={Trophy} title="Top 20 Whiskies" />
+      <SectionHeader icon={Trophy} title={t("historyUi.top20Whiskies")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-top-whiskies">
         {topWhiskies.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -467,7 +467,7 @@ function LabsHistoryInsights() {
         ) : <EmptyState />}
       </div>
 
-      <SectionHeader icon={MapPin} title="Best-Performing Regions" />
+      <SectionHeader icon={MapPin} title={t("historyUi.bestPerformingRegions")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-regions">
         {regionData.length > 0 ? (
           <ResponsiveContainer width="100%" height={Math.max(regionData.length * 32, 120)}>
@@ -481,7 +481,7 @@ function LabsHistoryInsights() {
         ) : <EmptyState />}
       </div>
 
-      <SectionHeader icon={Flame} title="Smoky vs. Non-Smoky" />
+      <SectionHeader icon={Flame} title={t("historyUi.smokyVsNonSmoky")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-smoky">
         {smokyPieData.length > 0 ? (
           <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
@@ -509,7 +509,7 @@ function LabsHistoryInsights() {
         ) : <EmptyState />}
       </div>
 
-      <SectionHeader icon={Wine} title="Cask Type Comparison" />
+      <SectionHeader icon={Wine} title={t("historyUi.caskTypeComparison")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-cask">
         {caskData.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -530,7 +530,7 @@ function LabsHistoryInsights() {
         ) : <EmptyState />}
       </div>
 
-      <SectionHeader icon={BarChart3} title="Score Distribution" />
+      <SectionHeader icon={BarChart3} title={t("historyUi.scoreDistribution")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-score-dist">
         {analytics.scoreDistribution.filter(d => d.count > 0).length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
@@ -544,7 +544,7 @@ function LabsHistoryInsights() {
         ) : <EmptyState />}
       </div>
 
-      <SectionHeader icon={Droplets} title="Group Taste Profile" />
+      <SectionHeader icon={Droplets} title={t("historyUi.groupTasteProfile")} />
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-group-profile">
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 0, marginBottom: 16 }}>
           An aggregate view of taste tendencies across all historical tastings.
@@ -561,9 +561,9 @@ function LabsHistoryInsights() {
         </div>
         <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
           {[
-            { label: "Top Region", value: topRegions[0]?.[0] ?? "\u2014" },
-            { label: "Top Cask", value: topCasks[0]?.[0] ?? "\u2014" },
-            { label: "Peat Level", value: `${smokyPct}%` },
+            { label: t("historyUi.topRegion"), value: topRegions[0]?.[0] ?? "\u2014" },
+            { label: t("historyUi.topCask"), value: topCasks[0]?.[0] ?? "\u2014" },
+            { label: t("historyUi.peatLevel"), value: `${smokyPct}%` },
           ].map(({ label, value }) => (
             <div key={label} style={{
               flex: "1 1 140px", minWidth: 120,

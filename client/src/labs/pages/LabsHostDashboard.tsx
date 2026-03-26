@@ -401,7 +401,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
               <QrCode style={{ width: 14, height: 14, color: th.gold }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>QR Code</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>{t("hostDashboardUi.qrCode")}</span>
             </div>
             {qrDataUrl ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -413,26 +413,26 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
                     flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, color: th.text, cursor: "pointer",
                   }} data-testid="invite-download-qr">
-                    <Download style={{ width: 13, height: 13 }} /> Save
+                    <Download style={{ width: 13, height: 13 }} /> {t("ui.save")}
                   </button>
                   <button onClick={handleCopyLink} style={{
                     flex: 1, fontSize: 12, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, color: th.text, cursor: "pointer",
                   }} data-testid="invite-copy-link">
                     {copiedLink ? <Check style={{ width: 13, height: 13 }} /> : <LinkIcon style={{ width: 13, height: 13 }} />}
-                    {copiedLink ? "Copied!" : "Link"}
+                    {copiedLink ? t("ui.copied") : t("ui.link")}
                   </button>
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No join code available</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>{t("hostDashboardUi.noJoinCode")}</p>
             )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
               <Mail style={{ width: 14, height: 14, color: th.gold }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>Email Invite</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: th.text }}>{t("hostDashboardUi.emailInvite")}</span>
             </div>
             {currentParticipant?.id && selectedTastingId && (
               <FriendsQuickSelect
@@ -462,7 +462,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
             <textarea
               value={personalNote}
               onChange={e => setPersonalNote(e.target.value)}
-              placeholder="Add a personal note (optional)"
+              placeholder={t("hostDashboardUi.personalNotePlaceholder")}
               rows={2}
               style={{ ...inputStyle, resize: "none" }}
               data-testid="invite-personal-note"
@@ -483,7 +483,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
               data-testid="invite-send-button"
             >
               {sending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Send style={{ width: 14, height: 14 }} />}
-              {sending ? "Sending..." : "Send Invitations"}
+              {sending ? t("hostDashboardUi.sending") : t("hostDashboardUi.sendInvitations")}
             </button>
 
             {results && (
@@ -497,7 +497,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
                         : <Mail style={{ width: 13, height: 13, color: "#e06060", flexShrink: 0 }} />
                       }
                       <span style={{ color: th.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.email}</span>
-                      <StatusBadge status={ok ? "open" : "closed"} label={ok ? "Sent" : "Failed"} />
+                      <StatusBadge status={ok ? "open" : "closed"} label={ok ? t("hostDashboardUi.sent") : t("hostDashboardUi.failed")} />
                     </div>
                   );
                 })}
@@ -510,7 +510,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
           <div style={{ marginTop: 4 }} data-testid="sent-invitations-list">
             <div style={{ height: 1, background: th.border, marginBottom: 12 }} />
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: th.faint, marginBottom: 8 }}>
-              Sent Invitations ({allInvites.length})
+              {t("hostDashboardUi.sentInvitations")} ({allInvites.length})
             </p>
             <div style={{
               maxHeight: 200,
@@ -821,11 +821,11 @@ export default function LabsHostDashboard() {
   if (isError) {
     return (
       <div style={{ padding: "60px 20px", textAlign: "center" }}>
-        <p style={{ color: "#e06060", fontSize: 15, fontWeight: 600, marginBottom: SP.sm }}>Could not load dashboard</p>
+        <p style={{ color: "#e06060", fontSize: 15, fontWeight: 600, marginBottom: SP.sm }}>{t("hostDashboardUi.couldNotLoadDashboard")}</p>
         <button onClick={() => refetch()} style={{
           background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10,
           padding: "8px 16px", color: th.text, cursor: "pointer", fontSize: 13,
-        }}>Retry</button>
+        }}>{t("ui.retry")}</button>
       </div>
     );
   }
@@ -838,10 +838,10 @@ export default function LabsHostDashboard() {
   const hasData = s.totalTastings > 0;
 
   const chartData = [
-    { dim: "Nose", score: Math.round(s.averageScores.nose) },
-    { dim: "Taste", score: Math.round(s.averageScores.taste) },
-    { dim: "Finish", score: Math.round(s.averageScores.finish) },
-    { dim: "Overall", score: Math.round(s.averageScores.overall) },
+    { dim: t("cockpitUi.nose"), score: Math.round(s.averageScores.nose) },
+    { dim: t("cockpitUi.taste"), score: Math.round(s.averageScores.taste) },
+    { dim: t("cockpitUi.finish"), score: Math.round(s.averageScores.finish) },
+    { dim: t("cockpitUi.overall"), score: Math.round(s.averageScores.overall) },
   ];
 
   return (
@@ -915,7 +915,7 @@ export default function LabsHostDashboard() {
           <div style={cardStyle}>
             <SectionTitle icon={Star} title={t("m2.hostDash.recentTastings", "Recent Tastings")} />
             {s.recentTastings.length === 0 ? (
-              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No tastings yet</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>{t("hostDashboardUi.noTastingsYet")}</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {s.recentTastings.slice(0, 5).map(rt => (
@@ -947,7 +947,7 @@ export default function LabsHostDashboard() {
           <div style={cardStyle}>
             <SectionTitle icon={Trophy} title={t("m2.hostDash.topWhiskies", "Top Whiskies")} />
             {s.topWhiskies.length === 0 ? (
-              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>No ratings yet</p>
+              <p style={{ fontSize: 12, color: th.faint, fontStyle: "italic" }}>{t("hostDashboardUi.noRatingsYet")}</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {s.topWhiskies.slice(0, 5).map((w, i) => {

@@ -221,10 +221,10 @@ export default function LabsCommunityDetail() {
     return (
       <div className="labs-page labs-fade-in">
         <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }}>
-          <ChevronLeft className="w-4 h-4" /> Communities
+          <ChevronLeft className="w-4 h-4" /> {t("communityUi.communities")}
         </button>
         <p className="text-sm text-center py-10" style={{ color: "var(--labs-text-muted)" }}>
-          Community not found or you don't have access.
+          {t("communityUi.communityNotFound")}
         </p>
       </div>
     );
@@ -258,7 +258,7 @@ export default function LabsCommunityDetail() {
   return (
     <div className="labs-page labs-fade-in" data-testid="community-detail-page">
       <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="btn-back-communities">
-        <ChevronLeft className="w-4 h-4" /> Communities
+        <ChevronLeft className="w-4 h-4" /> {t("communityUi.communities")}
       </button>
 
       <div className="labs-card mb-5" style={{ padding: "var(--labs-space-md)" }} data-testid="community-info-card">
@@ -283,7 +283,7 @@ export default function LabsCommunityDetail() {
             />
             <div className="flex gap-2">
               <button onClick={saveEdits} className="labs-btn-primary flex items-center gap-1" data-testid="btn-save-edit">
-                <Save className="w-4 h-4" /> Save
+                <Save className="w-4 h-4" /> {t("ui.save")}
               </button>
               <button onClick={() => setEditing(false)} className="labs-btn-ghost" data-testid="btn-cancel-edit">{t("common.cancel")}</button>
             </div>
@@ -309,12 +309,12 @@ export default function LabsCommunityDetail() {
             </div>
             <div className="flex items-center gap-4 mt-3">
               <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                <Users className="w-3 h-3 inline mr-1" /> {members.length} members
+                <Users className="w-3 h-3 inline mr-1" /> {members.length} {t("ui.members")}
               </span>
               {members.filter((m: any) => isOnline(m.lastSeenAt)).length > 0 && (
                 <span className="text-xs flex items-center gap-1" style={{ color: "#22c55e" }} data-testid="detail-online-count">
                   <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#22c55e" }} />
-                  {members.filter((m: any) => isOnline(m.lastSeenAt)).length} online
+                  {members.filter((m: any) => isOnline(m.lastSeenAt)).length} {t("ui.online")}
                 </span>
               )}
               <span className="text-xs flex items-center gap-1" style={{ color: roleColor(community.myRole) }}>
@@ -356,7 +356,7 @@ export default function LabsCommunityDetail() {
                   }}
                   data-testid="btn-invite-tab-email"
                 >
-                  <Mail className="w-3 h-3 inline mr-1" /> Email
+                  <Mail className="w-3 h-3 inline mr-1" /> {t("communityUi.email")}
                 </button>
                 <button
                   onClick={() => setInviteTab("friends")}
@@ -369,7 +369,7 @@ export default function LabsCommunityDetail() {
                   }}
                   data-testid="btn-invite-tab-friends"
                 >
-                  <Users className="w-3 h-3 inline mr-1" /> Friends
+                  <Users className="w-3 h-3 inline mr-1" /> {t("communityUi.friends")}
                 </button>
               </div>
 
@@ -412,11 +412,11 @@ export default function LabsCommunityDetail() {
                 <div>
                   {friendsLoading ? (
                     <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }} data-testid="text-friends-loading">
-                      Loading friends…
+                      {t("communityUi.loadingFriends")}
                     </p>
                   ) : allFriendsWithStatus.length === 0 ? (
                     <p className="text-xs text-center py-4" style={{ color: "var(--labs-text-muted)" }} data-testid="text-no-friends">
-                      No friends found.
+                      {t("communityUi.noFriendsFound")}
                     </p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -494,7 +494,7 @@ export default function LabsCommunityDetail() {
       )}
 
       <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)" }}>
-        Members ({members.length})
+        {t("communityUi.membersLabel")} ({members.length})
       </h3>
       <div className="space-y-1" data-testid="members-list">
         {members.map((m: any) => (
@@ -517,7 +517,7 @@ export default function LabsCommunityDetail() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                  {stripGuestSuffix(m.participantName || "Unknown")}
+                  {stripGuestSuffix(m.participantName || t("communityUi.unknownMember"))}
                   {m.participantId === pid && <span className="text-[10px] ml-1" style={{ color: "var(--labs-accent)" }}>({t("common.you")})</span>}
                 </p>
                 <div className="flex items-center gap-1">

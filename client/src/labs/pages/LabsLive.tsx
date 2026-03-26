@@ -37,25 +37,27 @@ const DIMENSIONS = ["nose", "taste", "finish"] as const;
 type Dimension = (typeof DIMENSIONS)[number];
 
 function GuidedLobby({ tasting, participantCount }: { tasting: any; participantCount: number }) {
+  const { t } = useTranslation();
   return (
     <div className="labs-lobby labs-fade-in" data-testid="guided-lobby">
       <p className="labs-lobby-eyebrow" data-testid="guided-lobby-title">{tasting.title}</p>
       <div className="labs-pulse-dot" />
       <h1 className="labs-lobby-title">
-        {tasting.isBlind ? 'Blind Tasting' : 'Tasting'}<br />
-        <em>beginnt gleich</em>
+        {tasting.isBlind ? t("liveUi.blindTasting") : t("liveUi.tasting")}<br />
+        <em>{t("liveUi.startsShortly")}</em>
       </h1>
       <div className="labs-lobby-divider" />
       <p className="labs-lobby-meta" data-testid="guided-lobby-waiting">
-        {tasting.whiskies?.length ?? '?'} Drams · {participantCount} {participantCount === 1 ? 'Taster' : 'Taster'}
+        {tasting.whiskies?.length ?? '?'} {t("liveUi.drams")} · {participantCount} {t("liveUi.taster")}
         {tasting.location ? ` · ${tasting.location}` : ''}
       </p>
-      <p className="labs-lobby-hint" data-testid="guided-lobby-count">Warte ruhig. Der Host beginnt.</p>
+      <p className="labs-lobby-hint" data-testid="guided-lobby-count">{t("liveUi.waitForHost")}</p>
     </div>
   );
 }
 
 function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   return (
     <div
@@ -69,8 +71,8 @@ function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
     >
       <div style={{ width: 10, height: 10, borderRadius: 5, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
       <div style={{ flex: 1 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>Presentation is live</span>
-        <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0 }}>Tap to watch the results presentation</p>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)" }}>{t("liveUi.presentationLive")}</span>
+        <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0 }}>{t("liveUi.tapToWatch")}</p>
       </div>
       <Monitor style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
     </div>
@@ -78,6 +80,7 @@ function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
 }
 
 function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; presentationActive?: boolean }) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   return (
     <div className="labs-fade-in" style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", textAlign: "center" }}>
@@ -98,11 +101,11 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
           style={{ color: "var(--labs-text)" }}
           data-testid="guided-complete-title"
         >
-          Tasting Complete
+          {t("liveUi.tastingComplete")}
         </h2>
 
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-          Thank you for participating! Check out the results below.
+          {t("liveUi.thankYou")}
         </p>
 
         <button
@@ -111,7 +114,7 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
           data-testid="guided-complete-results"
         >
           <Eye className="w-4 h-4 inline mr-1.5" />
-          View Results
+          {t("liveUi.viewResults")}
         </button>
       </div>
     </div>
@@ -314,8 +317,8 @@ function GuidedStepView({
       queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     },
     onError: (err: any) => {
-      const msg = err?.message || "Save failed";
-      setSaveError(msg.includes("locked") || msg.includes("403") ? "Ratings are locked" : msg);
+      const msg = err?.message || t("liveUi.saveFailedError");
+      setSaveError(msg.includes("locked") || msg.includes("403") ? t("liveUi.ratingsLocked") : msg);
     },
   });
 
@@ -533,7 +536,7 @@ function GuidedStepView({
                 guidedDirtyRef.current = false;
                 setFlowSaved(true);
               } catch (err: any) {
-                setSaveError(err?.message || "Save failed");
+                setSaveError(err?.message || t("liveUi.saveFailedError"));
               }
             }}
             onBack={() => {
@@ -701,6 +704,7 @@ function GuidedStepView({
 }
 
 export default function LabsLive({ params }: LabsLiveProps) {
+  const { t } = useTranslation();
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
@@ -844,8 +848,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, currentWhisky?.id] });
     },
     onError: (err: any) => {
-      const msg = err?.message || "Save failed";
-      setSaveError(msg.includes("locked") || msg.includes("403") ? "Ratings are locked" : msg);
+      const msg = err?.message || t("liveUi.saveFailedError");
+      setSaveError(msg.includes("locked") || msg.includes("403") ? t("liveUi.ratingsLocked") : msg);
     },
   });
 

@@ -45,50 +45,52 @@ interface PageEntry {
   keywords?: string[];
 }
 
-const PAGES_REGISTRY: PageEntry[] = [
-  { label: "Tastings", labelDe: "Tastings", route: "/labs/tastings", section: "Main", sectionDe: "Haupt", icon: Wine, keywords: ["sessions", "events"] },
-  { label: "Explore", labelDe: "Entdecken", route: "/labs/explore", section: "Main", sectionDe: "Haupt", icon: Compass, keywords: ["search", "whiskies", "database", "suchen"] },
-  { label: "Taste Hub", labelDe: "Geschmack", route: "/labs/taste", section: "Main", sectionDe: "Haupt", icon: Radar, keywords: ["profile", "analytics", "profil"] },
-  { label: "Discover", labelDe: "Entdecken", route: "/labs/discover", section: "Main", sectionDe: "Haupt", icon: BookOpen, keywords: ["knowledge", "wissen"] },
-  { label: "Circle", labelDe: "Circle", route: "/labs/circle", section: "Main", sectionDe: "Haupt", icon: Users, keywords: ["friends", "community", "freunde"] },
-  { label: "Solo Tasting", labelDe: "Solo Verkostung", route: "/labs/solo", section: "Tasting", sectionDe: "Verkostung", icon: Wine, keywords: ["quick", "log", "dram", "schnell"] },
-  { label: "Join Session", labelDe: "Session beitreten", route: "/labs/join", section: "Tasting", sectionDe: "Verkostung", icon: ArrowRight, keywords: ["code", "enter"] },
-  { label: "Host a Tasting", labelDe: "Tasting hosten", route: "/labs/host", section: "Tasting", sectionDe: "Verkostung", icon: Sparkles, keywords: ["create", "new", "erstellen"] },
-  { label: "Host Dashboard", labelDe: "Host Dashboard", route: "/labs/host/dashboard", section: "Tasting", sectionDe: "Verkostung", icon: Layers, keywords: ["manage", "control"] },
-  { label: "Calendar", labelDe: "Kalender", route: "/labs/calendar", section: "Tasting", sectionDe: "Verkostung", icon: Calendar, keywords: ["schedule", "upcoming", "termine"] },
-  { label: "Session History", labelDe: "Verlauf", route: "/labs/history", section: "Tasting", sectionDe: "Verkostung", icon: History, keywords: ["past", "archive", "vergangene"] },
-  { label: "Flavor Profile", labelDe: "Geschmacksprofil", route: "/labs/taste/profile", section: "Taste", sectionDe: "Geschmack", icon: Radar, keywords: ["radar", "sweet spot", "style"] },
-  { label: "Analytics", labelDe: "Statistiken", route: "/labs/taste/analytics", section: "Taste", sectionDe: "Geschmack", icon: BarChart3, keywords: ["trends", "evolution", "stats"] },
-  { label: "Flavor Wheel", labelDe: "Aromarad", route: "/labs/taste/wheel", section: "Taste", sectionDe: "Geschmack", icon: FlameKindling, keywords: ["aroma", "distribution"] },
-  { label: "Taste Compare", labelDe: "Geschmacksvergleich", route: "/labs/taste/compare", section: "Taste", sectionDe: "Geschmack", icon: BarChart3, keywords: ["community", "average"] },
-  { label: "Recommendations", labelDe: "Empfehlungen", route: "/labs/taste/recommendations", section: "Taste", sectionDe: "Geschmack", icon: Sparkles, keywords: ["ai", "suggestions", "vorschläge"] },
-  { label: "Pairings", labelDe: "Paarungen", route: "/labs/taste/pairings", section: "Taste", sectionDe: "Geschmack", icon: Heart, keywords: ["food", "essen"] },
-  { label: "Benchmark", labelDe: "Benchmark", route: "/labs/taste/benchmark", section: "Taste", sectionDe: "Geschmack", icon: Beaker, keywords: ["ai", "metadata", "library"] },
-  { label: "Collection Analysis", labelDe: "Sammlungsanalyse", route: "/labs/taste/collection-analysis", section: "Taste", sectionDe: "Geschmack", icon: BarChart3, keywords: ["cellar", "bottles", "flaschen"] },
-  { label: "Palate Letter", labelDe: "Palate Letter", route: "/labs/taste/connoisseur", section: "Taste", sectionDe: "Geschmack", icon: FileText, keywords: ["pdf", "identity", "report", "letter", "connoisseur"] },
-  { label: "AI Curation", labelDe: "AI Kuration", route: "/labs/taste/ai-curation", section: "Taste", sectionDe: "Geschmack", icon: Sparkles, keywords: ["lineup", "flight", "builder"] },
-  { label: "My Drams", labelDe: "Meine Drams", route: "/labs/taste/drams", section: "Taste", sectionDe: "Geschmack", icon: Wine, keywords: ["journal", "notes", "notizen"] },
-  { label: "My Collection", labelDe: "Meine Sammlung", route: "/labs/taste/collection", section: "Taste", sectionDe: "Geschmack", icon: Layers, keywords: ["bottles", "cellar", "flaschen"] },
-  { label: "Wishlist", labelDe: "Wunschliste", route: "/labs/taste/wishlist", section: "Taste", sectionDe: "Geschmack", icon: Heart, keywords: ["want", "try", "wish"] },
-  { label: "Downloads", labelDe: "Downloads", route: "/labs/taste/downloads", section: "Taste", sectionDe: "Geschmack", icon: Download, keywords: ["export", "data"] },
-  { label: "Settings", labelDe: "Einstellungen", route: "/labs/taste/settings", section: "Taste", sectionDe: "Geschmack", icon: Settings, keywords: ["preferences", "config"] },
-  { label: "Lexicon", labelDe: "Lexikon", route: "/labs/discover/lexicon", section: "Discover", sectionDe: "Entdecken", icon: BookOpen, keywords: ["dictionary", "terms", "begriffe", "wörterbuch"] },
-  { label: "Distilleries", labelDe: "Brennereien", route: "/labs/discover/distilleries", section: "Discover", sectionDe: "Entdecken", icon: Building2, keywords: ["map", "karte"] },
-  { label: "Bottlers", labelDe: "Abfüller", route: "/labs/discover/bottlers", section: "Discover", sectionDe: "Entdecken", icon: Building2, keywords: ["independent"] },
-  { label: "Flavour Map", labelDe: "Aromenlandkarte", route: "/labs/discover/flavour-map", section: "Discover", sectionDe: "Entdecken", icon: Map, keywords: ["vocabulary", "compass", "radar", "vokabular"] },
-  { label: "Tasting Guide", labelDe: "Verkostungsanleitung", route: "/labs/discover/guide", section: "Discover", sectionDe: "Entdecken", icon: GraduationCap, keywords: ["beginner", "how to", "anleitung"] },
-  { label: "Templates", labelDe: "Vorlagen", route: "/labs/discover/templates", section: "Discover", sectionDe: "Entdecken", icon: FileText, keywords: ["sheets", "vocabulary"] },
-  { label: "Rabbit Hole", labelDe: "Rabbit Hole", route: "/labs/discover/rabbit-hole", section: "Discover", sectionDe: "Entdecken", icon: Beaker, keywords: ["statistics", "models", "deep dive"] },
-  { label: "Research", labelDe: "Forschung", route: "/labs/discover/research", section: "Discover", sectionDe: "Entdecken", icon: GraduationCap, keywords: ["science", "perception", "wissenschaft"] },
-  { label: "Activity Feed", labelDe: "Aktivitäten", route: "/labs/activity", section: "Community", sectionDe: "Community", icon: Activity, keywords: ["feed", "friends"] },
-  { label: "Community", labelDe: "Community", route: "/labs/community", section: "Community", sectionDe: "Community", icon: Users, keywords: ["members", "directory"] },
-  { label: "About", labelDe: "Über uns", route: "/labs/about", section: "Info", sectionDe: "Info", icon: Info, keywords: ["story", "mission"] },
-  { label: "Donate", labelDe: "Spenden", route: "/labs/donate", section: "Info", sectionDe: "Info", icon: Gift, keywords: ["support", "hospice"] },
-  { label: "Impressum", labelDe: "Impressum", route: "/labs/impressum", section: "Info", sectionDe: "Info", icon: Shield, keywords: ["legal"] },
-  { label: "Privacy", labelDe: "Datenschutz", route: "/labs/privacy", section: "Info", sectionDe: "Info", icon: Lock, keywords: ["data", "daten"] },
-  { label: "Terms of Use", labelDe: "Nutzungsbedingungen", route: "/labs/terms", section: "Info", sectionDe: "Info", icon: FileText, keywords: ["terms", "agb", "conditions", "nutzungsbedingungen", "copyright"] },
-  { label: "Paper Scan", labelDe: "Papier-Scan", route: "/labs/paper-scan", section: "Tools", sectionDe: "Tools", icon: Mic, keywords: ["ocr", "import", "handwritten"] },
-];
+function getPagesRegistry(t: (key: string) => string): PageEntry[] {
+  return [
+    { label: t("globalSearchUi.tastings"), labelDe: "Tastings", route: "/labs/tastings", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Wine, keywords: ["sessions", "events"] },
+    { label: t("globalSearchUi.explore"), labelDe: "Entdecken", route: "/labs/explore", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Compass, keywords: ["search", "whiskies", "database", "suchen"] },
+    { label: t("globalSearchUi.tasteHub"), labelDe: "Geschmack", route: "/labs/taste", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Radar, keywords: ["profile", "analytics", "profil"] },
+    { label: t("globalSearchUi.discover"), labelDe: "Entdecken", route: "/labs/discover", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: BookOpen, keywords: ["knowledge", "wissen"] },
+    { label: t("globalSearchUi.circle"), labelDe: "Circle", route: "/labs/circle", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Users, keywords: ["friends", "community", "freunde"] },
+    { label: t("globalSearchUi.soloTasting"), labelDe: "Solo Verkostung", route: "/labs/solo", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: Wine, keywords: ["quick", "log", "dram", "schnell"] },
+    { label: t("globalSearchUi.joinSession"), labelDe: "Session beitreten", route: "/labs/join", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: ArrowRight, keywords: ["code", "enter"] },
+    { label: t("globalSearchUi.hostATasting"), labelDe: "Tasting hosten", route: "/labs/host", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: Sparkles, keywords: ["create", "new", "erstellen"] },
+    { label: t("globalSearchUi.hostDashboard"), labelDe: "Host Dashboard", route: "/labs/host/dashboard", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: Layers, keywords: ["manage", "control"] },
+    { label: t("globalSearchUi.calendar"), labelDe: "Kalender", route: "/labs/calendar", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: Calendar, keywords: ["schedule", "upcoming", "termine"] },
+    { label: t("globalSearchUi.sessionHistory"), labelDe: "Verlauf", route: "/labs/history", section: t("globalSearchUi.sectionTasting"), sectionDe: "Verkostung", icon: History, keywords: ["past", "archive", "vergangene"] },
+    { label: t("globalSearchUi.flavorProfile"), labelDe: "Geschmacksprofil", route: "/labs/taste/profile", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Radar, keywords: ["radar", "sweet spot", "style"] },
+    { label: t("globalSearchUi.analytics"), labelDe: "Statistiken", route: "/labs/taste/analytics", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: BarChart3, keywords: ["trends", "evolution", "stats"] },
+    { label: t("globalSearchUi.flavorWheel"), labelDe: "Aromarad", route: "/labs/taste/wheel", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: FlameKindling, keywords: ["aroma", "distribution"] },
+    { label: t("globalSearchUi.tasteCompare"), labelDe: "Geschmacksvergleich", route: "/labs/taste/compare", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: BarChart3, keywords: ["community", "average"] },
+    { label: t("globalSearchUi.recommendations"), labelDe: "Empfehlungen", route: "/labs/taste/recommendations", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Sparkles, keywords: ["ai", "suggestions", "vorschläge"] },
+    { label: t("globalSearchUi.pairings"), labelDe: "Paarungen", route: "/labs/taste/pairings", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Heart, keywords: ["food", "essen"] },
+    { label: t("globalSearchUi.benchmark"), labelDe: "Benchmark", route: "/labs/taste/benchmark", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Beaker, keywords: ["ai", "metadata", "library"] },
+    { label: t("globalSearchUi.collectionAnalysis"), labelDe: "Sammlungsanalyse", route: "/labs/taste/collection-analysis", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: BarChart3, keywords: ["cellar", "bottles", "flaschen"] },
+    { label: t("globalSearchUi.palateLetter"), labelDe: "Palate Letter", route: "/labs/taste/connoisseur", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: FileText, keywords: ["pdf", "identity", "report", "letter", "connoisseur"] },
+    { label: t("globalSearchUi.aiCuration"), labelDe: "AI Kuration", route: "/labs/taste/ai-curation", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Sparkles, keywords: ["lineup", "flight", "builder"] },
+    { label: t("globalSearchUi.myDrams"), labelDe: "Meine Drams", route: "/labs/taste/drams", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Wine, keywords: ["journal", "notes", "notizen"] },
+    { label: t("globalSearchUi.myCollection"), labelDe: "Meine Sammlung", route: "/labs/taste/collection", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Layers, keywords: ["bottles", "cellar", "flaschen"] },
+    { label: t("globalSearchUi.wishlist"), labelDe: "Wunschliste", route: "/labs/taste/wishlist", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Heart, keywords: ["want", "try", "wish"] },
+    { label: t("globalSearchUi.downloads"), labelDe: "Downloads", route: "/labs/taste/downloads", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Download, keywords: ["export", "data"] },
+    { label: t("globalSearchUi.settings"), labelDe: "Einstellungen", route: "/labs/taste/settings", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Settings, keywords: ["preferences", "config"] },
+    { label: t("globalSearchUi.lexicon"), labelDe: "Lexikon", route: "/labs/discover/lexicon", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: BookOpen, keywords: ["dictionary", "terms", "begriffe", "wörterbuch"] },
+    { label: t("globalSearchUi.distilleries"), labelDe: "Brennereien", route: "/labs/discover/distilleries", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: Building2, keywords: ["map", "karte"] },
+    { label: t("globalSearchUi.bottlers"), labelDe: "Abfüller", route: "/labs/discover/bottlers", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: Building2, keywords: ["independent"] },
+    { label: t("globalSearchUi.flavourMap"), labelDe: "Aromenlandkarte", route: "/labs/discover/flavour-map", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: Map, keywords: ["vocabulary", "compass", "radar", "vokabular"] },
+    { label: t("globalSearchUi.tastingGuide"), labelDe: "Verkostungsanleitung", route: "/labs/discover/guide", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: GraduationCap, keywords: ["beginner", "how to", "anleitung"] },
+    { label: t("globalSearchUi.templates"), labelDe: "Vorlagen", route: "/labs/discover/templates", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: FileText, keywords: ["sheets", "vocabulary"] },
+    { label: t("globalSearchUi.rabbitHole"), labelDe: "Rabbit Hole", route: "/labs/discover/rabbit-hole", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: Beaker, keywords: ["statistics", "models", "deep dive"] },
+    { label: t("globalSearchUi.research"), labelDe: "Forschung", route: "/labs/discover/research", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: GraduationCap, keywords: ["science", "perception", "wissenschaft"] },
+    { label: t("globalSearchUi.activityFeed"), labelDe: "Aktivitäten", route: "/labs/activity", section: t("globalSearchUi.sectionCommunity"), sectionDe: "Community", icon: Activity, keywords: ["feed", "friends"] },
+    { label: t("globalSearchUi.community"), labelDe: "Community", route: "/labs/community", section: t("globalSearchUi.sectionCommunity"), sectionDe: "Community", icon: Users, keywords: ["members", "directory"] },
+    { label: t("globalSearchUi.about"), labelDe: "Über uns", route: "/labs/about", section: t("globalSearchUi.sectionInfo"), sectionDe: "Info", icon: Info, keywords: ["story", "mission"] },
+    { label: t("globalSearchUi.donate"), labelDe: "Spenden", route: "/labs/donate", section: t("globalSearchUi.sectionInfo"), sectionDe: "Info", icon: Gift, keywords: ["support", "hospice"] },
+    { label: t("globalSearchUi.impressum"), labelDe: "Impressum", route: "/labs/impressum", section: t("globalSearchUi.sectionInfo"), sectionDe: "Info", icon: Shield, keywords: ["legal"] },
+    { label: t("globalSearchUi.privacy"), labelDe: "Datenschutz", route: "/labs/privacy", section: t("globalSearchUi.sectionInfo"), sectionDe: "Info", icon: Lock, keywords: ["data", "daten"] },
+    { label: t("globalSearchUi.termsOfUse"), labelDe: "Nutzungsbedingungen", route: "/labs/terms", section: t("globalSearchUi.sectionInfo"), sectionDe: "Info", icon: FileText, keywords: ["terms", "agb", "conditions", "nutzungsbedingungen", "copyright"] },
+    { label: t("globalSearchUi.paperScan"), labelDe: "Papier-Scan", route: "/labs/paper-scan", section: t("globalSearchUi.sectionTools"), sectionDe: "Tools", icon: Mic, keywords: ["ocr", "import", "handwritten"] },
+  ];
+}
 
 function getRecent(): string[] {
   try {
@@ -202,7 +204,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const pageResults = useMemo((): SearchResult[] => {
     const q = debouncedQuery.toLowerCase();
     if (!q) return [];
-    return PAGES_REGISTRY
+    return getPagesRegistry(t)
       .filter((p) => {
         const label = (isDe ? p.labelDe : p.label).toLowerCase();
         const section = (isDe ? p.sectionDe : p.section).toLowerCase();
@@ -220,7 +222,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         iconColor: "var(--labs-accent)",
         iconBg: "var(--labs-accent-muted)",
       }));
-  }, [debouncedQuery, isDe]);
+  }, [debouncedQuery, isDe, t]);
 
   const distilleryResults = useMemo((): SearchResult[] => {
     const q = debouncedQuery.toLowerCase();

@@ -79,9 +79,9 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   if (!split) return (
     <div className="labs-page">
       <button onClick={() => navigate("/labs/splits")} data-testid="button-split-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}>
-        <ArrowLeft size={16} />Zurück
+        <ArrowLeft size={16} />{t("ui.back")}
       </button>
-      <p style={{ textAlign: "center", color: "var(--labs-text-muted)", marginTop: 40 }}>Split nicht gefunden.</p>
+      <p style={{ textAlign: "center", color: "var(--labs-text-muted)", marginTop: 40 }}>{t("bottleSplitUi.splitNotFound")}</p>
     </div>
   );
 
@@ -220,7 +220,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   return (
     <div className="labs-page labs-fade-in">
       <button onClick={() => navigate("/labs/splits")} data-testid="button-split-detail-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
-        <ArrowLeft size={16} />Zurück
+        <ArrowLeft size={16} />{t("ui.back")}
       </button>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
@@ -390,21 +390,21 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
           {claims.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: "var(--labs-text-muted)" }}>
-              <p style={{ fontSize: 14, fontWeight: 600 }}>Noch keine Claims</p>
+              <p style={{ fontSize: 14, fontWeight: 600 }}>{t("bottleSplitUi.noClaims")}</p>
             </div>
           ) : (
             <>
               <div className="labs-card" style={{ padding: "var(--labs-space-md)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Gesamtvolumen</span>
+                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("bottleSplitUi.totalVolume")}</span>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{totalClaimedMl}ml</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Umsatz</span>
+                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("bottleSplitUi.revenue")}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-success)" }}>{totalRevenue.toFixed(2)}€</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>Teilnehmer</span>
+                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("tastingDetail.participants")}</span>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{uniqueClaimants}</span>
                 </div>
               </div>

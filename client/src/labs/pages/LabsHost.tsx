@@ -1544,7 +1544,7 @@ function MobileCompanion({
                     data-testid="mobile-ai-import-toggle"
                   >
                     <Sparkles style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
-                    AI Import
+                    {t("hostUi.aiImport")}
                   </button>
                   <div style={{ height: 1, background: "var(--labs-border)", margin: "0 12px" }} />
                   <button
@@ -1600,7 +1600,7 @@ function MobileCompanion({
                   data-testid="mobile-ai-import-hero"
                 >
                   <Sparkles style={{ width: 15, height: 15 }} />
-                  AI Import
+                  {t("hostUi.aiImport")}
                 </button>
                 <button
                   onClick={() => { setMobileShowAdd(true); setMobileAiImport(false); }}
@@ -1631,7 +1631,7 @@ function MobileCompanion({
             <div className="labs-card mb-3 overflow-hidden" data-testid="mobile-ai-import-panel" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }}>
               <div className="flex items-center gap-2 px-4 py-3" style={{ background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
                 <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-semibold flex-1" style={{ color: "var(--labs-text)" }}>AI Import</span>
+                <span className="text-sm font-semibold flex-1" style={{ color: "var(--labs-text)" }}>{t("hostUi.aiImport")}</span>
                 <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); setMobileAiError(""); }} style={{ padding: "2px 6px" }}>
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -3288,7 +3288,7 @@ function ParticipantStatusSection({
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}</p>
                         {tasting?.hostId && p.participantId === tasting.hostId && (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>(Host)</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("ui.host")}</span>
                         )}
                       </div>
                       <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
@@ -3679,7 +3679,7 @@ function GuidedTastingEngine({
               <p className="text-lg font-bold" style={{ color: ratedParticipantIds.size === participantList.length && participantList.length > 0 ? "var(--labs-success)" : "var(--labs-accent)" }}>
                 {ratedParticipantIds.size}/{participantList.length}
               </p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>rated</p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("ui.rated")}</p>
             </div>
           </div>
           <div className="flex gap-1">
@@ -3742,7 +3742,7 @@ function GuidedTastingEngine({
                         {displayName}
                       </p>
                       {isHost && (
-                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>(Host)</span>
+                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("ui.host")}</span>
                       )}
                     </div>
                     <p className="text-[11px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
@@ -4978,8 +4978,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     return (
       <div className="labs-empty" style={{ minHeight: "60vh" }}>
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>{t("hostUi.tastingNotFound")}</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>{t("hostUi.tastingNoAccess")}</p>
         <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-host-error-back">
           Tastings
         </button>
@@ -5002,7 +5002,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     return (
       <div className="labs-empty" style={{ minHeight: "60vh" }}>
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Tasting not found</p>
+        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("hostUi.tastingNotFound")}</p>
         <button className="labs-btn-ghost mt-4" onClick={goBack} data-testid="labs-host-back-to-tastings">
           Tastings
         </button>
@@ -5574,17 +5574,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="labs-card p-4 text-center">
           <Wine className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" data-testid="labs-host-whisky-count">{whiskyCount}</p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Whiskies</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("tastingDetail.whiskies")}</p>
         </div>
         <div className="labs-card p-4 text-center">
           <Users className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" data-testid="labs-host-participant-count">{participantCount}</p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Participants</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("tastingDetail.participants")}</p>
         </div>
         <div className="labs-card p-4 text-center">
           <BarChart3 className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" data-testid="labs-host-rating-progress">{ratingProgress}%</p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Rated</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("ui.rated")}</p>
         </div>
       </div>
 
@@ -5838,7 +5838,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     data-testid="labs-host-ai-import-toggle"
                   >
                     <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                    AI Import
+                    {t("hostUi.aiImport")}
                   </button>
                   <div style={{ height: 1, background: "var(--labs-border)" }} />
                   <button
@@ -5876,7 +5876,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="desktop-ai-import-hero"
               >
                 <Sparkles className="w-4 h-4" />
-                AI Import
+                {t("hostUi.aiImport")}
               </button>
               <button
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm transition-all"
@@ -5900,7 +5900,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           <div className="labs-card p-4 mb-3 space-y-3" data-testid="labs-ai-import-panel">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>AI Import</span>
+              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("hostUi.aiImport")}</span>
             </div>
             <div
               className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg text-sm cursor-pointer"

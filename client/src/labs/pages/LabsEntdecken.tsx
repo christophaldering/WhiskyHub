@@ -340,7 +340,7 @@ export default function LabsEntdecken() {
     <div className="labs-page" data-testid="labs-entdecken-page">
       <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-entdecken">
-          <ChevronLeft className="w-4 h-4" /> Home
+          <ChevronLeft className="w-4 h-4" /> {t("ui.home")}
         </button>
       </BackLink>
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>

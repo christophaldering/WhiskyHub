@@ -51,6 +51,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
   onSave: (data: Record<string, unknown>) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState((whisky.name as string) || "");
   const [distillery, setDistillery] = useState((whisky.distillery as string) || "");
   const [age, setAge] = useState((whisky.age as string) || "");
@@ -62,7 +63,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
         className="labs-input w-full text-sm"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Name"
+        placeholder={t("tastingDetail.namePlaceholder")}
         data-testid={`input-whisky-name-${whisky.id}`}
       />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -70,26 +71,26 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
           className="labs-input text-sm"
           value={distillery}
           onChange={(e) => setDistillery(e.target.value)}
-          placeholder="Distillery"
+          placeholder={t("tastingDetail.distilleryPlaceholder")}
           data-testid={`input-whisky-distillery-${whisky.id}`}
         />
         <input
           className="labs-input text-sm"
           value={age}
           onChange={(e) => setAge(e.target.value)}
-          placeholder="Age"
+          placeholder={t("tastingDetail.agePlaceholder")}
           data-testid={`input-whisky-age-${whisky.id}`}
         />
         <input
           className="labs-input text-sm"
           value={abv}
           onChange={(e) => setAbv(e.target.value)}
-          placeholder="ABV %"
+          placeholder={t("tastingDetail.abvPlaceholder")}
           data-testid={`input-whisky-abv-${whisky.id}`}
         />
       </div>
       <div className="flex gap-2 justify-end">
-        <button className="labs-btn-ghost text-xs" onClick={onCancel} data-testid={`button-whisky-cancel-${whisky.id}`}>Cancel</button>
+        <button className="labs-btn-ghost text-xs" onClick={onCancel} data-testid={`button-whisky-cancel-${whisky.id}`}>{t("ui.cancel")}</button>
         <button
           className="labs-btn-primary text-xs px-3"
           onClick={() => onSave({
@@ -100,7 +101,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
           })}
           data-testid={`button-whisky-save-${whisky.id}`}
         >
-          Save
+          {t("ui.save")}
         </button>
       </div>
     </div>
@@ -263,12 +264,12 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      setSettingsSaveStatus(err.message || "Save failed");
+      setSettingsSaveStatus(err.message || t("ui.saveFailed"));
       setTimeout(() => setSettingsSaveStatus(null), 3000);
-      throw new Error(err.message || "Save failed");
+      throw new Error(err.message || t("ui.saveFailed"));
     }
     queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-    setSettingsSaveStatus("Saved");
+    setSettingsSaveStatus(t("ui.saved"));
     setTimeout(() => setSettingsSaveStatus(null), 2000);
   };
 
@@ -325,9 +326,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-not-found-back">Tastings</button>
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>{t("tastingDetail.notFound")}</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>{t("tastingDetail.notFoundDesc")}</p>
+        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-not-found-back">{t("ui.tastings")}</button>
       </div>
     );
   }
@@ -349,9 +350,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
-        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-notfound-back">Tastings</button>
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>{t("tastingDetail.notFound")}</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>{t("tastingDetail.notFoundDesc")}</p>
+        <button className="labs-btn-secondary" onClick={goBack} data-testid="labs-detail-notfound-back">{t("ui.tastings")}</button>
       </div>
     );
   }
@@ -368,7 +369,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         data-testid="labs-detail-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        Tastings
+        {t("ui.tastings")}
       </button>
 
       <div className="mb-5">
@@ -379,7 +380,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 className="labs-input flex-1 text-lg font-bold"
                 value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
-                placeholder="Tasting title"
+                placeholder={t("tastingDetail.titlePlaceholder")}
                 data-testid="input-meta-title"
               />
               <span className={`${statusCfg.cssClass} flex-shrink-0`} data-testid="labs-detail-status">
@@ -391,7 +392,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               rows={2}
               value={metaDescription}
               onChange={(e) => setMetaDescription(e.target.value)}
-              placeholder="Description (optional)"
+              placeholder={t("tastingDetail.descriptionPlaceholder")}
               data-testid="input-meta-description"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -406,13 +407,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 className="labs-input text-sm"
                 value={metaLocation}
                 onChange={(e) => setMetaLocation(e.target.value)}
-                placeholder="Location"
+                placeholder={t("tastingDetail.locationPlaceholder")}
                 data-testid="input-meta-location"
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <button className="labs-btn-ghost text-xs" onClick={() => setEditingMeta(false)} data-testid="button-meta-cancel">Cancel</button>
-              <button className="labs-btn-primary text-xs px-4" onClick={saveMetaEdit} data-testid="button-meta-save">Save</button>
+              <button className="labs-btn-ghost text-xs" onClick={() => setEditingMeta(false)} data-testid="button-meta-cancel">{t("ui.cancel")}</button>
+              <button className="labs-btn-primary text-xs px-4" onClick={saveMetaEdit} data-testid="button-meta-save">{t("ui.save")}</button>
             </div>
           </div>
         ) : (
@@ -534,7 +535,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               data-testid="labs-detail-join-live"
             >
               <Play className="w-5 h-5" />
-              {isLive ? "Enter Live Session" : "View Reveal"}
+              {isLive ? t("tastingDetail.enterLiveSession") : t("tastingDetail.viewReveal")}
             </button>
             {isHost && (
               <button
@@ -542,7 +543,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 onClick={() => navigate(`/labs/host/${tastingId}`)}
                 data-testid="labs-detail-manage"
               >
-                Manage Session
+                {t("tastingDetail.manageSession")}
               </button>
             )}
           </>
@@ -555,7 +556,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             data-testid="labs-detail-join-live"
           >
             <Play className="w-4 h-4" />
-            Enter Session
+            {t("tastingDetail.enterSession")}
           </button>
         )}
 
@@ -567,7 +568,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               data-testid="labs-detail-view-results"
             >
               <BarChart3 className="w-5 h-5" />
-              View Results
+              {t("tastingDetail.viewResults")}
             </button>
             <button
               className="labs-btn-secondary w-full flex items-center justify-center gap-2"
@@ -575,7 +576,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               data-testid="labs-detail-view-recap"
             >
               <Trophy className="w-4 h-4" />
-              Tasting Recap
+              {t("tastingDetail.tastingRecap")}
             </button>
             {isHost && (
               <button
@@ -584,7 +585,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 data-testid="labs-detail-manage"
               >
                 <RotateCcw className="w-4 h-4" />
-                Restart Tasting
+                {t("tastingDetail.restartTasting")}
               </button>
             )}
           </>
@@ -636,10 +637,10 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 </label>
                 <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
                   {[
-                    { value: 5, label: "5", desc: "Simple" },
-                    { value: 10, label: "10", desc: "Classic" },
-                    { value: 20, label: "20", desc: "Detailed" },
-                    { value: 100, label: "100", desc: "Pro" },
+                    { value: 5, label: "5", desc: t("tastingDetail.simple") },
+                    { value: 10, label: "10", desc: t("tastingDetail.classic") },
+                    { value: 20, label: "20", desc: t("tastingDetail.detailed") },
+                    { value: 100, label: "100", desc: t("tastingDetail.pro") },
                   ].map((opt) => {
                     const active = (tasting.ratingScale ?? 100) === opt.value;
                     return (
@@ -737,9 +738,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 </label>
                 <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
                   {[
-                    { value: "flow", label: "Free", desc: tasting.guidedMode ? "Not with Host Controls" : "Explore freely", disabled: !!tasting.guidedMode },
-                    { value: "focus", label: "One at a Time", desc: "Focus mode" },
-                    { value: "journal", label: "Dram", desc: "Guided notes" },
+                    { value: "flow", label: t("tastingDetail.free"), desc: tasting.guidedMode ? t("tastingDetail.notWithHostControls") : t("tastingDetail.exploreFreely"), disabled: !!tasting.guidedMode },
+                    { value: "focus", label: t("tastingDetail.oneAtATime"), desc: t("tastingDetail.focusMode") },
+                    { value: "journal", label: t("tastingDetail.dram"), desc: t("tastingDetail.guidedNotes") },
                   ].map((opt) => {
                     const active = ((tasting.sessionUiMode as string) || "flow") === opt.value;
                     return (
@@ -773,8 +774,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 </label>
                 <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
                   {[
-                    { value: "standard", label: "Account", desc: "Saved ratings" },
-                    { value: "ultra", label: "Instant", desc: "No sign-in" },
+                    { value: "standard", label: t("tastingDetail.account"), desc: t("tastingDetail.savedRatings") },
+                    { value: "ultra", label: t("tastingDetail.instant"), desc: t("tastingDetail.noSignIn") },
                   ].map((opt) => {
                     const active = ((tasting.guestMode as string) || "standard") === opt.value;
                     return (
@@ -849,7 +850,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   data-testid="button-labs-copy-code"
                 >
                   {codeCopied ? <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5 flex-shrink-0" />}
-                  {codeCopied ? "Copied" : "Copy"}
+                  {codeCopied ? t("ui.copied") : t("ui.copy")}
                 </button>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
@@ -869,7 +870,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   data-testid="button-labs-copy-join-link"
                 >
                   {linkCopied ? <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} /> : <Copy className="w-3.5 h-3.5 flex-shrink-0" />}
-                  {linkCopied ? "Copied" : "Copy Link"}
+                  {linkCopied ? t("ui.copied") : t("ui.copyLink")}
                 </button>
               </div>
               {showQr && qrDataUrl && (
@@ -1125,7 +1126,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 data-testid="labs-detail-add-whisky-toggle"
               >
                 {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                {showAddWhisky ? "Close" : "Add"}
+                {showAddWhisky ? t("ui.close") : t("ui.add")}
               </button>
             )}
             <button
@@ -1151,7 +1152,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               className="labs-input flex-1 text-sm"
               value={newWhiskyName}
               onChange={(e) => setNewWhiskyName(e.target.value)}
-              placeholder="Whisky name"
+              placeholder={t("tastingDetail.whiskyNamePlaceholder")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newWhiskyName.trim()) {
                   addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
@@ -1169,7 +1170,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               }}
               data-testid="button-add-whisky"
             >
-              {addWhiskyMutation.isPending ? "..." : "Add"}
+              {addWhiskyMutation.isPending ? "..." : t("ui.add")}
             </button>
           </div>
         )}

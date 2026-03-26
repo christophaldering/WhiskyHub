@@ -163,7 +163,7 @@ export default function LabsTasteCollection() {
   const hasCollection = items.length > 0;
 
   const statusColor = (s: string | null) => s === "open" ? "var(--labs-success)" : s === "closed" ? "var(--labs-info)" : "var(--labs-text-muted)";
-  const statusLabel = (s: string | null) => s === "open" ? "Open" : s === "closed" ? "Closed" : s === "empty" ? "Empty" : (s || "");
+  const statusLabel = (s: string | null) => s === "open" ? t("collectionUi.open") : s === "closed" ? t("collectionUi.closed") : s === "empty" ? t("collectionUi.empty") : (s || "");
 
   const cycleStatus = (item: WhiskybaseCollectionItem) => {
     const currentIdx = STATUS_CYCLE.indexOf(item.status || "closed");
@@ -257,8 +257,8 @@ export default function LabsTasteCollection() {
     return (
       <div className="labs-page" data-testid="labs-taste-collection">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Collection</h1>
+          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("collectionUi.myWhisky")}</button>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>{t("collectionUi.collection")}</h1>
         </div>
         <AuthGateMessage
           icon={<Archive className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
@@ -282,8 +282,8 @@ export default function LabsTasteCollection() {
       <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={handleSyncFileInput} data-testid="input-labs-sync-file" />
 
       <div className="flex items-center gap-3 mb-1">
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
-        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">Collection</h1>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("collectionUi.myWhisky")}</button>
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">{t("collectionUi.collection")}</h1>
       </div>
 
       {hasCollection && (
@@ -295,7 +295,7 @@ export default function LabsTasteCollection() {
         >
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-              {stats.total} bottles
+              {stats.total} {t("collectionUi.bottles")}
             </span>
             {stats.avgRating && (
               <>
@@ -326,9 +326,9 @@ export default function LabsTasteCollection() {
           {showTopDistilleries && (
             <div className="mt-2 labs-fade-in" onClick={(e) => e.stopPropagation()}>
               <div className="flex gap-3 text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                <span>{stats.open} open</span>
-                <span>{stats.closed} closed</span>
-                <span>{stats.empty} empty</span>
+                <span>{stats.open} {t("collectionUi.open")}</span>
+                <span>{stats.closed} {t("collectionUi.closed")}</span>
+                <span>{stats.empty} {t("collectionUi.empty")}</span>
               </div>
               {stats.topDistilleries.length > 0 && (
                 <div className="flex flex-wrap gap-1">
@@ -346,7 +346,7 @@ export default function LabsTasteCollection() {
         <div className="labs-card p-3 mb-4 flex items-center gap-3" style={{ background: "rgba(255,180,0,0.08)", border: "1px solid rgba(255,180,0,0.25)" }} data-testid="banner-sync-stale">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "#e6a800" }} />
           <p className="text-xs" style={{ color: "var(--labs-text-secondary)", flex: 1 }}>
-            Last sync was {lastSyncDate ? Math.floor((Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60 * 24)) : "?"} days ago.
+            {t("collectionUi.lastSyncWas")} {lastSyncDate ? Math.floor((Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60 * 24)) : "?"} {t("collectionUi.daysAgo")}
           </p>
           <button onClick={() => openPanel("importSync")} className="labs-btn-secondary" style={{ padding: "4px 10px", fontSize: 11, flexShrink: 0 }} data-testid="button-sync-stale">
             <RefreshCw className="w-3 h-3" /> Sync
@@ -378,7 +378,7 @@ export default function LabsTasteCollection() {
               ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />
               : <Upload className="w-4 h-4" />
             }
-            {hasCollection ? "Import / Sync" : "Import"}
+            {hasCollection ? t("collectionUi.importSync") : t("collectionUi.importBtn")}
           </button>
 
           {selectMode && (
@@ -397,7 +397,7 @@ export default function LabsTasteCollection() {
               }}
               data-testid="button-labs-cancel-select"
             >
-              <X className="w-4 h-4" /> Cancel
+              <X className="w-4 h-4" /> {t("ui.cancel")}
             </button>
           )}
 
@@ -439,19 +439,19 @@ export default function LabsTasteCollection() {
                 >
                   <OverflowItem
                     icon={<CheckSquare className="w-4 h-4" />}
-                    label="Select Bottles"
+                    label={t("collectionUi.selectBottles")}
                     onClick={() => { setSelectMode(true); setSelectedIds(new Set()); setActivePanel(null); setPriceSelectMode(false); setSelectedForPrice(new Set()); setShowOverflow(false); }}
                     testId="button-labs-toggle-select"
                   />
                   <OverflowItem
                     icon={<Sparkles className="w-4 h-4" />}
-                    label="AI Price Estimation"
+                    label={t("collectionUi.aiPriceEstimation")}
                     onClick={() => openPanel("priceSelect")}
                     testId="button-labs-start-price-estimate"
                   />
                   <OverflowItem
                     icon={<Download className="w-4 h-4" />}
-                    label="Export CSV"
+                    label={t("collectionUi.exportCsv")}
                     onClick={() => { downloadCsv(getExportItems()); setShowOverflow(false); }}
                     testId="button-labs-export-csv"
                   />
@@ -467,15 +467,15 @@ export default function LabsTasteCollection() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-              <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>AI Price Estimation</h3>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("collectionUi.aiPriceEstimation")}</h3>
             </div>
             <button onClick={() => { setActivePanel(null); setPriceSelectMode(false); setSelectedForPrice(new Set()); }} style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-close-price-panel"><X className="w-4 h-4" /></button>
           </div>
           <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-            Select bottles to estimate current market prices using AI. Tap bottles in the list below, then press Estimate.
+            {t("collectionUi.selectBottlesDesc")}
           </p>
-          {selectedForPrice.size > 0 && <p className="text-xs mb-2" style={{ color: "var(--labs-text-secondary)" }}>{selectedForPrice.size} selected</p>}
-          {rateLimitDate && <p className="text-xs mb-2" style={{ color: "var(--labs-accent)" }}>Rate limited until {rateLimitDate}</p>}
+          {selectedForPrice.size > 0 && <p className="text-xs mb-2" style={{ color: "var(--labs-text-secondary)" }}>{selectedForPrice.size} {t("collectionUi.selected")}</p>}
+          {rateLimitDate && <p className="text-xs mb-2" style={{ color: "var(--labs-accent)" }}>{t("collectionUi.rateLimitedUntil")} {rateLimitDate}</p>}
           <div className="flex items-center gap-2">
             <button onClick={() => setSelectedForPrice(new Set(filtered.map(i => i.id)))} className="labs-btn-secondary" style={{ padding: "6px 10px", fontSize: 12 }} data-testid="button-labs-select-all-price"><Check className="w-3.5 h-3.5" /> All</button>
             <button onClick={() => priceEstimateMutation.mutate(Array.from(selectedForPrice))} disabled={selectedForPrice.size === 0 || priceEstimateMutation.isPending} className="labs-btn-primary" style={{ padding: "6px 12px", fontSize: 12, opacity: selectedForPrice.size === 0 ? 0.5 : 1 }} data-testid="button-labs-estimate-prices">
