@@ -2777,11 +2777,78 @@ function CreateTastingForm() {
 
   if (!currentParticipant) {
     return (
-      <AuthGateMessage
-        icon={<Wine className="w-12 h-12" style={{ color: "var(--labs-text-muted)" }} />}
-        title={t("authGate.host.title")}
-        bullets={[t("authGate.host.bullet1"), t("authGate.host.bullet2"), t("authGate.host.bullet3")]}
-      />
+      <div className="labs-page labs-fade-in">
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-host-preview-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("common.back", "Back")}
+        </button>
+
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <Crown className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
+          <h1 className="labs-serif" style={{ fontSize: 22, color: "var(--labs-text)", marginBottom: 6 }} data-testid="text-preview-host-title">
+            {t("authGate.preview.hostWelcome", "Host your own tasting")}
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 380, margin: "0 auto" }}>
+            {t("authGate.preview.hostSubtitle", "Invite friends, set up a blind tasting, and compare your ratings live.")}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+          {[
+            { icon: <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "hostFeature1Title", descKey: "hostFeature1Desc", titleFb: "Set up in seconds", descFb: "Add your whiskies, share the invite code -- done." },
+            { icon: <BarChart3 className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "hostFeature2Title", descKey: "hostFeature2Desc", titleFb: "Live ratings", descFb: "See your guests' scores and aromas in real time." },
+            { icon: <FileText className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "hostFeature3Title", descKey: "hostFeature3Desc", titleFb: "Results & export", descFb: "PDF summary, CSV data, and a shareable results page." },
+          ].map((feat, i) => (
+            <div
+              key={i}
+              className={`labs-card labs-fade-in labs-stagger-${i + 1}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: 16 }}
+              data-testid={`card-host-feature-${i}`}
+            >
+              <div style={{ flexShrink: 0, marginTop: 2 }}>{feat.icon}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 3 }}>
+                  {t(`authGate.preview.${feat.titleKey}`, feat.titleFb)}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>
+                  {t(`authGate.preview.${feat.descKey}`, feat.descFb)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", padding: "20px 16px", borderRadius: 12, background: "var(--labs-surface)" }}>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 14 }}>
+            {t("authGate.preview.hostCta", "A free profile is all you need to host your first tasting")}
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => openAuthDialog("register")}
+              className="labs-btn-primary"
+              style={{ padding: "10px 20px", fontSize: 14 }}
+              data-testid="button-preview-host-profile"
+            >
+              {t("authGate.preview.profileCta", "Create profile")}
+            </button>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 10 }}>
+            {t("authGate.preview.alreadyHaveAccount", "Already have a profile?")}{" "}
+            <button
+              onClick={() => openAuthDialog("signin")}
+              style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}
+              data-testid="button-preview-host-signin"
+            >
+              {t("authGate.preview.signInLink", "Sign in here")}
+            </button>
+          </p>
+        </div>
+      </div>
     );
   }
 

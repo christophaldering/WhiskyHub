@@ -38,7 +38,7 @@ function formatTastingDate(dateStr: string | null | undefined): string {
 
 export default function LabsTastings() {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, openAuthDialog } = useAppStore();
   const [, navigate] = useLocation();
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
@@ -129,11 +129,123 @@ export default function LabsTastings() {
 
   if (!currentParticipant) {
     return (
-      <AuthGateMessage
-        icon={<Wine className="w-12 h-12 labs-tasting-action-icon" />}
-        title={t("authGate.tastings.title")}
-        bullets={[t("authGate.tastings.bullet1"), t("authGate.tastings.bullet2"), t("authGate.tastings.bullet3")]}
-      />
+      <div className="labs-page labs-fade-in">
+        <BackLink href="/labs/home" style={{ textDecoration: "none" }} className="labs-btn-ghost mb-4" data-testid="button-back-tastings">
+          <ChevronLeft className="w-4 h-4" /> Home
+        </BackLink>
+
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <Wine className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
+          <h1 className="labs-serif" style={{ fontSize: 22, color: "var(--labs-text)", marginBottom: 6 }} data-testid="text-preview-tastings-title">
+            {t("authGate.preview.tastingsWelcome", "Discover how CaskSense works")}
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 360, margin: "0 auto" }}>
+            {t("authGate.preview.tastingsSubtitle", "Four ways to explore the world of whisky -- try any of them right away.")}
+          </p>
+        </div>
+
+        <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions">
+          <Link href="/labs/join" className="labs-action-bar-item" data-testid="labs-preview-action-join">
+            <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+              <Users className="w-5 h-5 labs-icon-accent" />
+            </div>
+            <span className="labs-action-bar-label">Join</span>
+          </Link>
+          <Link href="/labs/solo" className="labs-action-bar-item" data-testid="labs-preview-action-solo">
+            <div className="labs-action-bar-icon labs-action-bar-icon--surface">
+              <PenLine className="w-5 h-5 labs-icon-text-secondary" />
+            </div>
+            <span className="labs-action-bar-label">Solo</span>
+          </Link>
+          <Link href="/labs/host" className="labs-action-bar-item" data-testid="labs-preview-action-host">
+            <div className="labs-action-bar-icon labs-action-bar-icon--success">
+              <Crown className="w-5 h-5 labs-icon-success" />
+            </div>
+            <span className="labs-action-bar-label">Host</span>
+          </Link>
+          <Link href="/labs/bottle-sharing" className="labs-action-bar-item" data-testid="labs-preview-action-share">
+            <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+              <Share2 className="w-5 h-5 labs-icon-accent" />
+            </div>
+            <span className="labs-action-bar-label">Share</span>
+          </Link>
+        </div>
+
+        <div className="labs-mode-guide labs-fade-in labs-stagger-2" data-testid="labs-preview-mode-guide">
+          <div className="labs-mode-guide-grid">
+            <Link href="/labs/join" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="labs-mode-guide-item" data-testid="preview-guide-join">
+                <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
+                  <Users className="w-4 h-4 labs-icon-accent" />
+                </div>
+                <div className="labs-mode-guide-text">
+                  <span className="labs-mode-guide-label">Join</span>
+                  <span className="labs-mode-guide-desc">{t("authGate.tastings.bullet2", "Join a tasting someone has created for you")}</span>
+                </div>
+              </div>
+            </Link>
+            <Link href="/labs/solo" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="labs-mode-guide-item" data-testid="preview-guide-solo">
+                <div className="labs-mode-guide-icon labs-action-bar-icon--surface">
+                  <PenLine className="w-4 h-4 labs-icon-text-secondary" />
+                </div>
+                <div className="labs-mode-guide-text">
+                  <span className="labs-mode-guide-label">Solo</span>
+                  <span className="labs-mode-guide-desc">{t("authGate.tastings.bullet1", "Train your palate at your own pace")}</span>
+                </div>
+              </div>
+            </Link>
+            <Link href="/labs/host" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="labs-mode-guide-item" data-testid="preview-guide-host">
+                <div className="labs-mode-guide-icon labs-action-bar-icon--success">
+                  <Crown className="w-4 h-4 labs-icon-success" />
+                </div>
+                <div className="labs-mode-guide-text">
+                  <span className="labs-mode-guide-label">Host</span>
+                  <span className="labs-mode-guide-desc">{t("authGate.host.bullet1", "Set up your own whisky tasting in just a few clicks")}</span>
+                </div>
+              </div>
+            </Link>
+            <Link href="/labs/bottle-sharing" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="labs-mode-guide-item" data-testid="preview-guide-share">
+                <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
+                  <Share2 className="w-4 h-4 labs-icon-accent" />
+                </div>
+                <div className="labs-mode-guide-text">
+                  <span className="labs-mode-guide-label">Share</span>
+                  <span className="labs-mode-guide-desc">{t("authGate.bottleSharing.bullet1", "Organize joint tastings of special bottles")}</span>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="labs-fade-in labs-stagger-3" style={{ textAlign: "center", marginTop: 28, padding: "20px 16px", borderRadius: 12, background: "var(--labs-surface)" }}>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 14 }}>
+            {t("authGate.preview.tastingsCta", "Create a free profile to save your tastings")}
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => openAuthDialog("register")}
+              className="labs-btn-primary"
+              style={{ padding: "10px 20px", fontSize: 14 }}
+              data-testid="button-preview-create-profile"
+            >
+              {t("authGate.preview.profileCta", "Create profile")}
+            </button>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 10 }}>
+            {t("authGate.preview.alreadyHaveAccount", "Already have a profile?")}{" "}
+            <button
+              onClick={() => openAuthDialog("signin")}
+              style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}
+              data-testid="button-preview-signin-link"
+            >
+              {t("authGate.preview.signInLink", "Sign in here")}
+            </button>
+          </p>
+        </div>
+      </div>
     );
   }
 

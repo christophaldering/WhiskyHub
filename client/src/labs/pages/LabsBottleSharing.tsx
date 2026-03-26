@@ -51,7 +51,7 @@ const STYLE_API_MAP: Record<string, string> = {
 };
 
 export default function LabsBottleSharing() {
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, openAuthDialog } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const goBackToHome = useBackNavigation("/labs/home");
@@ -101,7 +101,82 @@ export default function LabsBottleSharing() {
       .then(r => r.ok ? r.json() : []).then(setCommunities).catch(() => {});
   }, [pid]);
 
-  if (!currentParticipant) return <AuthGateMessage title={t("authGate.bottleSharing.title")} bullets={[t("authGate.bottleSharing.bullet1"), t("authGate.bottleSharing.bullet2"), t("authGate.bottleSharing.bullet3")]} />;
+  if (!currentParticipant) {
+    return (
+      <div className="labs-page labs-fade-in">
+        <button
+          onClick={goBackToHome}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-sharing-preview-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("common.back", "Back")}
+        </button>
+
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <Share2 className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
+          <h1 className="labs-serif" style={{ fontSize: 22, color: "var(--labs-text)", marginBottom: 6 }} data-testid="text-preview-sharing-title">
+            {t("authGate.preview.sharingWelcome", "Bottle Sharing")}
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 380, margin: "0 auto" }}>
+            {t("authGate.preview.sharingSubtitle", "Share special bottles with friends -- everyone brings something, everyone tastes everything.")}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+          {[
+            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Organize a round", descFb: "List the bottles, invite your circle, pick a date." },
+            { icon: <Eye className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Blind or open", descFb: "Reveal bottles upfront or keep it a surprise." },
+            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Rate together", descFb: "Compare your scores and discover new favorites." },
+          ].map((feat, i) => (
+            <div
+              key={i}
+              className={`labs-card labs-fade-in labs-stagger-${i + 1}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: 16 }}
+              data-testid={`card-sharing-feature-${i}`}
+            >
+              <div style={{ flexShrink: 0, marginTop: 2 }}>{feat.icon}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 3 }}>
+                  {t(`authGate.preview.${feat.titleKey}`, feat.titleFb)}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>
+                  {t(`authGate.preview.${feat.descKey}`, feat.descFb)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", padding: "20px 16px", borderRadius: 12, background: "var(--labs-surface)" }}>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 14 }}>
+            {t("authGate.preview.sharingCta", "Create a free profile to organize your first sharing")}
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => openAuthDialog("register")}
+              className="labs-btn-primary"
+              style={{ padding: "10px 20px", fontSize: 14 }}
+              data-testid="button-preview-sharing-profile"
+            >
+              {t("authGate.preview.profileCta", "Create profile")}
+            </button>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 10 }}>
+            {t("authGate.preview.alreadyHaveAccount", "Already have a profile?")}{" "}
+            <button
+              onClick={() => openAuthDialog("signin")}
+              style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}
+              data-testid="button-preview-sharing-signin"
+            >
+              {t("authGate.preview.signInLink", "Sign in here")}
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const validBottles = bottles.filter(b => b.name.trim());
   const friendsWithEmail = friends.filter((f: any) => f.email && f.status === "accepted");
