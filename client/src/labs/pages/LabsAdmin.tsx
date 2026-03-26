@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
-import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import BackButton from "@/components/navigation/BackButton";
 import { adminApi, feedbackApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { apiRequest } from "@/lib/queryClient";
@@ -147,7 +147,7 @@ const labsSelect: React.CSSProperties = {
 
 export default function LabsAdmin() {
   const [, navigate] = useLocation();
-  const goBackToHome = useBackNavigation("/labs/home");
+
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -208,14 +208,7 @@ export default function LabsAdmin() {
          data-testid="labs-admin-page">
 
       <div style={{ marginBottom: 20 }}>
-        <button onClick={goBackToHome}
-          style={{ display: "flex", alignItems: "center", gap: 4,
-                   background: "none", border: "none", cursor: "pointer",
-                   color: "var(--labs-text-muted)", fontSize: 14,
-                   minHeight: 44, padding: "0 0 8px" }}
-          data-testid="labs-admin-back">
-          <ChevronLeft className="w-4 h-4" /> {t("admin.home")}
-        </button>
+        <BackButton fallback="/labs/home" />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26,
                        fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
