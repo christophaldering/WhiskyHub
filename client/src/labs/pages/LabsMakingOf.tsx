@@ -435,7 +435,7 @@ export default function LabsMakingOf() {
 }
 
 function BackBtn() {
-  const goBackToHome = useBackNavigation("/labs/home");
+  const goBackToHome = useBackNavigation("/labs/tastings");
   return (
     <button
       onClick={goBackToHome}

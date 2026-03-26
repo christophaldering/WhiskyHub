@@ -376,7 +376,7 @@ function SmartRedirectToLabs() {
     "/discover/database": "/labs/explore",
     "/discover-hub": "/labs/entdecken",
     "/data-export": "/labs/taste/downloads",
-    "/home": "/labs",
+    "/home": "/labs/tastings",
     "/tasting/sessions": "/labs/tastings",
     "/tasting/calendar": "/labs/host/calendar",
     "/tasting/host": "/labs/host/dashboard",
@@ -553,20 +553,20 @@ function Router() {
         <Route path="/app/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/app/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
         <Route path="/app/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
-        <Route path="/app/home">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/app/home">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/app/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/app/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
         <Route path="/app/cellar">{() => <Redirect to="/labs/taste/collection" />}</Route>
         <Route path="/app/more">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/app/admin">{() => <Redirect to="/admin" />}</Route>
-        <Route path="/app">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/app">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/app/*">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/lab-dark/home">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/lab-dark/home">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
         <Route path="/lab-dark/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/lab-dark/*">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/legacy/home">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/legacy/home">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/tasting/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/tasting/calendar">{() => <Redirect to="/labs/host/calendar" />}</Route>
         <Route path="/legacy/tasting/host">{() => <Redirect to="/labs/host/dashboard" />}</Route>
@@ -577,7 +577,7 @@ function Router() {
         <Route path="/legacy/admin">{() => <Redirect to="/admin" />}</Route>
         <Route path="/legacy/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
         <Route path="/legacy/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
-        <Route path="/legacy">{() => <Redirect to="/labs/home" />}</Route>
+        <Route path="/legacy">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/*">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/onboarding">{() => <Redirect to="/labs/onboarding" />}</Route>
 
@@ -663,7 +663,7 @@ function Router() {
                     </div>
                     <h2 className="labs-serif text-lg font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Page not found</h2>
                     <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This page doesn't exist in Labs yet.</p>
-                    <a href="/labs/home" className="labs-btn-primary" data-testid="labs-404-home">Back to Labs</a>
+                    <a href="/labs/tastings" className="labs-btn-primary" data-testid="labs-404-home">Back to Labs</a>
                   </div>
                 </div>
               )}</Route>

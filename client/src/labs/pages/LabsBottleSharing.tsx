@@ -54,7 +54,7 @@ export default function LabsBottleSharing() {
   const { currentParticipant, openAuthDialog } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const goBackToHome = useBackNavigation("/labs/home");
+  const goBackToHome = useBackNavigation("/labs/tastings");
 
   const [publicSharings, setPublicSharings] = useState<any[]>([]);
   const [mySharings, setMySharings] = useState<any[]>([]);

@@ -392,10 +392,10 @@ export default function LabsOnboarding() {
       >
         <span>{t("onboarding.signIn.label")} </span>
         <a
-          href="/labs/home"
+          href="/labs/tastings"
           onClick={(e) => {
             e.preventDefault();
-            completeOnboarding("/labs/home");
+            completeOnboarding("/labs/tastings");
           }}
           style={{ color: ACCENT_GOLD_DIM, textDecoration: "underline", textUnderlineOffset: 3 }}
           data-testid="link-onboard-signin"

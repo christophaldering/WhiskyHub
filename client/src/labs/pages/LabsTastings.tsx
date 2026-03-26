@@ -1,14 +1,21 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, ChevronLeft, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
-import BackLink from "@/labs/components/BackLink";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, tastingHistoryApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
-import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
+import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
+import i18n from "i18next";
+
+function getTimeGreetingKey(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "hub.timeGreetingMorning";
+  if (h < 18) return "hub.timeGreetingAfternoon";
+  return "hub.timeGreetingEvening";
+}
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live";
@@ -127,135 +134,165 @@ export default function LabsTastings() {
     };
   }, [tastings]);
 
+  useEffect(() => {
+    if (!currentParticipant) {
+      try {
+        const returnTo = sessionStorage.getItem("returnTo");
+        if (returnTo) {
+          openAuthDialog("signin");
+        }
+      } catch {}
+    }
+  }, [currentParticipant, openAuthDialog]);
+
+  const { data: historyData } = useQuery({
+    queryKey: ["tasting-history", currentParticipant?.id],
+    queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant?.id,
+    staleTime: 60_000,
+  });
+
+  const recentDrams = useMemo(() => {
+    if (!historyData?.tastings) return [];
+    const items: { id: string; whiskyName: string; score: number; date: string }[] = [];
+    for (const tasting of historyData.tastings) {
+      if (!tasting.ratings) continue;
+      for (const r of tasting.ratings) {
+        items.push({
+          id: `${tasting.id}-${r.whiskyId}`,
+          whiskyName: r.whiskyName || "Unknown Whisky",
+          score: r.normalizedScore ?? r.overall ?? 0,
+          date: r.updatedAt || tasting.date || "",
+        });
+      }
+    }
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return items.slice(0, 5);
+  }, [historyData]);
+
   if (!currentParticipant) {
     return (
-      <div className="labs-page labs-fade-in">
-        <BackLink href="/labs/home" style={{ textDecoration: "none" }} className="labs-btn-ghost mb-4" data-testid="button-back-tastings">
-          <ChevronLeft className="w-4 h-4" /> Home
-        </BackLink>
-
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Wine className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
-          <h1 className="labs-serif" style={{ fontSize: 22, color: "var(--labs-text)", marginBottom: 6 }} data-testid="text-preview-tastings-title">
-            {t("authGate.preview.tastingsWelcome", "Discover how CaskSense works")}
+      <div className="labs-home-container labs-fade-in">
+        <div className="labs-home-header">
+          <p className="ty-label labs-home-eyebrow" data-testid="labs-home-eyebrow">
+            CaskSense
+          </p>
+          <h1 className="ty-h1 labs-home-title" data-testid="labs-home-title">
+            {t('home.greeting')}
           </h1>
-          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", maxWidth: 360, margin: "0 auto" }}>
-            {t("authGate.preview.tastingsSubtitle", "Four ways to explore the world of whisky -- try any of them right away.")}
+          <p className="ty-sub labs-home-tagline" data-testid="labs-home-tagline">
+            {t('home.greetingSub')}
           </p>
         </div>
 
-        <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions">
-          <Link href="/labs/join" className="labs-action-bar-item" data-testid="labs-preview-action-join">
-            <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-              <Users className="w-5 h-5 labs-icon-accent" />
+        <div className="labs-home-cards">
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
+            onClick={() => navigate('/labs/solo')}
+            data-testid="labs-action-solo"
+          >
+            <div className="labs-home-action-icon">
+              <GlassIcon size={20} />
             </div>
-            <span className="labs-action-bar-label">Join</span>
-          </Link>
-          <Link href="/labs/solo" className="labs-action-bar-item" data-testid="labs-preview-action-solo">
-            <div className="labs-action-bar-icon labs-action-bar-icon--surface">
-              <PenLine className="w-5 h-5 labs-icon-text-secondary" />
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.solo')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.soloSub')}
+              </div>
             </div>
-            <span className="labs-action-bar-label">Solo</span>
-          </Link>
-          <Link href="/labs/host" className="labs-action-bar-item" data-testid="labs-preview-action-host">
-            <div className="labs-action-bar-icon labs-action-bar-icon--success">
-              <Crown className="w-5 h-5 labs-icon-success" />
+          </button>
+
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-2"
+            onClick={() => navigate('/labs/join')}
+            data-testid="labs-action-join"
+          >
+            <div className="labs-home-action-icon">
+              <JoinIcon size={20} />
             </div>
-            <span className="labs-action-bar-label">Host</span>
-          </Link>
-          <Link href="/labs/bottle-sharing" className="labs-action-bar-item" data-testid="labs-preview-action-share">
-            <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-              <Share2 className="w-5 h-5 labs-icon-accent" />
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.join')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.joinSub')}
+              </div>
             </div>
-            <span className="labs-action-bar-label">Share</span>
-          </Link>
+          </button>
+
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-3"
+            onClick={() => navigate('/labs/host')}
+            data-testid="labs-action-host"
+          >
+            <div className="labs-home-action-icon">
+              <HostIcon size={20} />
+            </div>
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.host')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.hostSub')}
+              </div>
+            </div>
+          </button>
         </div>
 
-        <div className="labs-mode-guide labs-fade-in labs-stagger-2" data-testid="labs-preview-mode-guide">
-          <div className="labs-mode-guide-grid">
-            <Link href="/labs/join" style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="labs-mode-guide-item" data-testid="preview-guide-join">
-                <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
-                  <Users className="w-4 h-4 labs-icon-accent" />
-                </div>
-                <div className="labs-mode-guide-text">
-                  <span className="labs-mode-guide-label">Join</span>
-                  <span className="labs-mode-guide-desc">{t("authGate.tastings.bullet2", "Join a tasting someone has created for you")}</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/labs/solo" style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="labs-mode-guide-item" data-testid="preview-guide-solo">
-                <div className="labs-mode-guide-icon labs-action-bar-icon--surface">
-                  <PenLine className="w-4 h-4 labs-icon-text-secondary" />
-                </div>
-                <div className="labs-mode-guide-text">
-                  <span className="labs-mode-guide-label">Solo</span>
-                  <span className="labs-mode-guide-desc">{t("authGate.tastings.bullet1", "Train your palate at your own pace")}</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/labs/host" style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="labs-mode-guide-item" data-testid="preview-guide-host">
-                <div className="labs-mode-guide-icon labs-action-bar-icon--success">
-                  <Crown className="w-4 h-4 labs-icon-success" />
-                </div>
-                <div className="labs-mode-guide-text">
-                  <span className="labs-mode-guide-label">Host</span>
-                  <span className="labs-mode-guide-desc">{t("authGate.host.bullet1", "Set up your own whisky tasting in just a few clicks")}</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/labs/bottle-sharing" style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="labs-mode-guide-item" data-testid="preview-guide-share">
-                <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
-                  <Share2 className="w-4 h-4 labs-icon-accent" />
-                </div>
-                <div className="labs-mode-guide-text">
-                  <span className="labs-mode-guide-label">Share</span>
-                  <span className="labs-mode-guide-desc">{t("authGate.bottleSharing.bullet1", "Organize joint tastings of special bottles")}</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
+        <p className="ty-caption labs-home-more labs-fade-in labs-stagger-4" data-testid="labs-home-more">
+          {t('home.moreAppears')}
+        </p>
 
-        <div className="labs-fade-in labs-stagger-3" style={{ textAlign: "center", marginTop: 28, padding: "20px 16px", borderRadius: 12, background: "var(--labs-surface)" }}>
-          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 14 }}>
-            {t("authGate.preview.tastingsCta", "Create a free profile to save your tastings")}
+        <div className="labs-home-divider labs-fade-in labs-stagger-5" />
+
+        <div className="labs-home-stille labs-fade-in labs-stagger-6" data-testid="labs-home-stille">
+          <p className="ty-caption labs-home-stille-title">
+            Stille
           </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <button
-              onClick={() => openAuthDialog("register")}
-              className="labs-btn-primary"
-              style={{ padding: "10px 20px", fontSize: 14 }}
-              data-testid="button-preview-create-profile"
-            >
-              {t("authGate.preview.profileCta", "Create profile")}
-            </button>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 10 }}>
-            {t("authGate.preview.alreadyHaveAccount", "Already have a profile?")}{" "}
-            <button
-              onClick={() => openAuthDialog("signin")}
-              style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}
-              data-testid="button-preview-signin-link"
-            >
-              {t("authGate.preview.signInLink", "Sign in here")}
-            </button>
+          <p className="ty-caption labs-home-stille-sub">
+            {t('home.noAccount')}
           </p>
         </div>
       </div>
     );
   }
 
+  const displayName = currentParticipant?.name?.trim() || t("hub.guest");
+  const timeKey = getTimeGreetingKey();
+
   return (
     <div className="labs-page labs-fade-in">
-      <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-tastings">
-          <ChevronLeft className="w-4 h-4" /> Home
-        </button>
-      </BackLink>
+      <div className="labs-hub-greeting" data-testid="labs-hub">
+        <span className="labs-hub-greeting-time" data-testid="hub-time-greeting">
+          {t(timeKey)}
+        </span>
+        <h1 className="labs-hub-greeting-name" data-testid="hub-greeting-name">
+          {displayName}
+        </h1>
+        <p className="labs-hub-greeting-mood" data-testid="hub-mood-line">
+          {t("hub.moodLine")}
+        </p>
+      </div>
+
+      <div className="labs-hub-recent labs-fade-in" data-testid="hub-recent-section">
+        <span className="labs-section-label">{t("hub.recentlyRated")}</span>
+        {recentDrams.length > 0 ? (
+          <div className="labs-hub-dram-list">
+            {recentDrams.map((d) => (
+              <div key={d.id} className="labs-dram-item" data-testid={`dram-item-${d.id}`}>
+                <div className="labs-dram-info">
+                  <span className="labs-dram-name">{d.whiskyName}</span>
+                  <span className="labs-dram-date">
+                    {d.date ? new Date(d.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US") : ""}
+                  </span>
+                </div>
+                <div className={`labs-dram-score${Math.round(d.score) >= 90 ? " labs-dram-score--high" : ""}`}>{Math.round(d.score)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="labs-hub-empty" data-testid="hub-no-drams">
+            {t("hub.noDrams")}
+          </p>
+        )}
+      </div>
+
       <div className="labs-tastings-header">
         <div className="flex items-center justify-between">
           <h1
@@ -388,45 +425,29 @@ export default function LabsTastings() {
           </p>
         </div>
       ) : filtered.length === 0 && invitations.length === 0 ? (
-        <div className="labs-mode-guide labs-fade-in" data-testid="labs-tastings-empty">
-          <div className="labs-mode-guide-grid">
-            <div className="labs-mode-guide-item" data-testid="guide-join">
-              <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
-                <Users className="w-4 h-4 labs-icon-accent" />
-              </div>
-              <div className="labs-mode-guide-text">
-                <span className="labs-mode-guide-label">Join</span>
-                <span className="labs-mode-guide-desc">Tritt einem Tasting bei, das jemand für dich erstellt hat.</span>
-              </div>
-            </div>
-            <div className="labs-mode-guide-item" data-testid="guide-solo">
-              <div className="labs-mode-guide-icon labs-action-bar-icon--surface">
-                <PenLine className="w-4 h-4 labs-icon-text-secondary" />
-              </div>
-              <div className="labs-mode-guide-text">
-                <span className="labs-mode-guide-label">Solo</span>
-                <span className="labs-mode-guide-desc">Trainiere deinen Gaumen allein — in deinem eigenen Tempo.</span>
-              </div>
-            </div>
-            <div className="labs-mode-guide-item" data-testid="guide-host">
-              <div className="labs-mode-guide-icon labs-action-bar-icon--success">
-                <Crown className="w-4 h-4 labs-icon-success" />
-              </div>
-              <div className="labs-mode-guide-text">
-                <span className="labs-mode-guide-label">Host</span>
-                <span className="labs-mode-guide-desc">Lade Freunde zu einer Blindverkostung ein und vergleicht eure Bewertungen.</span>
-              </div>
-            </div>
-            <div className="labs-mode-guide-item" data-testid="guide-share">
-              <div className="labs-mode-guide-icon labs-action-bar-icon--accent">
-                <Share2 className="w-4 h-4 labs-icon-accent" />
-              </div>
-              <div className="labs-mode-guide-text">
-                <span className="labs-mode-guide-label">Share</span>
-                <span className="labs-mode-guide-desc">Organisiere ein Bottle Sharing — jeder bringt etwas mit.</span>
-              </div>
-            </div>
-          </div>
+        <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
+          <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
+            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
+              fill="var(--labs-accent)" opacity="0.18"/>
+            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
+              stroke="var(--labs-accent)" strokeWidth="1.5" fill="none" opacity="0.6"/>
+            <rect x="18" y="9" width="12" height="9" rx="2.5" fill="var(--labs-accent)" opacity="0.25"/>
+            <path d="M20 26 Q24 30 28 26" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
+          </svg>
+          <h2 className="labs-empty-title" data-testid="text-empty-title">
+            {t("tastings.emptyTitle", "Dein erstes Dram wartet")}
+          </h2>
+          <p className="labs-empty-sub" data-testid="text-empty-sub">
+            {t("tastings.emptySub", "Starte ein Solo-Tasting oder tritt einem bei — deine Bewertungen erscheinen dann hier.")}
+          </p>
+          <button
+            className="labs-btn-primary"
+            style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
+            onClick={() => navigate("/labs/solo")}
+            data-testid="button-empty-start-solo"
+          >
+            {t("tastings.emptyAction", "Solo starten")}
+          </button>
         </div>
       ) : (
         <>

@@ -526,7 +526,7 @@ export default function LabsTaste() {
 
   return (
     <div className="labs-page">
-      <BackLink href="/labs/home" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-taste">
           <ChevronLeft className="w-4 h-4" /> Home
         </button>

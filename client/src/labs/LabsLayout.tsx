@@ -751,7 +751,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     });
   }, []);
 
-  const isLabsHome = location === "/labs" || location === "/labs/";
   const isOnboarding = location === "/labs/onboarding";
 
   const needsAuthRedirect =
@@ -764,10 +763,10 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       try {
         sessionStorage.setItem("returnTo", location);
         const prev = prevLocationRef.current;
-        const origin = prev !== location && isPublicLabsRoute(prev) ? prev : "/labs/home";
+        const origin = prev !== location && isPublicLabsRoute(prev) ? prev : "/labs/tastings";
         sessionStorage.setItem("returnFrom", origin);
       } catch {}
-      window.location.replace("/labs/home");
+      window.location.replace("/labs/tastings");
       return;
     }
     prevLocationRef.current = location;
@@ -1079,8 +1078,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </LabsErrorBoundary>
       </main>
 
-      {!isLabsHome && (
-        <nav
+      <nav
           className="fixed bottom-0 left-0 right-0 z-40 flex items-start justify-around"
           style={{
             background: "var(--labs-nav-bg)",
@@ -1169,7 +1167,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             );
           })}
         </nav>
-      )}
 
       {profileOpen && (
         <LabsErrorBoundary overlay onClose={() => setProfileOpen(false)}>

@@ -222,7 +222,7 @@ export default function LabsAdmin() {
          data-testid="labs-admin-page">
 
       <div style={{ marginBottom: 20 }}>
-        <BackButton fallback="/labs/home" />
+        <BackButton fallback="/labs/tastings" />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26,
                        fontWeight: 700, color: "var(--labs-text)", margin: 0 }}

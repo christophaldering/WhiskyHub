@@ -203,7 +203,7 @@ function HeroSection() {
           }} data-testid="link-hero-open-app">
             Open App <ChevronRight style={{ width: 16, height: 16 }} />
           </Link>
-          <Link href="/labs/home" data-testid="link-hero-labs" style={{
+          <Link href="/labs/tastings" data-testid="link-hero-labs" style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 8,

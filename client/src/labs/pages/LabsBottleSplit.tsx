@@ -64,7 +64,7 @@ export default function LabsBottleSplit() {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const goBackToHome = useBackNavigation("/labs/home");
+  const goBackToHome = useBackNavigation("/labs/tastings");
 
   const [publicSplits, setPublicSplits] = useState<any[]>([]);
   const [mySplits, setMySplits] = useState<any[]>([]);
