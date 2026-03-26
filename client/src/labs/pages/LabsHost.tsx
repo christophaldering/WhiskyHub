@@ -2779,7 +2779,8 @@ function CreateTastingForm() {
     return (
       <AuthGateMessage
         icon={<Wine className="w-12 h-12" style={{ color: "var(--labs-text-muted)" }} />}
-        message={t("m2.host.signInToHost", "Sign in to host a tasting")}
+        title={t("authGate.host.title")}
+        bullets={[t("authGate.host.bullet1"), t("authGate.host.bullet2"), t("authGate.host.bullet3")]}
       />
     );
   }

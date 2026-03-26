@@ -224,7 +224,8 @@ export default function LabsBenchmark() {
     return (
       <AuthGateMessage
         icon={<Brain className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("benchmark.loginRequired")}
+        title={t("authGate.benchmark.title")}
+        bullets={[t("authGate.benchmark.bullet1"), t("authGate.benchmark.bullet2"), t("authGate.benchmark.bullet3")]}
       />
     );
   }

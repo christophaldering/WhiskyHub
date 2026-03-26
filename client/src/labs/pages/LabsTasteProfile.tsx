@@ -155,7 +155,8 @@ export default function LabsTasteProfile() {
     return (
       <AuthGateMessage
         icon={<Activity className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("labs.profile.authGate", "Sign in to see your flavor fingerprint")}
+        title={t("authGate.profile.title")}
+        bullets={[t("authGate.profile.bullet1"), t("authGate.profile.bullet2"), t("authGate.profile.bullet3")]}
       />
     );
   }

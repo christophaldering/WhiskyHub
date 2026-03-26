@@ -84,7 +84,8 @@ export default function LabsTasteWheel() {
     return (
       <AuthGateMessage
         icon={<CircleDot className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("labs.wheel.authGate", "Sign in to explore your flavor categories")}
+        title={t("authGate.wheel.title")}
+        bullets={[t("authGate.wheel.bullet1"), t("authGate.wheel.bullet2"), t("authGate.wheel.bullet3")]}
       />
     );
   }

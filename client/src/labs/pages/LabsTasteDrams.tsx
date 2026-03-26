@@ -726,7 +726,8 @@ export default function LabsTasteDrams() {
         <div style={{ padding: "0 20px" }}>
           <AuthGateMessage
             icon={<Wine className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
-            message="Sign in to access your drams"
+            title={t("authGate.drams.title")}
+            bullets={[t("authGate.drams.bullet1"), t("authGate.drams.bullet2"), t("authGate.drams.bullet3")]}
             className="labs-empty"
             compact
           />

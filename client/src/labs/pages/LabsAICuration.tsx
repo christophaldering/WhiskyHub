@@ -90,7 +90,8 @@ export default function LabsAICuration() {
     return (
       <AuthGateMessage
         icon={<Sparkles className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to use AI-powered curation"
+        title={t("authGate.aiCuration.title")}
+        bullets={[t("authGate.aiCuration.bullet1"), t("authGate.aiCuration.bullet2"), t("authGate.aiCuration.bullet3")]}
       />
     );
   }

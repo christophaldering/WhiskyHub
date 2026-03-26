@@ -185,7 +185,8 @@ export default function LabsTasteSettings() {
         </div>
         <AuthGateMessage
           icon={<Settings className="w-10 h-10" style={{ color: "var(--labs-text-muted)" }} />}
-          message="Sign in to access settings"
+          title={t("authGate.settings.title")}
+          bullets={[t("authGate.settings.bullet1"), t("authGate.settings.bullet2"), t("authGate.settings.bullet3")]}
           className="labs-empty"
           compact
         />

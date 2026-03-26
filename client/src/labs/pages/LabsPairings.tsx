@@ -82,7 +82,8 @@ export default function LabsPairings() {
     return (
       <AuthGateMessage
         icon={<Utensils className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("m2.taste.pairings.signIn")}
+        title={t("authGate.pairings.title")}
+        bullets={[t("authGate.pairings.bullet1"), t("authGate.pairings.bullet2"), t("authGate.pairings.bullet3")]}
       />
     );
   }

@@ -318,7 +318,8 @@ export default function LabsMakingOf() {
         <BackBtn />
         <AuthGateMessage
           icon={<Lock className="w-10 h-10 opacity-30" style={{ color: "var(--labs-text-muted)" }} />}
-          message="Sign in to view this page."
+          title={t("authGate.makingOf.title")}
+          bullets={[t("authGate.makingOf.bullet1"), t("authGate.makingOf.bullet2"), t("authGate.makingOf.bullet3")]}
           className="text-center py-16"
           compact
         />

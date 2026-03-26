@@ -151,6 +151,16 @@ function LabsHistoryList() {
     { value: "quality", label: t("m2.historical.sortQuality", "Best rated") },
   ];
 
+  if (!pid) {
+    return (
+      <AuthGateMessage
+        icon={<Archive className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
+        title={t("authGate.history.title")}
+        bullets={[t("authGate.history.bullet1"), t("authGate.history.bullet2"), t("authGate.history.bullet3")]}
+      />
+    );
+  }
+
   return (
     <>
       {analytics && (

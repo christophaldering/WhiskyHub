@@ -187,7 +187,8 @@ export default function LabsAdmin() {
     return !pid ? (
       <AuthGateMessage
         icon={<Shield className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("admin.pleaseSignIn")}
+        title={t("authGate.admin.title")}
+        bullets={[t("authGate.admin.bullet1"), t("authGate.admin.bullet2"), t("authGate.admin.bullet3")]}
       />
     ) : (
       <div className="labs-page labs-fade-in text-center" data-testid="labs-admin-access-denied">

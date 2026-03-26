@@ -71,7 +71,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
     })();
   }, [split?.tasting?.whiskies?.length, pid]);
 
-  if (!currentParticipant) return <AuthGateMessage />;
+  if (!currentParticipant) return <AuthGateMessage title={t("authGate.bottleSplitDetail.title")} bullets={[t("authGate.bottleSplitDetail.bullet1"), t("authGate.bottleSplitDetail.bullet2"), t("authGate.bottleSplitDetail.bullet3")]} />;
   const flash = (msg: string) => { setActionMsg(msg); setTimeout(() => setActionMsg(null), 2000); };
 
   if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="labs-spinner" size={24} /></div>;

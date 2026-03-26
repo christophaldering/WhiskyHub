@@ -483,7 +483,8 @@ export default function LabsTaste() {
     return (
       <AuthGateMessage
         icon={<Compass className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("myTastePage.signInDesc", "Sign in to discover your personal tasting patterns.")}
+        title={t("authGate.taste.title")}
+        bullets={[t("authGate.taste.bullet1"), t("authGate.taste.bullet2"), t("authGate.taste.bullet3")]}
       />
     );
   }

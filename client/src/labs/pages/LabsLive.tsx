@@ -571,7 +571,8 @@ function GuidedStepView({
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
             <AuthGateMessage
-              message={t("m2.taste.rating.signInToRate", "Sign in to rate whiskies")}
+              title={t("authGate.live.title")}
+              bullets={[t("authGate.live.bullet1"), t("authGate.live.bullet2"), t("authGate.live.bullet3")]}
               compact
             />
           ) : (
@@ -1569,7 +1570,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
           ) : (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
               {!currentParticipant ? (
-                <AuthGateMessage message="Sign in to rate whiskies" />
+                <AuthGateMessage
+                  title={t("authGate.live.title")}
+                  bullets={[t("authGate.live.bullet1"), t("authGate.live.bullet2"), t("authGate.live.bullet3")]}
+                />
               ) : tasting.status === "draft" ? (
                 <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
                   This session has not started yet

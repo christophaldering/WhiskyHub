@@ -203,7 +203,8 @@ export default function LabsCommunityDetail() {
     return (
       <AuthGateMessage
         icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("m2.community.signInPrompt")}
+        title={t("authGate.communityDetail.title")}
+        bullets={[t("authGate.communityDetail.bullet1"), t("authGate.communityDetail.bullet2"), t("authGate.communityDetail.bullet3")]}
       />
     );
   }

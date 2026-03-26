@@ -201,7 +201,8 @@ export default function LabsTasteCompare() {
     return (
       <AuthGateMessage
         icon={<GitCompareArrows className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to compare your scores with the community"
+        title={t("authGate.compare.title")}
+        bullets={[t("authGate.compare.bullet1"), t("authGate.compare.bullet2"), t("authGate.compare.bullet3")]}
       />
     );
   }

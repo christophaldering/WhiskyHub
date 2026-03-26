@@ -65,7 +65,8 @@ export default function LabsTasteWishlist() {
         </div>
         <AuthGateMessage
           icon={<Star className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
-          message="Sign in to access your wishlist"
+          title={t("authGate.wishlist.title")}
+          bullets={[t("authGate.wishlist.bullet1"), t("authGate.wishlist.bullet2"), t("authGate.wishlist.bullet3")]}
           className="labs-empty"
           compact
         />

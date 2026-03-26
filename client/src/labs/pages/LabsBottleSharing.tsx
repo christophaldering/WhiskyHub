@@ -101,7 +101,7 @@ export default function LabsBottleSharing() {
       .then(r => r.ok ? r.json() : []).then(setCommunities).catch(() => {});
   }, [pid]);
 
-  if (!currentParticipant) return <AuthGateMessage />;
+  if (!currentParticipant) return <AuthGateMessage title={t("authGate.bottleSharing.title")} bullets={[t("authGate.bottleSharing.bullet1"), t("authGate.bottleSharing.bullet2"), t("authGate.bottleSharing.bullet3")]} />;
 
   const validBottles = bottles.filter(b => b.name.trim());
   const friendsWithEmail = friends.filter((f: any) => f.email && f.status === "accepted");

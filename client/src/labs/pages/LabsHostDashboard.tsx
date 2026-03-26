@@ -803,7 +803,8 @@ export default function LabsHostDashboard() {
     return (
       <AuthGateMessage
         icon={<GlassWater style={{ width: 40, height: 40, color: th.faint }} />}
-        message="Sign in to access your dashboard"
+        title={t("authGate.hostDashboard.title")}
+        bullets={[t("authGate.hostDashboard.bullet1"), t("authGate.hostDashboard.bullet2"), t("authGate.hostDashboard.bullet3")]}
       />
     );
   }

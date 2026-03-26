@@ -131,7 +131,8 @@ export default function LabsTastings() {
     return (
       <AuthGateMessage
         icon={<Wine className="w-12 h-12 labs-tasting-action-icon" />}
-        message="Sign in to see your sessions and join new ones."
+        title={t("authGate.tastings.title")}
+        bullets={[t("authGate.tastings.bullet1"), t("authGate.tastings.bullet2"), t("authGate.tastings.bullet3")]}
       />
     );
   }

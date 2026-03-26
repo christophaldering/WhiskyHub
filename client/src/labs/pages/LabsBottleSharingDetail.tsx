@@ -56,7 +56,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
     })();
   }, [sharing?.whiskies?.length, pid]);
 
-  if (!currentParticipant) return <AuthGateMessage />;
+  if (!currentParticipant) return <AuthGateMessage title={t("authGate.bottleSharingDetail.title")} bullets={[t("authGate.bottleSharingDetail.bullet1"), t("authGate.bottleSharingDetail.bullet2"), t("authGate.bottleSharingDetail.bullet3")]} />;
 
   const flash = (msg: string) => { setActionMsg(msg); setTimeout(() => setActionMsg(null), 2000); };
 

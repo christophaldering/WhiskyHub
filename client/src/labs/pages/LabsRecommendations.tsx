@@ -155,7 +155,8 @@ export default function LabsRecommendations() {
     return (
       <AuthGateMessage
         icon={<Sparkles className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("labs.recommendations.authGate", "Sign in to get personalized whisky recommendations")}
+        title={t("authGate.recommendations.title")}
+        bullets={[t("authGate.recommendations.bullet1"), t("authGate.recommendations.bullet2"), t("authGate.recommendations.bullet3")]}
       />
     );
   }

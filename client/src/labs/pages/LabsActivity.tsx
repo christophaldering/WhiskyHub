@@ -66,7 +66,8 @@ export default function LabsActivity() {
       {!pid && (
         <AuthGateMessage
           icon={<Activity className="w-10 h-10" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />}
-          message={t("labs.activity.authGate", "Sign in to see your friends' activity.")}
+          title={t("authGate.activity.title")}
+          bullets={[t("authGate.activity.bullet1"), t("authGate.activity.bullet2"), t("authGate.activity.bullet3")]}
           className="labs-empty"
           compact
         />

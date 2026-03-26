@@ -302,7 +302,8 @@ export default function LabsCircle() {
     return (
       <AuthGateMessage
         icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message={t("m2.circle.signInPrompt")}
+        title={t("authGate.circle.title")}
+        bullets={[t("authGate.circle.bullet1"), t("authGate.circle.bullet2"), t("authGate.circle.bullet3")]}
       />
     );
   }

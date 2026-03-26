@@ -75,7 +75,8 @@ export default function LabsCommunity() {
     return (
       <AuthGateMessage
         icon={<Users className="w-12 h-12" style={{ color: "var(--labs-accent)" }} />}
-        message="Sign in to see your communities."
+        title={t("authGate.community.title")}
+        bullets={[t("authGate.community.bullet1"), t("authGate.community.bullet2"), t("authGate.community.bullet3")]}
       />
     );
   }

@@ -347,7 +347,8 @@ export default function LabsTasteAnalytics() {
 
       {!session.signedIn || !pid ? (
         <AuthGateMessage
-          message="Sign in to access your taste analytics"
+          title={t("authGate.analytics.title")}
+          bullets={[t("authGate.analytics.bullet1"), t("authGate.analytics.bullet2"), t("authGate.analytics.bullet3")]}
           className="labs-card p-6 text-center labs-fade-in"
           compact
         />

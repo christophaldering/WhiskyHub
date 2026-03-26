@@ -262,7 +262,8 @@ export default function LabsTasteCollection() {
         </div>
         <AuthGateMessage
           icon={<Archive className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
-          message="Sign in to access your collection"
+          title={t("authGate.collection.title")}
+          bullets={[t("authGate.collection.bullet1"), t("authGate.collection.bullet2"), t("authGate.collection.bullet3")]}
           className="labs-empty"
           compact
         />

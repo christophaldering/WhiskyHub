@@ -132,7 +132,8 @@ export default function LabsCollectionAnalysis() {
     return (
       <AuthGateMessage
         icon={<Library style={{ width: 48, height: 48, color: th.gold }} />}
-        message={t("labs.collection.authGate", "Sign in to analyze your collection")}
+        title={t("authGate.collectionAnalysis.title")}
+        bullets={[t("authGate.collectionAnalysis.bullet1"), t("authGate.collectionAnalysis.bullet2"), t("authGate.collectionAnalysis.bullet3")]}
       />
     );
   }

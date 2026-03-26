@@ -100,7 +100,7 @@ export default function LabsBottleSplit() {
       .then(r => r.ok ? r.json() : []).then(setCommunities).catch(() => {});
   }, [pid]);
 
-  if (!currentParticipant) return <AuthGateMessage />;
+  if (!currentParticipant) return <AuthGateMessage title={t("authGate.bottleSplit.title")} bullets={[t("authGate.bottleSplit.bullet1"), t("authGate.bottleSplit.bullet2"), t("authGate.bottleSplit.bullet3")]} />;
 
   const steps: WizardStep[] = ["bottles", "pricing", "visibility", "review"];
   const stepIdx = steps.indexOf(step);
