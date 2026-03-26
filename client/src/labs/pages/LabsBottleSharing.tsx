@@ -124,24 +124,24 @@ export default function LabsBottleSharing() {
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32, paddingLeft: 4, paddingRight: 4 }}>
           {[
-            { icon: <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Organize joint tastings of special bottles", descFb: "Bring together rare and special bottles for a shared tasting experience." },
-            { icon: <Users className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Share experiences with your circle", descFb: "Invite friends and enjoy unique whiskies together." },
-            { icon: <BarChart3 className="w-5 h-5" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Manage participants and ratings", descFb: "Keep track of who's joining and compare everyone's scores." },
+            { icon: <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />, titleKey: "sharingFeature1Title", descKey: "sharingFeature1Desc", titleFb: "Organize joint tastings of special bottles", descFb: "Bring together rare and special bottles for a shared tasting experience." },
+            { icon: <Users className="w-4 h-4" style={{ color: "var(--labs-success, #4ade80)" }} />, titleKey: "sharingFeature2Title", descKey: "sharingFeature2Desc", titleFb: "Share experiences with your circle", descFb: "Invite friends and enjoy unique whiskies together." },
+            { icon: <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-info, #60a5fa)" }} />, titleKey: "sharingFeature3Title", descKey: "sharingFeature3Desc", titleFb: "Manage participants and ratings", descFb: "Keep track of who's joining and compare everyone's scores." },
           ].map((feat, i) => (
             <div
               key={i}
-              className={`labs-card labs-fade-in labs-stagger-${i + 1}`}
-              style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: 16 }}
+              className={`labs-fade-in labs-stagger-${i + 1}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12 }}
               data-testid={`card-sharing-feature-${i}`}
             >
-              <div style={{ flexShrink: 0, marginTop: 2 }}>{feat.icon}</div>
+              <div style={{ flexShrink: 0, marginTop: 1, opacity: 0.85 }}>{feat.icon}</div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 3 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 2 }}>
                   {t(`authGate.preview.${feat.titleKey}`, feat.titleFb)}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--labs-text-secondary)" }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
                   {t(`authGate.preview.${feat.descKey}`, feat.descFb)}
                 </div>
               </div>
@@ -149,21 +149,19 @@ export default function LabsBottleSharing() {
           ))}
         </div>
 
-        <div style={{ textAlign: "center", padding: "20px 16px", borderRadius: 12, background: "var(--labs-surface)" }}>
-          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 14 }}>
+        <div style={{ textAlign: "center", padding: "24px 20px", borderRadius: 16, background: "linear-gradient(135deg, var(--labs-surface), var(--labs-bg))", border: "1px solid var(--labs-border)" }}>
+          <p style={{ fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 16 }}>
             {t("authGate.preview.sharingCta", "Create a free profile to organize your first sharing")}
           </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <button
-              onClick={() => openAuthDialog("register")}
-              className="labs-btn-primary"
-              style={{ padding: "10px 20px", fontSize: 14 }}
-              data-testid="button-preview-sharing-profile"
-            >
-              {t("authGate.preview.profileCta", "Create profile")}
-            </button>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 10 }}>
+          <button
+            onClick={() => openAuthDialog("register")}
+            className="labs-btn-primary"
+            style={{ padding: "12px 32px", fontSize: 15, fontWeight: 600, width: "100%", maxWidth: 280 }}
+            data-testid="button-preview-sharing-profile"
+          >
+            {t("authGate.preview.profileCta", "Create profile")}
+          </button>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 12 }}>
             {t("authGate.preview.alreadyHaveAccount", "Already have a profile?")}{" "}
             <button
               onClick={() => openAuthDialog("signin")}
