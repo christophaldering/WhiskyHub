@@ -5877,6 +5877,9 @@ const resources = {
           joining: "Joining...",
           pinPlaceholder: "Your PIN",
           codePlaceholder: "ABC123",
+          title: "Join a Tasting",
+          subtitleLoggedIn: "Accept an invitation or enter the code from your host.",
+          subtitleGuest: "Enter the code your host shared with you.",
         },
         host: {
           title: "Host",
@@ -13650,6 +13653,9 @@ const resources = {
           joining: "Beitreten...",
           pinPlaceholder: "Dein PIN",
           codePlaceholder: "ABC123",
+          title: "An einem Tasting teilnehmen",
+          subtitleLoggedIn: "Nimm eine Einladung an oder gib den Code deines Hosts ein.",
+          subtitleGuest: "Gib den Code ein, den dein Host mit dir geteilt hat.",
         },
         host: {
           title: "Host",

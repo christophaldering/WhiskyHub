@@ -484,13 +484,15 @@ export default function LabsJoin() {
           style={{ color: "var(--labs-text)" }}
           data-testid="labs-join-title"
         >
-          Join a Tasting
+          {t("m2.join.title", "Join a Tasting")}
         </h1>
         <p
           className="text-sm leading-relaxed"
           style={{ color: "var(--labs-text-muted)" }}
         >
-          Enter the code your host shared to join the session.
+          {isLoggedIn
+            ? t("m2.join.subtitleLoggedIn", "Accept an invitation or enter the code from your host.")
+            : t("m2.join.subtitleGuest", "Enter the code your host shared with you.")}
         </p>
       </div>
 
@@ -580,7 +582,7 @@ export default function LabsJoin() {
           className="labs-section-label"
           style={{ display: "block", marginBottom: 8 }}
         >
-          Tasting Code
+          {t("m2.join.placeholder", "Tasting Code")}
         </label>
         <input
           className="labs-input text-center text-lg tracking-widest font-semibold"
