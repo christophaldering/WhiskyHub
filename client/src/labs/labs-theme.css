@@ -1102,6 +1102,7 @@
 .labs-stagger-4 { animation-delay: 240ms; }
 .labs-stagger-5 { animation-delay: 300ms; }
 .labs-stagger-6 { animation-delay: 360ms; }
+.labs-stagger-7 { animation-delay: 420ms; }
 
 @keyframes labsSkeletonShimmer {
   0% { background-position: -200% 0; }

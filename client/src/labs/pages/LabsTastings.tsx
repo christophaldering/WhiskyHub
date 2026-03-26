@@ -233,15 +233,31 @@ export default function LabsTastings() {
               </div>
             </div>
           </button>
+
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-4"
+            onClick={() => navigate('/labs/bottle-sharing')}
+            data-testid="labs-action-share"
+          >
+            <div className="labs-home-action-icon">
+              <Share2 size={20} />
+            </div>
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.share')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.shareSub')}
+              </div>
+            </div>
+          </button>
         </div>
 
-        <p className="ty-caption labs-home-more labs-fade-in labs-stagger-4" data-testid="labs-home-more">
+        <p className="ty-caption labs-home-more labs-fade-in labs-stagger-5" data-testid="labs-home-more">
           {t('home.moreAppears')}
         </p>
 
-        <div className="labs-home-divider labs-fade-in labs-stagger-5" />
+        <div className="labs-home-divider labs-fade-in labs-stagger-6" />
 
-        <div className="labs-home-stille labs-fade-in labs-stagger-6" data-testid="labs-home-stille">
+        <div className="labs-home-stille labs-fade-in labs-stagger-7" data-testid="labs-home-stille">
           <p className="ty-caption labs-home-stille-title">
             Stille
           </p>
