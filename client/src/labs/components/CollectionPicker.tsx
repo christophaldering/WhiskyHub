@@ -190,7 +190,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: 520,
+          maxWidth: 768,
           background: "var(--labs-bg)",
           borderRadius: "20px 20px 0 0",
           maxHeight: "85vh",
