@@ -1,11 +1,17 @@
 import { db } from "./db";
-import { ratings, whiskies } from "@shared/schema";
-import { eq, inArray } from "drizzle-orm";
+import { ratings, whiskies, journalEntries } from "@shared/schema";
+import { eq, and, isNull, ne, inArray } from "drizzle-orm";
 
 export interface Insight {
   type: string;
   message: string;
   confidence: number;
+}
+
+interface ScoredDataPoint {
+  normalizedScore: number;
+  peatLevel: string | null;
+  abv: number | null;
 }
 
 export async function generateParticipantInsights(participantId: string): Promise<Insight[]> {
@@ -17,23 +23,58 @@ export async function generateParticipantInsights(participantId: string): Promis
     .from(ratings)
     .where(eq(ratings.participantId, participantId));
 
-  const scored = allRatings.filter(r => r.normalizedScore != null) as { normalizedScore: number; whiskyId: string }[];
-  if (scored.length < 3) return [];
+  const scoredRatings = allRatings.filter(r => r.normalizedScore != null) as { normalizedScore: number; whiskyId: string }[];
 
-  const whiskyIds = [...new Set(scored.map(r => r.whiskyId))];
-  if (whiskyIds.length === 0) return [];
-
-  const whiskyRows = await db
-    .select({
-      id: whiskies.id,
-      abv: whiskies.abv,
-      region: whiskies.region,
-      peatLevel: whiskies.peatLevel,
-    })
-    .from(whiskies)
-    .where(inArray(whiskies.id, whiskyIds));
-
+  const whiskyIds = [...new Set(scoredRatings.map(r => r.whiskyId))];
+  const whiskyRows = whiskyIds.length > 0
+    ? await db
+        .select({
+          id: whiskies.id,
+          abv: whiskies.abv,
+          peatLevel: whiskies.peatLevel,
+        })
+        .from(whiskies)
+        .where(inArray(whiskies.id, whiskyIds))
+    : [];
   const whiskyMap = new Map(whiskyRows.map(w => [w.id, w]));
+
+  const ratingDataPoints: ScoredDataPoint[] = scoredRatings.map(r => {
+    const w = whiskyMap.get(r.whiskyId);
+    return {
+      normalizedScore: r.normalizedScore,
+      peatLevel: w?.peatLevel ?? null,
+      abv: w?.abv ?? null,
+    };
+  });
+
+  const journal = await db
+    .select({
+      personalScore: journalEntries.personalScore,
+      peatLevel: journalEntries.peatLevel,
+      abv: journalEntries.abv,
+    })
+    .from(journalEntries)
+    .where(
+      and(
+        eq(journalEntries.participantId, participantId),
+        ne(journalEntries.status, "draft"),
+        isNull(journalEntries.deletedAt)
+      )
+    );
+
+  const journalDataPoints: ScoredDataPoint[] = journal
+    .filter(j => j.personalScore != null && j.personalScore > 0)
+    .map(j => {
+      const parsedAbv = j.abv ? parseFloat(j.abv.replace(/[%\s]/g, "")) : null;
+      return {
+        normalizedScore: j.personalScore!,
+        peatLevel: j.peatLevel ?? null,
+        abv: parsedAbv != null && !isNaN(parsedAbv) ? parsedAbv : null,
+      };
+    });
+
+  const scored = [...ratingDataPoints, ...journalDataPoints];
+  if (scored.length < 3) return [];
 
   const allScores = scored.map(r => r.normalizedScore);
   const globalAvg = avg(allScores);
@@ -44,9 +85,8 @@ export async function generateParticipantInsights(participantId: string): Promis
   const smokyScores: number[] = [];
   const nonSmokyScores: number[] = [];
   for (const r of scored) {
-    const w = whiskyMap.get(r.whiskyId);
-    if (!w || !w.peatLevel) continue;
-    const level = w.peatLevel.toLowerCase();
+    if (!r.peatLevel) continue;
+    const level = r.peatLevel.toLowerCase();
     if (level === "medium" || level === "heavy") {
       smokyScores.push(r.normalizedScore);
     } else if (level === "none" || level === "light") {
@@ -77,9 +117,8 @@ export async function generateParticipantInsights(participantId: string): Promis
   const highAbvScores: number[] = [];
   const normalAbvScores: number[] = [];
   for (const r of scored) {
-    const w = whiskyMap.get(r.whiskyId);
-    if (!w || w.abv == null) continue;
-    if (w.abv > 50) {
+    if (r.abv == null) continue;
+    if (r.abv > 50) {
       highAbvScores.push(r.normalizedScore);
     } else {
       normalAbvScores.push(r.normalizedScore);
