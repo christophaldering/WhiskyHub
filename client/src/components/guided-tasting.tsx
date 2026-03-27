@@ -213,7 +213,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     enabled: !!participantId && !!activeWhisky?.id,
   });
 
-  const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+  const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, overall: mid });
   const [notes, setNotes] = useState("");
   const [guessAbv, setGuessAbv] = useState<number | null>(null);
   const [guessAge, setGuessAge] = useState("");
@@ -224,7 +224,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
 
   const computeAvg = useCallback((s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish) / 3;
     return Math.round(avg * factor) / factor;
   }, [step]);
 
@@ -233,7 +233,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     const whiskyChanged = prevWhiskyIdForResetRef.current !== activeWhisky?.id;
     if (whiskyChanged) prevWhiskyIdForResetRef.current = activeWhisky?.id;
     if (existingRating) {
-      const loaded = { nose: existingRating.nose, taste: existingRating.taste, finish: existingRating.finish, balance: existingRating.balance, overall: existingRating.overall };
+      const loaded = { nose: existingRating.nose, taste: existingRating.taste, finish: existingRating.finish, overall: existingRating.overall };
       setScores(loaded);
       const avg = computeAvg(loaded);
       setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
@@ -242,7 +242,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (whiskyChanged) {
-      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+      setScores({ nose: mid, taste: mid, finish: mid, overall: mid });
       setOverallManual(false);
       setNotes("");
       setGuessAbv(null);
@@ -405,7 +405,6 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
     { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
     { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
   ];
 
   if (isWaiting) {

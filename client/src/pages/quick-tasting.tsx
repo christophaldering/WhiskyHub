@@ -119,7 +119,7 @@ function WhiskySliderCard({
   });
 
   const [scores, setScores] = useState({
-    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
+    nose: mid, taste: mid, finish: mid, overall: mid,
   });
   const [notes, setNotes] = useState("");
   const [isDirty, setIsDirty] = useState(false);
@@ -141,7 +141,7 @@ function WhiskySliderCard({
     if (existingRating) {
       const loaded = {
         nose: existingRating.nose, taste: existingRating.taste,
-        finish: existingRating.finish, balance: existingRating.balance,
+        finish: existingRating.finish,
         overall: existingRating.overall,
       };
       setScores(loaded);
@@ -174,7 +174,7 @@ function WhiskySliderCard({
 
   const computeAvg = (s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish) / 3;
     return Math.round(avg * factor) / factor;
   };
 
@@ -202,7 +202,6 @@ function WhiskySliderCard({
     { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
     { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
     { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
   ];
 
   const isBlind = tasting.blindMode && tasting.status === "open";

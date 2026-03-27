@@ -14,7 +14,7 @@ interface CheckItem {
 const HAPPY_PATH: CheckItem[] = [
   { label: "1. Landing Page", route: "/", description: "3 CTAs visible: Join, Log, My Taste" },
   { label: "2. Join a Tasting", route: "/enter", description: "Name/PIN → code entry → tasting room" },
-  { label: "3. Rate in Tasting Room", route: "/enter", description: "Sliders for nose/taste/finish/balance/overall" },
+  { label: "3. Rate in Tasting Room", route: "/enter", description: "Sliders for nose/taste/finish/overall" },
   { label: "4. Log a Whisky", route: "/log-simple", description: "Name + score + notes → save" },
   { label: "5. Identify → Take Photo", route: "/log-simple", description: "Tap Identify → Take Photo → camera → candidates" },
   { label: "6. Identify → Upload Photo(s)", route: "/log-simple", description: "Tap Identify → Upload → select files → candidates" },

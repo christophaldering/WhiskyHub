@@ -258,7 +258,6 @@ const it = {
       nose: "Naso",
       taste: "Gusto",
       finish: "Finale",
-      balance: "Equilibrio",
       overall: "Punteggio Complessivo",
       notes: "Note Personali",
       save: "Salva Valutazione",
@@ -812,7 +811,6 @@ const it = {
       nose: "Naso",
       taste: "Gusto",
       finish: "Finale",
-      balance: "Equilibrio"
     },
     wisdom: {
       title: "Parole di Saggezza",

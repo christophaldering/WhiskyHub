@@ -258,7 +258,6 @@ const es = {
       nose: "Nariz",
       taste: "Sabor",
       finish: "Final",
-      balance: "Equilibrio",
       overall: "Puntuación General",
       notes: "Notas Personales",
       save: "Guardar Evaluación",
@@ -812,7 +811,6 @@ const es = {
       nose: "Nariz",
       taste: "Sabor",
       finish: "Final",
-      balance: "Equilibrio"
     },
     wisdom: {
       title: "Palabras de Sabiduría",

@@ -23,7 +23,6 @@ const DIMENSIONS = [
   { id: "nose", label: "Nosing" },
   { id: "taste", label: "Tasting" },
   { id: "finish", label: "Abgang" },
-  { id: "balance", label: "Balance" },
 ];
 
 function getScaleConfig(scale: number) {
@@ -35,7 +34,7 @@ function getScaleConfig(scale: number) {
 
 function computeAvg(s: Record<string, number | null>, step: number) {
   const factor = step < 1 ? (1 / step) : 1;
-  const vals = [s.nose, s.taste, s.finish, s.balance].filter((v): v is number => v !== null);
+  const vals = [s.nose, s.taste, s.finish].filter((v): v is number => v !== null);
   if (vals.length === 0) return null;
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
   return Math.round(avg * factor) / factor;
@@ -216,7 +215,7 @@ function useRatingState(whisky: Whisky, tasting: Tasting, participantId: string)
   });
 
   const [scores, setScores] = useState<Record<string, number | null>>({
-    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
+    nose: mid, taste: mid, finish: mid, overall: mid,
   });
   const [overallManual, setOverallManual] = useState(false);
   const [notes, setNotes] = useState("");
@@ -238,7 +237,7 @@ function useRatingState(whisky: Whisky, tasting: Tasting, participantId: string)
     if (existingRating) {
       const loaded = {
         nose: existingRating.nose, taste: existingRating.taste,
-        finish: existingRating.finish, balance: existingRating.balance,
+        finish: existingRating.finish,
         overall: existingRating.overall,
       };
       setScores(loaded);
@@ -827,12 +826,11 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
                     <DramThumbnail display={display} size="sm" index={idx} />
                     <p className="font-serif font-bold text-xs text-foreground">{display.displayTitle}</p>
                   </div>
-                  <div className="grid grid-cols-5 gap-1 text-center">
+                  <div className="grid grid-cols-4 gap-1 text-center">
                     {[
                       { label: "N", val: rating.nose },
                       { label: "T", val: rating.taste },
                       { label: "A", val: rating.finish },
-                      { label: "B", val: rating.balance },
                       { label: "G", val: rating.overall },
                     ].map(d => (
                       <div key={d.label}>
@@ -912,12 +910,11 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
                   <DramThumbnail display={display} size="sm" index={idx} />
                   <p className="font-serif font-bold text-xs text-foreground">{display.displayTitle}</p>
                 </div>
-                <div className="grid grid-cols-5 gap-1 text-center">
+                <div className="grid grid-cols-4 gap-1 text-center">
                   {[
                     { label: "N", val: rating.nose },
                     { label: "T", val: rating.taste },
                     { label: "A", val: rating.finish },
-                    { label: "B", val: rating.balance },
                     { label: "G", val: rating.overall },
                   ].map(d => (
                     <div key={d.label}>

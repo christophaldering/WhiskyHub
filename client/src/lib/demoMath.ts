@@ -1,4 +1,4 @@
-export const DIMS = ["Nose", "Palate", "Finish", "Balance", "Overall"] as const;
+export const DIMS = ["Nose", "Palate", "Finish", "Overall"] as const;
 export type Dim = (typeof DIMS)[number];
 
 export function cosineSimilarity(a: number[], b: number[]): number {

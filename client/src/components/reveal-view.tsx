@@ -68,7 +68,6 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
       { subject: t('evaluation.nose'), A: whiskyData.categories.nose, fullMark: scale },
       { subject: t('evaluation.taste'), A: whiskyData.categories.taste, fullMark: scale },
       { subject: t('evaluation.finish'), A: whiskyData.categories.finish, fullMark: scale },
-      { subject: t('evaluation.balance'), A: whiskyData.categories.balance, fullMark: scale },
     ];
 
     return (

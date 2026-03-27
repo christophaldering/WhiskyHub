@@ -26,7 +26,6 @@ interface RatingData {
   nose: number;
   taste: number;
   finish: number;
-  balance: number;
   overall: number;
   notes: string;
 }
@@ -345,7 +344,6 @@ export default function TastingRoomSimple() {
               nose: clamp(existing.nose ?? fallback),
               taste: clamp(existing.taste ?? fallback),
               finish: clamp(existing.finish ?? fallback),
-              balance: clamp(existing.balance ?? fallback),
               overall: clamp(existing.overall ?? fallback),
               notes: existing.notes ?? "",
             },
@@ -358,7 +356,7 @@ export default function TastingRoomSimple() {
   const mid = 75;
 
   const currentRating: RatingData = ratings[whiskyId || ""] || {
-    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid, notes: "",
+    nose: mid, taste: mid, finish: mid, overall: mid, notes: "",
   };
 
   const updateField = useCallback((field: keyof RatingData, value: number | string) => {
@@ -371,7 +369,7 @@ export default function TastingRoomSimple() {
     setRatings((prev) => {
       const base = { ...(prev[whiskyId] || currentRating), [field]: value };
       if (field !== "overall" && field !== "notes" && !overallManual.current.has(whiskyId)) {
-        const avg = Math.round(((base.nose as number) + (base.taste as number) + (base.finish as number) + (base.balance as number)) / 4);
+        const avg = Math.round(((base.nose as number) + (base.taste as number) + (base.finish as number)) / 3);
         base.overall = avg;
       }
       return { ...prev, [whiskyId]: base };
@@ -388,7 +386,7 @@ export default function TastingRoomSimple() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tastingId, whiskyId, participantId: pid,
-            nose: r.nose, taste: r.taste, finish: r.finish, balance: r.balance, overall: r.overall, notes: r.notes,
+            nose: r.nose, taste: r.taste, finish: r.finish, overall: r.overall, notes: r.notes,
           }),
         })
           .then(() => console.log("[TASTING_ROOM] rating saved"))
@@ -679,7 +677,6 @@ export default function TastingRoomSimple() {
         <RatingSlider label={t("tastingRoomSimple.nose")} value={currentRating.nose} onChange={(v) => updateField("nose", v)} disabled={!canRate} />
         <RatingSlider label={t("tastingRoomSimple.taste")} value={currentRating.taste} onChange={(v) => updateField("taste", v)} disabled={!canRate} />
         <RatingSlider label={t("tastingRoomSimple.finish")} value={currentRating.finish} onChange={(v) => updateField("finish", v)} disabled={!canRate} />
-        <RatingSlider label={t("tastingRoomSimple.balance")} value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} />
 
         <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 8 }}>
           <RatingSlider

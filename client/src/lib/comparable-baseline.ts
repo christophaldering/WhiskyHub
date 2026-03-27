@@ -33,12 +33,11 @@ export interface HistoricalRating {
   nose?: number | null;
   taste?: number | null;
   finish?: number | null;
-  balance?: number | null;
   overall?: number | null;
 }
 
 export type BaselineType = "overall" | "comparable";
-export type Dimension = "nose" | "taste" | "finish" | "balance" | "overall";
+export type Dimension = "nose" | "taste" | "finish" | "overall";
 
 export interface BaselineStats {
   median: number;

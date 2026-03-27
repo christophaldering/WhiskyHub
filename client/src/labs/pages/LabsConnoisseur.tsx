@@ -15,7 +15,6 @@ interface DimensionScores {
   nose?: number | null;
   taste?: number | null;
   finish?: number | null;
-  balance?: number | null;
   overall?: number | null;
 }
 
@@ -84,7 +83,6 @@ function RadarChart({ userScores, groupScores, size = 240, legendYou, legendComm
   if (userScores.nose != null) dims.push({ key: "nose", label: "Nose" });
   if (userScores.taste != null) dims.push({ key: "taste", label: "Taste" });
   if (userScores.finish != null) dims.push({ key: "finish", label: "Finish" });
-  if (userScores.balance != null) dims.push({ key: "balance", label: "Balance" });
   if (userScores.overall != null) dims.push({ key: "overall", label: "Overall" });
   const dimCount = dims.length || 3;
 
@@ -420,7 +418,6 @@ function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, f
     { key: "nose", label: t("labs.connoisseur.dimNose", "Nose"), color: "var(--labs-dim-nose)" },
     { key: "taste", label: t("labs.connoisseur.dimTaste", "Taste"), color: "var(--labs-dim-taste)" },
     { key: "finish", label: t("labs.connoisseur.dimFinish", "Finish"), color: "var(--labs-dim-finish)" },
-    { key: "balance", label: t("labs.connoisseur.dimBalance", "Balance"), color: "var(--labs-dim-balance, var(--labs-info))" },
     { key: "overall", label: t("labs.connoisseur.dimOverall", "Overall"), color: "var(--labs-accent)" },
   ].filter(d => avgScores[d.key] != null);
 

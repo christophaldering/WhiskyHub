@@ -148,7 +148,7 @@ export async function seedLabsPilotData() {
       const overall = Math.round(((nose + taste + finish) / 3) * 10) / 10;
       await db.insert(ratings).values({
         tastingId: tastingA.id, whiskyId: w.id, participantId: p.id,
-        nose, taste, finish, balance: 0, overall, normalizedScore: overall,
+        nose, taste, finish, overall, normalizedScore: overall,
         normalizedNose: nose, normalizedTaste: taste, normalizedFinish: finish,
       });
       ratingsCreated++;

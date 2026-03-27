@@ -105,7 +105,6 @@ interface IndividualRating {
   nose: number;
   taste: number;
   finish: number;
-  balance: number;
   overall: number;
   notes: string | null;
 }
@@ -1415,7 +1414,6 @@ export default function AdminPanel() {
                                                   <th className="text-center py-1 px-1">Nose</th>
                                                   <th className="text-center py-1 px-1">Taste</th>
                                                   <th className="text-center py-1 px-1">Finish</th>
-                                                  <th className="text-center py-1 px-1">Balance</th>
                                                   <th className="text-center py-1 px-1">Overall</th>
                                                   <th className="text-left py-1 pl-2">Notes</th>
                                                 </tr>
@@ -1427,7 +1425,6 @@ export default function AdminPanel() {
                                                     <td className="text-center py-1.5 px-1">{r.nose}</td>
                                                     <td className="text-center py-1.5 px-1">{r.taste}</td>
                                                     <td className="text-center py-1.5 px-1">{r.finish}</td>
-                                                    <td className="text-center py-1.5 px-1">{r.balance}</td>
                                                     <td className="text-center py-1.5 px-1 font-semibold text-primary">{r.overall}</td>
                                                     <td className="py-1.5 pl-2 text-muted-foreground max-w-[200px] truncate">{r.notes || "—"}</td>
                                                   </tr>

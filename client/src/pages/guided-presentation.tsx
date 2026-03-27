@@ -270,7 +270,7 @@ const chapA: Feature[] = [
   { title: "Session Modes", desc: "Three ways: free Flow, locked Focus, or guided Diary.", quote: "Flow. Focus. Diary." },
   { title: "QR Code & Join", desc: "Join via QR scan or 6-digit code. No app download needed.", quote: "Scan or type. Instantly in." },
   { title: "Blind Mode", desc: "Four-stage reveal: number, ABV, age, then the full name.", quote: "Mystery, unveiled in acts." },
-  { title: "Live Rating", desc: "Rate nose, taste, finish, balance. Select flavor chips. Voice notes.", quote: "Every sense, captured live." },
+  { title: "Live Rating", desc: "Rate nose, taste, and finish. Select flavor chips. Voice notes.", quote: "Every sense, captured live." },
   { title: "Voice-to-Text", desc: "Dictate impressions hands-free. Speech recognition instant.", quote: "Speak. Notes appear." },
   { title: "Discussion Panel", desc: "Live chat during the session. Debate flavors together.", quote: "Debate in real time." },
   { title: "Multi-Act Reveal", desc: "4-act show: participation, consensus, details, final ranking.", quote: "A reveal like a finale." },
@@ -282,7 +282,7 @@ const chapA: Feature[] = [
 ];
 
 const chapB: Feature[] = [
-  { title: "Flavor Radar", desc: "Interactive radar chart mapping nose, taste, finish, balance, overall.", quote: "Shape your palate." },
+  { title: "Flavor Radar", desc: "Interactive radar chart mapping nose, taste, finish, and overall.", quote: "Shape your palate." },
   { title: "Profile Comparison", desc: "Overlay your radar against friends or the community.", quote: "You vs. everyone." },
   { title: "Taste Evolution", desc: "Trend line showing how your ratings develop over months.", quote: "Taste evolves over time." },
   { title: "Consistency Score", desc: "Standard deviation, range, spread. How steady is your palate?", quote: "How steady is your palate?" },
@@ -463,7 +463,6 @@ function LiveRatingDemo() {
     { label: "Nose", pct: 82, color: A },
     { label: "Taste", pct: 90, color: "#d4a256" },
     { label: "Finish", pct: 76, color: A2 },
-    { label: "Balance", pct: 85, color: A },
     { label: "Overall", pct: 88, color: "#d4a256" },
   ];
   const chips = ["Smoky", "Honey", "Vanilla", "Maritime"];
@@ -480,7 +479,7 @@ function LiveRatingDemo() {
         </span>
       </div>
       <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
-        Rate nose, taste, finish, balance, and overall. Select flavor chips. Dictate voice notes. All captured live.
+        Rate nose, taste, finish, and overall. Select flavor chips. Dictate voice notes. All captured live.
       </p>
       <div ref={ref} style={{
         maxWidth: 400, margin: "0 auto", padding: "24px",
@@ -607,8 +606,8 @@ function RadarChartDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const cx = 150, cy = 150, r = 100;
-  const labels = ["Nose", "Taste", "Finish", "Balance", "Overall"];
-  const values = [0.82, 0.9, 0.76, 0.85, 0.88];
+  const labels = ["Nose", "Taste", "Finish", "Overall"];
+  const values = [0.82, 0.9, 0.76, 0.88];
   const angles = labels.map((_, i) => (Math.PI * 2 * i) / labels.length - Math.PI / 2);
   const pts = values.map((v, i) => ({
     x: cx + Math.cos(angles[i]) * r * v,
@@ -630,7 +629,7 @@ function RadarChartDemo() {
         </span>
       </div>
       <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
-        Interactive radar chart mapping your averages across nose, taste, finish, balance, and overall.
+        Interactive radar chart mapping your averages across nose, taste, finish, and overall.
       </p>
       <div ref={ref} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
         <svg viewBox="0 0 300 300" style={{ width: 280, height: 280 }}>

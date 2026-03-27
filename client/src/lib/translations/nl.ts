@@ -258,7 +258,6 @@ const nl = {
       nose: "Neus",
       taste: "Smaak",
       finish: "Afdronk",
-      balance: "Balans",
       overall: "Totaalscore",
       notes: "Persoonlijke Notities",
       save: "Beoordeling Opslaan",
@@ -812,7 +811,6 @@ const nl = {
       nose: "Neus",
       taste: "Smaak",
       finish: "Afdronk",
-      balance: "Balans"
     },
     wisdom: {
       title: "Wijze Woorden",

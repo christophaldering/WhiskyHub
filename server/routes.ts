@@ -5175,14 +5175,13 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const lowestWhisky = sortedByScore.length > 1 ? { name: sortedByScore[sortedByScore.length - 1].whisky.name, score: sortedByScore[sortedByScore.length - 1].rating.overall } : null;
 
       let groupAvgOverall: number | null = null;
-      let groupAvgScores: { nose: number | null; taste: number | null; finish: number | null; balance: number | null; overall: number | null } = { nose: null, taste: null, finish: null, balance: null, overall: null };
+      let groupAvgScores: { nose: number | null; taste: number | null; finish: number | null; overall: number | null } = { nose: null, taste: null, finish: null, overall: null };
       try {
         const allRatings = await storage.getAllRatings();
         const avg = (vals: number[]) => vals.length > 0 ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10 : null;
         groupAvgScores.nose = avg(allRatings.filter(r => r.nose != null).map(r => r.nose!));
         groupAvgScores.taste = avg(allRatings.filter(r => r.taste != null).map(r => r.taste!));
         groupAvgScores.finish = avg(allRatings.filter(r => r.finish != null).map(r => r.finish!));
-        groupAvgScores.balance = avg(allRatings.filter(r => r.balance != null).map(r => r.balance!));
         groupAvgScores.overall = avg(allRatings.filter(r => r.overall != null).map(r => r.overall!));
         groupAvgOverall = groupAvgScores.overall;
       } catch {}
@@ -5194,7 +5193,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         name: rw.whisky.name,
         distillery: rw.whisky.distillery,
         region: rw.whisky.region,
-        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, balance: rw.rating.balance, overall: rw.rating.overall },
+        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
         flavors: rw.rating.flavors || [],
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
@@ -13390,7 +13389,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           rows.push({
             Tasting: t.title, Date: t.date, Location: t.location, Status: t.status,
             Whisky: "", Distillery: "", Age: "", ABV: "",
-            Nose: "", Taste: "", Finish: "", Balance: "", Overall: "", Notes: ""
+            Nose: "", Taste: "", Finish: "", Overall: "", Notes: ""
           });
         }
         const exportScale = t.ratingScale ?? 100;
@@ -13645,7 +13644,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       features: [
         "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
         "QR-Code Einladungen — Scannen und sofort dabei — kein Konto nötig",
-        "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance — auf deiner Wunschskala",
+        "Strukturierte Bewertung — Nase, Geschmack, Abgang — auf deiner Wunschskala",
         "Live-Diskussion — Austausch in Echtzeit während des Tastings",
       ],
     },
@@ -16389,7 +16388,6 @@ Rules:
           nose,
           taste,
           finish,
-          balance: 0,
           overall,
           notes: score.notes || "",
           normalizedScore,

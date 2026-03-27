@@ -258,7 +258,6 @@ const fr = {
       nose: "Nez",
       taste: "Goût",
       finish: "Finale",
-      balance: "Équilibre",
       overall: "Note Globale",
       notes: "Notes Personnelles",
       save: "Enregistrer l'Évaluation",
@@ -812,7 +811,6 @@ const fr = {
       nose: "Nez",
       taste: "Goût",
       finish: "Finale",
-      balance: "Équilibre"
     },
     wisdom: {
       title: "Paroles de Sagesse",

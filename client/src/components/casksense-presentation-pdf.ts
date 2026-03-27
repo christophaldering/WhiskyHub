@@ -491,7 +491,7 @@ function drawTastingEngineFeatures(doc: jsPDF) {
     doc.roundedRect(chipX, chipY, 19, 6, 3, 3, "F");
     drawText(doc, cl, chipX + 9.5, chipY + 4.2, 5, ACCENT, "normal", "center");
   });
-  drawFeatureRight(doc, TEXT_X, y, "Live Rating System", "Rate nose, taste, finish, balance, and overall. Select flavor chips. Dictate voice notes. All captured live.", "Every sense, captured live.");
+  drawFeatureRight(doc, TEXT_X, y, "Live Rating System", "Rate nose, taste, finish, and overall. Select flavor chips. Dictate voice notes. All captured live.", "Every sense, captured live.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
@@ -774,7 +774,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
     const ay = cy + 22 * Math.sin(i * angleStep - Math.PI / 2);
     drawText(doc, a, ax, ay + 2, 6, MUTED, "bold", "center");
   });
-  drawFeatureRight(doc, TEXT_X, y, "Flavor Profile Radar", "Interactive radar chart mapping your averages across nose, taste, finish, balance, and overall. Your palate, visualized.", "Shape your palate.");
+  drawFeatureRight(doc, TEXT_X, y, "Flavor Profile Radar", "Interactive radar chart mapping your averages across nose, taste, finish, and overall. Your palate, visualized.", "Shape your palate.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 

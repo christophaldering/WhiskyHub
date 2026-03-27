@@ -42,7 +42,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   });
 
   const [scores, setScores] = useState({
-    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
+    nose: mid, taste: mid, finish: mid, overall: mid,
   });
   const [overallManual, setOverallManual] = useState(false);
   const [notes, setNotes] = useState("");
@@ -103,7 +103,6 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
         nose: existingRating.nose,
         taste: existingRating.taste,
         finish: existingRating.finish,
-        balance: existingRating.balance,
         overall: existingRating.overall,
       };
       setScores(loaded);
@@ -114,7 +113,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (prevWhiskyId !== whisky.id) {
-      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+      setScores({ nose: mid, taste: mid, finish: mid, overall: mid });
       setOverallManual(false);
       setNotes("");
       setGuessAbv(null);
@@ -150,7 +149,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
 
   const computeAvg = useCallback((s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish) / 3;
     return Math.round(avg * factor) / factor;
   }, [step]);
 
@@ -186,7 +185,6 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     { id: "nose", label: t('evaluation.nose') },
     { id: "taste", label: t('evaluation.taste') },
     { id: "finish", label: t('evaluation.finish') },
-    { id: "balance", label: t('evaluation.balance') },
   ];
 
   return (

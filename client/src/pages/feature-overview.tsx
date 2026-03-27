@@ -65,7 +65,7 @@ const categories: Category[] = [
     icon: <Star style={{ width: 20, height: 20 }} />,
     features: [
       { icon: <QrCode style={{ width: 18, height: 18 }} />, title: "QR Code Join", description: "Scan a QR code or enter a session code to join any tasting instantly." },
-      { icon: <Radar style={{ width: 18, height: 18 }} />, title: "Multi-Dimensional Rating", description: "Rate whiskies across nose, palate, finish, balance, and overall with fine-grained sliders." },
+      { icon: <Radar style={{ width: 18, height: 18 }} />, title: "Multi-Dimensional Rating", description: "Rate whiskies across nose, palate, finish, and overall with fine-grained sliders." },
       { icon: <Palette style={{ width: 18, height: 18 }} />, title: "Flavor Chip Selection", description: "Choose from curated flavor descriptors to capture your tasting notes precisely." },
       { icon: <Mic style={{ width: 18, height: 18 }} />, title: "Voice Memos", description: "Record short audio notes during a tasting — automatically transcribed by AI." },
       { icon: <EyeOff style={{ width: 18, height: 18 }} />, title: "Blind Mode", description: "Rate without knowing the bottle — pure palate, no bias." },

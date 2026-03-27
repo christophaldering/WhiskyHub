@@ -25,14 +25,12 @@ interface WhiskyResult {
   avgNose: number | null;
   avgTaste: number | null;
   avgFinish: number | null;
-  avgBalance: number | null;
   ratings: Array<{
     participantId: string;
     overall: number | null;
     nose: number | null;
     taste: number | null;
     finish: number | null;
-    balance: number | null;
     notes: string | null;
   }>;
 }
@@ -68,7 +66,7 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
 function WhiskyResultCard({ result, rank, inCollection, onAddToCollection, addPending }: { result: WhiskyResult; rank: number; inCollection?: boolean; onAddToCollection?: () => void; addPending?: boolean }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const hasDetails = result.avgNose != null || result.avgTaste != null || result.avgFinish != null || result.avgBalance != null;
+  const hasDetails = result.avgNose != null || result.avgTaste != null || result.avgFinish != null;
   const medalColor = rank < 3 ? medals[rank] : c.muted;
 
   return (
@@ -193,7 +191,6 @@ function WhiskyResultCard({ result, rank, inCollection, onAddToCollection, addPe
               <ScoreBar label={t("tastingResults.nose")} value={result.avgNose} />
               <ScoreBar label={t("tastingResults.taste")} value={result.avgTaste} />
               <ScoreBar label={t("tastingResults.finish")} value={result.avgFinish} />
-              <ScoreBar label={t("tastingResults.balance")} value={result.avgBalance} />
             </div>
           )}
         </div>

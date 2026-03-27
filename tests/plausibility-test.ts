@@ -297,7 +297,6 @@ async function testWhiskiesAndRatings() {
       nose: 85,
       taste: 90,
       finish: 88,
-      balance: 87,
       overall: 88,
       notes: "Plausibilitätstest Rating",
     });
@@ -310,7 +309,7 @@ async function testWhiskiesAndRatings() {
       tastingId: ratingTastingId,
       whiskyId: testWhiskyId,
       participantId: testParticipantId,
-      nose: 90, taste: 92, finish: 91, balance: 89, overall: 91,
+      nose: 90, taste: 92, finish: 91, overall: 91,
       notes: "Aktualisiert",
     });
     const updated = await req("GET", `/api/ratings/${testParticipantId}/${testWhiskyId}`);
@@ -320,7 +319,7 @@ async function testWhiskiesAndRatings() {
       tastingId: ratingTastingId,
       whiskyId: testWhiskyId,
       participantId: testParticipantId,
-      nose: null, taste: null, finish: null, balance: null, overall: null,
+      nose: null, taste: null, finish: null, overall: null,
       notes: "",
     });
     nullRating.id || nullRating.__status === 200

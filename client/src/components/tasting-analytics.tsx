@@ -19,7 +19,6 @@ const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
   nose: { en: "Nose", de: "Nase" },
   taste: { en: "Taste", de: "Geschmack" },
   finish: { en: "Finish", de: "Abgang" },
-  balance: { en: "Balance", de: "Balance" },
 };
 
 function KendallBadge({ value }: { value: number | null }) {
@@ -202,7 +201,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 const groupAvgLabel = t("tastingAnalytics.groupAvg");
                 const myRatingLabel = t("tastingAnalytics.myRating");
 
-                const radarData = (["nose", "taste", "finish", "balance"] as const).map(cat => ({
+                const radarData = (["nose", "taste", "finish"] as const).map(cat => ({
                   category: t("tastingAnalytics." + cat),
                   [groupAvgLabel]: cats[cat]?.avg ?? 0,
                   ...(myRating ? { [myRatingLabel]: myRating[cat] ?? 0 } : {}),
@@ -218,8 +217,8 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                   >
                     <h5 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, color: th.text, fontSize: 14, margin: 0 }}>{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</h5>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: SP.sm, textAlign: "center", fontSize: 12 }}>
-                      {(["nose", "taste", "finish", "balance"] as const).map(cat => (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: SP.sm, textAlign: "center", fontSize: 12 }}>
+                      {(["nose", "taste", "finish"] as const).map(cat => (
                         <div key={cat} style={{ background: th.bgCard, borderRadius: 10, padding: SP.sm }}>
                           <div style={{ color: th.faint, marginBottom: 2 }}>{t("tastingAnalytics." + cat)}</div>
                           <div style={{ fontWeight: 600, color: th.gold }}>Ø {cats[cat]?.avg?.toFixed(1) ?? "–"}</div>

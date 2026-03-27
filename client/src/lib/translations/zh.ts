@@ -258,7 +258,6 @@ const zh = {
       nose: "香气",
       taste: "口感",
       finish: "余韵",
-      balance: "平衡",
       overall: "总评",
       notes: "个人笔记",
       save: "保存评分",
@@ -812,7 +811,6 @@ const zh = {
       nose: "香气",
       taste: "口感",
       finish: "余韵",
-      balance: "平衡"
     },
     wisdom: {
       title: "名言警句",
