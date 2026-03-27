@@ -12,6 +12,7 @@ import {
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
+  Crown,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
