@@ -141,6 +141,27 @@ export default function LabsSolo() {
     hasUnsavedRef.current = step === "form" || step === "rating";
   }, [step]);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("cs_retaste_context");
+      if (!raw) return;
+      sessionStorage.removeItem("cs_retaste_context");
+      const data = JSON.parse(raw);
+      const mapped: CapturedWhisky = {
+        name: String(data.whiskyName ?? data.name ?? ""),
+        distillery: String(data.distillery ?? ""),
+        region: String(data.region ?? ""),
+        age: String(data.age ?? ""),
+        abv: String(data.abv ?? ""),
+        cask: String(data.caskType ?? data.cask ?? ""),
+        fromAI: false,
+      };
+      setWhisky(mapped);
+      setStep("form");
+    } catch {
+    }
+  }, []);
+
   const initParticipant = useCallback(() => {
     const token = Date.now();
     setInitToken(token);
