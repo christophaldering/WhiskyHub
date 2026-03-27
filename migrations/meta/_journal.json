@@ -99,6 +99,13 @@
       "when": 1774915200000,
       "tag": "0013_sync_whiskybase_collection_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1775001600000,
+      "tag": "0014_fix_text_to_real_columns",
+      "breakpoints": true
     }
   ]
 }

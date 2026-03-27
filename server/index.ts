@@ -430,6 +430,9 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
             `UPDATE ${table} SET ${column} = REPLACE(${column}, '%', '') WHERE ${column} LIKE '%\\%%'`
           ));
           await dbSync.execute(sqlSync.raw(
+            `UPDATE ${table} SET ${column} = NULL WHERE ${column} IS NOT NULL AND ${column} !~ '^-?[0-9]+([.,][0-9]+)?$'`
+          ));
+          await dbSync.execute(sqlSync.raw(
             `ALTER TABLE ${table} ALTER COLUMN ${column} TYPE real USING NULLIF(REPLACE(${column}, ',', '.'), '')::real`
           ));
           log(`Fixed ${table}.${column}: text → real`, "startup");
@@ -439,10 +442,12 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS country text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS country text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS region text`);
+      await dbSync.execute(sqlSync`ALTER TABLE wishlist_entries ADD COLUMN IF NOT EXISTS country text`);
       const verify = await dbSync.execute(sqlSync`
         SELECT table_name, column_name FROM information_schema.columns
         WHERE (table_name = 'whiskies' AND column_name = 'country')
            OR (table_name = 'whiskybase_collection' AND column_name IN ('country', 'region'))
+           OR (table_name = 'wishlist_entries' AND column_name = 'country')
         ORDER BY table_name, column_name
       `);
       const cols = (verify as any).rows?.map((r: any) => `${r.table_name}.${r.column_name}`) ?? [];
