@@ -356,10 +356,20 @@ export default function LabsTasteDrams() {
     const hasStructured = /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(raw);
     if (hasStructured) {
       const parsed = parseNoseNotes(raw);
+      const flatTaste = cleanTasteNotes(entry.tasteNotes || "");
+      const flatFinish = entry.finishNotes || "";
+      const tasteChips = parsed.dims.taste?.chips.join(", ") || "";
+      const tasteText = parsed.dims.taste?.text || "";
+      const finishChips = parsed.dims.finish?.chips.join(", ") || "";
+      const finishText = parsed.dims.finish?.text || "";
       setEditStructured({
         hasStructured: true, generalNotes: parsed.cleanText,
         scores: { nose: parsed.scores.nose != null ? String(parsed.scores.nose) : "", taste: parsed.scores.taste != null ? String(parsed.scores.taste) : "", finish: parsed.scores.finish != null ? String(parsed.scores.finish) : "" },
-        dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" } },
+        dims: {
+          nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" },
+          taste: { chips: tasteChips, text: tasteText || flatTaste },
+          finish: { chips: finishChips, text: finishText || flatFinish },
+        },
       });
     } else { setEditStructured(null); }
     setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
@@ -404,7 +414,21 @@ export default function LabsTasteDrams() {
   const handleSaveEdit = () => {
     if (!selectedEntry) return;
     const data: any = { ...editForm };
-    if (editStructured) data.noseNotes = reassembleStructuredNotes();
+    if (editStructured) {
+      data.noseNotes = reassembleStructuredNotes();
+      const tasteDim = editStructured.dims.taste;
+      const tasteChipsVal = tasteDim?.chips.trim() || "";
+      const tasteTextVal = tasteDim?.text.trim() || "";
+      const tasteDedup = tasteTextVal && tasteChipsVal && tasteTextVal.toLowerCase() === tasteChipsVal.toLowerCase() ? "" : tasteTextVal;
+      const tasteParts = [tasteChipsVal, tasteDedup].filter(Boolean);
+      data.tasteNotes = tasteParts.length ? tasteParts.join(". ") : "";
+      const finishDim = editStructured.dims.finish;
+      const finishChipsVal = finishDim?.chips.trim() || "";
+      const finishTextVal = finishDim?.text.trim() || "";
+      const finishDedup = finishTextVal && finishChipsVal && finishTextVal.toLowerCase() === finishChipsVal.toLowerCase() ? "" : finishTextVal;
+      const finishParts = [finishChipsVal, finishDedup].filter(Boolean);
+      data.finishNotes = finishParts.length ? finishParts.join(". ") : "";
+    }
     if (data.personalScore === "") data.personalScore = null;
     else data.personalScore = parseFloat(data.personalScore);
     updateMutation.mutate({ id: selectedEntry.id, data });
@@ -775,8 +799,6 @@ export default function LabsTasteDrams() {
                   </div>
                 );
               })}
-              <EditTextarea label="Taste" value={editForm.tasteNotes} onChange={(v) => setEditForm({ ...editForm, tasteNotes: v })} testId="input-labs-edit-taste" />
-              <EditTextarea label="Finish" value={editForm.finishNotes} onChange={(v) => setEditForm({ ...editForm, finishNotes: v })} testId="input-labs-edit-finish" />
               <EditTextarea label="Overall" value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
             </div>
           ) : (
