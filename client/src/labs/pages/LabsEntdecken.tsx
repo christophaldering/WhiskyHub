@@ -9,7 +9,7 @@ import CommunityInsights from "@/labs/components/CommunityInsights";
 import {
   Search, ChevronRight, ChevronLeft, Wine, Lock, Calendar,
   BookOpen, Building2, Package, FileText, Map,
-  BookMarked, MessageSquare, Sparkles, BarChart3,
+  BookMarked, MessageSquare, Sparkles,
   Info, Heart, Flame, Globe, History, Archive,
   X, ChevronDown, Check, ArrowUp, ArrowDown,
 } from "lucide-react";
@@ -80,8 +80,7 @@ export default function LabsEntdecken() {
 
   const deepDiveItems = [
     { icon: BookMarked, key: "rabbitHole", path: "/labs/discover/rabbit-hole" },
-    { icon: Archive, key: "historicalTastings", path: "/labs/history" },
-    { icon: BarChart3, key: "insights", path: "/labs/history/insights" },
+    { icon: Archive, key: "archive", path: "/labs/history" },
   ];
 
   const moreItems = [

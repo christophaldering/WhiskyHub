@@ -604,7 +604,13 @@ export default function LabsHistory() {
   const [isInsightsOld] = useRoute("/labs/host/history/insights");
   const isInsights = isInsightsNew || isInsightsOld;
   const [, navigate] = useLocation();
-  const goBack = useLabsBack("/labs/entdecken");
+  const { t } = useTranslation();
+
+  const isHostRoute = window.location.pathname.startsWith("/labs/host/");
+  const backFallback = isHostRoute ? "/labs/host/dashboard" : "/labs/entdecken";
+  const goBack = useLabsBack(backFallback);
+  const tastingsPath = isHostRoute ? "/labs/host/history" : "/labs/history";
+  const insightsPath = isHostRoute ? "/labs/host/history/insights" : "/labs/history/insights";
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-history-page">
@@ -615,21 +621,68 @@ export default function LabsHistory() {
         data-testid="labs-history-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        {isInsights ? "History" : "Entdecken"}
+        {isHostRoute ? t("history.backToDashboard", "Dashboard") : t("history.backToDiscover", "Entdecken")}
       </button>
       <h1
         className="labs-serif"
         style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}
         data-testid="history-title"
       >
-        {isInsights ? "Historical Insights" : "Historical Tastings"}
+        {t("history.archiveTitle", "Archive")}
       </h1>
-      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
-        {isInsights
-          ? "Cross-tasting analytics and group taste profile"
-          : "A curated archive of past tasting events"
-        }
+      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
+        {t("history.archiveSubtitle", "Past tastings, analytics & group taste profile")}
       </p>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          marginBottom: 16,
+          background: "var(--labs-card-bg)",
+          borderRadius: 12,
+          padding: 3,
+          border: "1px solid var(--labs-border-subtle)",
+        }}
+        data-testid="history-tab-switcher"
+      >
+        <button
+          onClick={() => navigate(tastingsPath)}
+          data-testid="history-tab-tastings"
+          style={{
+            flex: 1,
+            padding: "8px 12px",
+            fontSize: 14,
+            fontWeight: 600,
+            borderRadius: 10,
+            border: "none",
+            cursor: "pointer",
+            transition: "all 200ms ease",
+            background: !isInsights ? "var(--labs-accent)" : "transparent",
+            color: !isInsights ? "#1a1714" : "var(--labs-text-muted)",
+          }}
+        >
+          {t("history.tabTastings", "Tastings")}
+        </button>
+        <button
+          onClick={() => navigate(insightsPath)}
+          data-testid="history-tab-insights"
+          style={{
+            flex: 1,
+            padding: "8px 12px",
+            fontSize: 14,
+            fontWeight: 600,
+            borderRadius: 10,
+            border: "none",
+            cursor: "pointer",
+            transition: "all 200ms ease",
+            background: isInsights ? "var(--labs-accent)" : "transparent",
+            color: isInsights ? "#1a1714" : "var(--labs-text-muted)",
+          }}
+        >
+          {t("history.tabInsights", "Insights")}
+        </button>
+      </div>
 
       {isInsights ? <LabsHistoryInsights /> : <LabsHistoryList />}
     </div>

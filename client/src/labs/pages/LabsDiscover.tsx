@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, ChevronRight, ChevronLeft,
-  Sparkles, Info, Heart, BarChart3,
+  Sparkles, Info, Heart, Archive,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -49,7 +49,7 @@ const SECTIONS: DiscoverSection[] = [
     titleFallback: "Deep Dives",
     links: [
       { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
-      { icon: BarChart3, labelKey: "discover.insights", labelFallback: "Historical Insights", descKey: "discover.insightsDesc", descFallback: "Cross-tasting analytics & trends", href: "/labs/host/history/insights", testId: "labs-link-discover-historical-insights" },
+      { icon: Archive, labelKey: "discover.archive", labelFallback: "Archive", descKey: "discover.archiveDesc", descFallback: "Past tastings & cross-tasting insights", href: "/labs/history", testId: "labs-link-discover-archive" },
     ],
   },
   {

@@ -980,8 +980,7 @@ export default function LabsHostDashboard() {
           {[
             { href: "/labs/host", icon: Plus, label: t("m2.hostDash.newTasting", "New Tasting"), desc: "Create a new session" },
             { href: "/labs/host/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
-            { href: "/labs/host/history", icon: Archive, label: t("m2.hostDash.archive", "Historical Archive"), desc: "Browse past events" },
-            { href: "/labs/host/history/insights", icon: BarChart3, label: t("m2.hostDash.insights", "Cross-Tasting Insights"), desc: "Top whiskies & trends" },
+            { href: "/labs/host/history", icon: Archive, label: t("m2.hostDash.archive", "Archive"), desc: "Past events & insights" },
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href}>
               <div
