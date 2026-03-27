@@ -5,9 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { whiskyApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE_BYTES = 2 * 1024 * 1024;
+import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 
 interface WhiskyImageUploadProps {
   whiskyId?: string;
@@ -66,36 +64,38 @@ export default function WhiskyImageUpload({
     },
   });
 
-  const validateFile = useCallback((file: File): boolean => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      toast({ title: t("common.uploadInvalidType", "Only JPEG, PNG and WebP allowed"), variant: "destructive" });
-      return false;
-    }
-    if (file.size > MAX_SIZE_BYTES) {
-      toast({ title: t("common.uploadTooLarge", "Max 2 MB"), variant: "destructive" });
-      return false;
-    }
-    return true;
-  }, [toast, t]);
+  const [compressing, setCompressing] = useState(false);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!validateFile(file)) {
+    if (!isAcceptedImageType(file)) {
+      toast({ title: "Nur JPEG, PNG, WebP, GIF oder HEIC erlaubt.", variant: "destructive" });
       e.target.value = "";
       return;
     }
-
-    const previewUrl = URL.createObjectURL(file);
-    setLocalPreview(previewUrl);
-
-    if (onFileSelected) {
-      onFileSelected(file);
-    } else if (whiskyId) {
-      uploadMutation.mutate(file);
+    setCompressing(true);
+    try {
+      const compressed = await compressImage(file);
+      if (fileTooLargeAfterCompression(compressed)) {
+        toast({ title: "Das Bild ist auch nach Komprimierung zu groß (max. 20 MB).", variant: "destructive" });
+        e.target.value = "";
+        return;
+      }
+      const previewUrl = URL.createObjectURL(compressed);
+      setLocalPreview(previewUrl);
+      if (onFileSelected) {
+        onFileSelected(compressed);
+      } else if (whiskyId) {
+        uploadMutation.mutate(compressed);
+      }
+    } catch {
+      toast({ title: "Bild konnte nicht verarbeitet werden. Bitte versuche ein anderes Format.", variant: "destructive" });
+    } finally {
+      setCompressing(false);
+      e.target.value = "";
     }
-    e.target.value = "";
-  }, [validateFile, onFileSelected, whiskyId, uploadMutation]);
+  }, [onFileSelected, whiskyId, uploadMutation, toast]);
 
   const handleDelete = useCallback(() => {
     setLocalPreview(null);
@@ -106,7 +106,7 @@ export default function WhiskyImageUpload({
     }
   }, [whiskyId, deleteMutation, onImageDeleted]);
 
-  const isUploading = uploadMutation.isPending;
+  const isUploading = uploadMutation.isPending || compressing;
   const isDeleting = deleteMutation.isPending;
   const displayUrl = localPreview || imageUrl;
   const dims = size === "sm" ? { w: 72, h: 96 } : { w: 128, h: 128 };
@@ -159,13 +159,13 @@ export default function WhiskyImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={IMAGE_ACCEPT_STRING}
           onChange={handleFileChange}
           style={{ display: "none" }}
           data-testid={`${testIdPrefix}-input`}
         />
         <p style={{ fontSize: 10, color: "var(--labs-text-muted)", opacity: 0.6, textAlign: "center", margin: 0 }}>
-          {t("common.uploadHint", "JPEG/PNG/WebP, max 2 MB. You confirm you own the rights.")}
+          {t("common.uploadHint", "JPEG/PNG/WebP/HEIC – Bilder werden automatisch komprimiert.")}
         </p>
       </div>
     );
@@ -214,7 +214,7 @@ export default function WhiskyImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={IMAGE_ACCEPT_STRING}
           onChange={handleFileChange}
           className="hidden"
           data-testid={`${testIdPrefix}-input`}
@@ -232,7 +232,7 @@ export default function WhiskyImageUpload({
           )}
           {displayUrl ? t("whisky.replacePhoto", "Replace Photo") : t("whisky.uploadPhoto", "Upload Photo")}
         </button>
-        <p className="text-[10px] text-muted-foreground/60">{t("common.uploadHint", "JPEG/PNG/WebP, max 2 MB. You confirm you own the rights.")}</p>
+        <p className="text-[10px] text-muted-foreground/60">{t("common.uploadHint", "JPEG/PNG/WebP/HEIC – Bilder werden automatisch komprimiert.")}</p>
       </div>
     </div>
   );

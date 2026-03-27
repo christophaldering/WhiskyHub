@@ -110,23 +110,25 @@ const upload = multer({
       cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
     },
   }),
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: (_req: any, file: any, cb: any) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, WebP, and GIF images are allowed"));
-  },
-});
-
-const memUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req: any, file: any, cb: any) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
     const heicExtensions = [".heic", ".heif"];
     const ext = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf(".")) : "";
     if (allowed.includes(file.mimetype) || heicExtensions.includes(ext)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, WebP, GIF, and HEIC images are allowed"));
+    else cb(new Error("Nur JPG, PNG, WebP, GIF und HEIC Bilder sind erlaubt."));
+  },
+});
+
+const memUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+    const heicExtensions = [".heic", ".heif"];
+    const ext = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf(".")) : "";
+    if (allowed.includes(file.mimetype) || heicExtensions.includes(ext)) cb(null, true);
+    else cb(new Error("Nur JPG, PNG, WebP, GIF und HEIC Bilder sind erlaubt."));
   },
 });
 
@@ -353,7 +355,7 @@ async function downloadImageFromUrl(url: string, objectStorage: ObjectStorageSer
     if (!allowed.some(a => contentType.includes(a))) return null;
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length > 5 * 1024 * 1024) return null;
+    if (buffer.length > 20 * 1024 * 1024) return null;
 
     const mimeType = contentType.split(";")[0].trim() || "image/jpeg";
     return await uploadBufferToObjectStorage(objectStorage, buffer, mimeType);
@@ -2243,11 +2245,13 @@ export async function registerRoutes(
         cb(null, `scan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
       },
     }),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 20 * 1024 * 1024 },
     fileFilter: (_req: any, file: any, cb: any) => {
-      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-      if (allowed.includes(file.mimetype)) cb(null, true);
-      else cb(new Error("Only image files are allowed"));
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+      const heicExtensions = [".heic", ".heif"];
+      const ext = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf(".")) : "";
+      if (allowed.includes(file.mimetype) || heicExtensions.includes(ext)) cb(null, true);
+      else cb(new Error("Nur JPG, PNG, WebP, GIF und HEIC Bilder sind erlaubt."));
     },
   });
 

@@ -9,6 +9,7 @@ import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { downloadBlob } from "@/lib/download";
+import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
@@ -161,13 +162,18 @@ export default function LabsTasteSettings() {
     onError: (error: Error) => { if (error.message === "INVALID_PIN") setDeletePinError(t("m2.taste.settings.deleteAccountPinError")); else toast({ title: error.message, variant: "destructive" }); },
   });
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) { toast({ title: "Invalid file type", variant: "destructive" }); return; }
-    if (file.size > 2 * 1024 * 1024) { toast({ title: "File too large (max 2 MB)", variant: "destructive" }); return; }
-    setPhotoFile(file); setRemovePhoto(false);
-    const reader = new FileReader(); reader.onload = (ev) => setPhotoPreview(ev.target?.result as string); reader.readAsDataURL(file);
+    if (!isAcceptedImageType(file)) { toast({ title: "Nur JPEG, PNG, WebP, GIF oder HEIC erlaubt.", variant: "destructive" }); return; }
+    try {
+      const compressed = await compressImage(file);
+      if (fileTooLargeAfterCompression(compressed)) { toast({ title: "Das Bild ist auch nach Komprimierung zu groß (max. 20 MB).", variant: "destructive" }); return; }
+      setPhotoFile(compressed); setRemovePhoto(false);
+      const reader = new FileReader(); reader.onload = (ev) => setPhotoPreview(ev.target?.result as string); reader.readAsDataURL(compressed);
+    } catch {
+      toast({ title: "Bild konnte nicht verarbeitet werden. Bitte versuche ein anderes Format.", variant: "destructive" });
+    }
   };
 
   const toggleRegion = (region: string) => setPreferredRegions(prev => prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region]);
@@ -245,12 +251,12 @@ export default function LabsTasteSettings() {
                 data-testid="button-labs-avatar-upload">
                 {!currentPhotoUrl && currentParticipant.name.charAt(0).toUpperCase()}
               </div>
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handlePhotoSelect} style={{ display: "none" }} data-testid="input-labs-profile-photo" />
+              <input ref={fileInputRef} type="file" accept={IMAGE_ACCEPT_STRING} onChange={handlePhotoSelect} style={{ display: "none" }} data-testid="input-labs-profile-photo" />
               <div className="flex flex-col gap-1.5">
                 <button onClick={() => fileInputRef.current?.click()} className="text-sm" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} data-testid="button-labs-upload-photo">
                   {currentPhotoUrl ? "Change Photo" : "Upload Photo"}
                 </button>
-                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>JPG, PNG, WebP - max 2 MB</span>
+                <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>JPG, PNG, WebP, HEIC – wird automatisch komprimiert</span>
                 <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-photo-rights-hint">{t("common.uploadRightsHint")}</span>
                 {currentPhotoUrl && (
                   <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); }} className="text-xs" style={{ color: "var(--labs-danger)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} data-testid="button-labs-remove-photo">Remove Photo</button>

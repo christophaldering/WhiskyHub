@@ -28,6 +28,7 @@ import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import { downloadDataUrl } from "@/lib/download";
+import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
 import QRCode from "qrcode";
@@ -3851,16 +3852,25 @@ function TastingSetupSection({
   const [coverUploadError, setCoverUploadError] = useState<string | null>(null);
   const handleCoverUpload = async (file: File) => {
     setCoverUploadError(null);
-    const previewUrl = URL.createObjectURL(file);
-    setLocalCoverUrl(previewUrl);
+    if (!isAcceptedImageType(file)) {
+      setCoverUploadError("Nur JPEG, PNG, WebP, GIF oder HEIC erlaubt.");
+      return;
+    }
     try {
-      await tastingApi.uploadCoverImage(tastingId, file, pid);
+      const compressed = await compressImage(file);
+      if (fileTooLargeAfterCompression(compressed)) {
+        setCoverUploadError("Das Bild ist auch nach Komprimierung zu groß (max. 20 MB).");
+        return;
+      }
+      const previewUrl = URL.createObjectURL(compressed);
+      setLocalCoverUrl(previewUrl);
+      await tastingApi.uploadCoverImage(tastingId, compressed, pid);
       URL.revokeObjectURL(previewUrl);
       setLocalCoverUrl(null);
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
     } catch (e: any) {
       setLocalCoverUrl(null);
-      const msg = e?.message || "Upload failed";
+      const msg = e?.message || "Upload fehlgeschlagen";
       setCoverUploadError(msg);
       setSaveStatus(msg);
       setTimeout(() => setSaveStatus(null), 4000);
@@ -4167,7 +4177,7 @@ function TastingSetupSection({
               {(tasting.coverImageUrl as string) ? t("labs.host.changeCover") : t("labs.host.uploadCover")}
               <input
                 type="file"
-                accept="image/*"
+                accept={IMAGE_ACCEPT_STRING}
                 style={{ display: "none" }}
                 onChange={e => { if (e.target.files?.[0]) handleCoverUpload(e.target.files[0]); }}
               />
@@ -4460,10 +4470,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   };
 
   const handleWhiskyImageUpload = async (whiskyId: string, file: File) => {
+    if (!isAcceptedImageType(file)) {
+      toast({ title: "Nur JPEG, PNG, WebP, GIF oder HEIC erlaubt.", variant: "destructive" });
+      return;
+    }
     try {
-      await whiskyApi.uploadImage(whiskyId, file);
+      const compressed = await compressImage(file);
+      if (fileTooLargeAfterCompression(compressed)) {
+        toast({ title: "Das Bild ist auch nach Komprimierung zu groß (max. 20 MB).", variant: "destructive" });
+        return;
+      }
+      await whiskyApi.uploadImage(whiskyId, compressed);
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-    } catch {}
+    } catch {
+      toast({ title: "Bild konnte nicht verarbeitet werden. Bitte versuche ein anderes Format.", variant: "destructive" });
+    }
   };
 
   const [aiImportError, setAiImportError] = useState("");
@@ -6407,7 +6428,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         <>
                           <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`} title={t("common.uploadRightsHint")}>
                             <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
+                            <input type="file" accept={IMAGE_ACCEPT_STRING} style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
                           </label>
                           <button
                             className="labs-btn-ghost p-1"
@@ -6461,7 +6482,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         <>
                           <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`mobile-upload-img-${w.id}`} title={t("common.uploadRightsHint")}>
                             <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
+                            <input type="file" accept={IMAGE_ACCEPT_STRING} style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
                           </label>
                           <button
                             className="labs-btn-ghost p-1"

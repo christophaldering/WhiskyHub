@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Upload, Trash2, X, Printer, Eye, ChevronLeft, ChevronRight, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import { useToast } from "@/hooks/use-toast";
+import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import type { TastingPhoto, Whisky } from "@shared/schema";
 
 interface TastingPhotosProps {
@@ -77,21 +78,21 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) {
-      toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+    if (!isAcceptedImageType(file)) {
+      toast({ title: "Nur JPEG, PNG, WebP, GIF oder HEIC erlaubt.", variant: "destructive" });
       return;
     }
     setUploading(true);
     try {
-      await uploadMutation.mutateAsync(file);
-      toast({ title: t("session.photos.uploadSuccess", "Photo uploaded") });
+      const compressed = await compressImage(file);
+      if (fileTooLargeAfterCompression(compressed)) {
+        toast({ title: "Das Bild ist auch nach Komprimierung zu groß (max. 20 MB).", variant: "destructive" });
+        return;
+      }
+      await uploadMutation.mutateAsync(compressed);
+      toast({ title: t("session.photos.uploadSuccess", "Foto hochgeladen") });
     } catch (err: any) {
-      toast({ title: t("session.photos.uploadError", "Upload failed"), description: err?.message || "Unknown error", variant: "destructive" });
+      toast({ title: t("session.photos.uploadError", "Upload fehlgeschlagen"), description: err?.message || "Unbekannter Fehler", variant: "destructive" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -122,7 +123,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept={IMAGE_ACCEPT_STRING}
             className="hidden"
             onChange={handleFileSelect}
             data-testid="input-photo-upload"
