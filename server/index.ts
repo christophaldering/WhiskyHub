@@ -390,6 +390,24 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await setupVite(httpServer, app);
     }
 
+    try {
+      const { db: dbMig } = await import("./db");
+      const { sql: sqlMig } = await import("drizzle-orm");
+      const colCheck = await dbMig.execute(sqlMig`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'whiskies' AND column_name IN ('cask_influence', 'cask_type')
+      `);
+      const columns = (colCheck as any).rows?.map((r: any) => r.column_name) ?? [];
+      if (columns.includes("cask_influence") && !columns.includes("cask_type")) {
+        await dbMig.execute(sqlMig`ALTER TABLE whiskies RENAME COLUMN cask_influence TO cask_type`);
+        log("Renamed whiskies.cask_influence → cask_type", "startup");
+      } else if (!columns.includes("cask_type")) {
+        throw new Error("whiskies table missing both cask_influence and cask_type columns");
+      }
+    } catch (e: any) {
+      log(`CRITICAL: cask_type migration failed: ${e.message} — app may not serve explore data correctly`, "startup");
+    }
+
     ready = true;
     log("Application fully initialized");
 
