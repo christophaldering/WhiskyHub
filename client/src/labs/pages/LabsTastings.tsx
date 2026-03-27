@@ -307,29 +307,6 @@ export default function LabsTastings() {
         </p>
       </div>
 
-      <div className="labs-hub-recent labs-fade-in" data-testid="hub-recent-section">
-        <span className="labs-section-label">{t("hub.recentlyRated")}</span>
-        {recentDrams.length > 0 ? (
-          <div className="labs-hub-dram-list">
-            {recentDrams.map((d) => (
-              <div key={d.id} className="labs-dram-item" data-testid={`dram-item-${d.id}`}>
-                <div className="labs-dram-info">
-                  <span className="labs-dram-name">{d.whiskyName}</span>
-                  <span className="labs-dram-date">
-                    {d.date ? new Date(d.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US") : ""}
-                  </span>
-                </div>
-                <div className={`labs-dram-score${Math.round(d.score) >= 90 ? " labs-dram-score--high" : ""}`}>{Math.round(d.score)}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="labs-hub-empty" data-testid="hub-no-drams">
-            {t("hub.noDrams")}
-          </p>
-        )}
-      </div>
-
       <div className="labs-tastings-header">
         <div className="flex items-center justify-between">
           <h1
@@ -694,6 +671,29 @@ export default function LabsTastings() {
           )}
         </>
       )}
+
+      <div className="labs-hub-recent labs-fade-in" data-testid="hub-recent-section">
+        <span className="labs-section-label">{t("hub.recentlyRated")}</span>
+        {recentDrams.length > 0 ? (
+          <div className="labs-hub-dram-list">
+            {recentDrams.map((d) => (
+              <div key={d.id} className="labs-dram-item" data-testid={`dram-item-${d.id}`}>
+                <div className="labs-dram-info">
+                  <span className="labs-dram-name">{d.whiskyName}</span>
+                  <span className="labs-dram-date">
+                    {d.date ? new Date(d.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US") : ""}
+                  </span>
+                </div>
+                <div className={`labs-dram-score${Math.round(d.score) >= 90 ? " labs-dram-score--high" : ""}`}>{Math.round(d.score)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="labs-hub-empty" data-testid="hub-no-drams">
+            {t("hub.noDrams")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
