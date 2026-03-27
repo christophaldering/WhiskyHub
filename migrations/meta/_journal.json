@@ -92,6 +92,13 @@
       "when": 1774828800000,
       "tag": "0012_rename_cask_influence_to_cask_type",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1774915200000,
+      "tag": "0013_sync_whiskybase_collection_columns",
+      "breakpoints": true
     }
   ]
 }
