@@ -7,6 +7,7 @@ import { CollectionPicker, type SelectedWhisky } from "@/labs/components/Collect
 export interface CapturedWhisky {
   name: string;
   distillery: string;
+  country: string;
   region: string;
   cask: string;
   age: string;
@@ -42,6 +43,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
     const captured: CapturedWhisky = {
       name: selected.name,
       distillery: selected.distillery || "",
+      country: selected.country || "",
       region: selected.region || "",
       cask: selected.cask || "",
       age: selected.age || "",
@@ -89,6 +91,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
       const recognitionResult: BottleRecognitionResult = {
         whiskyName: bottle.whiskyName || bottle.matchedExisting || "",
         distillery: bottle.distillery || "",
+        country: bottle.country || "",
         region: bottle.region || "",
         caskType: bottle.caskType || "",
         age: bottle.age ? String(bottle.age) : "",
@@ -132,6 +135,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
           const recognitionResult: BottleRecognitionResult = {
             whiskyName: result.data.name || "",
             distillery: result.data.distillery || "",
+            country: result.data.country || "",
             region: result.data.region || "",
             caskType: result.data.caskType || "",
             age: result.data.age || "",
@@ -224,6 +228,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
     onCaptured({
       name: data.whiskyName,
       distillery: data.distillery,
+      country: data.country || "",
       region: data.region,
       cask: data.caskType,
       age: data.age,

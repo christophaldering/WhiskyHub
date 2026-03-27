@@ -54,6 +54,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
   const { t } = useTranslation();
   const [name, setName] = useState((whisky.name as string) || "");
   const [distillery, setDistillery] = useState((whisky.distillery as string) || "");
+  const [country, setCountry] = useState((whisky.country as string) || "");
   const [age, setAge] = useState((whisky.age as string) || "");
   const [abv, setAbv] = useState(whisky.abv != null ? String(whisky.abv) : "");
 
@@ -66,13 +67,20 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
         placeholder={t("tastingDetail.namePlaceholder")}
         data-testid={`input-whisky-name-${whisky.id}`}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <input
           className="labs-input text-sm"
           value={distillery}
           onChange={(e) => setDistillery(e.target.value)}
           placeholder={t("tastingDetail.distilleryPlaceholder")}
           data-testid={`input-whisky-distillery-${whisky.id}`}
+        />
+        <input
+          className="labs-input text-sm"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          placeholder={t("tastingDetail.countryPlaceholder", "Country")}
+          data-testid={`input-whisky-country-${whisky.id}`}
         />
         <input
           className="labs-input text-sm"
@@ -96,6 +104,7 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
           onClick={() => onSave({
             name: name.trim() || undefined,
             distillery: distillery.trim() || null,
+            country: country.trim() || null,
             age: age.trim() || null,
             abv: abv.trim() ? parseFloat(abv) : null,
           })}
@@ -1214,9 +1223,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                         <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)", margin: 0 }}>
                           {tasting.blindMode && !isHost ? `Dram #${idx + 1}` : ((w.name as string) || `Dram #${idx + 1}`)}
                         </p>
-                        {(w.distillery || w.age || w.abv || w.region) && (
+                        {(w.distillery || w.country || w.age || w.abv || w.region) && (
                           <p className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)", margin: 0 }}>
-                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ")}
+                            {[w.distillery, w.country, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ")}
                           </p>
                         )}
                       </div>

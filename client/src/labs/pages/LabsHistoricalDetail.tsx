@@ -103,6 +103,7 @@ function WhiskyCard({ entry, t, isTied, myRating }: { entry: HistoricalEntry; t:
   const isWinner = rank === 1;
   const title = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || t("historicalDetailUi.unknownWhisky", "Unknown Whisky");
   const details: string[] = [];
+  if (entry.countryRaw) details.push(entry.countryRaw);
   if (entry.regionRaw) details.push(entry.regionRaw);
   if (entry.ageRaw) details.push(`${entry.ageRaw}y`);
   if (entry.normalizedAbv) details.push(`${entry.normalizedAbv.toFixed(1)}%`);

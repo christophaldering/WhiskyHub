@@ -255,6 +255,7 @@ async function drawParticipantInfo(doc: jsPDF, participant: ParticipantInfo, y: 
 function getWhiskyMeta(w: Whisky): string {
   const parts: string[] = [];
   if (w.distillery) parts.push(w.distillery);
+  if (w.country) parts.push(w.country);
   if (w.age && w.age !== "NAS") parts.push(`${w.age}y`);
   if (w.age === "NAS" || w.age === "n.a.s.") parts.push("NAS");
   if (w.abv != null) parts.push(`${w.abv}%`);
@@ -384,6 +385,7 @@ async function drawCoverPage(
 
       const parts = [
         whisky.distillery,
+        whisky.country,
         whisky.age ? `${whisky.age}y` : null,
         whisky.abv ? `${whisky.abv}%` : null,
         whisky.caskType,
@@ -652,7 +654,7 @@ async function drawScoringPage(
       doc.text(nameLines, margin + 10, y + 6);
 
       if (!isBlind) {
-        const metaParts = [whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.region, whisky.caskType].filter(Boolean);
+        const metaParts = [whisky.distillery, whisky.country, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.region, whisky.caskType].filter(Boolean);
         if (metaParts.length > 0) {
           doc.setFontSize(7);
           doc.setTextColor(...GOLD_RGB);

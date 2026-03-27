@@ -21,6 +21,7 @@ interface DimensionScores {
 interface WhiskySummary {
   name: string;
   distillery?: string;
+  country?: string;
   region?: string;
   scores: DimensionScores;
   flavors?: string[];
@@ -378,7 +379,7 @@ function WhiskysTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, 
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{w.name}</p>
-              {w.distillery && <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{w.distillery}{w.region ? ` · ${w.region}` : ""}</p>}
+              {(w.distillery || w.country || w.region) && <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{[w.distillery, w.country, w.region].filter(Boolean).join(" · ")}</p>}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {w.vsGroupOverall != null && (
@@ -474,6 +475,42 @@ function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, f
           );
         })}
       </div>
+
+      {(() => {
+        const countryCounts: Record<string, number> = {};
+        for (const ws of (snapshot.whiskySummaries || [])) {
+          if (ws.country) countryCounts[ws.country] = (countryCounts[ws.country] || 0) + 1;
+        }
+        const countryEntries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const maxCount = countryEntries.length > 0 ? countryEntries[0][1] : 0;
+        if (countryEntries.length === 0) return null;
+        return (
+          <>
+            <p className="labs-section-label mb-3">{t("labs.connoisseur.countryDistribution", "Country Distribution")}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+              {countryEntries.map(([country, count], i) => (
+                <div key={country} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                  background: "var(--labs-surface)", borderRadius: 10,
+                }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: i === 0 ? "var(--labs-accent)" : "var(--labs-text-muted)", opacity: i === 0 ? 1 : 0.6, width: 24, fontFamily: "var(--font-display)" }}>
+                    {i + 1}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{country}</span>
+                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginLeft: 8 }}>{count} {t("labs.connoisseur.rated", "rated")}</span>
+                  </div>
+                  <div style={{ flex: 1, maxWidth: 80 }}>
+                    <div style={{ height: 4, borderRadius: 2, background: "rgba(201,167,108,0.1)" }}>
+                      <div style={{ height: 4, borderRadius: 2, background: "var(--labs-accent)", width: `${(count / maxCount) * 100}%`, transition: "width 0.5s ease" }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       {regionBreakdown.length > 0 && (
         <>

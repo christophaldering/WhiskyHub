@@ -144,6 +144,7 @@ const DARK_COLOR: RGB = [30, 41, 59];
 
 function buildMetaLine(w: Whisky): string {
   const parts: string[] = [];
+  if (w.country) parts.push(w.country);
   if (w.region) parts.push(w.region);
   if (w.caskType) parts.push(w.caskType);
   if (w.peatLevel && w.peatLevel !== "None") parts.push(w.peatLevel);

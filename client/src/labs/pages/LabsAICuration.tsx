@@ -14,6 +14,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 interface Suggestion {
   name: string;
   distillery: string;
+  country?: string;
   region: string;
   caskType: string;
   peatLevel: string;
@@ -177,6 +178,7 @@ export default function LabsAICuration() {
                     <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{s.name}</div>
                     <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>
                       {s.distillery}
+                      {s.country && <span> · {s.country}</span>}
                       {s.age && <span> · {s.age}y</span>}
                       {s.abv && <span> · {s.abv}%</span>}
                     </div>

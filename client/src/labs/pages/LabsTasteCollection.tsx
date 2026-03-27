@@ -553,6 +553,7 @@ export default function LabsTasteCollection() {
                     <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}</div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--labs-text-muted)" }}>
                       {item.distillery && <span>{item.distillery}</span>}
+                      {item.country && <span>{item.country}</span>}
                       {item.statedAge && <span>{item.statedAge}</span>}
                       {item.abv && <span>{item.abv}</span>}
                     </div>

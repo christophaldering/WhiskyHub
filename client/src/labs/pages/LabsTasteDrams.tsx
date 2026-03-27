@@ -185,6 +185,7 @@ export default function LabsTasteDrams() {
           title: w.name || w.whiskyName || "—",
           whiskyName: w.name || w.whiskyName || null,
           distillery: w.distillery || null,
+          country: w.country || null,
           region: w.region || null,
           age: w.age ? String(w.age) : null,
           abv: w.abv ? String(w.abv) : null,
@@ -361,7 +362,7 @@ export default function LabsTasteDrams() {
         dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" } },
       });
     } else { setEditStructured(null); }
-    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
+    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
     setViewState("edit");
   };
 
@@ -533,6 +534,7 @@ export default function LabsTasteDrams() {
                     const retasteData = {
                       whiskyName: selectedEntry.whiskyName || selectedEntry.title || "",
                       distillery: selectedEntry.distillery || "",
+                      country: selectedEntry.country || "",
                       region: selectedEntry.region || "",
                       age: selectedEntry.age || "",
                       abv: selectedEntry.abv || "",
@@ -586,8 +588,9 @@ export default function LabsTasteDrams() {
             )}
           </div>
 
-          {(selectedEntry.region || selectedEntry.age || selectedEntry.abv || selectedEntry.caskType) && (
+          {(selectedEntry.country || selectedEntry.region || selectedEntry.age || selectedEntry.abv || selectedEntry.caskType) && (
             <div className="flex flex-wrap gap-2 mb-4">
+              {selectedEntry.country && <MetaBadge label="Country" value={selectedEntry.country} />}
               {selectedEntry.region && <MetaBadge label="Region" value={selectedEntry.region} />}
               {selectedEntry.age && <MetaBadge label="Age" value={selectedEntry.age} />}
               {selectedEntry.abv && <MetaBadge label="ABV" value={selectedEntry.abv} />}
@@ -735,10 +738,11 @@ export default function LabsTasteDrams() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <EditField label="Country" value={editForm.country || ""} onChange={(v) => setEditForm({ ...editForm, country: v })} testId="input-labs-edit-country" />
             <EditField label="Region" value={editForm.region} onChange={(v) => setEditForm({ ...editForm, region: v })} testId="input-labs-edit-region" />
-            <EditField label="Age" value={editForm.age} onChange={(v) => setEditForm({ ...editForm, age: v })} testId="input-labs-edit-age" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <EditField label="Age" value={editForm.age} onChange={(v) => setEditForm({ ...editForm, age: v })} testId="input-labs-edit-age" />
             <EditField label="ABV" value={editForm.abv} onChange={(v) => setEditForm({ ...editForm, abv: v })} testId="input-labs-edit-abv" />
             <EditField label="Cask Type" value={editForm.caskType} onChange={(v) => setEditForm({ ...editForm, caskType: v })} testId="input-labs-edit-caskType" />
           </div>

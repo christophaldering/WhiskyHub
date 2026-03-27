@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 export interface BottleRecognitionResult {
   whiskyName: string;
   distillery: string;
+  country: string;
   region: string;
   caskType: string;
   age: string;
@@ -109,6 +110,7 @@ export default function BottleRecognitionFeedback({ result, participantId, onCon
   const fields: { key: keyof BottleRecognitionResult; labelKey: string; fallback: string }[] = [
     { key: "whiskyName", labelKey: "v2.recognition.labelName", fallback: "Name" },
     { key: "distillery", labelKey: "v2.recognition.labelDistillery", fallback: "Distillery" },
+    { key: "country", labelKey: "v2.recognition.labelCountry", fallback: "Country" },
     { key: "region", labelKey: "v2.recognition.labelRegion", fallback: "Region" },
     { key: "age", labelKey: "v2.recognition.labelAge", fallback: "Age" },
     { key: "abv", labelKey: "v2.recognition.labelABV", fallback: "ABV" },

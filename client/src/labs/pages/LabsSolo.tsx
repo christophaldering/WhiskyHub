@@ -150,6 +150,7 @@ export default function LabsSolo() {
       const mapped: CapturedWhisky = {
         name: String(data.whiskyName ?? data.name ?? ""),
         distillery: String(data.distillery ?? ""),
+        country: String(data.country ?? ""),
         region: String(data.region ?? ""),
         age: String(data.age ?? ""),
         abv: String(data.abv ?? ""),
@@ -242,7 +243,7 @@ export default function LabsSolo() {
   }, [showDraftFlash]);
 
   const handleBarcode = useCallback((barcode: string) => {
-    const w: CapturedWhisky = { name: barcode, distillery: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
+    const w: CapturedWhisky = { name: barcode, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
     setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
@@ -277,6 +278,7 @@ export default function LabsSolo() {
       title: whiskyName,
       whiskyName,
       distillery: whisky?.distillery || "",
+      country: whisky?.country || "",
       region: whisky?.region || "",
       caskType: whisky?.cask || "",
       age: whisky?.age || "",
@@ -351,6 +353,7 @@ export default function LabsSolo() {
         body: JSON.stringify({
           name: whisky.name,
           distillery: whisky.distillery || "",
+          country: whisky.country || "",
           statedAge: whisky.age || "",
           abv: whisky.abv || "",
           caskType: whisky.cask || "",

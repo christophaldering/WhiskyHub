@@ -128,6 +128,7 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {[
             { label: t('taxonomy.category'), value: w.category },
+            { label: t('taxonomy.country', 'Country'), value: w.country },
             { label: t('taxonomy.region'), value: w.region },
             { label: t('taxonomy.cask'), value: w.caskType },
             { label: t('taxonomy.abv'), value: w.abvBand },

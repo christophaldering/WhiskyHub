@@ -17,6 +17,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
   const { t } = useTranslation();
   const [name, setName] = useState(initial?.name || "");
   const [distillery, setDistillery] = useState(initial?.distillery || "");
+  const [country, setCountry] = useState(initial?.country || "");
   const [region, setRegion] = useState(initial?.region || "");
   const [cask, setCask] = useState(initial?.cask || "");
   const [age, setAge] = useState(initial?.age || "");
@@ -35,8 +36,8 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
   const mountedRef = useRef(false);
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; return; }
-    onChange?.({ name, distillery, region, cask, age, abv, fromAI: fromAI || false });
-  }, [name, distillery, region, cask, age, abv]);
+    onChange?.({ name, distillery, country, region, cask, age, abv, fromAI: fromAI || false });
+  }, [name, distillery, country, region, cask, age, abv]);
 
   const canSubmit = name.trim().length > 0;
 
@@ -45,6 +46,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
     onSubmit({
       name: name.trim(),
       distillery: distillery.trim(),
+      country: country.trim(),
       region: region.trim(),
       cask: cask.trim(),
       age: age.trim(),
@@ -133,6 +135,18 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
             placeholder={t("v2.solo.distilleryPH", "e.g. Lagavulin")}
             className="labs-input"
             data-testid="solo-input-distillery"
+          />
+        </div>
+
+        <div>
+          <span className="labs-section-label">{t("v2.solo.country", "Country")}</span>
+          <input
+            type="text"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            placeholder={t("v2.solo.countryPH", "e.g. Scotland")}
+            className="labs-input"
+            data-testid="solo-input-country"
           />
         </div>
 

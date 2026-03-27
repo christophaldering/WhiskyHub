@@ -7,6 +7,7 @@ import type { JournalEntry, WhiskybaseCollectionItem } from "@shared/schema";
 export interface SelectedWhisky {
   name: string;
   distillery: string | null;
+  country: string | null;
   region: string | null;
   cask: string | null;
   age: string | null;
@@ -56,6 +57,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
         const journalItems: SelectedWhisky[] = ((journalData || []) as JournalEntry[]).map((entry) => ({
           name: entry.whiskyName || "",
           distillery: entry.distillery || null,
+          country: entry.country || null,
           region: entry.region || null,
           cask: entry.caskType || null,
           age: entry.age || null,
@@ -66,6 +68,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
         const collectionItems: SelectedWhisky[] = ((collectionData || []) as WhiskybaseCollectionItem[]).map((entry) => ({
           name: entry.name || "",
           distillery: entry.distillery || entry.brand || null,
+          country: entry.country || null,
           region: null,
           cask: entry.caskType || null,
           age: entry.statedAge || null,
@@ -545,7 +548,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
                       >
                         {item.name}
                       </div>
-                      {(item.distillery || item.region) && (
+                      {(item.distillery || item.country || item.region) && (
                         <div
                           style={{
                             fontSize: 12,
@@ -554,7 +557,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
                             marginTop: 2,
                           }}
                         >
-                          {[item.distillery, item.region].filter(Boolean).join(" · ")}
+                          {[item.distillery, item.country, item.region].filter(Boolean).join(" · ")}
                         </div>
                       )}
                       <span
