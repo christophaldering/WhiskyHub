@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, tastingHistoryApi } from "@/lib/api";
+import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
@@ -152,23 +152,44 @@ export default function LabsTastings() {
     staleTime: 60_000,
   });
 
+  const { data: journalData } = useQuery({
+    queryKey: ["journal-entries", currentParticipant?.id],
+    queryFn: () => journalApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id,
+    staleTime: 60_000,
+  });
+
   const recentDrams = useMemo(() => {
-    if (!historyData?.tastings) return [];
     const items: { id: string; whiskyName: string; score: number; date: string }[] = [];
-    for (const tasting of historyData.tastings) {
-      if (!tasting.ratings) continue;
-      for (const r of tasting.ratings) {
+    if (historyData?.tastings) {
+      for (const tasting of historyData.tastings) {
+        if (!tasting.ratings) continue;
+        for (const r of tasting.ratings) {
+          items.push({
+            id: `${tasting.id}-${r.whiskyId}`,
+            whiskyName: r.whiskyName || "Unknown Whisky",
+            score: r.normalizedScore ?? r.overall ?? 0,
+            date: r.updatedAt || tasting.date || "",
+          });
+        }
+      }
+    }
+    if (Array.isArray(journalData)) {
+      for (const j of journalData) {
+        if (j.status === "draft" || j.deletedAt) continue;
+        const score = j.personalScore ?? j.overall ?? 0;
+        if (score <= 0) continue;
         items.push({
-          id: `${tasting.id}-${r.whiskyId}`,
-          whiskyName: r.whiskyName || "Unknown Whisky",
-          score: r.normalizedScore ?? r.overall ?? 0,
-          date: r.updatedAt || tasting.date || "",
+          id: `journal-${j.id}`,
+          whiskyName: j.whiskyName || "Unknown Whisky",
+          score,
+          date: j.tastingDate || j.createdAt || "",
         });
       }
     }
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return items.slice(0, 5);
-  }, [historyData]);
+  }, [historyData, journalData]);
 
   if (!currentParticipant) {
     return (
