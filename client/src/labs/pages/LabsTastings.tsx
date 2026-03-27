@@ -145,7 +145,7 @@ export default function LabsTastings() {
     }
   }, [currentParticipant, openAuthDialog]);
 
-  const { data: historyData } = useQuery({
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
     queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
     enabled: !!currentParticipant?.id,
@@ -442,28 +442,65 @@ export default function LabsTastings() {
         </div>
       ) : filtered.length === 0 && invitations.length === 0 ? (
         <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
-          <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-              fill="var(--labs-accent)" opacity="0.18"/>
-            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-              stroke="var(--labs-accent)" strokeWidth="1.5" fill="none" opacity="0.6"/>
-            <rect x="18" y="9" width="12" height="9" rx="2.5" fill="var(--labs-accent)" opacity="0.25"/>
-            <path d="M20 26 Q24 30 28 26" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
-          </svg>
-          <h2 className="labs-empty-title" data-testid="text-empty-title">
-            {t("tastings.emptyTitle", "Dein erstes Dram wartet")}
-          </h2>
-          <p className="labs-empty-sub" data-testid="text-empty-sub">
-            {t("tastings.emptySub", "Starte ein Solo-Tasting oder tritt einem bei — deine Bewertungen erscheinen dann hier.")}
-          </p>
-          <button
-            className="labs-btn-primary"
-            style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
-            onClick={() => navigate("/labs/solo")}
-            data-testid="button-empty-start-solo"
-          >
-            {t("tastings.emptyAction", "Solo starten")}
-          </button>
+          {isHistoryLoading ? (
+            <>
+              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="18" fill="var(--labs-accent)" opacity="0.10"/>
+              </svg>
+              <h2 className="labs-empty-title" data-testid="text-empty-title">
+                {t("tastings.emptyReturningTitle", "Keine aktiven Tastings")}
+              </h2>
+              <p className="labs-empty-sub" data-testid="text-empty-sub">
+                {t("tastings.emptyReturningSub", "Starte ein neues Tasting oder tritt einem bei.")}
+              </p>
+            </>
+          ) : recentDrams.length > 0 || (historyData?.tastings?.length ?? 0) > 0 ? (
+            <>
+              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="18" fill="var(--labs-accent)" opacity="0.10"/>
+                <path d="M16 24 L22 30 L32 18" stroke="var(--labs-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
+              </svg>
+              <h2 className="labs-empty-title" data-testid="text-empty-title">
+                {t("tastings.emptyReturningTitle", "Keine aktiven Tastings")}
+              </h2>
+              <p className="labs-empty-sub" data-testid="text-empty-sub">
+                {t("tastings.emptyReturningSub", "Starte ein neues Tasting oder tritt einem bei.")}
+              </p>
+              <button
+                className="labs-btn-primary"
+                style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
+                onClick={() => navigate("/labs/solo")}
+                data-testid="button-empty-start-solo"
+              >
+                {t("tastings.emptyReturningAction", "Neues Tasting starten")}
+              </button>
+            </>
+          ) : (
+            <>
+              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
+                <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
+                  fill="var(--labs-accent)" opacity="0.18"/>
+                <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
+                  stroke="var(--labs-accent)" strokeWidth="1.5" fill="none" opacity="0.6"/>
+                <rect x="18" y="9" width="12" height="9" rx="2.5" fill="var(--labs-accent)" opacity="0.25"/>
+                <path d="M20 26 Q24 30 28 26" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
+              </svg>
+              <h2 className="labs-empty-title" data-testid="text-empty-title">
+                {t("tastings.emptyTitle", "Dein erstes Dram wartet")}
+              </h2>
+              <p className="labs-empty-sub" data-testid="text-empty-sub">
+                {t("tastings.emptySub", "Starte ein Solo-Tasting oder tritt einem bei — deine Bewertungen erscheinen dann hier.")}
+              </p>
+              <button
+                className="labs-btn-primary"
+                style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
+                onClick={() => navigate("/labs/solo")}
+                data-testid="button-empty-start-solo"
+              >
+                {t("tastings.emptyAction", "Solo starten")}
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <>
