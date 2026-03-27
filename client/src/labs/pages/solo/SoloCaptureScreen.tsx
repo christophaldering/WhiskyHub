@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight } from "lucide-react";
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight } from "lucide-react";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
@@ -30,6 +30,7 @@ type Status = "idle" | "identifying" | "error" | "barcode" | "feedback";
 export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack }: Props) {
   const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
@@ -53,6 +54,10 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
 
   const handlePhoto = () => {
     fileRef.current?.click();
+  };
+
+  const handleGalleryUpload = () => {
+    galleryRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,6 +104,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
     }
 
     if (fileRef.current) fileRef.current.value = "";
+    if (galleryRef.current) galleryRef.current.value = "";
   };
 
   const handleBarcodeSubmit = () => {
@@ -275,6 +281,14 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
         style={{ display: "none" }}
         data-testid="solo-file-input"
       />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+        data-testid="solo-gallery-input"
+      />
 
       <button
         onClick={onBack}
@@ -323,6 +337,31 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             </div>
             <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
               {t("v2.solo.photoDesc", "Photograph the bottle and identify via AI")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleGalleryUpload}
+          data-testid="solo-upload-btn"
+          className="labs-list-row"
+          style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            background: "var(--labs-phase-nose-dim)",
+          }}>
+            <ImagePlus className="w-5 h-5" style={{ color: "var(--labs-phase-nose)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.upload", "Upload Photo")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+              {t("v2.solo.uploadDesc", "Choose an existing photo from your gallery")}
             </div>
           </div>
           <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
