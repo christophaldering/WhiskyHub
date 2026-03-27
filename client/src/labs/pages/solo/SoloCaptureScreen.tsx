@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight } from "lucide-react";
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X } from "lucide-react";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
@@ -25,7 +25,7 @@ interface Props {
   onBack: () => void;
 }
 
-type Status = "idle" | "identifying" | "error" | "barcode" | "feedback";
+type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barcode-scanning" | "barcode-lookup";
 
 export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack }: Props) {
   const { t } = useTranslation();
@@ -107,10 +107,116 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
     if (galleryRef.current) galleryRef.current.value = "";
   };
 
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const html5QrCodeRef = useRef<any>(null);
+  const isProcessingRef = useRef(false);
+  const [barcodeLookupError, setBarcodeLookupError] = useState("");
+  const [barcodeFromScan, setBarcodeFromScan] = useState(false);
+
+  const performBarcodeLookup = useCallback(async (code: string) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    setStatus("barcode-lookup");
+    setBarcodeLookupError("");
+    try {
+      const res = await fetch(`/api/barcode-lookup/${encodeURIComponent(code)}`);
+      if (res.status === 400) {
+        isProcessingRef.current = false;
+        setStatus("barcode");
+        setBarcodeLookupError(t("v2.solo.invalidBarcode", "Invalid barcode. Please enter an 8-14 digit EAN/UPC number."));
+        return;
+      }
+      if (res.ok) {
+        const result = await res.json();
+        if (result.found && result.data) {
+          const recognitionResult: BottleRecognitionResult = {
+            whiskyName: result.data.name || "",
+            distillery: result.data.distillery || "",
+            region: result.data.region || "",
+            caskType: result.data.caskType || "",
+            age: result.data.age || "",
+            abv: result.data.abv || "",
+            confidence: result.data.confidence || 75,
+          };
+          setAiResult(recognitionResult);
+          setBarcodeValue(code);
+          setBarcodeFromScan(true);
+          setStatus("feedback");
+          isProcessingRef.current = false;
+          return;
+        }
+      }
+      isProcessingRef.current = false;
+      onBarcode(code);
+    } catch {
+      isProcessingRef.current = false;
+      onBarcode(code);
+    }
+  }, [onBarcode, t]);
+
+  const stopCameraScanner = useCallback(async () => {
+    try {
+      if (html5QrCodeRef.current) {
+        const state = html5QrCodeRef.current.getState?.();
+        if (state === 2) {
+          await html5QrCodeRef.current.stop();
+        }
+        html5QrCodeRef.current.clear();
+        html5QrCodeRef.current = null;
+      }
+    } catch {}
+  }, []);
+
+  const startCameraScanner = useCallback(async () => {
+    setStatus("barcode-scanning");
+    isProcessingRef.current = false;
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      await new Promise((r) => setTimeout(r, 100));
+      const scannerId = "barcode-scanner-region";
+      const el = document.getElementById(scannerId);
+      if (!el) return;
+
+      const scanner = new Html5Qrcode(scannerId);
+      html5QrCodeRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 280, height: 120 },
+          formatsToSupport: [2, 3, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16],
+        },
+        (decodedText: string) => {
+          if (isProcessingRef.current) return;
+          const cleaned = decodedText.trim();
+          if (cleaned) {
+            isProcessingRef.current = true;
+            scanner.stop().then(() => scanner.clear()).catch(() => {});
+            html5QrCodeRef.current = null;
+            isProcessingRef.current = false;
+            performBarcodeLookup(cleaned);
+          }
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.warn("Camera scanner error:", err);
+      setStatus("barcode");
+      setBarcodeLookupError(t("v2.solo.cameraError", "Could not access camera. Please enter the barcode manually."));
+    }
+  }, [performBarcodeLookup, t]);
+
+  useEffect(() => {
+    return () => {
+      stopCameraScanner();
+    };
+  }, [stopCameraScanner]);
+
   const handleBarcodeSubmit = () => {
     const trimmed = barcodeValue.trim();
     if (trimmed.length > 0) {
-      onBarcode(trimmed);
+      performBarcodeLookup(trimmed);
     }
   };
 
@@ -123,13 +229,19 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
       age: data.age,
       abv: data.abv,
       fromAI: true,
+      barcodeValue: barcodeValue || undefined,
     }, capturedFile);
   };
 
   const handleFeedbackDismiss = () => {
     setAiResult(null);
     setCapturedFile(null);
-    setStatus("idle");
+    if (barcodeFromScan) {
+      setBarcodeFromScan(false);
+      onBarcode(barcodeValue);
+    } else {
+      setStatus("idle");
+    }
   };
 
   if (status === "feedback" && aiResult) {
@@ -207,11 +319,81 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
     );
   }
 
+  if (status === "barcode-lookup") {
+    return (
+      <div className="labs-fade-in" style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 400,
+        gap: "var(--labs-space-lg)",
+      }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 16,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--labs-phase-finish-dim)",
+        }}>
+          <Loader2 size={32} style={{ color: "var(--labs-phase-finish)", animation: "spin 1s linear infinite" }} />
+        </div>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--labs-text-muted)", margin: 0 }} data-testid="solo-barcode-lookup-text">
+          {t("v2.solo.barcodeLookup", "Looking up barcode...")}
+        </p>
+      </div>
+    );
+  }
+
+  if (status === "barcode-scanning") {
+    return (
+      <div className="labs-fade-in">
+        <button
+          onClick={() => { stopCameraScanner(); setStatus("barcode"); }}
+          data-testid="solo-scanner-back-btn"
+          className="labs-btn-ghost"
+          style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
+        >
+          <ArrowLeft size={18} />
+          {t("v2.back", "Back")}
+        </button>
+
+        <h2 className="labs-h2" style={{ marginBottom: "var(--labs-space-lg)" }}>
+          {t("v2.solo.scanBarcode", "Scan Barcode")}
+        </h2>
+
+        <div className="labs-card" style={{
+          padding: "var(--labs-space-lg)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--labs-space-md)",
+        }}>
+          <div
+            id="barcode-scanner-region"
+            ref={scannerRef}
+            data-testid="solo-barcode-scanner"
+            style={{ width: "100%", maxWidth: 400, minHeight: 250, borderRadius: 12, overflow: "hidden" }}
+          />
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: 0 }}>
+            {t("v2.solo.scanHint", "Point your camera at the barcode on the bottle")}
+          </p>
+          <button
+            onClick={() => { stopCameraScanner(); setStatus("barcode"); }}
+            data-testid="solo-scanner-cancel-btn"
+            className="labs-btn-secondary"
+            style={{ minWidth: 140 }}
+          >
+            {t("v2.solo.enterManually", "Enter manually")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (status === "barcode") {
     return (
       <div className="labs-fade-in">
         <button
-          onClick={() => { setStatus("idle"); setBarcodeValue(""); }}
+          onClick={() => { setStatus("idle"); setBarcodeValue(""); setBarcodeLookupError(""); }}
           data-testid="solo-barcode-back-btn"
           className="labs-btn-ghost"
           style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
@@ -239,6 +421,24 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             <Barcode size={28} style={{ color: "var(--labs-phase-finish)" }} />
           </div>
 
+          <button
+            onClick={startCameraScanner}
+            data-testid="solo-barcode-scan-btn"
+            className="labs-btn-secondary"
+            style={{ width: "100%", maxWidth: 300, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <ScanLine size={18} />
+            {t("v2.solo.scanWithCamera", "Scan with Camera")}
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", maxWidth: 300 }}>
+            <div style={{ flex: 1, height: 1, background: "var(--labs-border)" }} />
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--labs-text-muted)" }}>
+              {t("v2.solo.or", "or")}
+            </span>
+            <div style={{ flex: 1, height: 1, background: "var(--labs-border)" }} />
+          </div>
+
           <input
             type="text"
             inputMode="numeric"
@@ -252,9 +452,11 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             onKeyDown={(e) => { if (e.key === "Enter") handleBarcodeSubmit(); }}
           />
 
-          <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: 0 }}>
-            {t("v2.solo.barcodeDesc", "Read an EAN or QR code")}
-          </p>
+          {barcodeLookupError && (
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--labs-danger)", textAlign: "center", margin: 0 }} data-testid="solo-barcode-error">
+              {barcodeLookupError}
+            </p>
+          )}
 
           <button
             onClick={handleBarcodeSubmit}

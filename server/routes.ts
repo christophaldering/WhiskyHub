@@ -5771,7 +5771,117 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         return res.status(400).json({ error: "Invalid barcode (8-14 digits)" });
       }
 
-      return res.status(404).json({ error: "not_in_database", suggestion: "photo" });
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
+      }
+
+      console.log(`[BARCODE-LOOKUP] code: "${code}"`);
+
+      const { db: dbInst } = await import("./db");
+      const { whiskies, whiskybaseCollection } = await import("@shared/schema");
+      const { eq, or, ilike } = await import("drizzle-orm");
+
+      const whiskyMatches = await dbInst.select().from(whiskies).where(
+        or(
+          eq(whiskies.whiskybaseId, code),
+          ilike(whiskies.name, code)
+        )
+      ).limit(1);
+
+      if (whiskyMatches.length > 0) {
+        const w = whiskyMatches[0];
+        console.log(`[BARCODE-LOOKUP] Found in whiskies table: "${w.name}"`);
+        return res.json({
+          found: true,
+          source: "whisky_db",
+          data: {
+            name: w.name || "",
+            distillery: w.distillery || "",
+            region: w.region || "",
+            age: w.age || "",
+            abv: w.abv ? String(w.abv) : "",
+            caskType: w.caskInfluence || "",
+            confidence: 95,
+          },
+        });
+      }
+
+      const collectionMatches = await dbInst.select().from(whiskybaseCollection).where(
+        or(
+          eq(whiskybaseCollection.whiskybaseId, code),
+          ilike(whiskybaseCollection.name, code)
+        )
+      ).limit(1);
+
+      if (collectionMatches.length > 0) {
+        const c = collectionMatches[0];
+        console.log(`[BARCODE-LOOKUP] Found in collection: "${c.name}"`);
+        return res.json({
+          found: true,
+          source: "collection",
+          data: {
+            name: c.name || "",
+            distillery: c.distillery || c.brand || "",
+            region: "",
+            age: c.statedAge || "",
+            abv: c.abv || "",
+            caskType: c.caskType || "",
+            confidence: 90,
+          },
+        });
+      }
+
+      console.log(`[BARCODE-LOOKUP] Not found in DB, trying AI text identification...`);
+      try {
+        const openai = new OpenAI({
+          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          temperature: 0.1,
+          max_tokens: 500,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky identification expert. Given a barcode number (EAN/UPC), try to identify the whisky product. Return JSON:
+{"name": "full product name", "distillery": "distillery name", "age": "age or empty", "abv": "ABV% or empty", "caskType": "cask type or empty", "region": "region or empty", "confidence": "high/medium/low"}
+If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
+            },
+            { role: "user", content: `Barcode: ${code}` },
+          ],
+        });
+
+        const raw = completion.choices[0]?.message?.content || "{}";
+        const parsed = JSON.parse(raw);
+
+        if (parsed.name && parsed.confidence !== "low") {
+          const confMap: Record<string, number> = { high: 95, medium: 75, low: 45 };
+          console.log(`[BARCODE-LOOKUP] AI identified: "${parsed.name}" (${parsed.confidence})`);
+          return res.json({
+            found: true,
+            source: "ai",
+            data: {
+              name: parsed.name,
+              distillery: parsed.distillery || "",
+              region: parsed.region || "",
+              age: parsed.age || "",
+              abv: parsed.abv || "",
+              caskType: parsed.caskType || "",
+              confidence: confMap[parsed.confidence] || 45,
+            },
+          });
+        }
+      } catch (aiErr: any) {
+        console.warn("[BARCODE-LOOKUP] AI fallback failed:", aiErr.message);
+      }
+
+      console.log(`[BARCODE-LOOKUP] No results for code "${code}"`);
+      return res.status(404).json({ found: false, error: "not_found" });
     } catch (error: any) {
       console.error("Barcode lookup error:", error.message);
       res.status(500).json({ error: "Lookup failed" });
