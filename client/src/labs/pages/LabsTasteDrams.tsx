@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingData } from "@/labs/components/rating/types";
 
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
-type ViewState = "list" | "detail" | "edit" | "trash";
+type ViewState = "list" | "detail" | "edit" | "trash" | "deepRate";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 type SortBy = "date" | "score" | "name" | "saved";
@@ -310,6 +312,17 @@ export default function LabsTasteDrams() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); setViewState("list"); setSelectedEntry(null); },
   });
 
+  const deepRateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
+    onSuccess: async (updatedEntry: any) => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+      if (updatedEntry && selectedEntry) {
+        setSelectedEntry({ ...selectedEntry, ...updatedEntry });
+      }
+      setViewState("detail");
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => journalApi.delete(session.pid!, id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); queryClient.invalidateQueries({ queryKey: ["journal-trash"] }); setDeleteTarget(null); if (selectedEntry?.id === deleteTarget?.id) { setSelectedEntry(null); setViewState("list"); } },
@@ -398,6 +411,16 @@ export default function LabsTasteDrams() {
 
   const handleBack = () => { setViewState("list"); setSelectedEntry(null); };
   const isSoloEntry = (entry: any) => !entry.source || entry.source === "solo" || entry.source === "casksense";
+  const isQuickRating = (entry: DramEntry) => {
+    if (!isSoloEntry(entry)) return false;
+    if (entry.status !== "final") return false;
+    if (entry.noseScore != null || entry.tasteScore != null || entry.finishScore != null) return false;
+    if (entry.noseNotes && /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(entry.noseNotes)) return false;
+    const hasTasteNotes = entry.tasteNotes && entry.tasteNotes.trim() && !isJsonScoreString(entry.tasteNotes);
+    const hasFinishNotes = entry.finishNotes && entry.finishNotes.trim();
+    if (hasTasteNotes || hasFinishNotes) return false;
+    return true;
+  };
 
   if (viewState === "trash") {
     return (
@@ -494,6 +517,16 @@ export default function LabsTasteDrams() {
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
+              {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
+                <button
+                  onClick={() => setViewState("deepRate")}
+                  className="labs-btn-secondary flex items-center gap-1.5"
+                  style={{ padding: "6px 12px", fontSize: 13 }}
+                  data-testid="button-labs-deep-rate-dram"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
+                </button>
+              )}
               {selectedEntry.status === "final" && (
                 <button
                   onClick={() => {
@@ -620,6 +653,55 @@ export default function LabsTasteDrams() {
         </div>
 
         {deleteTarget && <DeleteDialog onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} isPending={deleteMutation.isPending} />}
+      </div>
+    );
+  }
+
+  if (viewState === "deepRate" && selectedEntry) {
+    const deepRateWhisky = {
+      name: selectedEntry.whiskyName || selectedEntry.title || "",
+      region: selectedEntry.region || "",
+      cask: selectedEntry.caskType || "",
+    };
+    const deepRateInitialData: RatingData = {
+      scores: {
+        nose: selectedEntry.personalScore ?? 80,
+        palate: selectedEntry.personalScore ?? 80,
+        finish: selectedEntry.personalScore ?? 80,
+        overall: selectedEntry.personalScore ?? 80,
+      },
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: { nose: "", palate: "", finish: "", overall: "" },
+    };
+    const handleDeepRateDone = (data: RatingData) => {
+      const existingNotes = selectedEntry.noseNotes?.trim() || "";
+      const scoreLine = `[SCORES] Nose:${Math.round(data.scores.nose)} Taste:${Math.round(data.scores.palate)} Finish:${Math.round(data.scores.finish)} [/SCORES]`;
+      const dimParts: string[] = [];
+      for (const dim of ["nose", "palate", "finish"] as const) {
+        const tag = dim === "palate" ? "TASTE" : dim.toUpperCase();
+        const chips = (data.tags[dim] || []).join(", ");
+        const note = data.notes[dim] || "";
+        const content = [chips, note].filter(Boolean).join(" — ");
+        if (content) dimParts.push(`[${tag}] ${content} [/${tag}]`);
+      }
+      const structuredNotes = [existingNotes, scoreLine, ...dimParts].filter(Boolean).join("\n");
+      const patchData: any = {
+        personalScore: data.scores.overall,
+        noseNotes: structuredNotes,
+        tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
+        finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
+      };
+      deepRateMutation.mutate({ id: selectedEntry.id, data: patchData });
+    };
+    return (
+      <div className="labs-page" data-testid="labs-dram-deep-rate">
+        <RatingFlowV2
+          whisky={deepRateWhisky}
+          initialData={deepRateInitialData}
+          onDone={handleDeepRateDone}
+          onBack={() => setViewState("detail")}
+          hideQuick
+        />
       </div>
     );
   }

@@ -21,10 +21,11 @@ interface RatingModeSelectProps {
   labels: RatingLabels;
   onSelect: (mode: "guided" | "compact" | "quick") => void;
   onBack: () => void;
+  hideQuick?: boolean;
 }
 
-export default function RatingModeSelect({ labels, onSelect, onBack }: RatingModeSelectProps) {
-  const cards: Array<{
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick }: RatingModeSelectProps) {
+  const allCards: Array<{
     mode: "guided" | "compact" | "quick";
     title: string;
     desc: string;
@@ -35,6 +36,7 @@ export default function RatingModeSelect({ labels, onSelect, onBack }: RatingMod
     { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
     { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
   ];
+  const cards = hideQuick ? allCards.filter(c => c.mode !== "quick") : allCards;
 
   return (
     <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px` }}>

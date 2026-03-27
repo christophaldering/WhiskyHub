@@ -26,11 +26,12 @@ interface RatingFlowV2Props {
   onDone: (data: RatingData) => void;
   onBack: () => void;
   onChange?: (draft: RatingFlowDraftState) => void;
+  hideQuick?: boolean;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange }: RatingFlowV2Props) {
+export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, hideQuick }: RatingFlowV2Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(initialMode ?? null);
   const [step, setStep] = useState<Step>(initialMode ? "rating" : "mode");
@@ -125,6 +126,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         labels={modeLabels}
         onSelect={handleModeSelect}
         onBack={onBack}
+        hideQuick={hideQuick}
       />
     );
   }
