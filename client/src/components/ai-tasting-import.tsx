@@ -30,8 +30,8 @@ interface ImportedWhisky {
   category: string | null;
   country: string | null;
   region: string | null;
-  caskInfluence: string | null;
-  vintage: string | null;
+  caskType: string | null;
+  distilledYear: string | null;
   whiskybaseId: string | null;
   wbScore: number | null;
   price: number | null;
@@ -607,11 +607,11 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                                 </div>
                                 <div>
                                   <label style={smallLabelStyle}>Cask</label>
-                                  <input style={smallInputStyle} value={w.caskInfluence || ""} onChange={(e) => updateWhisky(idx, "caskInfluence", e.target.value || null)} />
+                                  <input style={smallInputStyle} value={w.caskType || ""} onChange={(e) => updateWhisky(idx, "caskType", e.target.value || null)} />
                                 </div>
                                 <div>
                                   <label style={smallLabelStyle}>{t("whisky.vintage")}</label>
-                                  <input style={smallInputStyle} value={w.vintage || ""} onChange={(e) => updateWhisky(idx, "vintage", e.target.value || null)} />
+                                  <input style={smallInputStyle} value={w.distilledYear || ""} onChange={(e) => updateWhisky(idx, "distilledYear", e.target.value || null)} />
                                 </div>
                                 <div>
                                   <label style={smallLabelStyle}>{t("whisky.price")}</label>

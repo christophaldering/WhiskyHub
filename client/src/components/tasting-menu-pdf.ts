@@ -109,8 +109,8 @@ export function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
       const r = w.region.toLowerCase();
       regionCounts[r] = (regionCounts[r] || 0) + 1;
     }
-    if (w.caskInfluence) {
-      const cask = w.caskInfluence.toLowerCase();
+    if (w.caskType) {
+      const cask = w.caskType.toLowerCase();
       if (cask.includes("sherry") || cask.includes("oloroso") || cask.includes("pedro") || cask.includes("px")) {
         sherryCaskCount++;
       }
@@ -135,8 +135,8 @@ export function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
   if (peatedCount > threshold) return THEME_PRESETS.islay;
 
   const bourbonCaskCount = whiskies.filter(w => {
-    if (!w.caskInfluence) return false;
-    const c = w.caskInfluence.toLowerCase();
+    if (!w.caskType) return false;
+    const c = w.caskType.toLowerCase();
     return c.includes("bourbon") || c.includes("american oak");
   }).length;
   if (bourbonCaskCount > threshold) return THEME_PRESETS.bourbon;
@@ -640,7 +640,7 @@ export async function generateTastingMenu(
           details.push(ageDisplay);
         }
         if (w.abv != null) details.push(`${w.abv}%`);
-        if (w.caskInfluence) details.push(w.caskInfluence);
+        if (w.caskType) details.push(w.caskType);
         if (w.region) details.push(w.region);
 
         if (details.length > 0) {

@@ -29,7 +29,7 @@ function blindLabel(idx: number): string {
 
 const REVEAL_DEFAULT_ORDER: string[][] = [
   ["name"],
-  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+  ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
   ["image"],
 ];
 
@@ -39,22 +39,22 @@ const REVEAL_PRESETS: Record<RevealPresetKey, { labelKey: string; fallbackLabel:
   classic: {
     labelKey: "cockpit.presetClassic",
     fallbackLabel: "Classic",
-    order: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+    order: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
   },
   nameFirst: {
     labelKey: "cockpit.presetNameFirst",
     fallbackLabel: "Name First",
-    order: [["name", "distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+    order: [["name", "distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
   },
   photoFirst: {
     labelKey: "cockpit.presetPhotoFirst",
     fallbackLabel: "Photo First",
-    order: [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+    order: [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
   },
   custom: {
     labelKey: "cockpit.presetCustom",
     fallbackLabel: "Custom",
-    order: [["name"], ["distillery"], ["age", "abv"], ["region", "country", "category"], ["caskInfluence", "peatLevel", "ppm"], ["bottler", "price"], ["image"]],
+    order: [["name"], ["distillery"], ["age", "abv"], ["region", "country", "category"], ["caskType", "peatLevel", "ppm"], ["bottler", "price"], ["image"]],
   },
 };
 
@@ -74,7 +74,7 @@ function getRevealState(tasting: any, whiskyCount: number, translate?: (key: str
   const FIELD_LABELS: Record<string, string> = {
     name: "cockpitUi.fieldName", distillery: "cockpitUi.fieldDistillery", age: "cockpitUi.fieldAge", abv: "cockpitUi.fieldAbv",
     region: "cockpitUi.fieldRegion", country: "cockpitUi.fieldCountry", category: "cockpitUi.fieldCategory",
-    caskInfluence: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", image: "cockpitUi.fieldImage",
+    caskType: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", image: "cockpitUi.fieldImage",
     bottler: "cockpitUi.fieldBottler", vintage: "cockpitUi.fieldVintage", distilledYear: "cockpitUi.fieldDistilled",
     bottledYear: "cockpitUi.fieldBottled", hostNotes: "cockpitUi.fieldNotes",
     hostSummary: "cockpitUi.fieldSummary", price: "cockpitUi.fieldPrice", ppm: "cockpitUi.fieldPpm",
@@ -131,7 +131,7 @@ function getGuestVisibility(tasting: any, stepGroups: string[][], isGuided: bool
 const REVEAL_FIELD_LABELS: Record<string, string> = {
   name: "cockpitUi.fieldName", distillery: "cockpitUi.fieldDistillery", age: "cockpitUi.fieldAge", abv: "cockpitUi.fieldAbv",
   region: "cockpitUi.fieldRegion", country: "cockpitUi.fieldCountry", category: "cockpitUi.fieldCategory",
-  caskInfluence: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", bottler: "cockpitUi.fieldBottler",
+  caskType: "cockpitUi.fieldCask", peatLevel: "cockpitUi.fieldPeat", bottler: "cockpitUi.fieldBottler",
   vintage: "cockpitUi.fieldVintage", distilledYear: "cockpitUi.fieldDistilled", bottledYear: "cockpitUi.fieldBottled",
   hostNotes: "cockpitUi.fieldNotes", hostSummary: "cockpitUi.fieldSummary", image: "cockpitUi.fieldImage",
   ppm: "cockpitUi.fieldPpm", price: "cockpitUi.fieldPrice", wbId: "cockpitUi.fieldWbId", wbScore: "cockpitUi.fieldWbScore",
@@ -1396,10 +1396,9 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           ["distillery", activeWhisky.distillery], ["age", activeWhisky.age ? `${activeWhisky.age}y` : null],
                           ["abv", activeWhisky.abv ? `${activeWhisky.abv}%` : null], ["region", activeWhisky.region],
                           ["country", activeWhisky.country], ["category", activeWhisky.category],
-                          ["caskInfluence", activeWhisky.caskInfluence], ["bottler", activeWhisky.bottler],
+                          ["caskType", activeWhisky.caskType], ["bottler", activeWhisky.bottler],
                           ["distilledYear", (activeWhisky as any).distilledYear ? `Dist. ${(activeWhisky as any).distilledYear}` : null],
                           ["bottledYear", (activeWhisky as any).bottledYear ? `Btl. ${(activeWhisky as any).bottledYear}` : null],
-                          ["vintage", !((activeWhisky as any).distilledYear || (activeWhisky as any).bottledYear) && activeWhisky.vintage ? `${activeWhisky.vintage}` : null],
                           ["peatLevel", activeWhisky.peatLevel],
                           ["ppm", activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : null],
                           ["price", activeWhisky.price ? Number(activeWhisky.price).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €" : null],
@@ -1563,7 +1562,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     name: activeWhisky?.name || "", distillery: activeWhisky?.distillery || "",
                     age: activeWhisky?.age ? `${activeWhisky.age}y` : "", abv: activeWhisky?.abv ? `${activeWhisky.abv}%` : "",
                     region: activeWhisky?.region || "", country: activeWhisky?.country || "",
-                    category: activeWhisky?.category || "", caskInfluence: activeWhisky?.caskInfluence || "",
+                    category: activeWhisky?.category || "", caskType: activeWhisky?.caskType || "",
                     bottler: activeWhisky?.bottler || "", peatLevel: activeWhisky?.peatLevel || "",
                     distilledYear: activeWhisky?.distilledYear || "", bottledYear: activeWhisky?.bottledYear || "",
                     ppm: activeWhisky?.ppm ? String(activeWhisky.ppm) : "", price: activeWhisky?.price || "",
@@ -2249,7 +2248,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               whisky={{
                 name: isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`,
                 region: currentRatingWhisky.region || undefined,
-                cask: currentRatingWhisky.caskInfluence || undefined,
+                cask: currentRatingWhisky.caskType || undefined,
                 blind: isBlind,
               }}
               initialData={(() => {

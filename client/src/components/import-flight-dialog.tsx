@@ -18,7 +18,7 @@ interface PreviewRow {
   abv?: number;
   type?: string;
   region?: string;
-  caskInfluence?: string;
+  caskType?: string;
   peatLevel?: string;
   notes?: string;
   imageRef?: string;

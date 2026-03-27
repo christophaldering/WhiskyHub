@@ -101,8 +101,8 @@ function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
       const r = w.region.toLowerCase();
       regionCounts[r] = (regionCounts[r] || 0) + 1;
     }
-    if (w.caskInfluence) {
-      const cask = w.caskInfluence.toLowerCase();
+    if (w.caskType) {
+      const cask = w.caskType.toLowerCase();
       if (cask.includes("sherry") || cask.includes("oloroso") || cask.includes("pedro") || cask.includes("px")) {
         sherryCaskCount++;
       }
@@ -128,8 +128,8 @@ function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
   if (peatedCount > threshold) return THEME_PRESETS.islay;
 
   const bourbonCaskCount = whiskies.filter(w => {
-    if (!w.caskInfluence) return false;
-    const c = w.caskInfluence.toLowerCase();
+    if (!w.caskType) return false;
+    const c = w.caskType.toLowerCase();
     return c.includes("bourbon") || c.includes("american oak");
   }).length;
   if (bourbonCaskCount > threshold) return THEME_PRESETS.bourbon;
@@ -145,7 +145,7 @@ const DARK_COLOR: RGB = [30, 41, 59];
 function buildMetaLine(w: Whisky): string {
   const parts: string[] = [];
   if (w.region) parts.push(w.region);
-  if (w.caskInfluence) parts.push(w.caskInfluence);
+  if (w.caskType) parts.push(w.caskType);
   if (w.peatLevel && w.peatLevel !== "None") parts.push(w.peatLevel);
   if (w.ppm != null) parts.push(`${w.ppm} ppm`);
   if (w.whiskybaseId) parts.push(`WB ${w.whiskybaseId}`);

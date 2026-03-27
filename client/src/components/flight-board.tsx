@@ -18,7 +18,7 @@ const ITEMS_PER_COLUMN = 6;
 function buildMetaLine(w: Whisky): string {
   const parts: string[] = [];
   if (w.region) parts.push(w.region);
-  if (w.caskInfluence) parts.push(w.caskInfluence);
+  if (w.caskType) parts.push(w.caskType);
   if (w.peatLevel && w.peatLevel !== "None") parts.push(w.peatLevel);
   if (w.ppm != null) parts.push(`${w.ppm} ppm`);
   if (w.whiskybaseId) parts.push(`WB ${w.whiskybaseId}`);
@@ -300,8 +300,8 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
           {whisky.region && (
             <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{whisky.region}</p></div>
           )}
-          {whisky.caskInfluence && (
-            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{whisky.caskInfluence}</p></div>
+          {whisky.caskType && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{whisky.caskType}</p></div>
           )}
           {whisky.peatLevel && whisky.peatLevel !== "None" && (
             <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{whisky.peatLevel}{whisky.ppm != null ? ` (${whisky.ppm} ppm)` : ""}</p></div>

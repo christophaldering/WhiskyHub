@@ -39,7 +39,6 @@ interface WhiskyEntry {
   abv: string;
   cask_type: string;
   peat_level: string;
-  vintage: string;
   bottler: string;
 }
 
@@ -103,7 +102,6 @@ Return a JSON object with a "whiskies" key containing an array of objects. Each 
 - abv: Alcohol percentage as string (e.g. "43", "46", "54.2")
 - cask_type: Maturation cask type (e.g. "Ex-Bourbon", "Ex-Sherry Oloroso", "Virgin Oak", "" if unknown)
 - peat_level: One of "None", "Light", "Medium", "Heavy", or "" if not applicable
-- vintage: Vintage year as string if applicable, otherwise ""
 - bottler: "Official" for official bottlings, or the independent bottler name
 
 Rules:
@@ -204,10 +202,9 @@ async function insertWhiskiesBatch(whiskies: WhiskyEntry[]): Promise<number> {
     country: w.country || null,
     category: w.category || null,
     age: w.age || null,
-    abv: w.abv || null,
+    abv: w.abv ? parseFloat(w.abv) || null : null,
     caskType: w.cask_type || null,
     peatLevel: w.peat_level || null,
-    vintage: w.vintage || null,
     bottler: w.bottler || null,
     source: "casksense-database",
     status: "final" as const,

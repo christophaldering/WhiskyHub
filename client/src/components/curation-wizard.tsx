@@ -71,7 +71,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
           age: whisky.age || "",
           abv: whisky.abv || "",
           region: whisky.region || "",
-          caskInfluence: whisky.caskInfluence || "",
+          caskType: whisky.caskType || "",
           peatLevel: whisky.peatLevel || "",
         }),
       });

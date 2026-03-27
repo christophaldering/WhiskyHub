@@ -118,10 +118,10 @@ export function BriefingNotes({ whiskies, tastingTitle }: BriefingNotesProps) {
                       </div>
                     )}
 
-                    {w.caskInfluence && (
+                    {w.caskType && (
                       <div data-testid={`text-briefing-cask-${w.id}`}>
                         <span className="text-muted-foreground text-xs uppercase tracking-wider">{t("briefing.cask")}:</span>{" "}
-                        {w.caskInfluence}
+                        {w.caskType}
                       </div>
                     )}
 

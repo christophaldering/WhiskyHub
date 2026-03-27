@@ -227,7 +227,7 @@ function GuidedStepView({
 
   const REVEAL_DEFAULT_ORDER: string[][] = [
     ["name"],
-    ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+    ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
     ["image"],
   ];
   let stepGroups = REVEAL_DEFAULT_ORDER;
@@ -248,7 +248,7 @@ function GuidedStepView({
 
   const [revealMoment, setRevealMoment] = useState<{
     whiskyName: string; distillery?: string; age?: string; region?: string; imageUrl?: string; stepLabel?: string;
-    caskInfluence?: string; abv?: string; category?: string; bottler?: string; vintage?: string; peatLevel?: string; country?: string; ppm?: string; price?: string;
+    caskType?: string; abv?: string; category?: string; bottler?: string; vintage?: string; peatLevel?: string; country?: string; ppm?: string; price?: string;
   } | null>(null);
   const prevRevealRef = useRef<string>("");
 
@@ -268,11 +268,11 @@ function GuidedStepView({
           region: revealedFields.has("region") ? activeWhisky.region : undefined,
           imageUrl: (revealedFields.has("image") || isFullyRevealed) ? activeWhisky.imageUrl : undefined,
           stepLabel: isFullyRevealed ? "Fully Revealed" : `Step ${step}`,
-          caskInfluence: revealedFields.has("caskInfluence") ? activeWhisky.caskInfluence : undefined,
+          caskType: revealedFields.has("caskType") ? activeWhisky.caskType : undefined,
           abv: revealedFields.has("abv") && activeWhisky.abv ? `${activeWhisky.abv}%` : undefined,
           category: revealedFields.has("category") ? activeWhisky.category : undefined,
           bottler: revealedFields.has("bottler") ? activeWhisky.bottler : undefined,
-          vintage: revealedFields.has("vintage") && activeWhisky.vintage ? `${activeWhisky.vintage}` : undefined,
+          vintage: (revealedFields.has("vintage") || revealedFields.has("distilledYear")) && activeWhisky.distilledYear ? `${activeWhisky.distilledYear}` : undefined,
           peatLevel: revealedFields.has("peatLevel") ? activeWhisky.peatLevel : undefined,
           country: revealedFields.has("country") ? activeWhisky.country : undefined,
           ppm: revealedFields.has("ppm") && activeWhisky.ppm ? `${activeWhisky.ppm} ppm` : undefined,
@@ -480,7 +480,7 @@ function GuidedStepView({
             whisky={{
               name: displayName,
               region: activeWhisky?.region || undefined,
-              cask: activeWhisky?.caskInfluence || undefined,
+              cask: activeWhisky?.caskType || undefined,
               blind: isBlindStep,
             }}
             initialData={myRating && editRatingMode !== "retaste" ? (() => {
@@ -928,7 +928,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const freeRevealStp = tasting?.revealStep ?? 0;
   const FREE_REVEAL_DEFAULT: string[][] = [
     ["name"],
-    ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+    ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
     ["image"],
   ];
   let freeStepGroups = FREE_REVEAL_DEFAULT;

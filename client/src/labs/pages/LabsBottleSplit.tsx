@@ -20,7 +20,7 @@ interface BottleEntry {
   region?: string;
   category?: string;
   country?: string;
-  caskInfluence?: string;
+  caskType?: string;
   peatLevel?: string;
   whiskybaseId?: string;
   bottler?: string;
@@ -157,7 +157,7 @@ export default function LabsBottleSplit() {
           bottles: validBottles.map(b => ({
             name: b.name, distillery: b.distillery, age: b.age, abv: b.abv,
             region: b.region, category: b.category, country: b.country,
-            caskInfluence: b.caskInfluence, peatLevel: b.peatLevel,
+            caskType: b.caskType, peatLevel: b.peatLevel,
             whiskybaseId: b.whiskybaseId, bottler: b.bottler, vintage: b.vintage,
             ppm: b.ppm, distilledYear: b.distilledYear, bottledYear: b.bottledYear,
             price: b.price, wbScore: b.wbScore, notes: b.notes,
@@ -273,7 +273,7 @@ export default function LabsBottleSplit() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
                     <input data-testid={`input-split-bottle-age-${i}`} value={b.age || ""} onChange={e => updateBottle(i, "age", e.target.value)} placeholder={t("bottleSplitUi.agePlaceholder")} className="labs-input" />
                     <input data-testid={`input-split-bottle-abv-${i}`} type="number" step="0.1" value={b.abv ?? ""} onChange={e => updateBottle(i, "abv", e.target.value ? parseFloat(e.target.value) : null)} placeholder={t("bottleSplitUi.abvPlaceholder")} className="labs-input" />
-                    <input data-testid={`input-split-bottle-cask-${i}`} value={b.caskInfluence || ""} onChange={e => updateBottle(i, "caskInfluence", e.target.value)} placeholder={t("bottleSplitUi.caskPlaceholder")} className="labs-input" />
+                    <input data-testid={`input-split-bottle-cask-${i}`} value={b.caskType || ""} onChange={e => updateBottle(i, "caskType", e.target.value)} placeholder={t("bottleSplitUi.caskPlaceholder")} className="labs-input" />
                     <input data-testid={`input-split-bottle-category-${i}`} value={b.category || ""} onChange={e => updateBottle(i, "category", e.target.value)} placeholder={t("bottleSplitUi.categoryPlaceholder")} className="labs-input" />
                     <input data-testid={`input-split-bottle-country-${i}`} value={b.country || ""} onChange={e => updateBottle(i, "country", e.target.value)} placeholder={t("bottleSplitUi.countryPlaceholder")} className="labs-input" />
                     <input data-testid={`input-split-bottle-peat-${i}`} value={b.peatLevel || ""} onChange={e => updateBottle(i, "peatLevel", e.target.value)} placeholder={t("bottleSplitUi.peatLevelPlaceholder")} className="labs-input" />

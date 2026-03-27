@@ -21,7 +21,7 @@ export interface ComparableSettings {
 export interface WhiskyMetadata {
   region?: string | null;
   peatLevel?: string | null;
-  caskInfluence?: string | null;
+  caskType?: string | null;
   abv?: number | null;
   age?: string | null;
   abvBand?: string | null;
@@ -150,8 +150,8 @@ export function computeSimilarity(
     totalWeight += weights.peat;
   }
 
-  const tCask = normalizeCask(target.caskInfluence);
-  const cCask = normalizeCask(candidate.caskInfluence);
+  const tCask = normalizeCask(target.caskType);
+  const cCask = normalizeCask(candidate.caskType);
   if (tCask && cCask) {
     score += tCask === cCask ? weights.cask : 0;
     totalWeight += weights.cask;
@@ -279,7 +279,7 @@ export function computeComparableBaseline(
 const baselineCacheMap = new Map<string, BaselineResult>();
 
 function metaSignature(m: WhiskyMetadata): string {
-  return `${normalizeRegion(m.region)}|${normalizePeat(m.peatLevel)}|${normalizeCask(m.caskInfluence)}|${parseAbv(m.abv)}|${parseAge(m.age)}`;
+  return `${normalizeRegion(m.region)}|${normalizePeat(m.peatLevel)}|${normalizeCask(m.caskType)}|${parseAbv(m.abv)}|${parseAge(m.age)}`;
 }
 
 function cacheKey(

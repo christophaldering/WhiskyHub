@@ -129,7 +129,7 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
           {[
             { label: t('taxonomy.category'), value: w.category },
             { label: t('taxonomy.region'), value: w.region },
-            { label: t('taxonomy.cask'), value: w.caskInfluence },
+            { label: t('taxonomy.cask'), value: w.caskType },
             { label: t('taxonomy.abv'), value: w.abvBand },
             { label: t('taxonomy.age'), value: w.ageBand },
             { label: t('taxonomy.peat'), value: w.peatLevel },

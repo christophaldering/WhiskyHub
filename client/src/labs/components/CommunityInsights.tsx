@@ -10,7 +10,7 @@ interface InsightsData {
   topRated: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
   mostExplored: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
   regionalHighlights: Array<{ region: string; avgOverall: number; count: number }>;
-  flavorTrends: { peatLevels: Record<string, number>; caskInfluences: Record<string, number> };
+  flavorTrends: { peatLevels: Record<string, number>; caskTypes: Record<string, number> };
   divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
 }
 
@@ -247,22 +247,22 @@ export default function CommunityInsights() {
             </div>
           )}
 
-          {(Object.keys(flavorTrends.peatLevels).length > 0 || Object.keys(flavorTrends.caskInfluences).length > 0) && (
+          {(Object.keys(flavorTrends.peatLevels).length > 0 || Object.keys(flavorTrends.caskTypes).length > 0) && (
             <div data-testid="card-flavor-trends">
               <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 10px" }}>
                 {t("insights.flavorTitle")}
               </h3>
               <div className="labs-grouped-list" style={{ padding: "16px 18px" }}>
                 {Object.keys(flavorTrends.peatLevels).length > 0 && (
-                  <div style={{ marginBottom: Object.keys(flavorTrends.caskInfluences).length > 0 ? 16 : 0 }}>
+                  <div style={{ marginBottom: Object.keys(flavorTrends.caskTypes).length > 0 ? 16 : 0 }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>{t("insights.peatLevels")}</p>
                     <DonutChart data={flavorTrends.peatLevels} size={72} />
                   </div>
                 )}
-                {Object.keys(flavorTrends.caskInfluences).length > 0 && (
+                {Object.keys(flavorTrends.caskTypes).length > 0 && (
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>{t("insights.caskInfluence")}</p>
-                    <DonutChart data={flavorTrends.caskInfluences} size={72} />
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", margin: "0 0 8px" }}>{t("insights.caskType")}</p>
+                    <DonutChart data={flavorTrends.caskTypes} size={72} />
                   </div>
                 )}
               </div>

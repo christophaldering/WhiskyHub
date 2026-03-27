@@ -312,11 +312,11 @@ export const FLAVOR_PROFILES: FlavorProfileDef[] = [
 export function detectFlavorProfile(whisky: {
   region?: string | null;
   peatLevel?: string | null;
-  caskInfluence?: string | null;
+  caskType?: string | null;
 }): FlavorProfileId | null {
   const region = (whisky.region || "").toLowerCase();
   const peat = (whisky.peatLevel || "").toLowerCase();
-  const cask = (whisky.caskInfluence || "").toLowerCase();
+  const cask = (whisky.caskType || "").toLowerCase();
 
   if (peat === "heavy" || peat === "medium") return "peated-maritime";
   if (cask.includes("sherry") || cask.includes("port") || cask.includes("wine") || cask.includes("oloroso") || cask.includes("pedro")) return "sherried-rich";
@@ -329,7 +329,7 @@ export function detectFlavorProfile(whisky: {
 }
 
 export function getEffectiveProfile(
-  whisky: { flavorProfile?: string | null; region?: string | null; peatLevel?: string | null; caskInfluence?: string | null },
+  whisky: { flavorProfile?: string | null; region?: string | null; peatLevel?: string | null; caskType?: string | null },
   isBlind: boolean
 ): { profileId: FlavorProfileId | null; detectedLabel: string | null } {
   const explicit = whisky.flavorProfile as FlavorProfileId | null | undefined;

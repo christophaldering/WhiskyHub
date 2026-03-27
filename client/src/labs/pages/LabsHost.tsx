@@ -38,7 +38,7 @@ const EXCEL_MAX_SIZE = 5 * 1024 * 1024;
 const EXCEL_MAX_ROWS = 500;
 const EXCEL_ALLOWED_FIELDS = new Set([
   "sortOrder", "name", "distillery", "age", "abv", "category", "region",
-  "country", "caskInfluence", "peatLevel", "ppm", "bottler", "vintage",
+  "country", "caskType", "peatLevel", "ppm", "bottler",
   "distilledYear", "bottledYear",
   "price", "whiskybaseId", "notes", "hostSummary",
 ]);
@@ -46,9 +46,9 @@ const EXCEL_HEADER_MAP: Record<string, string> = {
   "#": "sortOrder", "name": "name", "name *": "name",
   "distillery": "distillery", "age": "age", "abv %": "abv", "abv": "abv",
   "category": "category", "region": "region", "country": "country",
-  "cask type": "caskInfluence", "cask influence": "caskInfluence",
+  "cask type": "caskType", "cask influence": "caskType",
   "peat level": "peatLevel", "ppm": "ppm", "bottler": "bottler",
-  "vintage": "vintage", "distilled": "distilledYear", "distilled year": "distilledYear",
+  "vintage": "distilledYear", "distilled": "distilledYear", "distilled year": "distilledYear",
   "bottled": "bottledYear", "bottled year": "bottledYear",
   "price": "price", "whiskybase id": "whiskybaseId",
   "notes": "notes", "host summary": "hostSummary",
@@ -260,7 +260,7 @@ interface LabsHostProps {
 
 const REVEAL_DEFAULT_ORDER: string[][] = [
   ["name"],
-  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+  ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
   ["image"],
 ];
 
@@ -305,8 +305,8 @@ function getRevealState(tasting: any, whiskyCount: number, t: (key: string, opts
   const FIELD_LABELS: Record<string, string> = {
     name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
     region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
-    caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
-    bottler: t("labs.host.fieldBottler"), vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"),
+    caskType: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
+    bottler: t("labs.host.fieldBottler"), distilledYear: t("labs.host.fieldDistilled"),
     bottledYear: t("labs.host.fieldBottled"), hostNotes: t("labs.host.fieldNotes"),
     hostSummary: t("labs.host.fieldSummary"), price: t("labs.host.fieldPrice"), ppm: t("labs.host.fieldPpm"),
     wbId: t("labs.host.fieldWbId"), wbScore: t("labs.host.fieldWbScore"),
@@ -1374,7 +1374,7 @@ function MobileCompanion({
             name: w.name || "",
             distillery: w.distillery || "",
             abv: normalizeAbv(w.abv),
-            caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
+            caskType: w.caskType || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
             country: w.country || "",
@@ -1383,7 +1383,7 @@ function MobileCompanion({
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
-            vintage: w.vintage || "",
+            distilledYear: w.distilledYear || "",
             distilledYear: w.distilledYear || "",
             bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
@@ -2267,7 +2267,7 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
 
 const REVEAL_ALL_FIELDS = [
   "name", "distillery", "age", "abv", "region", "country",
-  "category", "caskInfluence", "peatLevel", "bottler", "vintage",
+  "category", "caskType", "peatLevel", "bottler",
   "distilledYear", "bottledYear",
   "hostNotes", "hostSummary", "image",
 ] as const;
@@ -2275,17 +2275,17 @@ const REVEAL_ALL_FIELDS = [
 const getRevealFieldLabels = (t: (key: string) => string): Record<string, string> => ({
   name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
   region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
-  caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), bottler: t("labs.host.fieldBottler"),
-  vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
+  caskType: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), bottler: t("labs.host.fieldBottler"),
+  distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
   hostNotes: t("labs.host.fieldNotes"), hostSummary: t("labs.host.fieldSummary"), image: t("labs.host.fieldImage"),
   ppm: t("labs.host.fieldPpm"), price: t("labs.host.fieldPrice"), wbId: t("labs.host.fieldWbId"), wbScore: t("labs.host.fieldWbScore"),
 });
 
 const REVEAL_PRESETS_MAP: Record<string, string[][]> = {
-  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
-  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
-  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler"], ["distilledYear", "bottledYear"], ["hostNotes", "hostSummary"], ["image"]],
-  "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "distilledYear", "bottledYear", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskType"], ["peatLevel", "bottler"], ["distilledYear", "bottledYear"], ["hostNotes", "hostSummary"], ["image"]],
+  "details-first": [["distillery", "age", "abv", "region", "caskType"], ["name"], ["image"]],
 };
 
 function detectPresetKey(order: string[][] | null): string {
@@ -3421,8 +3421,8 @@ function GuidedTastingEngine({
   const GUIDED_FIELD_LABELS: Record<string, string> = {
     name: t("labs.host.fieldName"), distillery: t("labs.host.fieldDistillery"), age: t("labs.host.fieldAge"), abv: t("labs.host.fieldAbv"),
     region: t("labs.host.fieldRegion"), country: t("labs.host.fieldCountry"), category: t("labs.host.fieldCategory"),
-    caskInfluence: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
-    bottler: t("labs.host.fieldBottler"), vintage: t("labs.host.fieldVintage"), distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
+    caskType: t("labs.host.fieldCask"), peatLevel: t("labs.host.fieldPeat"), image: t("labs.host.fieldImage"),
+    bottler: t("labs.host.fieldBottler"), distilledYear: t("labs.host.fieldDistilled"), bottledYear: t("labs.host.fieldBottled"),
     hostNotes: t("labs.host.fieldNotes"), hostSummary: t("labs.host.fieldSummary"), price: t("labs.host.fieldPrice"),
   };
   let parsedRevealOrder = REVEAL_DEFAULT_ORDER;
@@ -4573,7 +4573,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             name: w.name || "",
             distillery: w.distillery || "",
             abv: normalizeAbv(w.abv),
-            caskInfluence: w.caskInfluence || w.caskType || w.cask || "",
+            caskType: w.caskType || w.caskType || w.cask || "",
             age: w.age ? String(w.age) : "",
             category: w.category || "",
             country: w.country || "",
@@ -4582,7 +4582,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
-            vintage: w.vintage || "",
+            distilledYear: w.distilledYear || "",
             distilledYear: w.distilledYear || "",
             bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
@@ -4636,8 +4636,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.country && !prev.country ? { country: data.country } : {}),
           ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
           ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
-          ...(data.vintage ? { vintage: String(data.vintage) } : {}),
-          ...(data.distilledYear ? { distilledYear: String(data.distilledYear) } : {}),
+          ...(data.distilledYear || data.vintage ? { distilledYear: String(data.distilledYear || data.vintage) } : {}),
           ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
@@ -4657,8 +4656,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.country && !prev.country ? { country: data.country } : {}),
           ...(data.peatLevel && !prev.peatLevel ? { peatLevel: data.peatLevel } : {}),
           ...(data.bottler && !prev.bottler ? { bottler: data.bottler } : {}),
-          ...(data.vintage ? { vintage: String(data.vintage) } : {}),
-          ...(data.distilledYear ? { distilledYear: String(data.distilledYear) } : {}),
+          ...(data.distilledYear || data.vintage ? { distilledYear: String(data.distilledYear || data.vintage) } : {}),
           ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
@@ -4682,13 +4680,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         name: newWhiskyName.trim(),
         distillery: extFields.distillery || "",
         abv: normalizeAbv(extFields.abv),
-        caskInfluence: extFields.caskType || "",
+        caskType: extFields.caskType || "",
         age: extFields.age || "",
         category: extFields.category || "",
         country: extFields.country || "",
         region: extFields.region || "",
         bottler: extFields.bottler || "",
-        vintage: extFields.vintage || "",
+        distilledYear: extFields.distilledYear || "",
         distilledYear: extFields.distilledYear || "",
         bottledYear: extFields.bottledYear || "",
         whiskybaseId: extFields.whiskybaseId || "",
@@ -4727,7 +4725,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     if (coerced.price !== undefined) coerced.price = normalizePrice(coerced.price);
     if (coerced.ppm !== undefined) coerced.ppm = coerced.ppm ? parseFloat(coerced.ppm as string) || null : null;
     if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
-    if (coerced.caskType !== undefined) { coerced.caskInfluence = coerced.caskType; delete coerced.caskType; }
     if (coerced.flavorProfile !== undefined) { coerced.flavorProfile = coerced.flavorProfile === "auto" || !coerced.flavorProfile ? null : coerced.flavorProfile; }
     if (editWbLookupId.trim()) coerced.whiskybaseId = editWbLookupId.trim();
     updateWhiskyMutation.mutate({ id: whiskyId, data: coerced });
@@ -4743,13 +4740,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       name: w.name || "",
       distillery: w.distillery || "",
       abv: w.abv ? String(w.abv) : "",
-      caskType: w.caskInfluence || "",
+      caskType: w.caskType || "",
       age: w.age ? String(w.age) : "",
       category: w.category || "",
       country: w.country || "",
       region: w.region || "",
       bottler: w.bottler || "",
-      vintage: w.vintage || "",
+      distilledYear: w.distilledYear || "",
       distilledYear: w.distilledYear || "",
       bottledYear: w.bottledYear || "",
       price: w.price ? String(w.price).replace(".", ",") : "",
@@ -6175,7 +6172,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder={t("labs.host.fieldPeat")} value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder={t("labs.host.fieldPpm")} value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
                 <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
-                  <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskInfluence: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
+                  <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskType: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
                   <option value="none">{t("labs.host.flavorNone")}</option>
                   {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                 </select>
@@ -6313,7 +6310,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
                       <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
                       <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
-                        <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskInfluence: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
+                        <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskType: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
                         <option value="none">{t("labs.host.flavorNone")}</option>
                         {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                       </select>

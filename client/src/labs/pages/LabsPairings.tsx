@@ -14,7 +14,7 @@ interface Suggestion {
   name: string;
   distillery: string;
   region: string;
-  caskInfluence: string;
+  caskType: string;
   peatLevel: string;
   score: number;
   reason: string;
@@ -161,7 +161,7 @@ export default function LabsPairings() {
                     <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>{s.distillery}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {s.region && <Tag icon={MapPin} label={s.region} variant="accent" />}
-                      {s.caskInfluence && <Tag icon={Package} label={s.caskInfluence} variant="gold" />}
+                      {s.caskType && <Tag icon={Package} label={s.caskType} variant="gold" />}
                       {s.peatLevel && <Tag icon={Flame} label={s.peatLevel} variant="red" />}
                     </div>
                     {s.reason && (

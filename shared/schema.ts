@@ -134,7 +134,7 @@ export const whiskies = pgTable("whiskies", {
   region: text("region"), // Islay, Speyside, Highland, Kentucky, etc.
   abvBand: text("abv_band"), // Low (<40%), Standard (40-46%), High (46-55%), Cask Strength (>55%)
   ageBand: text("age_band"), // NAS, Young (3-9), Classic (10-17), Mature (18-25), Old (25+)
-  caskInfluence: text("cask_influence"), // Bourbon, Sherry, Port, Wine, etc.
+  caskType: text("cask_type"), // Bourbon, Sherry, Port, Wine, etc.
   peatLevel: text("peat_level"), // None, Light, Medium, Heavy
   ppm: real("ppm"), // phenol parts per million
   whiskybaseId: text("whiskybase_id"), // Whiskybase catalog number
@@ -143,7 +143,6 @@ export const whiskies = pgTable("whiskies", {
   photoRevealed: boolean("photo_revealed").default(false),
   hostNotes: text("host_notes"),
   bottler: text("bottler"), // Independent Bottler or "OA" for official
-  vintage: text("vintage"), // Legacy field — kept for backwards compatibility
   distilledYear: text("distilled_year"), // Year of distillation
   bottledYear: text("bottled_year"), // Year of bottling
   price: real("price"), // Bottle price (0.7l)
@@ -308,10 +307,9 @@ export const journalEntries = pgTable("journal_entries", {
   country: text("country"),
   category: text("category"),
   age: text("age"),
-  abv: text("abv"),
+  abv: real("abv"),
   caskType: text("cask_type"),
   peatLevel: text("peat_level"),
-  vintage: text("vintage"),
   bottler: text("bottler"),
   noseNotes: text("nose_notes"),
   tasteNotes: text("taste_notes"),
@@ -319,11 +317,10 @@ export const journalEntries = pgTable("journal_entries", {
   personalScore: real("personal_score"),
   whiskybaseId: text("whiskybase_id"),
   wbScore: real("wb_score"),
-  price: text("price"),
+  price: real("price"),
   mood: text("mood"),
   occasion: text("occasion"),
   imageUrl: text("image_url"),
-  body: text("body"),
   source: text("source").default("casksense"),
   voiceMemoUrl: text("voice_memo_url"),
   voiceMemoTranscript: text("voice_memo_transcript"),
@@ -346,7 +343,7 @@ export const benchmarkEntries = pgTable("benchmark_entries", {
   region: text("region"),
   country: text("country"),
   age: text("age"),
-  abv: text("abv"),
+  abv: real("abv"),
   caskType: text("cask_type"),
   category: text("category"),
   noseNotes: text("nose_notes"),
@@ -373,8 +370,9 @@ export const wishlistEntries = pgTable("wishlist_entries", {
   whiskyName: text("whisky_name").notNull(),
   distillery: text("distillery"),
   region: text("region"),
+  country: text("country"),
   age: text("age"),
-  abv: text("abv"),
+  abv: real("abv"),
   caskType: text("cask_type"),
   notes: text("notes"),
   priority: text("priority").default("medium"),
@@ -424,7 +422,7 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
   status: text("status"), // open, closed, empty
   statedAge: text("stated_age"),
   size: text("size"),
-  abv: text("abv"),
+  abv: real("abv"),
   unit: text("unit"),
   caskType: text("cask_type"),
   communityRating: real("community_rating"),
@@ -434,6 +432,8 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
   avgPrice: real("avg_price"),
   avgPriceCurrency: text("avg_price_currency"),
   distillery: text("distillery"),
+  country: text("country"),
+  region: text("region"),
   vintage: text("vintage"),
   addedAt: text("added_at"),
   imageUrl: text("image_url"),
@@ -960,6 +960,7 @@ export const bottleSplits = pgTable("bottle_splits", {
     region?: string;
     category?: string;
     country?: string;
+    caskType?: string;
     caskInfluence?: string;
     peatLevel?: string;
     whiskybaseId?: string;

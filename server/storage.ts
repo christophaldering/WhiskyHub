@@ -281,7 +281,7 @@ export interface IStorage {
     totalRaters: number;
     region: string | null;
     category: string | null;
-    caskInfluence: string | null;
+    caskType: string | null;
     peatLevel: string | null;
     age: string | null;
     abv: number | null;
@@ -300,7 +300,7 @@ export interface IStorage {
     topRated: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
     mostExplored: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
     regionalHighlights: Array<{ region: string; avgOverall: number; count: number }>;
-    flavorTrends: { peatLevels: Record<string, number>; caskInfluences: Record<string, number> };
+    flavorTrends: { peatLevels: Record<string, number>; caskTypes: Record<string, number> };
     divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
   }>;
 
@@ -746,7 +746,7 @@ export class DatabaseStorage implements IStorage {
         region: w.region,
         abvBand: w.abvBand,
         ageBand: w.ageBand,
-        caskInfluence: w.caskInfluence,
+        caskType: w.caskType,
         peatLevel: w.peatLevel,
         ppm: w.ppm,
         whiskybaseId: w.whiskybaseId,
@@ -945,7 +945,7 @@ export class DatabaseStorage implements IStorage {
         country: whiskies.country,
         region: whiskies.region,
         category: whiskies.category,
-        caskInfluence: whiskies.caskInfluence,
+        caskType: whiskies.caskType,
         imageUrl: whiskies.imageUrl,
         tastingId: tastings.id,
         tastingTitle: tastings.title,
@@ -1264,7 +1264,7 @@ export class DatabaseStorage implements IStorage {
       const w = whiskyMap.get(rating.whiskyId);
       if (w) {
         if (w.region) ratedRegions[w.region] = (ratedRegions[w.region] || 0) + 1;
-        if (w.caskInfluence) ratedCaskTypes[w.caskInfluence] = (ratedCaskTypes[w.caskInfluence] || 0) + 1;
+        if (w.caskType) ratedCaskTypes[w.caskType] = (ratedCaskTypes[w.caskType] || 0) + 1;
         if (w.peatLevel) ratedPeatLevels[w.peatLevel] = (ratedPeatLevels[w.peatLevel] || 0) + 1;
       }
     }
@@ -1336,9 +1336,9 @@ export class DatabaseStorage implements IStorage {
           if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
           regionAcc[w.region].total += normOverall; regionAcc[w.region].count++;
         }
-        if (w.caskInfluence) {
-          if (!caskAcc[w.caskInfluence]) caskAcc[w.caskInfluence] = { total: 0, count: 0 };
-          caskAcc[w.caskInfluence].total += normOverall; caskAcc[w.caskInfluence].count++;
+        if (w.caskType) {
+          if (!caskAcc[w.caskType]) caskAcc[w.caskType] = { total: 0, count: 0 };
+          caskAcc[w.caskType].total += normOverall; caskAcc[w.caskType].count++;
         }
         if (w.peatLevel) {
           if (!peatAcc[w.peatLevel]) peatAcc[w.peatLevel] = { total: 0, count: 0 };
@@ -1895,7 +1895,7 @@ export class DatabaseStorage implements IStorage {
     totalRaters: number;
     region: string | null;
     category: string | null;
-    caskInfluence: string | null;
+    caskType: string | null;
     peatLevel: string | null;
     age: string | null;
     abv: number | null;
@@ -1955,7 +1955,7 @@ export class DatabaseStorage implements IStorage {
         totalRaters: raters.size,
         region: w.region,
         category: w.category,
-        caskInfluence: w.caskInfluence,
+        caskType: w.caskType,
         peatLevel: w.peatLevel,
         age: w.age,
         abv: w.abv,
@@ -1971,7 +1971,7 @@ export class DatabaseStorage implements IStorage {
     topRated: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
     mostExplored: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; ratingCount: number; imageUrl: string | null }>;
     regionalHighlights: Array<{ region: string; avgOverall: number; count: number }>;
-    flavorTrends: { peatLevels: Record<string, number>; caskInfluences: Record<string, number> };
+    flavorTrends: { peatLevels: Record<string, number>; caskTypes: Record<string, number> };
     divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
   }> {
     const allWhiskyRows = await db.select().from(whiskies);
@@ -2039,19 +2039,19 @@ export class DatabaseStorage implements IStorage {
       ratingCount: g.scores.length,
       imageUrl: g.whisky.imageUrl,
       peatLevel: g.whisky.peatLevel,
-      caskInfluence: g.whisky.caskInfluence,
+      caskType: g.whisky.caskType,
       variance: variance(g.scores),
     }));
 
     const topRated = [...scored]
       .sort((a, b) => b.avgOverall - a.avgOverall)
       .slice(0, 5)
-      .map(({ peatLevel, caskInfluence, variance, ...rest }) => rest);
+      .map(({ peatLevel, caskType, variance, ...rest }) => rest);
 
     const mostExplored = [...scored]
       .sort((a, b) => b.ratingCount - a.ratingCount)
       .slice(0, 5)
-      .map(({ peatLevel, caskInfluence, variance, ...rest }) => rest);
+      .map(({ peatLevel, caskType, variance, ...rest }) => rest);
 
     const regionMap: Record<string, { scores: number[] }> = {};
     for (const s of scored) {
@@ -2065,19 +2065,19 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.avgOverall - a.avgOverall);
 
     const peatLevels: Record<string, number> = {};
-    const caskInfluences: Record<string, number> = {};
+    const caskTypes: Record<string, number> = {};
     for (const s of scored) {
       if (s.peatLevel) peatLevels[s.peatLevel] = (peatLevels[s.peatLevel] || 0) + 1;
-      if (s.caskInfluence) caskInfluences[s.caskInfluence] = (caskInfluences[s.caskInfluence] || 0) + 1;
+      if (s.caskType) caskTypes[s.caskType] = (caskTypes[s.caskType] || 0) + 1;
     }
 
     const divisiveDrams = [...scored]
       .filter(s => s.ratingCount >= 3)
       .sort((a, b) => b.variance - a.variance)
       .slice(0, 3)
-      .map(({ peatLevel, caskInfluence, ...rest }) => rest);
+      .map(({ peatLevel, caskType, ...rest }) => rest);
 
-    return { communityPulse, topRated, mostExplored, regionalHighlights, flavorTrends: { peatLevels, caskInfluences }, divisiveDrams };
+    return { communityPulse, topRated, mostExplored, regionalHighlights, flavorTrends: { peatLevels, caskTypes }, divisiveDrams };
   }
 
   async getTasteTwins(participantId: string): Promise<Array<{

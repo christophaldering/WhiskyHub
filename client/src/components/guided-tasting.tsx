@@ -691,7 +691,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                   {activeWhisky.age && <span>{activeWhisky.age === "NAS" ? "NAS" : `${activeWhisky.age}y`}</span>}
                   {activeWhisky.abv != null && <span>{activeWhisky.abv}%</span>}
                   {activeWhisky.bottler && <span className="text-primary/80">{activeWhisky.bottler}</span>}
-                  {activeWhisky.vintage && <span>{activeWhisky.vintage}</span>}
+                  {activeWhisky.distilledYear && <span>{activeWhisky.distilledYear}</span>}
                   {activeWhisky.region && <span>{activeWhisky.region}</span>}
                   {activeWhisky.category && <span>{activeWhisky.category}</span>}
                   {activeWhisky.price != null && <span>€{activeWhisky.price.toFixed(0)}</span>}

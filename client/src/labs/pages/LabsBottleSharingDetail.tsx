@@ -178,7 +178,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
           {whiskies.map((w: any) => (
             <div key={w.id} data-testid={`sharing-whisky-${w.id}`} className="labs-card" style={{ padding: "12px 16px" }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{sharing.blindMode ? "Blind Sample" : w.name}</div>
-              {!sharing.blindMode && (w.region || w.caskInfluence) && <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>{[w.region, w.caskInfluence].filter(Boolean).join(" · ")}</div>}
+              {!sharing.blindMode && (w.region || w.caskType) && <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>{[w.region, w.caskType].filter(Boolean).join(" · ")}</div>}
             </div>
           ))}
 
@@ -284,7 +284,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 600 }}>{d.whisky.name}</div>
-                    {(d.whisky.region || d.whisky.caskInfluence) && <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{[d.whisky.region, d.whisky.caskInfluence].filter(Boolean).join(" · ")}</div>}
+                    {(d.whisky.region || d.whisky.caskType) && <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{[d.whisky.region, d.whisky.caskType].filter(Boolean).join(" · ")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)" }}>{d.avgOverall > 0 ? d.avgOverall.toFixed(1) : "—"}</div>

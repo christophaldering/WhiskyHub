@@ -59,7 +59,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
           region: entry.region || null,
           cask: entry.caskType || null,
           age: entry.age || null,
-          abv: entry.abv || null,
+          abv: entry.abv != null ? String(entry.abv) : null,
           source: "journal" as const,
         }));
 
@@ -69,7 +69,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
           region: null,
           cask: entry.caskType || null,
           age: entry.statedAge || null,
-          abv: entry.abv || null,
+          abv: entry.abv != null ? String(entry.abv) : null,
           source: "collection" as const,
         }));
 

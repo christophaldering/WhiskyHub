@@ -11,7 +11,7 @@ import ExploreStatistics from "@/labs/components/ExploreStatistics";
 
 type SortOption = "alphabetical" | "alphabetical_desc" | "region" | "category" | "age" | "abv" | "highest_rated" | "most_rated";
 type ExploreTab = "all";
-type FilterDimension = "region" | "caskInfluence" | "peatLevel" | "ageBand" | "abvBand" | "category" | "country";
+type FilterDimension = "region" | "caskType" | "peatLevel" | "ageBand" | "abvBand" | "category" | "country";
 
 const BATCH_SIZE = 50;
 
@@ -19,7 +19,7 @@ const FILTER_DIMENSIONS: { key: FilterDimension; labelKey: string; fallback: str
   { key: "region", labelKey: "explore.filterRegion", fallback: "Region" },
   { key: "country", labelKey: "explore.filterCountry", fallback: "Country" },
   { key: "category", labelKey: "explore.filterCategory", fallback: "Category" },
-  { key: "caskInfluence", labelKey: "explore.filterCask", fallback: "Cask" },
+  { key: "caskType", labelKey: "explore.filterCask", fallback: "Cask" },
   { key: "peatLevel", labelKey: "explore.filterPeat", fallback: "Peat Level" },
   { key: "ageBand", labelKey: "explore.filterAge", fallback: "Age Band" },
   { key: "abvBand", labelKey: "explore.filterAbv", fallback: "ABV Band" },
@@ -46,7 +46,7 @@ export default function LabsExplore() {
   }, [location]);
   const [filters, setFilters] = useState<Record<FilterDimension, Set<string>>>({
     region: new Set(),
-    caskInfluence: new Set(),
+    caskType: new Set(),
     peatLevel: new Set(),
     ageBand: new Set(),
     abvBand: new Set(),
@@ -71,7 +71,7 @@ export default function LabsExplore() {
     if (!allWhiskies || !Array.isArray(allWhiskies)) return {} as Record<FilterDimension, string[]>;
     const result: Record<FilterDimension, Set<string>> = {
       region: new Set(),
-      caskInfluence: new Set(),
+      caskType: new Set(),
       peatLevel: new Set(),
       ageBand: new Set(),
       abvBand: new Set(),
@@ -80,7 +80,7 @@ export default function LabsExplore() {
     };
     for (const w of allWhiskies) {
       if (w.region) result.region.add(w.region);
-      if (w.caskInfluence) result.caskInfluence.add(w.caskInfluence);
+      if (w.caskType) result.caskType.add(w.caskType);
       if (w.peatLevel) result.peatLevel.add(w.peatLevel);
       if (w.ageBand) result.ageBand.add(w.ageBand);
       if (w.abvBand) result.abvBand.add(w.abvBand);
@@ -89,7 +89,7 @@ export default function LabsExplore() {
     }
     const out: Record<FilterDimension, string[]> = {
       region: Array.from(result.region).sort(),
-      caskInfluence: Array.from(result.caskInfluence).sort(),
+      caskType: Array.from(result.caskType).sort(),
       peatLevel: Array.from(result.peatLevel).sort(),
       ageBand: Array.from(result.ageBand).sort(),
       abvBand: Array.from(result.abvBand).sort(),
@@ -118,7 +118,7 @@ export default function LabsExplore() {
   const clearAllFilters = useCallback(() => {
     setFilters({
       region: new Set(),
-      caskInfluence: new Set(),
+      caskType: new Set(),
       peatLevel: new Set(),
       ageBand: new Set(),
       abvBand: new Set(),
@@ -131,7 +131,7 @@ export default function LabsExplore() {
     if (!allWhiskies || !Array.isArray(allWhiskies)) return [];
     return allWhiskies.filter((w: any) => {
       if (filters.region.size > 0 && (!w.region || !filters.region.has(w.region))) return false;
-      if (filters.caskInfluence.size > 0 && (!w.caskInfluence || !filters.caskInfluence.has(w.caskInfluence))) return false;
+      if (filters.caskType.size > 0 && (!w.caskType || !filters.caskType.has(w.caskType))) return false;
       if (filters.peatLevel.size > 0 && (!w.peatLevel || !filters.peatLevel.has(w.peatLevel))) return false;
       if (filters.ageBand.size > 0 && (!w.ageBand || !filters.ageBand.has(w.ageBand))) return false;
       if (filters.abvBand.size > 0 && (!w.abvBand || !filters.abvBand.has(w.abvBand))) return false;

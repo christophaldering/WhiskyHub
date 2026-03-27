@@ -50,15 +50,15 @@ const TASTING_B = {
 };
 
 const WHISKIES_A = [
-  { name: "A'Bunadh Batch 72", distillery: "Aberlour", age: "NAS", abv: 60.8, region: "Speyside", peatLevel: "None", category: "Single Malt", caskInfluence: "Sherry", sortOrder: 0 },
-  { name: "Old Pulteney 12", distillery: "Old Pulteney", age: "12", abv: 40.0, region: "Highland", peatLevel: "None", category: "Single Malt", caskInfluence: "Bourbon", sortOrder: 1 },
-  { name: "GlenDronach 15 Revival", distillery: "GlenDronach", age: "15", abv: 46.0, region: "Highland", peatLevel: "None", category: "Single Malt", caskInfluence: "Sherry", sortOrder: 2 },
-  { name: "Balvenie 14 Caribbean Cask", distillery: "Balvenie", age: "14", abv: 43.0, region: "Speyside", peatLevel: "None", category: "Single Malt", caskInfluence: "Bourbon", sortOrder: 3 },
-  { name: "Clynelish 14", distillery: "Clynelish", age: "14", abv: 46.0, region: "Highland", peatLevel: "Light", category: "Single Malt", caskInfluence: "Bourbon", sortOrder: 4 },
+  { name: "A'Bunadh Batch 72", distillery: "Aberlour", age: "NAS", abv: 60.8, region: "Speyside", peatLevel: "None", category: "Single Malt", caskType: "Sherry", sortOrder: 0 },
+  { name: "Old Pulteney 12", distillery: "Old Pulteney", age: "12", abv: 40.0, region: "Highland", peatLevel: "None", category: "Single Malt", caskType: "Bourbon", sortOrder: 1 },
+  { name: "GlenDronach 15 Revival", distillery: "GlenDronach", age: "15", abv: 46.0, region: "Highland", peatLevel: "None", category: "Single Malt", caskType: "Sherry", sortOrder: 2 },
+  { name: "Balvenie 14 Caribbean Cask", distillery: "Balvenie", age: "14", abv: 43.0, region: "Speyside", peatLevel: "None", category: "Single Malt", caskType: "Bourbon", sortOrder: 3 },
+  { name: "Clynelish 14", distillery: "Clynelish", age: "14", abv: 46.0, region: "Highland", peatLevel: "Light", category: "Single Malt", caskType: "Bourbon", sortOrder: 4 },
 ];
 
 const WHISKIES_B = [
-  { name: "Redbreast 12", distillery: "Midleton", age: "12", abv: 40.0, region: "Ireland", peatLevel: "None", category: "Single Pot Still", caskInfluence: "Sherry", country: "Ireland", sortOrder: 0 },
+  { name: "Redbreast 12", distillery: "Midleton", age: "12", abv: 40.0, region: "Ireland", peatLevel: "None", category: "Single Pot Still", caskType: "Sherry", country: "Ireland", sortOrder: 0 },
   { name: "Nikka From The Barrel", distillery: "Nikka", age: "NAS", abv: 51.4, region: "Japan", peatLevel: "Light", category: "Blended", country: "Japan", sortOrder: 1 },
   { name: "Buffalo Trace", distillery: "Buffalo Trace", age: "NAS", abv: 45.0, region: "Kentucky", peatLevel: "None", category: "Bourbon", country: "USA", sortOrder: 2 },
   { name: "Amrut Fusion", distillery: "Amrut", age: "NAS", abv: 50.0, region: "Bangalore", peatLevel: "Medium", category: "Single Malt", country: "India", sortOrder: 3 },

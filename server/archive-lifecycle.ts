@@ -129,7 +129,7 @@ export async function createArchiveSnapshot(
       typeRaw: whisky.category || whisky.type || null,
       smokyRaw: isSmoky != null ? (isSmoky ? "Ja" : "Nein") : null,
       ppmRaw: whisky.ppm != null ? String(whisky.ppm) : null,
-      caskRaw: whisky.caskInfluence || null,
+      caskRaw: whisky.caskType || null,
       noseScore: avgNose != null ? parseFloat(avgNose.toFixed(1)) : null,
       noseRank: whiskyRank?.noseRank ?? null,
       tasteScore: avgTaste != null ? parseFloat(avgTaste.toFixed(1)) : null,
@@ -150,7 +150,7 @@ export async function createArchiveSnapshot(
       normalizedType: normalizeText(whisky.category || whisky.type),
       normalizedIsSmoky: isSmoky,
       normalizedPpm: whisky.ppm ?? null,
-      normalizedCask: normalizeText(whisky.caskInfluence),
+      normalizedCask: normalizeText(whisky.caskType),
     };
 
     await db.insert(historicalTastingEntries).values(entryData).returning();

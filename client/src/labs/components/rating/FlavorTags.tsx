@@ -169,7 +169,7 @@ export default function FlavorTags({
   const profile = useMemo(() => {
     if (blind) return null;
     const { profileId } = getEffectiveProfile(
-      { flavorProfile: whiskyFlavorProfile, region: whiskyRegion, peatLevel: null, caskInfluence: whiskyCask },
+      { flavorProfile: whiskyFlavorProfile, region: whiskyRegion, peatLevel: null, caskType: whiskyCask },
       blind
     );
     if (profileId) return profileId;
@@ -180,7 +180,7 @@ export default function FlavorTags({
   const profileLabel = useMemo(() => {
     if (blind) return null;
     const { profileId } = getEffectiveProfile(
-      { flavorProfile: whiskyFlavorProfile, region: whiskyRegion, peatLevel: null, caskInfluence: whiskyCask },
+      { flavorProfile: whiskyFlavorProfile, region: whiskyRegion, peatLevel: null, caskType: whiskyCask },
       blind
     );
     if (profileId) {

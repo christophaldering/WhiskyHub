@@ -345,7 +345,7 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
   const isConsensus = stdDev != null && whisky.ratingCount >= 2 && stdDev <= 5;
   const isDebated = stdDev != null && whisky.ratingCount >= 2 && stdDev > 10;
 
-  const details = [whisky.region, whisky.country, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.category, whisky.caskInfluence].filter(Boolean);
+  const details = [whisky.region, whisky.country, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.category, whisky.caskType].filter(Boolean);
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px" }}>

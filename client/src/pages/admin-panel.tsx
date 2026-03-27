@@ -91,7 +91,7 @@ interface WhiskyDetail {
   age: string | null;
   abv: number | null;
   region: string | null;
-  caskInfluence: string | null;
+  caskType: string | null;
   peatLevel: string | null;
   imageUrl: string | null;
   avgOverall: number | null;
@@ -1393,7 +1393,7 @@ export default function AdminPanel() {
                                               {whisky.age && <span>Age: {whisky.age}</span>}
                                               {whisky.abv != null && <span>ABV: {whisky.abv}%</span>}
                                               {whisky.region && <span>Region: {whisky.region}</span>}
-                                              {whisky.caskInfluence && <span>Cask: {whisky.caskInfluence}</span>}
+                                              {whisky.caskType && <span>Cask: {whisky.caskType}</span>}
                                               {whisky.peatLevel && <span>Peat: {whisky.peatLevel}</span>}
                                             </div>
                                             <div className="flex items-center gap-3 mt-2 text-sm">
@@ -1554,12 +1554,6 @@ export default function AdminPanel() {
                                 <div>
                                   <span className="text-muted-foreground font-medium">Finish:</span>
                                   <p className="mt-0.5">{journal.finishNotes}</p>
-                                </div>
-                              )}
-                              {journal.body && (
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Notes:</span>
-                                  <p className="mt-0.5">{journal.body}</p>
                                 </div>
                               )}
                             </div>

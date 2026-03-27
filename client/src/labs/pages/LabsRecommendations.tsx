@@ -18,7 +18,7 @@ interface Whisky {
   abv: number | null;
   region: string | null;
   category: string | null;
-  caskInfluence: string | null;
+  caskType: string | null;
   peatLevel: string | null;
   imageUrl: string | null;
   whiskybaseId: string | null;
@@ -79,9 +79,9 @@ function computeRecommendations(
       score += (regionBreakdown[w.region]?.avgScore || 0) * weights.region;
       reasons.push(w.region);
     }
-    if (weights.cask > 0 && w.caskInfluence && topCasks.includes(w.caskInfluence)) {
-      score += (caskBreakdown[w.caskInfluence]?.avgScore || 0) * weights.cask;
-      reasons.push(w.caskInfluence);
+    if (weights.cask > 0 && w.caskType && topCasks.includes(w.caskType)) {
+      score += (caskBreakdown[w.caskType]?.avgScore || 0) * weights.cask;
+      reasons.push(w.caskType);
     }
     if (weights.peat > 0 && w.peatLevel && topPeat.includes(w.peatLevel)) {
       score += (peatBreakdown[w.peatLevel]?.avgScore || 0) * weights.peat;
@@ -248,9 +248,9 @@ export default function LabsRecommendations() {
                             <MapPin style={{ width: 9, height: 9 }} />{rec.whisky.region}
                           </span>
                         )}
-                        {rec.whisky.caskInfluence && (
+                        {rec.whisky.caskType && (
                           <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                            <Droplets style={{ width: 9, height: 9 }} />{rec.whisky.caskInfluence}
+                            <Droplets style={{ width: 9, height: 9 }} />{rec.whisky.caskType}
                           </span>
                         )}
                         {rec.whisky.peatLevel && (

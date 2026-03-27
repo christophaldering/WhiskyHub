@@ -15,18 +15,17 @@ interface ExploreWhisky {
   country: string | null;
   category: string | null;
   age: string | null;
-  abv: string | null;
+  abv: number | null;
   caskType: string | null;
   imageUrl: string | null;
   avgOverall: number | null;
   ratingCount: number;
   peatLevel: string | null;
-  caskInfluence: string | null;
   ageBand: string | null;
   abvBand: string | null;
   price: number | null;
   wbScore: number | null;
-  vintage: string | null;
+  distilledYear: string | null;
   avgNose: number | null;
   avgTaste: number | null;
   avgFinish: number | null;
@@ -288,7 +287,7 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
   const caskTypeRanking = useMemo(() => {
     const map = new Map<string, { scores: number[]; count: number }>();
     for (const w of rated) {
-      const cask = w.caskInfluence || w.caskType;
+      const cask = w.caskType || w.caskType;
       if (!cask) continue;
       const existing = map.get(cask);
       if (existing) {
@@ -412,13 +411,13 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
   const vintageAnalysis = useMemo(() => {
     const map = new Map<string, { scores: number[]; count: number }>();
     for (const w of rated) {
-      if (!w.vintage) continue;
-      const existing = map.get(w.vintage);
+      if (!w.distilledYear) continue;
+      const existing = map.get(w.distilledYear);
       if (existing) {
         existing.scores.push(w.avgOverall!);
         existing.count++;
       } else {
-        map.set(w.vintage, { scores: [w.avgOverall!], count: 1 });
+        map.set(w.distilledYear, { scores: [w.avgOverall!], count: 1 });
       }
     }
     return Array.from(map.entries())

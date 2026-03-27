@@ -259,7 +259,7 @@ function getWhiskyMeta(w: Whisky): string {
   if (w.age === "NAS" || w.age === "n.a.s.") parts.push("NAS");
   if (w.abv != null) parts.push(`${w.abv}%`);
   if (w.region) parts.push(w.region);
-  if (w.caskInfluence) parts.push(w.caskInfluence);
+  if (w.caskType) parts.push(w.caskType);
   return parts.join(" · ");
 }
 
@@ -386,7 +386,7 @@ async function drawCoverPage(
         whisky.distillery,
         whisky.age ? `${whisky.age}y` : null,
         whisky.abv ? `${whisky.abv}%` : null,
-        whisky.caskInfluence,
+        whisky.caskType,
         whisky.region,
       ].filter(Boolean);
       doc.setFontSize(7);
@@ -652,7 +652,7 @@ async function drawScoringPage(
       doc.text(nameLines, margin + 10, y + 6);
 
       if (!isBlind) {
-        const metaParts = [whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.region, whisky.caskInfluence].filter(Boolean);
+        const metaParts = [whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.region, whisky.caskType].filter(Boolean);
         if (metaParts.length > 0) {
           doc.setFontSize(7);
           doc.setTextColor(...GOLD_RGB);
@@ -999,7 +999,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
         headers,
         body: JSON.stringify({
           prompt: aiPrompt.trim(),
-          whiskies: whiskies.map(w => ({ name: w.name, region: w.region, caskInfluence: w.caskInfluence })),
+          whiskies: whiskies.map(w => ({ name: w.name, region: w.region, caskType: w.caskType })),
           tastingTitle: tasting.title,
         }),
       });

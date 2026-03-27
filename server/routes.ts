@@ -196,8 +196,8 @@ const COLUMN_MAP: Record<string, string> = {
   type: "type", typ: "type", kategorie: "type",
   category: "category",
   region: "region",
-  cask: "caskInfluence", "cask influence": "caskInfluence", cask_influence: "caskInfluence",
-  fass: "caskInfluence", fasseinfluss: "caskInfluence",
+  cask: "caskType", "cask influence": "caskType", cask_influence: "caskType", cask_type: "caskType", "cask type": "caskType",
+  fass: "caskType", fasseinfluss: "caskType",
   peat: "peatLevel", "peat level": "peatLevel", peat_level: "peatLevel",
   torf: "peatLevel", torfgehalt: "peatLevel",
   ppm: "ppm", phenol: "ppm", "phenol ppm": "ppm",
@@ -209,7 +209,7 @@ const COLUMN_MAP: Record<string, string> = {
   abv_band: "abvBand", abvband: "abvBand",
   age_band: "ageBand", ageband: "ageBand", altersband: "ageBand",
   bottler: "bottler", "independent bottler": "bottler", ib: "bottler", abfüller: "bottler",
-  vintage: "vintage", jahrgang: "vintage",
+  vintage: "distilledYear", jahrgang: "distilledYear", "distilled year": "distilledYear", distilled_year: "distilledYear",
   price: "price", preis: "price", "retail price": "price",
   host_summary: "hostSummary", hostsummary: "hostSummary", "host summary": "hostSummary",
 };
@@ -2061,7 +2061,6 @@ export async function registerRoutes(
       if (body.price === "") body.price = null;
       if (body.wbScore !== undefined && body.wbScore !== null) body.wbScore = typeof body.wbScore === "string" ? (parseFloat(body.wbScore) || null) : body.wbScore;
       if (body.wbScore === "") body.wbScore = null;
-      if (body.caskType !== undefined && !body.caskInfluence) { body.caskInfluence = body.caskType; delete body.caskType; }
       const data = insertWhiskySchema.parse(body);
       const whisky = await storage.createWhisky(data);
       if (!whisky.imageUrl && whisky.whiskybaseId) {
@@ -2096,7 +2095,6 @@ export async function registerRoutes(
     if (body.price === "") body.price = null;
     if (body.wbScore !== undefined) body.wbScore = (typeof body.wbScore === "string" ? parseFloat(body.wbScore) : body.wbScore) || null;
     if (body.wbScore === "") body.wbScore = null;
-    if (body.caskType !== undefined && !body.caskInfluence) { body.caskInfluence = body.caskType; delete body.caskType; }
     if (body.imageUrl) {
       const existing = await storage.getWhisky(req.params.id);
       if (existing?.imageUrl && existing.imageUrl !== body.imageUrl) {
@@ -2897,7 +2895,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             region: row.region || null,
             abvBand: row.abvBand || null,
             ageBand: row.ageBand || null,
-            caskInfluence: row.caskInfluence || null,
+            caskType: row.caskType || null,
             peatLevel: row.peatLevel || null,
             ppm: row.ppm ? parseFloat(String(row.ppm).replace(",", ".")) : null,
             whiskybaseId: row.whiskybaseId || null,
@@ -4512,9 +4510,9 @@ ${whisky.distillery ? `Distillery: ${whisky.distillery}` : ""}
 ${whisky.region ? `Region: ${whisky.region}` : ""}
 ${whisky.age ? `Age: ${whisky.age}` : ""}
 ${whisky.category ? `Category: ${whisky.category}` : ""}
-${whisky.caskInfluence ? `Cask: ${whisky.caskInfluence}` : ""}
+${whisky.caskType ? `Cask: ${whisky.caskType}` : ""}
 ${whisky.bottler ? `Bottler: ${whisky.bottler}` : ""}
-${whisky.vintage ? `Vintage: ${whisky.vintage}` : ""}
+${whisky.distilledYear ? `Vintage: ${whisky.distilledYear}` : ""}
 
 Respond in JSON format:
 {
@@ -4603,7 +4601,8 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
-      const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
+      const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskType, caskInfluence: caskInfluenceLegacy, category, peatLevel, language } = req.body;
+      const cask = caskType || caskInfluenceLegacy;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
@@ -4633,7 +4632,7 @@ Respond ONLY with valid JSON, no markdown.`;
         region && `Region: ${region}`,
         age && `Age: ${age}`,
         abv && `ABV: ${abv}%`,
-        caskInfluence && `Cask: ${caskInfluence}`,
+        cask && `Cask: ${cask}`,
         category && `Category: ${category}`,
         peatLevel && `Peat: ${peatLevel}`,
       ].filter(Boolean).join(", ");
@@ -4832,7 +4831,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
           age: w.age,
           abv: w.abv,
           region: w.region,
-          caskInfluence: w.caskInfluence,
+          caskType: w.caskType,
           peatLevel: w.peatLevel,
           avgScore: avgOverall.toFixed(1),
           ratingCount: wRatings.length,
@@ -5670,7 +5669,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         region: parsed.region || "",
         country: parsed.country || "",
         peatLevel: parsed.peatLevel || parsed.peat_level || "",
-        vintage: parsed.vintage ? String(parsed.vintage) : "",
+        distilledYear: parsed.vintage ? String(parsed.vintage) : "",
         bottler: parsed.bottler || "",
         price: parsed.price || "",
       };
@@ -5708,8 +5707,8 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       }
 
       const fieldsToFill = (emptyFields || []).filter((f: string) =>
-        ["age", "abv", "caskType", "region", "country", "peatLevel", "vintage", "bottler", "price"].includes(f)
-      );
+        ["age", "abv", "caskType", "region", "country", "peatLevel", "distilledYear", "vintage", "bottler", "price"].includes(f)
+      ).map((f: string) => f === "vintage" ? "distilledYear" : f);
       if (fieldsToFill.length === 0) {
         return res.json({});
       }
@@ -5721,7 +5720,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         region: "region (e.g. Islay, Speyside, Highland, Thuringia, etc.)",
         country: "country (e.g. Scotland, Ireland, Japan, Germany, USA)",
         peatLevel: "peatLevel (None, Light, Medium, or Heavy)",
-        vintage: "vintage (year as number)",
+        distilledYear: "distilledYear (year as number)",
         bottler: 'bottler (company name, or "OB" for official bottling)',
         price: "price (estimated retail price in EUR with € sign)",
       };
@@ -5802,7 +5801,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
             region: w.region || "",
             age: w.age || "",
             abv: w.abv ? String(w.abv) : "",
-            caskType: w.caskInfluence || "",
+            caskType: w.caskType || "",
             confidence: 95,
           },
         });
@@ -6068,6 +6067,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const { name, distillery, whiskybaseId, brand, statedAge, abv, caskType, status, imageUrl } = req.body;
       if (!name) return res.status(400).json({ error: "Name is required" });
       const wbId = whiskybaseId || `manual-${Date.now()}`;
+      const abvNum = abv != null ? (typeof abv === "string" ? parseFloat(abv) || null : abv) : null;
       const item = await storage.upsertWhiskybaseCollectionItem({
         participantId,
         whiskybaseId: wbId,
@@ -6075,7 +6075,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         brand: brand || distillery || null,
         distillery: distillery || null,
         statedAge: statedAge || null,
-        abv: abv || null,
+        abv: abvNum,
         caskType: caskType || null,
         status: status || "open",
         imageUrl: imageUrl || null,
@@ -6207,13 +6207,13 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         mood: null,
         occasion: null,
         imageUrl: item.imageUrl || null,
-        body: [
+        noseNotes: [
           item.bottlingSeries ? `Series: ${item.bottlingSeries}` : null,
           item.vintage ? `Vintage: ${item.vintage}` : null,
           item.status ? `Status: ${item.status}` : null,
           item.pricePaid ? `Price: ${item.pricePaid} ${item.currency || ""}` : null,
           item.notes || null,
-        ].filter(Boolean).join("\n"),
+        ].filter(Boolean).join("\n") || null,
       });
       
       res.json(journalEntry);
@@ -6778,7 +6778,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
           identified.country = identified.country || matchedWhisky.country;
           identified.age = identified.age || matchedWhisky.age;
           identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
-          identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+          identified.caskType = identified.caskType || matchedWhisky.caskType;
           identified.matchedInDb = true;
         } else if (matchedBenchmark) {
           identified.distillery = identified.distillery || matchedBenchmark.distillery;
@@ -6931,7 +6931,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "personalScore", "whiskybaseId", "price", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price"]);
+      if (sanitizedBody.abv !== undefined) sanitizedBody.abv = sanitizedBody.abv != null ? (typeof sanitizedBody.abv === "string" ? parseFloat(sanitizedBody.abv.replace(",", ".").replace("%", "")) || null : sanitizedBody.abv) : null;
+      if (sanitizedBody.price !== undefined) sanitizedBody.price = sanitizedBody.price != null ? (typeof sanitizedBody.price === "string" ? parseFloat(sanitizedBody.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : sanitizedBody.price) : null;
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
 
       if (!parsed.imageUrl) {
@@ -6956,14 +6958,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "vintage", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
-      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion", "region", "country", "peatLevel", "vintage", "bottler", "price"];
+      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
+      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) {
           filtered[key] = textKeys.includes(key) && typeof req.body[key] === "string" ? stripHtmlTags(req.body[key]) : req.body[key];
         }
       }
+      if (filtered.abv !== undefined) filtered.abv = filtered.abv != null ? (typeof filtered.abv === "string" ? parseFloat(filtered.abv.replace(",", ".").replace("%", "")) || null : filtered.abv) : null;
+      if (filtered.price !== undefined) filtered.price = filtered.price != null ? (typeof filtered.price === "string" ? parseFloat(filtered.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : filtered.price) : null;
       const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, filtered);
       if (!entry) return res.status(404).json({ message: "Journal entry not found" });
       res.json(entry);
@@ -7236,7 +7240,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
           identified.country = identified.country || matchedWhisky.country;
           identified.age = identified.age || matchedWhisky.age;
           identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
-          identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+          identified.caskType = identified.caskType || matchedWhisky.caskType;
           identified.matchedInDb = true;
         } else if (matchedBenchmark) {
           identified.distillery = identified.distillery || matchedBenchmark.distillery;
@@ -7408,7 +7412,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         identified.country = identified.country || matchedWhisky.country;
         identified.age = identified.age || matchedWhisky.age;
         identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
-        identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+        identified.caskType = identified.caskType || matchedWhisky.caskType;
         identified.matchedInDb = true;
       } else if (matchedBenchmark) {
         identified.distillery = identified.distillery || matchedBenchmark.distillery;
@@ -7884,7 +7888,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         for (const r of monthRatings) {
           const w = whiskyMap.get(r.whiskyId);
           if (w?.region) regions[w.region] = (regions[w.region] || 0) + 1;
-          if (w?.caskInfluence) casks[w.caskInfluence] = (casks[w.caskInfluence] || 0) + 1;
+          if (w?.caskType) casks[w.caskType] = (casks[w.caskType] || 0) + 1;
         }
 
         const topRegion = Object.entries(regions).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
@@ -8690,7 +8694,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
               country: w.country,
               region: w.region,
               category: w.category,
-              caskInfluence: w.caskInfluence,
+              caskType: w.caskType,
               peatLevel: w.peatLevel,
               imageUrl: w.imageUrl,
               whiskybaseId: w.whiskybaseId || null,
@@ -8768,7 +8772,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const lineupWhiskies = await storage.getWhiskiesForTasting(tastingId);
 
       const lineupRegions = new Set(lineupWhiskies.map(w => w.region).filter(Boolean));
-      const lineupCasks = new Set(lineupWhiskies.map(w => w.caskInfluence).filter(Boolean));
+      const lineupCasks = new Set(lineupWhiskies.map(w => w.caskType).filter(Boolean));
       const lineupPeats = new Set(lineupWhiskies.map(w => w.peatLevel).filter(Boolean));
       const lineupIds = new Set(lineupWhiskies.map(w => w.id));
 
@@ -8783,16 +8787,16 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           score += 3;
           reasons.push(`Adds ${w.region} region not yet in lineup`);
         }
-        if (w.caskInfluence && !lineupCasks.has(w.caskInfluence)) {
+        if (w.caskType && !lineupCasks.has(w.caskType)) {
           score += 2;
-          reasons.push(`Brings ${w.caskInfluence} cask influence`);
+          reasons.push(`Brings ${w.caskType} cask influence`);
         }
         if (w.peatLevel && !lineupPeats.has(w.peatLevel)) {
           score += 2;
           reasons.push(`Introduces ${w.peatLevel} peat level`);
         }
 
-        if (w.region && lineupRegions.has(w.region) && w.caskInfluence && !lineupCasks.has(w.caskInfluence)) {
+        if (w.region && lineupRegions.has(w.region) && w.caskType && !lineupCasks.has(w.caskType)) {
           score += 1;
           reasons.push(`Same region but different cask for comparison`);
         }
@@ -8806,7 +8810,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           name: w.name,
           distillery: w.distillery,
           region: w.region,
-          caskInfluence: w.caskInfluence,
+          caskType: w.caskType,
           peatLevel: w.peatLevel,
           abv: w.abv,
           age: w.age,
@@ -8822,7 +8826,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         name: s.name,
         distillery: s.distillery || "",
         region: s.region || "",
-        caskInfluence: s.caskInfluence || "",
+        caskType: s.caskType || "",
         peatLevel: s.peatLevel || "",
         abv: s.abv || "",
         age: s.age || "",
@@ -8847,10 +8851,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         }
         if (client) {
           const lineupSummary = lineupWhiskies.map(w =>
-            `${w.name} (${w.distillery || "?"}, ${w.region || "?"}, ${w.caskInfluence || "?"}, ${w.peatLevel || "?"}, ABV ${w.abv || "?"})`
+            `${w.name} (${w.distillery || "?"}, ${w.region || "?"}, ${w.caskType || "?"}, ${w.peatLevel || "?"}, ABV ${w.abv || "?"})`
           ).join("\n");
           const candidateSummary = ruleBasedSuggestions.map(s =>
-            `${s.name} (${s.distillery}, ${s.region}, ${s.caskInfluence}, ${s.peatLevel})`
+            `${s.name} (${s.distillery}, ${s.region}, ${s.caskType}, ${s.peatLevel})`
           ).join("\n");
 
           const completion = await client.chat.completions.create({
@@ -9860,7 +9864,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             age: w.age,
             abv: w.abv,
             region: w.region,
-            caskInfluence: w.caskInfluence,
+            caskType: w.caskType,
             peatLevel: w.peatLevel,
             imageUrl: w.imageUrl,
             tastingTitle: tasting.title,
@@ -9883,7 +9887,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (stylesParam) {
         const styleKeys = stylesParam.split(",").map(s => s.toLowerCase());
         filtered = filtered.filter(w => {
-          const cask = (w.caskInfluence || "").toLowerCase();
+          const cask = (w.caskType || "").toLowerCase();
           const peat = (w.peatLevel || "").toLowerCase();
           return styleKeys.some(sk => {
             if (sk.includes("peat") && peat !== "none" && peat !== "") return true;
@@ -9946,7 +9950,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             type: w.type,
             region: w.region,
             category: w.category,
-            caskInfluence: w.caskInfluence,
+            caskType: w.caskType,
             peatLevel: w.peatLevel,
             wbScore: w.wbScore,
             whiskybaseId: w.whiskybaseId,
@@ -10164,7 +10168,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           age: w.age,
           abv: w.abv,
           region: w.region,
-          caskInfluence: w.caskInfluence,
+          caskType: w.caskType,
           peatLevel: w.peatLevel,
           imageUrl: w.imageUrl,
           avgOverall: avgOverall ? Math.round(avgOverall * 10) / 10 : null,
@@ -12086,7 +12090,7 @@ Key CaskSense Features:
         region: z.string().nullable().optional(),
         country: z.string().nullable().optional(),
         age: z.string().nullable().optional(),
-        abv: z.string().nullable().optional(),
+        abv: z.union([z.string(), z.number()]).nullable().optional(),
         caskType: z.string().nullable().optional(),
         category: z.string().nullable().optional(),
         noseNotes: z.string().nullable().optional(),
@@ -12104,8 +12108,10 @@ Key CaskSense Features:
       for (const e of entries) {
         const parsed = entrySchema.safeParse(e);
         if (!parsed.success) continue;
+        const abvVal = parsed.data.abv != null ? (typeof parsed.data.abv === "string" ? parseFloat(parsed.data.abv) || null : parsed.data.abv) : null;
         validated.push({
           ...parsed.data,
+          abv: abvVal,
           uploadedBy: participantId,
         });
       }
@@ -12182,9 +12188,8 @@ Key CaskSense Features:
           caskType: e.caskType || null,
           noseNotes: e.noseNotes || null,
           tasteNotes: e.tasteNotes || null,
-          finishNotes: e.finishNotes || null,
+          finishNotes: e.overallNotes ? (e.finishNotes ? `${e.finishNotes}\n${e.overallNotes}` : e.overallNotes) : (e.finishNotes || null),
           personalScore: e.score || null,
-          body: e.overallNotes || null,
           source: "imported",
         });
         saved.push(entry);
@@ -12230,7 +12235,7 @@ Key CaskSense Features:
             entry.country = entry.country || matchedWhisky.country;
             entry.age = entry.age || matchedWhisky.age;
             entry.abv = entry.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
-            entry.caskType = entry.caskType || matchedWhisky.caskInfluence;
+            entry.caskType = entry.caskType || matchedWhisky.caskType;
             entry.matchedInDb = true;
           } else if (matchedBenchmark) {
             entry.distillery = entry.distillery || matchedBenchmark.distillery;
@@ -12491,7 +12496,7 @@ You MUST return a JSON object with a "whiskies" array. Each element has these fi
 - abv (number or null, e.g. 46.0)
 - type (string or null, e.g. "Single Malt Scotch Whisky", "Bourbon", "Blended")
 - category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye")
-- caskInfluence (string or null, e.g. "Bourbon", "Sherry", "Port", "Wine")
+- caskType (string or null, e.g. "Bourbon", "Sherry", "Port", "Wine")
 - peatLevel (string or null, "None", "Light", "Medium", "Heavy")
 - notes (string or null, any interesting details from the label)
 - confidence (string, "high", "medium", or "low")
@@ -12564,7 +12569,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               abv: identified.abv || matchedWhisky.abv,
               type: identified.type || matchedWhisky.type,
               category: identified.category || matchedWhisky.category,
-              caskInfluence: identified.caskInfluence || matchedWhisky.caskInfluence,
+              caskType: identified.caskType || matchedWhisky.caskType,
               peatLevel: identified.peatLevel || matchedWhisky.peatLevel,
               dbMatch: true,
               dbWhiskyId: matchedWhisky.id,
@@ -12578,7 +12583,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               country: identified.country || matchedBenchmark.country,
               age: identified.age || matchedBenchmark.age,
               abv: identified.abv != null ? identified.abv : (matchedBenchmark.abv ? parseFloat(matchedBenchmark.abv) : null),
-              caskInfluence: identified.caskInfluence || matchedBenchmark.caskType,
+              caskType: identified.caskType || matchedBenchmark.caskType,
               category: identified.category || matchedBenchmark.category,
               benchmarkMatch: true,
             };
@@ -12670,7 +12675,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           country: w.country || null,
           category: w.category || null,
           region: w.region || null,
-          caskInfluence: w.caskInfluence || null,
+          caskType: w.caskType || null,
           peatLevel: w.peatLevel || null,
           notes: w.notes || null,
           imageUrl: w.imageUrl || null,
@@ -13137,7 +13142,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           category: getName(rowMap["category"]),
           country,
           region,
-          caskInfluence: getName(rowMap["cask"]),
+          caskType: getName(rowMap["cask"]),
           vintage: getName(rowMap["vintage"]),
           whiskybaseId,
           wbScore,
@@ -13308,7 +13313,7 @@ Extract ALL whisky information you can find. Return a JSON object with this stru
       "category": "Single Malt / Blended Malt / Bourbon / Rye / Grain / Blended / Other",
       "country": "Scotland / Ireland / Japan / USA / Canada / India / Taiwan / Other",
       "region": "Speyside / Islay / Highland / etc.",
-      "caskInfluence": "Cask type(s)",
+      "caskType": "Cask type(s)",
       "vintage": "Vintage year(s) e.g. '2010 - 2025'",
       "whiskybaseId": "Whiskybase ID number if visible",
       "wbScore": 87.5,
@@ -13439,13 +13444,13 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           sortOrder: w.sortOrder ?? i,
           category: w.category || w.type || null,
           region: w.region?.trim() || null,
-          caskInfluence: w.caskInfluence?.trim() || null,
+          caskType: w.caskType?.trim() || null,
           peatLevel: w.peatLevel || null,
           ppm: w.ppm != null ? parseFloat(String(w.ppm)) || null : null,
           whiskybaseId: w.whiskybaseId?.toString()?.trim() || null,
           wbScore: w.wbScore != null ? parseFloat(String(w.wbScore)) || null : null,
           bottler: w.bottler?.trim() || null,
-          vintage: w.vintage?.toString()?.trim() || null,
+          distilledYear: w.distilledYear?.toString()?.trim() || null,
           price: w.price != null ? parseFloat(String(w.price)) || null : null,
           hostNotes: w.hostNotes?.trim() || null,
           hostSummary: w.hostSummary?.trim() || null,
@@ -14475,7 +14480,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
 
       // 2b. Property Rankings: average score by whisky properties
       const propGroups: { property: string; values: { value: string; avgScore: number; count: number }[] }[] = [];
-      for (const prop of ["region", "category", "caskInfluence", "peatLevel", "ageBand"] as const) {
+      for (const prop of ["region", "category", "caskType", "peatLevel", "ageBand"] as const) {
         const acc: Record<string, { total: number; count: number }> = {};
         for (const r of allRatings) {
           const w = whiskyMap.get(r.whiskyId);
@@ -15695,7 +15700,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       const sanitizedPrompt = prompt.trim().slice(0, 500);
 
       const whiskyContext = (whiskies || []).slice(0, 12).map((w: any) =>
-        [w.name, w.region, w.caskInfluence].filter(Boolean).join(", ")
+        [w.name, w.region, w.caskType].filter(Boolean).join(", ")
       ).join("; ");
 
       const systemPrompt = `You are a graphic design assistant for CaskSense, a premium whisky tasting platform.
@@ -15799,7 +15804,7 @@ User's style request: ${sanitizedPrompt}`;
 
       for (const w of whiskiesForTasting) {
         if (w.region) regions.add(w.region);
-        if (w.caskInfluence) caskTypes.add(w.caskInfluence);
+        if (w.caskType) caskTypes.add(w.caskType);
         if (w.peatLevel) {
           peatLevels.add(w.peatLevel);
           if (w.peatLevel === "Heavy" || w.peatLevel === "Medium") hasHighPeat = true;
@@ -16656,7 +16661,7 @@ Rules:
         ratingCount: number;
         tastingCount: number;
         peatLevel: string | null;
-        caskInfluence: string | null;
+        caskType: string | null;
         ageBand: string | null;
         abvBand: string | null;
         price: number | null;
@@ -16678,7 +16683,7 @@ Rules:
         id: string; name: string; distillery?: string | null; region?: string | null;
         country?: string | null; category?: string | null; age?: string | null;
         abv?: string | null; caskType?: string | null; imageUrl?: string | null;
-        peatLevel?: string | null; caskInfluence?: string | null;
+        peatLevel?: string | null;
         ageBand?: string | null; abvBand?: string | null;
         price?: number | null; wbScore?: number | null; vintage?: string | null;
       }, scores: number[], noseScores: number[], tasteScores: number[], finishScores: number[], isTasting: boolean) => {
@@ -16703,7 +16708,6 @@ Rules:
           if (!existing.caskType && entry.caskType) existing.caskType = entry.caskType;
           if (!existing.imageUrl && entry.imageUrl) existing.imageUrl = entry.imageUrl;
           if (!existing.peatLevel && entry.peatLevel) existing.peatLevel = entry.peatLevel;
-          if (!existing.caskInfluence && entry.caskInfluence) existing.caskInfluence = entry.caskInfluence;
           if (!existing.ageBand && entry.ageBand) existing.ageBand = entry.ageBand;
           if (!existing.abvBand && entry.abvBand) existing.abvBand = entry.abvBand;
           if (existing.price == null && entry.price != null) existing.price = entry.price;
@@ -16725,7 +16729,6 @@ Rules:
             ratingCount: scores.length,
             tastingCount: isTasting ? 1 : 0,
             peatLevel: entry.peatLevel || null,
-            caskInfluence: entry.caskInfluence || null,
             ageBand: entry.ageBand || null,
             abvBand: entry.abvBand || null,
             price: entry.price ?? null,
@@ -16754,10 +16757,10 @@ Rules:
           id: w.id, name: w.name || "", distillery: w.distillery, region: w.region,
           country: w.country, category: w.category, age: w.age, abv: w.abv != null ? String(w.abv) : null,
           caskType: w.caskType, imageUrl: w.imageUrl,
-          peatLevel: w.peatLevel, caskInfluence: w.caskInfluence,
+          peatLevel: w.peatLevel,
           ageBand: w.ageBand, abvBand: w.abvBand,
           price: w.price, wbScore: w.wbScore,
-          vintage: w.distilledYear || w.vintage,
+          vintage: w.distilledYear,
         }, overallScores, noseScores, tasteScores, finishScores, true);
       }
 
@@ -16825,7 +16828,7 @@ Rules:
           age: entry.age, abv: entry.abv, caskType: entry.caskType,
           imageUrl: entry.imageUrl, avgOverall: entry.avgOverall,
           ratingCount: entry.ratingCount, tastingCount: entry.tastingCount,
-          peatLevel: entry.peatLevel, caskInfluence: entry.caskInfluence,
+          peatLevel: entry.peatLevel, caskType: entry.caskType,
           ageBand: entry.ageBand, abvBand: entry.abvBand,
           price: entry.price, wbScore: entry.wbScore, vintage: entry.vintage,
           avgNose: entry.avgNose, avgTaste: entry.avgTaste, avgFinish: entry.avgFinish,
@@ -18102,7 +18105,7 @@ Rules:
           age: b.age || undefined,
           abv: b.abv ?? undefined,
           region: b.region || undefined,
-          caskInfluence: b.caskInfluence || undefined,
+          caskType: b.caskType || undefined,
           category: b.category || undefined,
           country: b.country || undefined,
           whiskybaseId: b.whiskybaseId || undefined,

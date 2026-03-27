@@ -25,7 +25,7 @@ interface BottleEntry {
   age?: string;
   abv?: number | null;
   region?: string;
-  caskInfluence?: string;
+  caskType?: string;
   category?: string;
   country?: string;
   whiskybaseId?: string;
@@ -228,7 +228,7 @@ export default function LabsBottleSharing() {
             age: b.age || undefined,
             abv: b.abv ?? undefined,
             region: b.region || undefined,
-            caskInfluence: b.caskInfluence || undefined,
+            caskType: b.caskType || undefined,
             category: b.category || undefined,
             country: b.country || undefined,
             whiskybaseId: b.whiskybaseId || undefined,
@@ -270,7 +270,7 @@ export default function LabsBottleSharing() {
         age: w.age || undefined,
         abv: w.abv ?? null,
         region: w.region || undefined,
-        caskInfluence: w.caskInfluence || undefined,
+        caskType: w.caskType || undefined,
         category: w.category || undefined,
         country: w.country || undefined,
         whiskybaseId: w.whiskybaseId || undefined,
@@ -313,7 +313,7 @@ export default function LabsBottleSharing() {
       age: w.age || undefined,
       abv: w.abv ? (typeof w.abv === "number" ? w.abv : parseFloat(w.abv)) : null,
       region: w.region || undefined,
-      caskInfluence: w.caskInfluence || undefined,
+      caskType: w.caskType || undefined,
       category: w.category || undefined,
       country: w.country || undefined,
       peatLevel: w.peatLevel || undefined,
@@ -468,7 +468,7 @@ export default function LabsBottleSharing() {
                       <input data-testid={`input-bottle-region-${i}`} value={b.region || ""} onChange={e => updateBottle(i, "region", e.target.value)} placeholder="Region" className="labs-input" />
                       <input data-testid={`input-bottle-age-${i}`} value={b.age || ""} onChange={e => updateBottle(i, "age", e.target.value)} placeholder="Age" className="labs-input" />
                       <input data-testid={`input-bottle-abv-${i}`} type="number" step="0.1" value={b.abv ?? ""} onChange={e => updateBottle(i, "abv", e.target.value ? parseFloat(e.target.value) : null)} placeholder="ABV %" className="labs-input" />
-                      <input data-testid={`input-bottle-cask-${i}`} value={b.caskInfluence || ""} onChange={e => updateBottle(i, "caskInfluence", e.target.value)} placeholder="Cask" className="labs-input" />
+                      <input data-testid={`input-bottle-cask-${i}`} value={b.caskType || ""} onChange={e => updateBottle(i, "caskType", e.target.value)} placeholder="Cask" className="labs-input" />
                       <input data-testid={`input-bottle-whiskybase-${i}`} value={b.whiskybaseId || ""} onChange={e => updateBottle(i, "whiskybaseId", e.target.value)} placeholder="Whiskybase ID" className="labs-input" />
                     </div>
 
@@ -876,7 +876,7 @@ export default function LabsBottleSharing() {
               <div key={i} className="labs-card" style={{ padding: "12px 16px" }}>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{b.name}</div>
                 <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>
-                  {[b.distillery, b.region, b.age ? `${b.age}y` : null, b.abv ? `${b.abv}%` : null, b.caskInfluence].filter(Boolean).join(" · ")}
+                  {[b.distillery, b.region, b.age ? `${b.age}y` : null, b.abv ? `${b.abv}%` : null, b.caskType].filter(Boolean).join(" · ")}
                 </div>
                 {b.whiskybaseId && <div style={{ fontSize: 11, color: "var(--labs-text-faint)", marginTop: 2 }}>WB #{b.whiskybaseId}</div>}
               </div>
