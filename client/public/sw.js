@@ -1,12 +1,17 @@
-const SHELL_CACHE = 'casksense-shell-v2';
+const CACHE_VERSION = '__BUILD_TIMESTAMP__';
+const SHELL_CACHE = 'casksense-shell-' + CACHE_VERSION;
 const OFFLINE_QUEUE = 'casksense-offline-queue';
-const SHELL_URLS = ['/', '/labs', '/labs-v2', '/manifest.json'];
+const SHELL_URLS = ['/', '/manifest.json'];
+
+function isHashedAsset(pathname) {
+  if (!pathname.startsWith('/assets/')) return false;
+  return /[-\.][A-Za-z0-9_-]{7,}\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|gif)$/.test(pathname);
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_URLS))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -40,11 +45,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.method === 'GET') {
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstNavigation(request));
+    return;
+  }
+
+  if (request.method === 'GET' && isHashedAsset(url.pathname)) {
     event.respondWith(cacheFirstWithNetwork(request));
     return;
   }
+
+  if (request.method === 'GET') {
+    event.respondWith(networkFirstWithCache(request));
+    return;
+  }
 });
+
+async function networkFirstNavigation(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(SHELL_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (_e) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const fallback = await caches.match('/');
+    if (fallback) return fallback;
+    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+  }
+}
 
 async function handleRatingPost(request) {
   try {
@@ -178,6 +210,9 @@ self.addEventListener('message', (event) => {
         event.source.postMessage({ type: 'QUEUE_LENGTH', count: count });
       }
     });
+  }
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { StorageConsent } from "@/components/storage-consent";
+import UpdateBanner from "@/components/UpdateBanner";
 import "@/lib/i18n";
 import { pushRoute, incrementNavIdx, saveScrollPosition, getScrollPosition, consumeBackNavigation } from "@/lib/navStack";
 import { trackingApi } from "@/lib/api";
@@ -692,6 +693,7 @@ function App() {
           <Toaster />
           <Router />
           <StorageConsent />
+          <UpdateBanner />
         </ErrorBoundary>
       </TooltipProvider>
     </QueryClientProvider>
