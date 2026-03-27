@@ -10942,7 +10942,7 @@ const resources = {
         waitingForTasters: "Warte auf Bewertungen der Teilnehmer.",
       },
       home: {
-        greeting: "Was bringst du\nzu CaskSense?",
+        greeting: "Was führt Dich\nzu CaskSense?",
         greetingSub: "Wähle deinen Einstieg — du kannst jederzeit wechseln.",
         solo: "Einen Dram loggen",
         soloSub: "Solo · schnell · für mich",
