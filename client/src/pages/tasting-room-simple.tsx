@@ -2,6 +2,7 @@ import { useParams } from "wouter";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
+import { formatScore } from "@/lib/utils";
 import { tastingApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
@@ -54,18 +55,17 @@ interface GroupStats {
 const blindLabel = (index: number) => String.fromCharCode(65 + index);
 
 function RatingSlider({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
-  const display = Number.isInteger(value) ? value : value.toFixed(1);
   return (
     <div style={{ marginBottom: 12, opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontSize: 13, color: c.muted }}>{label}</span>
-        <span style={{ fontSize: 13, color: c.accent, fontWeight: 600, fontFamily: "monospace" }}>{display}</span>
+        <span style={{ fontSize: 13, color: c.accent, fontWeight: 600, fontFamily: "monospace" }}>{formatScore(value)}</span>
       </div>
       <input
         type="range"
         min={60}
         max={100}
-        step={1}
+        step={0.5}
         value={Math.max(60, Math.min(100, value))}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
@@ -369,7 +369,7 @@ export default function TastingRoomSimple() {
     setRatings((prev) => {
       const base = { ...(prev[whiskyId] || currentRating), [field]: value };
       if (field !== "overall" && field !== "notes" && !overallManual.current.has(whiskyId)) {
-        const avg = Math.round(((base.nose as number) + (base.taste as number) + (base.finish as number)) / 3);
+        const avg = Math.round(((base.nose as number) + (base.taste as number) + (base.finish as number)) / 3 * 2) / 2;
         base.overall = avg;
       }
       return { ...prev, [whiskyId]: base };
@@ -716,7 +716,7 @@ export default function TastingRoomSimple() {
             </div>
             <div style={{ textAlign: "right" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>
-                {groupStats.avgOverall}
+                {formatScore(groupStats.avgOverall)}
               </span>
               <span style={{ fontSize: 11, color: c.muted, marginLeft: 4 }}>
                 ({groupStats.ratingCount} {t("tastingRoomSimple.ratings")})

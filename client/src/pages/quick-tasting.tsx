@@ -111,7 +111,7 @@ function WhiskySliderCard({
   const { t } = useTranslation();
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const step = scale >= 100 ? 0.5 : scale >= 20 ? 0.5 : 0.1;
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
     queryFn: () => ratingApi.getMyRating(participantId, whisky.id),

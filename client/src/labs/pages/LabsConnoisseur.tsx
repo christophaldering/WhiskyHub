@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { pidHeaders, profileApi } from "@/lib/api";
-import { stripGuestSuffix } from "@/lib/utils";
+import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   ChevronLeft, Sparkles, Copy, Check, Download,
@@ -816,7 +816,7 @@ export default function LabsConnoisseur() {
   const hasDualLang = !!(latestReport?.dataSnapshot?.reportEn && latestReport?.dataSnapshot?.reportDe);
 
   const avgScores = useMemo(() => snap.avgScores || {}, [snap]);
-  const userAvg = useMemo(() => avgScores.overall != null ? Math.round(avgScores.overall * 10) / 10 : null, [avgScores]);
+  const userAvg = useMemo(() => avgScores.overall != null ? formatScore(avgScores.overall) : null, [avgScores]);
   const vsGroup = useMemo(() => snap.vsGroupDelta != null ? snap.vsGroupDelta : null, [snap]);
   const highest = useMemo(() => snap.highestWhisky || null, [snap]);
   const lowest = useMemo(() => snap.lowestWhisky || null, [snap]);

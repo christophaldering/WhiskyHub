@@ -14,7 +14,7 @@ export interface RatingScale {
 }
 
 const SCALE_CONFIGS: Record<number, { step: number; bigStep: number }> = {
-  100: { step: 1, bigStep: 5 },
+  100: { step: 0.5, bigStep: 5 },
   20: { step: 1, bigStep: 2 },
   10: { step: 0.5, bigStep: 1 },
   5: { step: 1, bigStep: 1 },
@@ -32,12 +32,12 @@ function buildScale(max: number): RatingScale {
     bigStep: config.bigStep,
     label: `1–${safeMax}`,
     normalize: (val: number) => {
-      if (safeMax === 100) return Math.round(Math.max(0, Math.min(val, 100)));
+      if (safeMax === 100) return Math.round(Math.max(0, Math.min(val, 100)) * 2) / 2;
       const clamped = Math.max(0, Math.min(val, safeMax));
       return Math.round((clamped / safeMax) * 1000) / 10;
     },
     denormalize: (normalized: number) => {
-      if (safeMax === 100) return Math.round(Math.max(0, Math.min(normalized, 100)));
+      if (safeMax === 100) return Math.round(Math.max(0, Math.min(normalized, 100)) * 2) / 2;
       const raw = (normalized / 100) * safeMax;
       return Math.round(raw * 10) / 10;
     },

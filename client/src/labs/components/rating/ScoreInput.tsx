@@ -56,7 +56,7 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const score = Math.round(60 + ratio * 40);
+    const score = Math.round((60 + ratio * 40) * 2) / 2;
     onChange(Math.max(60, Math.min(100, score)));
   }, [onChange]);
 
@@ -79,9 +79,9 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
   }, [fromX]);
 
   const commitEdit = useCallback(() => {
-    const v = parseInt(draft, 10);
+    const v = parseFloat(draft);
     if (!isNaN(v) && v >= 60 && v <= 100) {
-      onChange(v);
+      onChange(Math.round(v * 2) / 2);
     }
     setEditing(false);
   }, [draft, onChange]);
@@ -99,6 +99,7 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
               type="number"
               min={60}
               max={100}
+              step={0.5}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitEdit}
@@ -132,7 +133,7 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
                 lineHeight: 1,
               }}
             >
-              {value}
+              {value % 1 !== 0 ? value.toFixed(1) : value}
             </div>
           )}
         </div>

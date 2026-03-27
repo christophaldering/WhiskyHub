@@ -70,7 +70,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const [scores, setScores] = useState<PhaseScores>(() => {
     const init = initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
     if (!initialData?.scores) {
-      return { ...init, overall: Math.round((init.nose + init.palate + init.finish) / 3) };
+      return { ...init, overall: Math.round(((init.nose + init.palate + init.finish) / 3) * 2) / 2 };
     }
     return init;
   });
@@ -82,11 +82,11 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
     const s = initialData.scores;
-    return s.overall !== Math.round((s.nose + s.palate + s.finish) / 3);
+    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
   });
 
   const computeAutoOverall = (s: PhaseScores) =>
-    Math.round((s.nose + s.palate + s.finish) / 3);
+    Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
 
   const overallAvg = Math.round((scores.nose + scores.palate + scores.finish + scores.overall) / 4);
 

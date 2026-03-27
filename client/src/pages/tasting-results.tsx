@@ -7,6 +7,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { Trophy, ChevronDown, Download, FileSpreadsheet, FileText, ClipboardList, Loader2, Check, Archive } from "lucide-react";
 import BackButton from "@/components/back-button";
 import { c, cardStyle } from "@/lib/theme";
+import { formatScore } from "@/lib/utils";
 import { downloadBlob } from "@/lib/download";
 import { getParticipantId, collectionApi } from "@/lib/api";
 import jsPDF from "jspdf";
@@ -57,7 +58,7 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
         <div style={{ width: `${pct}%`, height: "100%", background: c.accent, borderRadius: 3, transition: "width 0.3s" }} />
       </div>
       <span style={{ fontSize: 12, color: c.text, fontFamily: "monospace", width: 28, textAlign: "right", flexShrink: 0 }}>
-        {value.toFixed(1)}
+        {formatScore(value)}
       </span>
     </div>
   );
@@ -125,7 +126,7 @@ function WhiskyResultCard({ result, rank, inCollection, onAddToCollection, addPe
             fontFamily: "'Playfair Display', serif",
             lineHeight: 1,
           }} data-testid={`text-avg-score-${result.whiskyId}`}>
-            {result.avgOverall?.toFixed(1) ?? "—"}
+            {formatScore(result.avgOverall)}
           </div>
           <div style={{ fontSize: 11, color: c.muted, marginTop: 2 }}>
             {result.ratingCount} {result.ratingCount === 1 ? t("tastingResults.rating") : t("tastingResults.rating_plural")}
@@ -276,10 +277,10 @@ function exportPdf(data: ResultsData) {
       String(i + 1),
       r.name.length > 28 ? r.name.slice(0, 26) + "…" : r.name,
       (r.distillery ?? "").length > 20 ? (r.distillery ?? "").slice(0, 18) + "…" : (r.distillery ?? ""),
-      r.avgOverall?.toFixed(1) ?? "—",
-      r.avgNose?.toFixed(1) ?? "—",
-      r.avgTaste?.toFixed(1) ?? "—",
-      r.avgFinish?.toFixed(1) ?? "—",
+      formatScore(r.avgOverall),
+      formatScore(r.avgNose),
+      formatScore(r.avgTaste),
+      formatScore(r.avgFinish),
       String(r.ratingCount),
     ];
 

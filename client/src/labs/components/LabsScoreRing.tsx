@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatScore } from "@/lib/utils";
 
 interface ScoreRingProps {
   score: number | null | undefined;
@@ -123,7 +124,7 @@ export default function LabsScoreRing({
               className="labs-serif font-semibold"
               style={{ fontSize: size * 0.28, lineHeight: 1 }}
             >
-              {isEmpty ? "—" : (visible ? (formatValue ? formatValue(displayValue) : displayValue) : (formatValue ? formatValue(0) : 0))}
+              {isEmpty ? "—" : (visible ? (formatValue ? formatValue(displayValue) : formatScore(displayValue)) : (formatValue ? formatValue(0) : "0"))}
             </span>
           </div>
         )}

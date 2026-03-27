@@ -10,7 +10,7 @@ import type { UIMode } from "@/lib/store";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn, formatScore } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText, AlertTriangle, Info } from "lucide-react";
 import jsPDF from "jspdf";
@@ -26,7 +26,7 @@ const DIMENSIONS = [
 ];
 
 function getScaleConfig(scale: number) {
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : scale >= 10 ? 0.5 : 0.1;
+  const step = scale >= 100 ? 0.5 : scale >= 20 ? 0.5 : scale >= 10 ? 0.5 : 0.1;
   const mid = scale / 2;
   const factor = step < 1 ? (1 / step) : 1;
   return { step, mid, factor };
@@ -793,7 +793,7 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.setTextColor(71, 85, 105);
-      doc.text(`Ø ${r.avgOverall}`, pageW - marginX - 5, y + 4, { align: "right" });
+      doc.text(`Ø ${formatScore(r.avgOverall)}`, pageW - marginX - 5, y + 4, { align: "right" });
       y += 22;
     });
 
@@ -884,10 +884,10 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
                 )}
               </div>
               <div className="text-right flex-shrink-0 space-y-0.5">
-                <p className="text-lg font-mono font-black text-primary">Ø {r.avgOverall}</p>
+                <p className="text-lg font-mono font-black text-primary">Ø {formatScore(r.avgOverall)}</p>
                 <p className="text-[9px] text-muted-foreground/50 font-mono">{r.count} {t("naked.ratings", "Bew.")}</p>
                 {r.myScore !== null && (
-                  <p className="text-[10px] text-primary/60 font-mono">{t("naked.myScore", "Mein Score")}: {r.myScore}</p>
+                  <p className="text-[10px] text-primary/60 font-mono">{t("naked.myScore", "Mein Score")}: {formatScore(r.myScore)}</p>
                 )}
               </div>
             </motion.div>

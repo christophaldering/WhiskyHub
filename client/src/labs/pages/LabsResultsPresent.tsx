@@ -12,7 +12,7 @@ import { tastingApi, whiskyApi, ratingApi, presentationApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
-import { stripGuestSuffix } from "@/lib/utils";
+import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
 interface LabsResultsPresentProps {
@@ -79,7 +79,7 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
         }} />
       </div>
       <span style={{ width: 38, fontSize: 14, fontWeight: 700, color: "var(--labs-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {value != null ? Math.round(value * 10) / 10 : "—"}
+        {value != null ? formatScore(value) : "—"}
       </span>
     </div>
   );
@@ -263,7 +263,7 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
-            {names.length > 0 ? Math.round(totalRatings / names.length * 10) / 10 : 0}
+            {names.length > 0 ? formatScore(Math.round(totalRatings / names.length * 10) / 10) : 0}
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.avgPerTaster")}</div>
         </div>
@@ -563,7 +563,7 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
                 {w.name || "Unknown"}
               </p>
               <span style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
-                {w.avgOverall != null ? (Math.round(w.avgOverall * 10) / 10) : "—"}
+                {w.avgOverall != null ? formatScore(w.avgOverall) : "—"}
               </span>
               <div style={{
                 width: "100%", height: h, borderRadius: "14px 14px 0 0",
@@ -755,14 +755,14 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     if (sorted.length === 0) return stats;
 
     const groupAvg = sorted.reduce((s, w) => s + (w.avgOverall || 0), 0) / sorted.length;
-    stats.push({ icon: <BarChart3 style={{ width: 16, height: 16 }} />, label: "Group Average", value: `${Math.round(groupAvg * 10) / 10}`, sub: `across ${sorted.length} whiskies` });
+    stats.push({ icon: <BarChart3 style={{ width: 16, height: 16 }} />, label: "Group Average", value: formatScore(groupAvg), sub: `across ${sorted.length} whiskies` });
 
     const withStdDev = sorted.filter(w => w.overallStdDev != null && w.ratingCount >= 2);
     const mostAgreed = withStdDev.sort((a, b) => (a.overallStdDev || 999) - (b.overallStdDev || 999))[0];
-    if (mostAgreed) stats.push({ icon: <Target style={{ width: 16, height: 16 }} />, label: "Most Agreed", value: mostAgreed.name || "Unknown", sub: `σ = ${Math.round((mostAgreed.overallStdDev || 0) * 10) / 10}` });
+    if (mostAgreed) stats.push({ icon: <Target style={{ width: 16, height: 16 }} />, label: "Most Agreed", value: mostAgreed.name || "Unknown", sub: `σ = ${formatScore(mostAgreed.overallStdDev || 0)}` });
 
     const mostDebated = [...withStdDev].sort((a, b) => (b.overallStdDev || 0) - (a.overallStdDev || 0))[0];
-    if (mostDebated && mostDebated.id !== mostAgreed?.id) stats.push({ icon: <MessageCircle style={{ width: 16, height: 16 }} />, label: "Most Debated", value: mostDebated.name || "Unknown", sub: `σ = ${Math.round((mostDebated.overallStdDev || 0) * 10) / 10}` });
+    if (mostDebated && mostDebated.id !== mostAgreed?.id) stats.push({ icon: <MessageCircle style={{ width: 16, height: 16 }} />, label: "Most Debated", value: mostDebated.name || "Unknown", sub: `σ = ${formatScore(mostDebated.overallStdDev || 0)}` });
 
     const ratings = allRatings || [];
     if (ratings.length > 0) {
@@ -781,9 +781,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
       if (entries.length >= 2) {
         const generous = entries.sort((a, b) => b.avg - a.avg)[0];
         const harsh = entries.sort((a, b) => a.avg - b.avg)[0];
-        stats.push({ icon: <TrendingUp style={{ width: 16, height: 16 }} />, label: "Most Generous", value: generous.name, sub: `avg: ${Math.round(generous.avg * 10) / 10}` });
+        stats.push({ icon: <TrendingUp style={{ width: 16, height: 16 }} />, label: "Most Generous", value: generous.name, sub: `avg: ${formatScore(generous.avg)}` });
         if (harsh.pid !== generous.pid) {
-          stats.push({ icon: <TrendingDown style={{ width: 16, height: 16 }} />, label: "Toughest Critic", value: harsh.name, sub: `avg: ${Math.round(harsh.avg * 10) / 10}` });
+          stats.push({ icon: <TrendingDown style={{ width: 16, height: 16 }} />, label: "Toughest Critic", value: harsh.name, sub: `avg: ${formatScore(harsh.avg)}` });
         }
       }
 

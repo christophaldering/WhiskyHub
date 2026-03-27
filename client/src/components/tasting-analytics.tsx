@@ -14,6 +14,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
+import { formatScore } from "@/lib/utils";
 
 const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
   nose: { en: "Nose", de: "Nase" },
@@ -180,10 +181,10 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                           >
                             <td style={{ padding: "8px 8px" }}><MedalIcon rank={idx + 1} /></td>
                             <td style={{ padding: "8px 8px", fontWeight: 500 }}>{wa.whisky?.name || `#${wa.whisky?.sortOrder}`}</td>
-                            <td style={{ padding: "8px 8px", textAlign: "center", fontWeight: 600, color: th.gold }}>{wa.median?.toFixed(1)}</td>
-                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.avg?.toFixed(1)}</td>
-                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.stdDev?.toFixed(1)}</td>
-                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.iqr?.toFixed(1)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", fontWeight: 600, color: th.gold }}>{formatScore(wa.median)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{formatScore(wa.avg)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{formatScore(wa.stdDev)}</td>
+                            <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{formatScore(wa.iqr)}</td>
                             <td style={{ padding: "8px 8px", textAlign: "center", color: th.faint }}>{wa.count}</td>
                           </tr>
                         ))}
@@ -221,8 +222,8 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                       {(["nose", "taste", "finish"] as const).map(cat => (
                         <div key={cat} style={{ background: th.bgCard, borderRadius: 10, padding: SP.sm }}>
                           <div style={{ color: th.faint, marginBottom: 2 }}>{t("tastingAnalytics." + cat)}</div>
-                          <div style={{ fontWeight: 600, color: th.gold }}>Ø {cats[cat]?.avg?.toFixed(1) ?? "–"}</div>
-                          <div style={{ fontSize: 10, color: th.faint }}>Md {cats[cat]?.median?.toFixed(1) ?? "–"}</div>
+                          <div style={{ fontWeight: 600, color: th.gold }}>Ø {cats[cat]?.avg != null ? formatScore(cats[cat].avg) : "–"}</div>
+                          <div style={{ fontSize: 10, color: th.faint }}>Md {cats[cat]?.median != null ? formatScore(cats[cat].median) : "–"}</div>
                           {myRating && (
                             <div style={{ fontSize: 10, color: th.amber, marginTop: 2 }}>
                               {t("tastingAnalytics.me")}: {myRating[cat] ?? "–"}
@@ -268,7 +269,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                         <span style={{ fontWeight: 600, color: th.gold }}>{myRating.overall}</span>
                         <span style={{ margin: "0 8px" }}>·</span>
                         {t("tastingAnalytics.groupMedian")}{" "}
-                        <span style={{ fontWeight: 600, color: th.gold }}>{wa.median?.toFixed(1)}</span>
+                        <span style={{ fontWeight: 600, color: th.gold }}>{formatScore(wa.median)}</span>
                       </div>
                     )}
                   </motion.div>

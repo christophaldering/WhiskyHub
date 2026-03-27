@@ -8,6 +8,7 @@ import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, Ale
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
+import { formatScore } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs/components/FlavorTagStrip";
@@ -503,7 +504,7 @@ function GuidedStepView({
             onDone={async (data: RatingData) => {
               if (!currentParticipant || !activeWhisky) return;
               const computeOv = (s: { nose: number; palate: number; finish: number }) =>
-                Math.round((s.nose + s.palate + s.finish) / 3);
+                Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
               const eff = data.scores.overall > 0
                 ? data.scores.overall
                 : Math.max(1, computeOv(data.scores));
@@ -875,7 +876,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   );
 
   const computeAutoOverall = (s: typeof scores) =>
-    Math.round((s.nose + s.taste + s.finish) / 3);
+    Math.round(((s.nose + s.taste + s.finish) / 3) * 2) / 2;
 
   const updateScore = (dimension: keyof typeof scores, value: number) => {
     const newScores = { ...scores, [dimension]: value };
@@ -1545,15 +1546,15 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       {myAllRatings.length >= 2 && (() => {
                         const overalls = myAllRatings.map((r: any) => r.overall).filter((v: any) => v != null);
                         if (overalls.length < 2) return null;
-                        const avg = Math.round(overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length * 10) / 10;
+                        const avg = overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length;
                         const min = Math.min(...overalls);
                         const max = Math.max(...overalls);
                         return (
                           <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="calibration-stats">
                             <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                              <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{avg}</strong></span>
-                              <span>Range: <strong style={{ color: "var(--labs-text)" }}>{min}–{max}</strong></span>
-                              <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{Math.round((max - min) * 10) / 10}</strong></span>
+                              <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{formatScore(avg)}</strong></span>
+                              <span>Range: <strong style={{ color: "var(--labs-text)" }}>{formatScore(min)}–{formatScore(max)}</strong></span>
+                              <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(max - min)}</strong></span>
                             </div>
                           </div>
                         );

@@ -192,7 +192,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const isHost = tasting.hostId === participantId;
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const step = scale >= 100 ? 0.5 : scale >= 20 ? 0.5 : 0.1;
 
 
   const guidedIdx = tasting.guidedWhiskyIndex ?? -1;

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
-import { stripGuestSuffix } from "@/lib/utils";
+import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
@@ -540,7 +540,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       if (vals.length === 0) { result[d] = { avg: 0, min: 0, max: 0, count: 0 }; continue; }
       const sum = vals.reduce((a, b) => a + b, 0);
       result[d] = {
-        avg: Math.round(sum / vals.length),
+        avg: Math.round(sum / vals.length * 2) / 2,
         min: Math.min(...vals),
         max: Math.max(...vals),
         count: vals.length,
@@ -1463,7 +1463,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     const validRatings = whiskyRatings.filter((r: any) => r[d.key] != null);
                     if (validRatings.length === 0) return 0;
                     const sum = validRatings.reduce((acc: number, r: any) => acc + r[d.key], 0);
-                    return Math.round(sum / validRatings.length);
+                    return Math.round(sum / validRatings.length * 2) / 2;
                   });
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 12 }}>
@@ -1476,7 +1476,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--labs-accent)", opacity: 0.6, transition: "width 0.4s ease" }} />
                             </div>
                             <span data-testid={`guest-avg-${d.key}`} style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 40, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                              {ratedCount > 0 ? `${avgs[i]}/${ratingScale}` : "—"}
+                              {ratedCount > 0 ? `${formatScore(avgs[i])}/${ratingScale}` : "—"}
                             </span>
                           </div>
                         );
@@ -1643,7 +1643,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       </span>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
-                          {s.avg}
+                          {formatScore(s.avg)}
                         </span>
                         <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>/ {ratingScale}</span>
                       </div>
@@ -1652,7 +1652,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       <div className="cockpit-progress-fill" style={{ width: `${pct}%`, background: "var(--labs-accent)" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 10, color: "var(--labs-text-muted)" }}>
-                      <span>{t("cockpit.range", "Range")}: {s.min}–{s.max}</span>
+                      <span>{t("cockpit.range", "Range")}: {formatScore(s.min)}–{formatScore(s.max)}</span>
                       <span style={{
                         color: consensus === "high" ? "var(--labs-success)" : consensus === "medium" ? "var(--labs-accent)" : "var(--labs-text-muted)",
                         fontWeight: 600,
@@ -1693,7 +1693,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       }} />
                       <span style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>{pName(p)}</span>
                       <span style={{ fontSize: 11, color: hasRated ? "var(--labs-accent)" : "var(--labs-text-muted)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                        {hasRated && score != null ? `${score}/${ratingScale}` : "—"}
+                        {hasRated && score != null ? `${formatScore(score)}/${ratingScale}` : "—"}
                       </span>
                     </div>
                   );
@@ -1968,7 +1968,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
           const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
           const avgScore = whiskyRatings.length > 0
-            ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length)
+            ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length * 2) / 2
             : null;
           const pct = totalParticipants > 0 ? Math.round((ratedCount / totalParticipants) * 100) : 0;
           const shortName = (w.name || `Whisky ${idx + 1}`).length > 18
@@ -2000,7 +2000,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               }} title={`${pct}% rated`} />
 
               {avgScore !== null && (
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{avgScore}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{formatScore(avgScore)}</span>
               )}
             </div>
           );
@@ -2040,7 +2040,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
                 const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
                 const avgScore = whiskyRatings.length > 0
-                  ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length)
+                  ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length * 2) / 2
                   : null;
                 const pct = totalParticipants > 0 ? Math.round((ratedCount / totalParticipants) * 100) : 0;
 
@@ -2076,7 +2076,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
                       {avgScore !== null && (
-                        <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{avgScore}</span>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{formatScore(avgScore)}</span>
                       )}
                       <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}>{ratedCount}/{totalParticipants} {t("ui.rated")}</span>
                       {isLive && (
@@ -2274,7 +2274,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 setHostScores(prev => ({ ...prev, [wId]: updatedScores }));
 
                 const computeOv = (s: { nose: number; palate: number; finish: number }) =>
-                  Math.round((s.nose + s.palate + s.finish) / 3);
+                  Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
                 const eff = data.scores.overall > 0
                   ? data.scores.overall
                   : Math.max(1, computeOv(data.scores));

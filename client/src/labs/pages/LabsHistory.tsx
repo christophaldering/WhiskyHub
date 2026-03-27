@@ -5,6 +5,7 @@ import { Link, useRoute, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
+import { formatScore } from "@/lib/utils";
 import { getParticipantId } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -281,7 +282,7 @@ function LabsHistoryList() {
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar size={11} /> {formatDate(tasting.tastingDate, lang)}</span>
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Wine size={11} /> {tasting.whiskyCount}</span>
                           {tasting.avgTotalScore != null && (
-                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Sparkles size={11} /> Ø {typeof tasting.avgTotalScore === "number" ? Math.round(tasting.avgTotalScore * 10) / 10 : tasting.avgTotalScore}/100</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Sparkles size={11} /> Ø {typeof tasting.avgTotalScore === "number" ? formatScore(tasting.avgTotalScore) : tasting.avgTotalScore}/100</span>
                           )}
                           {pCount > 0 && (
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }} data-testid={`participant-count-${tasting.id}`}>
@@ -293,7 +294,7 @@ function LabsHistoryList() {
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 12, color: "var(--labs-accent)" }}>
                             <Trophy size={11} style={{ flexShrink: 0 }} />
                             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{winnerLabel}</span>
-                            {tasting.winnerScore != null && <span style={{ color: "var(--labs-text-muted)", flexShrink: 0 }}>({typeof tasting.winnerScore === "number" ? Math.round(tasting.winnerScore * 10) / 10 : tasting.winnerScore}/100)</span>}
+                            {tasting.winnerScore != null && <span style={{ color: "var(--labs-text-muted)", flexShrink: 0 }}>({typeof tasting.winnerScore === "number" ? formatScore(tasting.winnerScore) : tasting.winnerScore}/100)</span>}
                           </div>
                         )}
                       </div>

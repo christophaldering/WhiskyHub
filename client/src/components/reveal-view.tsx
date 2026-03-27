@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatScore } from "@/lib/utils";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Tasting, Whisky } from "@shared/schema";
 
@@ -78,15 +78,15 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center space-y-6">
             <div className="text-8xl font-serif font-black text-primary tracking-tighter">
-              {whiskyData.avg}
+              {formatScore(whiskyData.avg)}
             </div>
             <div className="flex gap-8 text-sm text-muted-foreground">
               <div className="text-center">
-                <div className="font-mono font-bold text-lg text-foreground">{whiskyData.median}</div>
+                <div className="font-mono font-bold text-lg text-foreground">{formatScore(whiskyData.median)}</div>
                 <div className="text-xs uppercase tracking-widest">Median</div>
               </div>
               <div className="text-center">
-                <div className="font-mono font-bold text-lg text-foreground">{whiskyData.stdDev}</div>
+                <div className="font-mono font-bold text-lg text-foreground">{formatScore(whiskyData.stdDev)}</div>
                 <div className="text-xs uppercase tracking-widest">Std Dev</div>
               </div>
               <div className="text-center">
@@ -160,7 +160,7 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
                 <div className="font-serif text-lg">{item.whisky.name}</div>
                 <div className="text-xs opacity-70">{item.whisky.distillery}</div>
               </div>
-              <div className="font-mono font-bold text-xl">{item.avg}</div>
+              <div className="font-mono font-bold text-xl">{formatScore(item.avg)}</div>
             </div>
           ))}
         </div>

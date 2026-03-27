@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import { useAppStore } from "@/lib/store";
-import { stripGuestSuffix } from "@/lib/utils";
+import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
@@ -1191,7 +1191,7 @@ export default function LabsCircle() {
                           {t("m2.circle.loggedDram")}: {String(whiskyName)}
                           {score != null && (
                             <span style={{ color: "var(--labs-accent)", fontWeight: 600, marginLeft: 6 }}>
-                              {typeof score === "number" ? Math.round(score * 10) / 10 : String(score)}/100
+                              {typeof score === "number" ? formatScore(score) : String(score)}/100
                             </span>
                           )}
                         </>

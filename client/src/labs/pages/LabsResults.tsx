@@ -13,7 +13,7 @@ import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadBlob } from "@/lib/download";
 import { saveJsPdf } from "@/lib/pdf";
-import { stripGuestSuffix } from "@/lib/utils";
+import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import jsPDF from "jspdf";
 
 async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
@@ -134,7 +134,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(...accent);
-    doc.text(r.avgOverall?.toFixed?.(1) ?? String(r.avgOverall ?? "\u2014"), pageW - marginX, y + 3, { align: "right" });
+    doc.text(formatScore(r.avgOverall), pageW - marginX, y + 3, { align: "right" });
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
@@ -160,7 +160,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
         doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25 * pct, 3, 1, 1, "F");
         doc.setFontSize(6);
         doc.setTextColor(...textColor);
-        doc.text(String(Math.round((barVals[bi] ?? 0) * 10) / 10), bx + 26 + barMaxW * 0.25, by + 1);
+        doc.text(formatScore(barVals[bi]), bx + 26 + barMaxW * 0.25, by + 1);
       }
     });
 
@@ -336,7 +336,7 @@ function ViewerDimBar({ label, value, maxScore }: { label: string; value: number
         <div style={{ height: "100%", width: `${pct}%`, background: "var(--labs-accent)", borderRadius: 4, transition: "width 800ms cubic-bezier(0.4, 0, 0.2, 1)" }} />
       </div>
       <span style={{ width: 36, fontSize: 13, fontWeight: 700, color: "var(--labs-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {value != null ? Math.round(value * 10) / 10 : "\u2014"}
+        {value != null ? formatScore(value) : "\u2014"}
       </span>
     </div>
   );
@@ -519,7 +519,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                         <BarChart3 style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
                         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Group Average</span>
                       </div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)" }}>{Math.round(groupAvg * 10) / 10}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)" }}>{formatScore(groupAvg)}</div>
                     </div>
                     {mostAgreed && (
                       <div style={{ padding: "16px 20px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)" }}>
@@ -629,7 +629,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                         <div key={w.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 200 }}>
                           <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 85 : 65} height={actualRank === 0 ? 90 : 70} whiskyId={w.id} />
                           <p className="labs-serif" style={{ fontSize: actualRank === 0 ? 16 : 13, fontWeight: 700, color: "var(--labs-text)", textAlign: "center", marginTop: 8, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{w.name || t("resultsUi.unknown")}</p>
-                          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 8, fontVariantNumeric: "tabular-nums" }}>{w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : "—"}</span>
+                          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 8, fontVariantNumeric: "tabular-nums" }}>{formatScore(w.avgOverall)}</span>
                           <div style={{ width: "100%", height: h, borderRadius: "14px 14px 0 0", background: `linear-gradient(180deg, ${MEDAL_COLORS[actualRank]}22 0%, ${MEDAL_COLORS[actualRank]}08 100%)`, border: `1px solid ${MEDAL_COLORS[actualRank]}33`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 18 }}>
                             <span style={{ width: 42, height: 42, borderRadius: 21, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, background: MEDAL_COLORS[actualRank], color: actualRank === 0 ? "#78350f" : actualRank === 1 ? "#1f2937" : "#451a03", boxShadow: `0 4px 16px ${MEDAL_COLORS[actualRank]}55` }}>{actualRank + 1}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", marginTop: 7, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t(MEDAL_LABELS_KEYS[actualRank])}</span>
@@ -1000,25 +1000,25 @@ export default function LabsResults({ params }: LabsResultsProps) {
     setExpandedWhisky(expandedWhisky === id ? null : id);
   };
 
-  const fmt = (v: number | null | undefined) => v == null ? null : Math.round(v * 10) / 10;
+  const fmt = (v: number | null | undefined) => v == null ? null : formatScore(v);
 
   const DeltaIndicator = ({ delta }: { delta: number | null }) => {
     if (delta == null) return null;
-    const d = fmt(delta)!;
-    const absDelta = Math.abs(d);
+    const rounded = Math.round(delta * 10) / 10;
+    const absDelta = Math.abs(rounded);
     if (absDelta < 1) return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-text-muted)" }}>
         <Minus className="w-3 h-3" /> ±0
       </span>
     );
-    if (d > 0) return (
+    if (rounded > 0) return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-success)" }}>
-        <TrendingUp className="w-3 h-3" /> +{d}
+        <TrendingUp className="w-3 h-3" /> +{formatScore(rounded)}
       </span>
     );
     return (
       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-danger)" }}>
-        <TrendingDown className="w-3 h-3" /> {d}
+        <TrendingDown className="w-3 h-3" /> {formatScore(rounded)}
       </span>
     );
   };

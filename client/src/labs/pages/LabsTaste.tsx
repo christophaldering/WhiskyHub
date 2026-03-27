@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { formatScore } from "@/lib/utils";
 import {
   Wine, Calendar, ChevronRight, ChevronLeft, BookOpen,
   BarChart3, Target, Compass,
@@ -674,7 +675,7 @@ export default function LabsTaste() {
                     {dram.score != null && (
                       <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
                         <Star className="w-3 h-3" style={{ color: "var(--labs-accent)", opacity: 0.6 }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{Number(dram.score) % 1 === 0 ? Number(dram.score).toFixed(0) : Number(dram.score).toFixed(1)}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{formatScore(Number(dram.score))}</span>
                       </div>
                     )}
                   </div>
@@ -1089,9 +1090,9 @@ function LabsMonthlyReview({ data }: { data: MonthlyReviewData }) {
             {data.scoreDelta > 0 ? "\u25b2" : data.scoreDelta < 0 ? "\u25bc" : "\u25cf"}
             {" "}
             {data.scoreDelta > 0
-              ? `${data.scoreDelta.toFixed(1)} ${t("labs.monthlyReviewUp", "up")}`
+              ? `${formatScore(data.scoreDelta)} ${t("labs.monthlyReviewUp", "up")}`
               : data.scoreDelta < 0
-                ? `${Math.abs(data.scoreDelta).toFixed(1)} ${t("labs.monthlyReviewDown", "down")}`
+                ? `${formatScore(Math.abs(data.scoreDelta))} ${t("labs.monthlyReviewDown", "down")}`
                 : t("labs.monthlyReviewSame", "steady")
             }
           </span>

@@ -92,12 +92,12 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
     const s = initialData.scores;
-    return s.overall !== Math.round((s.nose + s.palate + s.finish) / 3);
+    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
   });
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const computeAutoOverall = (s: PhaseScores) =>
-    Math.round((s.nose + s.palate + s.finish) / 3);
+    Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
 
   const currentPhase = PHASES[phaseIndex];
   const accent = `var(--labs-phase-${currentPhase})`;
