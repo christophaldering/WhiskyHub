@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
 import ScoreInput from "./ScoreInput";
@@ -80,6 +81,7 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
 }
 
 export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange }: GuidedRatingProps) {
+  const { t } = useTranslation();
   const [phaseIndex, setPhaseIndex] = useState(initialPhaseIndex ?? 0);
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
@@ -87,7 +89,15 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   const [showFlash, setShowFlash] = useState(false);
   const [visibleContent, setVisibleContent] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [overallManuallySet, setOverallManuallySet] = useState(() => {
+    if (!initialData?.scores) return false;
+    const s = initialData.scores;
+    return s.overall !== Math.round((s.nose + s.palate + s.finish) / 3);
+  });
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const computeAutoOverall = (s: PhaseScores) =>
+    Math.round((s.nose + s.palate + s.finish) / 3);
 
   const currentPhase = PHASES[phaseIndex];
   const accent = `var(--labs-phase-${currentPhase})`;
@@ -95,6 +105,17 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
 
   useEffect(() => {
     setSaveError(null);
+  }, [phaseIndex]);
+
+  useEffect(() => {
+    if (phaseIndex === 3 && !overallManuallySet) {
+      const auto = computeAutoOverall(scores);
+      if (scores.overall !== auto) {
+        const nextScores = { ...scores, overall: auto };
+        setScores(nextScores);
+        onChange?.(phaseIndex, { scores: nextScores, tags, notes });
+      }
+    }
   }, [phaseIndex]);
 
   useEffect(() => {
@@ -145,6 +166,9 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   }, [scores, tags, notes, onChange]);
 
   const handleScoreChange = useCallback((v: number) => {
+    if (currentPhase === "overall") {
+      setOverallManuallySet(true);
+    }
     setScores((prev) => {
       const next = { ...prev, [currentPhase]: v };
       onChange?.(phaseIndex, { scores: next, tags, notes });
@@ -323,6 +347,49 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
             phaseId={currentPhase}
             labels={scoreLabels}
           />
+          {currentPhase === "overall" && (
+            <div
+              data-testid="guided-overall-auto-hint"
+              style={{
+                marginTop: SP.sm,
+                fontSize: 12,
+                fontFamily: FONT.body,
+                color: overallManuallySet ? "var(--labs-text-secondary)" : "var(--labs-text-muted)",
+                textAlign: "center",
+              }}
+            >
+              {overallManuallySet
+                ? t("ratingUi.overallManual", "Manual override")
+                : t("ratingUi.overallAuto", "Average of sub-scores")}
+              {overallManuallySet && (
+                <button
+                  data-testid="guided-overall-reset-btn"
+                  onClick={() => {
+                    setOverallManuallySet(false);
+                    const auto = computeAutoOverall(scores);
+                    setScores((prev) => {
+                      const next = { ...prev, overall: auto };
+                      onChange?.(phaseIndex, { scores: next, tags, notes });
+                      return next;
+                    });
+                  }}
+                  style={{
+                    marginLeft: SP.sm,
+                    fontSize: 12,
+                    fontFamily: FONT.body,
+                    color: accent,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    padding: 0,
+                  }}
+                >
+                  {t("ratingUi.overallReset", "Reset to average")}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {currentPhase !== "overall" && (

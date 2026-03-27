@@ -67,12 +67,26 @@ function getBandColor(score: number): string {
 
 export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange }: CompactRatingProps) {
   const { t } = useTranslation();
-  const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
+  const [scores, setScores] = useState<PhaseScores>(() => {
+    const init = initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
+    if (!initialData?.scores) {
+      return { ...init, overall: Math.round((init.nose + init.palate + init.finish) / 3) };
+    }
+    return init;
+  });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [openPhase, setOpenPhase] = useState<PhaseId | null>("nose");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [overallManuallySet, setOverallManuallySet] = useState(() => {
+    if (!initialData?.scores) return false;
+    const s = initialData.scores;
+    return s.overall !== Math.round((s.nose + s.palate + s.finish) / 3);
+  });
+
+  const computeAutoOverall = (s: PhaseScores) =>
+    Math.round((s.nose + s.palate + s.finish) / 3);
 
   const overallAvg = Math.round((scores.nose + scores.palate + scores.finish + scores.overall) / 4);
 
@@ -188,12 +202,61 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
             {isOpen && (
               <div style={{ borderTop: "1px solid var(--labs-border)", padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
                 <ScoreInput value={scores[pid]} onChange={(v) => {
+                  if (pid === "overall") {
+                    setOverallManuallySet(true);
+                  }
                   setScores((p) => {
                     const next = { ...p, [pid]: v };
+                    if (pid !== "overall" && !overallManuallySet) {
+                      next.overall = computeAutoOverall(next);
+                    }
                     onChange?.(0, { scores: next, tags, notes });
                     return next;
                   });
                 }} phaseId={pid} labels={scoreLabels} />
+                {pid === "overall" && (
+                  <div
+                    data-testid="compact-overall-auto-hint"
+                    style={{
+                      marginTop: SP.sm,
+                      fontSize: 12,
+                      fontFamily: FONT.body,
+                      color: overallManuallySet ? "var(--labs-text-secondary)" : "var(--labs-text-muted)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {overallManuallySet
+                      ? t("ratingUi.overallManual", "Manual override")
+                      : t("ratingUi.overallAuto", "Average of sub-scores")}
+                    {overallManuallySet && (
+                      <button
+                        data-testid="compact-overall-reset-btn"
+                        onClick={() => {
+                          setOverallManuallySet(false);
+                          const auto = computeAutoOverall(scores);
+                          setScores((prev) => {
+                            const next = { ...prev, overall: auto };
+                            onChange?.(0, { scores: next, tags, notes });
+                            return next;
+                          });
+                        }}
+                        style={{
+                          marginLeft: SP.sm,
+                          fontSize: 12,
+                          fontFamily: FONT.body,
+                          color: "var(--labs-phase-overall)",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          padding: 0,
+                        }}
+                      >
+                        {t("ratingUi.overallReset", "Reset to average")}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {pid !== "overall" && (
                   <FlavorTags
                     phaseId={pid}
