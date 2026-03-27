@@ -361,7 +361,7 @@ export default function LabsTasteDrams() {
         dims: { nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" }, taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" }, finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" } },
       });
     } else { setEditStructured(null); }
-    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "" });
+    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
     setViewState("edit");
   };
 
@@ -773,12 +773,14 @@ export default function LabsTasteDrams() {
               })}
               <EditTextarea label="Taste" value={editForm.tasteNotes} onChange={(v) => setEditForm({ ...editForm, tasteNotes: v })} testId="input-labs-edit-taste" />
               <EditTextarea label="Finish" value={editForm.finishNotes} onChange={(v) => setEditForm({ ...editForm, finishNotes: v })} testId="input-labs-edit-finish" />
+              <EditTextarea label="Overall" value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
             </div>
           ) : (
             <>
               <EditTextarea label="Nose" value={editForm.noseNotes} onChange={(v) => setEditForm({ ...editForm, noseNotes: v })} testId="input-labs-edit-nose" />
               <EditTextarea label="Taste" value={editForm.tasteNotes} onChange={(v) => setEditForm({ ...editForm, tasteNotes: v })} testId="input-labs-edit-taste" />
               <EditTextarea label="Finish" value={editForm.finishNotes} onChange={(v) => setEditForm({ ...editForm, finishNotes: v })} testId="input-labs-edit-finish" />
+              <EditTextarea label="Overall" value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
             </>
           )}
         </div>
