@@ -39,7 +39,42 @@ const allowlist = [
   "zod-validation-error",
 ];
 
+async function migrateTextToReal() {
+  if (!process.env.DATABASE_URL) {
+    console.log("no DATABASE_URL, skipping pre-build migration");
+    return;
+  }
+  const pgMod = await import("pg");
+  const pool = new pgMod.default.Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
+  const cols: Array<{ table: string; column: string }> = [
+    { table: "journal_entries", column: "abv" },
+    { table: "journal_entries", column: "price" },
+    { table: "benchmark_entries", column: "abv" },
+    { table: "whiskybase_collection", column: "abv" },
+    { table: "wishlist_entries", column: "abv" },
+  ];
+  try {
+    for (const { table, column } of cols) {
+      const { rows } = await pool.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+        [table, column]
+      );
+      if (rows[0]?.data_type === "text") {
+        await pool.query(`UPDATE ${table} SET ${column} = REPLACE(${column}, '%', '') WHERE ${column} LIKE '%\\%%'`);
+        await pool.query(`UPDATE ${table} SET ${column} = NULL WHERE ${column} IS NOT NULL AND ${column} !~ '^-?[0-9]+([.,][0-9]+)?$'`);
+        await pool.query(`ALTER TABLE ${table} ALTER COLUMN ${column} TYPE real USING NULLIF(REPLACE(${column}, ',', '.'), '')::real`);
+        console.log(`pre-build: ${table}.${column} text → real`);
+      }
+    }
+  } catch (e: any) {
+    console.log(`pre-build migration note: ${e.message}`);
+  } finally {
+    await pool.end();
+  }
+}
+
 async function buildAll() {
+  await migrateTextToReal();
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
