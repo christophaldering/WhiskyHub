@@ -1257,6 +1257,7 @@ function FriendDetailSheet({
   isInviteLoading: boolean;
   pid: string;
 }) {
+  const { t } = useTranslation();
   const [showInvitePicker, setShowInvitePicker] = useState(false);
   const isSelf = friend.participantId === pid;
   const initials = friend.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
@@ -1352,25 +1353,25 @@ function FriendDetailSheet({
           <div className="mb-6">
             <p className="labs-section-label mb-2">{t("m2.circle.selectTasting")}</p>
             <div className="space-y-2">
-              {myActiveTastings.map((t: Record<string, unknown>) => (
+              {myActiveTastings.map((tasting: Record<string, unknown>) => (
                 <button
-                  key={t.id as string}
+                  key={tasting.id as string}
                   className="w-full labs-card p-3 flex items-center gap-3 transition-all"
                   style={{ border: "1px solid var(--labs-border)", cursor: "pointer", background: "var(--labs-surface)" }}
                   onClick={() => {
-                    onInvite(friend.friendId, t.id as string);
+                    onInvite(friend.friendId, tasting.id as string);
                     setShowInvitePicker(false);
                   }}
                   disabled={isInviteLoading}
-                  data-testid={`friend-detail-invite-tasting-${t.id}`}
+                  data-testid={`friend-detail-invite-tasting-${tasting.id}`}
                 >
                   <Wine className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                      {String(t.title || "Tasting")}
+                      {String(tasting.title || "Tasting")}
                     </p>
                     <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                      {String(t.date ?? "")} · {String(t.status ?? "")}
+                      {String(tasting.date ?? "")} · {String(tasting.status ?? "")}
                     </p>
                   </div>
                   <Send className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
@@ -1497,22 +1498,22 @@ function InvitePickerSheet({
           Wähle ein Tasting aus:
         </p>
         <div className="space-y-2">
-          {tastings.map((t: Record<string, unknown>) => (
+          {tastings.map((tasting: Record<string, unknown>) => (
             <button
-              key={t.id as string}
+              key={tasting.id as string}
               className="w-full labs-card p-3 flex items-center gap-3 transition-all"
               style={{ border: "1px solid var(--labs-border)", cursor: "pointer", background: "var(--labs-surface)" }}
-              onClick={() => onInvite(t.id as string)}
+              onClick={() => onInvite(tasting.id as string)}
               disabled={isLoading}
-              data-testid={`invite-picker-tasting-${t.id}`}
+              data-testid={`invite-picker-tasting-${tasting.id}`}
             >
               <Wine className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                  {String(t.title || "Tasting")}
+                  {String(tasting.title || "Tasting")}
                 </p>
                 <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                  {String(t.date ?? "")} · {String(t.status ?? "")}
+                  {String(tasting.date ?? "")} · {String(tasting.status ?? "")}
                 </p>
               </div>
               <Send className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
