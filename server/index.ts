@@ -408,6 +408,49 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       log(`CRITICAL: cask_type migration failed: ${e.message} — app may not serve explore data correctly`, "startup");
     }
 
+    try {
+      const { db: dbSync } = await import("./db");
+      const { sql: sqlSync } = await import("drizzle-orm");
+
+      const textToReal: Array<{ table: string; column: string }> = [
+        { table: "journal_entries", column: "abv" },
+        { table: "journal_entries", column: "price" },
+        { table: "benchmark_entries", column: "abv" },
+        { table: "whiskybase_collection", column: "abv" },
+        { table: "wishlist_entries", column: "abv" },
+      ];
+      for (const { table, column } of textToReal) {
+        const check = await dbSync.execute(sqlSync`
+          SELECT data_type FROM information_schema.columns
+          WHERE table_name = ${table} AND column_name = ${column}
+        `);
+        const dtype = (check as any).rows?.[0]?.data_type;
+        if (dtype === "text") {
+          await dbSync.execute(sqlSync.raw(
+            `UPDATE ${table} SET ${column} = REPLACE(${column}, '%', '') WHERE ${column} LIKE '%\\%%'`
+          ));
+          await dbSync.execute(sqlSync.raw(
+            `ALTER TABLE ${table} ALTER COLUMN ${column} TYPE real USING NULLIF(REPLACE(${column}, ',', '.'), '')::real`
+          ));
+          log(`Fixed ${table}.${column}: text → real`, "startup");
+        }
+      }
+
+      await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS country text`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS country text`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS region text`);
+      const verify = await dbSync.execute(sqlSync`
+        SELECT table_name, column_name FROM information_schema.columns
+        WHERE (table_name = 'whiskies' AND column_name = 'country')
+           OR (table_name = 'whiskybase_collection' AND column_name IN ('country', 'region'))
+        ORDER BY table_name, column_name
+      `);
+      const cols = (verify as any).rows?.map((r: any) => `${r.table_name}.${r.column_name}`) ?? [];
+      log(`Schema sync verified columns: ${cols.join(", ")}`, "startup");
+    } catch (e: any) {
+      log(`CRITICAL: schema column sync failed: ${e.message}`, "startup");
+    }
+
     ready = true;
     log("Application fully initialized");
 
