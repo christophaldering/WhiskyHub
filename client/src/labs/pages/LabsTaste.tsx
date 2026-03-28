@@ -595,9 +595,9 @@ export default function LabsTaste() {
               )}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
               {[
-                { label: t("labs.statDramsLabel", "Drams"), icon: <Wine className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+                { label: t("labs.statAvgLabel", "Average"), icon: <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statConsistencyLabel", "Consistency"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statExplorationLabel", "Exploration"), icon: <Compass className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
               ].map(s => (
@@ -722,6 +722,7 @@ export default function LabsTaste() {
         </>
       ) : (
         <>
+          {insight && (
           <div className="labs-card labs-fade-in labs-stagger-1" style={{ padding: 0, marginBottom: 24, position: "relative", overflow: "hidden" }} data-testid="card-hero-insight">
             <div style={{ position: "absolute", top: -50, right: -50, width: 140, height: 140, background: "radial-gradient(circle, var(--labs-accent-glow), transparent 70%)", pointerEvents: "none" }} />
             <div style={{ padding: "20px 20px 16px" }}>
@@ -731,45 +732,23 @@ export default function LabsTaste() {
                   {t("labs.heroInsightLabel", "Taste Insight")}
                 </span>
               </div>
-              {insight ? (
-                <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0, fontFamily: "var(--font-display)", fontStyle: "italic" }} data-testid="text-insight-message">
-                  {String(insight.message ?? "")}
-                </p>
-              ) : avgScores.overall > 0 ? (
-                <div data-testid="text-hero-palate-summary">
-                  <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0 }}>
-                    {t("labs.heroAvgNeutral", "Your average is based on {{count}} ratings", { count: (flavorProfile?.sources?.tastingRatings || 0) + (flavorProfile?.sources?.journalEntries || 0) })}
-                  </p>
-                </div>
-              ) : (
-                <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
-                  {t("labs.heroPlaceholder", "Your personal taste insights will appear here as you rate more whiskies.")}
-                </p>
-              )}
+              <p style={{ fontSize: 15, fontWeight: 400, color: "var(--labs-text)", lineHeight: 1.6, margin: 0, fontFamily: "var(--font-display)", fontStyle: "italic" }} data-testid="text-insight-message">
+                {String(insight.message ?? "")}
+              </p>
             </div>
-            {avgScores.overall > 0 && (
-              <div style={{ padding: "0 20px 16px" }}>
-                <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%", width: `${Math.min(100, ((Math.max(60, Math.min(100, avgScores.overall)) - 60) / 40) * 100)}%`,
-                    borderRadius: 2, background: "var(--labs-accent)",
-                    transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  }} />
-                </div>
-              </div>
-            )}
           </div>
+          )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
-            <div className="labs-card" style={{ padding: 16, textAlign: "center" }} data-testid="labs-taste-stat-tastings">
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
+            <div className="labs-card" style={{ padding: 16, textAlign: "center" }} data-testid="labs-taste-stat-average">
               <div style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1, marginBottom: 4 }}>
-                {whiskyCount ?? "—"}
+                {avgScores.overall > 0 ? avgScores.overall.toFixed(1) : "—"}
               </div>
               <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 2 }}>
-                {t("labs.statDramsLabel", "Drams")}
+                {t("labs.statAvgLabel", "Average")}
               </p>
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3 }}>
-                {t("labs.statDramsDesc", "Whiskys rated")}
+                {t("labs.statAvgDesc", "Based on {{count}} ratings", { count: whiskyCount ?? 0 })}
               </p>
             </div>
 
