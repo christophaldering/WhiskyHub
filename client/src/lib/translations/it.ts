@@ -914,7 +914,7 @@ const it = {
       goToDramPlaceholder: "Il tuo dram affidabile di tutti i giorni",
       preferredRegions: "Regioni Preferite",
       preferredPeatLevel: "Livello di Torba Preferito",
-      preferredCaskInfluence: "Influenza della Botte Preferita",
+      preferredCaskType: "Tipo di Botte Preferito",
       photo: "Foto Profilo",
       uploadPhoto: "Carica Foto",
       changePhoto: "Cambia",

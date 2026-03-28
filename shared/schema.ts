@@ -166,7 +166,7 @@ export const profiles = pgTable("profiles", {
   goToDram: text("go_to_dram"),
   preferredRegions: text("preferred_regions"),
   preferredPeatLevel: text("preferred_peat_level"),
-  preferredCaskInfluence: text("preferred_cask_influence"),
+  preferredCaskType: text("preferred_cask_type"),
   photoUrl: text("photo_url"),
   openaiApiKey: text("openai_api_key"),
   friendNotificationsEnabled: boolean("friend_notifications_enabled").default(true),

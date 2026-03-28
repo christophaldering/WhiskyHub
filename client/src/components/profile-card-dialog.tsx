@@ -12,7 +12,7 @@ export interface RosterEntry {
   goToDram: string | null;
   preferredRegions: string | null;
   preferredPeatLevel: string | null;
-  preferredCaskInfluence: string | null;
+  preferredCaskType: string | null;
 }
 
 interface ProfileCardDialogProps {
@@ -39,7 +39,7 @@ export function ProfileCardDialog({ participant, open, onClose }: ProfileCardDia
   const hasPreferences =
     participant.preferredRegions ||
     participant.preferredPeatLevel ||
-    participant.preferredCaskInfluence;
+    participant.preferredCaskType;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -111,11 +111,11 @@ export function ProfileCardDialog({ participant, open, onClose }: ProfileCardDia
                 </Badge>
               </div>
             )}
-            {participant.preferredCaskInfluence && (
+            {participant.preferredCaskType && (
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5">{t("profile.preferredCaskInfluence")}</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5">{t("profile.preferredCaskType")}</p>
                 <Badge variant="outline" className="text-xs font-serif" data-testid={`badge-cask-${participant.id}`}>
-                  {participant.preferredCaskInfluence}
+                  {participant.preferredCaskType}
                 </Badge>
               </div>
             )}

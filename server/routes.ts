@@ -1363,7 +1363,7 @@ export async function registerRoutes(
           goToDram: "",
           preferredRegions: "",
           preferredPeatLevel: "",
-          preferredCaskInfluence: "",
+          preferredCaskType: "",
           photoUrl: "",
         });
       }
@@ -3479,7 +3479,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         goToDram: "goToDram" in req.body ? (req.body.goToDram || null) : (existing?.goToDram ?? null),
         preferredRegions: "preferredRegions" in req.body ? (req.body.preferredRegions || null) : (existing?.preferredRegions ?? null),
         preferredPeatLevel: "preferredPeatLevel" in req.body ? (req.body.preferredPeatLevel || null) : (existing?.preferredPeatLevel ?? null),
-        preferredCaskInfluence: "preferredCaskInfluence" in req.body ? (req.body.preferredCaskInfluence || null) : (existing?.preferredCaskInfluence ?? null),
+        preferredCaskType: ("preferredCaskType" in req.body || "preferredCaskInfluence" in req.body) ? (req.body.preferredCaskType || req.body.preferredCaskInfluence || null) : (existing?.preferredCaskType ?? null),
       };
       if ("openaiApiKey" in req.body) {
         data.openaiApiKey = req.body.openaiApiKey || null;
@@ -4264,7 +4264,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             goToDram: profile?.goToDram || null,
             preferredRegions: profile?.preferredRegions || null,
             preferredPeatLevel: profile?.preferredPeatLevel || null,
-            preferredCaskInfluence: profile?.preferredCaskInfluence || null,
+            preferredCaskType: profile?.preferredCaskType || null,
             joinedAt: tp.joinedAt,
           };
         })

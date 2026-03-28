@@ -914,7 +914,7 @@ const es = {
       goToDramPlaceholder: "Tu dram fiable del día a día",
       preferredRegions: "Regiones Preferidas",
       preferredPeatLevel: "Nivel de Turba Preferido",
-      preferredCaskInfluence: "Influencia de Barrica Preferida",
+      preferredCaskType: "Tipo de Barrica Preferido",
       photo: "Foto de Perfil",
       uploadPhoto: "Subir Foto",
       changePhoto: "Cambiar",

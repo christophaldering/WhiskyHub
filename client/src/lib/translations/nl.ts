@@ -914,7 +914,7 @@ const nl = {
       goToDramPlaceholder: "Je betrouwbare dagelijkse dram",
       preferredRegions: "Voorkeur Regio's",
       preferredPeatLevel: "Voorkeur Turfniveau",
-      preferredCaskInfluence: "Voorkeur Vatinvloed",
+      preferredCaskType: "Voorkeur Vattype",
       photo: "Profielfoto",
       uploadPhoto: "Foto Uploaden",
       changePhoto: "Wijzigen",

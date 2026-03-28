@@ -914,7 +914,7 @@ const zh = {
       goToDramPlaceholder: "您可靠的日常威士忌",
       preferredRegions: "偏好产区",
       preferredPeatLevel: "偏好泥煤程度",
-      preferredCaskInfluence: "偏好桶型影响",
+      preferredCaskType: "偏好桶型",
       photo: "头像",
       uploadPhoto: "上传照片",
       changePhoto: "更换",

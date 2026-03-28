@@ -40,7 +40,7 @@ export default function LabsTasteSettings() {
   const [goToDram, setGoToDram] = useState("");
   const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
   const [preferredPeatLevel, setPreferredPeatLevel] = useState("");
-  const [preferredCaskInfluence, setPreferredCaskInfluence] = useState("");
+  const [preferredCaskType, setPreferredCaskType] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
@@ -83,7 +83,7 @@ export default function LabsTasteSettings() {
     if (profile) {
       setBio(profile.bio || ""); setFavoriteWhisky(profile.favoriteWhisky || ""); setGoToDram(profile.goToDram || "");
       setPreferredRegions(profile.preferredRegions || []); setPreferredPeatLevel(profile.preferredPeatLevel || "");
-      setPreferredCaskInfluence(profile.preferredCaskInfluence || ""); setOpenaiApiKey(profile.openaiApiKey || "");
+      setPreferredCaskType(profile.preferredCaskType || ""); setOpenaiApiKey(profile.openaiApiKey || "");
       setOnlineToastLevel(profile.onlineToastLevel || "all");
       setCheersEnabled(profile.cheersEnabled !== false);
       setTastingInviteEnabled(profile.tastingInviteEnabled !== false);
@@ -123,7 +123,7 @@ export default function LabsTasteSettings() {
           window.dispatchEvent(new CustomEvent("casksense:photo-updated", { detail: { photoUrl: photoResult.photoUrl } }));
         }
       }
-      await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, openaiApiKey: openaiApiKey.trim() || null });
+      await profileApi.update(currentParticipant.id, { bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskType, openaiApiKey: openaiApiKey.trim() || null });
       const participantUpdates: any = {};
       if (displayName.trim() && displayName !== participant?.name) participantUpdates.name = displayName.trim();
       if (email !== (participant?.email || "")) participantUpdates.email = email;
@@ -328,7 +328,7 @@ export default function LabsTasteSettings() {
               </select>
             </Field>
             <Field label="Preferred Cask Type">
-              <select value={preferredCaskInfluence} onChange={(e) => setPreferredCaskInfluence(e.target.value)} style={selectStyle} data-testid="select-labs-cask-influence">
+              <select value={preferredCaskType} onChange={(e) => setPreferredCaskType(e.target.value)} style={selectStyle} data-testid="select-labs-cask-type">
                 <option value="">Select cask type</option>
                 {CASK_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>

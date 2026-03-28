@@ -914,7 +914,7 @@ const fr = {
       goToDramPlaceholder: "Votre dram quotidien de confiance",
       preferredRegions: "Régions Préférées",
       preferredPeatLevel: "Niveau de Tourbe Préféré",
-      preferredCaskInfluence: "Influence de Fût Préférée",
+      preferredCaskType: "Type de Fût Préféré",
       photo: "Photo de Profil",
       uploadPhoto: "Télécharger une Photo",
       changePhoto: "Modifier",
