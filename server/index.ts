@@ -442,11 +442,12 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS country text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS country text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS region text`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS distilled_year integer`);
       await dbSync.execute(sqlSync`ALTER TABLE wishlist_entries ADD COLUMN IF NOT EXISTS country text`);
       const verify = await dbSync.execute(sqlSync`
         SELECT table_name, column_name FROM information_schema.columns
         WHERE (table_name = 'whiskies' AND column_name = 'country')
-           OR (table_name = 'whiskybase_collection' AND column_name IN ('country', 'region'))
+           OR (table_name = 'whiskybase_collection' AND column_name IN ('country', 'region', 'distilled_year'))
            OR (table_name = 'wishlist_entries' AND column_name = 'country')
         ORDER BY table_name, column_name
       `);
