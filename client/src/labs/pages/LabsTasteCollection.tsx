@@ -18,7 +18,10 @@ import type { WhiskybaseCollectionItem } from "@shared/schema";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 
 type SortKey = "name" | "rating" | "price" | "added";
+type SortDirection = "asc" | "desc";
 type StatusFilter = "all" | "open" | "closed" | "empty";
+
+const sortDefaults: Record<SortKey, SortDirection> = { name: "asc", rating: "desc", price: "desc", added: "desc" };
 type ActivePanel = null | "importSync" | "priceSelect";
 
 const STATUS_CYCLE: string[] = ["closed", "open", "empty"];
@@ -33,6 +36,7 @@ export default function LabsTasteCollection() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [deleteTarget, setDeleteTarget] = useState<WhiskybaseCollectionItem | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
@@ -123,16 +127,17 @@ export default function LabsTasteCollection() {
       const q = search.toLowerCase();
       result = result.filter(i => i.name?.toLowerCase().includes(q) || i.brand?.toLowerCase().includes(q) || i.distillery?.toLowerCase().includes(q) || i.caskType?.toLowerCase().includes(q));
     }
+    const dir = sortDirection === "asc" ? 1 : -1;
     result.sort((a, b) => {
       switch (sortBy) {
-        case "rating": return (b.communityRating || 0) - (a.communityRating || 0);
-        case "price": return (b.pricePaid || b.avgPrice || 0) - (a.pricePaid || a.avgPrice || 0);
-        case "added": return (b.addedAt || "").localeCompare(a.addedAt || "");
-        default: return (a.brand || "").localeCompare(b.brand || "") || (a.name || "").localeCompare(b.name || "");
+        case "rating": return dir * ((a.communityRating || 0) - (b.communityRating || 0));
+        case "price": return dir * ((a.pricePaid || a.avgPrice || 0) - (b.pricePaid || b.avgPrice || 0));
+        case "added": return dir * (a.addedAt || "").localeCompare(b.addedAt || "");
+        default: return dir * ((a.brand || "").localeCompare(b.brand || "") || (a.name || "").localeCompare(b.name || ""));
       }
     });
     return result;
-  }, [items, statusFilter, search, sortBy]);
+  }, [items, statusFilter, search, sortBy, sortDirection]);
 
   const stats = useMemo(() => {
     const all = items as WhiskybaseCollectionItem[];
@@ -498,15 +503,18 @@ export default function LabsTasteCollection() {
         {(["all", "open", "closed", "empty"] as StatusFilter[]).map(sf => (
           <button key={sf} onClick={() => setStatusFilter(sf)}
             style={{ padding: "5px 12px", fontSize: 11, fontWeight: statusFilter === sf ? 600 : 400, color: statusFilter === sf ? "var(--labs-accent)" : "var(--labs-text-muted)", background: statusFilter === sf ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${statusFilter === sf ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
-            data-testid={`labs-status-${sf}`}>{sf === "all" ? "All" : statusLabel(sf)}</button>
+            data-testid={`labs-status-${sf}`}>{sf === "all" ? t("collectionUi.filterAll") : statusLabel(sf)}</button>
         ))}
       </div>
-      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
-        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>Sort:</span>
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", marginTop: 2 }}>
+        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>{t("collectionUi.sortLabel")}:</span>
         {(["name", "rating", "price", "added"] as SortKey[]).map(sk => (
-          <button key={sk} onClick={() => setSortBy(sk)}
-            style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
-            data-testid={`labs-sort-${sk}`}>{sk.charAt(0).toUpperCase() + sk.slice(1)}</button>
+          <button key={sk} onClick={() => { if (sortBy === sk) { setSortDirection(d => d === "asc" ? "desc" : "asc"); } else { setSortBy(sk); setSortDirection(sortDefaults[sk]); } }}
+            style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: sortBy === sk ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 3 }}
+            data-testid={`labs-sort-${sk}`}>
+            <span>{t(`collectionUi.sort_${sk}`)}</span>
+            {sortBy === sk && <span style={{ fontSize: 10 }}>{sortDirection === "asc" ? "↑" : "↓"}</span>}
+          </button>
         ))}
       </div>
 
