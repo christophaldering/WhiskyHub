@@ -46,6 +46,7 @@ interface CompactRatingProps {
   onDone: (data: RatingData) => void;
   onBack: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
+  onSaveAsDraft?: (data: RatingData) => void;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -65,7 +66,7 @@ function getBandColor(score: number): string {
   return "rgba(200,180,160,0.5)";
 }
 
-export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange }: CompactRatingProps) {
+export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft }: CompactRatingProps) {
   const { t } = useTranslation();
   const [scores, setScores] = useState<PhaseScores>(() => {
     const init = initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
@@ -372,6 +373,38 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
         >
           <AlertTriangleIcon color="var(--labs-amber)" size={18} />
           <span style={{ fontSize: 13, color: "var(--labs-amber)", fontFamily: FONT.body }}>{saveError}</span>
+        </div>
+      )}
+
+      {onSaveAsDraft && (
+        <div style={{
+          position: "fixed",
+          bottom: "calc(136px + env(safe-area-inset-bottom, 8px))",
+          left: SP.md,
+          right: SP.md,
+          zIndex: 14,
+          display: "flex",
+          justifyContent: "center",
+        }}>
+          <button
+            data-testid="compact-save-draft-btn"
+            onClick={() => onSaveAsDraft({ scores, tags, notes })}
+            style={{
+              height: 40,
+              paddingLeft: 20,
+              paddingRight: 20,
+              borderRadius: RADIUS.full,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface)",
+              color: "var(--labs-text-muted)",
+              fontFamily: FONT.body,
+              fontSize: 13,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t("v2.saveAsDraft", "Als Entwurf speichern")}
+          </button>
         </div>
       )}
 

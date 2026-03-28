@@ -55,6 +55,7 @@ interface GuidedRatingProps {
   onDone: (data: RatingData) => void;
   onBack: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
+  onSaveAsDraft?: (data: RatingData) => void;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -80,7 +81,7 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
   return map[id];
 }
 
-export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange }: GuidedRatingProps) {
+export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft }: GuidedRatingProps) {
   const { t } = useTranslation();
   const [phaseIndex, setPhaseIndex] = useState(initialPhaseIndex ?? 0);
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
@@ -457,6 +458,40 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         >
           <AlertTriangleIcon color="var(--labs-amber)" size={18} />
           <span style={{ fontSize: 13, color: "var(--labs-amber)", fontFamily: FONT.body }}>{saveError}</span>
+        </div>
+      )}
+
+      {onSaveAsDraft && (
+        <div style={{
+          position: "fixed",
+          bottom: "calc(136px + env(safe-area-inset-bottom, 8px))",
+          left: 0,
+          right: 0,
+          zIndex: 14,
+          display: "flex",
+          justifyContent: "center",
+          padding: `0 ${SP.md}px`,
+          boxSizing: "border-box",
+        }}>
+          <button
+            data-testid="rating-save-draft-btn"
+            onClick={() => onSaveAsDraft({ scores, tags, notes })}
+            style={{
+              height: 40,
+              paddingLeft: 20,
+              paddingRight: 20,
+              borderRadius: RADIUS.full,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface)",
+              color: "var(--labs-text-muted)",
+              fontFamily: FONT.body,
+              fontSize: 13,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t("v2.saveAsDraft", "Als Entwurf speichern")}
+          </button>
         </div>
       )}
 

@@ -26,12 +26,13 @@ interface RatingFlowV2Props {
   onDone: (data: RatingData) => void;
   onBack: () => void;
   onChange?: (draft: RatingFlowDraftState) => void;
+  onSaveAsDraft?: (data: RatingData) => void;
   hideQuick?: boolean;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, hideQuick }: RatingFlowV2Props) {
+export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft, hideQuick }: RatingFlowV2Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(initialMode ?? null);
   const [step, setStep] = useState<Step>(initialMode ? "rating" : "mode");
@@ -131,6 +132,14 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     );
   }
 
+  const handleRatingBack = useCallback(() => {
+    if (onSaveAsDraft) {
+      onBack();
+    } else {
+      setStep("mode");
+    }
+  }, [onBack, onSaveAsDraft]);
+
   if (step === "rating" && mode === "guided") {
     return (
       <GuidedRating
@@ -139,8 +148,9 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         initialData={initialData}
         initialPhaseIndex={initialPhaseIndex}
         onDone={handleRatingDone}
-        onBack={() => setStep("mode")}
+        onBack={handleRatingBack}
         onChange={handleChange}
+        onSaveAsDraft={onSaveAsDraft}
       />
     );
   }
@@ -152,8 +162,9 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
         initialData={initialData}
         onDone={handleRatingDone}
-        onBack={() => setStep("mode")}
+        onBack={handleRatingBack}
         onChange={handleChange}
+        onSaveAsDraft={onSaveAsDraft}
       />
     );
   }
@@ -165,8 +176,9 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         whisky={{ ...whisky, blind: whisky.blind ?? false }}
         initialData={initialData}
         onDone={handleRatingDone}
-        onBack={() => setStep("mode")}
+        onBack={handleRatingBack}
         onChange={handleChange}
+        onSaveAsDraft={onSaveAsDraft}
       />
     );
   }

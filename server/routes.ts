@@ -6930,7 +6930,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price", "status"]);
       if (sanitizedBody.abv !== undefined) sanitizedBody.abv = sanitizedBody.abv != null ? (typeof sanitizedBody.abv === "string" ? parseFloat(sanitizedBody.abv.replace(",", ".").replace("%", "")) || null : sanitizedBody.abv) : null;
       if (sanitizedBody.price !== undefined) sanitizedBody.price = sanitizedBody.price != null ? (typeof sanitizedBody.price === "string" ? parseFloat(sanitizedBody.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : sanitizedBody.price) : null;
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });

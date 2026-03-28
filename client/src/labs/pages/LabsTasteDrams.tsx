@@ -13,7 +13,7 @@ import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
-  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock,
+  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -347,7 +347,14 @@ export default function LabsTasteDrams() {
 
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<JournalEntry | null>(null);
 
-  const handleView = (entry: any) => { setSelectedEntry(entry); setViewState("detail"); };
+  const handleView = (entry: any) => {
+    setSelectedEntry(entry);
+    if (entry.status === "draft" && isSoloEntry(entry)) {
+      setViewState("deepRate");
+    } else {
+      setViewState("detail");
+    }
+  };
 
   const handleEdit = (entry: any) => {
     setSelectedEntry(entry);
@@ -582,9 +589,16 @@ export default function LabsTasteDrams() {
         </div>
 
         {selectedEntry.status === "draft" && isSoloEntry(selectedEntry) && (
-          <button onClick={() => updateMutation.mutate({ id: selectedEntry.id, data: { status: "final" } })} className="labs-btn-primary w-full flex items-center justify-center gap-2 mb-4" data-testid="button-labs-finalize-dram">
-            <Check className="w-4 h-4" /> Finish tasting
-          </button>
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => {
+              setViewState("deepRate");
+            }} className="labs-btn-primary flex-1 flex items-center justify-center gap-2" data-testid="button-labs-finalize-dram">
+              <SlidersHorizontal className="w-4 h-4" /> {t("v2.drams.finishRating", "Bewertung vervollständigen")}
+            </button>
+            <button onClick={() => updateMutation.mutate({ id: selectedEntry.id, data: { status: "final" } })} className="labs-btn-secondary flex items-center justify-center gap-2" style={{ padding: "8px 14px" }} data-testid="button-labs-quick-finalize-dram">
+              <Check className="w-4 h-4" /> {t("v2.drams.markFinal", "Als fertig markieren")}
+            </button>
+          </div>
         )}
 
         <div className="labs-card p-5">
@@ -698,7 +712,12 @@ export default function LabsTasteDrams() {
         overall: selectedEntry.personalScore ?? 80,
       },
       tags: { nose: [], palate: [], finish: [], overall: [] },
-      notes: { nose: "", palate: "", finish: "", overall: "" },
+      notes: {
+        nose: selectedEntry.noseNotes || "",
+        palate: selectedEntry.tasteNotes ? cleanTasteNotes(selectedEntry.tasteNotes) : "",
+        finish: selectedEntry.finishNotes || "",
+        overall: selectedEntry.notes || "",
+      },
     };
     const handleDeepRateDone = (data: RatingData) => {
       const noseNoteParts = [data.notes.nose, ...(data.tags.nose || [])].filter(Boolean).join(", ");
@@ -710,6 +729,7 @@ export default function LabsTasteDrams() {
         noseNotes: noseNoteParts || selectedEntry.noseNotes || "",
         tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
         finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
+        ...(selectedEntry.status === "draft" ? { status: "final" } : {}),
       };
       deepRateMutation.mutate({ id: selectedEntry.id, data: patchData });
     };
@@ -719,7 +739,7 @@ export default function LabsTasteDrams() {
           whisky={deepRateWhisky}
           initialData={deepRateInitialData}
           onDone={handleDeepRateDone}
-          onBack={() => setViewState("detail")}
+          onBack={() => setViewState(selectedEntry.status === "draft" ? "list" : "detail")}
           hideQuick
         />
       </div>
@@ -862,6 +882,35 @@ export default function LabsTasteDrams() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeFilter !== "drafts" && journal.filter((e: any) => e.status === "draft").length > 0 && (
+            <div style={{ padding: "0 20px", marginBottom: 12 }} data-testid="labs-draft-banner">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  background: "rgba(200,134,26,0.08)",
+                  border: "1px solid rgba(200,134,26,0.2)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setActiveFilter("drafts")}
+              >
+                <FileEdit style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+                    {t("v2.drams.draftBanner", "Du hast {{count}} unfertige Bewertung(en)", { count: journal.filter((e: any) => e.status === "draft").length })}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                    {t("v2.drams.draftBannerHint", "Jetzt vervollständigen?")}
+                  </div>
+                </div>
+                <ChevronLeft style={{ width: 16, height: 16, color: "#c8861a", transform: "rotate(180deg)" }} />
+              </div>
             </div>
           )}
 
@@ -1065,7 +1114,7 @@ export default function LabsTasteDrams() {
                   {hasAnyFilter ? `${filteredEntries.length} of ${allItems.length} entries` : `${filteredEntries.length} entries`}
                 </div>
                 {filteredEntries.map((entry: any) => (
-                  <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "16px 18px", cursor: "pointer", borderRadius: 14 }} data-testid={`labs-dram-${entry.id}`}>
+                  <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "16px 18px", cursor: "pointer", borderRadius: 14, ...(entry.status === "draft" ? { borderStyle: "dashed", borderColor: "rgba(200,134,26,0.35)", background: "rgba(200,134,26,0.04)" } : {}) }} data-testid={`labs-dram-${entry.id}`}>
                     <div className="flex items-start gap-3">
                       <WhiskyImage imageUrl={entry.imageUrl} name={entry.name || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
                       <div style={{ flex: 1, minWidth: 0 }}>

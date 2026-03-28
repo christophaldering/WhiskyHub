@@ -14,7 +14,7 @@ import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
-type Step = "capture" | "form" | "rating" | "done";
+type Step = "capture" | "form" | "rating" | "quickFollowUp" | "done";
 
 function getExistingParticipantId(storeParticipantId: string | null): string | null {
   try {
@@ -105,6 +105,9 @@ export default function LabsSolo() {
   const [addToCollection, setAddToCollection] = useState(true);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
   const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isDraftSave, setIsDraftSave] = useState(false);
+  const [showBackDialog, setShowBackDialog] = useState(false);
+  const [quickFollowUpData, setQuickFollowUpData] = useState<RatingData | null>(null);
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
   const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
@@ -113,6 +116,7 @@ export default function LabsSolo() {
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
 
   const hasUnsavedRef = useRef(false);
+  const latestRatingDataRef = useRef<Partial<RatingData>>({});
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -211,6 +215,7 @@ export default function LabsSolo() {
   const handleRatingChange = useCallback((draft: RatingFlowDraftState) => {
     setRatingMode(draft.mode);
     setRatingPhaseIndex(draft.phaseIndex);
+    latestRatingDataRef.current = draft.data;
     saveSoloDraft({
       step: "rating",
       whisky,
@@ -269,12 +274,9 @@ export default function LabsSolo() {
     showDraftFlash();
   }, [fromCollection, showDraftFlash]);
 
-  const handleRatingDone = useCallback(async (data: RatingData) => {
-    setRatingResult(data);
-    setSaveError(false);
-
+  const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft") => {
     const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
-    const body = {
+    return {
       title: whiskyName,
       name: whiskyName,
       distillery: whisky?.distillery || "",
@@ -301,7 +303,16 @@ export default function LabsSolo() {
       ].filter(Boolean).join(", "),
       notes: data.notes.overall || "",
       source: "solo",
+      status,
     };
+  }, [whisky, t]);
+
+  const handleRatingDone = useCallback(async (data: RatingData) => {
+    setRatingResult(data);
+    setSaveError(false);
+    setIsDraftSave(false);
+
+    const body = buildJournalBody(data, "final");
 
     try {
       const res = await fetch(`/api/journal/${participantId}`, {
@@ -337,13 +348,95 @@ export default function LabsSolo() {
     } catch {
       setSaveError(true);
     }
-  }, [whisky, participantId, t, soloImageFile]);
+  }, [whisky, participantId, t, soloImageFile, buildJournalBody]);
+
+  const handleSaveAsDraft = useCallback(async (data: RatingData) => {
+    setRatingResult(data);
+    setSaveError(false);
+    setIsDraftSave(true);
+
+    const body = buildJournalBody(data, "draft");
+
+    try {
+      const res = await fetch(`/api/journal/${participantId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-participant-id": participantId,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        setSaveError(true);
+        return;
+      }
+
+      if (soloImageFile) {
+        try {
+          const entry = await res.json();
+          if (entry?.id) {
+            const imgFormData = new FormData();
+            imgFormData.append("image", soloImageFile);
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+          }
+        } catch {}
+        setSoloImageFile(null);
+      }
+
+      clearSoloDraft();
+      hasUnsavedRef.current = false;
+      queryClient.invalidateQueries({ queryKey: ["journal"] });
+      setStep("done");
+    } catch {
+      setSaveError(true);
+    }
+  }, [whisky, participantId, t, soloImageFile, buildJournalBody]);
+
+  const handleQuickRatingDone = useCallback((data: RatingData) => {
+    if (ratingMode === "quick") {
+      setQuickFollowUpData(data);
+      setStep("quickFollowUp");
+    } else {
+      handleRatingDone(data);
+    }
+  }, [handleRatingDone, ratingMode]);
+
+  const handleQuickFollowUpFinish = useCallback(() => {
+    if (quickFollowUpData) {
+      handleRatingDone(quickFollowUpData);
+    }
+  }, [quickFollowUpData, handleRatingDone]);
+
+  const handleQuickFollowUpDeepen = useCallback(() => {
+    if (quickFollowUpData) {
+      setRatingInitialData({
+        scores: { ...quickFollowUpData.scores },
+        tags: { nose: [], palate: [], finish: [], overall: [] },
+        notes: { ...quickFollowUpData.notes },
+      });
+      setRatingMode(null);
+      setRatingPhaseIndex(0);
+      setStep("rating");
+      setQuickFollowUpData(null);
+    }
+  }, [quickFollowUpData]);
+
+  const handleQuickFollowUpDraft = useCallback(() => {
+    if (quickFollowUpData) {
+      handleSaveAsDraft(quickFollowUpData);
+    }
+  }, [quickFollowUpData, handleSaveAsDraft]);
 
   const handleRetrySave = useCallback(() => {
     if (ratingResult) {
-      handleRatingDone(ratingResult);
+      if (isDraftSave) {
+        handleSaveAsDraft(ratingResult);
+      } else {
+        handleRatingDone(ratingResult);
+      }
     }
-  }, [ratingResult, handleRatingDone]);
+  }, [ratingResult, handleRatingDone, handleSaveAsDraft, isDraftSave]);
 
   const saveToCollectionIfNeeded = useCallback(() => {
     if (addToCollection && !fromCollection && isUserAuthenticated() && whisky?.name && participantId) {
@@ -376,6 +469,8 @@ export default function LabsSolo() {
     setRatingMode(null);
     setRatingPhaseIndex(0);
     setRatingInitialData(undefined);
+    setIsDraftSave(false);
+    setQuickFollowUpData(null);
     setStep("capture");
   }, [saveToCollectionIfNeeded]);
 
@@ -383,6 +478,41 @@ export default function LabsSolo() {
     saveToCollectionIfNeeded();
     goBack();
   }, [saveToCollectionIfNeeded, goBack]);
+
+  const handleRatingBack = useCallback(() => {
+    const currentData = latestRatingDataRef.current;
+    if (hasDraftData(currentData)) {
+      setShowBackDialog(true);
+    } else {
+      setStep("form");
+      clearSoloDraft();
+    }
+  }, []);
+
+  const handleBackDialogSaveDraft = useCallback(() => {
+    setShowBackDialog(false);
+    const currentData = latestRatingDataRef.current;
+    const baseScores = ratingInitialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
+    const baseTags = ratingInitialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] };
+    const baseNotes = ratingInitialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" };
+    const fullData: RatingData = {
+      scores: currentData.scores ? { ...baseScores, ...currentData.scores } : baseScores,
+      tags: currentData.tags ? { ...baseTags, ...currentData.tags } : baseTags,
+      notes: currentData.notes ? { ...baseNotes, ...currentData.notes } : baseNotes,
+    };
+    handleSaveAsDraft(fullData);
+  }, [handleSaveAsDraft, ratingInitialData]);
+
+  const handleBackDialogDiscard = useCallback(() => {
+    setShowBackDialog(false);
+    clearSoloDraft();
+    latestRatingDataRef.current = {};
+    setStep("form");
+  }, []);
+
+  const handleBackDialogCancel = useCallback(() => {
+    setShowBackDialog(false);
+  }, []);
 
   let content: React.ReactNode = null;
 
@@ -480,9 +610,10 @@ export default function LabsSolo() {
           initialData={ratingInitialData}
           initialMode={ratingMode}
           initialPhaseIndex={ratingPhaseIndex}
-          onDone={handleRatingDone}
-          onBack={() => { setStep("form"); clearSoloDraft(); }}
+          onDone={handleQuickRatingDone}
+          onBack={handleRatingBack}
           onChange={handleRatingChange}
+          onSaveAsDraft={handleSaveAsDraft}
         />
         {saveError && (
           <div className="labs-card" style={{
@@ -513,6 +644,100 @@ export default function LabsSolo() {
         )}
       </div>
     );
+  } else if (step === "quickFollowUp") {
+    content = (
+      <div className="labs-fade-in" style={{
+        padding: "var(--labs-space-xl) var(--labs-space-md)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "var(--labs-space-lg)",
+      }}>
+        <div className="labs-card" style={{
+          width: "100%",
+          padding: "var(--labs-space-xl)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--labs-space-md)",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 14,
+            background: "rgba(200,134,26,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <span style={{ fontSize: 28 }}>&#129346;</span>
+          </div>
+
+          <h2 className="labs-h2" style={{ margin: 0, textAlign: "center", fontSize: 18 }} data-testid="quick-followup-title">
+            {t("v2.solo.quickFollowUpTitle", "Einzelbewertungen ergänzen?")}
+          </h2>
+
+          <p style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 14,
+            color: "var(--labs-text-muted)",
+            margin: 0,
+            textAlign: "center",
+            lineHeight: 1.5,
+          }} data-testid="quick-followup-hint">
+            {t("v2.solo.quickFollowUpHint", "Du hast nur den Overall-Score vergeben. Möchtest du Nose, Palate und Finish noch einzeln bewerten?")}
+          </p>
+
+          {quickFollowUpData && (
+            <div style={{
+              fontSize: 36,
+              fontWeight: 700,
+              fontFamily: "var(--font-display)",
+              color: quickFollowUpData.scores.overall >= 90 ? "var(--labs-success)" : quickFollowUpData.scores.overall >= 80 ? "var(--labs-gold)" : "var(--labs-accent)",
+              lineHeight: 1,
+            }} data-testid="quick-followup-score">
+              {quickFollowUpData.scores.overall}
+            </div>
+          )}
+        </div>
+
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
+          <button
+            onClick={handleQuickFollowUpDeepen}
+            data-testid="quick-followup-deepen-btn"
+            className="labs-btn-primary"
+            style={{ width: "100%", minHeight: 44 }}
+          >
+            {t("v2.solo.quickFollowUpDeepen", "Jetzt ergänzen")}
+          </button>
+
+          <button
+            onClick={handleQuickFollowUpFinish}
+            data-testid="quick-followup-finish-btn"
+            className="labs-btn-secondary"
+            style={{ width: "100%", minHeight: 44 }}
+          >
+            {t("v2.solo.quickFollowUpFinish", "Fertig")}
+          </button>
+
+          <button
+            onClick={handleQuickFollowUpDraft}
+            data-testid="quick-followup-draft-btn"
+            style={{
+              width: "100%",
+              minHeight: 40,
+              background: "transparent",
+              border: "1px solid var(--labs-border)",
+              borderRadius: 10,
+              color: "var(--labs-text-muted)",
+              fontSize: 13,
+              fontFamily: "var(--font-ui)",
+              cursor: "pointer",
+            }}
+          >
+            {t("v2.solo.quickFollowUpDraft", "Später (als Entwurf)")}
+          </button>
+        </div>
+      </div>
+    );
   } else if (step === "done" && ratingResult) {
     const authenticated = isUserAuthenticated();
     content = (
@@ -521,9 +746,10 @@ export default function LabsSolo() {
         score={ratingResult.scores.overall}
         onAnother={handleAnother}
         onHub={handleHub}
-        showAddToCollection={authenticated && !fromCollection}
+        showAddToCollection={authenticated && !fromCollection && !isDraftSave}
         addToCollection={addToCollection}
         onToggleAddToCollection={setAddToCollection}
+        isDraft={isDraftSave}
       />
     );
   }
@@ -555,6 +781,102 @@ export default function LabsSolo() {
         >
           <Check style={{ width: 14, height: 14 }} />
           {t("v2.draftSaved", "Draft saved")}
+        </div>
+      )}
+
+      {showBackDialog && (
+        <div
+          data-testid="back-confirm-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={handleBackDialogCancel}
+        >
+          <div
+            data-testid="back-confirm-dialog"
+            className="labs-card"
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: "var(--labs-space-xl)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--labs-space-md)",
+              animation: "labsFadeIn 200ms ease both",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 18,
+              fontWeight: 600,
+              color: "var(--labs-text)",
+              margin: 0,
+              textAlign: "center",
+            }}>
+              {t("v2.solo.backDialogTitle", "Fortschritt als Entwurf speichern?")}
+            </h3>
+
+            <p style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 14,
+              color: "var(--labs-text-muted)",
+              margin: 0,
+              textAlign: "center",
+              lineHeight: 1.5,
+            }}>
+              {t("v2.solo.backDialogHint", "Du hast bereits Bewertungsdaten eingegeben. Was möchtest du tun?")}
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
+              <button
+                onClick={handleBackDialogSaveDraft}
+                data-testid="back-confirm-save-draft"
+                className="labs-btn-primary"
+                style={{ width: "100%", minHeight: 44 }}
+              >
+                {t("v2.solo.backDialogSave", "Als Entwurf speichern")}
+              </button>
+
+              <button
+                onClick={handleBackDialogDiscard}
+                data-testid="back-confirm-discard"
+                style={{
+                  width: "100%",
+                  minHeight: 44,
+                  background: "transparent",
+                  border: "1px solid var(--labs-danger, #ef4444)",
+                  borderRadius: 10,
+                  color: "var(--labs-danger, #ef4444)",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-ui)",
+                  cursor: "pointer",
+                }}
+              >
+                {t("v2.solo.backDialogDiscard", "Verwerfen")}
+              </button>
+
+              <button
+                onClick={handleBackDialogCancel}
+                data-testid="back-confirm-cancel"
+                className="labs-btn-secondary"
+                style={{ width: "100%", minHeight: 44 }}
+              >
+                {t("v2.solo.backDialogCancel", "Weiter bewerten")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, FileEdit } from "lucide-react";
 
 interface Props {
   whiskyName: string;
@@ -9,9 +9,10 @@ interface Props {
   showAddToCollection?: boolean;
   addToCollection?: boolean;
   onToggleAddToCollection?: (val: boolean) => void;
+  isDraft?: boolean;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, addToCollection, onToggleAddToCollection }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, addToCollection, onToggleAddToCollection, isDraft }: Props) {
   const { t } = useTranslation();
 
   const scoreBand =
@@ -37,12 +38,16 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
       }}>
         <div style={{
           width: 64, height: 64, borderRadius: 16,
-          background: "var(--labs-phase-overall-dim)",
+          background: isDraft ? "rgba(200,134,26,0.1)" : "var(--labs-phase-overall-dim)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }} data-testid="solo-done-check">
-          <Check size={32} style={{ color: "var(--labs-phase-overall)" }} />
+          {isDraft ? (
+            <FileEdit size={32} style={{ color: "#c8861a" }} />
+          ) : (
+            <Check size={32} style={{ color: "var(--labs-phase-overall)" }} />
+          )}
         </div>
 
         <h2 className="labs-h2" style={{ margin: 0, textAlign: "center" }} data-testid="solo-done-whisky">
@@ -63,11 +68,25 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
         <p style={{
           fontFamily: "var(--font-ui)",
           fontSize: 14,
-          color: "var(--labs-text-muted)",
+          color: isDraft ? "#c8861a" : "var(--labs-text-muted)",
           margin: 0,
         }} data-testid="solo-done-saved">
-          {t("v2.solo.saved", "Saved to diary")}
+          {isDraft
+            ? t("v2.solo.draftSaved", "Entwurf gespeichert")
+            : t("v2.solo.saved", "Saved to diary")}
         </p>
+
+        {isDraft && (
+          <p style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            color: "var(--labs-text-muted)",
+            margin: 0,
+            textAlign: "center",
+          }} data-testid="solo-done-draft-hint">
+            {t("v2.solo.draftHint", "Du kannst den Entwurf jederzeit unter \"My Drams\" vervollständigen.")}
+          </p>
+        )}
 
         {showAddToCollection && (
           <div
