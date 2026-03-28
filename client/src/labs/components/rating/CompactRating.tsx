@@ -403,7 +403,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
               whiteSpace: "nowrap",
             }}
           >
-            {t("v2.saveAsDraft", "Als Entwurf speichern")}
+            {t("v2.saveDraftInline", "Zwischenstand sichern")}
           </button>
         </div>
       )}

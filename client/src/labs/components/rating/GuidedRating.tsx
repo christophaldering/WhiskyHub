@@ -490,7 +490,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
               whiteSpace: "nowrap",
             }}
           >
-            {t("v2.saveAsDraft", "Als Entwurf speichern")}
+            {t("v2.saveDraftInline", "Zwischenstand sichern")}
           </button>
         </div>
       )}

@@ -201,7 +201,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
             justifyContent: "center",
           }}
         >
-          {t("v2.saveAsDraft", "Als Entwurf speichern")}
+          {t("v2.saveDraftInline", "Zwischenstand sichern")}
         </button>
       )}
     </div>

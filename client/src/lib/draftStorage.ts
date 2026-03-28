@@ -15,6 +15,7 @@ export interface SoloDraft {
   ratingPhaseIndex: number;
   ratingData: Partial<RatingData>;
   fromCollection: boolean;
+  serverDraftId?: string | null;
 }
 
 export interface GroupDraft {

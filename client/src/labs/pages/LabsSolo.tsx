@@ -12,7 +12,7 @@ import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
-import { saveSoloDraft, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
+import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
 type Step = "capture" | "form" | "rating" | "quickFollowUp" | "done";
 
@@ -108,6 +108,8 @@ export default function LabsSolo() {
   const [isDraftSave, setIsDraftSave] = useState(false);
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [quickFollowUpData, setQuickFollowUpData] = useState<RatingData | null>(null);
+  const [draftEntryId, setDraftEntryId] = useState<string | null>(null);
+  const [draftSaving, setDraftSaving] = useState(false);
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
   const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
@@ -203,6 +205,9 @@ export default function LabsSolo() {
     if (resumeDraft.ratingData?.scores) {
       setRatingInitialData(resumeDraft.ratingData as RatingData);
     }
+    if (resumeDraft.serverDraftId) {
+      setDraftEntryId(resumeDraft.serverDraftId);
+    }
     setStep(resumeDraft.step);
     setResumeDraft(null);
   }, [resumeDraft]);
@@ -223,17 +228,19 @@ export default function LabsSolo() {
       ratingPhaseIndex: draft.phaseIndex,
       ratingData: draft.data,
       fromCollection,
+      serverDraftId: draftEntryId,
     });
     showDraftFlash();
-  }, [whisky, fromCollection, showDraftFlash]);
+  }, [whisky, fromCollection, showDraftFlash, draftEntryId]);
 
   const handleCaptured = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
     setFromCollection(false);
     setAddToCollection(true);
     setSoloImageFile(imageFile || null);
+    setDraftEntryId(null);
     setStep("form");
-    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
 
@@ -242,8 +249,9 @@ export default function LabsSolo() {
     setFromCollection(false);
     setAddToCollection(true);
     setSoloImageFile(null);
+    setDraftEntryId(null);
     setStep("form");
-    saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
 
@@ -253,16 +261,18 @@ export default function LabsSolo() {
     setFromCollection(false);
     setAddToCollection(true);
     setSoloImageFile(null);
+    setDraftEntryId(null);
     setStep("form");
-    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false });
+    saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
 
   const handleCollectionSelect = useCallback((w: CapturedWhisky) => {
     setWhisky(w);
     setFromCollection(true);
+    setDraftEntryId(null);
     setStep("rating");
-    saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: true });
+    saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: true, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
 
@@ -352,48 +362,79 @@ export default function LabsSolo() {
     }
   }, [whisky, participantId, t, soloImageFile, buildJournalBody]);
 
-  const handleSaveAsDraft = useCallback(async (data: RatingData) => {
+  const handleSaveAsDraft = useCallback(async (data: RatingData): Promise<boolean> => {
     setRatingResult(data);
     setSaveError(false);
     setIsDraftSave(true);
+    setDraftSaving(true);
 
     const body = buildJournalBody(data, "draft");
 
     try {
-      const res = await fetch(`/api/journal/${participantId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-participant-id": participantId,
-        },
-        body: JSON.stringify(body),
-      });
+      let res: Response;
+      if (draftEntryId) {
+        res = await fetch(`/api/journal/${participantId}/${draftEntryId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-participant-id": participantId,
+          },
+          body: JSON.stringify(body),
+        });
+      } else {
+        res = await fetch(`/api/journal/${participantId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-participant-id": participantId,
+          },
+          body: JSON.stringify(body),
+        });
+      }
 
       if (!res.ok) {
         setSaveError(true);
-        return;
+        setDraftSaving(false);
+        return false;
       }
 
-      if (soloImageFile) {
-        try {
-          const entry = await res.json();
-          if (entry?.id) {
+      try {
+        const entry = await res.json();
+        const newDraftId = entry?.id || draftEntryId;
+        if (entry?.id && !draftEntryId) {
+          setDraftEntryId(entry.id);
+        }
+
+        if (soloImageFile && entry?.id) {
+          try {
             const imgFormData = new FormData();
             imgFormData.append("image", soloImageFile);
             await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
-          }
-        } catch {}
-        setSoloImageFile(null);
-      }
+          } catch {}
+          setSoloImageFile(null);
+        }
 
-      clearSoloDraft();
-      hasUnsavedRef.current = false;
+        saveSoloDraftImmediate({
+          step: "rating",
+          whisky,
+          ratingMode,
+          ratingPhaseIndex,
+          ratingData: data,
+          fromCollection,
+          serverDraftId: newDraftId || null,
+        });
+      } catch {}
+
       queryClient.invalidateQueries({ queryKey: ["journal"] });
-      setStep("done");
+      showDraftFlash();
+      setDraftSaving(false);
+      return true;
     } catch {
       setSaveError(true);
+      setDraftSaving(false);
+      return false;
     }
-  }, [whisky, participantId, t, soloImageFile, buildJournalBody]);
+  }, [whisky, participantId, t, soloImageFile, buildJournalBody, draftEntryId, showDraftFlash, ratingMode, ratingPhaseIndex, fromCollection]);
 
   const handleQuickRatingDone = useCallback((data: RatingData) => {
     if (ratingMode === "quick") {
@@ -462,9 +503,14 @@ export default function LabsSolo() {
     }
   }, [quickFollowUpData]);
 
-  const handleQuickFollowUpDraft = useCallback(() => {
+  const handleQuickFollowUpDraft = useCallback(async () => {
     if (quickFollowUpData) {
-      handleSaveAsDraft(quickFollowUpData);
+      const success = await handleSaveAsDraft(quickFollowUpData);
+      if (success) {
+        clearSoloDraft();
+        hasUnsavedRef.current = false;
+        setStep("done");
+      }
     }
   }, [quickFollowUpData, handleSaveAsDraft]);
 
@@ -511,6 +557,8 @@ export default function LabsSolo() {
     setRatingInitialData(undefined);
     setIsDraftSave(false);
     setQuickFollowUpData(null);
+    setDraftEntryId(null);
+    setDraftSaving(false);
     setStep("capture");
   }, [saveToCollectionIfNeeded]);
 
@@ -526,6 +574,7 @@ export default function LabsSolo() {
     } else {
       setStep("form");
       clearSoloDraft();
+      setDraftEntryId(null);
     }
   }, []);
 

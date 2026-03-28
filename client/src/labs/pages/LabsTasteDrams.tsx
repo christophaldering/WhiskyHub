@@ -319,6 +319,8 @@ export default function LabsTasteDrams() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); setViewState("list"); setSelectedEntry(null); },
   });
 
+  const [deepRateDraftFlash, setDeepRateDraftFlash] = useState(false);
+
   const deepRateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
     onSuccess: async (updatedEntry: any) => {
@@ -327,6 +329,18 @@ export default function LabsTasteDrams() {
         setSelectedEntry({ ...selectedEntry, ...updatedEntry });
       }
       setViewState("detail");
+    },
+  });
+
+  const deepRateDraftMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
+    onSuccess: async (updatedEntry: any) => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+      if (updatedEntry && selectedEntry) {
+        setSelectedEntry({ ...selectedEntry, ...updatedEntry });
+      }
+      setDeepRateDraftFlash(true);
+      setTimeout(() => setDeepRateDraftFlash(false), 2000);
     },
   });
 
@@ -757,13 +771,37 @@ export default function LabsTasteDrams() {
       };
       deepRateMutation.mutate({ id: selectedEntry.id, data: patchData });
     };
+    const handleDeepRateSaveAsDraft = (data: RatingData) => {
+      const noseNoteParts = [data.notes.nose, ...(data.tags.nose || [])].filter(Boolean).join(", ");
+      const patchData: any = {
+        personalScore: data.scores.overall,
+        noseScore: data.scores.nose,
+        tasteScore: data.scores.palate,
+        finishScore: data.scores.finish,
+        noseNotes: noseNoteParts || selectedEntry.noseNotes || "",
+        tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
+        finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
+      };
+      deepRateDraftMutation.mutate({ id: selectedEntry.id, data: patchData });
+    };
     return (
       <div className="labs-page" data-testid="labs-dram-deep-rate">
+        {deepRateDraftFlash && (
+          <div style={{
+            position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
+            zIndex: 100, padding: "8px 20px", borderRadius: 10,
+            background: "var(--labs-accent-muted)", color: "var(--labs-accent)",
+            fontSize: 13, fontWeight: 600, boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+          }} data-testid="deep-rate-draft-flash">
+            {t("v2.saveDraftInline", "Zwischenstand sichern")} ✓
+          </div>
+        )}
         <RatingFlowV2
           whisky={deepRateWhisky}
           initialData={deepRateInitialData}
           onDone={handleDeepRateDone}
           onBack={() => setViewState(selectedEntry.status === "draft" ? "list" : "detail")}
+          onSaveAsDraft={handleDeepRateSaveAsDraft}
           hideQuick
         />
       </div>
