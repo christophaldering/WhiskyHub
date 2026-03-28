@@ -774,10 +774,19 @@ export default function LabsTaste() {
               <div style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1, marginBottom: 4 }}>
                 {avgScores.overall > 0 ? avgScores.overall.toFixed(1) : "—"}
               </div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 2 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 6 }}>
                 {t("labs.statAvgLabel", "Average")}
               </p>
-              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3 }}>
+              <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden", marginBottom: 6 }}>
+                <div style={{
+                  height: "100%",
+                  width: avgScores.overall > 0 ? `${Math.max(0, Math.min(100, ((avgScores.overall - 60) / 40) * 100))}%` : "0%",
+                  borderRadius: 2,
+                  background: avgScores.overall > 0 ? "var(--labs-accent)" : "var(--labs-border)",
+                  transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }} />
+              </div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.3, textAlign: "center" }}>
                 {t("labs.statAvgDesc", "Based on {{count}} ratings", { count: whiskyCount ?? 0 })}
               </p>
             </div>
