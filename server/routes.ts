@@ -7073,10 +7073,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.get("/api/wishlist/:participantId", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const entries = await storage.getWishlistEntries(req.params.participantId);
-      res.json(entries);
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
+      res.json(Array.isArray(entries) ? entries : []);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to load wishlist";
+      console.error(`[wishlist] Error loading entries for ${req.params.participantId}: ${msg}`);
+      res.status(500).json({ message: "Failed to load wishlist entries. Please try again." });
     }
   });
 
@@ -7468,15 +7474,32 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     try {
       const auth = await requireOwnerOrAdmin(req, req.params.id);
       if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
-      const profile = await storage.getFlavorProfile(req.params.id);
-      const userRatings = await storage.getRatingsForParticipant(req.params.id);
-      const userTastingIds = [...new Set(userRatings.map(r => r.tastingId))];
-      const userTastings = await Promise.all(userTastingIds.map(id => storage.getTasting(id)));
-      const scales = new Set(userTastings.filter(Boolean).map(t => t!.ratingScale ?? 100));
-      const hasMultipleScales = scales.size > 1 || (scales.size === 1 && !scales.has(100));
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Participant not found", code: "PARTICIPANT_NOT_FOUND" });
+      let profile;
+      try {
+        profile = await storage.getFlavorProfile(req.params.id);
+      } catch (profileErr: unknown) {
+        const msg = profileErr instanceof Error ? profileErr.message : "Unknown error";
+        console.error(`[flavor-profile] Failed to compute profile for ${req.params.id}: ${msg}`);
+        return res.status(500).json({ message: "Failed to compute flavor profile. Please try again later.", code: "PROFILE_COMPUTATION_FAILED" });
+      }
+      let hasMultipleScales = false;
+      try {
+        const userRatings = await storage.getRatingsForParticipant(req.params.id);
+        const userTastingIds = [...new Set(userRatings.map(r => r.tastingId))];
+        const userTastings = await Promise.all(userTastingIds.map(id => storage.getTasting(id)));
+        const scales = new Set(userTastings.filter(Boolean).map(t => t!.ratingScale ?? 100));
+        hasMultipleScales = scales.size > 1 || (scales.size === 1 && !scales.has(100));
+      } catch (scaleErr: unknown) {
+        const msg = scaleErr instanceof Error ? scaleErr.message : "Unknown error";
+        console.error(`[flavor-profile] Scale detection failed for ${req.params.id}: ${msg}`);
+      }
       res.json({ ...profile, hasMultipleScales });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Internal server error";
+      console.error(`[flavor-profile] Unhandled error for ${req.params.id}: ${msg}`);
+      res.status(500).json({ message: "An unexpected error occurred while loading your flavor profile.", code: "INTERNAL_ERROR" });
     }
   });
 

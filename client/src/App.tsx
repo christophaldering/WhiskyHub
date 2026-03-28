@@ -304,15 +304,22 @@ function ScrollRestoration() {
 
       if (savedY != null && savedY > 0) {
         let attempts = 0;
-        const maxAttempts = 50;
-        const interval = 30;
+        const maxAttempts = 80;
         const tryScroll = () => {
-          if (document.documentElement.scrollHeight >= savedY + window.innerHeight * 0.5 || attempts >= maxAttempts) {
+          const docHeight = document.documentElement.scrollHeight;
+          const canScroll = docHeight >= savedY + window.innerHeight * 0.3;
+          if (canScroll || attempts >= maxAttempts) {
             window.scrollTo(0, savedY);
+            requestAnimationFrame(() => {
+              if (Math.abs(window.scrollY - savedY) > 2) {
+                window.scrollTo(0, savedY);
+              }
+            });
             return;
           }
           attempts++;
-          requestAnimationFrame(() => setTimeout(tryScroll, interval));
+          const delay = attempts < 20 ? 16 : attempts < 50 ? 50 : 100;
+          requestAnimationFrame(() => setTimeout(tryScroll, delay));
         };
         requestAnimationFrame(tryScroll);
       } else {

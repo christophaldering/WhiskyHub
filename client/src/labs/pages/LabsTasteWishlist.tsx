@@ -35,10 +35,14 @@ export default function LabsTasteWishlist() {
   const [editingEntry, setEditingEntry] = useState<WishlistEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WishlistEntry | null>(null);
 
-  const { data: entries = [], isLoading } = useQuery({
+  const { data: entries = [], isLoading, isError } = useQuery({
     queryKey: ["wishlist", participantId],
-    queryFn: () => wishlistApi.getAll(participantId!),
+    queryFn: async () => {
+      const result = await wishlistApi.getAll(participantId!);
+      return Array.isArray(result) ? result : [];
+    },
     enabled: !!participantId,
+    retry: 2,
   });
 
   const createMutation = useMutation({
@@ -102,6 +106,12 @@ export default function LabsTasteWishlist() {
 
             {isLoading ? (
               <div className="flex flex-col gap-3">{[1, 2, 3].map(i => <div key={i} className="labs-card" style={{ height: 80 }} />)}</div>
+            ) : isError ? (
+              <div className="labs-empty" style={{ minHeight: 200 }}>
+                <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-danger)", opacity: 0.75 }} />
+                <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Failed to load wishlist</p>
+                <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>Please try again</p>
+              </div>
             ) : entries.length === 0 ? (
               <div className="labs-empty" style={{ minHeight: 200 }}>
                 <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />

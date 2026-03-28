@@ -102,8 +102,10 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
       {open && (
         <div style={{ padding: "0 16px 16px" }}>
           {entries.map(([name, data], idx) => {
+            const avgScore = typeof data?.avgScore === "number" && !isNaN(data.avgScore) ? data.avgScore : 0;
+            const count = typeof data?.count === "number" && !isNaN(data.count) ? data.count : 0;
             const maxScore = entries[0]?.[1]?.avgScore || 1;
-            const pct = maxScore > 0 ? (data.avgScore / maxScore) * 100 : 0;
+            const pct = maxScore > 0 ? (avgScore / maxScore) * 100 : 0;
             return (
               <div key={name} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: "8px 0",
@@ -116,8 +118,8 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
                   </div>
                 </div>
                 <div style={{ textAlign: "right", minWidth: 50 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{Number(data.avgScore).toFixed(1)}</div>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(data.count ?? 0)} {t("labs.profile.rated", "rated")}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }}>{avgScore.toFixed(1)}</div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{String(count)} {t("labs.profile.rated", "rated")}</div>
                 </div>
               </div>
             );
@@ -204,9 +206,19 @@ export default function LabsTasteProfile() {
         }))
       : [];
 
-  const regionEntries = profile?.regionBreakdown ? Object.entries(profile.regionBreakdown).sort((a, b) => b[1].avgScore - a[1].avgScore) : [];
-  const caskEntries = profile?.caskBreakdown ? Object.entries(profile.caskBreakdown).sort((a, b) => b[1].avgScore - a[1].avgScore) : [];
-  const peatEntries = profile?.peatBreakdown ? Object.entries(profile.peatBreakdown).sort((a, b) => b[1].avgScore - a[1].avgScore) : [];
+  const safeBreakdownEntries = (breakdown: Record<string, { count: number; avgScore: number }> | null | undefined): [string, { count: number; avgScore: number }][] => {
+    if (!breakdown || typeof breakdown !== "object") return [];
+    try {
+      return Object.entries(breakdown)
+        .filter(([key, val]) => key && val && typeof val === "object" && typeof val.avgScore === "number" && !isNaN(val.avgScore))
+        .sort((a, b) => (b[1].avgScore || 0) - (a[1].avgScore || 0));
+    } catch {
+      return [];
+    }
+  };
+  const regionEntries = safeBreakdownEntries(profile?.regionBreakdown);
+  const caskEntries = safeBreakdownEntries(profile?.caskBreakdown);
+  const peatEntries = safeBreakdownEntries(profile?.peatBreakdown);
 
   const compareModes = [
     { key: "none", label: t("labs.profile.justMe", "Just Me") },

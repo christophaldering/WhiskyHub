@@ -149,7 +149,7 @@ export default function LabsRecommendations() {
         communityScores, weights)
     : [];
 
-  const hasRatings = (profile?.ratedWhiskies?.length || 0) > 0;
+  const hasRatings = (profile?.ratedWhiskies?.length || 0) > 0 || (profile?.sources?.journalEntries || 0) > 0;
 
   if (!session.signedIn || !session.pid) {
     return (

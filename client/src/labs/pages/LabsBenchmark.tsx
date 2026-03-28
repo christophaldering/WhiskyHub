@@ -102,7 +102,7 @@ export default function LabsBenchmark() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<LibraryTab>("import");
+  const [activeTab, setActiveTab] = useState<LibraryTab>("tasting_notes");
   const [extractedEntries, setExtractedEntries] = useState<ExtractedEntry[]>([]);
   const [fileName, setFileName] = useState("");
   const { masterDisabled: aiDisabled } = useAIStatus();
@@ -124,7 +124,8 @@ export default function LabsBenchmark() {
 
   const isHost = allTastings?.some((t: Record<string, string>) => t.hostId === pid);
   const isAdmin = session.role === "admin";
-  const hasAccess = isHost || isAdmin;
+  const canImport = isHost || isAdmin;
+  const hasAccess = !!session.signedIn && !!pid;
   const isLibraryTab = activeTab !== "import";
   const categoryFilter = isLibraryTab ? activeTab : undefined;
 
@@ -230,20 +231,6 @@ export default function LabsBenchmark() {
     );
   }
 
-  if (!hasAccess) {
-    return (
-      <div className="labs-page">
-        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Taste</button>
-        </BackLink>
-        <div className="labs-empty" data-testid="text-access-denied">
-          <AlertCircle className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.taste.benchmarkHostOnly")}</p>
-        </div>
-      </div>
-    );
-  }
-
   const isSaving = saveMutation.isPending || wishlistMutation.isPending || journalMutation.isPending;
 
   const classifyChipStyle = (active: boolean): React.CSSProperties => ({
@@ -277,7 +264,7 @@ export default function LabsBenchmark() {
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto pb-0 mb-5" style={{ borderBottom: "1px solid var(--labs-border)" }} data-testid="library-tabs">
-        {LIBRARY_CATEGORIES.map(({ key, icon: Icon }) => (
+        {LIBRARY_CATEGORIES.filter(({ key }) => key !== "import" || canImport).map(({ key, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}

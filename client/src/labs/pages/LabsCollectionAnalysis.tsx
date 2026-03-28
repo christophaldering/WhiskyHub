@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Component, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
@@ -7,36 +7,57 @@ import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
 import {
   ChevronLeft, Library, Wine, MapPin, Clock, Layers, DollarSign,
-  Star, Droplets, Calendar, Package, ChevronDown, ChevronUp,
+  Star, Droplets, Calendar, Package, ChevronDown, ChevronUp, AlertCircle,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
+
+class AnalysisErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
 
 const distilleryRegionMap = new Map<string, string>();
 for (const d of distilleries) {
   distilleryRegionMap.set(d.name.toLowerCase(), d.region);
 }
 
-function deriveRegion(distillery: string | null): string {
-  if (!distillery) return "__unknown__";
-  const lower = distillery.toLowerCase().trim();
-  let found = "__other__";
-  distilleryRegionMap.forEach((region, name) => {
-    if (lower.includes(name) || name.includes(lower)) found = region;
-  });
-  return found;
+function deriveRegion(distillery: string | null | undefined): string {
+  if (!distillery || typeof distillery !== "string") return "__unknown__";
+  try {
+    const lower = distillery.toLowerCase().trim();
+    if (!lower) return "__unknown__";
+    let found = "__other__";
+    distilleryRegionMap.forEach((region, name) => {
+      if (lower.includes(name) || name.includes(lower)) found = region;
+    });
+    return found;
+  } catch {
+    return "__unknown__";
+  }
 }
 
-function parseAbv(abv: string | null | undefined): number | null {
-  if (!abv) return null;
-  const n = parseFloat(abv.replace(",", ".").replace("%", "").trim());
-  return isNaN(n) ? null : n;
+function parseAbv(abv: string | number | null | undefined): number | null {
+  if (abv == null) return null;
+  try {
+    if (typeof abv === "number") return isNaN(abv) ? null : abv;
+    const n = parseFloat(String(abv).replace(",", ".").replace("%", "").trim());
+    return isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
 }
 
-function parseAge(age: string | null | undefined): number | null {
-  if (!age) return null;
-  const n = parseInt(age.replace(/[^\d]/g, ""), 10);
-  return isNaN(n) ? null : n;
+function parseAge(age: string | number | null | undefined): number | null {
+  if (age == null) return null;
+  try {
+    if (typeof age === "number") return isNaN(age) ? null : age;
+    const n = parseInt(String(age).replace(/[^\d]/g, ""), 10);
+    return isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
 }
 
 interface BarEntry { label: string; value: number; pct: number }
@@ -156,7 +177,24 @@ export default function LabsCollectionAnalysis() {
     );
   }
 
-  const items: CollectionItem[] = Array.isArray(collection) ? collection : [];
+  const items: CollectionItem[] = Array.isArray(collection)
+    ? collection.map((raw: unknown) => {
+        const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+        return {
+          name: typeof item.name === "string" ? item.name : "Unknown",
+          distillery: typeof item.distillery === "string" ? item.distillery : null,
+          status: typeof item.status === "string" ? item.status : null,
+          pricePaid: typeof item.pricePaid === "number" && !isNaN(item.pricePaid) ? item.pricePaid : null,
+          currency: typeof item.currency === "string" ? item.currency : null,
+          caskType: typeof item.caskType === "string" ? item.caskType : null,
+          statedAge: item.statedAge != null ? String(item.statedAge) : null,
+          abv: item.abv != null ? String(item.abv) : null,
+          distilledYear: typeof item.distilledYear === "number" && !isNaN(item.distilledYear) ? item.distilledYear : null,
+          personalRating: typeof item.personalRating === "number" && !isNaN(item.personalRating) ? item.personalRating : null,
+          communityRating: typeof item.communityRating === "number" && !isNaN(item.communityRating) ? item.communityRating : null,
+        };
+      })
+    : [];
 
   if (items.length === 0) {
     return (
@@ -264,7 +302,23 @@ export default function LabsCollectionAnalysis() {
   const cardStyle = { background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.md, marginBottom: SP.md };
   const sectionLabel = { fontSize: 11, fontWeight: 700 as const, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs };
 
+  const errorFallback = (
+    <div className="labs-page">
+      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
+        <button style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0 }} data-testid="button-back-error">
+          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
+        </button>
+      </BackLink>
+      <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center" }}>
+        <AlertCircle style={{ width: 40, height: 40, marginBottom: SP.md, color: "#e06060" }} />
+        <p style={{ color: th.text, fontSize: 16, fontWeight: 600 }}>{t("labs.collection.analysisError", "Analysis Error")}</p>
+        <p style={{ color: th.muted, fontSize: 13, marginTop: SP.sm }}>{t("labs.collection.analysisErrorDesc", "Some data could not be processed. Try re-importing your collection.")}</p>
+      </div>
+    </div>
+  );
+
   return (
+    <AnalysisErrorBoundary fallback={errorFallback}>
     <div className="labs-page" data-testid="labs-collection-analysis">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button style={{
@@ -415,5 +469,6 @@ export default function LabsCollectionAnalysis() {
 
       <div style={{ height: 60 }} />
     </div>
+    </AnalysisErrorBoundary>
   );
 }

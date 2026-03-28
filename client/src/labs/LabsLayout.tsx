@@ -673,7 +673,7 @@ function LabsAuthDialog() {
 }
 
 export default function LabsLayout({ children }: LabsLayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { t, i18n } = useTranslation();
 
   const navItems = useMemo<NavItem[]>(() => [
@@ -1112,7 +1112,13 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             const testLabel = item.labelKey.split('.').pop()!.toLowerCase().replace(/\s+/g, "-");
 
             return (
-              <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
+              <a key={item.href} href={item.href} style={{ textDecoration: "none" }} onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                const isSubpage = location !== item.href && location.startsWith(item.href + "/");
+                if (isSubpage) markBackNavigation();
+                navigate(item.href);
+              }}>
                 <div
                   className={`labs-nav-item${isActive ? " labs-nav-item-active" : ""}`}
                   style={{ color }}
@@ -1165,7 +1171,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                     {label}
                   </span>
                 </div>
-              </Link>
+              </a>
             );
           })}
         </nav>

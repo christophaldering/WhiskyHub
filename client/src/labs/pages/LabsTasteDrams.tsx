@@ -165,20 +165,26 @@ export default function LabsTasteDrams() {
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
-    queryFn: () => journalApi.getAll(session.pid!),
+    queryFn: async () => {
+      const result = await journalApi.getAll(session.pid!);
+      return Array.isArray(result) ? result : [];
+    },
     enabled: !!session.pid,
+    retry: 2,
   });
 
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history", session.pid],
     queryFn: () => tastingHistoryApi.get(session.pid!),
     enabled: !!session.pid,
+    retry: 2,
   });
 
   const tastingWhiskies = useMemo(() => {
-    if (!tastingHistory?.tastings) return [];
-    return tastingHistory.tastings.flatMap((tasting: any) =>
-      (tasting.whiskies || []).filter((w: any) => w.myRating).map((w: any) => {
+    if (!tastingHistory?.tastings || !Array.isArray(tastingHistory.tastings)) return [];
+    return tastingHistory.tastings.flatMap((tasting: any) => {
+      if (!tasting) return [];
+      return (Array.isArray(tasting.whiskies) ? tasting.whiskies : []).filter((w: any) => w?.myRating).map((w: any) => {
         const parsedNotes = splitRatingNotes(w.myRating?.notes);
         return {
           id: `tw-${tasting.id}-${w.id}`,
@@ -203,8 +209,8 @@ export default function LabsTasteDrams() {
           finishNotes: parsedNotes.finishNotes,
           imageUrl: w.imageUrl || null,
         };
-      })
-    );
+      });
+    });
   }, [tastingHistory]);
 
   const allItems = useMemo(() => [
