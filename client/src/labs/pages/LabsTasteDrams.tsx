@@ -385,7 +385,7 @@ export default function LabsTasteDrams() {
         },
       });
     } else { setEditStructured(null); }
-    setEditForm({ title: entry.title || entry.name || "", name: entry.name || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
+    setEditForm({ title: entry.title || entry.name || "", name: entry.name || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseScore: entry.noseScore != null ? String(entry.noseScore) : "", tasteScore: entry.tasteScore != null ? String(entry.tasteScore) : "", finishScore: entry.finishScore != null ? String(entry.finishScore) : "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
     setViewState("edit");
   };
 
@@ -444,6 +444,24 @@ export default function LabsTasteDrams() {
     }
     if (data.personalScore === "") data.personalScore = null;
     else data.personalScore = parseFloat(data.personalScore);
+    if (selectedEntry.status === "draft") {
+      if (editStructured) {
+        data.noseScore = editStructured.scores.nose !== "" ? parseFloat(editStructured.scores.nose) : null;
+        data.tasteScore = editStructured.scores.taste !== "" ? parseFloat(editStructured.scores.taste) : null;
+        data.finishScore = editStructured.scores.finish !== "" ? parseFloat(editStructured.scores.finish) : null;
+      } else {
+        if (data.noseScore === "" || data.noseScore == null) data.noseScore = null;
+        else data.noseScore = parseFloat(data.noseScore);
+        if (data.tasteScore === "" || data.tasteScore == null) data.tasteScore = null;
+        else data.tasteScore = parseFloat(data.tasteScore);
+        if (data.finishScore === "" || data.finishScore == null) data.finishScore = null;
+        else data.finishScore = parseFloat(data.finishScore);
+      }
+    } else {
+      delete data.noseScore;
+      delete data.tasteScore;
+      delete data.finishScore;
+    }
     updateMutation.mutate({ id: selectedEntry.id, data });
   };
 
@@ -790,6 +808,26 @@ export default function LabsTasteDrams() {
             <EditField label="Cask Type" value={editForm.caskType} onChange={(v) => setEditForm({ ...editForm, caskType: v })} testId="input-labs-edit-caskType" />
           </div>
           <EditField label="Score" value={editForm.personalScore} onChange={(v) => setEditForm({ ...editForm, personalScore: v })} testId="input-labs-edit-score" type="number" />
+
+          {selectedEntry.status === "draft" && !editStructured && (
+            <div>
+              <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Individual Scores</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["nose", "taste", "finish"] as const).map((dim) => (
+                  <div key={dim}>
+                    <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
+                    <input
+                      type="number" min="0" max="100"
+                      value={editForm[`${dim}Score`] || ""}
+                      onChange={(e) => setEditForm({ ...editForm, [`${dim}Score`]: e.target.value })}
+                      style={{ width: "100%", padding: "8px 6px", textAlign: "center", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 8, fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", outline: "none", boxSizing: "border-box" }}
+                      data-testid={`input-labs-edit-${dim}Score`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {editStructured ? (
             <div className="flex flex-col gap-3">
@@ -1145,11 +1183,26 @@ export default function LabsTasteDrams() {
                           )}
                         </div>
                       </div>
-                      {entry.personalScore != null && (
-                        <div style={{ flexShrink: 0, background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", borderRadius: 12, padding: "6px 10px", textAlign: "center", minWidth: 44 }}>
-                          <div className="labs-serif" style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1.1 }}>{Number(entry.personalScore).toFixed(1)}</div>
-                        </div>
-                      )}
+                      <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                        {entry.personalScore != null && (
+                          <div style={{ background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", borderRadius: 12, padding: "6px 10px", textAlign: "center", minWidth: 44 }}>
+                            <div className="labs-serif" style={{ fontSize: 17, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1.1 }}>{Number(entry.personalScore).toFixed(1)}</div>
+                          </div>
+                        )}
+                        {(entry.noseScore != null || entry.tasteScore != null || entry.finishScore != null) && (
+                          <div className="flex gap-1" data-testid={`labs-dram-subscores-${entry.id}`}>
+                            {entry.noseScore != null && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 5px", borderRadius: 6, background: "var(--labs-surface-elevated, rgba(255,255,255,0.06))", color: "var(--labs-text-muted)", lineHeight: 1.4 }} data-testid={`labs-badge-nose-${entry.id}`}>N {Number(entry.noseScore).toFixed(0)}</span>
+                            )}
+                            {entry.tasteScore != null && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 5px", borderRadius: 6, background: "var(--labs-surface-elevated, rgba(255,255,255,0.06))", color: "var(--labs-text-muted)", lineHeight: 1.4 }} data-testid={`labs-badge-taste-${entry.id}`}>T {Number(entry.tasteScore).toFixed(0)}</span>
+                            )}
+                            {entry.finishScore != null && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 5px", borderRadius: 6, background: "var(--labs-surface-elevated, rgba(255,255,255,0.06))", color: "var(--labs-text-muted)", lineHeight: 1.4 }} data-testid={`labs-badge-finish-${entry.id}`}>F {Number(entry.finishScore).toFixed(0)}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
