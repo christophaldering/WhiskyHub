@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Stable Milestone: "Es laeuft" (28.03.2026)
+All core features operational. Tasks #519-#539 merged and deployed. Explore page restructured (Bibliothek + paginated whisky list), Solo draft flow, Connoisseur PDF fix, Navigation restructure (Explore + Bibliothek), Community Insights, Deep-Rate fix, Geschmacksradar journal integration, Drams individual scores, Profile breakdowns crash fix, Benchmark UX cleanup. Production stable on casksense.com.
+
 ## Overview
 CaskSense is a web application designed to facilitate collaborative whisky tastings. It enables users to create events, manage participants, and conduct structured whisky evaluations with features like tasting progression, multi-act reveals with analytics, and personalized tools such as a whisky journal. The project aims to establish a leading platform for structured whisky tasting, fostering a global community and providing advanced tools for whisky enthusiasts. Key capabilities include comprehensive whisky management, personalized analytics, and AI-powered integrations.
 
