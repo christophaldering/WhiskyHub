@@ -65,7 +65,7 @@ export async function generateParticipantInsights(participantId: string): Promis
   const journalDataPoints: ScoredDataPoint[] = journal
     .filter(j => j.personalScore != null && j.personalScore > 0)
     .map(j => {
-      const parsedAbv = j.abv ? parseFloat(j.abv.replace(/[%\s]/g, "")) : null;
+      const parsedAbv = j.abv != null ? (typeof j.abv === "number" ? j.abv : parseFloat(String(j.abv).replace(/[%\s]/g, ""))) : null;
       return {
         normalizedScore: j.personalScore!,
         peatLevel: j.peatLevel ?? null,

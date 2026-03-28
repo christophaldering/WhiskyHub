@@ -464,7 +464,29 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS nose_score real`);
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS taste_score real`);
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS finish_score real`);
-      log("Ensured journal_entries has nose_score/taste_score/finish_score columns", "startup");
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS name text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS country text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS category text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS bottler text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS whiskybase_id text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS wb_score real`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS mood text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS occasion text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS source text DEFAULT 'casksense'`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS voice_memo_url text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS voice_memo_transcript text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS voice_memo_duration integer`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'final'`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS deleted_at timestamp`);
+      log("Ensured journal_entries has all schema columns", "startup");
+
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preferred_cask_type text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS openai_api_key text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS friend_notifications_enabled boolean DEFAULT true`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS online_toast_level text DEFAULT 'all'`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cheers_enabled boolean DEFAULT true`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tasting_invite_enabled boolean DEFAULT true`);
+      log("Ensured profiles has all schema columns", "startup");
 
       const rows = await dbJournal.execute(sqlJ`
         SELECT id, nose_notes FROM journal_entries
