@@ -120,58 +120,6 @@ export default function LabsDistilleries() {
       </div>
       <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
 
-      {view === "list" && (
-        <button
-          onClick={() => setView("map")}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "14px 18px",
-            marginBottom: 16,
-            borderRadius: 12,
-            border: "1px solid var(--labs-accent)",
-            background: "linear-gradient(135deg, var(--labs-surface-elevated) 0%, rgba(var(--labs-accent-rgb, 180, 120, 60), 0.08) 100%)",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            textAlign: "left",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--labs-accent)";
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-          data-testid="banner-map-teaser"
-        >
-          <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            background: "var(--labs-accent)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <MapPin style={{ width: 20, height: 20, color: "var(--labs-bg)" }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 2 }}>
-              {t("discover.mapBannerTitle", "Entdecke alle Brennereien auf der Weltkarte")}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-              {t("discover.mapBannerSubtitle", "Interaktive Karte mit {{count}} Brennereien weltweit", { count: distilleries.length })}
-            </div>
-          </div>
-          <MapIcon style={{ width: 18, height: 18, color: "var(--labs-accent)", flexShrink: 0 }} />
-        </button>
-      )}
-
       {view === "map" ? (
         <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--labs-text-muted)" }}>{t("discover.loadingMap", "Loading map...")}</div>}>
           <div className="labs-card" style={{ overflow: "hidden" }}><DistilleryMap /></div>

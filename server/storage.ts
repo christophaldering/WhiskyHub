@@ -2112,7 +2112,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     const allParticipantIds = new Set<string>();
-    const entries = Object.values(grouped).filter(g => g.scores.length >= 2);
+    const entries = Object.values(grouped).filter(g => g.scores.length >= 1);
     for (const g of entries) {
       for (const pid of g.participantIds) allParticipantIds.add(pid);
     }

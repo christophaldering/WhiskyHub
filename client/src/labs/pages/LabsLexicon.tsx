@@ -1,14 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearch, useLocation } from "wouter";
 import BackLink from "@/labs/components/BackLink";
 import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown, ChevronLeft } from "lucide-react";
 import { lexiconData, categoryLabelsEn, categoryLabelsDe, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
+import { TemplatesContent } from "./LabsTemplates";
+import { VocabularyContent } from "./LabsVocabulary";
+
+type TabId = "dictionary" | "templates" | "flavour-map";
 
 const iconMap: Record<string, React.ElementType> = {
   tastingTerms: Wine, flavorCategories: FlameKindling, regions: MapPin, productionMethods: Factory, caskTypes: Package,
 };
 
-export default function LabsLexicon() {
+function DictionaryContent() {
   const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -26,21 +31,7 @@ export default function LabsLexicon() {
   }, [categories, searchQuery]);
 
   return (
-    <div className="labs-page" data-testid="labs-discover-lexicon-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-lexicon">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-lexicon-title">
-          Lexicon
-        </h1>
-      </div>
-      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>Searchable whisky dictionary</p>
-
+    <div data-testid="dictionary-content">
       <div style={{ position: "relative", marginBottom: 16 }}>
         <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
         <input
@@ -91,6 +82,80 @@ export default function LabsLexicon() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+export default function LabsLexicon() {
+  const { t } = useTranslation();
+  const searchStr = useSearch();
+  const params = new URLSearchParams(searchStr);
+  const tabParam = params.get("tab");
+  const [, navigate] = useLocation();
+  const resolvedTab: TabId = tabParam === "templates" ? "templates" : tabParam === "flavour-map" ? "flavour-map" : "dictionary";
+  const [activeTab, setActiveTab] = useState<TabId>(resolvedTab);
+
+  useEffect(() => {
+    setActiveTab(resolvedTab);
+  }, [resolvedTab]);
+
+  const switchTab = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    const query = tab === "dictionary" ? "" : `?tab=${tab}`;
+    navigate(`/labs/discover/lexicon${query}`, { replace: true });
+  }, [navigate]);
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "dictionary", label: t("bibliothek.tabDictionary", "Dictionary") },
+    { id: "templates", label: t("bibliothek.tabTemplates", "Templates") },
+    { id: "flavour-map", label: t("bibliothek.tabFlavourMap", "Flavour Map") },
+  ];
+
+  return (
+    <div className="labs-page" data-testid="labs-discover-lexicon-page">
+      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-lexicon">
+          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+        </button>
+      </BackLink>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
+        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-lexicon-title">
+          {t("discover.lexicon", "Lexicon")}
+        </h1>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
+        {t("bibliothek.lexiconSubtitle", "Dictionary, tasting templates & flavour visualisations")}
+      </p>
+
+      <div style={{ display: "flex", borderRadius: 10, border: "1px solid var(--labs-border)", overflow: "hidden", background: "var(--labs-surface-elevated)", marginBottom: 20 }} data-testid="lexicon-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => switchTab(tab.id)}
+            style={{
+              flex: 1,
+              padding: "10px 8px",
+              fontSize: 12,
+              fontWeight: 600,
+              background: activeTab === tab.id ? "var(--labs-accent)" : "transparent",
+              color: activeTab === tab.id ? "var(--labs-bg)" : "var(--labs-text-muted)",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              fontFamily: "inherit",
+            }}
+            data-testid={`button-tab-${tab.id}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "dictionary" && <DictionaryContent />}
+      {activeTab === "templates" && <TemplatesContent />}
+      {activeTab === "flavour-map" && <VocabularyContent />}
     </div>
   );
 }

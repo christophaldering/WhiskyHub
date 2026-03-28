@@ -335,7 +335,7 @@ function LabsHistoryList() {
   );
 }
 
-function LabsHistoryInsights() {
+export function LabsHistoryInsights() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const session = useSession();
@@ -473,9 +473,9 @@ function LabsHistoryInsights() {
       <div className="labs-card" style={{ padding: 16, marginBottom: 20 }} data-testid="insights-regions">
         {regionData.length > 0 ? (
           <ResponsiveContainer width="100%" height={Math.max(regionData.length * 32, 120)}>
-            <BarChart data={regionData} layout="vertical" margin={{ left: 80, right: 16, top: 4, bottom: 4 }}>
+            <BarChart data={regionData} layout="vertical" margin={{ left: 10, right: 16, top: 4, bottom: 4 }}>
               <XAxis type="number" tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fill: "var(--labs-text)", fontSize: 12 }} axisLine={false} tickLine={false} width={76} />
+              <YAxis type="category" dataKey="name" tick={{ fill: "var(--labs-text)", fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
               <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "var(--labs-text)" }} itemStyle={{ color: "var(--labs-accent)" }} />
               <Bar dataKey="value" fill="var(--labs-accent)" radius={[0, 4, 4, 0]} />
             </BarChart>

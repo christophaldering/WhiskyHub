@@ -102,13 +102,11 @@ const LabsCommunityInsightsPage = lazy(() => import("@/labs/pages/LabsCommunityI
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
-const LabsTemplates = lazy(() => import("@/labs/pages/LabsTemplates"));
 const LabsGuide = lazy(() => import("@/labs/pages/LabsGuide"));
 const LabsResearch = lazy(() => import("@/labs/pages/LabsResearch"));
 const LabsRabbitHole = lazy(() => import("@/labs/pages/LabsRabbitHole"));
 const LabsMethod = lazy(() => import("@/labs/pages/LabsMethod"));
 const LabsBackground = lazy(() => import("@/labs/pages/LabsBackground"));
-const LabsVocabulary = lazy(() => import("@/labs/pages/LabsVocabulary"));
 const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
 const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
 const LabsImpressum = lazy(() => import("@/labs/pages/LabsImpressum"));
@@ -365,13 +363,13 @@ function SmartRedirectToLabs() {
     "/my-taste/export": "/labs/taste/downloads",
     "/my-taste/knowledge": "/labs/taste",
     "/my-taste/community": "/labs/community",
-    "/vocabulary": "/labs/discover/flavour-map",
+    "/vocabulary": "/labs/discover/lexicon?tab=flavour-map",
     "/ai-curation": "/labs/taste/ai-curation",
     "/guide": "/labs/discover/guide",
     "/research": "/labs/discover/research",
     "/discover": "/labs/explore",
     "/discover/guide": "/labs/discover/guide",
-    "/discover/templates": "/labs/discover/templates",
+    "/discover/templates": "/labs/discover/lexicon?tab=templates",
     "/discover/about": "/labs/about",
     "/discover/rabbit-hole": "/labs/discover/rabbit-hole",
     "/discover/lexicon": "/labs/discover/lexicon",
@@ -407,7 +405,7 @@ function SmartRedirectToLabs() {
     "/export-notes": "/labs/taste/downloads",
     "/calendar": "/labs/host/calendar",
     "/comparison": "/labs/taste/compare",
-    "/tasting-templates": "/labs/discover/templates",
+    "/tasting-templates": "/labs/discover/lexicon?tab=templates",
     "/pairings": "/labs/taste/pairings",
     "/benchmark": "/labs/taste/benchmark",
     "/whisky-database": "/labs/explore",
@@ -540,11 +538,11 @@ function Router() {
         <Route path="/m2/discover/lexicon">{() => <Redirect to="/labs/discover/lexicon" />}</Route>
         <Route path="/m2/discover/distilleries">{() => <Redirect to="/labs/discover/distilleries" />}</Route>
         <Route path="/m2/discover/bottlers">{() => <Redirect to="/labs/discover/bottlers" />}</Route>
-        <Route path="/m2/discover/templates">{() => <Redirect to="/labs/discover/templates" />}</Route>
+        <Route path="/m2/discover/templates">{() => <Redirect to="/labs/discover/lexicon?tab=templates" />}</Route>
         <Route path="/m2/discover/guide">{() => <Redirect to="/labs/discover/guide" />}</Route>
         <Route path="/m2/discover/research">{() => <Redirect to="/labs/discover/research" />}</Route>
         <Route path="/m2/discover/rabbit-hole">{() => <Redirect to="/labs/discover/rabbit-hole" />}</Route>
-        <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/discover/flavour-map" />}</Route>
+        <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/discover/lexicon?tab=flavour-map" />}</Route>
         <Route path="/m2/discover/about">{() => <Redirect to="/labs/about" />}</Route>
         <Route path="/m2/discover/donate">{() => <Redirect to="/labs/donate" />}</Route>
         <Route path="/m2/discover/activity">{() => <Redirect to="/labs/activity" />}</Route>
@@ -621,14 +619,14 @@ function Router() {
               <Route path="/labs/discover/lexicon" component={LabsLexicon} />
               <Route path="/labs/discover/distilleries" component={LabsDistilleries} />
               <Route path="/labs/discover/bottlers" component={LabsBottlers} />
-              <Route path="/labs/discover/templates" component={LabsTemplates} />
+              <Route path="/labs/discover/templates">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=templates" />}</Route>
               <Route path="/labs/discover/guide" component={LabsGuide} />
               <Route path="/labs/discover/research" component={LabsResearch} />
               <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
               <Route path="/labs/discover/method" component={LabsMethod} />
               <Route path="/labs/discover/background" component={LabsBackground} />
-              <Route path="/labs/discover/flavour-map" component={LabsVocabulary} />
-              <Route path="/labs/discover/vocabulary">{() => { window.location.replace("/labs/discover/flavour-map"); return null; }}</Route>
+              <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
+              <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
               <Route path="/labs/discover">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/entdecken">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />

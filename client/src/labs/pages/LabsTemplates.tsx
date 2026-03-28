@@ -29,7 +29,7 @@ function Section({ title, terms, id, copied, onCopy }: { title: string; terms: s
   );
 }
 
-export default function LabsTemplates() {
+export function TemplatesContent() {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -39,10 +39,56 @@ export default function LabsTemplates() {
   };
 
   return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="templates-content">
+      {CATEGORY_IDS.map((id) => {
+        const isOpen = expandedId === id;
+        const name = t(`vocabCategories.${id}.name`);
+        const desc = t(`vocabCategories.${id}.desc`);
+        const nose = t(`vocabCategories.${id}.nose`, { returnObjects: true }) as string[];
+        const palate = t(`vocabCategories.${id}.palate`, { returnObjects: true }) as string[];
+        const finish = t(`vocabCategories.${id}.finish`, { returnObjects: true }) as string[];
+        const tips = t(`vocabCategories.${id}.tips`);
+
+        return (
+          <div key={id} className="labs-card" style={{ overflow: "hidden" }} data-testid={`labs-template-${id}`}>
+            <button onClick={() => setExpandedId(isOpen ? null : id)} className="labs-btn-ghost" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }} data-testid={`button-toggle-template-${id}`}>
+              <span style={{ fontSize: 22 }}>{ICONS[id]}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{name}</div>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{desc}</div>
+              </div>
+              {isOpen ? <ChevronUp style={{ width: 14, height: 14, color: "var(--labs-text-muted)", flexShrink: 0 }} /> : <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", flexShrink: 0 }} />}
+            </button>
+            {isOpen && (
+              <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--labs-border)" }}>
+                <div style={{ marginTop: 14 }}>
+                  <Section title={t("vocabCategories.noseSection")} terms={nose} id={`${id}-nose`} copied={copied} onCopy={copy} />
+                  <Section title={t("vocabCategories.palateSection")} terms={palate} id={`${id}-palate`} copied={copied} onCopy={copy} />
+                  <Section title={t("vocabCategories.finishSection")} terms={finish} id={`${id}-finish`} copied={copied} onCopy={copy} />
+                </div>
+                <div style={{ padding: "10px 12px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Lightbulb style={{ width: 12, height: 12 }} />Expert Tip
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{tips}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function LabsTemplates() {
+  const { t } = useTranslation();
+
+  return (
     <div className="labs-page" data-testid="labs-discover-templates-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/discover/lexicon" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-templates">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+          <ChevronLeft className="w-4 h-4" /> {t("discover.lexicon", "Lexicon")}
         </button>
       </BackLink>
 
@@ -54,45 +100,7 @@ export default function LabsTemplates() {
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 20px" }}>Copy-paste vocabulary for your tasting notes</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {CATEGORY_IDS.map((id) => {
-          const isOpen = expandedId === id;
-          const name = t(`vocabCategories.${id}.name`);
-          const desc = t(`vocabCategories.${id}.desc`);
-          const nose = t(`vocabCategories.${id}.nose`, { returnObjects: true }) as string[];
-          const palate = t(`vocabCategories.${id}.palate`, { returnObjects: true }) as string[];
-          const finish = t(`vocabCategories.${id}.finish`, { returnObjects: true }) as string[];
-          const tips = t(`vocabCategories.${id}.tips`);
-
-          return (
-            <div key={id} className="labs-card" style={{ overflow: "hidden" }} data-testid={`labs-template-${id}`}>
-              <button onClick={() => setExpandedId(isOpen ? null : id)} className="labs-btn-ghost" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }} data-testid={`button-toggle-template-${id}`}>
-                <span style={{ fontSize: 22 }}>{ICONS[id]}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{name}</div>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{desc}</div>
-                </div>
-                {isOpen ? <ChevronUp style={{ width: 14, height: 14, color: "var(--labs-text-muted)", flexShrink: 0 }} /> : <ChevronDown style={{ width: 14, height: 14, color: "var(--labs-text-muted)", flexShrink: 0 }} />}
-              </button>
-              {isOpen && (
-                <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--labs-border)" }}>
-                  <div style={{ marginTop: 14 }}>
-                    <Section title={t("vocabCategories.noseSection")} terms={nose} id={`${id}-nose`} copied={copied} onCopy={copy} />
-                    <Section title={t("vocabCategories.palateSection")} terms={palate} id={`${id}-palate`} copied={copied} onCopy={copy} />
-                    <Section title={t("vocabCategories.finishSection")} terms={finish} id={`${id}-finish`} copied={copied} onCopy={copy} />
-                  </div>
-                  <div style={{ padding: "10px 12px", background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-accent)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Lightbulb style={{ width: 12, height: 12 }} />Expert Tip
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{tips}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <TemplatesContent />
     </div>
   );
 }

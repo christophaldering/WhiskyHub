@@ -669,7 +669,7 @@ function MyNotesTray({
   );
 }
 
-export default function LabsVocabulary() {
+export function VocabularyContent() {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>("wheel");
   const [focusedCategory, setFocusedCategory] = useState<CategoryId | null>(null);
@@ -703,22 +703,7 @@ export default function LabsVocabulary() {
   const clearAll = useCallback(() => setCollectedTerms([]), []);
 
   return (
-    <div className="labs-page" style={{ paddingBottom: collectedTerms.length > 0 ? 140 : undefined }} data-testid="labs-flavour-map-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-flavour-map">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-flavour-map-title">
-          Flavour Map
-        </h1>
-      </div>
-      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
-        Explore whisky styles interactively — tap terms to collect tasting notes
-      </p>
-
+    <div style={{ paddingBottom: collectedTerms.length > 0 ? 140 : undefined }} data-testid="vocabulary-content">
       <div style={{ marginBottom: 20 }}>
         <SegmentedControl value={viewMode} onChange={(v) => { setViewMode(v); setFocusedCategory(null); setCompassCategory(null); }} />
       </div>
@@ -758,6 +743,31 @@ export default function LabsVocabulary() {
       </div>
 
       <MyNotesTray terms={collectedTerms} onRemoveTerm={removeTerm} onClearAll={clearAll} />
+    </div>
+  );
+}
+
+export default function LabsVocabulary() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="labs-page" data-testid="labs-flavour-map-page">
+      <BackLink href="/labs/discover/lexicon" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-flavour-map">
+          <ChevronLeft className="w-4 h-4" /> {t("discover.lexicon", "Lexicon")}
+        </button>
+      </BackLink>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-flavour-map-title">
+          Flavour Map
+        </h1>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
+        Explore whisky styles interactively — tap terms to collect tasting notes
+      </p>
+
+      <VocabularyContent />
     </div>
   );
 }

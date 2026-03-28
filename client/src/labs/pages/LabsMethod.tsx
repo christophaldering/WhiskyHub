@@ -21,9 +21,9 @@ export default function LabsMethod() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-method-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-method">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+          <ChevronLeft className="w-4 h-4" /> {t("discover.rabbitHole", "Rabbit Hole")}
         </button>
       </BackLink>
 
