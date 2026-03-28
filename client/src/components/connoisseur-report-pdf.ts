@@ -312,11 +312,51 @@ export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOption
       totalTastings: { en: "Total Tastings", de: "Tastings gesamt" },
       totalJournalEntries: { en: "Diary Entries", de: "Diary-Einträge" },
       topRegion: { en: "Top Region", de: "Top-Region" },
+      topRegionCount: { en: "Top Region Count", de: "Top-Region Anzahl" },
       collectionSize: { en: "Collection Size", de: "Sammlungsgröße" },
       smokeAffinityIndex: { en: "Smoke Affinity", de: "Rauch-Affinität" },
       sweetnessBias: { en: "Sweetness Bias", de: "Süße-Neigung" },
       explorationIndex: { en: "Exploration Index", de: "Erkundungsindex" },
       ratingStabilityScore: { en: "Rating Stability", de: "Bewertungsstabilität" },
+      groupAvgOverall: { en: "Group Average", de: "Gruppen-Durchschnitt" },
+      vsGroupDelta: { en: "vs. Group Delta", de: "Abweichung zur Gruppe" },
+      tasteTwinsCount: { en: "Taste Twins", de: "Geschmackszwillinge" },
+      topTasteTwin: { en: "Closest Taste Twin", de: "Engster Geschmackszwilling" },
+      topTasteTwinCorrelation: { en: "Twin Correlation", de: "Zwillings-Korrelation" },
+    };
+
+    const aiTextFields = new Set([
+      "reportEn", "reportDe", "summaryEn", "summaryDe",
+      "palateProfileEn", "palateProfileDe",
+      "tastingHighlightsEn", "tastingHighlightsDe",
+      "recommendationEn", "recommendationDe",
+      "quoteEn", "quoteDe",
+    ]);
+
+    const specialFields = new Set(["highestWhisky", "lowestWhisky", "groupAvgScores"]);
+
+    const formatValue = (val: unknown): string => {
+      if (typeof val === "number") {
+        return Number.isInteger(val) ? String(val) : val.toFixed(2);
+      }
+      return String(val);
+    };
+
+    const renderMetricRow = (label: string, value: string) => {
+      y = checkPageBreak(y, 8);
+      const xPos = marginX + col * colW;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SECONDARY);
+      doc.text(`${label}:`, xPos, y);
+      const labelW = doc.getTextWidth(`${label}: `);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...PRIMARY);
+      doc.text(value, xPos + labelW, y);
+      col++;
+      if (col >= 2) {
+        col = 0;
+        y += 6;
+      }
     };
 
     const colW = contentW / 2;
@@ -324,26 +364,49 @@ export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOption
 
     for (const [key, val] of Object.entries(snapshot)) {
       if (val === null || val === undefined) continue;
-      y = checkPageBreak(y, 8);
+      if (aiTextFields.has(key)) continue;
+
+      if (key === "highestWhisky" && val && typeof val === "object") {
+        const hw = val as Record<string, unknown>;
+        if (hw.name) {
+          const label = language === "de" ? "Höchstbewerteter Whisky" : "Highest Rated Whisky";
+          const score = hw.score != null ? ` (${formatValue(hw.score)})` : "";
+          renderMetricRow(label, `${hw.name}${score}`);
+        }
+        continue;
+      }
+
+      if (key === "lowestWhisky" && val && typeof val === "object") {
+        const lw = val as Record<string, unknown>;
+        if (lw.name) {
+          const label = language === "de" ? "Niedrigstbewerteter Whisky" : "Lowest Rated Whisky";
+          const score = lw.score != null ? ` (${formatValue(lw.score)})` : "";
+          renderMetricRow(label, `${lw.name}${score}`);
+        }
+        continue;
+      }
+
+      if (key === "groupAvgScores" && val && typeof val === "object") {
+        const scores = val as Record<string, unknown>;
+        const scoreLabels: Record<string, Record<string, string>> = {
+          nose: { en: "Group Avg Nose", de: "Gruppen-Ø Nase" },
+          taste: { en: "Group Avg Taste", de: "Gruppen-Ø Geschmack" },
+          finish: { en: "Group Avg Finish", de: "Gruppen-Ø Finish" },
+          overall: { en: "Group Avg Overall", de: "Gruppen-Ø Gesamt" },
+        };
+        for (const [sk, sv] of Object.entries(scores)) {
+          if (sv == null || typeof sv !== "number") continue;
+          const sLabel = scoreLabels[sk]?.[language] || scoreLabels[sk]?.en || sk;
+          renderMetricRow(sLabel, formatValue(sv));
+        }
+        continue;
+      }
+
+      if (!metricLabels[key] && !specialFields.has(key)) continue;
+      if (typeof val === "object") continue;
 
       const label = metricLabels[key]?.[language] || metricLabels[key]?.en || key;
-      const xPos = marginX + col * colW;
-
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...SECONDARY);
-      doc.text(`${label}:`, xPos, y);
-
-      const labelW = doc.getTextWidth(`${label}: `);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...PRIMARY);
-      const displayVal = typeof val === "number" ? (Number.isInteger(val) ? String(val) : val.toFixed(2)) : String(val);
-      doc.text(displayVal, xPos + labelW, y);
-
-      col++;
-      if (col >= 2) {
-        col = 0;
-        y += 6;
-      }
+      renderMetricRow(label, formatValue(val));
     }
     if (col !== 0) y += 6;
   }
