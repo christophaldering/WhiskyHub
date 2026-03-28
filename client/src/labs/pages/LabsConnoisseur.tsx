@@ -388,7 +388,7 @@ function WhiskysTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, 
                   color: w.vsGroupOverall > 0 ? "var(--labs-success)" : w.vsGroupOverall < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)",
                   background: w.vsGroupOverall > 0 ? "color-mix(in srgb, var(--labs-success) 10%, transparent)" : w.vsGroupOverall < 0 ? "color-mix(in srgb, var(--labs-danger) 10%, transparent)" : "transparent",
                 }}>
-                  {w.vsGroupOverall > 0 ? "+" : ""}{w.vsGroupOverall.toFixed(1)}
+                  {Number(w.vsGroupOverall) > 0 ? "+" : ""}{Number(w.vsGroupOverall).toFixed(1)}
                 </span>
               )}
               <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-display)" }}>
@@ -529,7 +529,7 @@ function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, f
                   <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginLeft: 8 }}>{r.count} {t("labs.connoisseur.rated", "rated")}</span>
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
-                  {r.avgScore?.toFixed(1)}
+                  {r.avgScore != null ? Number(r.avgScore).toFixed(1) : "—"}
                 </span>
               </div>
             ))}
@@ -545,7 +545,7 @@ function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, f
               <div style={{ background: "var(--labs-surface)", borderRadius: 12, padding: "12px 14px" }}>
                 <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("labs.connoisseur.smokeAffinity", "Smoke Affinity")}</span>
                 <p style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", marginTop: 4, fontFamily: "var(--font-display)" }}>
-                  {(snapshot.smokeAffinityIndex * 100).toFixed(0)}%
+                  {(Number(snapshot.smokeAffinityIndex) * 100).toFixed(0)}%
                 </p>
               </div>
             )}
@@ -553,7 +553,7 @@ function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, f
               <div style={{ background: "var(--labs-surface)", borderRadius: 12, padding: "12px 14px" }}>
                 <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("labs.connoisseur.sweetnessBias", "Sweetness Bias")}</span>
                 <p style={{ fontSize: 20, fontWeight: 700, color: "var(--labs-text)", marginTop: 4, fontFamily: "var(--font-display)" }}>
-                  {(snapshot.sweetnessBias * 100).toFixed(0)}%
+                  {(Number(snapshot.sweetnessBias) * 100).toFixed(0)}%
                 </p>
               </div>
             )}
@@ -944,7 +944,7 @@ export default function LabsConnoisseur() {
           <p style={{ color: "var(--labs-text-muted)", fontSize: 12, margin: "4px 0 0", lineHeight: 1.4 }}>
             {snap.totalRatings != null ? `${snap.totalRatings} ${t("labs.connoisseur.ratings", "ratings")}` : ""}
             {snap.totalRatings != null && snap.whiskySummaries?.length ? ` · ${snap.whiskySummaries.length} ${t("labs.connoisseur.whiskies", "whiskies")}` : ""}
-            {snap.avgScores?.overall != null ? ` · ${t("labs.connoisseur.avg", "Avg")} ${(snap.avgScores.overall).toFixed(1)}` : ""}
+            {snap.avgScores?.overall != null ? ` · ${t("labs.connoisseur.avg", "Avg")} ${Number(snap.avgScores.overall).toFixed(1)}` : ""}
           </p>
         )}
 
@@ -1108,12 +1108,12 @@ export default function LabsConnoisseur() {
           <div className="labs-fade-in" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }} data-testid="stat-cards-row">
             <StatCard
               label={t("labs.connoisseur.avgScore", "Avg Score")}
-              value={userAvg != null ? userAvg.toFixed(1) : "—"}
+              value={userAvg != null ? userAvg : "—"}
               icon={BarChart3}
             />
             <StatCard
               label={t("labs.connoisseur.vsGroup", "vs Group")}
-              value={vsGroup != null ? `${vsGroup > 0 ? "+" : ""}${vsGroup.toFixed(1)}` : "—"}
+              value={vsGroup != null ? `${Number(vsGroup) > 0 ? "+" : ""}${Number(vsGroup).toFixed(1)}` : "—"}
               icon={TrendingUp}
               trend={vsGroup != null ? (vsGroup > 0 ? "up" : vsGroup < 0 ? "down" : "neutral") : undefined}
             />
