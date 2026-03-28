@@ -8,7 +8,7 @@ import {
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
   Download, Brain, Utensils, Library, Info, Star,
-  Archive, Heart, Trophy,
+  Archive, Heart,
 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
@@ -87,6 +87,46 @@ function NavItem({ icon: Icon, label, description, href, testId, badge, locked }
           <span className="labs-badge labs-badge-accent">{badge}</span>
         )}
         <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      </div>
+    </Link>
+  );
+}
+
+interface NavTileProps {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  testId: string;
+  locked?: boolean;
+  color: string;
+  bgColor: string;
+}
+
+function NavTile({ icon: Icon, label, href, testId, locked, color, bgColor }: NavTileProps) {
+  return (
+    <Link href={locked ? "#" : href} style={{ textDecoration: "none" }}>
+      <div
+        className="labs-card labs-card-interactive"
+        style={{
+          padding: "14px 12px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          opacity: locked ? 0.5 : 1,
+          cursor: locked ? "default" : "pointer",
+          minHeight: 88,
+          justifyContent: "center",
+        }}
+        data-testid={testId}
+      >
+        <div style={{
+          width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          background: bgColor,
+        }}>
+          {locked ? <Lock className="w-[18px] h-[18px]" style={{ color: "var(--labs-text-muted)" }} /> : <Icon className="w-[18px] h-[18px]" style={{ color }} />}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", textAlign: "center", lineHeight: 1.3 }}>{label}</div>
       </div>
     </Link>
   );
@@ -391,16 +431,6 @@ export default function LabsTaste() {
     queryKey: ["palate-timeline", pid],
     queryFn: async () => {
       const res = await fetch(`/api/participants/${pid}/palate-timeline`, { headers: { "x-participant-id": pid! } });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    enabled: !!pid,
-  });
-
-  const { data: milestonesData } = useQuery({
-    queryKey: ["milestones", pid],
-    queryFn: async () => {
-      const res = await fetch(`/api/participants/${pid}/milestones`, { headers: { "x-participant-id": pid! } });
       if (!res.ok) return null;
       return res.json();
     },
@@ -856,10 +886,6 @@ export default function LabsTaste() {
             <LabsPalateTimeline periods={timelineData.periods} />
           )}
 
-          {milestonesData?.milestones?.length > 0 && (
-            <LabsMilestoneBadges milestones={milestonesData.milestones} />
-          )}
-
           <div className="mt-6 labs-fade-in labs-stagger-2">
             <p className="labs-section-label flex items-center gap-2">
               <Archive className="w-3.5 h-3.5" />
@@ -871,6 +897,38 @@ export default function LabsTaste() {
               <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
             </div>
           </div>
+
+          {recentTastings.length > 0 && (
+            <div className="mt-6 labs-fade-in labs-stagger-2">
+              <p className="labs-section-label flex items-center gap-2">
+                <Compass className="w-3.5 h-3.5" />
+                Recent Tastings
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {recentTastings.map((t: any) => (
+                  <div
+                    key={t.id}
+                    className="labs-card labs-card-interactive flex items-center gap-3 p-3"
+                    onClick={() => navigate(`/labs/tastings/${t.id}`)}
+                    data-testid={`labs-taste-tasting-${t.id}`}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: 9, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{String(t.title ?? "")}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                          <Calendar className="w-3 h-3" />{typeof t.date === "string" ? t.date : t.date instanceof Date ? t.date.toLocaleDateString() : String(t.date ?? "")}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <PalateLetterCard
             reports={connoisseurReports}
@@ -887,11 +945,12 @@ export default function LabsTaste() {
           <Activity className="w-3.5 h-3.5" />
           Profile & Analysis
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <NavItem icon={Activity} label="CaskSense Profile" description="Flavor radar, style & sweet spot" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} />
-          <NavItem icon={BarChart3} label="Analytics" description="Evolution, consistency & stats" href="/labs/taste/analytics" testId="labs-taste-link-analytics" />
-          <NavItem icon={PieChart} label="Flavor Wheel" description="Aroma categories from your notes" href="/labs/taste/wheel" testId="labs-taste-link-wheel" />
-          <NavItem icon={GitCompareArrows} label="Compare" description="Your scores vs. community" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <NavTile icon={Activity} label="CaskSense Profile" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          <NavTile icon={BarChart3} label="Analytics" href="/labs/taste/analytics" testId="labs-taste-link-analytics" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          <NavTile icon={PieChart} label="Flavor Wheel" href="/labs/taste/wheel" testId="labs-taste-link-wheel" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          <NavTile icon={GitCompareArrows} label="Compare" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          <NavTile icon={Download} label="Downloads" href="/labs/taste/downloads" testId="labs-taste-link-downloads" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
         </div>
       </div>
 
@@ -900,56 +959,14 @@ export default function LabsTaste() {
           <Sparkles className="w-3.5 h-3.5" />
           AI & Insights
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <NavItem icon={Sparkles} label="Recommendations" description="AI-powered whisky suggestions" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} />
-          <NavItem icon={Utensils} label="Pairings" description="Lineup-based pairing suggestions" href="/labs/taste/pairings" testId="labs-taste-link-pairings" />
-          <NavItem icon={Brain} label="Benchmark" description="AI text extraction & library" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" />
-          <NavItem icon={Library} label="Collection Analysis" description="Deep stats on your bottles" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" />
-          <NavItem icon={Compass} label="AI Curation" description="Curated whisky discovery" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Utensils} label="Pairings" href="/labs/taste/pairings" testId="labs-taste-link-pairings" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Brain} label="Benchmark" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
         </div>
       </div>
-
-      <div className="mt-8 labs-fade-in labs-stagger-4">
-        <p className="labs-section-label flex items-center gap-2">
-          <BookOpen className="w-3.5 h-3.5" />
-          Data & Tools
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <NavItem icon={Download} label="Downloads" description="Export data & templates" href="/labs/taste/downloads" testId="labs-taste-link-downloads" />
-        </div>
-      </div>
-
-      {recentTastings.length > 0 && (
-        <div className="mt-8 labs-fade-in labs-stagger-4">
-          <p className="labs-section-label flex items-center gap-2">
-            <Compass className="w-3.5 h-3.5" />
-            Recent Tastings
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {recentTastings.map((t: any) => (
-              <div
-                key={t.id}
-                className="labs-card labs-card-interactive flex items-center gap-3 p-3"
-                onClick={() => navigate(`/labs/tastings/${t.id}`)}
-                data-testid={`labs-taste-tasting-${t.id}`}
-              >
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{String(t.title ?? "")}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
-                      <Calendar className="w-3 h-3" />{typeof t.date === "string" ? t.date : t.date instanceof Date ? t.date.toLocaleDateString() : String(t.date ?? "")}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -962,13 +979,6 @@ interface TimelinePeriod {
   topCask: string | null;
   regionCount: number;
   delta: { overall: number; finish: number } | null;
-}
-
-interface MilestoneItem {
-  key: string;
-  icon: string;
-  unlocked: boolean;
-  category: string;
 }
 
 interface MonthlyReviewData {
@@ -1225,101 +1235,3 @@ function LabsPalateTimeline({ periods }: { periods: TimelinePeriod[] }) {
   );
 }
 
-function LabsMilestoneBadges({ milestones }: { milestones: MilestoneItem[] }) {
-  const { t } = useTranslation();
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-
-  const milestoneLabels: Record<string, string> = {
-    rating10: t("labs.milestone10", "10 Ratings"),
-    rating25: t("labs.milestone25", "25 Ratings"),
-    rating50: t("labs.milestone50", "50 Ratings"),
-    rating100: t("labs.milestone100", "100 Ratings"),
-    regions5: t("labs.milestone5Regions", "5 Regions"),
-    tastings3: t("labs.milestone3Tastings", "3 Tastings"),
-    consistency: t("labs.milestoneConsistency", "Consistency"),
-    tasteTwin: t("labs.milestoneTasteTwin", "Taste Twin"),
-    explorer: t("labs.milestoneExplorer", "Explorer"),
-    confidenceUp: t("labs.milestoneConfidenceUp", "Confidence Up"),
-  };
-
-  const unlocked = milestones.filter(m => m.unlocked);
-  const locked = milestones.filter(m => !m.unlocked);
-
-  return (
-    <div className="mb-6 labs-fade-in labs-stagger-2" data-testid="labs-milestones">
-      <p className="labs-section-label flex items-center gap-2">
-        <Trophy className="w-3.5 h-3.5" />
-        {t("labs.milestones", "Milestones")}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {unlocked.map((m) => (
-          <div key={m.key} style={{ position: "relative" }}>
-            <button
-              onClick={() => setExpandedKey(expandedKey === m.key ? null : m.key)}
-              data-testid={`labs-milestone-${m.key}`}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: "linear-gradient(135deg, var(--labs-phase-palate-dim), var(--labs-phase-overall-dim))",
-                border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                cursor: "pointer",
-                transition: "transform 0.2s, box-shadow 0.2s",
-                boxShadow: expandedKey === m.key ? "0 0 12px color-mix(in srgb, var(--labs-accent) 27%, transparent)" : "none",
-                fontFamily: "inherit",
-              }}
-            >
-              {m.icon}
-            </button>
-            {expandedKey === m.key && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: -36,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "var(--labs-surface)",
-                  border: "1px solid var(--labs-border)",
-                  borderRadius: 8,
-                  padding: "4px 10px",
-                  whiteSpace: "nowrap",
-                  fontSize: 11,
-                  color: "var(--labs-text)",
-                  zIndex: 10,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                }}
-              >
-                {milestoneLabels[m.key] || m.key}
-              </div>
-            )}
-          </div>
-        ))}
-        {locked.slice(0, 3).map((m) => (
-          <div
-            key={m.key}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: "var(--labs-surface)",
-              border: "1px solid var(--labs-border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              opacity: 0.3,
-              filter: "grayscale(1)",
-            }}
-            data-testid={`labs-milestone-locked-${m.key}`}
-          >
-            {m.icon}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
