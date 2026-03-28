@@ -1086,7 +1086,7 @@ export default function LabsEntdecken() {
                     <Archive className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-                        {t("discover.viewHistoricalTastings", "Browse Historical Tastings")}
+                        {t("discover.viewHistoricalTastings", "Historical Tastings")}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 1 }}>
                         {t("discover.viewHistoricalTastingsSub", "Full archive & cross-tasting insights")}
