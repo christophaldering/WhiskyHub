@@ -692,29 +692,22 @@ export default function LabsTasteDrams() {
     };
     const deepRateInitialData: RatingData = {
       scores: {
-        nose: selectedEntry.personalScore ?? 80,
-        palate: selectedEntry.personalScore ?? 80,
-        finish: selectedEntry.personalScore ?? 80,
+        nose: selectedEntry.noseScore ?? selectedEntry.personalScore ?? 80,
+        palate: selectedEntry.tasteScore ?? selectedEntry.personalScore ?? 80,
+        finish: selectedEntry.finishScore ?? selectedEntry.personalScore ?? 80,
         overall: selectedEntry.personalScore ?? 80,
       },
       tags: { nose: [], palate: [], finish: [], overall: [] },
       notes: { nose: "", palate: "", finish: "", overall: "" },
     };
     const handleDeepRateDone = (data: RatingData) => {
-      const existingNotes = selectedEntry.noseNotes?.trim() || "";
-      const scoreLine = `[SCORES] Nose:${Math.round(data.scores.nose)} Taste:${Math.round(data.scores.palate)} Finish:${Math.round(data.scores.finish)} [/SCORES]`;
-      const dimParts: string[] = [];
-      for (const dim of ["nose", "palate", "finish"] as const) {
-        const tag = dim === "palate" ? "TASTE" : dim.toUpperCase();
-        const chips = (data.tags[dim] || []).join(", ");
-        const note = data.notes[dim] || "";
-        const content = [chips, note].filter(Boolean).join(" — ");
-        if (content) dimParts.push(`[${tag}] ${content} [/${tag}]`);
-      }
-      const structuredNotes = [existingNotes, scoreLine, ...dimParts].filter(Boolean).join("\n");
+      const noseNoteParts = [data.notes.nose, ...(data.tags.nose || [])].filter(Boolean).join(", ");
       const patchData: any = {
         personalScore: data.scores.overall,
-        noseNotes: structuredNotes,
+        noseScore: data.scores.nose,
+        tasteScore: data.scores.palate,
+        finishScore: data.scores.finish,
+        noseNotes: noseNoteParts || selectedEntry.noseNotes || "",
         tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
         finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
       };

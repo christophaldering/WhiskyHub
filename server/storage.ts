@@ -1424,12 +1424,30 @@ export class DatabaseStorage implements IStorage {
     const journal = await db.select().from(journalEntries).where(and(eq(journalEntries.participantId, participantId), ne(journalEntries.status, 'draft'), isNull(journalEntries.deletedAt)));
     let journalScoreCount = 0;
 
+    let journalDimCount = 0;
+
     for (const j of journal) {
       const score = j.personalScore;
       if (score != null && score > 0) {
         sumOverall += score;
         overallScores.push(score);
         journalScoreCount++;
+
+        if (j.noseScore != null && j.noseScore > 0) {
+          sumNose += j.noseScore;
+          noseScores.push(j.noseScore);
+        }
+        if (j.tasteScore != null && j.tasteScore > 0) {
+          sumTaste += j.tasteScore;
+          tasteScores.push(j.tasteScore);
+        }
+        if (j.finishScore != null && j.finishScore > 0) {
+          sumFinish += j.finishScore;
+          finishScores.push(j.finishScore);
+        }
+        if (j.noseScore != null || j.tasteScore != null || j.finishScore != null) {
+          journalDimCount++;
+        }
 
         if (j.region) {
           if (!regionAcc[j.region]) regionAcc[j.region] = { total: 0, count: 0 };
@@ -1448,7 +1466,6 @@ export class DatabaseStorage implements IStorage {
 
     const ratingCount = allRatings.length;
     const totalOverallCount = ratingCount + journalScoreCount;
-    const nDim = ratingCount || 1;
     const nOverall = totalOverallCount || 1;
 
     const toBreakdown = (acc: Record<string, { total: number; count: number }>) => {
@@ -1479,9 +1496,9 @@ export class DatabaseStorage implements IStorage {
 
     return {
       avgScores: {
-        nose: Math.round((sumNose / nDim) * 10) / 10,
-        taste: Math.round((sumTaste / nDim) * 10) / 10,
-        finish: Math.round((sumFinish / nDim) * 10) / 10,
+        nose: Math.round((sumNose / (noseScores.length || 1)) * 10) / 10,
+        taste: Math.round((sumTaste / (tasteScores.length || 1)) * 10) / 10,
+        finish: Math.round((sumFinish / (finishScores.length || 1)) * 10) / 10,
         overall: Math.round((sumOverall / nOverall) * 10) / 10,
       },
       dimensionStats: {

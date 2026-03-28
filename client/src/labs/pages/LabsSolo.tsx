@@ -284,6 +284,9 @@ export default function LabsSolo() {
       age: whisky?.age || "",
       abv: whisky?.abv || "",
       personalScore: data.scores.overall,
+      noseScore: data.scores.nose,
+      tasteScore: data.scores.palate,
+      finishScore: data.scores.finish,
       noseNotes: [
         data.notes.nose,
         ...(data.tags.nose || []),

@@ -457,6 +457,43 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       log(`CRITICAL: schema column sync failed: ${e.message}`, "startup");
     }
 
+    try {
+      const { db: dbJournal } = await import("./db");
+      const { sql: sqlJ } = await import("drizzle-orm");
+
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS nose_score real`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS taste_score real`);
+      await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS finish_score real`);
+      log("Ensured journal_entries has nose_score/taste_score/finish_score columns", "startup");
+
+      const rows = await dbJournal.execute(sqlJ`
+        SELECT id, nose_notes FROM journal_entries
+        WHERE nose_notes LIKE '%[SCORES]%'
+          AND (nose_score IS NULL OR taste_score IS NULL OR finish_score IS NULL)
+      `);
+      const entries = (rows as any).rows || [];
+      let migrated = 0;
+      for (const row of entries) {
+        const match = (row.nose_notes as string).match(/\[SCORES\]\s*Nose:\s*([0-9]+(?:\.[0-9]+)?)\s*Taste:\s*([0-9]+(?:\.[0-9]+)?)\s*Finish:\s*([0-9]+(?:\.[0-9]+)?)\s*\[\/SCORES\]/i);
+        if (match) {
+          const noseScore = parseFloat(match[1]);
+          const tasteScore = parseFloat(match[2]);
+          const finishScore = parseFloat(match[3]);
+          await dbJournal.execute(sqlJ`
+            UPDATE journal_entries
+            SET nose_score = ${noseScore}, taste_score = ${tasteScore}, finish_score = ${finishScore}
+            WHERE id = ${row.id}
+          `);
+          migrated++;
+        }
+      }
+      if (migrated > 0) {
+        log(`Migrated ${migrated} journal entries with [SCORES] data to new columns`, "startup");
+      }
+    } catch (e: any) {
+      log(`Journal score columns migration: ${e.message}`, "startup");
+    }
+
     ready = true;
     log("Application fully initialized");
 
