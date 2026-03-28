@@ -77,6 +77,7 @@ function deriveSweetSpot(region: Record<string, BreakdownEntry>, cask: Record<st
 function BreakdownSection({ title, icon: Icon, entries, testId }: {
   title: string; icon: React.ElementType; entries: [string, BreakdownEntry][]; testId: string;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   if (entries.length === 0) return null;
   return (

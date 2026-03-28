@@ -292,7 +292,7 @@ export default function LabsBenchmark() {
               </div>
               <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-accent)" }}>{t("m2.taste.benchmarkUpload")}</h2>
               <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)", maxWidth: 400, margin: "0 auto" }}>
-                Upload tasting notes, reviews, or articles. AI will extract whisky data automatically.
+                {t("m2.taste.benchmarkUploadDesc", "Upload tasting notes, reviews, or articles. AI will extract whisky data automatically.")}
               </p>
               <div className="flex flex-wrap gap-1.5 justify-center mb-4">
                 {["PDF", "Excel", "CSV", "TXT", "JPG/PNG"].map(fmt => (
