@@ -10,7 +10,7 @@ packages = ["zip"]
 PORT = "5000"
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "autoscale"
 build = ["sh", "-c", "npx tsx script/build.ts"]
 run = ["node", "dist/index.cjs"]
 
