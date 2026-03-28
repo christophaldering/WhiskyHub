@@ -121,6 +121,14 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     onChange?.({ mode, phaseIndex, data });
   }, [mode, onChange]);
 
+  const handleRatingBack = useCallback(() => {
+    if (onSaveAsDraft) {
+      onBack();
+    } else {
+      setStep("mode");
+    }
+  }, [onBack, onSaveAsDraft]);
+
   if (step === "mode") {
     return (
       <RatingModeSelect
@@ -131,14 +139,6 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
       />
     );
   }
-
-  const handleRatingBack = useCallback(() => {
-    if (onSaveAsDraft) {
-      onBack();
-    } else {
-      setStep("mode");
-    }
-  }, [onBack, onSaveAsDraft]);
 
   if (step === "rating" && mode === "guided") {
     return (

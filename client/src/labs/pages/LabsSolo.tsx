@@ -274,7 +274,7 @@ export default function LabsSolo() {
     showDraftFlash();
   }, [fromCollection, showDraftFlash]);
 
-  const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft") => {
+  const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
     const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
     return {
       title: whiskyName,
@@ -286,9 +286,11 @@ export default function LabsSolo() {
       age: whisky?.age || "",
       abv: whisky?.abv || "",
       personalScore: data.scores.overall,
-      noseScore: data.scores.nose,
-      tasteScore: data.scores.palate,
-      finishScore: data.scores.finish,
+      ...(omitDimensionScores ? {} : {
+        noseScore: data.scores.nose,
+        tasteScore: data.scores.palate,
+        finishScore: data.scores.finish,
+      }),
       noseNotes: [
         data.notes.nose,
         ...(data.tags.nose || []),
@@ -402,11 +404,49 @@ export default function LabsSolo() {
     }
   }, [handleRatingDone, ratingMode]);
 
-  const handleQuickFollowUpFinish = useCallback(() => {
-    if (quickFollowUpData) {
-      handleRatingDone(quickFollowUpData);
+  const handleQuickFollowUpFinish = useCallback(async () => {
+    if (!quickFollowUpData) return;
+    setRatingResult(quickFollowUpData);
+    setSaveError(false);
+    setIsDraftSave(true);
+
+    const body = buildJournalBody(quickFollowUpData, "draft", true);
+
+    try {
+      const res = await fetch(`/api/journal/${participantId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-participant-id": participantId,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        setSaveError(true);
+        return;
+      }
+
+      if (soloImageFile) {
+        try {
+          const entry = await res.json();
+          if (entry?.id) {
+            const imgFormData = new FormData();
+            imgFormData.append("image", soloImageFile);
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+          }
+        } catch {}
+        setSoloImageFile(null);
+      }
+
+      clearSoloDraft();
+      hasUnsavedRef.current = false;
+      queryClient.invalidateQueries({ queryKey: ["journal"] });
+      setStep("done");
+    } catch {
+      setSaveError(true);
     }
-  }, [quickFollowUpData, handleRatingDone]);
+  }, [quickFollowUpData, participantId, buildJournalBody, soloImageFile]);
 
   const handleQuickFollowUpDeepen = useCallback(() => {
     if (quickFollowUpData) {
