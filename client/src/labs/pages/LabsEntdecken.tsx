@@ -268,8 +268,8 @@ export default function LabsEntdecken() {
       } else if (sort === "most") {
         return dir * ((b.tastingCount ?? b.ratingCount ?? 0) - (a.tastingCount ?? a.ratingCount ?? 0));
       } else {
-        const nameA = (a.name || a.whiskeyName || "").toLowerCase();
-        const nameB = (b.name || b.whiskeyName || "").toLowerCase();
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
         return dir * nameA.localeCompare(nameB);
       }
     });
@@ -759,7 +759,7 @@ export default function LabsEntdecken() {
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || w.whiskeyName}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || "—"}</div>
                     <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` \u00b7 ${w.region}` : ""}</div>
                     {w.tastingCount > 0 && (
                       <div style={{ fontSize: 11, color: "var(--labs-phase-palate)", marginTop: 2 }}>
@@ -916,7 +916,7 @@ export default function LabsEntdecken() {
                                       fontFamily: "inherit",
                                     }}
                                   >
-                                    {w.name || w.whiskeyName}
+                                    {w.name || "—"}
                                   </button>
                                 ))}
                                 {tasting.whiskies.length > 4 && (
