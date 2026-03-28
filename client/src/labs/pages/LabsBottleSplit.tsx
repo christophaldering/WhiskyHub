@@ -24,7 +24,6 @@ interface BottleEntry {
   peatLevel?: string;
   whiskybaseId?: string;
   bottler?: string;
-  vintage?: string;
   ppm?: number | null;
   distilledYear?: string;
   bottledYear?: string;
@@ -158,7 +157,7 @@ export default function LabsBottleSplit() {
             name: b.name, distillery: b.distillery, age: b.age, abv: b.abv,
             region: b.region, category: b.category, country: b.country,
             caskType: b.caskType, peatLevel: b.peatLevel,
-            whiskybaseId: b.whiskybaseId, bottler: b.bottler, vintage: b.vintage,
+            whiskybaseId: b.whiskybaseId, bottler: b.bottler,
             ppm: b.ppm, distilledYear: b.distilledYear, bottledYear: b.bottledYear,
             price: b.price, wbScore: b.wbScore, notes: b.notes,
             hostSummary: b.hostSummary, flavorProfile: b.flavorProfile,

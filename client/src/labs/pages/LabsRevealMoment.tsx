@@ -14,7 +14,7 @@ interface RevealMomentProps {
   abv?: string;
   category?: string;
   bottler?: string;
-  vintage?: string;
+  distilledYear?: string;
   peatLevel?: string;
   country?: string;
   ppm?: string;
@@ -33,7 +33,7 @@ export default function LabsRevealMoment({
   abv,
   category,
   bottler,
-  vintage,
+  distilledYear,
   peatLevel,
   country,
   ppm,
@@ -60,7 +60,7 @@ export default function LabsRevealMoment({
   const opacity = phase === "show" ? 1 : 0;
   const scale = phase === "show" ? 1 : phase === "enter" ? 0.92 : 1.04;
 
-  const detailParts = [age, region, country, abv, category, caskType, bottler, vintage, peatLevel, ppm, price].filter(Boolean);
+  const detailParts = [age, region, country, abv, category, caskType, bottler, distilledYear, peatLevel, ppm, price].filter(Boolean);
 
   return createPortal(
     <div

@@ -434,7 +434,7 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
   distillery: text("distillery"),
   country: text("country"),
   region: text("region"),
-  vintage: text("vintage"),
+  distilledYear: integer("distilled_year"),
   addedAt: text("added_at"),
   imageUrl: text("image_url"),
   auctionPrice: real("auction_price"),
@@ -964,7 +964,6 @@ export const bottleSplits = pgTable("bottle_splits", {
     peatLevel?: string;
     whiskybaseId?: string;
     bottler?: string;
-    vintage?: string;
     ppm?: number | null;
     wbScore?: number | null;
     imageUrl?: string;

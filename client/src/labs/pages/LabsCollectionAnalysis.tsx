@@ -50,7 +50,7 @@ interface CollectionItem {
   caskType: string | null;
   statedAge: string | null;
   abv: string | null;
-  vintage: string | null;
+  distilledYear: number | null;
   personalRating: number | null;
   communityRating: number | null;
 }
@@ -229,8 +229,8 @@ export default function LabsCollectionAnalysis() {
       else abvBuckets["60%+"]++;
     }
 
-    if (item.vintage) {
-      const v = parseInt(item.vintage, 10);
+    if (item.distilledYear) {
+      const v = item.distilledYear;
       if (!isNaN(v)) {
         const decade = `${Math.floor(v / 10) * 10}s`;
         vintageCounts.set(decade, (vintageCounts.get(decade) || 0) + 1);

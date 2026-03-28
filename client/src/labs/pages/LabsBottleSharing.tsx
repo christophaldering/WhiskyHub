@@ -30,7 +30,7 @@ interface BottleEntry {
   country?: string;
   whiskybaseId?: string;
   bottler?: string;
-  vintage?: string;
+  distilledYear?: string;
   peatLevel?: string;
   ppm?: number | null;
   wbScore?: number | null;
@@ -233,7 +233,7 @@ export default function LabsBottleSharing() {
             country: b.country || undefined,
             whiskybaseId: b.whiskybaseId || undefined,
             bottler: b.bottler || undefined,
-            vintage: b.vintage || undefined,
+            distilledYear: b.distilledYear || undefined,
             peatLevel: b.peatLevel || undefined,
             ppm: b.ppm ?? undefined,
             wbScore: b.wbScore ?? undefined,
@@ -275,7 +275,7 @@ export default function LabsBottleSharing() {
         country: w.country || undefined,
         whiskybaseId: w.whiskybaseId || undefined,
         bottler: w.bottler || undefined,
-        vintage: w.vintage || undefined,
+        distilledYear: w.distilledYear || undefined,
         peatLevel: w.peatLevel || undefined,
         ppm: w.ppm ?? null,
         wbScore: w.wbScore ?? null,
@@ -319,7 +319,7 @@ export default function LabsBottleSharing() {
       peatLevel: w.peatLevel || undefined,
       whiskybaseId: w.whiskybaseId || undefined,
       bottler: w.bottler || undefined,
-      vintage: w.vintage || undefined,
+      distilledYear: w.distilledYear || (w as any).vintage || undefined,
       wbScore: w.wbScore ? (typeof w.wbScore === "number" ? w.wbScore : parseFloat(w.wbScore)) : null,
       price: w.price ? (typeof w.price === "number" ? w.price : parseFloat(w.price)) : null,
     };
@@ -477,7 +477,7 @@ export default function LabsBottleSharing() {
                         <input data-testid={`input-bottle-category-${i}`} value={b.category || ""} onChange={e => updateBottle(i, "category", e.target.value)} placeholder="Category" className="labs-input" />
                         <input data-testid={`input-bottle-country-${i}`} value={b.country || ""} onChange={e => updateBottle(i, "country", e.target.value)} placeholder="Country" className="labs-input" />
                         <input data-testid={`input-bottle-bottler-${i}`} value={b.bottler || ""} onChange={e => updateBottle(i, "bottler", e.target.value)} placeholder="Bottler" className="labs-input" />
-                        <input data-testid={`input-bottle-vintage-${i}`} value={b.vintage || ""} onChange={e => updateBottle(i, "vintage", e.target.value)} placeholder="Vintage" className="labs-input" />
+                        <input data-testid={`input-bottle-distilledYear-${i}`} value={b.distilledYear || ""} onChange={e => updateBottle(i, "distilledYear", e.target.value)} placeholder="Vintage" className="labs-input" />
                         <input data-testid={`input-bottle-peat-${i}`} value={b.peatLevel || ""} onChange={e => updateBottle(i, "peatLevel", e.target.value)} placeholder="Peat Level" className="labs-input" />
                         <input data-testid={`input-bottle-ppm-${i}`} type="number" step="1" value={b.ppm ?? ""} onChange={e => updateBottle(i, "ppm", e.target.value ? parseFloat(e.target.value) : null)} placeholder="PPM" className="labs-input" />
                         <input data-testid={`input-bottle-price-${i}`} type="number" step="0.01" value={b.price ?? ""} onChange={e => updateBottle(i, "price", e.target.value ? parseFloat(e.target.value) : null)} placeholder="Price" className="labs-input" />

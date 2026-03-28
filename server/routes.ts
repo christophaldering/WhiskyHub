@@ -6039,7 +6039,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
           avgPriceCurrency: colMap(row, "Währung Whisky", "Currency Whisky") || null,
           distillery: colMap(row, "Destillerien", "Distilleries") || null,
-          vintage: colMap(row, "Jahrgang", "Vintage") || null,
+          distilledYear: (() => { const v = colMap(row, "Jahrgang", "Vintage"); return v ? (parseInt(v, 10) || null) : null; })(),
           addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
           imageUrl: colMap(row, "Bild", "Image") || null,
           auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
@@ -6208,7 +6208,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         imageUrl: item.imageUrl || null,
         noseNotes: [
           item.bottlingSeries ? `Series: ${item.bottlingSeries}` : null,
-          item.vintage ? `Vintage: ${item.vintage}` : null,
+          item.distilledYear ? `Vintage: ${item.distilledYear}` : null,
           item.status ? `Status: ${item.status}` : null,
           item.pricePaid ? `Price: ${item.pricePaid} ${item.currency || ""}` : null,
           item.notes || null,
@@ -6303,7 +6303,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
       avgPriceCurrency: colMap(row, "Währung Whisky", "Currency Whisky") || null,
       distillery: colMap(row, "Destillerien", "Distilleries") || null,
-      vintage: colMap(row, "Jahrgang", "Vintage") || null,
+      distilledYear: (() => { const v = colMap(row, "Jahrgang", "Vintage"); return v ? (parseInt(v, 10) || null) : null; })(),
       addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
       imageUrl: colMap(row, "Bild", "Image") || null,
       auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
@@ -6515,7 +6515,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           if (item.statedAge) parts.push(`Age: ${item.statedAge}`);
           if (item.abv) parts.push(`ABV: ${item.abv}`);
           if (item.caskType) parts.push(`Cask: ${item.caskType}`);
-          if (item.vintage) parts.push(`Vintage: ${item.vintage}`);
+          if (item.distilledYear) parts.push(`Vintage: ${item.distilledYear}`);
           if (item.communityRating) parts.push(`WB Rating: ${item.communityRating}`);
           if (item.whiskybaseId) parts.push(`Whiskybase ID: ${item.whiskybaseId}`);
           return parts.join(", ");
@@ -6603,7 +6603,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         if (item.statedAge) parts.push(`Age: ${item.statedAge}`);
         if (item.abv) parts.push(`ABV: ${item.abv}`);
         if (item.caskType) parts.push(`Cask: ${item.caskType}`);
-        if (item.vintage) parts.push(`Vintage: ${item.vintage}`);
+        if (item.distilledYear) parts.push(`Vintage: ${item.distilledYear}`);
         if (item.communityRating) parts.push(`Rating: ${item.communityRating}`);
         if (item.status) parts.push(`Status: ${item.status}`);
         return parts.join(", ");
@@ -13154,7 +13154,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           country,
           region,
           caskType: getName(rowMap["cask"]),
-          vintage: getName(rowMap["vintage"]),
+          distilledYear: getName(rowMap["vintage"]),
           whiskybaseId,
           wbScore,
           price,
@@ -13325,7 +13325,7 @@ Extract ALL whisky information you can find. Return a JSON object with this stru
       "country": "Scotland / Ireland / Japan / USA / Canada / India / Taiwan / Other",
       "region": "Speyside / Islay / Highland / etc.",
       "caskType": "Cask type(s)",
-      "vintage": "Vintage year(s) e.g. '2010 - 2025'",
+      "distilledYear": "Vintage/distilled year(s) e.g. '2010 - 2025'",
       "whiskybaseId": "Whiskybase ID number if visible",
       "wbScore": 87.5,
       "price": 80.00,
@@ -16680,7 +16680,7 @@ Rules:
         abvBand: string | null;
         price: number | null;
         wbScore: number | null;
-        vintage: string | null;
+        distilledYear: string | null;
         avgNose: number | null;
         avgTaste: number | null;
         avgFinish: number | null;
@@ -16699,7 +16699,7 @@ Rules:
         abv?: string | null; caskType?: string | null; imageUrl?: string | null;
         peatLevel?: string | null;
         ageBand?: string | null; abvBand?: string | null;
-        price?: number | null; wbScore?: number | null; vintage?: string | null;
+        price?: number | null; wbScore?: number | null; distilledYear?: string | null;
       }, scores: number[], noseScores: number[], tasteScores: number[], finishScores: number[], isTasting: boolean) => {
         const avg = (arr: number[]) => arr.length > 0 ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : null;
         const existing = whiskyMap.get(key);
@@ -16726,7 +16726,7 @@ Rules:
           if (!existing.abvBand && entry.abvBand) existing.abvBand = entry.abvBand;
           if (existing.price == null && entry.price != null) existing.price = entry.price;
           if (existing.wbScore == null && entry.wbScore != null) existing.wbScore = entry.wbScore;
-          if (!existing.vintage && entry.vintage) existing.vintage = entry.vintage;
+          if (!existing.distilledYear && entry.distilledYear) existing.distilledYear = entry.distilledYear;
         } else {
           whiskyMap.set(key, {
             id: entry.id,
@@ -16747,7 +16747,7 @@ Rules:
             abvBand: entry.abvBand || null,
             price: entry.price ?? null,
             wbScore: entry.wbScore ?? null,
-            vintage: entry.vintage || null,
+            distilledYear: entry.distilledYear || null,
             avgNose: avg(noseScores),
             avgTaste: avg(tasteScores),
             avgFinish: avg(finishScores),
@@ -16774,7 +16774,7 @@ Rules:
           peatLevel: w.peatLevel,
           ageBand: w.ageBand, abvBand: w.abvBand,
           price: w.price, wbScore: w.wbScore,
-          vintage: w.distilledYear,
+          distilledYear: w.distilledYear,
         }, overallScores, noseScores, tasteScores, finishScores, true);
       }
 
@@ -16787,7 +16787,7 @@ Rules:
           id: ci.id.toString(), name: ci.name, distillery: ci.distillery, region: null,
           country: null, category: null, age: ci.statedAge, abv: ci.abv,
           caskType: ci.caskType, imageUrl: ci.imageUrl,
-          vintage: ci.vintage, price: ci.pricePaid,
+          distilledYear: ci.distilledYear != null ? String(ci.distilledYear) : null, price: ci.pricePaid,
         }, scores, [], [], [], false);
       }
 
@@ -16844,7 +16844,7 @@ Rules:
           ratingCount: entry.ratingCount, tastingCount: entry.tastingCount,
           peatLevel: entry.peatLevel,
           ageBand: entry.ageBand, abvBand: entry.abvBand,
-          price: entry.price, wbScore: entry.wbScore, vintage: entry.vintage,
+          price: entry.price, wbScore: entry.wbScore, distilledYear: entry.distilledYear,
           avgNose: entry.avgNose, avgTaste: entry.avgTaste, avgFinish: entry.avgFinish,
           scoreVariance: computedVariance,
         };
@@ -18124,7 +18124,6 @@ Rules:
           country: b.country || undefined,
           whiskybaseId: b.whiskybaseId || undefined,
           bottler: b.bottler || undefined,
-          vintage: b.vintage || undefined,
           peatLevel: b.peatLevel || undefined,
           ppm: b.ppm ?? undefined,
           wbScore: b.wbScore ?? undefined,

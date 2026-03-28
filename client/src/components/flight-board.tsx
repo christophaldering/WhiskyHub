@@ -309,9 +309,6 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
           {(whisky as any).bottler && (
             <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(whisky as any).bottler}</p></div>
           )}
-          {(whisky as any).vintage && (
-            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(whisky as any).vintage}</p></div>
-          )}
           {whisky.distilledYear && (
             <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistilledYear", "Distilled")}</span><p className="font-serif">{whisky.distilledYear}</p></div>
           )}
