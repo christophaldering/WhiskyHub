@@ -5218,8 +5218,8 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         topRegionCount: regionBreakdown[0]?.count || 0,
         smokeAffinityIndex: participant.smokeAffinityIndex,
         sweetnessBias: participant.sweetnessBias,
-        ratingStabilityScore: participant.ratingStabilityScore,
-        explorationIndex: participant.explorationIndex,
+        ratingStabilityScore: stats.ratingStabilityScore,
+        explorationIndex: stats.explorationIndex,
         tasteTwinsCount: tasteTwins.length,
         topTasteTwin: tasteTwins[0]?.participantName || null,
         topTasteTwinCorrelation: tasteTwins[0]?.correlation || null,
@@ -5246,8 +5246,8 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         recentJournals: journalEntries.slice(0, 3).map(j => ({ title: j.title, whisky: j.whiskyName, score: j.personalScore })),
         smokeAffinityIndex: participant.smokeAffinityIndex,
         sweetnessBias: participant.sweetnessBias,
-        ratingStabilityScore: participant.ratingStabilityScore,
-        explorationIndex: participant.explorationIndex,
+        ratingStabilityScore: stats.ratingStabilityScore,
+        explorationIndex: stats.explorationIndex,
         tasteTwins: tasteTwins.slice(0, 3).map(t => ({ name: t.participantName, correlation: t.correlation, sharedWhiskies: t.sharedWhiskies })),
         communityRankPosition,
       };
@@ -7959,8 +7959,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       milestones.push({ key: "tastings3", icon: "🎉", unlocked: stats.totalTastings >= 3, category: "quantitative" });
 
-      const stabilityScore = participant?.ratingStabilityScore;
-      milestones.push({ key: "consistency", icon: "🎯", unlocked: stabilityScore != null && stabilityScore > 70, category: "qualitative" });
+      const stabilityScore = stats.ratingStabilityScore;
+      milestones.push({ key: "consistency", icon: "🎯", unlocked: stabilityScore != null && stabilityScore > 7, category: "qualitative" });
 
       let hasTasteTwin = false;
       try {
@@ -7969,8 +7969,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       } catch { /* ignore */ }
       milestones.push({ key: "tasteTwin", icon: "👥", unlocked: hasTasteTwin, category: "qualitative" });
 
-      const explorationIndex = participant?.explorationIndex;
-      milestones.push({ key: "explorer", icon: "🧭", unlocked: explorationIndex != null && explorationIndex > 50, category: "qualitative" });
+      const explorationIndex = stats.explorationIndex;
+      milestones.push({ key: "explorer", icon: "🧭", unlocked: explorationIndex != null && explorationIndex > 5, category: "qualitative" });
 
       let confidenceUp = false;
       if (stats.totalRatings >= 10) {

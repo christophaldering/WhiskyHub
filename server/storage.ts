@@ -244,6 +244,8 @@ export interface IStorage {
     ratedCaskTypes: Record<string, number>;
     ratedPeatLevels: Record<string, number>;
     highestOverall: number;
+    ratingStabilityScore: number | null;
+    explorationIndex: number | null;
   }>;
 
   // Flavor Profile (aggregated ratings with whisky metadata)
@@ -1228,6 +1230,8 @@ export class DatabaseStorage implements IStorage {
     ratedCaskTypes: Record<string, number>;
     ratedPeatLevels: Record<string, number>;
     highestOverall: number;
+    ratingStabilityScore: number | null;
+    explorationIndex: number | null;
   }> {
     const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
 
@@ -1269,6 +1273,70 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    const journalRows = await db.select().from(journalEntries).where(
+      and(
+        eq(journalEntries.participantId, participantId),
+        ne(journalEntries.status, 'draft'),
+        isNull(journalEntries.deletedAt)
+      )
+    );
+
+    const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
+    const tastingRows = tastingIds.length > 0
+      ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
+      : [];
+    const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
+
+    const allOverallScores: number[] = [];
+    for (const r of allRatings) {
+      const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+      const norm = 100 / scale;
+      allOverallScores.push(r.normalizedScore ?? r.overall * norm);
+    }
+    for (const j of journalRows) {
+      if (j.personalScore != null && j.personalScore > 0) {
+        allOverallScores.push(j.personalScore);
+      }
+    }
+
+    let ratingStabilityScore: number | null = null;
+    if (allOverallScores.length >= 3) {
+      const mean = allOverallScores.reduce((a, b) => a + b, 0) / allOverallScores.length;
+      const variance = allOverallScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / allOverallScores.length;
+      const stdDev = Math.sqrt(variance);
+      const maxStdDev = 30;
+      ratingStabilityScore = Math.round(Math.max(0, Math.min(10, 10 - (stdDev / maxStdDev) * 10)) * 10) / 10;
+    }
+
+    const uniqueRegions = new Set<string>();
+    const uniqueCategories = new Set<string>();
+    const uniqueCaskTypes = new Set<string>();
+
+    for (const r of allRatings) {
+      const w = whiskyMap.get(r.whiskyId);
+      if (w) {
+        if (w.region) uniqueRegions.add(w.region);
+        if (w.category) uniqueCategories.add(w.category);
+        if (w.caskType) uniqueCaskTypes.add(w.caskType);
+      }
+    }
+    for (const j of journalRows) {
+      if (j.personalScore != null && j.personalScore > 0) {
+        if (j.region) uniqueRegions.add(j.region);
+        if (j.category) uniqueCategories.add(j.category);
+        if (j.caskType) uniqueCaskTypes.add(j.caskType);
+      }
+    }
+
+    let explorationIndex: number | null = null;
+    const totalEntries = allRatings.length + journalRows.filter(j => j.personalScore != null && j.personalScore > 0).length;
+    if (totalEntries >= 3) {
+      const regionScore = Math.min(uniqueRegions.size / 8, 1);
+      const categoryScore = Math.min(uniqueCategories.size / 5, 1);
+      const caskScore = Math.min(uniqueCaskTypes.size / 6, 1);
+      explorationIndex = Math.round(((regionScore * 0.4 + categoryScore * 0.3 + caskScore * 0.3) * 10) * 10) / 10;
+    }
+
     return {
       totalRatings: allRatings.length,
       totalTastings,
@@ -1278,6 +1346,8 @@ export class DatabaseStorage implements IStorage {
       ratedCaskTypes,
       ratedPeatLevels,
       highestOverall,
+      ratingStabilityScore,
+      explorationIndex,
     };
   }
 
@@ -1351,7 +1421,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    const journal = await db.select().from(journalEntries).where(and(eq(journalEntries.participantId, participantId), isNull(journalEntries.deletedAt)));
+    const journal = await db.select().from(journalEntries).where(and(eq(journalEntries.participantId, participantId), ne(journalEntries.status, 'draft'), isNull(journalEntries.deletedAt)));
     let journalScoreCount = 0;
 
     for (const j of journal) {
@@ -1361,6 +1431,13 @@ export class DatabaseStorage implements IStorage {
         overallScores.push(score);
         journalScoreCount++;
 
+        sumNose += score;
+        noseScores.push(score);
+        sumTaste += score;
+        tasteScores.push(score);
+        sumFinish += score;
+        finishScores.push(score);
+
         if (j.region) {
           if (!regionAcc[j.region]) regionAcc[j.region] = { total: 0, count: 0 };
           regionAcc[j.region].total += score; regionAcc[j.region].count++;
@@ -1369,12 +1446,17 @@ export class DatabaseStorage implements IStorage {
           if (!caskAcc[j.caskType]) caskAcc[j.caskType] = { total: 0, count: 0 };
           caskAcc[j.caskType].total += score; caskAcc[j.caskType].count++;
         }
+        if (j.category) {
+          if (!categoryAcc[j.category]) categoryAcc[j.category] = { total: 0, count: 0 };
+          categoryAcc[j.category].total += score; categoryAcc[j.category].count++;
+        }
       }
     }
 
     const ratingCount = allRatings.length;
     const totalOverallCount = ratingCount + journalScoreCount;
-    const n = ratingCount || 1;
+    const totalDimCount = totalOverallCount;
+    const n = totalDimCount || 1;
     const nOverall = totalOverallCount || 1;
 
     const toBreakdown = (acc: Record<string, { total: number; count: number }>) => {

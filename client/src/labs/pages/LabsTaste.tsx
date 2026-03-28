@@ -502,12 +502,12 @@ export default function LabsTaste() {
   const totalTastings = tastings?.length || 0;
   const totalRatings = myRatings.length;
   const statsObj = stats as { totalRatings?: number; totalTastingWhiskies?: number; totalJournalEntries?: number } | null;
-  const whiskyCount = (statsObj?.totalTastingWhiskies ?? 0) + (statsObj?.totalJournalEntries ?? 0);
+  const whiskyCount = (statsObj?.totalRatings ?? 0) + (statsObj?.totalJournalEntries ?? 0);
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
 
-  const participantObj = participant as { ratingStabilityScore?: number; explorationIndex?: number } | null;
-  const stability = participantObj?.ratingStabilityScore ?? null;
-  const exploration = participantObj?.explorationIndex ?? null;
+  const statsObjExt = stats as { ratingStabilityScore?: number | null; explorationIndex?: number | null } | null;
+  const stability = statsObjExt?.ratingStabilityScore ?? null;
+  const exploration = statsObjExt?.explorationIndex ?? null;
   const insight = insightData?.insight ?? null;
 
   const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, overall: 0 };
@@ -585,8 +585,8 @@ export default function LabsTaste() {
               </div>
               {whiskyCount > 0 && (
                 <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-start", gap: 12, fontSize: 11, color: "var(--labs-text-muted)" }}>
-                  {(statsObj?.totalTastingWhiskies ?? 0) > 0 && (
-                    <span data-testid="text-count-tasting-ratings">{statsObj?.totalTastingWhiskies} from tastings</span>
+                  {(statsObj?.totalRatings ?? 0) > 0 && (
+                    <span data-testid="text-count-tasting-ratings">{statsObj?.totalRatings} from tastings</span>
                   )}
                   {(statsObj?.totalJournalEntries ?? 0) > 0 && (
                     <span data-testid="text-count-solo-drams">{statsObj?.totalJournalEntries} solo</span>
@@ -597,7 +597,7 @@ export default function LabsTaste() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
               {[
-                { label: t("labs.statTastingsLabel", "Tastings"), icon: <Wine className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+                { label: t("labs.statDramsLabel", "Drams"), icon: <Wine className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statConsistencyLabel", "Consistency"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statExplorationLabel", "Exploration"), icon: <Compass className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
               ].map(s => (
@@ -763,13 +763,13 @@ export default function LabsTaste() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
             <div className="labs-card" style={{ padding: 16, textAlign: "center" }} data-testid="labs-taste-stat-tastings">
               <div style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1, marginBottom: 4 }}>
-                {totalTastings ?? "—"}
+                {whiskyCount ?? "—"}
               </div>
               <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 2 }}>
-                {t("labs.statTastingsLabel", "Tastings")}
+                {t("labs.statDramsLabel", "Drams")}
               </p>
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3 }}>
-                {t("labs.statTastingsDesc", "Sessions joined")}
+                {t("labs.statDramsDesc", "Whiskys rated")}
               </p>
             </div>
 

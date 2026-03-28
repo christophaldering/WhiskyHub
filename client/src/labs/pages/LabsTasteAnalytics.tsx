@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
-import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
+import { statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
 import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -163,15 +163,15 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
     staleTime: 120000,
   });
 
-  const { data: participant } = useQuery({
-    queryKey: ["labs-participant-detail-analytics", pid],
-    queryFn: () => participantApi.get(pid),
+  const { data: statsData } = useQuery({
+    queryKey: ["labs-participant-stats-analytics", pid],
+    queryFn: () => statsApi.get(pid!),
     enabled: !!pid,
   });
 
-  const typedParticipant = participant as ParticipantDetail | undefined;
+  const typedStats = statsData as { ratingStabilityScore?: number | null } | undefined;
   const typedProfile = profile as WhiskyProfileResponse | undefined;
-  const stability = typedParticipant?.ratingStabilityScore ?? null;
+  const stability = typedStats?.ratingStabilityScore ?? null;
   const ratingStyle = typedProfile?.ratingStyle;
   const stdDev = ratingStyle?.stdDev ?? null;
   const mean = ratingStyle?.meanScore ?? null;
