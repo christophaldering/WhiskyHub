@@ -15296,6 +15296,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           tastingId: hte.historicalTastingId,
           tastingNumber: ht.tastingNumber,
           tastingTitle: ht.titleDe,
+          tastingTitleEn: ht.titleEn,
           tastingDate: ht.tastingDate,
           distillery: hte.distilleryRaw,
           whiskyName: hte.whiskyNameRaw,
@@ -15313,7 +15314,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
 
       const appearances = rows.map(r => ({
         ...r,
-        tastingTitle: r.tastingTitle ?? `Tasting #${r.tastingNumber ?? "?"}`,
+        tastingTitle: r.tastingTitle || r.tastingTitleEn || `Tasting #${r.tastingNumber ?? "?"}`,
       }));
 
       const scoredApps = appearances.filter(a => a.normalizedTotal != null || a.totalScore != null);
@@ -15433,7 +15434,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
             whiskyScores[key].count++;
           }
         }
-        const topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }> = Object.values(whiskyScores)
+        const topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number; titleDe: string | null; titleEn: string | null }> = Object.values(whiskyScores)
           .filter(w => w.count >= 1)
           .map(w => ({
             distillery: w.distillery,
@@ -15441,6 +15442,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
             totalScore: null,
             normalizedTotal: Math.round((w.total / w.count) * 10) / 10,
             tastingNumber: 0,
+            titleDe: null,
+            titleEn: null,
           }))
           .sort((a, b) => (b.normalizedTotal ?? 0) - (a.normalizedTotal ?? 0))
           .slice(0, 20);

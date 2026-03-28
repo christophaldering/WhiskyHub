@@ -452,7 +452,7 @@ export default function LabsHistoricalDetail() {
 
   const isForbidden = error instanceof ForbiddenError;
   const title = data
-    ? (lang === "de" ? data.titleDe : data.titleEn) || data.titleDe || `Tasting #${data.tastingNumber}`
+    ? (lang.startsWith("de") ? data.titleDe : data.titleEn) || data.titleDe || `Tasting #${data.tastingNumber}`
     : "";
   const entries = data?.entries ?? [];
   const sorted = [...entries].sort((a, b) => (a.totalRank ?? 999) - (b.totalRank ?? 999));

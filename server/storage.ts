@@ -444,7 +444,7 @@ export interface IStorage {
   getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
-    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number; titleDe: string | null; titleEn: string | null }>;
     regionBreakdown: Record<string, number>;
     smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
     caskBreakdown: Record<string, number>;
@@ -2845,7 +2845,7 @@ export class DatabaseStorage implements IStorage {
   async getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
-    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number; titleDe: string | null; titleEn: string | null }>;
     regionBreakdown: Record<string, number>;
     smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
     caskBreakdown: Record<string, number>;
@@ -2880,6 +2880,8 @@ export class DatabaseStorage implements IStorage {
         totalScore: historicalTastingEntries.totalScore,
         normalizedTotal: historicalTastingEntries.normalizedTotal,
         tastingNumber: historicalTastings.tastingNumber,
+        titleDe: historicalTastings.titleDe,
+        titleEn: historicalTastings.titleEn,
       })
       .from(historicalTastingEntries)
       .innerJoin(historicalTastings, eq(historicalTastingEntries.historicalTastingId, historicalTastings.id))
@@ -2893,6 +2895,8 @@ export class DatabaseStorage implements IStorage {
       totalScore: r.totalScore,
       normalizedTotal: (() => { const v = r.normalizedTotal ?? (r.totalScore != null ? r.totalScore * 10 : null); return v != null ? Math.min(v, 100) : null; })(),
       tastingNumber: r.tastingNumber,
+      titleDe: r.titleDe,
+      titleEn: r.titleEn,
     }));
 
     const regionBaseFilter = tastingIds

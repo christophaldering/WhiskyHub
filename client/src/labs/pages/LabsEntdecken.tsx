@@ -316,7 +316,7 @@ export default function LabsEntdecken() {
   const filteredTastings = allTastings
     .filter((t2: any) => {
       if (!search) return true;
-      const name = (t2.name || t2.title || "").toLowerCase();
+      const name = (t2.titleDe || t2.titleEn || t2.name || t2.title || "").toLowerCase();
       return name.includes(search.toLowerCase());
     })
     .sort((a: any, b: any) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
@@ -863,7 +863,7 @@ export default function LabsEntdecken() {
                             )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {tasting.name || tasting.title || `Tasting #${tasting.tastingNumber || ""}`}
+                                {(lang.startsWith("de") ? tasting.titleDe : tasting.titleEn) || tasting.titleDe || tasting.name || tasting.title || `Tasting #${tasting.tastingNumber || ""}`}
                               </div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3 }}>
                                 {tasting.date && (

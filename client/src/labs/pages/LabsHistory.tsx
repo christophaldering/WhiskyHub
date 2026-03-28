@@ -37,7 +37,7 @@ interface EnrichedTasting {
 interface AnalyticsData {
   totalTastings: number;
   totalEntries: number;
-  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
+  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number; titleDe?: string | null; titleEn?: string | null }>;
   regionBreakdown: Record<string, number>;
   smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
   caskBreakdown: Record<string, number>;
@@ -138,7 +138,7 @@ function LabsHistoryList() {
   }, [tastings, sortMode]);
 
   const getTitle = (tasting: EnrichedTasting) =>
-    (lang === "de" ? tasting.titleDe : tasting.titleEn) || tasting.titleDe || `Tasting #${tasting.tastingNumber}`;
+    (lang.startsWith("de") ? tasting.titleDe : tasting.titleEn) || tasting.titleDe || `Tasting #${tasting.tastingNumber}`;
 
   const totalWhiskies = analytics?.totalEntries ?? 0;
   const totalTastings = analytics?.totalTastings ?? 0;
@@ -336,7 +336,8 @@ function LabsHistoryList() {
 }
 
 function LabsHistoryInsights() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const session = useSession();
   const pid = getParticipantId();
 
@@ -460,7 +461,7 @@ function LabsHistoryInsights() {
                       : "\u2014"}
                     {(w.normalizedTotal ?? w.totalScore) != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 2 }}>/100</span>}
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", background: "var(--labs-accent-muted)", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>#{w.tastingNumber}</span>
+                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", background: "var(--labs-accent-muted)", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>{(lang.startsWith("de") ? w.titleDe : w.titleEn) || w.titleDe || (w.tastingNumber ? `#${w.tastingNumber}` : "")}</span>
                 </div>
               );
             })}
