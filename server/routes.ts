@@ -7599,6 +7599,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const allTastingsArr = await storage.getAllTastings();
       const tastingScaleMap = new Map(allTastingsArr.map(t => [t.id, t.ratingScale ?? 100]));
+      const tastingStatusMap = new Map(allTastingsArr.map(t => [t.id, t.status]));
+      const completedTastingStatuses = new Set(["closed", "reveal", "archived"]);
 
       const whiskyIds = Array.from(new Set(userRatingsRaw.map(r => r.whiskyId)));
       const allWhiskiesArr = await storage.getWhiskiesByIds(whiskyIds);
@@ -7608,22 +7610,23 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         whiskyId: string; nose: number; taste: number; finish: number; overall: number; ratedAt?: string | null; isJournal?: boolean;
       }
 
-      let userRatings: NormedRating[] = userRatingsRaw.map(r => {
-        const scale = tastingScaleMap.get(r.tastingId) ?? 100;
-        const norm = 100 / scale;
-        return {
-          whiskyId: r.whiskyId,
-          nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm,
-          overall: r.normalizedScore ?? r.overall * norm,
-          ratedAt: r.updatedAt || null,
-        };
-      });
-
-      const tastingRatingCount = userRatings.length;
+      let userRatings: NormedRating[] = userRatingsRaw
+        .filter(r => completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? ""))
+        .map(r => {
+          const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+          const norm = 100 / scale;
+          return {
+            whiskyId: r.whiskyId,
+            nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm,
+            overall: r.normalizedScore ?? r.overall * norm,
+            ratedAt: r.updatedAt || null,
+          };
+        });
 
       if (source === "all" || source === "journal" || source === "imported" || source === "all_incl_imported") {
         const journal = await storage.getJournalEntries(req.params.id);
         const filterFn = (j: any) => {
+          if (j.status === "draft") return false;
           if (source === "journal") return j.personalScore != null && j.personalScore > 0;
           if (source === "imported") return j.source === "imported" && j.personalScore != null && j.personalScore > 0;
           return j.personalScore != null && j.personalScore > 0;
@@ -7631,7 +7634,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         const journalScores = journal.filter(filterFn)
           .map(j => ({
             whiskyId: j.id,
-            nose: 0, taste: 0, finish: 0,
+            nose: j.noseScore ?? 0, taste: j.tasteScore ?? 0, finish: j.finishScore ?? 0,
             overall: j.personalScore!,
             ratedAt: j.createdAt || null,
             isJournal: true,
@@ -7651,6 +7654,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           hasDimensionalData: false,
         });
       }
+
+      const dimensionalRatingCount = userRatings.filter(r =>
+        !r.isJournal || (r.nose > 0 || r.taste > 0 || r.finish > 0)
+      ).length;
 
       const dims = ["nose", "taste", "finish", "overall"] as const;
       const calcMedian = (arr: number[]) => {
@@ -7678,6 +7685,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const platformParticipantIds = new Set<string>();
 
       for (const r of allRatingsRaw) {
+        if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
         const scale = tastingScaleMap.get(r.tastingId) ?? 100;
         const norm = 100 / scale;
         const normOverall = r.normalizedScore ?? r.overall * norm;
@@ -7724,13 +7732,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const dimAvgs: Record<string, number> = {};
       for (const dim of dims) {
-        if (dim !== "overall" && tastingRatingCount === 0) {
-          dimAvgs[dim] = 0;
-        } else if (dim !== "overall") {
-          const vals = userRatings.filter(r => !r.isJournal).map(r => r[dim]);
+        if (dim === "overall") {
+          const vals = userRatings.map(r => r[dim]);
           dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
         } else {
-          const vals = userRatings.map(r => r[dim]);
+          const vals = userRatings
+            .filter(r => !r.isJournal || r[dim] > 0)
+            .map(r => r[dim]);
           dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
         }
       }
@@ -7743,7 +7751,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const confidence: Record<string, { level: string; percent: number; n: number }> = {};
       for (const dim of dims) {
-        const n = dim !== "overall" ? tastingRatingCount : userRatings.length;
+        const n = dim !== "overall" ? dimensionalRatingCount : userRatings.length;
         const stab = getStabilityLevel(n);
         confidence[dim] = { ...stab, n };
       }
@@ -7780,7 +7788,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const friendParticipants = allParticipants.filter(Boolean) as Participant[];
           const friendIds = friendParticipants.map(p => p.id);
           if (friendIds.length > 0) {
-            const friendRatings = allRatingsRaw.filter(r => friendIds.includes(r.participantId));
+            const friendRatings = allRatingsRaw.filter(r => friendIds.includes(r.participantId) && completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? ""));
             const friendDimScores: Record<string, number[]> = { nose: [], taste: [], finish: [], overall: [] };
             for (const r of friendRatings) {
               const scale = tastingScaleMap.get(r.tastingId) ?? 100;
@@ -7805,6 +7813,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       } else if (compareMode === "platform") {
         const platformDimScores: Record<string, number[]> = { nose: [], taste: [], finish: [], overall: [] };
         for (const r of allRatingsRaw) {
+          if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
           const scale = tastingScaleMap.get(r.tastingId) ?? 100;
           const norm = 100 / scale;
           platformDimScores.nose.push(r.normalizedNose ?? r.nose * norm);
@@ -7826,11 +7835,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           medians: platformMedians,
           iqrs: platformIqrs,
           nParticipants: platformParticipantIds.size,
-          nRatings: allRatingsRaw.length,
+          nRatings: platformDimScores.overall.length,
         };
       }
 
-      const userTastingIds = new Set(userRatingsRaw.map(r => r.tastingId));
+      const userTastingIds = new Set(userRatingsRaw.filter(r => completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")).map(r => r.tastingId));
       const userScales = new Set(Array.from(userTastingIds).map(id => tastingScaleMap.get(id) ?? 100));
       const hasMultipleScales = userScales.size > 1 || (userScales.size === 1 && !userScales.has(100));
 
@@ -7841,7 +7850,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         confidence,
         comparisonData,
         hasMultipleScales,
-        hasDimensionalData: tastingRatingCount > 0,
+        hasDimensionalData: dimensionalRatingCount > 0,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
