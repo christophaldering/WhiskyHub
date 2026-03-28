@@ -39,22 +39,46 @@ const allowlist = [
   "zod-validation-error",
 ];
 
-async function migrateTextToReal() {
+async function preBuildMigrations() {
   if (!process.env.DATABASE_URL) {
     console.log("no DATABASE_URL, skipping pre-build migration");
     return;
   }
   const pgMod = await import("pg");
   const pool = new pgMod.default.Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
-  const cols: Array<{ table: string; column: string }> = [
-    { table: "journal_entries", column: "abv" },
-    { table: "journal_entries", column: "price" },
-    { table: "benchmark_entries", column: "abv" },
-    { table: "whiskybase_collection", column: "abv" },
-    { table: "wishlist_entries", column: "abv" },
-  ];
   try {
-    for (const { table, column } of cols) {
+    const renames: Array<{ table: string; from: string; to: string }> = [
+      { table: "journal_entries", from: "whisky_name", to: "name" },
+      { table: "benchmark_entries", from: "whisky_name", to: "name" },
+      { table: "wishlist_entries", from: "whisky_name", to: "name" },
+      { table: "profiles", from: "preferred_cask_influence", to: "preferred_cask_type" },
+      { table: "whiskybase_collection", from: "vintage", to: "distilled_year" },
+    ];
+    for (const { table, from, to } of renames) {
+      const { rows } = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+        [table, from]
+      );
+      if (rows.length > 0) {
+        const { rows: hasNew } = await pool.query(
+          `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+          [table, to]
+        );
+        if (hasNew.length === 0) {
+          await pool.query(`ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to}`);
+          console.log(`pre-build: ${table}.${from} → ${to}`);
+        }
+      }
+    }
+
+    const textToReal: Array<{ table: string; column: string }> = [
+      { table: "journal_entries", column: "abv" },
+      { table: "journal_entries", column: "price" },
+      { table: "benchmark_entries", column: "abv" },
+      { table: "whiskybase_collection", column: "abv" },
+      { table: "wishlist_entries", column: "abv" },
+    ];
+    for (const { table, column } of textToReal) {
       const { rows } = await pool.query(
         `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
         [table, column]
@@ -66,6 +90,39 @@ async function migrateTextToReal() {
         console.log(`pre-build: ${table}.${column} text → real`);
       }
     }
+
+    const addCols: Array<{ table: string; column: string; type: string }> = [
+      { table: "journal_entries", column: "country", type: "text" },
+      { table: "journal_entries", column: "category", type: "text" },
+      { table: "journal_entries", column: "bottler", type: "text" },
+      { table: "journal_entries", column: "whiskybase_id", type: "text" },
+      { table: "journal_entries", column: "wb_score", type: "real" },
+      { table: "journal_entries", column: "mood", type: "text" },
+      { table: "journal_entries", column: "occasion", type: "text" },
+      { table: "journal_entries", column: "source", type: "text" },
+      { table: "journal_entries", column: "voice_memo_url", type: "text" },
+      { table: "journal_entries", column: "voice_memo_transcript", type: "text" },
+      { table: "journal_entries", column: "voice_memo_duration", type: "integer" },
+      { table: "journal_entries", column: "status", type: "text" },
+      { table: "journal_entries", column: "deleted_at", type: "timestamp" },
+      { table: "journal_entries", column: "nose_score", type: "real" },
+      { table: "journal_entries", column: "taste_score", type: "real" },
+      { table: "journal_entries", column: "finish_score", type: "real" },
+      { table: "profiles", column: "openai_api_key", type: "text" },
+      { table: "profiles", column: "friend_notifications_enabled", type: "boolean" },
+      { table: "profiles", column: "online_toast_level", type: "text" },
+      { table: "profiles", column: "cheers_enabled", type: "boolean" },
+      { table: "profiles", column: "tasting_invite_enabled", type: "boolean" },
+      { table: "whiskybase_collection", column: "country", type: "text" },
+      { table: "whiskybase_collection", column: "region", type: "text" },
+      { table: "whiskybase_collection", column: "distilled_year", type: "integer" },
+      { table: "whiskies", column: "country", type: "text" },
+      { table: "wishlist_entries", column: "country", type: "text" },
+    ];
+    for (const { table, column, type } of addCols) {
+      await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${type}`);
+    }
+    console.log("pre-build: ensured all columns exist");
   } catch (e: any) {
     console.log(`pre-build migration note: ${e.message}`);
   } finally {
@@ -74,7 +131,7 @@ async function migrateTextToReal() {
 }
 
 async function buildAll() {
-  await migrateTextToReal();
+  await preBuildMigrations();
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
