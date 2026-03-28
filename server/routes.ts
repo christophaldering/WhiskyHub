@@ -7582,7 +7582,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const whiskyMap = new Map(allWhiskiesArr.map(w => [w.id, w]));
 
       interface NormedRating {
-        whiskyId: string; nose: number; taste: number; finish: number; overall: number; ratedAt?: string | null;
+        whiskyId: string; nose: number; taste: number; finish: number; overall: number; ratedAt?: string | null; isJournal?: boolean;
       }
 
       let userRatings: NormedRating[] = userRatingsRaw.map(r => {
@@ -7596,7 +7596,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         };
       });
 
-      if (source === "journal" || source === "imported" || source === "all_incl_imported") {
+      const tastingRatingCount = userRatings.length;
+
+      if (source === "all" || source === "journal" || source === "imported" || source === "all_incl_imported") {
         const journal = await storage.getJournalEntries(req.params.id);
         const filterFn = (j: any) => {
           if (source === "journal") return j.personalScore != null && j.personalScore > 0;
@@ -7606,11 +7608,12 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         const journalScores = journal.filter(filterFn)
           .map(j => ({
             whiskyId: j.id,
-            nose: j.noseNotes ? 50 : 0, taste: j.tasteNotes ? 50 : 0, finish: j.finishNotes ? 50 : 0,
+            nose: 0, taste: 0, finish: 0,
             overall: j.personalScore!,
             ratedAt: j.createdAt || null,
+            isJournal: true,
           }));
-        if (source === "all_incl_imported") {
+        if (source === "all" || source === "all_incl_imported") {
           userRatings = [...userRatings, ...journalScores];
         } else {
           userRatings = journalScores;
@@ -7622,6 +7625,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           ratingStyle: null, tasteStructure: null, whiskyComparison: [],
           confidence: { overall: { level: "preliminary", percent: 0, n: 0 } },
           comparisonData: null,
+          hasDimensionalData: false,
         });
       }
 
@@ -7697,8 +7701,15 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const dimAvgs: Record<string, number> = {};
       for (const dim of dims) {
-        const vals = source === "journal" && dim !== "overall" ? [] : userRatings.map(r => r[dim]);
-        dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
+        if (dim !== "overall" && tastingRatingCount === 0) {
+          dimAvgs[dim] = 0;
+        } else if (dim !== "overall") {
+          const vals = userRatings.filter(r => !r.isJournal).map(r => r[dim]);
+          dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
+        } else {
+          const vals = userRatings.map(r => r[dim]);
+          dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
+        }
       }
 
       const getStabilityLevel = (n: number): { level: string; percent: number } => {
@@ -7709,7 +7720,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const confidence: Record<string, { level: string; percent: number; n: number }> = {};
       for (const dim of dims) {
-        const n = source === "journal" && dim !== "overall" ? 0 : userRatings.length;
+        const n = dim !== "overall" ? tastingRatingCount : userRatings.length;
         const stab = getStabilityLevel(n);
         confidence[dim] = { ...stab, n };
       }
@@ -7807,6 +7818,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         confidence,
         comparisonData,
         hasMultipleScales,
+        hasDimensionalData: tastingRatingCount > 0,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

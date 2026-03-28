@@ -46,6 +46,7 @@ interface WhiskyProfileData {
     mode: string; medians: Record<string, number>;
     nFriends?: number; nParticipants?: number; nRatings: number;
   } | null;
+  hasDimensionalData?: boolean;
 }
 
 type CompareMode = "none" | "friends" | "platform";
@@ -310,6 +311,11 @@ export default function LabsTasteProfile() {
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+              {whiskyProfile?.hasDimensionalData === false && (
+                <p className="text-xs text-center mt-2" style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }} data-testid="text-no-dimensional-data">
+                  {t("labs.profile.noDimensionalHint", "Nose, Taste & Finish werden durch Tasting-Teilnahmen erfasst")}
+                </p>
+              )}
               {whiskyProfile?.comparisonData && (
                 <p className="text-xs text-center mt-2" style={{ color: "var(--labs-text-muted)" }} data-testid="text-comparison-basis">
                   {whiskyProfile.comparisonData.mode === "friends"

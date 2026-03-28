@@ -1444,37 +1444,49 @@ export class DatabaseStorage implements IStorage {
 
   async getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; overall: number; totalRatings: number; totalParticipants: number }> {
     const allRatings = await db.select().from(ratings);
-    if (allRatings.length === 0) {
-      return { nose: 0, taste: 0, finish: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
-    }
     const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
     const tastingRows = tastingIds.length > 0
       ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
       : [];
     const testTastingIds = new Set(tastingRows.filter(t => t.isTestData).map(t => t.id));
     const filteredRatings = allRatings.filter(r => !testTastingIds.has(r.tastingId));
-    if (filteredRatings.length === 0) {
-      return { nose: 0, taste: 0, finish: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
-    }
     const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
 
     let sumNose = 0, sumTaste = 0, sumFinish = 0, sumOverall = 0;
-    const participantIds: string[] = [];
+    let noseCount = 0;
+    const participantIds = new Set<string>();
+
     for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
       sumNose += (r.normalizedNose ?? r.nose * norm); sumTaste += (r.normalizedTaste ?? r.taste * norm); sumFinish += (r.normalizedFinish ?? r.finish * norm);
       sumOverall += (r.normalizedScore ?? r.overall * norm);
-      if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
+      noseCount++;
+      participantIds.add(r.participantId);
     }
-    const n = filteredRatings.length;
-    const uniquePersons = await getUniquePersonCount(participantIds);
+
+    const allJournal = await db.select().from(journalEntries).where(isNull(journalEntries.deletedAt));
+    let journalScoreCount = 0;
+    for (const j of allJournal) {
+      if (j.personalScore != null && j.personalScore > 0) {
+        sumOverall += j.personalScore;
+        journalScoreCount++;
+        participantIds.add(j.participantId);
+      }
+    }
+
+    const totalOverallCount = noseCount + journalScoreCount;
+    if (totalOverallCount === 0) {
+      return { nose: 0, taste: 0, finish: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
+    }
+
+    const uniquePersons = await getUniquePersonCount(Array.from(participantIds));
     return {
-      nose: Math.round((sumNose / n) * 10) / 10,
-      taste: Math.round((sumTaste / n) * 10) / 10,
-      finish: Math.round((sumFinish / n) * 10) / 10,
-      overall: Math.round((sumOverall / n) * 10) / 10,
-      totalRatings: n,
+      nose: noseCount > 0 ? Math.round((sumNose / noseCount) * 10) / 10 : 0,
+      taste: noseCount > 0 ? Math.round((sumTaste / noseCount) * 10) / 10 : 0,
+      finish: noseCount > 0 ? Math.round((sumFinish / noseCount) * 10) / 10 : 0,
+      overall: Math.round((sumOverall / totalOverallCount) * 10) / 10,
+      totalRatings: totalOverallCount,
       totalParticipants: uniquePersons,
     };
   }
