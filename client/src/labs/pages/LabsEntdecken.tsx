@@ -7,12 +7,13 @@ import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
 import CommunityInsights from "@/labs/components/CommunityInsights";
 import {
-  Search, ChevronRight, Wine, Lock,
+  Search, ChevronRight, ChevronLeft, Wine, Lock, Calendar,
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, Sparkles,
-  Flame, Globe, History, Archive,
+  Info, Heart, Flame, Globe, History, Archive,
   X, ChevronDown, Check, ArrowUp, ArrowDown,
 } from "lucide-react";
+import BackLink from "@/labs/components/BackLink";
 
 type DiscoveryTab = "whiskys" | "tastings" | "insights";
 type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
@@ -64,19 +65,27 @@ export default function LabsEntdecken() {
     }
   }, [expandedFilter]);
 
-  const wissenWerkzeugeItems = [
+  const knowledgeItems = [
     { icon: BookOpen, key: "lexicon", path: "/labs/discover/lexicon" },
     { icon: Building2, key: "distilleries", path: "/labs/discover/distilleries" },
     { icon: Package, key: "bottlers", path: "/labs/discover/bottlers" },
     { icon: MessageSquare, key: "vocabulary", path: "/labs/discover/flavour-map" },
+  ];
+
+  const tastingGuideItems = [
     { icon: Map, key: "guide", path: "/labs/discover/guide" },
     { icon: FileText, key: "templates", path: "/labs/discover/templates" },
     { icon: Sparkles, key: "aiCuration", path: "/labs/taste/ai-curation" },
   ];
 
-  const vertiefenItems = [
+  const deepDiveItems = [
     { icon: BookMarked, key: "rabbitHole", path: "/labs/discover/rabbit-hole" },
     { icon: Archive, key: "archive", path: "/labs/history" },
+  ];
+
+  const moreItems = [
+    { icon: Info, key: "about", path: "/labs/about" },
+    { icon: Heart, key: "donate", path: "/labs/donate" },
   ];
 
   const { data: whiskiesRaw = [] } = useQuery({
@@ -328,77 +337,19 @@ export default function LabsEntdecken() {
 
   return (
     <div className="labs-page" data-testid="labs-entdecken-page">
+      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-entdecken">
+          <ChevronLeft className="w-4 h-4" /> {t("ui.home")}
+        </button>
+      </BackLink>
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
         {t("discoverHub.title", "Entdecken")}
       </h1>
-      <p className="labs-fade-in labs-stagger-1" style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "0 0 16px", opacity: 0.6 }}>
+      <p className="labs-fade-in labs-stagger-1" style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "0 0 24px", opacity: 0.6 }}>
         {t("discoverHub.subtitle", "Explore the whisky world")}
       </p>
 
-      {activeTab !== "insights" && (
-        <div className="labs-fade-in" style={{ position: "relative", marginBottom: 16 }}>
-          <Search className="w-4 h-4" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={activeTab === "tastings" ? t("discover.searchTastings", "Search tastings...") : t("discover.searchWhiskies", "Search whiskies...")}
-            data-testid="input-discovery-global-search"
-            style={{
-              width: "100%",
-              minHeight: 44,
-              borderRadius: 12,
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              color: "var(--labs-text)",
-              fontSize: 15,
-              padding: "10px 14px 10px 36px",
-              outline: "none",
-              fontFamily: "inherit",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
-      )}
-
-      <div className="labs-fade-in labs-stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
-        {[
-          { icon: Wine, label: t("discover.quickWhiskyDb", "Whisky-Datenbank"), action: () => { setActiveTab("whiskys"); setSearch(""); }, testId: "quick-link-whisky-db" },
-          { icon: Building2, label: t("discover.distilleries", "Brennereien"), action: () => navigate("/labs/discover/distilleries"), testId: "quick-link-distilleries" },
-          { icon: BookOpen, label: t("discover.lexicon", "Lexikon"), action: () => navigate("/labs/discover/lexicon"), testId: "quick-link-lexicon" },
-          { icon: Map, label: t("discover.guide", "Verkostungs-Guide"), action: () => navigate("/labs/discover/guide"), testId: "quick-link-guide" },
-        ].map((item) => (
-          <button
-            key={item.testId}
-            onClick={item.action}
-            data-testid={item.testId}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "16px 8px",
-              borderRadius: 14,
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              transition: "all 150ms",
-            }}
-          >
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: "var(--labs-accent-muted)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <item.icon className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", textAlign: "center", lineHeight: 1.2 }}>
-              {item.label}
-            </span>
-          </button>
-        ))}
-      </div>
+      <CommunityInsights />
 
       <div className="labs-fade-in labs-stagger-1" style={{ marginBottom: 32 }}>
         <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
@@ -434,6 +385,29 @@ export default function LabsEntdecken() {
 
         {activeTab === "whiskys" && (
           <div>
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <Search className="w-4 h-4" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={t("discover.searchWhiskies", "Search whiskies...")}
+                data-testid="input-discovery-whisky-search"
+                style={{
+                  width: "100%",
+                  minHeight: 44,
+                  borderRadius: 12,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text)",
+                  fontSize: 15,
+                  padding: "10px 14px 10px 36px",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 {t("discover.sortLabel", "Sortieren")}
@@ -831,6 +805,28 @@ export default function LabsEntdecken() {
               </div>
             ) : (
               <>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <Search className="w-4 h-4" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", opacity: 0.5 }} />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder={t("discover.searchTastings", "Search tastings...")}
+                    data-testid="input-discovery-tasting-search"
+                    style={{
+                      width: "100%",
+                      minHeight: 44,
+                      borderRadius: 12,
+                      border: "1px solid var(--labs-border)",
+                      background: "var(--labs-surface)",
+                      color: "var(--labs-text)",
+                      fontSize: 15,
+                      padding: "10px 14px 10px 36px",
+                      outline: "none",
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
                 <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8 }}>
                   {filteredTastings.length} Tastings
                 </div>
@@ -943,8 +939,6 @@ export default function LabsEntdecken() {
 
         {activeTab === "insights" && (
           <div>
-            <CommunityInsights />
-
             {tastingsLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
                 <div style={{ width: 28, height: 28, border: "2px solid var(--labs-border)", borderTopColor: "var(--labs-accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
@@ -1108,15 +1102,29 @@ export default function LabsEntdecken() {
       </div>
 
       <DiscoverSection
-        title={t("discover.sectionWissenWerkzeuge", "Wissen & Werkzeuge")}
-        items={wissenWerkzeugeItems}
+        title={t("discover.sectionKnowledge", "Knowledge & Reference")}
+        items={knowledgeItems}
         navigate={navigate}
         t={t}
       />
 
       <DiscoverSection
-        title={t("discover.sectionVertiefen", "Vertiefen")}
-        items={vertiefenItems}
+        title={t("discover.sectionTasting", "Tasting & Guides")}
+        items={tastingGuideItems}
+        navigate={navigate}
+        t={t}
+      />
+
+      <DiscoverSection
+        title={t("discover.sectionDeepDive", "Deep Dives")}
+        items={deepDiveItems}
+        navigate={navigate}
+        t={t}
+      />
+
+      <DiscoverSection
+        title={t("discover.sectionMore", "More")}
+        items={moreItems}
         navigate={navigate}
         t={t}
         isLast
