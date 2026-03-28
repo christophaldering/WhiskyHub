@@ -178,7 +178,7 @@ export default function LabsTasteDrams() {
   const tastingWhiskies = useMemo(() => {
     if (!tastingHistory?.tastings) return [];
     return tastingHistory.tastings.flatMap((tasting: any) =>
-      (tasting.whiskies || []).map((w: any) => {
+      (tasting.whiskies || []).filter((w: any) => w.myRating).map((w: any) => {
         const parsedNotes = splitRatingNotes(w.myRating?.notes);
         return {
           id: `tw-${tasting.id}-${w.id}`,
@@ -190,12 +190,12 @@ export default function LabsTasteDrams() {
           age: w.age ? String(w.age) : null,
           abv: w.abv ? String(w.abv) : null,
           caskType: w.caskType || null,
-          personalScore: w.myRating?.overall ?? w.overall ?? w.personalScore ?? null,
-          noseScore: w.myRating?.nose ?? null,
-          tasteScore: w.myRating?.taste ?? null,
-          finishScore: w.myRating?.finish ?? null,
+          personalScore: w.myRating.overall ?? null,
+          noseScore: w.myRating.nose ?? null,
+          tasteScore: w.myRating.taste ?? null,
+          finishScore: w.myRating.finish ?? null,
           createdAt: tasting.date || tasting.createdAt,
-          savedAt: w.myRating?.updatedAt || w.myRating?.createdAt || tasting.date || tasting.createdAt,
+          savedAt: w.myRating.updatedAt || w.myRating.createdAt || tasting.date || tasting.createdAt,
           source: "tasting" as const,
           tastingTitle: tasting.title,
           noseNotes: parsedNotes.noseNotes,

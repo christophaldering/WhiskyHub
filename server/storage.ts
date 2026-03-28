@@ -1431,13 +1431,6 @@ export class DatabaseStorage implements IStorage {
         overallScores.push(score);
         journalScoreCount++;
 
-        sumNose += score;
-        noseScores.push(score);
-        sumTaste += score;
-        tasteScores.push(score);
-        sumFinish += score;
-        finishScores.push(score);
-
         if (j.region) {
           if (!regionAcc[j.region]) regionAcc[j.region] = { total: 0, count: 0 };
           regionAcc[j.region].total += score; regionAcc[j.region].count++;
@@ -1455,8 +1448,7 @@ export class DatabaseStorage implements IStorage {
 
     const ratingCount = allRatings.length;
     const totalOverallCount = ratingCount + journalScoreCount;
-    const totalDimCount = totalOverallCount;
-    const n = totalDimCount || 1;
+    const nDim = ratingCount || 1;
     const nOverall = totalOverallCount || 1;
 
     const toBreakdown = (acc: Record<string, { total: number; count: number }>) => {
@@ -1487,9 +1479,9 @@ export class DatabaseStorage implements IStorage {
 
     return {
       avgScores: {
-        nose: Math.round((sumNose / n) * 10) / 10,
-        taste: Math.round((sumTaste / n) * 10) / 10,
-        finish: Math.round((sumFinish / n) * 10) / 10,
+        nose: Math.round((sumNose / nDim) * 10) / 10,
+        taste: Math.round((sumTaste / nDim) * 10) / 10,
+        finish: Math.round((sumFinish / nDim) * 10) / 10,
         overall: Math.round((sumOverall / nOverall) * 10) / 10,
       },
       dimensionStats: {
