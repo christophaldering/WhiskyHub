@@ -30,6 +30,7 @@ export default function LabsEntdecken() {
   const pid = currentParticipant?.id;
 
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(20);
   const [sort, setSort] = useState("avg");
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
   const [filterSearch, setFilterSearch] = useState("");
@@ -248,6 +249,10 @@ export default function LabsEntdecken() {
   }, [whiskiesRaw, filters, activeFilterCount, sort, sortDirection]);
 
   useEffect(() => {
+    setVisibleCount(20);
+  }, [search, filters, sort, sortDirection]);
+
+  useEffect(() => {
     if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
       setCountAnimating(true);
       const timer = setTimeout(() => setCountAnimating(false), 300);
@@ -273,7 +278,32 @@ export default function LabsEntdecken() {
 
       <CommunityInsights compactOnly />
 
-      <div className="labs-fade-in labs-stagger-1" style={{ marginBottom: 32 }}>
+      <Link href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+        <div
+          className="labs-card-interactive labs-fade-in labs-stagger-1"
+          style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}
+          data-testid="link-explore-bibliothek"
+        >
+          <div style={{
+            width: 42, height: 42, borderRadius: 12,
+            background: "var(--labs-accent-muted)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <BookOpen className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("explore.bibliothekCard", "Library")}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }}>
+              {t("explore.bibliothekCardDesc", "Knowledge, guides & reference")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+        </div>
+      </Link>
+
+      <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
         <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
           <Wine className="w-3.5 h-3.5" />
           {t("discover.whiskies", "Whiskies")}
@@ -622,7 +652,7 @@ export default function LabsEntdecken() {
             )}
           </div>
 
-          {whiskies.map((w: any, i: number) => {
+          {whiskies.slice(0, visibleCount).map((w: any, i: number) => {
             const score = (w.avgScore ?? w.avgOverall) ? Math.round(w.avgScore ?? w.avgOverall) : null;
             const scoreColor = score != null
               ? score > 85 ? "#D4A017" : score > 75 ? "#A0A0A0" : "var(--labs-text-muted)"
@@ -689,33 +719,35 @@ export default function LabsEntdecken() {
               {(search || activeFilterCount > 0) ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
             </div>
           )}
+
+          {visibleCount < whiskies.length && (
+            <button
+              onClick={() => setVisibleCount(prev => prev + 20)}
+              data-testid="button-show-more-whiskies"
+              className="labs-btn-ghost"
+              style={{
+                width: "100%",
+                minHeight: 48,
+                marginTop: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                color: "var(--labs-accent)",
+                border: "1px solid var(--labs-border)",
+                borderRadius: 12,
+                cursor: "pointer",
+                background: "var(--labs-surface)",
+              }}
+            >
+              {t("explore.loadMore", "Show more")} ({whiskies.length - visibleCount} {t("explore.remaining", "remaining")})
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
-
-      <Link href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <div
-          className="labs-card-interactive"
-          style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}
-          data-testid="link-explore-bibliothek"
-        >
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: "var(--labs-accent-muted)",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <BookOpen className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)" }}>
-              {t("explore.bibliothekCard", "Library")}
-            </div>
-            <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }}>
-              {t("explore.bibliothekCardDesc", "Knowledge, guides & reference")}
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
-        </div>
-      </Link>
     </div>
   );
 }
