@@ -612,6 +612,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/labs/onboarding",
   "/labs/join",
   "/labs/entdecken",
+  "/labs/bibliothek",
   "/labs/about",
   "/labs/impressum",
   "/labs/privacy",
@@ -678,7 +679,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const navItems = useMemo<NavItem[]>(() => [
     { href: "/labs/tastings", icon: "glencairn", label: t("nav.tastings"), labelKey: "nav.tastings" },
     { href: "/labs/taste", icon: "meinewelt", label: t("nav.myWorld"), labelKey: "nav.myWorld" },
-    { href: "/labs/entdecken", icon: "entdecken", label: t("nav.discover"), labelKey: "nav.discover" },
+    { href: "/labs/explore", icon: "entdecken", label: t("nav.explore"), labelKey: "nav.explore" },
     { href: "/labs/circle", icon: "circle", label: t("nav.circle"), labelKey: "nav.circle" },
   ], [t, i18n.language]);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -1098,9 +1099,9 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                 location.startsWith("/labs/results") || location.startsWith("/labs/host") ||
                 location.startsWith("/labs/join") || location.startsWith("/labs/solo")
               )) ||
-              (item.href === "/labs/entdecken" && (
+              (item.href === "/labs/explore" && (
                 location.startsWith("/labs/entdecken") || location.startsWith("/labs/explore") ||
-                location.startsWith("/labs/discover")
+                location.startsWith("/labs/discover") || location.startsWith("/labs/bibliothek")
               )) ||
               (item.href === "/labs/taste" && location.startsWith("/labs/taste")) ||
               (item.href === "/labs/circle" && location.startsWith("/labs/circle"));

@@ -72,7 +72,6 @@ const LabsTasteAnalytics = lazy(() => import("@/labs/pages/LabsTasteAnalytics"))
 const LabsTasteWheel = lazy(() => import("@/labs/pages/LabsTasteWheel"));
 const LabsTasteCompare = lazy(() => import("@/labs/pages/LabsTasteCompare"));
 const LabsCircle = lazy(() => import("@/labs/pages/LabsCircle"));
-const LabsExplore = lazy(() => import("@/labs/pages/LabsExplore"));
 const LabsSolo = lazy(() => import("@/labs/pages/LabsSolo"));
 const LabsBottleDetail = lazy(() => import("@/labs/pages/LabsBottleDetail"));
 const LabsPaperScan = lazy(() => import("@/labs/pages/LabsPaperScan"));
@@ -97,8 +96,9 @@ const LabsBottleSharingDetail = lazy(() => import("@/labs/pages/LabsBottleSharin
 const LabsBottleSplit = lazy(() => import("@/labs/pages/LabsBottleSplit"));
 const LabsBottleSplitDetail = lazy(() => import("@/labs/pages/LabsBottleSplitDetail"));
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
-const LabsDiscover = lazy(() => import("@/labs/pages/LabsDiscover"));
 const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
+const LabsBibliothek = lazy(() => import("@/labs/pages/LabsBibliothek"));
+const LabsCommunityInsightsPage = lazy(() => import("@/labs/pages/LabsCommunityInsightsPage"));
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
@@ -362,7 +362,7 @@ function SmartRedirectToLabs() {
     "/ai-curation": "/labs/taste/ai-curation",
     "/guide": "/labs/discover/guide",
     "/research": "/labs/discover/research",
-    "/discover": "/labs/entdecken",
+    "/discover": "/labs/explore",
     "/discover/guide": "/labs/discover/guide",
     "/discover/templates": "/labs/discover/templates",
     "/discover/about": "/labs/about",
@@ -375,7 +375,7 @@ function SmartRedirectToLabs() {
     "/discover/activity": "/labs/activity",
     "/discover/recommendations": "/labs/taste/recommendations",
     "/discover/database": "/labs/explore",
-    "/discover-hub": "/labs/entdecken",
+    "/discover-hub": "/labs/explore",
     "/data-export": "/labs/taste/downloads",
     "/home": "/labs/tastings",
     "/tasting/sessions": "/labs/tastings",
@@ -448,7 +448,7 @@ function SmartRedirectToLabs() {
   }
 
   if (location.startsWith("/discover/")) {
-    return <Redirect to="/labs/entdecken" />;
+    return <Redirect to="/labs/explore" />;
   }
 
   return <Redirect to="/labs/tastings" />;
@@ -542,7 +542,7 @@ function Router() {
         <Route path="/m2/discover/donate">{() => <Redirect to="/labs/donate" />}</Route>
         <Route path="/m2/discover/activity">{() => <Redirect to="/labs/activity" />}</Route>
         <Route path="/m2/discover/community">{() => <Redirect to="/labs/community" />}</Route>
-        <Route path="/m2/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
+        <Route path="/m2/discover">{() => <Redirect to="/labs/explore" />}</Route>
         <Route path="/m2/circle">{() => <Redirect to="/labs/circle" />}</Route>
         <Route path="/m2/impressum">{() => <Redirect to="/labs/impressum" />}</Route>
         <Route path="/m2/privacy">{() => <Redirect to="/labs/privacy" />}</Route>
@@ -556,7 +556,7 @@ function Router() {
         <Route path="/app/recap/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
         <Route path="/app/home">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/app/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/app/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
+        <Route path="/app/discover">{() => <Redirect to="/labs/explore" />}</Route>
         <Route path="/app/cellar">{() => <Redirect to="/labs/taste/collection" />}</Route>
         <Route path="/app/more">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/app/admin">{() => <Redirect to="/admin" />}</Route>
@@ -564,7 +564,7 @@ function Router() {
         <Route path="/app/*">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/home">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/lab-dark/sessions">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/lab-dark/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
+        <Route path="/lab-dark/discover">{() => <Redirect to="/labs/explore" />}</Route>
         <Route path="/lab-dark/session/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/lab-dark/*">{() => <Redirect to="/labs/tastings" />}</Route>
         <Route path="/legacy/home">{() => <Redirect to="/labs/tastings" />}</Route>
@@ -573,7 +573,7 @@ function Router() {
         <Route path="/legacy/tasting/host">{() => <Redirect to="/labs/host/dashboard" />}</Route>
         <Route path="/legacy/tasting/:id">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/legacy/tasting">{() => <Redirect to="/labs/tastings" />}</Route>
-        <Route path="/legacy/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
+        <Route path="/legacy/discover">{() => <Redirect to="/labs/explore" />}</Route>
         <Route path="/legacy/profile">{() => <Redirect to="/labs/taste" />}</Route>
         <Route path="/legacy/admin">{() => <Redirect to="/admin" />}</Route>
         <Route path="/legacy/invite/:token">{({ token }: { token: string }) => <Redirect to={`/labs/invite/${token}`} />}</Route>
@@ -608,7 +608,9 @@ function Router() {
               <Route path="/labs/live/:id" component={LabsLive} />
               <Route path="/labs/results/:id" component={LabsResults} />
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
-              <Route path="/labs/explore" component={LabsExplore} />
+              <Route path="/labs/explore" component={LabsEntdecken} />
+              <Route path="/labs/bibliothek/insights" component={LabsCommunityInsightsPage} />
+              <Route path="/labs/bibliothek" component={LabsBibliothek} />
               <Route path="/labs/discover/lexicon" component={LabsLexicon} />
               <Route path="/labs/discover/distilleries" component={LabsDistilleries} />
               <Route path="/labs/discover/bottlers" component={LabsBottlers} />
@@ -620,8 +622,8 @@ function Router() {
               <Route path="/labs/discover/background" component={LabsBackground} />
               <Route path="/labs/discover/flavour-map" component={LabsVocabulary} />
               <Route path="/labs/discover/vocabulary">{() => { window.location.replace("/labs/discover/flavour-map"); return null; }}</Route>
-              <Route path="/labs/discover">{() => <Redirect to="/labs/entdecken" />}</Route>
-              <Route path="/labs/entdecken" component={LabsEntdecken} />
+              <Route path="/labs/discover">{() => <Redirect to="/labs/explore" />}</Route>
+              <Route path="/labs/entdecken">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
               <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />
               <Route path="/labs/taste/wheel" component={LabsTasteWheel} />

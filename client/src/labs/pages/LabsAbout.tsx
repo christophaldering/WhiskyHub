@@ -9,7 +9,7 @@ type Block = { heading?: string; lines: string[]; italic?: boolean; accent?: boo
 export default function LabsAbout() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const goBackToDiscover = useBackNavigation("/labs/entdecken");
+  const goBackToDiscover = useBackNavigation("/labs/explore");
   const blocks = t("about.blocks", { returnObjects: true }) as Block[];
 
   return (

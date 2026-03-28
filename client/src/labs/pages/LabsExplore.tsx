@@ -231,9 +231,9 @@ export default function LabsExplore() {
 
   return (
     <div className="labs-page">
-      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/explore" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-explore">
-          <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Discover")}
+          <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Explore")}
         </button>
       </BackLink>
       <div style={{ marginBottom: 20 }}>

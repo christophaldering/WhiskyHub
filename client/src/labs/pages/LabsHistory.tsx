@@ -608,7 +608,7 @@ export default function LabsHistory() {
   const { t } = useTranslation();
 
   const isHostRoute = window.location.pathname.startsWith("/labs/host/");
-  const backFallback = isHostRoute ? "/labs/host/dashboard" : "/labs/entdecken";
+  const backFallback = isHostRoute ? "/labs/host/dashboard" : "/labs/bibliothek";
   const goBack = useLabsBack(backFallback);
   const tastingsPath = isHostRoute ? "/labs/host/history" : "/labs/history";
   const insightsPath = isHostRoute ? "/labs/host/history/insights" : "/labs/history/insights";
@@ -622,7 +622,7 @@ export default function LabsHistory() {
         data-testid="labs-history-back"
       >
         <ChevronLeft className="w-4 h-4" />
-        {isHostRoute ? t("history.backToDashboard", "Dashboard") : t("history.backToDiscover", "Entdecken")}
+        {isHostRoute ? t("history.backToDashboard", "Dashboard") : t("bibliothek.title", "Library")}
       </button>
       <h1
         className="labs-serif"

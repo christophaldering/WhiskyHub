@@ -67,9 +67,9 @@ function DonutChart({ data, size = 72 }: { data: Record<string, number>; size?: 
   );
 }
 
-export default function CommunityInsights() {
+export default function CommunityInsights({ compactOnly, expandedByDefault }: { compactOnly?: boolean; expandedByDefault?: boolean } = {}) {
   const { t } = useTranslation();
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(!!expandedByDefault);
 
   const { data: insights, isLoading } = useQuery<InsightsData>({
     queryKey: ["public-insights"],
@@ -140,7 +140,7 @@ export default function CommunityInsights() {
         </div>
       </div>
 
-      {!showAll && (
+      {!compactOnly && !showAll && (
         <button
           onClick={() => setShowAll(true)}
           style={{
@@ -159,7 +159,7 @@ export default function CommunityInsights() {
         </button>
       )}
 
-      {showAll && (
+      {!compactOnly && showAll && (
         <div className="labs-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 8 }}>
           {topRated.length > 0 && (
             <div data-testid="card-top-rated">

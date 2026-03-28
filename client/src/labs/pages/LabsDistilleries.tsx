@@ -99,9 +99,9 @@ export default function LabsDistilleries() {
 
   return (
     <div className="labs-page" style={view === "map" ? { maxWidth: 1000 } : undefined} data-testid="labs-discover-distilleries-page">
-      <BackLink href="/labs/entdecken" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
-          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
+          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
         </button>
       </BackLink>
 
