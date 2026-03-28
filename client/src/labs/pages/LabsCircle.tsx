@@ -1161,7 +1161,7 @@ export default function LabsCircle() {
           {items.slice(0, 20).map((item, idx) => {
             const details = (item.details || {}) as Record<string, unknown>;
             const isJournal = item.type === "journal";
-            const whiskyName = (details.whiskyName || details.name) as string | undefined;
+            const whiskyName = (details.name || details.whiskyName) as string | undefined;
             const score = (details.score || details.overall || details.personalScore) as number | undefined;
             return (
               <div

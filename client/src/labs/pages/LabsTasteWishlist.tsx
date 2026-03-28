@@ -122,7 +122,7 @@ export default function LabsTasteWishlist() {
                       <div className="flex items-start justify-between gap-3">
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="labs-serif font-semibold truncate text-sm" style={{ color: "var(--labs-text)", margin: 0 }}>{entry.whiskyName}</h3>
+                            <h3 className="labs-serif font-semibold truncate text-sm" style={{ color: "var(--labs-text)", margin: 0 }}>{entry.name}</h3>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, padding: "2px 8px", borderRadius: 999, border: `1px solid ${pc.border}`, background: pc.bg, color: pc.text, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
                               <PI style={{ width: 10, height: 10 }} /> {pk}
                             </span>
@@ -194,7 +194,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   const { i18n } = useTranslation();
   const { isFeatureDisabled } = useAIStatus();
   const aiScanDisabled = isFeatureDisabled("wishlist_identify");
-  const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
+  const [whiskyName, setWhiskyName] = useState(entry?.name || "");
   const [distillery, setDistillery] = useState(entry?.distillery || "");
   const [region, setRegion] = useState(entry?.region || "");
   const [age, setAge] = useState(entry?.age || "");
@@ -208,12 +208,13 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   const [aiSummaryDate, setAiSummaryDate] = useState(entry?.aiSummaryDate || "");
   const [generatingSummary, setGeneratingSummary] = useState(false);
 
-  const generateSummary = async (w: { whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string }) => {
-    if (!participantId || !w.whiskyName) return;
+  const generateSummary = async (w: { name?: string; whiskyName?: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string }) => {
+    const wName = w.name || w.whiskyName || "";
+    if (!participantId || !wName) return;
     setGeneratingSummary(true);
     try {
       const lang = i18n.language?.startsWith("de") ? "de" : "en";
-      const result = await wishlistScanApi.generateSummary({ participantId, language: lang, ...w });
+      const result = await wishlistScanApi.generateSummary({ participantId, language: lang, name: wName, distillery: w.distillery, region: w.region, age: w.age, abv: w.abv, caskType: w.caskType });
       if (result.summary) { setAiSummary(result.summary); setAiSummaryDate(result.summaryDate); }
     } catch {} finally { setGeneratingSummary(false); }
   };
@@ -240,7 +241,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
     e.preventDefault();
     if (!whiskyName.trim()) return;
     onSave({
-      whiskyName: whiskyName.trim(), distillery: distillery.trim() || null, region: region.trim() || null,
+      name: whiskyName.trim(), distillery: distillery.trim() || null, region: region.trim() || null,
       age: age.trim() || null, abv: abv.trim() || null, caskType: caskType.trim() || null,
       notes: notes.trim() || null, priority, source: source.trim() || null,
       aiSummary: aiSummary || null, aiSummaryDate: aiSummaryDate ? new Date(aiSummaryDate).toISOString() : null,
@@ -313,7 +314,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
         </div>
 
         {whiskyName && !aiSummary && !generatingSummary && (
-          <button type="button" onClick={() => generateSummary({ whiskyName, distillery, region, age, abv, caskType })} className="labs-btn-secondary flex items-center gap-2 self-start" style={{ fontSize: 12 }} data-testid="button-labs-generate-summary">
+          <button type="button" onClick={() => generateSummary({ name: whiskyName, distillery, region, age, abv, caskType })} className="labs-btn-secondary flex items-center gap-2 self-start" style={{ fontSize: 12 }} data-testid="button-labs-generate-summary">
             <Sparkles className="w-3.5 h-3.5" /> Generate AI Summary
           </button>
         )}

@@ -18,7 +18,7 @@ interface AmbientState {
 
 interface WishlistTransfer {
   wishlistEntryId: string;
-  whiskyName: string;
+  name: string;
   distillery?: string;
   region?: string;
   age?: string;

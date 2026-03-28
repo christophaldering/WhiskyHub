@@ -55,7 +55,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
         const deduped = new Map<string, SelectedWhisky>();
 
         const journalItems: SelectedWhisky[] = ((journalData || []) as JournalEntry[]).map((entry) => ({
-          name: entry.whiskyName || "",
+          name: entry.name || "",
           distillery: entry.distillery || null,
           country: entry.country || null,
           region: entry.region || null,

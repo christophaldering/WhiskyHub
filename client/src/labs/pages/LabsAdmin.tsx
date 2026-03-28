@@ -3252,7 +3252,7 @@ type AdminTrashEntry = {
   participantId: string;
   participantName: string;
   title: string;
-  whiskyName: string | null;
+  name: string | null;
   distillery: string | null;
   deletedAt: string | null;
 };
@@ -3309,7 +3309,7 @@ function AdminTrashTab({ pid }: { pid: string }) {
                 <div className="flex items-center justify-between gap-3">
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                      {entry.whiskyName || entry.title || "—"}
+                      {entry.name || entry.title || "—"}
                     </div>
                     <div className="text-[11px] mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: "var(--labs-text-muted)" }}>
                       <span className="flex items-center gap-1">

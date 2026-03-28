@@ -114,7 +114,7 @@ interface JournalEntryAdmin {
   participantId: string;
   participantName: string;
   title: string;
-  whiskyName: string | null;
+  name: string | null;
   distillery: string | null;
   region: string | null;
   age: string | null;
@@ -826,7 +826,7 @@ export default function AdminPanel() {
     return (
       j.participantName.toLowerCase().includes(q) ||
       j.title.toLowerCase().includes(q) ||
-      (j.whiskyName?.toLowerCase().includes(q))
+      (j.name?.toLowerCase().includes(q))
     );
   });
 
@@ -1513,7 +1513,7 @@ export default function AdminPanel() {
                               </div>
                               <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1 ml-6">
                                 <span className="flex items-center gap-1"><User className="w-3 h-3" /> {journal.participantName}</span>
-                                {journal.whiskyName && <span>{journal.whiskyName}</span>}
+                                {journal.name && <span>{journal.name}</span>}
                                 {journal.distillery && <span>{journal.distillery}</span>}
                                 {journal.createdAt && <span>{new Date(journal.createdAt).toLocaleDateString()}</span>}
                               </div>

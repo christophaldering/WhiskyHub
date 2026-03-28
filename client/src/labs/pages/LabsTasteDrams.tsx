@@ -183,7 +183,7 @@ export default function LabsTasteDrams() {
         return {
           id: `tw-${tasting.id}-${w.id}`,
           title: w.name || w.whiskyName || "—",
-          whiskyName: w.name || w.whiskyName || null,
+          name: w.name || w.whiskyName || null,
           distillery: w.distillery || null,
           country: w.country || null,
           region: w.region || null,
@@ -261,7 +261,7 @@ export default function LabsTasteDrams() {
     }
     if (search.trim()) {
       const q = search.toLowerCase();
-      items = items.filter((e: any) => (e.whiskyName || e.title || "").toLowerCase().includes(q) || (e.distillery || "").toLowerCase().includes(q));
+      items = items.filter((e: any) => (e.name || e.title || "").toLowerCase().includes(q) || (e.distillery || "").toLowerCase().includes(q));
     }
     if (datePeriod !== "all") {
       const days = DATE_PERIODS.find(p => p.key === datePeriod)?.days || 0;
@@ -294,8 +294,8 @@ export default function LabsTasteDrams() {
         return (sa - sb) * dir;
       }
       if (sortBy === "name") {
-        const na = (a.whiskyName || a.title || "").toLowerCase();
-        const nb = (b.whiskyName || b.title || "").toLowerCase();
+        const na = (a.name || a.title || "").toLowerCase();
+        const nb = (b.name || b.title || "").toLowerCase();
         return na.localeCompare(nb) * dir;
       }
       if (sortBy === "saved") {
@@ -372,7 +372,7 @@ export default function LabsTasteDrams() {
         },
       });
     } else { setEditStructured(null); }
-    setEditForm({ title: entry.title || entry.whiskyName || "", whiskyName: entry.whiskyName || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
+    setEditForm({ title: entry.title || entry.name || "", name: entry.name || "", distillery: entry.distillery || "", country: entry.country || "", region: entry.region || "", age: entry.age || "", abv: entry.abv != null ? String(entry.abv) : "", caskType: entry.caskType || "", personalScore: entry.personalScore ?? "", noseNotes: raw, tasteNotes: cleanTasteNotes(entry.tasteNotes || ""), finishNotes: entry.finishNotes || "", overallNotes: entry.overallNotes || "" });
     setViewState("edit");
   };
 
@@ -478,9 +478,9 @@ export default function LabsTasteDrams() {
               return (
                 <div key={entry.id} className="labs-card" style={{ padding: "16px 18px", borderRadius: 14, opacity: 0.85 }} data-testid={`labs-trash-item-${entry.id}`}>
                   <div className="flex items-start gap-3">
-                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
+                    <WhiskyImage imageUrl={entry.imageUrl} name={entry.name || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.whiskyName || entry.title || "—"}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.name || entry.title || "—"}</div>
                       {entry.distillery && <div style={{ fontSize: 13, color: "var(--labs-text-secondary, var(--labs-text-muted))", marginBottom: 6 }} className="truncate">{entry.distillery}</div>}
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3 h-3" style={{ color: daysLeft <= 3 ? "var(--labs-danger)" : "var(--labs-text-muted)" }} />
@@ -516,7 +516,7 @@ export default function LabsTasteDrams() {
           <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-permanent-delete">
             <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
               <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Permanently Delete</h3>
-              <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This will permanently delete "{permanentDeleteTarget.whiskyName || permanentDeleteTarget.title}". This cannot be undone.</p>
+              <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This will permanently delete "{permanentDeleteTarget.name || permanentDeleteTarget.title}". This cannot be undone.</p>
               <div className="flex justify-end gap-2.5">
                 <button onClick={() => setPermanentDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-cancel-permanent-delete">Cancel</button>
                 <button onClick={() => { permanentDeleteMutation.mutate(permanentDeleteTarget.id); setPermanentDeleteTarget(null); }} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-confirm-permanent-delete">
@@ -556,7 +556,7 @@ export default function LabsTasteDrams() {
                 <button
                   onClick={() => {
                     const retasteData = {
-                      whiskyName: selectedEntry.whiskyName || selectedEntry.title || "",
+                      name: selectedEntry.name || selectedEntry.title || "",
                       distillery: selectedEntry.distillery || "",
                       country: selectedEntry.country || "",
                       region: selectedEntry.region || "",
@@ -589,10 +589,10 @@ export default function LabsTasteDrams() {
 
         <div className="labs-card p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.whiskyName || selectedEntry.title || ""} size={64} height={88} className="flex-shrink-0" />
+            <WhiskyImage imageUrl={selectedEntry.imageUrl} name={selectedEntry.name || selectedEntry.title || ""} size={64} height={88} className="flex-shrink-0" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="labs-h3" style={{ color: "var(--labs-accent)", margin: 0 }}>
-                {selectedEntry.whiskyName || selectedEntry.title || "—"}
+                {selectedEntry.name || selectedEntry.title || "—"}
               </h2>
               {selectedEntry.distillery && <div className="text-sm mt-1" style={{ color: "var(--labs-text-secondary)" }}>{selectedEntry.distillery}</div>}
               <div className="flex items-center gap-2 mt-1">
@@ -676,7 +676,7 @@ export default function LabsTasteDrams() {
             </div>
           )}
 
-          <HistoricalAppearances distillery={selectedEntry.distillery || ""} whiskyName={selectedEntry.whiskyName || selectedEntry.title || ""} />
+          <HistoricalAppearances distillery={selectedEntry.distillery || ""} whiskyName={selectedEntry.name || selectedEntry.title || ""} />
         </div>
 
         {deleteTarget && <DeleteDialog onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} isPending={deleteMutation.isPending} />}
@@ -686,7 +686,7 @@ export default function LabsTasteDrams() {
 
   if (viewState === "deepRate" && selectedEntry) {
     const deepRateWhisky = {
-      name: selectedEntry.whiskyName || selectedEntry.title || "",
+      name: selectedEntry.name || selectedEntry.title || "",
       region: selectedEntry.region || "",
       cask: selectedEntry.caskType || "",
     };
@@ -750,7 +750,7 @@ export default function LabsTasteDrams() {
               testIdPrefix="labs-dram-image"
             />
             <div className="flex-1 flex flex-col gap-2">
-              <EditField label="Whisky Name" value={editForm.whiskyName} onChange={(v) => setEditForm({ ...editForm, whiskyName: v, title: v })} testId="input-labs-edit-whiskyName" />
+              <EditField label="Whisky Name" value={editForm.name} onChange={(v) => setEditForm({ ...editForm, name: v, title: v })} testId="input-labs-edit-whiskyName" />
               <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>
           </div>
@@ -1067,9 +1067,9 @@ export default function LabsTasteDrams() {
                 {filteredEntries.map((entry: any) => (
                   <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "16px 18px", cursor: "pointer", borderRadius: 14 }} data-testid={`labs-dram-${entry.id}`}>
                     <div className="flex items-start gap-3">
-                      <WhiskyImage imageUrl={entry.imageUrl} name={entry.whiskyName || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
+                      <WhiskyImage imageUrl={entry.imageUrl} name={entry.name || entry.title || ""} size={44} height={56} className="flex-shrink-0" />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.whiskyName || entry.title || "—"}</div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, marginBottom: 3 }} className="truncate">{entry.name || entry.title || "—"}</div>
                         {entry.distillery && <div style={{ fontSize: 13, color: "var(--labs-text-secondary, var(--labs-text-muted))", marginBottom: 6 }} className="truncate">{entry.distillery}</div>}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {entry.status === "draft" && (

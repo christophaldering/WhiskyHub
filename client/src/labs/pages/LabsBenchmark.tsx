@@ -13,7 +13,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useTranslation } from "react-i18next";
 
 interface ExtractedEntry {
-  whiskyName: string;
+  name: string;
   distillery?: string | null;
   region?: string | null;
   country?: string | null;
@@ -34,7 +34,7 @@ interface ExtractedEntry {
 
 interface SavedEntry {
   id: string;
-  whiskyName: string;
+  name: string;
   distillery: string | null;
   region: string | null;
   score: number | null;
@@ -217,7 +217,7 @@ export default function LabsBenchmark() {
   const filteredSaved = (savedEntries || []).filter(e => {
     if (!searchDb.trim()) return true;
     const q = searchDb.toLowerCase();
-    return e.whiskyName?.toLowerCase().includes(q) || e.distillery?.toLowerCase().includes(q) || e.region?.toLowerCase().includes(q) || e.sourceDocument?.toLowerCase().includes(q) || e.uploaderName?.toLowerCase().includes(q);
+    return e.name?.toLowerCase().includes(q) || e.distillery?.toLowerCase().includes(q) || e.region?.toLowerCase().includes(q) || e.sourceDocument?.toLowerCase().includes(q) || e.uploaderName?.toLowerCase().includes(q);
   });
 
   if (!session.signedIn || !pid) {
@@ -364,7 +364,7 @@ export default function LabsBenchmark() {
                       <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="labs-serif text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>{entry.whiskyName}</span>
+                            <span className="labs-serif text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>{entry.name}</span>
                             {entry.distillery && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>by {entry.distillery}</span>}
                             {entry.score != null && <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}</span>}
                             {entry.region && <span className="text-[11px]" style={{ padding: "1px 6px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{entry.region}</span>}
@@ -396,7 +396,7 @@ export default function LabsBenchmark() {
                       {expandedIdx === idx && (
                         <div style={{ padding: "4px 12px 12px", borderTop: "1px solid var(--labs-border)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
-                            <EditField label={t("benchmark.field.whiskyName")} value={entry.whiskyName} onChange={val => updateEntry(idx, "whiskyName", val)} />
+                            <EditField label={t("benchmark.field.whiskyName")} value={entry.name} onChange={val => updateEntry(idx, "name", val)} />
                             <EditField label={t("benchmark.field.distillery")} value={entry.distillery || ""} onChange={val => updateEntry(idx, "distillery", val)} />
                             <EditField label={t("benchmark.field.region")} value={entry.region || ""} onChange={val => updateEntry(idx, "region", val)} />
                             <EditField label={t("benchmark.field.country")} value={entry.country || ""} onChange={val => updateEntry(idx, "country", val)} />
@@ -488,7 +488,7 @@ export default function LabsBenchmark() {
                     <tbody>
                       {filteredSaved.map(entry => (
                         <tr key={entry.id} style={{ borderBottom: "1px solid var(--labs-border)" }} data-testid={`saved-entry-${entry.id}`}>
-                          <td className="labs-serif" style={{ padding: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{entry.whiskyName}</td>
+                          <td className="labs-serif" style={{ padding: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{entry.name}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.distillery || "—"}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.region || "—"}</td>
                           <td style={{ padding: 8 }}>{entry.score != null ? <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}</span> : "—"}</td>

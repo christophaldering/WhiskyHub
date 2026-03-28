@@ -440,7 +440,7 @@ export default function LabsTaste() {
       if (entry.status === "draft") continue;
       items.push({
         id: `j-${entry.id}`,
-        name: entry.whiskyName || entry.title || "—",
+        name: entry.name || entry.title || "—",
         distillery: entry.distillery || null,
         score: entry.personalScore ?? null,
         date: entry.createdAt ? String(entry.createdAt) : null,

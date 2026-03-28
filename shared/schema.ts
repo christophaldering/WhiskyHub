@@ -301,7 +301,7 @@ export const journalEntries = pgTable("journal_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   participantId: varchar("participant_id").notNull(),
   title: text("title").notNull(),
-  whiskyName: text("whisky_name"),
+  name: text("name"),
   distillery: text("distillery"),
   region: text("region"),
   country: text("country"),
@@ -341,7 +341,7 @@ export type JournalEntry = typeof journalEntries.$inferSelect;
 // --- Benchmark Entries (AI-extracted tasting data from documents) ---
 export const benchmarkEntries = pgTable("benchmark_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  whiskyName: text("whisky_name").notNull(),
+  name: text("name").notNull(),
   distillery: text("distillery"),
   region: text("region"),
   country: text("country"),
@@ -370,7 +370,7 @@ export type BenchmarkEntry = typeof benchmarkEntries.$inferSelect;
 export const wishlistEntries = pgTable("wishlist_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   participantId: varchar("participant_id").notNull(),
-  whiskyName: text("whisky_name").notNull(),
+  name: text("name").notNull(),
   distillery: text("distillery"),
   region: text("region"),
   country: text("country"),

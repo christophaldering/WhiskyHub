@@ -156,7 +156,7 @@ function makeKey(name: string, distillery: string): string {
 
 async function getExistingKeys(): Promise<Set<string>> {
   const existing = await db.select({
-    name: journalEntries.whiskyName,
+    name: journalEntries.name,
     distillery: journalEntries.distillery,
   })
   .from(journalEntries)
@@ -196,7 +196,7 @@ async function insertWhiskiesBatch(whiskies: WhiskyEntry[]): Promise<number> {
   const values = whiskies.map(w => ({
     participantId: SYSTEM_PARTICIPANT_ID,
     title: w.name,
-    whiskyName: w.name,
+    name: w.name,
     distillery: w.distillery || null,
     region: w.region || null,
     country: w.country || null,
@@ -221,7 +221,7 @@ async function insertWhiskiesBatch(whiskies: WhiskyEntry[]): Promise<number> {
         inserted++;
       } catch (innerErr: unknown) {
         const msg = innerErr instanceof Error ? innerErr.message : String(innerErr);
-        console.error(`  ✗ Insert failed for ${v.whiskyName}: ${msg}`);
+        console.error(`  ✗ Insert failed for ${v.name}: ${msg}`);
       }
     }
     return inserted;

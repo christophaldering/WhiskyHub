@@ -148,7 +148,7 @@ export default function LabsSolo() {
       sessionStorage.removeItem("cs_retaste_context");
       const data = JSON.parse(raw);
       const mapped: CapturedWhisky = {
-        name: String(data.whiskyName ?? data.name ?? ""),
+        name: String(data.name ?? data.whiskyName ?? ""),
         distillery: String(data.distillery ?? ""),
         country: String(data.country ?? ""),
         region: String(data.region ?? ""),
@@ -276,7 +276,7 @@ export default function LabsSolo() {
     const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
     const body = {
       title: whiskyName,
-      whiskyName,
+      name: whiskyName,
       distillery: whisky?.distillery || "",
       country: whisky?.country || "",
       region: whisky?.region || "",

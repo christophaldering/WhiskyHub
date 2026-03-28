@@ -181,7 +181,7 @@ export default function LabsTastings() {
         if (score <= 0) continue;
         items.push({
           id: `journal-${j.id}`,
-          whiskyName: j.whiskyName || "Unknown Whisky",
+          whiskyName: j.name || "Unknown Whisky",
           score,
           date: j.tastingDate || j.createdAt || "",
         });

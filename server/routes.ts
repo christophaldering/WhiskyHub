@@ -5243,7 +5243,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         collectionSize: collection.length,
         collectionRegions: Object.keys(ageDistribution).length,
         journalCount: journalEntries.length,
-        recentJournals: journalEntries.slice(0, 3).map(j => ({ title: j.title, whisky: j.whiskyName, score: j.personalScore })),
+        recentJournals: journalEntries.slice(0, 3).map(j => ({ title: j.title, whisky: j.name, score: j.personalScore })),
         smokeAffinityIndex: participant.smokeAffinityIndex,
         sweetnessBias: participant.sweetnessBias,
         ratingStabilityScore: stats.ratingStabilityScore,
@@ -6192,7 +6192,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const journalEntry = await storage.createJournalEntry({
         participantId: participantId as string,
         title: [item.brand, item.name].filter(Boolean).join(" - "),
-        whiskyName: item.name,
+        name: item.name,
         distillery: item.distillery || item.brand,
         region: null,
         age: item.statedAge,
@@ -6677,7 +6677,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
-      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.name))).slice(0, 200);
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
 
       const base64 = file.buffer.toString("base64");
@@ -6768,7 +6768,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
           w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
         );
         const matchedBenchmark = benchmarks.find(b =>
-          b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+          b.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
         );
 
         if (matchedWhisky) {
@@ -6930,7 +6930,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price"]);
       if (sanitizedBody.abv !== undefined) sanitizedBody.abv = sanitizedBody.abv != null ? (typeof sanitizedBody.abv === "string" ? parseFloat(sanitizedBody.abv.replace(",", ".").replace("%", "")) || null : sanitizedBody.abv) : null;
       if (sanitizedBody.price !== undefined) sanitizedBody.price = sanitizedBody.price != null ? (typeof sanitizedBody.price === "string" ? parseFloat(sanitizedBody.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : sanitizedBody.price) : null;
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
@@ -6939,7 +6939,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         const collectionImage = await findCollectionImageUrl(
           req.params.participantId,
           parsed.whiskybaseId,
-          parsed.whiskyName,
+          parsed.name,
           parsed.distillery
         );
         if (collectionImage) {
@@ -6957,8 +6957,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
-      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "region", "country", "peatLevel", "bottler"];
+      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
+      const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) {
@@ -7092,9 +7092,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/wishlist/:participantId/:id", async (req, res) => {
     try {
-      const { whiskyName, distillery, region, age, abv, caskType, notes, priority, source } = req.body;
+      const { name, distillery, region, age, abv, caskType, notes, priority, source } = req.body;
       const entry = await storage.updateWishlistEntry(req.params.id, req.params.participantId, {
-        whiskyName, distillery, region, age, abv, caskType, notes, priority, source,
+        name, distillery, region, age, abv, caskType, notes, priority, source,
       });
       if (!entry) return res.status(404).json({ message: "Wishlist entry not found" });
       res.json(entry);
@@ -7128,7 +7128,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
-      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.name))).slice(0, 200);
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
 
       const openai = new OpenAI({
@@ -7230,7 +7230,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
           w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
         );
         const matchedBenchmark = benchmarks.find(b =>
-          b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+          b.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
         );
 
         if (matchedWhisky) {
@@ -7266,10 +7266,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   app.post("/api/wishlist/generate-summary", async (req: Request, res: Response) => {
     try {
       if (await isAIDisabled("wishlist_summary")) return res.status(503).json({ message: "AI feature disabled by admin" });
-      const { participantId, whiskyName, distillery, region, age, abv, caskType, notes, language } = req.body;
+      const { participantId, name, distillery, region, age, abv, caskType, notes, language } = req.body;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
-      if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
+      if (!name) return res.status(400).json({ message: "name required" });
 
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
@@ -7288,7 +7288,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
         : "The taster has no established flavor profile yet — they are exploring whisky.";
 
       const whiskyDesc = [
-        whiskyName,
+        name,
         distillery ? `Distillery: ${distillery}` : null,
         region ? `Region: ${region}` : null,
         age ? `Age: ${age} years` : null,
@@ -7343,7 +7343,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
-      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.name))).slice(0, 200);
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
 
       const response = await openai.chat.completions.create({
@@ -7402,7 +7402,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
       );
       const matchedBenchmark = benchmarks.find(b =>
-        b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+        b.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
       );
 
       if (matchedWhisky) {
@@ -8130,7 +8130,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             timestamp: entry.createdAt?.toISOString() || new Date().toISOString(),
             details: {
               title: entry.title,
-              whiskyName: entry.whiskyName,
+              name: entry.name,
               distillery: entry.distillery,
               personalScore: entry.personalScore,
             },
@@ -10261,7 +10261,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       }
 
       let updated = 0;
-      const details: Array<{ entryId: string; whiskyName: string | null; imageUrl: string }> = [];
+      const details: Array<{ entryId: string; name: string | null; imageUrl: string }> = [];
 
       for (const entry of entriesWithoutImage) {
         const collection = collectionsByParticipant.get(entry.participantId) || [];
@@ -10274,8 +10274,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           if (match) matchedImage = match.imageUrl;
         }
 
-        if (!matchedImage && entry.whiskyName) {
-          const normName = normalizeForMatch(entry.whiskyName);
+        if (!matchedImage && entry.name) {
+          const normName = normalizeForMatch(entry.name);
           const normDist = normalizeForMatch(entry.distillery);
           const match = collection.find(c => {
             if (!c.imageUrl) return false;
@@ -10297,7 +10297,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         if (matchedImage) {
           await storage.updateJournalEntry(entry.id, entry.participantId, { imageUrl: matchedImage });
           updated++;
-          details.push({ entryId: entry.id, whiskyName: entry.whiskyName, imageUrl: matchedImage });
+          details.push({ entryId: entry.id, name: entry.name, imageUrl: matchedImage });
         }
       }
 
@@ -12096,7 +12096,7 @@ Key CaskSense Features:
       if (!auth) return res.status(403).json({ message: "Only hosts can save benchmark entries" });
 
       const entrySchema = z.object({
-        whiskyName: z.string().min(1),
+        name: z.string().min(1),
         distillery: z.string().nullable().optional(),
         region: z.string().nullable().optional(),
         country: z.string().nullable().optional(),
@@ -12162,7 +12162,7 @@ Key CaskSense Features:
       for (const e of entries) {
         const entry = await storage.createWishlistEntry({
           participantId,
-          whiskyName: e.whiskyName || "Unknown",
+          name: e.name || e.whiskyName || "Unknown",
           distillery: e.distillery || null,
           region: e.region || null,
           age: e.age || null,
@@ -12190,8 +12190,8 @@ Key CaskSense Features:
       for (const e of entries) {
         const entry = await storage.createJournalEntry({
           participantId,
-          title: e.whiskyName || "Imported Whisky",
-          whiskyName: e.whiskyName || null,
+          title: e.name || e.whiskyName || "Imported Whisky",
+          name: e.name || e.whiskyName || null,
           distillery: e.distillery || null,
           region: e.region || null,
           age: e.age || null,
@@ -12227,17 +12227,22 @@ Key CaskSense Features:
 
       const enrichEntries = (entries: any[]) => {
         return entries.map((entry: any) => {
-          if (!entry.whiskyName) return entry;
+          if (entry.whiskyName && !entry.name) {
+            entry.name = entry.whiskyName;
+            delete entry.whiskyName;
+          }
+          if (!entry.name) return entry;
+          const entryName = entry.name;
           
           if (!entry.whiskybaseSearch) {
-            entry.whiskybaseSearch = [entry.whiskyName, entry.distillery].filter(Boolean).join(" ");
+            entry.whiskybaseSearch = [entryName, entry.distillery].filter(Boolean).join(" ");
           }
           
           const matchedWhisky = allWhiskies.find(w =>
-            w.name.toLowerCase() === (entry.whiskyName || "").toLowerCase()
+            w.name.toLowerCase() === (entryName || "").toLowerCase()
           );
           const matchedBenchmark = benchmarks.find(b =>
-            b.whiskyName.toLowerCase() === (entry.whiskyName || "").toLowerCase()
+            b.name.toLowerCase() === (entryName || "").toLowerCase()
           );
           
           if (matchedWhisky) {
@@ -12461,7 +12466,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       const collectionItems = await storage.getWhiskybaseCollection(participantId);
 
       const dbWhiskyNames = [...new Set(allWhiskies.map(w => w.name))].slice(0, 200);
-      const benchmarkNames = [...new Set(benchmarks.map(b => b.whiskyName))].slice(0, 200);
+      const benchmarkNames = [...new Set(benchmarks.map(b => b.name))].slice(0, 200);
       const knownWhiskies = [...new Set([...dbWhiskyNames, ...benchmarkNames])];
 
       const results = [];
@@ -12567,7 +12572,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
             w.name.toLowerCase() === (identified.matchedExisting || identified.name || "").toLowerCase()
           );
           const matchedBenchmark = benchmarks.find(b =>
-            b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.name || "").toLowerCase()
+            b.name.toLowerCase() === (identified.matchedExisting || identified.name || "").toLowerCase()
           );
 
           if (matchedWhisky) {
@@ -16912,7 +16917,7 @@ Rules:
       if (!foundWhisky && !histEntry) {
         journalEntry = await storage.getJournalEntryById(whiskyId);
         if (journalEntry) {
-          whiskyName = (journalEntry.whiskyName || journalEntry.title || "").toLowerCase().trim();
+          whiskyName = (journalEntry.name || journalEntry.title || "").toLowerCase().trim();
           whiskyDistillery = (journalEntry.distillery || "").toLowerCase().trim();
         }
       }
@@ -17081,7 +17086,7 @@ Rules:
       if (journalEntry) {
         return res.json({
           id: journalEntry.id,
-          name: journalEntry.whiskyName || journalEntry.title,
+          name: journalEntry.name || journalEntry.title,
           distillery: journalEntry.distillery || null,
           region: journalEntry.region || null,
           country: journalEntry.country || null,
