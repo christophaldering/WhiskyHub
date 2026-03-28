@@ -2793,10 +2793,10 @@ function CreateTastingForm() {
         style={{ color: "var(--labs-text)" }}
         data-testid="labs-host-title"
       >
-        Host a Tasting
+        {t("labs.host.hostTitle")}
       </h1>
       <p className="text-sm mb-2" style={{ color: "var(--labs-text-secondary)" }}>
-        Create a new tasting session for your group
+        {t("labs.host.hostSubtitle")}
       </p>
       <div
         className="text-xs flex items-center gap-1 transition-all duration-300"
@@ -2810,7 +2810,7 @@ function CreateTastingForm() {
         data-testid="labs-draft-saved-indicator"
       >
         <Check className="w-3 h-3" />
-        Draft saved
+        {t("labs.host.draftSaved")}
       </div>
 
       <div className="space-y-5">
@@ -2827,7 +2827,7 @@ function CreateTastingForm() {
           />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="labs-section-label" htmlFor="tasting-date">{t("m2.host.dateLabel")}</label>
             <input
@@ -2850,7 +2850,7 @@ function CreateTastingForm() {
               data-testid="labs-host-input-time"
             />
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div className="sm:col-span-1">
             <label className="labs-section-label" htmlFor="tasting-location">{t("labs.host.locationPlaceholder")}</label>
             <input
               id="tasting-location"
@@ -2866,7 +2866,7 @@ function CreateTastingForm() {
         <div>
           <label className="labs-section-label" htmlFor="tasting-description">
             <FileText className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-            Description
+            {t("labs.host.descriptionLabel")}
           </label>
           <textarea
             id="tasting-description"
@@ -2893,7 +2893,7 @@ function CreateTastingForm() {
           <div>
             <label className="labs-section-label">
               <Eye className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-              Reveal Order
+              {t("labs.host.revealOrder")}
             </label>
             <LabsSegmentedSelect
               value={revealOrder}

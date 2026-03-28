@@ -5770,6 +5770,10 @@ const resources = {
           revealStepN: "Step {{n}}",
           timeLabel: "Time",
           fieldPriceEur: "Price (EUR)",
+          hostTitle: "Host a Tasting",
+          hostSubtitle: "Create a new tasting session for your group",
+          draftSaved: "Draft saved",
+          descriptionLabel: "Description",
         },
       },
       m2: {
@@ -13958,6 +13962,10 @@ const resources = {
           revealStepN: "Schritt {{n}}",
           timeLabel: "Uhrzeit",
           fieldPriceEur: "Preis (EUR)",
+          hostTitle: "Tasting veranstalten",
+          hostSubtitle: "Erstelle eine neue Tasting-Session für deine Gruppe",
+          draftSaved: "Entwurf gespeichert",
+          descriptionLabel: "Beschreibung",
         },
       },
       m2: {
