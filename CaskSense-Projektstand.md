@@ -168,7 +168,7 @@ Alle IDs sind UUIDs (`varchar` + `gen_random_uuid()`). Schema definiert in `shar
 | country | text | Land |
 | region | text | Region |
 | category | text | Single Malt, Bourbon, etc. |
-| caskInfluence | text | Fasstyp |
+| caskType | text | Fasstyp |
 | peatLevel | text | None/Light/Medium/Heavy |
 | imageUrl | text | Flaschenfoto URL |
 | sortOrder | integer | Reihenfolge |

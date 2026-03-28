@@ -273,7 +273,7 @@ async function testWhiskiesAndRatings() {
       region: "Islay",
       category: "Single Malt",
       peatLevel: "Heavy",
-      caskInfluence: "Sherry",
+      caskType: "Sherry",
       sortOrder: 0,
     });
     if (whisky.id) {

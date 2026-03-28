@@ -253,7 +253,7 @@ PostgreSQL mit Drizzle ORM. Alle IDs sind UUIDs.
 | `abv` | real | Alkoholgehalt |
 | `type` | text | Typ (Single Malt, Blend, etc.) |
 | `region` | text | Region |
-| `caskInfluence` | text | Fasstyp |
+| `caskType` | text | Fasstyp |
 | `imageUrl` | text | Foto-URL |
 | `sortOrder` | integer | Reihenfolge |
 | `hostNotes` | text | Notizen des Hosts |

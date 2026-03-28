@@ -961,7 +961,6 @@ export const bottleSplits = pgTable("bottle_splits", {
     category?: string;
     country?: string;
     caskType?: string;
-    caskInfluence?: string;
     peatLevel?: string;
     whiskybaseId?: string;
     bottler?: string;

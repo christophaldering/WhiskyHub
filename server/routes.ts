@@ -4601,8 +4601,8 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
-      const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskType, caskInfluence: caskInfluenceLegacy, category, peatLevel, language } = req.body;
-      const cask = caskType || caskInfluenceLegacy;
+      const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskType, category, peatLevel, language } = req.body;
+      const cask = caskType;
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
