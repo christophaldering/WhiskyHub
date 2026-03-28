@@ -108,7 +108,7 @@ export default function LabsPairings() {
 
       <div className="labs-card p-4 mb-4 labs-fade-in">
         <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
-          {t("m2.taste.pairings.selectTasting")}
+          {t("m2.pairings.selectTasting")}
         </label>
         <div style={{ position: "relative" }}>
           <select
@@ -121,7 +121,7 @@ export default function LabsPairings() {
               outline: "none", appearance: "none", WebkitAppearance: "none", cursor: "pointer", fontFamily: "inherit",
             }}
           >
-            <option value="" disabled>{t("m2.taste.pairings.chooseTasting")}</option>
+            <option value="" disabled>{t("m2.pairings.chooseTasting")}</option>
             {tL && <option value="" disabled>{t("common.loading")}</option>}
             {!tL && tastings?.map(item => <option key={item.id} value={item.id}>{item.title || item.name || item.id}</option>)}
           </select>
@@ -180,7 +180,7 @@ export default function LabsPairings() {
       {!selectedId && pid && !tL && (
         <div className="labs-empty labs-fade-in" style={{ paddingTop: 40 }}>
           <Sparkles className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} />
-          <p className="labs-serif" style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.taste.pairings.selectForSuggestions")}</p>
+          <p className="labs-serif" style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>{t("m2.pairings.selectForSuggestions")}</p>
         </div>
       )}
     </div>
