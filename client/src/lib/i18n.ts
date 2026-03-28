@@ -321,8 +321,6 @@ const resources = {
         lexiconCatRegions: "Regions",
         lexiconCatProductionMethods: "Production Methods",
         lexiconCatCaskTypes: "Cask Types",
-        viewHistoricalTastings: "Historical Tastings",
-        viewHistoricalTastingsSub: "Full archive & cross-tasting insights",
       },
       search: {
         placeholder: "Search whiskies, pages, terms...",
@@ -8521,8 +8519,6 @@ const resources = {
         lexiconCatRegions: "Regionen",
         lexiconCatProductionMethods: "Herstellungsverfahren",
         lexiconCatCaskTypes: "Fasstypen",
-        viewHistoricalTastings: "Historische Tastings",
-        viewHistoricalTastingsSub: "Vollständiges Archiv & Tasting-übergreifende Auswertungen",
       },
       search: {
         placeholder: "Whiskys, Seiten, Begriffe suchen...",
