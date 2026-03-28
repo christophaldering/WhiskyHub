@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import type { ElementType } from "react";
 
-interface BibliothekLink {
+export interface BibliothekLink {
   icon: ElementType;
   labelKey: string;
   labelFallback: string;
@@ -19,13 +19,13 @@ interface BibliothekLink {
   indent?: boolean;
 }
 
-interface BibliothekSection {
+export interface BibliothekSection {
   titleKey: string;
   titleFallback: string;
   links: BibliothekLink[];
 }
 
-const SECTIONS: BibliothekSection[] = [
+export const SECTIONS: BibliothekSection[] = [
   {
     titleKey: "bibliothek.sectionCommunity",
     titleFallback: "Community",
