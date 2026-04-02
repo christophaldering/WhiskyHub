@@ -126,6 +126,11 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
     }
   }, [saveError]);
 
+  const scrollToTop = useCallback(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+  }, []);
+
   const handleNext = useCallback(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -134,6 +139,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         const nextIdx = phaseIndex + 1;
         setPhaseIndex(nextIdx);
         onChange?.(nextIdx, { scores, tags, notes });
+        scrollToTop();
       } else {
         onDone({ scores, tags, notes });
       }
@@ -150,12 +156,13 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
           setPhaseIndex(nextIdx);
           setVisibleContent(true);
           onChange?.(nextIdx, { scores, tags, notes });
+          scrollToTop();
         } else {
           onDone({ scores, tags, notes });
         }
       }, 100);
     }, 300);
-  }, [phaseIndex, scores, tags, notes, onDone, onChange]);
+  }, [phaseIndex, scores, tags, notes, onDone, onChange, scrollToTop]);
 
   const goTo = useCallback((i: number) => {
     setVisibleContent(false);
@@ -163,8 +170,9 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
       setPhaseIndex(i);
       setVisibleContent(true);
       onChange?.(i, { scores, tags, notes });
+      scrollToTop();
     }, 120);
-  }, [scores, tags, notes, onChange]);
+  }, [scores, tags, notes, onChange, scrollToTop]);
 
   const handleScoreChange = useCallback((v: number) => {
     if (currentPhase === "overall") {

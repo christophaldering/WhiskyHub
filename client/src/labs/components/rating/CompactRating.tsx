@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
@@ -78,6 +78,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [openPhase, setOpenPhase] = useState<PhaseId | null>("nose");
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
@@ -156,6 +157,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
         return (
           <div
             key={pid}
+            ref={(el) => { sectionRefs.current[pid] = el; }}
             data-testid={`compact-card-${pid}`}
             style={{
               background: "var(--labs-surface)",
@@ -167,7 +169,16 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
           >
             <button
               data-testid={`compact-header-${pid}`}
-              onClick={() => setOpenPhase(isOpen ? null : pid)}
+              onClick={() => {
+                const next = isOpen ? null : pid;
+                setOpenPhase(next);
+                if (next) {
+                  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                  setTimeout(() => {
+                    sectionRefs.current[pid]?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+                  }, 50);
+                }
+              }}
               style={{
                 width: "100%",
                 display: "flex",
