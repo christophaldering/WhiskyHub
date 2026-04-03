@@ -49,6 +49,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
       scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score },
       tags: { nose: [], palate: [], finish: [], overall: [] },
       notes: { nose: "", palate: "", finish: "", overall: note },
+      overallExplicit: true,
     });
   };
 

@@ -95,6 +95,10 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
     const s = initialData.scores;
     return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
   });
+  const [overallRated, setOverallRated] = useState(() => {
+    if (!initialData?.scores) return false;
+    return initialData.overallExplicit === true;
+  });
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const computeAutoOverall = (s: PhaseScores) =>
@@ -131,7 +135,15 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
     window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
   }, []);
 
+  const canFinalize = phaseIndex < 3 || overallRated;
+
   const handleNext = useCallback(() => {
+    if (phaseIndex === 3 && !overallRated) return;
+
+    if (phaseIndex < 3 && onSaveAsDraft) {
+      onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated });
+    }
+
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReducedMotion) {
@@ -141,7 +153,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         onChange?.(nextIdx, { scores, tags, notes });
         scrollToTop();
       } else {
-        onDone({ scores, tags, notes });
+        onDone({ scores, tags, notes, overallExplicit: true });
       }
       return;
     }
@@ -158,11 +170,11 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
           onChange?.(nextIdx, { scores, tags, notes });
           scrollToTop();
         } else {
-          onDone({ scores, tags, notes });
+          onDone({ scores, tags, notes, overallExplicit: true });
         }
       }, 100);
     }, 300);
-  }, [phaseIndex, scores, tags, notes, onDone, onChange, scrollToTop]);
+  }, [phaseIndex, scores, tags, notes, onDone, onChange, onSaveAsDraft, overallRated, scrollToTop]);
 
   const goTo = useCallback((i: number) => {
     setVisibleContent(false);
@@ -177,6 +189,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   const handleScoreChange = useCallback((v: number) => {
     if (currentPhase === "overall") {
       setOverallManuallySet(true);
+      setOverallRated(true);
     }
     setScores((prev) => {
       const next = { ...prev, [currentPhase]: v };
@@ -483,7 +496,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         }}>
           <button
             data-testid="rating-save-draft-btn"
-            onClick={() => onSaveAsDraft({ scores, tags, notes })}
+            onClick={() => onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated })}
             style={{
               height: 40,
               paddingLeft: 20,
@@ -541,26 +554,30 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
           <button
             data-testid="rating-next-btn"
             onClick={handleNext}
+            disabled={!canFinalize}
             style={{
               flex: 1,
               minWidth: 0,
               height: 56,
-              background: accent,
-              color: "#1a1a1a",
-              border: "none",
+              background: canFinalize ? accent : "var(--labs-surface)",
+              color: canFinalize ? "#1a1a1a" : "var(--labs-text-muted)",
+              border: canFinalize ? "none" : "1px solid var(--labs-border)",
               borderRadius: RADIUS.full,
-              fontSize: 17,
-              fontWeight: 700,
+              fontSize: canFinalize ? 17 : 14,
+              fontWeight: canFinalize ? 700 : 500,
               fontFamily: FONT.body,
-              cursor: "pointer",
+              cursor: canFinalize ? "pointer" : "default",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              opacity: canFinalize ? 1 : 0.7,
             }}
           >
             {phaseIndex < 3
               ? `${phaseLabel(currentPhase, labels)} ${labels.save} \u2192 ${nextPhaseLabel}`
-              : labels.finish2
+              : canFinalize
+                ? labels.finish2
+                : t("v2.rateOverallFirst", "Bewerte Overall um abzuschließen")
             }
           </button>
         </div>

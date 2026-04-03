@@ -25,4 +25,5 @@ export interface RatingData {
   scores: PhaseScores;
   tags: PhaseTags;
   notes: PhaseNotes;
+  overallExplicit?: boolean;
 }

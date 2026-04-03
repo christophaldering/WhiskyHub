@@ -324,7 +324,8 @@ export default function LabsSolo() {
     setSaveError(false);
     setIsDraftSave(false);
 
-    const body = buildJournalBody(data, "final");
+    const status = data.overallExplicit ? "final" : "draft";
+    const body = buildJournalBody(data, status);
 
     try {
       const res = await fetch(`/api/journal/${participantId}`, {

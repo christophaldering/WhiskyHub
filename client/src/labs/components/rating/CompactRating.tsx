@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
@@ -86,6 +86,12 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
     const s = initialData.scores;
     return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
   });
+  const [overallRated, setOverallRated] = useState(() => {
+    if (!initialData?.scores) return false;
+    return initialData.overallExplicit === true;
+  });
+  const autoDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
 
   const computeAutoOverall = (s: PhaseScores) =>
     Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
@@ -110,12 +116,29 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
     profileLabel: labels.profileLabel,
   };
 
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!onSaveAsDraft) return;
+    if (autoDraftTimer.current) clearTimeout(autoDraftTimer.current);
+    autoDraftTimer.current = setTimeout(() => {
+      onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated });
+    }, 2000);
+    return () => {
+      if (autoDraftTimer.current) clearTimeout(autoDraftTimer.current);
+    };
+  }, [scores, tags, notes, onSaveAsDraft, overallRated]);
+
   const handleSubmit = useCallback(async () => {
     setSaving(true);
     setTimeout(() => {
-      onDone({ scores, tags, notes });
+      onDone({ scores, tags, notes, overallExplicit: true });
     }, 400);
   }, [scores, tags, notes, onDone]);
+
+  const canFinalize = overallRated;
 
   return (
     <div style={{ padding: `${SP.md}px`, paddingBottom: 200 }}>
@@ -216,6 +239,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                 <ScoreInput value={scores[pid]} onChange={(v) => {
                   if (pid === "overall") {
                     setOverallManuallySet(true);
+                    setOverallRated(true);
                   }
                   setScores((p) => {
                     const next = { ...p, [pid]: v };
@@ -399,7 +423,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
         }}>
           <button
             data-testid="compact-save-draft-btn"
-            onClick={() => onSaveAsDraft({ scores, tags, notes })}
+            onClick={() => onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated })}
             style={{
               height: 40,
               paddingLeft: 20,
@@ -448,24 +472,35 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
           <button
             data-testid="compact-submit-btn"
             onClick={handleSubmit}
-            disabled={saving}
+            disabled={saving || !canFinalize}
             style={{
               flex: 1,
               height: 56,
               background: saving
                 ? "color-mix(in srgb, var(--labs-success) 13%, transparent)"
-                : "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
-              color: saving ? "var(--labs-success)" : "var(--labs-accent-dark)",
-              border: saving ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)" : "none",
+                : canFinalize
+                  ? "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))"
+                  : "var(--labs-surface)",
+              color: saving
+                ? "var(--labs-success)"
+                : canFinalize
+                  ? "var(--labs-accent-dark)"
+                  : "var(--labs-text-muted)",
+              border: saving
+                ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)"
+                : canFinalize
+                  ? "none"
+                  : "1px solid var(--labs-border)",
               borderRadius: RADIUS.full,
-              fontSize: 17,
-              fontWeight: 700,
+              fontSize: canFinalize ? 17 : 14,
+              fontWeight: canFinalize ? 700 : 500,
               fontFamily: FONT.body,
-              cursor: saving ? "default" : "pointer",
+              cursor: saving || !canFinalize ? "default" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: SP.sm,
+              opacity: canFinalize ? 1 : 0.7,
             }}
           >
             {saving ? (
@@ -473,8 +508,10 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                 <CheckIcon color="var(--labs-success)" size={20} />
                 {labels.done}
               </>
-            ) : (
+            ) : canFinalize ? (
               labels.finish2
+            ) : (
+              t("v2.rateOverallFirst", "Bewerte Overall um abzuschließen")
             )}
           </button>
         </div>

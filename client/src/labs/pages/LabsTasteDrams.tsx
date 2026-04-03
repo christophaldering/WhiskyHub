@@ -767,7 +767,7 @@ export default function LabsTasteDrams() {
         noseNotes: noseNoteParts || selectedEntry.noseNotes || "",
         tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
         finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
-        ...(selectedEntry.status === "draft" ? { status: "final" } : {}),
+        ...(selectedEntry.status === "draft" && data.overallExplicit ? { status: "final" } : {}),
       };
       deepRateMutation.mutate({ id: selectedEntry.id, data: patchData });
     };

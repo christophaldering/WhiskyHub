@@ -37,6 +37,8 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   const [overalls, setOveralls] = useState<Record<string, number>>({});
   const [ratingNotes, setRatingNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [overallTouched, setOverallTouched] = useState<Record<string, boolean>>({});
+  const [finalized, setFinalized] = useState<Record<string, boolean>>({});
 
   const pid = currentParticipant?.id || "";
 
@@ -64,6 +66,10 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
               setScores(prev => ({ ...prev, [w.id]: { nose: ex.nose ?? 75, taste: ex.taste ?? 75, finish: ex.finish ?? 75 } }));
               setOveralls(prev => ({ ...prev, [w.id]: ex.overall ?? 75 }));
               if (ex.notes) setRatingNotes(prev => ({ ...prev, [w.id]: ex.notes }));
+              if (ex.source && ex.source !== "draft") {
+                setFinalized(prev => ({ ...prev, [w.id]: true }));
+                setOverallTouched(prev => ({ ...prev, [w.id]: true }));
+              }
             }
           }
         } catch {}
@@ -164,7 +170,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
     setStatusChanging(false);
   };
 
-  const saveRating = async (wId: string) => {
+  const saveRating = async (wId: string, isFinal = false) => {
     setSaving(true);
     const sc = scores[wId] || { nose: 75, taste: 75, finish: 75 };
     const overall = overalls[wId] ?? Math.round((sc.nose + sc.taste + sc.finish) / 3);
@@ -172,13 +178,18 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
       const res = await fetch("/api/ratings", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-participant-id": pid },
-        body: JSON.stringify({ participantId: pid, whiskyId: wId, tastingId: tasting.id, nose: sc.nose, taste: sc.taste, finish: sc.finish, overall, notes: ratingNotes[wId] || "" }),
+        body: JSON.stringify({ participantId: pid, whiskyId: wId, tastingId: tasting.id, nose: sc.nose, taste: sc.taste, finish: sc.finish, overall, notes: ratingNotes[wId] || "", source: isFinal ? "app" : "draft" }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Fehler" }));
         flash(err.message || "Fehler beim Speichern");
       } else {
-        flash("Bewertung gespeichert!");
+        if (isFinal) {
+          setFinalized(prev => ({ ...prev, [wId]: true }));
+          flash("Bewertung abgeschlossen!");
+        } else {
+          flash("Entwurf gespeichert!");
+        }
       }
     } catch { flash("Fehler beim Speichern"); }
     setSaving(false);
@@ -478,7 +489,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
                   <span style={{ fontSize: 13, fontWeight: 600 }}>Overall</span>
                   <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{overalls[currentWhisky.id] ?? 75}</span>
                 </div>
-                <input data-testid={`slider-split-overall-${currentWhisky.id}`} type="range" min={60} max={100} value={overalls[currentWhisky.id] ?? 75} onChange={e => setOveralls(prev => ({ ...prev, [currentWhisky.id]: parseInt(e.target.value) }))} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
+                <input data-testid={`slider-split-overall-${currentWhisky.id}`} type="range" min={60} max={100} value={overalls[currentWhisky.id] ?? 75} onChange={e => { setOveralls(prev => ({ ...prev, [currentWhisky.id]: parseInt(e.target.value) })); setOverallTouched(prev => ({ ...prev, [currentWhisky.id]: true })); }} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
               </div>
 
               <div>
@@ -486,8 +497,11 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
                 <textarea data-testid={`input-split-notes-${currentWhisky.id}`} value={ratingNotes[currentWhisky.id] || ""} onChange={e => setRatingNotes(prev => ({ ...prev, [currentWhisky.id]: e.target.value }))} placeholder="Was fällt dir auf..." rows={3} className="labs-input" style={{ resize: "none" }} />
               </div>
 
-              <button data-testid={`button-save-split-rating-${currentWhisky.id}`} onClick={() => saveRating(currentWhisky.id)} disabled={saving} className="labs-btn-primary" style={{ width: "100%" }}>
-                {saving ? <Loader2 className="labs-spinner" size={16} /> : "Bewertung speichern"}
+              <button data-testid={`button-save-split-rating-${currentWhisky.id}`} onClick={() => saveRating(currentWhisky.id, false)} disabled={saving} className="labs-btn-primary" style={{ width: "100%", background: "var(--labs-surface)", color: "var(--labs-text)", border: "1px solid var(--labs-border)" }}>
+                {saving ? <Loader2 className="labs-spinner" size={16} /> : "Entwurf speichern"}
+              </button>
+              <button data-testid={`button-finalize-split-rating-${currentWhisky.id}`} onClick={() => saveRating(currentWhisky.id, true)} disabled={saving || !overallTouched[currentWhisky.id] || finalized[currentWhisky.id]} className="labs-btn-primary" style={{ width: "100%", marginTop: 8, opacity: overallTouched[currentWhisky.id] && !finalized[currentWhisky.id] ? 1 : 0.5 }}>
+                {finalized[currentWhisky.id] ? "✓ Abgeschlossen" : overallTouched[currentWhisky.id] ? "Abschließen" : "Bewerte Overall um abzuschließen"}
               </button>
             </div>
           );
