@@ -1,0 +1,83 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — TEXTKORREKTUREN: Benchmark + Seitentitel
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik oder Routing ändern
+✅ NUR Textwerte in i18n.ts korrigieren
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — Benchmark-Beschreibung korrigieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts im DE-Block suchen:
+
+ALT (schlechte Übersetzung):
+  "Importiere Tastingnotizen aus Magazinen, Reviews oder Events — die KI extrahiert strukturierte Whiskydaten, die du mit deinen eigenen Bewertungen vergleichen kannst."
+
+NEU (korrekte Version):
+  "Importiere Tastingnotizen aus Magazinen, Reviews oder Events — die KI extrahiert die darin enthaltenen Whiskydaten, so dass du diese mit deinen eigenen Bewertungen vergleichen kannst."
+
+Schritt 1: grep -n "extrahiert strukturierte" client/src/lib/i18n.ts
+Schritt 2: Wert in DE-Block ersetzen (nur DE, EN unverändert)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — "My Whisky" → "Meine Welt" in allen Back-Links
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts im DE-Block:
+
+Suche: myTastePage.title
+Aktueller Wert: "Mein Whisky"
+Soll: "Meine Welt"
+
+Schritt 1: grep -n "Mein Whisky" client/src/lib/i18n.ts
+Schritt 2: Nur den Wert in DE-Block (nach Zeile 8232) ändern
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 3 — Benchmark Back-Button: /labs/taste → /labs/bibliothek
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsBenchmark.tsx
+
+Suche den Back-Link/BackLink der auf /labs/taste zeigt:
+  grep -n "labs/taste\|backTaste\|taste/benchmark" client/src/labs/pages/LabsBenchmark.tsx
+
+Falls der Back-Button auf /labs/taste zeigt:
+  Ändern auf /labs/bibliothek
+
+Falls useLabsBack("/labs/taste") verwendet wird:
+  Ändern auf useLabsBack("/labs/bibliothek")
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 4 — Pairings Back-Button: /labs/taste → /labs/bibliothek
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsPairings.tsx
+
+Suche den Back-Link der auf /labs/taste zeigt:
+  grep -n "labs/taste\|backTaste" client/src/labs/pages/LabsPairings.tsx
+
+Falls auf /labs/taste:
+  Ändern auf /labs/bibliothek
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "extrahiert strukturierte" client/src/lib/i18n.ts → kein Treffer
+□ grep -n "extrahiert die darin" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Mein Whisky" client/src/lib/i18n.ts → kein Treffer im DE-Block
+□ grep -n "Meine Welt" client/src/lib/i18n.ts → mindestens 2 Treffer
+□ tsc --noEmit fehlerfrei
