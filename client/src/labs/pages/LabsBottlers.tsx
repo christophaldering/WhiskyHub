@@ -117,7 +117,7 @@ export default function LabsBottlers() {
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-bottlers-title">Independent Bottlers</h1>
         {currentParticipant && <SuggestEntryDialog type="bottler" />}
       </div>
-      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : `Explore ${bottlersList.length} independent bottlers worldwide`}</p>
+      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.bottlersSubtitle", "Explore {{count}} independent bottlers worldwide", { count: bottlersList.length })}</p>
 
       <input type="text" placeholder="Search bottlers..." value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-bottlers" />
       <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
