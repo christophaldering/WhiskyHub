@@ -2220,7 +2220,8 @@
     left: 0 !important;
     right: 0 !important;
     top: auto !important;
-    margin-top: 0 !important;
+    margin: 0 auto !important;
+    max-width: 672px !important;
     z-index: 50 !important;
     border-radius: 20px 20px 0 0 !important;
     max-height: 70vh !important;

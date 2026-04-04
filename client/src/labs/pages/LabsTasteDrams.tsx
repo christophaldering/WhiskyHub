@@ -1292,7 +1292,7 @@ function FilterBottomSheet({
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100 }} data-testid="filter-bottom-sheet">
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={onClose} />
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "80vh", background: "var(--labs-bg, #0e0b05)", borderRadius: "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "80vh", maxWidth: 672, margin: "0 auto", background: "var(--labs-bg, #0e0b05)", borderRadius: "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
         <div style={{ position: "sticky", top: 0, background: "var(--labs-bg, #0e0b05)", padding: "16px 20px 12px", borderBottom: "1px solid var(--labs-border)", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{t("drams.filters")}</h3>
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-close-filter-sheet">
