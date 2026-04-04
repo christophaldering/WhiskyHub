@@ -1,0 +1,454 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n BLOCK 2: labs.* KEYS
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+Struktur: resources.en.translation (Zeilen 9–8231) + resources.de.translation (Zeilen 8232–Ende)
+
+Dieser Prompt fügt fehlende labs.* Keys ein:
+labs.connoisseur.*, labs.profile.*, labs.wheel.*,
+labs.recommendations.*, labs.collection.*, labs.activity.*,
+labs.host.* (Kurzform), labs.invite.*, labs.solo (Statistiken)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Keys löschen oder umbenennen
+❌ NIEMALS die Dateistruktur ändern
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS Keys doppelt einfügen — erst prüfen ob bereits vorhanden
+
+✅ Immer BEIDE Sprachblöcke (EN + DE) aktualisieren
+✅ Markenbegriffe in DE identisch zu EN lassen:
+   Tastings, Dram, Solo, Circle, Labs, Connoisseur,
+   Nose, Palate, Finish, Overall, Host, Benchmark
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.statAvg / labs.statConsistency / labs.statExploration
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in labs-Block einfügen):
+  statAvgLabel: "Average",
+  statAvgDesc: "Based on {{count}} ratings",
+  statConsistencyLabel: "Consistency",
+  statConsistencyDesc: "Rating consistency",
+  statExplorationLabel: "Exploration",
+  statExplorationDesc: "Variety across regions & styles",
+  palateTimeline: "Palate Timeline",
+  timelineAvgScore: "Avg Score",
+  timelineRatings: "Ratings",
+  timelineFinish: "Finish",
+  monthlyReview: "Monthly Review",
+  monthlyReviewAvg: "Avg Score",
+  monthlyReviewRated: "Drams rated",
+  monthlyReviewUp: "up",
+  monthlyReviewDown: "down",
+  monthlyReviewSame: "same",
+  monthlyReviewVsPrev: "vs. previous month",
+  monthlyReviewNewRegions: "new regions",
+  scoresNormalizedHint: "Scores normalized to 100-point scale",
+  scoresNormalizedMultiScale: "Multiple rating scales detected",
+  heroInsightLabel: "Your palate at a glance",
+
+DE (in labs-Block einfügen):
+  statAvgLabel: "Durchschnitt",
+  statAvgDesc: "Basierend auf {{count}} Bewertungen",
+  statConsistencyLabel: "Konsistenz",
+  statConsistencyDesc: "Bewertungskonsistenz",
+  statExplorationLabel: "Erkundung",
+  statExplorationDesc: "Vielfalt bei Regionen & Stilen",
+  palateTimeline: "Gaumen-Verlauf",
+  timelineAvgScore: "Ø Score",
+  timelineRatings: "Bewertungen",
+  timelineFinish: "Finish",
+  monthlyReview: "Monatsrückblick",
+  monthlyReviewAvg: "Ø Score",
+  monthlyReviewRated: "Drams bewertet",
+  monthlyReviewUp: "gestiegen",
+  monthlyReviewDown: "gesunken",
+  monthlyReviewSame: "unverändert",
+  monthlyReviewVsPrev: "vs. Vormonat",
+  monthlyReviewNewRegions: "neue Regionen",
+  scoresNormalizedHint: "Scores auf 100-Punkte-Skala normalisiert",
+  scoresNormalizedMultiScale: "Mehrere Bewertungsskalen erkannt",
+  heroInsightLabel: "Dein Gaumen auf einen Blick",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.connoisseur.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  connoisseur: {
+    title: "Connoisseur Report",
+    subtitle: "Your personal whisky analysis",
+    navLabel: "Connoisseur Report",
+    navDesc: "AI-generated palate analysis",
+    generate: "Generate Report",
+    generating: "Generating...",
+    generationFailed: "Generation failed",
+    loadError: "Could not load report",
+    networkError: "Network error",
+    emptyState: "No report yet",
+    noWhiskys: "Rate more whiskies to generate a report",
+    noHistory: "No rating history yet",
+    waitingResult: "Preparing your report...",
+    tabReport: "Report",
+    tabWhiskys: "Whiskies",
+    tabHistory: "History",
+    tabAromas: "Aromas",
+    sectionProfile: "Palate Profile",
+    sectionHighlights: "Highlights",
+    sectionRecommendation: "Recommendation",
+    rated: "Rated",
+    ratings: "Ratings",
+    tastings: "Tastings",
+    whiskies: "Whiskies",
+    avg: "Avg",
+    avgScore: "Avg Score",
+    avgTrend: "Trend",
+    highest: "Highest",
+    lowest: "Lowest",
+    dimNose: "Nose",
+    dimTaste: "Palate",
+    dimFinish: "Finish",
+    dimOverall: "Overall",
+    dimensionAvg: "Dimension avg",
+    vsGroup: "vs. group",
+    legendYou: "You",
+    legendCommunity: "Community",
+    smokeAffinity: "Smoke affinity",
+    sweetnessBias: "Sweetness bias",
+    regionPreferences: "Region preferences",
+    countryDistribution: "Country distribution",
+    flavorCloud: "Flavor cloud",
+    palateIndices: "Palate indices",
+    ratingStyle: "Rating style",
+    language: "Language",
+    share: "Share",
+    shareQuote: "My CaskSense Connoisseur Report",
+    copySummary: "Copy summary",
+    copied: "Copied!",
+    showImmediately: "Show immediately",
+    hideHint: "Hide hint",
+    addHint: "Add hint",
+    delete: "Delete",
+    deleting: "Deleting...",
+    deleteConfirmTitle: "Delete report?",
+    deleteConfirmText: "This cannot be undone.",
+    cancel: "Cancel",
+    retry: "Retry",
+  },
+
+DE:
+  connoisseur: {
+    title: "Connoisseur-Bericht",
+    subtitle: "Deine persönliche Whisky-Analyse",
+    navLabel: "Connoisseur-Bericht",
+    navDesc: "KI-generierte Gaumen-Analyse",
+    generate: "Bericht erstellen",
+    generating: "Wird erstellt...",
+    generationFailed: "Erstellung fehlgeschlagen",
+    loadError: "Bericht konnte nicht geladen werden",
+    networkError: "Netzwerkfehler",
+    emptyState: "Noch kein Bericht",
+    noWhiskys: "Bewerte mehr Whiskies für einen Bericht",
+    noHistory: "Noch keine Bewertungshistorie",
+    waitingResult: "Dein Bericht wird vorbereitet...",
+    tabReport: "Bericht",
+    tabWhiskys: "Whiskies",
+    tabHistory: "Verlauf",
+    tabAromas: "Aromen",
+    sectionProfile: "Gaumen-Profil",
+    sectionHighlights: "Highlights",
+    sectionRecommendation: "Empfehlung",
+    rated: "Bewertet",
+    ratings: "Bewertungen",
+    tastings: "Tastings",
+    whiskies: "Whiskies",
+    avg: "Ø",
+    avgScore: "Ø Score",
+    avgTrend: "Trend",
+    highest: "Höchster",
+    lowest: "Niedrigster",
+    dimNose: "Nose",
+    dimTaste: "Palate",
+    dimFinish: "Finish",
+    dimOverall: "Overall",
+    dimensionAvg: "Dimensions-Ø",
+    vsGroup: "vs. Gruppe",
+    legendYou: "Du",
+    legendCommunity: "Community",
+    smokeAffinity: "Rauch-Affinität",
+    sweetnessBias: "Süße-Tendenz",
+    regionPreferences: "Regionen-Präferenzen",
+    countryDistribution: "Länderverteilung",
+    flavorCloud: "Aroma-Wolke",
+    palateIndices: "Gaumen-Indizes",
+    ratingStyle: "Bewertungsstil",
+    language: "Sprache",
+    share: "Teilen",
+    shareQuote: "Mein CaskSense Connoisseur-Bericht",
+    copySummary: "Zusammenfassung kopieren",
+    copied: "Kopiert!",
+    showImmediately: "Sofort anzeigen",
+    hideHint: "Hinweis ausblenden",
+    addHint: "Hinweis hinzufügen",
+    delete: "Löschen",
+    deleting: "Wird gelöscht...",
+    deleteConfirmTitle: "Bericht löschen?",
+    deleteConfirmText: "Dies kann nicht rückgängig gemacht werden.",
+    cancel: "Abbrechen",
+    retry: "Erneut versuchen",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.profile.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  profile: {
+    title: "Your Palate Profile",
+    subtitle: "How you experience whisky",
+    backTaste: "My World",
+    tasteRadar: "Taste Radar",
+    radarDesc: "Your scoring pattern across dimensions",
+    scoresVsPlatform: "Your scores vs. platform",
+    scoresVsDesc: "How you score compared to others",
+    ratingStyle: "Rating style",
+    stability: "Stability",
+    stabilityHigh: "Very consistent",
+    stabilityMedium: "Moderately consistent",
+    stabilityLow: "Variable",
+    stdDev: "Std deviation",
+    range: "Range",
+    mean: "Mean",
+    sweetSpot: "Sweet spot",
+    count: "Ratings",
+    rated: "Rated",
+    whisky: "Whisky",
+    you: "You",
+    friends: "Friends",
+    platform: "Platform",
+    global: "Global",
+    justMe: "Just me",
+    basisPlatform: "vs. platform",
+    basisFriends: "vs. friends",
+    benchmarkAgainst: "Compare against",
+    comparedAcross: "Compared across {{count}} whiskies",
+    avgDeltaPlatform: "Avg delta vs. platform",
+    delta: "Delta",
+    byRegion: "By region",
+    byPeatLevel: "By peat level",
+    byCaskType: "By cask type",
+    building: "Building your profile...",
+    emptyHint: "Rate at least 5 whiskies to see your profile",
+    noDimensionalHint: "Not enough data for dimensional analysis",
+    confidenceDimension: "Confidence",
+    yourStyle: "Your style",
+  },
+
+DE:
+  profile: {
+    title: "Dein Gaumen-Profil",
+    subtitle: "Wie du Whisky erlebst",
+    backTaste: "Meine Welt",
+    tasteRadar: "Geschmacks-Radar",
+    radarDesc: "Dein Bewertungsmuster über alle Dimensionen",
+    scoresVsPlatform: "Deine Scores vs. Plattform",
+    scoresVsDesc: "Wie du im Vergleich zu anderen bewertest",
+    ratingStyle: "Bewertungsstil",
+    stability: "Stabilität",
+    stabilityHigh: "Sehr konsistent",
+    stabilityMedium: "Mäßig konsistent",
+    stabilityLow: "Variabel",
+    stdDev: "Standardabweichung",
+    range: "Spanne",
+    mean: "Mittelwert",
+    sweetSpot: "Sweet Spot",
+    count: "Bewertungen",
+    rated: "Bewertet",
+    whisky: "Whisky",
+    you: "Du",
+    friends: "Freunde",
+    platform: "Plattform",
+    global: "Global",
+    justMe: "Nur ich",
+    basisPlatform: "vs. Plattform",
+    basisFriends: "vs. Freunde",
+    benchmarkAgainst: "Vergleichen mit",
+    comparedAcross: "Verglichen über {{count}} Whiskies",
+    avgDeltaPlatform: "Ø Abweichung vs. Plattform",
+    delta: "Abweichung",
+    byRegion: "Nach Region",
+    byPeatLevel: "Nach Torfgehalt",
+    byCaskType: "Nach Fasstyp",
+    building: "Profil wird erstellt...",
+    emptyHint: "Bewerte mindestens 5 Whiskies für dein Profil",
+    noDimensionalHint: "Nicht genug Daten für dimensionale Analyse",
+    confidenceDimension: "Konfidenz",
+    yourStyle: "Dein Stil",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.wheel.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  wheel: {
+    title: "Flavor Wheel",
+    subtitle: "Your aroma fingerprint",
+    backTaste: "My World",
+    emptyHint: "Rate more whiskies to see your flavor wheel",
+    flavorDistribution: "Flavor distribution",
+    topCategory: "Top category",
+    totalMentions: "Total mentions",
+    mentions: "mentions",
+    mostUnique: "Most unique to you",
+    sources: "Sources",
+  },
+
+DE:
+  wheel: {
+    title: "Aroma-Rad",
+    subtitle: "Dein Aroma-Fingerabdruck",
+    backTaste: "Meine Welt",
+    emptyHint: "Bewerte mehr Whiskies für dein Aroma-Rad",
+    flavorDistribution: "Aroma-Verteilung",
+    topCategory: "Top-Kategorie",
+    totalMentions: "Nennungen gesamt",
+    mentions: "Nennungen",
+    mostUnique: "Am einzigartigsten für dich",
+    sources: "Quellen",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.recommendations.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  recommendations: {
+    title: "Recommendations",
+    subtitle: "Whiskies matched to your palate",
+    backTaste: "My World",
+    emptyHint: "Rate more whiskies to get recommendations",
+    noResults: "No recommendations yet",
+    match: "Match",
+    factors: "Why this matches you",
+    factorsInfo: "Based on your flavor preferences and rating history",
+    communityRating: "Community rating",
+  },
+
+DE:
+  recommendations: {
+    title: "Empfehlungen",
+    subtitle: "Whiskies passend zu deinem Gaumen",
+    backTaste: "Meine Welt",
+    emptyHint: "Bewerte mehr Whiskies für Empfehlungen",
+    noResults: "Noch keine Empfehlungen",
+    match: "Übereinstimmung",
+    factors: "Warum das zu dir passt",
+    factorsInfo: "Basierend auf deinen Aroma-Präferenzen und Bewertungshistorie",
+    communityRating: "Community-Bewertung",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.activity.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  activity: {
+    title: "Activity Feed",
+    subtitle: "What's happening in your circle",
+    backCircle: "Circle",
+    noActivity: "No activity yet",
+    noActivityDesc: "Activity from your friends will appear here",
+    joinedTasting: "joined a tasting",
+    loggedDram: "logged a dram",
+    justNow: "just now",
+    mAgo: "{{count}}m ago",
+    hAgo: "{{count}}h ago",
+    dAgo: "{{count}}d ago",
+  },
+
+DE:
+  activity: {
+    title: "Aktivitäts-Feed",
+    subtitle: "Was in deinem Circle passiert",
+    backCircle: "Circle",
+    noActivity: "Noch keine Aktivität",
+    noActivityDesc: "Aktivitäten deiner Freunde erscheinen hier",
+    joinedTasting: "hat an einem Tasting teilgenommen",
+    loggedDram: "hat einen Dram eingetragen",
+    justNow: "gerade eben",
+    mAgo: "vor {{count}} Min.",
+    hAgo: "vor {{count}} Std.",
+    dAgo: "vor {{count}} Tag(en)",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — labs.invite.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  invite: {
+    tastingInvitation: "Tasting invitation",
+    loading: "Loading invitation...",
+    accepting: "Accepting...",
+    accepted: "Accepted!",
+    redirecting: "Redirecting...",
+    signIn: "Sign in",
+    signInToAccept: "Sign in to accept this invitation",
+    goToTastings: "Go to Tastings",
+    notFound: "Invitation not found",
+    notFoundDesc: "This invitation link is invalid or has expired.",
+    couldNotAccept: "Could not accept invitation",
+    couldNotAcceptDesc: "Please try again or contact the host.",
+    tryAgain: "Try again",
+    backCircle: "Circle",
+  },
+
+DE:
+  invite: {
+    tastingInvitation: "Tasting-Einladung",
+    loading: "Einladung wird geladen...",
+    accepting: "Wird angenommen...",
+    accepted: "Angenommen!",
+    redirecting: "Weiterleitung...",
+    signIn: "Anmelden",
+    signInToAccept: "Melde dich an um diese Einladung anzunehmen",
+    goToTastings: "Zu den Tastings",
+    notFound: "Einladung nicht gefunden",
+    notFoundDesc: "Dieser Einladungslink ist ungültig oder abgelaufen.",
+    couldNotAccept: "Einladung konnte nicht angenommen werden",
+    couldNotAcceptDesc: "Bitte versuche es erneut oder kontaktiere den Host.",
+    tryAgain: "Erneut versuchen",
+    backCircle: "Circle",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ wc -l client/src/lib/i18n.ts → deutlich mehr Zeilen als vorher
+□ grep -n "Gaumen-Profil" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Aroma-Rad" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Empfehlungen" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Aktivitäts-Feed" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Connoisseur-Bericht" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ tsc --noEmit läuft fehlerfrei
+□ Keine bestehenden Keys wurden gelöscht
