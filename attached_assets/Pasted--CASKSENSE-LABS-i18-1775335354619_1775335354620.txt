@@ -1,0 +1,140 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n FIX: LabsTasteAnalytics.tsx vollständig übersetzen
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die Seite client/src/labs/pages/LabsTasteAnalytics.tsx enthält
+ausschließlich hardcoded englische Texte — kein einziges t().
+Alle sichtbaren Texte müssen durch t()-Aufrufe ersetzt werden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik oder Berechnungen ändern
+❌ NIEMALS Layout oder Styling ändern
+
+✅ NUR sichtbare Strings durch t()-Aufrufe ersetzen
+✅ Neue Keys in BEIDEN Sprachblöcken in i18n.ts eintragen
+✅ useTranslation() importieren falls nicht vorhanden
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsTasteAnalytics.tsx: Texte ersetzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ersetze folgende hardcoded Strings durch t()-Aufrufe:
+
+  "Analytics"
+  → t("analytics.title", "Analytics")
+
+  "Your taste evolution & rating consistency"
+  → t("analytics.subtitle", "Your taste evolution & rating consistency")
+
+  "My Whisky" (im BackLink)
+  → t("myTastePage.title", "My Whisky")
+
+  "TASTE EVOLUTION"
+  → t("analytics.tasteEvolution", "Taste Evolution")
+
+  "How your average rating has developed over time"
+  → t("analytics.tasteEvolutionDesc", "How your average rating has developed over time")
+
+  `Your average has shifted down by ${Math.round(Math.abs(delta))} pts`
+  → t("analytics.shiftedDown", "Your average has shifted down by {{pts}} pts", { pts: Math.round(Math.abs(delta)) })
+
+  `Your average has shifted up by ${Math.round(Math.abs(delta))} pts`  (falls vorhanden)
+  → t("analytics.shiftedUp", "Your average has shifted up by {{pts}} pts", { pts: Math.round(Math.abs(delta)) })
+
+  "RATING CONSISTENCY"
+  → t("analytics.ratingConsistency", "Rating Consistency")
+
+  "How stable and predictable your scoring pattern is"
+  → t("analytics.ratingConsistencyDesc", "How stable and predictable your scoring pattern is")
+
+  "Very Consistent"
+  → t("analytics.veryConsistent", "Very Consistent")
+
+  "Consistent"
+  → t("analytics.consistent", "Consistent")
+
+  "Moderately Consistent" (falls vorhanden)
+  → t("analytics.moderatelyConsistent", "Moderately Consistent")
+
+  "Variable" (falls vorhanden)
+  → t("analytics.variable", "Variable")
+
+  `Your scoring pattern is ${consistencyLabel.toLowerCase()}`
+  → t("analytics.scoringPattern", "Your scoring pattern is {{label}}", { label: consistencyLabel.toLowerCase() })
+
+  "Avg Score"
+  → t("analytics.avgScore", "Avg Score")
+
+  "Spread (StdDev)"
+  → t("analytics.spread", "Spread (StdDev)")
+
+  Alle weiteren englischen Labels die noch auf der Seite vorkommen
+  ebenfalls durch t()-Aufrufe mit dem Prefix "analytics." ersetzen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — i18n.ts: Neue Keys eintragen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts einen neuen analytics-Block eintragen
+in BEIDEN Sprachblöcken:
+
+EN (in en.translation):
+  analytics: {
+    title: "Analytics",
+    subtitle: "Your taste evolution & rating consistency",
+    tasteEvolution: "Taste Evolution",
+    tasteEvolutionDesc: "How your average rating has developed over time",
+    shiftedDown: "Your average has shifted down by {{pts}} pts",
+    shiftedUp: "Your average has shifted up by {{pts}} pts",
+    ratingConsistency: "Rating Consistency",
+    ratingConsistencyDesc: "How stable and predictable your scoring pattern is",
+    veryConsistent: "Very Consistent",
+    consistent: "Consistent",
+    moderatelyConsistent: "Moderately Consistent",
+    variable: "Variable",
+    scoringPattern: "Your scoring pattern is {{label}}",
+    avgScore: "Avg Score",
+    spread: "Spread (StdDev)",
+  },
+
+DE (in de.translation):
+  analytics: {
+    title: "Analytik",
+    subtitle: "Deine Geschmacksentwicklung & Bewertungskonsistenz",
+    tasteEvolution: "Geschmacksentwicklung",
+    tasteEvolutionDesc: "Wie sich dein Durchschnittsscore über die Zeit entwickelt hat",
+    shiftedDown: "Dein Durchschnitt ist um {{pts}} Punkte gesunken",
+    shiftedUp: "Dein Durchschnitt ist um {{pts}} Punkte gestiegen",
+    ratingConsistency: "Bewertungskonsistenz",
+    ratingConsistencyDesc: "Wie stabil und vorhersehbar dein Bewertungsmuster ist",
+    veryConsistent: "Sehr konsistent",
+    consistent: "Konsistent",
+    moderatelyConsistent: "Mäßig konsistent",
+    variable: "Variabel",
+    scoringPattern: "Dein Bewertungsmuster ist {{label}}",
+    avgScore: "Ø Score",
+    spread: "Streuung (StdAbw)",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "TASTE EVOLUTION\|RATING CONSISTENCY\|Avg Score\|Spread\|Consistent" client/src/labs/pages/LabsTasteAnalytics.tsx → kein Treffer
+□ grep -n "Geschmacksentwicklung" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Bewertungskonsistenz" client/src/lib/i18n.ts → 1 Treffer
+□ tsc --noEmit fehlerfrei

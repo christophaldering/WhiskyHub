@@ -1,0 +1,197 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n FIX: LabsTasteCompare.tsx + LabsTasteDownloads.tsx
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Zwei Seiten enthalten hardcoded englische Texte ohne t()-Aufrufe:
+1. client/src/labs/pages/LabsTasteCompare.tsx
+2. client/src/labs/pages/LabsTasteDownloads.tsx
+
+Beide müssen vollständig auf i18n umgestellt werden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik, Berechnungen oder Styling ändern
+❌ NIEMALS bestehende i18n-Keys löschen
+
+✅ NUR sichtbare Strings durch t()-Aufrufe ersetzen
+✅ Neue Keys in BEIDEN Sprachblöcken in i18n.ts eintragen
+✅ useTranslation() + { t } importieren falls nicht vorhanden
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsTasteCompare.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Alle hardcoded sichtbaren Strings in der Datei identifizieren
+und durch t()-Aufrufe mit Prefix "compare." ersetzen.
+
+Wichtige bekannte Strings (weitere in der Datei suchen):
+  "Compare" → t("compare.title", "Compare")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Export" / "Download" → t("compare.export", "Export")
+  "Score" → t("compare.score", "Score")
+  "No results" / "No data" → t("compare.noResults", "No results")
+  "Filter" → t("compare.filter", "Filter")
+  "Sort" → t("compare.sort", "Sort")
+  "All" → t("compare.all", "All")
+  "Higher" / "Lower" → t("compare.higher", "Higher") / t("compare.lower", "Lower")
+  "All time" → t("compare.allTime", "All time")
+
+Schritt 2: i18n.ts — compare-Block in EN + DE eintragen:
+
+EN:
+  compare: {
+    title: "Compare",
+    subtitle: "Your scores vs. the community",
+    export: "Export",
+    score: "Score",
+    noResults: "No results found",
+    filter: "Filter",
+    sort: "Sort",
+    all: "All",
+    higher: "Higher",
+    lower: "Lower",
+    allTime: "All time",
+    yourScore: "Your score",
+    communityScore: "Community score",
+    delta: "Difference",
+    whisky: "Whisky",
+    distillery: "Distillery",
+    region: "Region",
+    ratings: "Ratings",
+    noData: "Not enough data yet",
+    backTaste: "My World",
+  },
+
+DE:
+  compare: {
+    title: "Vergleich",
+    subtitle: "Deine Scores vs. die Community",
+    export: "Exportieren",
+    score: "Score",
+    noResults: "Keine Ergebnisse gefunden",
+    filter: "Filter",
+    sort: "Sortieren",
+    all: "Alle",
+    higher: "Höher",
+    lower: "Niedriger",
+    allTime: "Gesamte Zeit",
+    yourScore: "Dein Score",
+    communityScore: "Community-Score",
+    delta: "Unterschied",
+    whisky: "Whisky",
+    distillery: "Destillerie",
+    region: "Region",
+    ratings: "Bewertungen",
+    noData: "Noch nicht genug Daten",
+    backTaste: "Meine Welt",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — LabsTasteDownloads.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Alle hardcoded sichtbaren Strings identifizieren
+und durch t()-Aufrufe mit Prefix "downloads." ersetzen.
+
+Wichtige bekannte Strings:
+  "Downloads & Export" → t("downloads.title", "Downloads & Export")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Tastings" → t("downloads.tastings", "Tastings")
+  "All tasting sessions and results" → t("downloads.tastingsDesc", "All tasting sessions and results")
+  "Journal" → t("downloads.journal", "Journal")
+  "Profile" → t("downloads.profile", "Profile")
+  "Friends" → t("downloads.friends", "Friends")
+  "Wishlist" → t("downloads.wishlist", "Wishlist")
+  "Collection" → t("downloads.collection", "Collection")
+  "Download" → t("downloads.download", "Download")
+  "CSV" → t("downloads.csv", "CSV")
+  "Excel" → t("downloads.excel", "Excel")
+  "JSON" → t("downloads.json", "JSON")
+  "ZIP" → t("downloads.zip", "ZIP")
+  "Export all data" → t("downloads.exportAll", "Export all data")
+  "Downloading..." → t("downloads.downloading", "Downloading...")
+
+Schritt 2: i18n.ts — downloads-Block in EN + DE eintragen:
+
+EN:
+  downloads: {
+    title: "Downloads & Export",
+    subtitle: "Export your personal data",
+    backTaste: "My World",
+    tastings: "Tastings",
+    tastingsDesc: "All tasting sessions and results",
+    journal: "Journal",
+    journalDesc: "Your personal whisky diary",
+    profile: "Profile",
+    profileDesc: "Your taste profile and statistics",
+    friends: "Friends",
+    friendsDesc: "Your friend connections",
+    wishlist: "Wishlist",
+    wishlistDesc: "Your whisky wishlist",
+    collection: "Collection",
+    collectionDesc: "Your bottle collection",
+    download: "Download",
+    csv: "CSV",
+    excel: "Excel",
+    json: "JSON",
+    zip: "ZIP",
+    exportAll: "Export all data",
+    downloading: "Downloading...",
+    preparing: "Preparing...",
+    noData: "No data available",
+    success: "Downloaded successfully",
+    error: "Download failed",
+  },
+
+DE:
+  downloads: {
+    title: "Downloads & Export",
+    subtitle: "Deine persönlichen Daten exportieren",
+    backTaste: "Meine Welt",
+    tastings: "Tastings",
+    tastingsDesc: "Alle Tasting-Sessions und Ergebnisse",
+    journal: "Journal",
+    journalDesc: "Dein persönliches Whisky-Tagebuch",
+    profile: "Profil",
+    profileDesc: "Dein Geschmacksprofil und Statistiken",
+    friends: "Freunde",
+    friendsDesc: "Deine Freundesverbindungen",
+    wishlist: "Wunschliste",
+    wishlistDesc: "Deine Whisky-Wunschliste",
+    collection: "Sammlung",
+    collectionDesc: "Deine Flaschensammlung",
+    download: "Herunterladen",
+    csv: "CSV",
+    excel: "Excel",
+    json: "JSON",
+    zip: "ZIP",
+    exportAll: "Alle Daten exportieren",
+    downloading: "Wird heruntergeladen...",
+    preparing: "Wird vorbereitet...",
+    noData: "Keine Daten verfügbar",
+    success: "Erfolgreich heruntergeladen",
+    error: "Download fehlgeschlagen",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "Vergleich" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Downloads & Export" client/src/lib/i18n.ts → mindestens 2 Treffer (EN + DE)
+□ grep -n "Alle Daten exportieren" client/src/lib/i18n.ts → 1 Treffer
+□ tsc --noEmit fehlerfrei
+□ Keine Logik oder Styling verändert
