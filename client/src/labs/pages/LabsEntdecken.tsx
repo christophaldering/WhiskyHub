@@ -7,19 +7,9 @@ import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
 import {
   Search, ChevronRight, Wine,
-  BookOpen, Users, Bookmark, HelpCircle, Layers,
+  BookOpen,
   X, ChevronDown, Check, ArrowUp, ArrowDown,
-  Utensils, Brain,
 } from "lucide-react";
-import { SECTIONS } from "@/labs/pages/LabsBibliothek";
-import type { ElementType } from "react";
-
-const SECTION_ICONS: Record<string, ElementType> = {
-  "bibliothek.sectionCommunity": Users,
-  "bibliothek.sectionReference": Bookmark,
-  "bibliothek.sectionTastingHelp": HelpCircle,
-  "bibliothek.sectionDeepDive": Layers,
-};
 
 type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
 
@@ -280,77 +270,18 @@ export default function LabsEntdecken() {
       </p>
 
       <div className="labs-fade-in labs-stagger-1" style={{ marginBottom: 24 }}>
-        <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
-          <BookOpen className="w-3.5 h-3.5" />
-          {t("explore.bibliothekCard", "Library")}
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {SECTIONS.map((section, idx) => {
-            const SectionIcon = SECTION_ICONS[section.titleKey] || BookOpen;
-            return (
-              <Link
-                key={section.titleKey}
-                href="/labs/bibliothek"
-                style={{ textDecoration: "none" }}
-                data-testid={`link-bibliothek-section-${idx}`}
-              >
-                <div
-                  className="labs-card-interactive"
-                  style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, height: "100%" }}
-                  data-testid={`card-bibliothek-section-${idx}`}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <SectionIcon className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-                      {t(section.titleKey, section.titleFallback)}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                    {section.links.map((link) => (
-                      <span
-                        key={link.href}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(link.href); }}
-                        style={{
-                          fontSize: 11, color: "var(--labs-text-muted)", background: "var(--labs-surface-alt, rgba(255,255,255,0.04))",
-                          padding: "3px 8px", borderRadius: 6, display: "inline-block", cursor: "pointer",
-                          transition: "background 0.15s, color 0.15s",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--labs-accent-muted)"; e.currentTarget.style.color = "var(--labs-accent)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--labs-surface-alt, rgba(255,255,255,0.04))"; e.currentTarget.style.color = "var(--labs-text-muted)"; }}
-                        data-testid={`chip-${link.testId}`}
-                      >
-                        {t(link.labelKey, link.labelFallback)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-          <Link href="/labs/taste/pairings" style={{ textDecoration: "none" }} data-testid="link-entdecken-pairings">
-            <div className="labs-card-interactive" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, height: "100%" }}>
-              <Utensils className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{t("taste.pairings", "Pairings")}</div>
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("taste.pairingsDesc", "Whisky & Speisen kombinieren")}</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+        <Link href="/labs/bibliothek" style={{ textDecoration: "none" }} data-testid="link-entdecken-bibliothek">
+          <div className="labs-card-interactive" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <BookOpen className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
             </div>
-          </Link>
-          <Link href="/labs/taste/benchmark" style={{ textDecoration: "none" }} data-testid="link-entdecken-benchmark">
-            <div className="labs-card-interactive" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, height: "100%" }}>
-              <Brain className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{t("taste.benchmark", "Benchmark")}</div>
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("taste.benchmarkDesc", "Externe Tasting-Daten & Vergleich")}</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("bibliothek.title", "Library")}</div>
+              <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("explore.bibliothekSub", "Knowledge, reference & deep dive")}</div>
             </div>
-          </Link>
-        </div>
+            <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0 }} />
+          </div>
+        </Link>
       </div>
 
       <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>

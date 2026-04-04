@@ -242,9 +242,9 @@ export default function LabsBenchmark() {
 
   return (
     <div className="labs-page" data-testid="labs-benchmark">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href={new URLSearchParams(window.location.search).get("from") === "bibliothek" ? "/labs/bibliothek" : "/labs/taste"} style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-benchmark">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> {new URLSearchParams(window.location.search).get("from") === "bibliothek" ? t("bibliothek.title", "Library") : "Taste"}
         </button>
       </BackLink>
 

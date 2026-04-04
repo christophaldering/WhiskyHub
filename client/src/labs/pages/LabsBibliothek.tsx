@@ -5,6 +5,7 @@ import {
   BookOpen, Building2, Package, Map,
   BookMarked, ChevronRight, ChevronLeft,
   Archive, BarChart3, FlaskConical, SlidersHorizontal,
+  Utensils, Brain, Lightbulb, GraduationCap, TrendingUp, Factory,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -41,23 +42,40 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "bibliothek.lexiconDescNav", descFallback: "Dictionary, templates & flavour map", href: "/labs/discover/lexicon", testId: "labs-link-bibliothek-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-bibliothek-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-bibliothek-bottlers" },
+      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Whisky Production", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Background & knowledge", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
     ],
   },
   {
-    titleKey: "bibliothek.sectionTastingHelp",
-    titleFallback: "Tasting Help",
+    titleKey: "bibliothek.sectionTastingWissen",
+    titleFallback: "Tasting Knowledge",
     links: [
       { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-bibliothek-guide" },
+      { icon: FlaskConical, labelKey: "bibliothek.howCaskSenseWorks", labelFallback: "How CaskSense Works", descKey: "bibliothek.howCaskSenseWorksDesc", descFallback: "Scoring system explained", href: "/labs/discover/rabbit-hole", testId: "labs-link-bibliothek-how-casksense" },
+      { icon: SlidersHorizontal, labelKey: "bibliothek.howProfileCalculated", labelFallback: "How a Profile Is Calculated", descKey: "bibliothek.howProfileCalculatedDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/method", testId: "labs-link-bibliothek-profile-calc" },
+      { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/research#foundations", testId: "labs-link-bibliothek-idea-numbers" },
+      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/research#testTheory", testId: "labs-link-bibliothek-test-theory" },
+      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/research#statistics", testId: "labs-link-bibliothek-stat-methods" },
+    ],
+  },
+  {
+    titleKey: "bibliothek.sectionPairings",
+    titleFallback: "Pairings",
+    links: [
+      { icon: Utensils, labelKey: "bibliothek.pairings", labelFallback: "Whisky & Food Pairings", descKey: "bibliothek.pairingsDesc", descFallback: "Combine whisky with food", href: "/labs/taste/pairings?from=bibliothek", testId: "labs-link-bibliothek-pairings" },
+    ],
+  },
+  {
+    titleKey: "bibliothek.sectionBenchmark",
+    titleFallback: "Benchmark",
+    links: [
+      { icon: Brain, labelKey: "bibliothek.benchmark", labelFallback: "Benchmark", descKey: "bibliothek.benchmarkDesc", descFallback: "External tasting data & comparison", href: "/labs/taste/benchmark?from=bibliothek", testId: "labs-link-bibliothek-benchmark" },
     ],
   },
   {
     titleKey: "bibliothek.sectionDeepDive",
-    titleFallback: "Deep Dives",
+    titleFallback: "Deep Dive",
     links: [
-      { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-bibliothek-rabbit-hole" },
-      { icon: FlaskConical, labelKey: "bibliothek.method", labelFallback: "CaskSense Method", descKey: "bibliothek.methodDesc", descFallback: "Scoring system explained", href: "/labs/discover/method", testId: "labs-link-bibliothek-method", indent: true },
-      { icon: SlidersHorizontal, labelKey: "bibliothek.background", labelFallback: "Background & Methodology", descKey: "bibliothek.backgroundDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/background", testId: "labs-link-bibliothek-background", indent: true },
-      { icon: BookOpen, labelKey: "discover.research", labelFallback: "Research", descKey: "discover.researchDesc", descFallback: "Science of perception & bibliography", href: "/labs/discover/research", testId: "labs-link-bibliothek-research", indent: true },
+      { icon: BookMarked, labelKey: "bibliothek.literatureStudies", labelFallback: "Literature & Studies", descKey: "bibliothek.literatureStudiesDesc", descFallback: "Peer-reviewed research & bibliography", href: "/labs/discover/research", testId: "labs-link-bibliothek-literature" },
     ],
   },
 ];
