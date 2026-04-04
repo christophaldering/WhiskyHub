@@ -1,0 +1,446 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n BLOCK 4: m2.rating.* + tastingDetail.* + liveUi.* + resultsUi.* + cockpitUi.*
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+Struktur: resources.en.translation + resources.de.translation
+
+Dieser Prompt fügt fehlende Keys ein für:
+  m2.rating.*     — Bewertungsflow (Flavour Studio, Sliders)
+  tastingDetail.* — Tasting-Detailseite
+  liveUi.*        — Live-Tasting UI
+  resultsUi.*     — Ergebnisse
+  cockpitUi.*     — Host-Cockpit
+  ratingUi.*      — Bewertungs-UI
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Keys löschen oder umbenennen
+❌ NIEMALS die Dateistruktur ändern
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS Keys doppelt einfügen — erst prüfen ob vorhanden
+
+✅ Immer BEIDE Sprachblöcke (EN + DE) aktualisieren
+✅ Diese Begriffe bleiben in DE identisch zu EN (Markenbegriffe):
+   Nose, Palate, Finish, Overall, Dram, Tasting, Host,
+   Solo, Cockpit, Flavour Studio, Blind
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — m2.rating.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in m2.rating-Block einfügen falls nicht vorhanden):
+  nose: "Nose",
+  taste: "Palate",
+  finish: "Finish",
+  overall: "Overall",
+  overallLocked: "Overall (auto-calculated)",
+  resetToCalc: "Reset to calculated",
+  suggestedScore: "Suggested score",
+  optionalLabel: "Optional",
+  manual: "Manual",
+  quickList: "Quick list",
+  customDescriptor: "Add your own...",
+  describePlaceholder: "Describe what you taste...",
+  detailedTasting: "Detailed tasting",
+  detailedTastingDesc: "Step through nose, palate and finish",
+  flavourStudio: "Flavour Studio",
+  journeyPhase1: "Nose",
+  journeyPhase2: "Palate",
+  journeyPhase3: "Finish",
+  journeyNext: "Next",
+  journeyGoBack: "Back",
+  journeyRestart: "Start over",
+  journeyYes: "Yes",
+  journeyNo: "No",
+  journeyMaybe: "Maybe",
+  journeyMaybePrompt: "Tell us more",
+  journeyDrillPrompt: "What specifically?",
+  journeySweepPrompt: "Any of these?",
+  journeyNoSelections: "Skip for now",
+  journeyRefine: "Refine",
+  journeySelectedNotes: "Selected notes",
+  journeyShowProfile: "Show profile",
+  journeyCategoryWeights: "Category weights",
+  journeyProfileMatch: "Profile match",
+  studioGuide: "Guide",
+  studioJourney: "Journey",
+  studioDescribe: "Describe",
+  studioWheel: "Wheel",
+  studioCompass: "Compass",
+  studioGuideCategories: "Categories",
+  studioGuideGroups: "Groups",
+  studioGuideAll: "All",
+  studioGuideAllInCategory: "All in category",
+  studioGuideRelated: "Related",
+  studioGuideSelected: "Selected",
+  studioGuideNotes: "Notes",
+  studioSearchWhisky: "Search whisky...",
+  studioSearching: "Searching...",
+  studioTastesLike: "Tastes like",
+  studioTypicalFlavours: "Typical flavours",
+  studioSuggestedFlavours: "Suggested flavours",
+  studioCustomPlaceholder: "Custom aroma...",
+  studioQuickAdd: "Quick add",
+  studioViewLabel: "View",
+  studioAxisSweet: "Sweet",
+  studioAxisSmoky: "Smoky",
+  studioAxisLight: "Light",
+  studioAxisFullBodied: "Full-bodied",
+  studioDescribePlaceholder: "Describe your impressions...",
+  studioYouLabel: "You",
+  studioYourProfile: "Your profile",
+  ratingModels: "Rating modes",
+  moreAromasModels: "More aromas",
+  moreAromasModelsSub: "Explore additional aroma categories",
+
+DE (in m2.rating-Block einfügen falls nicht vorhanden):
+  nose: "Nose",
+  taste: "Palate",
+  finish: "Finish",
+  overall: "Overall",
+  overallLocked: "Overall (automatisch berechnet)",
+  resetToCalc: "Auf Berechnung zurücksetzen",
+  suggestedScore: "Vorgeschlagener Score",
+  optionalLabel: "Optional",
+  manual: "Manuell",
+  quickList: "Schnellliste",
+  customDescriptor: "Eigenen hinzufügen...",
+  describePlaceholder: "Beschreibe was du schmeckst...",
+  detailedTasting: "Detaillierte Verkostung",
+  detailedTastingDesc: "Durch Nose, Gaumen und Finish führen",
+  flavourStudio: "Flavour Studio",
+  journeyPhase1: "Nose",
+  journeyPhase2: "Palate",
+  journeyPhase3: "Finish",
+  journeyNext: "Weiter",
+  journeyGoBack: "Zurück",
+  journeyRestart: "Von vorne beginnen",
+  journeyYes: "Ja",
+  journeyNo: "Nein",
+  journeyMaybe: "Vielleicht",
+  journeyMaybePrompt: "Erzähl uns mehr",
+  journeyDrillPrompt: "Was genau?",
+  journeySweepPrompt: "Etwas davon?",
+  journeyNoSelections: "Jetzt überspringen",
+  journeyRefine: "Verfeinern",
+  journeySelectedNotes: "Ausgewählte Noten",
+  journeyShowProfile: "Profil anzeigen",
+  journeyCategoryWeights: "Kategoriegewichte",
+  journeyProfileMatch: "Profil-Übereinstimmung",
+  studioGuide: "Guide",
+  studioJourney: "Journey",
+  studioDescribe: "Beschreiben",
+  studioWheel: "Rad",
+  studioCompass: "Kompass",
+  studioGuideCategories: "Kategorien",
+  studioGuideGroups: "Gruppen",
+  studioGuideAll: "Alle",
+  studioGuideAllInCategory: "Alle in Kategorie",
+  studioGuideRelated: "Verwandte",
+  studioGuideSelected: "Ausgewählte",
+  studioGuideNotes: "Notizen",
+  studioSearchWhisky: "Whisky suchen...",
+  studioSearching: "Suche...",
+  studioTastesLike: "Schmeckt nach",
+  studioTypicalFlavours: "Typische Aromen",
+  studioSuggestedFlavours: "Vorgeschlagene Aromen",
+  studioCustomPlaceholder: "Eigenes Aroma...",
+  studioQuickAdd: "Schnell hinzufügen",
+  studioViewLabel: "Ansicht",
+  studioAxisSweet: "Süß",
+  studioAxisSmoky: "Rauchig",
+  studioAxisLight: "Leicht",
+  studioAxisFullBodied: "Vollmundig",
+  studioDescribePlaceholder: "Beschreibe deine Eindrücke...",
+  studioYouLabel: "Du",
+  studioYourProfile: "Dein Profil",
+  ratingModels: "Bewertungsmodi",
+  moreAromasModels: "Mehr Aromen",
+  moreAromasModelsSub: "Weitere Aromakategorien erkunden",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — tastingDetail.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  tastingDetail: {
+    notFound: "Tasting not found",
+    notFoundDesc: "This tasting does not exist or you have no access.",
+    account: "Account",
+    participants: "Participants",
+    whiskies: "Whiskies",
+    dram: "Dram",
+    enterSession: "Enter session",
+    enterLiveSession: "Enter live session",
+    manageSession: "Manage session",
+    viewResults: "View results",
+    viewReveal: "View reveal",
+    tastingRecap: "Tasting recap",
+    restartTasting: "Restart tasting",
+    savedRatings: "Saved ratings",
+    guidedNotes: "Guided notes",
+    focusMode: "Focus mode",
+    oneAtATime: "One at a time",
+    exploreFreely: "Explore freely",
+    noSignIn: "No sign-in required",
+    instant: "Instant access",
+    namePlaceholder: "Your name",
+    titlePlaceholder: "Tasting title",
+    locationPlaceholder: "Location",
+    descriptionPlaceholder: "Description",
+    distilleryPlaceholder: "Distillery",
+    agePlaceholder: "Age",
+    abvPlaceholder: "ABV %",
+    countryPlaceholder: "Country",
+    whiskyNamePlaceholder: "Whisky name",
+    notWithHostControls: "Not available with host controls active",
+    simple: "Simple",
+    classic: "Classic",
+    detailed: "Detailed",
+    free: "Free",
+    pro: "Pro",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  tastingDetail: {
+    notFound: "Tasting nicht gefunden",
+    notFoundDesc: "Dieses Tasting existiert nicht oder du hast keinen Zugriff.",
+    account: "Konto",
+    participants: "Teilnehmer",
+    whiskies: "Whiskies",
+    dram: "Dram",
+    enterSession: "Session betreten",
+    enterLiveSession: "Live-Session betreten",
+    manageSession: "Session verwalten",
+    viewResults: "Ergebnisse ansehen",
+    viewReveal: "Enthüllung ansehen",
+    tastingRecap: "Tasting-Rückblick",
+    restartTasting: "Tasting neu starten",
+    savedRatings: "Gespeicherte Bewertungen",
+    guidedNotes: "Geführte Notizen",
+    focusMode: "Fokusmodus",
+    oneAtATime: "Einen nach dem anderen",
+    exploreFreely: "Frei erkunden",
+    noSignIn: "Kein Account erforderlich",
+    instant: "Sofortzugang",
+    namePlaceholder: "Dein Name",
+    titlePlaceholder: "Tasting-Titel",
+    locationPlaceholder: "Ort",
+    descriptionPlaceholder: "Beschreibung",
+    distilleryPlaceholder: "Destillerie",
+    agePlaceholder: "Alter",
+    abvPlaceholder: "ABV %",
+    countryPlaceholder: "Land",
+    whiskyNamePlaceholder: "Whisky-Name",
+    notWithHostControls: "Nicht verfügbar wenn Host-Kontrollen aktiv",
+    simple: "Einfach",
+    classic: "Klassisch",
+    detailed: "Detailliert",
+    free: "Frei",
+    pro: "Pro",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — liveUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  liveUi: {
+    tasting: "Tasting",
+    drams: "Drams",
+    taster: "Taster",
+    blindTasting: "Blind Tasting",
+    startsShortly: "Starts shortly",
+    waitForHost: "Waiting for host...",
+    ratingsLocked: "Ratings locked",
+    tapToWatch: "Tap to watch",
+    tastingComplete: "Tasting complete",
+    thankYou: "Thank you for participating!",
+    viewResults: "View results",
+    saveFailedError: "Save failed — please retry",
+    presentationLive: "Presentation live",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  liveUi: {
+    tasting: "Tasting",
+    drams: "Drams",
+    taster: "Taster",
+    blindTasting: "Blind Tasting",
+    startsShortly: "Beginnt gleich",
+    waitForHost: "Warte auf Host...",
+    ratingsLocked: "Bewertungen gesperrt",
+    tapToWatch: "Zum Anschauen tippen",
+    tastingComplete: "Tasting abgeschlossen",
+    thankYou: "Danke für deine Teilnahme!",
+    viewResults: "Ergebnisse ansehen",
+    saveFailedError: "Speichern fehlgeschlagen — bitte erneut versuchen",
+    presentationLive: "Präsentation live",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — resultsUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in resultsUi-Block einfügen falls nicht vorhanden):
+  tastingResults: "Tasting Results",
+  theTasting: "The Tasting",
+  theTastingDesc: "Your evening at a glance",
+  tonightsLineup: "Tonight's lineup",
+  theTasters: "The tasters",
+  whiskiesTasted: "Whiskies tasted",
+  ratingsGiven: "Ratings given",
+  andTheWinnerIs: "And the winner is...",
+  andTheWinnerIsDesc: "The highest-rated whisky of the evening",
+  palatesOneMission: "palates, one mission",
+  consensus: "Consensus pick",
+  debated: "Most debated",
+  nose: "Nose",
+  taste: "Palate",
+  finish: "Finish",
+  rating: "Rating",
+  ratings: "Ratings",
+  ratingsNoEdit: "Ratings cannot be edited after reveal",
+  tasters: "Tasters",
+  whiskies: "Whiskies",
+  whisky: "Whisky",
+  other: "Other",
+  unknown: "Unknown",
+  live: "Live",
+  export: "Export",
+  pdf: "PDF",
+  csv: "CSV",
+  excel: "Excel",
+  generatedBy: "Generated by CaskSense",
+  finish: "Finish",
+  finalizeDesc: "Archive this tasting to lock all ratings",
+  tastingArchived: "Tasting archived",
+  failedToArchive: "Could not archive tasting",
+  adminReopen: "Reopen (Admin)",
+
+DE (in resultsUi-Block einfügen falls nicht vorhanden):
+  tastingResults: "Tasting-Ergebnisse",
+  theTasting: "Das Tasting",
+  theTastingDesc: "Dein Abend auf einen Blick",
+  tonightsLineup: "Das Lineup",
+  theTasters: "Die Taster",
+  whiskiesTasted: "Verkostete Whiskies",
+  ratingsGiven: "Abgegebene Bewertungen",
+  andTheWinnerIs: "Und der Gewinner ist...",
+  andTheWinnerIsDesc: "Der bestbewertete Whisky des Abends",
+  palatesOneMission: "Gaumen, eine Mission",
+  consensus: "Konsens-Favorit",
+  debated: "Am meisten diskutiert",
+  nose: "Nose",
+  taste: "Palate",
+  finish: "Finish",
+  rating: "Bewertung",
+  ratings: "Bewertungen",
+  ratingsNoEdit: "Bewertungen können nach der Enthüllung nicht bearbeitet werden",
+  tasters: "Taster",
+  whiskies: "Whiskies",
+  whisky: "Whisky",
+  other: "Andere",
+  unknown: "Unbekannt",
+  live: "Live",
+  export: "Export",
+  pdf: "PDF",
+  csv: "CSV",
+  excel: "Excel",
+  generatedBy: "Erstellt mit CaskSense",
+  finish: "Finish",
+  finalizeDesc: "Tasting archivieren um alle Bewertungen zu sperren",
+  tastingArchived: "Tasting archiviert",
+  failedToArchive: "Tasting konnte nicht archiviert werden",
+  adminReopen: "Wiedereröffnen (Admin)",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — cockpitUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  cockpitUi: {
+    nose: "Nose",
+    taste: "Palate",
+    finish: "Finish",
+    overall: "Overall",
+    compact: "Compact",
+    wizard: "Wizard",
+    lock: "Lock",
+    locked: "Locked",
+    revealNext: "Reveal next",
+    noRatingsYet: "No ratings yet",
+    ratingNotAvailable: "Rating not available",
+    sessionNotStarted: "Session not started",
+    startTastingToRate: "Start tasting to rate",
+    waitingForFirstDram: "Waiting for first dram",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  cockpitUi: {
+    nose: "Nose",
+    taste: "Palate",
+    finish: "Finish",
+    overall: "Overall",
+    compact: "Kompakt",
+    wizard: "Wizard",
+    lock: "Sperren",
+    locked: "Gesperrt",
+    revealNext: "Nächsten enthüllen",
+    noRatingsYet: "Noch keine Bewertungen",
+    ratingNotAvailable: "Bewertung nicht verfügbar",
+    sessionNotStarted: "Session noch nicht gestartet",
+    startTastingToRate: "Tasting starten um zu bewerten",
+    waitingForFirstDram: "Warte auf ersten Dram",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — ratingUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  ratingUi: {
+    avg: "Avg",
+    radar: "Radar",
+    overallAuto: "Overall (auto)",
+    overallManual: "Overall (manual)",
+    overallReset: "Reset to auto",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  ratingUi: {
+    avg: "Ø",
+    radar: "Radar",
+    overallAuto: "Overall (automatisch)",
+    overallManual: "Overall (manuell)",
+    overallReset: "Auf automatisch zurücksetzen",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ wc -l client/src/lib/i18n.ts → deutlich mehr Zeilen als vorher
+□ grep -n "Vollmundig" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Fokusmodus" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Tasting-Ergebnisse" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Gaumen, eine Mission" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Bewertungsmodi" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ tsc --noEmit läuft fehlerfrei
+□ Keine bestehenden Keys wurden gelöscht

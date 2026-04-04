@@ -1,0 +1,436 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n BLOCK 5: history.* + onboarding.* + globalSearchUi.* + v2.solo.* + collectionUi.* + tastingStatus.*
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+Struktur: resources.en.translation + resources.de.translation
+
+Dieser Prompt fügt fehlende Keys ein für:
+  history.* / historyUi.*     — Historische Tastings
+  onboarding.*                — Onboarding-Flow
+  globalSearchUi.*            — Globale Suche
+  v2.solo.*                   — Solo Dram Flow
+  collectionUi.*              — Sammlungs-UI
+  tastingStatus.*             — Tasting-Statusbadges
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Keys löschen oder umbenennen
+❌ NIEMALS die Dateistruktur ändern
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS Keys doppelt einfügen — erst prüfen ob vorhanden
+
+✅ Immer BEIDE Sprachblöcke (EN + DE) aktualisieren
+✅ Markenbegriffe in DE identisch zu EN:
+   Solo, Dram, Tastings, Whiskybase, Rabbit Hole, Community,
+   Leaderboard, Benchmark, Connoisseur, Circle, Labs
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — history.* + historyUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  history: {
+    archiveTitle: "Historical Archive",
+    archiveSubtitle: "Past tastings & results",
+    tabTastings: "Tastings",
+    tabInsights: "Insights",
+    backToDashboard: "Dashboard",
+  },
+  historyUi: {
+    avgScore: "Avg Score",
+    topRegion: "Top region",
+    topCask: "Top cask type",
+    peatLevel: "Peat level",
+    scoreDistribution: "Score distribution",
+    smokyVsNonSmoky: "Smoky vs. non-smoky",
+    groupTasteProfile: "Group taste profile",
+    top20Whiskies: "Top 20 whiskies",
+    bestPerformingRegions: "Best performing regions",
+    caskTypeComparison: "Cask type comparison",
+    couldNotLoadInsights: "Could not load insights",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  history: {
+    archiveTitle: "Historisches Archiv",
+    archiveSubtitle: "Vergangene Tastings & Ergebnisse",
+    tabTastings: "Tastings",
+    tabInsights: "Insights",
+    backToDashboard: "Dashboard",
+  },
+  historyUi: {
+    avgScore: "Ø Score",
+    topRegion: "Top-Region",
+    topCask: "Top-Fasstyp",
+    peatLevel: "Torfgehalt",
+    scoreDistribution: "Score-Verteilung",
+    smokyVsNonSmoky: "Rauchig vs. nicht rauchig",
+    groupTasteProfile: "Gruppen-Geschmacksprofil",
+    top20Whiskies: "Top 20 Whiskies",
+    bestPerformingRegions: "Beste Regionen",
+    caskTypeComparison: "Fasstyp-Vergleich",
+    couldNotLoadInsights: "Insights konnten nicht geladen werden",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — onboarding.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  onboarding: {
+    title: "Welcome to CaskSense",
+    signIn: {
+      label: "Sign in",
+      link: "Already have an account?",
+    },
+    join: {
+      go: "Get started",
+    },
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  onboarding: {
+    title: "Willkommen bei CaskSense",
+    signIn: {
+      label: "Anmelden",
+      link: "Bereits ein Konto?",
+    },
+    join: {
+      go: "Loslegen",
+    },
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — globalSearchUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  globalSearchUi: {
+    sectionMain: "Main",
+    sectionTasting: "Tasting",
+    sectionTaste: "My World",
+    sectionDiscover: "Explore",
+    sectionCommunity: "Circle",
+    sectionTools: "Tools",
+    sectionInfo: "Info",
+    tastings: "Tastings",
+    hostATasting: "Host a tasting",
+    joinSession: "Join session",
+    soloTasting: "Solo Tasting",
+    hostDashboard: "Host Dashboard",
+    myDrams: "My Drams",
+    myCollection: "My Bottles",
+    wishlist: "Wishlist",
+    flavorProfile: "Palate Profile",
+    analytics: "Analytics",
+    flavorWheel: "Flavor Wheel",
+    tasteCompare: "Compare",
+    tasteHub: "My World",
+    downloads: "Downloads",
+    settings: "Settings",
+    recommendations: "Recommendations",
+    pairings: "Pairings",
+    benchmark: "Benchmark",
+    collectionAnalysis: "Collection Analysis",
+    aiCuration: "AI Curation",
+    palateLetter: "Palate Letter",
+    explore: "Explore",
+    distilleries: "Distilleries",
+    bottlers: "Bottlers",
+    lexicon: "Lexicon",
+    flavourMap: "Flavour Map",
+    templates: "Templates",
+    tastingGuide: "Tasting Guide",
+    research: "Research",
+    rabbitHole: "Rabbit Hole",
+    circle: "Circle",
+    community: "Community",
+    activityFeed: "Activity Feed",
+    archive: "Archive",
+    calendar: "Calendar",
+    paperScan: "Paper Scan",
+    about: "About",
+    impressum: "Imprint",
+    privacy: "Privacy",
+    termsOfUse: "Terms of Use",
+    donate: "Donate",
+    discover: "Discover",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  globalSearchUi: {
+    sectionMain: "Hauptmenü",
+    sectionTasting: "Tasting",
+    sectionTaste: "Meine Welt",
+    sectionDiscover: "Entdecken",
+    sectionCommunity: "Circle",
+    sectionTools: "Werkzeuge",
+    sectionInfo: "Info",
+    tastings: "Tastings",
+    hostATasting: "Tasting hosten",
+    joinSession: "Session beitreten",
+    soloTasting: "Solo Tasting",
+    hostDashboard: "Host-Dashboard",
+    myDrams: "Meine Drams",
+    myCollection: "Meine Flaschen",
+    wishlist: "Wunschliste",
+    flavorProfile: "Gaumen-Profil",
+    analytics: "Analytik",
+    flavorWheel: "Aroma-Rad",
+    tasteCompare: "Vergleich",
+    tasteHub: "Meine Welt",
+    downloads: "Downloads",
+    settings: "Einstellungen",
+    recommendations: "Empfehlungen",
+    pairings: "Pairings",
+    benchmark: "Benchmark",
+    collectionAnalysis: "Sammlungsanalyse",
+    aiCuration: "KI-Kuratierung",
+    palateLetter: "Gaumen-Brief",
+    explore: "Entdecken",
+    distilleries: "Destillerien",
+    bottlers: "Abfüller",
+    lexicon: "Lexikon",
+    flavourMap: "Aromakarte",
+    templates: "Vorlagen",
+    tastingGuide: "Tasting-Guide",
+    research: "Forschung",
+    rabbitHole: "Rabbit Hole",
+    circle: "Circle",
+    community: "Community",
+    activityFeed: "Aktivitäts-Feed",
+    archive: "Archiv",
+    calendar: "Kalender",
+    paperScan: "Paper Scan",
+    about: "Über CaskSense",
+    impressum: "Impressum",
+    privacy: "Datenschutz",
+    termsOfUse: "Nutzungsbedingungen",
+    donate: "Spenden",
+    discover: "Entdecken",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — v2.solo.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in v2.solo-Block einfügen falls nicht vorhanden):
+  title: "Solo Dram",
+  name: "Name",
+  namePH: "Whisky name",
+  distillery: "Distillery",
+  distilleryPH: "Distillery name",
+  region: "Region",
+  regionPH: "Region",
+  country: "Country",
+  countryPH: "Country",
+  age: "Age",
+  agePH: "Years",
+  abv: "ABV",
+  abvPH: "% vol",
+  cask: "Cask type",
+  caskPH: "e.g. Sherry, Bourbon",
+  photo: "Photo",
+  photoDesc: "Take or upload a bottle photo",
+  upload: "Upload",
+  uploadDesc: "Upload from your library",
+  manual: "Manual entry",
+  manualDesc: "Enter whisky details manually",
+  or: "or",
+  barcode: "Barcode",
+  barcodeDesc: "Scan barcode to identify",
+  scanBarcode: "Scan barcode",
+  scanWithCamera: "Scan with camera",
+  scanHint: "Hold the camera over the barcode",
+  barcodeInput: "Enter barcode",
+  barcodeInputPH: "EAN / UPC",
+  barcodeLookup: "Look up",
+  barcodeSubmit: "Submit",
+  invalidBarcode: "Invalid barcode",
+  captureOptions: "Identify whisky",
+  captureSub: "Choose how to identify",
+  identifying: "Identifying...",
+  recognized: "Whisky recognized",
+  identifyFail: "Could not identify",
+  identifyRetry: "Try again",
+  cameraError: "Camera not available",
+  enterManually: "Enter manually",
+  saved: "Saved!",
+  saveRetry: "Save failed — retry",
+  draftSaved: "Draft saved",
+  draftHint: "Your draft will be saved automatically",
+  toRating: "Rate this dram",
+  toHub: "Back to My World",
+  another: "Log another",
+  collection: "Add to collection",
+  collectionDesc: "Save to your bottle collection",
+  addToCollection: "Add to collection",
+  participantError: "Please sign in to log drams",
+  backDialogTitle: "Leave without saving?",
+  backDialogHint: "Your progress will be lost",
+  backDialogSave: "Save draft",
+  backDialogDiscard: "Discard",
+  backDialogCancel: "Stay",
+  quickFollowUpTitle: "Nice dram!",
+  quickFollowUpHint: "What would you like to do next?",
+  quickFollowUpFinish: "I'm done",
+  quickFollowUpDeepen: "Add more details",
+  quickFollowUpDraft: "Save as draft",
+
+DE (in v2.solo-Block einfügen falls nicht vorhanden):
+  title: "Solo Dram",
+  name: "Name",
+  namePH: "Whisky-Name",
+  distillery: "Destillerie",
+  distilleryPH: "Destillerie",
+  region: "Region",
+  regionPH: "Region",
+  country: "Land",
+  countryPH: "Land",
+  age: "Alter",
+  agePH: "Jahre",
+  abv: "ABV",
+  abvPH: "% vol",
+  cask: "Fasstyp",
+  caskPH: "z.B. Sherry, Bourbon",
+  photo: "Foto",
+  photoDesc: "Flaschenfoto aufnehmen oder hochladen",
+  upload: "Hochladen",
+  uploadDesc: "Aus Bibliothek hochladen",
+  manual: "Manuelle Eingabe",
+  manualDesc: "Whisky-Details manuell eingeben",
+  or: "oder",
+  barcode: "Barcode",
+  barcodeDesc: "Barcode scannen zur Identifikation",
+  scanBarcode: "Barcode scannen",
+  scanWithCamera: "Mit Kamera scannen",
+  scanHint: "Kamera über den Barcode halten",
+  barcodeInput: "Barcode eingeben",
+  barcodeInputPH: "EAN / UPC",
+  barcodeLookup: "Nachschlagen",
+  barcodeSubmit: "Absenden",
+  invalidBarcode: "Ungültiger Barcode",
+  captureOptions: "Whisky identifizieren",
+  captureSub: "Wähle eine Methode",
+  identifying: "Wird identifiziert...",
+  recognized: "Whisky erkannt",
+  identifyFail: "Konnte nicht identifiziert werden",
+  identifyRetry: "Erneut versuchen",
+  cameraError: "Kamera nicht verfügbar",
+  enterManually: "Manuell eingeben",
+  saved: "Gespeichert!",
+  saveRetry: "Speichern fehlgeschlagen — nochmal",
+  draftSaved: "Entwurf gespeichert",
+  draftHint: "Dein Entwurf wird automatisch gespeichert",
+  toRating: "Diesen Dram bewerten",
+  toHub: "Zurück zu Meine Welt",
+  another: "Weiteren eintragen",
+  collection: "Zur Sammlung hinzufügen",
+  collectionDesc: "In deine Flaschensammlung speichern",
+  addToCollection: "Zur Sammlung",
+  participantError: "Bitte anmelden um Drams einzutragen",
+  backDialogTitle: "Ohne Speichern verlassen?",
+  backDialogHint: "Dein Fortschritt geht verloren",
+  backDialogSave: "Entwurf speichern",
+  backDialogDiscard: "Verwerfen",
+  backDialogCancel: "Bleiben",
+  quickFollowUpTitle: "Schöner Dram!",
+  quickFollowUpHint: "Was möchtest du als nächstes tun?",
+  quickFollowUpFinish: "Ich bin fertig",
+  quickFollowUpDeepen: "Mehr Details hinzufügen",
+  quickFollowUpDraft: "Als Entwurf speichern",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — collectionUi.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  collectionUi: {
+    myWhisky: "My Bottles",
+    collection: "Collection",
+    bottles: "Bottles",
+    empty: "No bottles yet",
+    importBtn: "Import CSV",
+    importSync: "Sync",
+    exportCsv: "Export CSV",
+    filterAll: "All",
+    open: "Open",
+    closed: "Sealed",
+    sortLabel: "Sort",
+    lastSyncWas: "Last sync",
+    daysAgo: "{{count}} days ago",
+    aiPriceEstimation: "AI price estimate",
+    rateLimitedUntil: "Available again",
+    selectBottles: "Select bottles",
+    selectBottlesDesc: "Choose bottles to export or manage",
+    selected: "selected",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  collectionUi: {
+    myWhisky: "Meine Flaschen",
+    collection: "Sammlung",
+    bottles: "Flaschen",
+    empty: "Noch keine Flaschen",
+    importBtn: "CSV importieren",
+    importSync: "Synchronisieren",
+    exportCsv: "CSV exportieren",
+    filterAll: "Alle",
+    open: "Geöffnet",
+    closed: "Versiegelt",
+    sortLabel: "Sortieren",
+    lastSyncWas: "Letzte Synchronisation",
+    daysAgo: "vor {{count}} Tagen",
+    aiPriceEstimation: "KI-Preisschätzung",
+    rateLimitedUntil: "Wieder verfügbar",
+    selectBottles: "Flaschen auswählen",
+    selectBottlesDesc: "Flaschen zum Exportieren oder Verwalten wählen",
+    selected: "ausgewählt",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — tastingStatus.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  tastingStatus: {
+    open: "Open",
+    invited: "Invited",
+    yourTasting: "Your tasting",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  tastingStatus: {
+    open: "Offen",
+    invited: "Eingeladen",
+    yourTasting: "Dein Tasting",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ wc -l client/src/lib/i18n.ts → deutlich mehr Zeilen als vorher
+□ grep -n "Historisches Archiv" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Willkommen bei CaskSense" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Meine Flaschen" client/src/lib/i18n.ts → mindestens 2 Treffer
+□ grep -n "Gaumen-Brief" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Flaschenfoto" client/src/lib/i18n.ts → 1 Treffer
+□ tsc --noEmit läuft fehlerfrei
+□ Keine bestehenden Keys wurden gelöscht
