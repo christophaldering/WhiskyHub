@@ -1,0 +1,179 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n GROSSER WURF: Alle verbleibenden Seiten auf einmal
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Folgende Seiten zeigen noch englische Texte weil hardcoded Strings
+oder fehlende DE-Keys verwendet werden. Alle werden in diesem Prompt
+auf einmal behoben.
+
+Betroffene Dateien:
+  client/src/labs/pages/LabsTasteDrams.tsx
+  client/src/labs/pages/LabsTasteWishlist.tsx
+  client/src/labs/pages/LabsTasteAnalytics.tsx
+  client/src/labs/pages/LabsTasteCompare.tsx
+  client/src/labs/pages/LabsTasteDownloads.tsx
+  client/src/lib/i18n.ts (neue Keys eintragen)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik, Berechnungen oder Styling ändern
+❌ NIEMALS bestehende i18n Keys löschen
+❌ NIEMALS Duplikate anlegen — erst prüfen ob Key existiert
+
+✅ NUR sichtbare Strings durch t()-Aufrufe ersetzen
+✅ Neue Keys in BEIDEN Sprachblöcken (EN + DE) in i18n.ts eintragen
+✅ useTranslation() + { t } importieren falls nicht vorhanden
+✅ Diese Begriffe bleiben in DE identisch zu EN (Markenbegriffe):
+   Solo, Tasting, Dram, N/T/F Labels, Filter, Drafts→Entwürfe ist OK
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEITE 1 — LabsTasteDrams.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alle hardcoded sichtbaren Strings suchen und ersetzen.
+Bekannte Strings:
+
+  "My Drams" → t("drams.title", "My Drams")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "drams logged" → t("drams.dramsLogged", "drams logged")
+  "Add Dram" → t("drams.addDram", "Add Dram")
+  "All" (Tab) → t("drams.tabAll", "All")
+  "Drafts" (Tab) → t("drams.tabDrafts", "Drafts")
+  "Trash" → t("drams.trash", "Trash")
+  "Search drams..." → t("drams.search", "Search drams...")
+  "Saved" → t("drams.saved", "Saved")
+  "entries" → t("drams.entries", "entries")
+  "No drams yet" → t("drams.noEntries", "No drams yet")
+
+i18n Keys — in EN + DE eintragen:
+EN: drams: { title:"My Drams", dramsLogged:"drams logged", addDram:"Add Dram", tabAll:"All", tabDrafts:"Drafts", trash:"Trash", search:"Search drams...", saved:"Saved", entries:"entries", noEntries:"No drams yet", noEntriesDesc:"Log your first dram to get started", backTaste:"My World" }
+DE: drams: { title:"Meine Drams", dramsLogged:"Drams eingetragen", addDram:"Dram hinzufügen", tabAll:"Alle", tabDrafts:"Entwürfe", trash:"Papierkorb", search:"Drams suchen...", saved:"Gespeichert", entries:"Einträge", noEntries:"Noch keine Drams", noEntriesDesc:"Trage deinen ersten Dram ein", backTaste:"Meine Welt" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEITE 2 — LabsTasteWishlist.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  "Wishlist" → t("wishlist.title", "Wishlist")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Whiskies you want to try" → t("wishlist.subtitle", "Whiskies you want to try")
+  "No wishlist entries yet" → t("wishlist.empty", "No wishlist entries yet")
+  "Add whiskies you want to try" → t("wishlist.emptyDesc", "Add whiskies you want to try")
+  "Add First Whisky" → t("wishlist.addFirst", "Add First Whisky")
+  "Add Whisky" → t("wishlist.add", "Add Whisky")
+
+i18n Keys — in EN + DE eintragen:
+EN: wishlist: { title:"Wishlist", subtitle:"Whiskies you want to try", add:"Add Whisky", addFirst:"Add First Whisky", empty:"No wishlist entries yet", emptyDesc:"Add whiskies you want to try", backTaste:"My World", search:"Search wishlist...", noResults:"No matches", remove:"Remove", addToJournal:"Add to journal", movedToJournal:"Moved to journal" }
+DE: wishlist: { title:"Wunschliste", subtitle:"Whiskies die du probieren möchtest", add:"Whisky hinzufügen", addFirst:"Ersten Whisky hinzufügen", empty:"Noch keine Einträge auf der Wunschliste", emptyDesc:"Füge Whiskies hinzu die du probieren möchtest", backTaste:"Meine Welt", search:"Wunschliste durchsuchen...", noResults:"Keine Treffer", remove:"Entfernen", addToJournal:"Zum Journal hinzufügen", movedToJournal:"In Journal verschoben" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEITE 3 — LabsTasteAnalytics.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  "Analytics" → t("analytics.title", "Analytics")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Your taste evolution & rating consistency" → t("analytics.subtitle", "Your taste evolution & rating consistency")
+  "TASTE EVOLUTION" → t("analytics.tasteEvolution", "Taste Evolution")
+  "How your average rating has developed over time" → t("analytics.tasteEvolutionDesc", "How your average rating has developed over time")
+  `Your average has shifted down by ${x} pts` → t("analytics.shiftedDown", "Your average has shifted down by {{pts}} pts", { pts: x })
+  `Your average has shifted up by ${x} pts` → t("analytics.shiftedUp", "Your average has shifted up by {{pts}} pts", { pts: x })
+  "RATING CONSISTENCY" → t("analytics.ratingConsistency", "Rating Consistency")
+  "How stable and predictable your scoring pattern is" → t("analytics.ratingConsistencyDesc", "How stable and predictable your scoring pattern is")
+  "Very Consistent" → t("analytics.veryConsistent", "Very Consistent")
+  "Consistent" → t("analytics.consistent", "Consistent")
+  "Moderately Consistent" → t("analytics.moderatelyConsistent", "Moderately Consistent")
+  "Variable" → t("analytics.variable", "Variable")
+  `Your scoring pattern is ${label}` → t("analytics.scoringPattern", "Your scoring pattern is {{label}}", { label })
+  "Avg Score" → t("analytics.avgScore", "Avg Score")
+  "Spread (StdDev)" → t("analytics.spread", "Spread (StdDev)")
+  Alle weiteren hardcoded Strings ebenfalls mit Prefix "analytics." ersetzen.
+
+i18n Keys — in EN + DE eintragen:
+EN: analytics: { title:"Analytics", subtitle:"Your taste evolution & rating consistency", tasteEvolution:"Taste Evolution", tasteEvolutionDesc:"How your average rating has developed over time", shiftedDown:"Your average has shifted down by {{pts}} pts", shiftedUp:"Your average has shifted up by {{pts}} pts", ratingConsistency:"Rating Consistency", ratingConsistencyDesc:"How stable and predictable your scoring pattern is", veryConsistent:"Very Consistent", consistent:"Consistent", moderatelyConsistent:"Moderately Consistent", variable:"Variable", scoringPattern:"Your scoring pattern is {{label}}", avgScore:"Avg Score", spread:"Spread (StdDev)", backTaste:"My World" }
+DE: analytics: { title:"Analytik", subtitle:"Deine Geschmacksentwicklung & Bewertungskonsistenz", tasteEvolution:"Geschmacksentwicklung", tasteEvolutionDesc:"Wie sich dein Durchschnittsscore über die Zeit entwickelt hat", shiftedDown:"Dein Durchschnitt ist um {{pts}} Punkte gesunken", shiftedUp:"Dein Durchschnitt ist um {{pts}} Punkte gestiegen", ratingConsistency:"Bewertungskonsistenz", ratingConsistencyDesc:"Wie stabil und vorhersehbar dein Bewertungsmuster ist", veryConsistent:"Sehr konsistent", consistent:"Konsistent", moderatelyConsistent:"Mäßig konsistent", variable:"Variabel", scoringPattern:"Dein Bewertungsmuster ist {{label}}", avgScore:"Ø Score", spread:"Streuung (StdAbw)", backTaste:"Meine Welt" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEITE 4 — LabsTasteCompare.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alle hardcoded sichtbaren Strings suchen und mit Prefix "compare." ersetzen.
+Bekannte Strings:
+  "Compare" → t("compare.title", "Compare")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Export" → t("compare.export", "Export")
+  "Score" → t("compare.score", "Score")
+  "No results" → t("compare.noResults", "No results")
+  "All" → t("compare.all", "All")
+  "Higher" → t("compare.higher", "Higher")
+  "Lower" → t("compare.lower", "Lower")
+  "All time" → t("compare.allTime", "All time")
+  Alle weiteren hardcoded Strings mit "compare." Prefix ersetzen.
+
+i18n Keys — in EN + DE eintragen:
+EN: compare: { title:"Compare", subtitle:"Your scores vs. the community", export:"Export", score:"Score", noResults:"No results found", all:"All", higher:"Higher", lower:"Lower", allTime:"All time", yourScore:"Your score", communityScore:"Community score", delta:"Difference", whisky:"Whisky", distillery:"Distillery", region:"Region", ratings:"Ratings", noData:"Not enough data yet", backTaste:"My World" }
+DE: compare: { title:"Vergleich", subtitle:"Deine Scores vs. die Community", export:"Exportieren", score:"Score", noResults:"Keine Ergebnisse", all:"Alle", higher:"Höher", lower:"Niedriger", allTime:"Gesamte Zeit", yourScore:"Dein Score", communityScore:"Community-Score", delta:"Unterschied", whisky:"Whisky", distillery:"Destillerie", region:"Region", ratings:"Bewertungen", noData:"Noch nicht genug Daten", backTaste:"Meine Welt" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEITE 5 — LabsTasteDownloads.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alle hardcoded sichtbaren Strings suchen und mit Prefix "downloads." ersetzen.
+Bekannte Strings:
+  "Downloads & Export" → t("downloads.title", "Downloads & Export")
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Tastings" → t("downloads.tastings", "Tastings")
+  "All tasting sessions and results" → t("downloads.tastingsDesc", "All tasting sessions and results")
+  "Journal" → t("downloads.journal", "Journal")
+  "Profile" → t("downloads.profile", "Profile")
+  "Friends" → t("downloads.friends", "Friends")
+  "Wishlist" → t("downloads.wishlist", "Wishlist")
+  "Collection" → t("downloads.collection", "Collection")
+  "Download" → t("downloads.download", "Download")
+  "Export all data" → t("downloads.exportAll", "Export all data")
+  "Downloading..." → t("downloads.downloading", "Downloading...")
+  Alle weiteren hardcoded Strings mit "downloads." Prefix ersetzen.
+
+i18n Keys — in EN + DE eintragen:
+EN: downloads: { title:"Downloads & Export", subtitle:"Export your personal data", backTaste:"My World", tastings:"Tastings", tastingsDesc:"All tasting sessions and results", journal:"Journal", journalDesc:"Your personal whisky diary", profile:"Profile", profileDesc:"Your taste profile and statistics", friends:"Friends", friendsDesc:"Your friend connections", wishlist:"Wishlist", wishlistDesc:"Your whisky wishlist", collection:"Collection", collectionDesc:"Your bottle collection", download:"Download", exportAll:"Export all data", downloading:"Downloading...", preparing:"Preparing...", noData:"No data available", success:"Downloaded successfully", error:"Download failed" }
+DE: downloads: { title:"Downloads & Export", subtitle:"Deine persönlichen Daten exportieren", backTaste:"Meine Welt", tastings:"Tastings", tastingsDesc:"Alle Tasting-Sessions und Ergebnisse", journal:"Journal", journalDesc:"Dein persönliches Whisky-Tagebuch", profile:"Profil", profileDesc:"Dein Geschmacksprofil und Statistiken", friends:"Freunde", friendsDesc:"Deine Freundesverbindungen", wishlist:"Wunschliste", wishlistDesc:"Deine Whisky-Wunschliste", collection:"Sammlung", collectionDesc:"Deine Flaschensammlung", download:"Herunterladen", exportAll:"Alle Daten exportieren", downloading:"Wird heruntergeladen...", preparing:"Wird vorbereitet...", noData:"Keine Daten verfügbar", success:"Erfolgreich heruntergeladen", error:"Download fehlgeschlagen" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VORGEHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Für jede Seite:
+1. Datei öffnen und ALLE hardcoded sichtbaren Strings identifizieren
+2. Durch t()-Aufrufe ersetzen (useTranslation importieren falls fehlt)
+3. Neue Keys in i18n.ts in EN-Block eintragen (vor Zeile 8232)
+4. Neue Keys in i18n.ts in DE-Block eintragen (nach Zeile 8232)
+5. Prüfen ob Key bereits existiert — kein Duplikat anlegen
+
+Reihenfolge: Drams → Wishlist → Analytics → Compare → Downloads
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "Meine Drams" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Wunschliste" client/src/lib/i18n.ts → mindestens 2 Treffer
+□ grep -n "Geschmacksentwicklung" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Vergleich" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Alle Daten exportieren" client/src/lib/i18n.ts → 1 Treffer
+□ grep -rn "\"My Drams\"\|\"Wishlist\"\|\"Analytics\"\|\"Compare\"" client/src/labs/pages/ → kein Treffer als hardcoded String
+□ tsc --noEmit fehlerfrei
