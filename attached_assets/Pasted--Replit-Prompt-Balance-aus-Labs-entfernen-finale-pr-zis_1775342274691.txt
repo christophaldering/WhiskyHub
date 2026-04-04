@@ -1,0 +1,158 @@
+# Replit-Prompt: Balance aus Labs entfernen — finale, präzise Version
+
+## Kontext
+- Alle nicht-Labs UI-Schichten (M2, V2, lab-dark, legacy, labs-v2, labs-apple)
+  sind bereits archiviert und gelöscht. Einzige aktive UI: `client/src/labs/`
+- Balance soll vollständig aus dem System entfernt werden
+- Verbleibende Bewertungsdimensionen: **Nase · Gaumen (taste) · Abgang (finish) · Gesamt (overall)**
+- Balance ist KEIN eigenständiger Score mehr — overall bleibt als manuell
+  einstellbarer Gesamtscore erhalten
+
+---
+
+## Bekannte Fundstellen (aus replit.md dokumentiert)
+
+### 1. `client/src/labs/components/LabsRatingPanel.tsx`
+Flavor-Chip-Tagging aktuell für: nose / taste / finish / **balance**
+→ Balance-Tab und zugehörige Chips entfernen
+→ Tabs danach: nose · taste · finish (3 Tabs)
+→ Overall bleibt als separater Slider am Ende
+
+### 2. `client/src/labs/pages/LabsTaste.tsx`
+Palate bars aktuell: nose / taste / finish / **balance**
+→ Balance-Bar entfernen
+→ Übrig: nose · taste · finish (3 Bars)
+
+### 3. `client/src/labs/pages/LabsTasteProfile.tsx`
+RadarChart-Dimensionen: nose / taste / finish / **balance** / overall
+→ Balance aus dem RadarChart entfernen
+→ RadarChart danach: nose · taste · finish · overall (4-seitig)
+→ Alle Vergleichs-Tabellen (You vs Platform) entsprechend anpassen
+
+### 4. `client/src/labs/` — Live Tasting Room (LabsLive.tsx o.ä.)
+Auto-Save für: Nose / Taste / Finish / **Balance** / Overall
+→ Balance-Slider/Eingabe entfernen
+→ Auto-Save läuft weiter für: nose · taste · finish · overall
+
+### 5. `client/src/labs/pages/LabsHostCockpit.tsx`
+Host Rating Panel: flavor chips für nose / taste / finish / **balance**
+→ Balance-Section entfernen
+→ Identisch wie LabsRatingPanel bereinigen
+
+### 6. `client/src/components/printable-tasting-sheets.tsx`
+PDF-Bewertungsbogen: "5 individually scored criteria (Nose, Palate, Finish, Balance, Overall)"
+→ Balance-Zeile aus dem PDF-Scoring-Sheet entfernen
+→ Danach: 4 Kriterien (Nose · Palate · Finish · Overall)
+→ Layout-Anpassung: die freigewordene Zeile sinnvoll nutzen (mehr Platz für
+  die anderen Dimensionen oder Notizfeld vergrößern)
+
+---
+
+## Backend
+
+### 7. `shared/schema.ts`
+```bash
+grep -n "balance" shared/schema.ts
+```
+Falls balance noch als Spalte vorhanden:
+- Aus ratings-Tabelle entfernen
+- Aus allen Zod-Insert/Select-Schemas entfernen
+- Migration erstellen:
+```sql
+ALTER TABLE ratings DROP COLUMN IF EXISTS balance;
+```
+Dann: `npm run db:push`
+
+### 8. `server/routes.ts`
+```bash
+grep -n "balance" server/routes.ts
+```
+Typische Fundstellen:
+- `POST /api/ratings` Destructuring: `balance` aus req.body entfernen
+- Insert-Objekt: `balance: balance ?? null` Zeile entfernen
+- Overall-Berechnung: falls `(nose + taste + finish + balance) / 4`
+  → ändern zu `(nose + taste + finish) / 3`
+- Analytics-Endpunkt `GET /api/tastings/:id/analytics`:
+  `avg(balance)` aus Aggregationen entfernen
+- Connoisseur Report Prompt: balance aus dem AI-Prompt-Kontext entfernen
+- PDF-Export-Logik: balance aus Excel/DOCX-Exporten entfernen
+
+### 9. `server/storage.ts`
+```bash
+grep -n "balance" server/storage.ts
+```
+- Aus IStorage-Interface entfernen (falls vorhanden)
+- Aus allen Drizzle SELECT-Queries entfernen
+- Aus allen INSERT/UPDATE-Objekten entfernen
+
+---
+
+## Gate-Logik anpassen
+
+Task #29 hat eine Sperre eingebaut:
+"Overall-Slider erst aktiv wenn alle Dimensionen > 0"
+
+Suche:
+```bash
+grep -rn "balance > 0\|allDimensionsRated\|all 4\|4 dimension" client/src/labs/
+```
+
+Ändere von:
+```ts
+const allDimensionsRated = nose > 0 && taste > 0 && finish > 0 && balance > 0;
+```
+zu:
+```ts
+const allDimensionsRated = nose > 0 && taste > 0 && finish > 0;
+```
+
+---
+
+## i18n bereinigen
+
+```bash
+grep -n "balance\|Balance" client/src/lib/i18n.ts
+```
+
+Alle gefundenen Keys in beiden Sprachblöcken (EN ab Zeile ~11,
+DE ab Zeile ~5492) entfernen. Typische Keys:
+- `balance`, `ratingBalance`, `dimension_balance`, etc.
+
+---
+
+## Validierung
+
+```bash
+# 1. Keine balance-Reste in aktivem Code
+grep -rn "balance" \
+  client/src/labs/ \
+  client/src/components/printable-tasting-sheets.tsx \
+  server/ shared/ client/src/lib/i18n.ts \
+  --include="*.ts" --include="*.tsx"
+# Erwartung: 0 Treffer
+
+# 2. TypeScript-Check
+npx tsc --noEmit
+# Erwartung: 0 Fehler
+
+# 3. Tests
+npm run test
+# Erwartung: alle Tests grün
+
+# 4. Manuell testen
+# - Live Tasting: kein Balance-Slider sichtbar
+# - LabsRatingPanel: 3 Tabs (Nose/Taste/Finish), kein Balance
+# - Taste-Profil RadarChart: 4 Achsen (Nose/Taste/Finish/Overall)
+# - PDF: 4 Scoring-Kriterien
+```
+
+---
+
+## Nicht anfassen
+- `overall`-Dimension bleibt vollständig erhalten
+- `normalizedNose`, `normalizedTaste`, `normalizedFinish` (Task #82) bleiben
+- Flavor-Tags und FlavorTagStrip sind unabhängig von Balance
+- `connoisseur_reports` Tabelle — nur den AI-Prompt anpassen,
+  nicht die Tabellenstruktur
+- `replit.md` — nach Abschluss manuell aktualisieren:
+  alle Erwähnungen von "balance" in den Feature-Beschreibungen entfernen
