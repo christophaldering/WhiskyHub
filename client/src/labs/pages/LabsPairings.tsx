@@ -90,9 +90,9 @@ export default function LabsPairings() {
 
   return (
     <div className="labs-page" data-testid="labs-pairings">
-      <BackLink href={new URLSearchParams(window.location.search).get("from") === "bibliothek" ? "/labs/bibliothek" : "/labs/taste"} style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-pairings">
-          <ChevronLeft className="w-4 h-4" /> {new URLSearchParams(window.location.search).get("from") === "bibliothek" ? t("bibliothek.title", "Library") : "Taste"}
+          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
         </button>
       </BackLink>
 
