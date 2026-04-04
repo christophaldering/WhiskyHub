@@ -44,7 +44,7 @@ Generated: 2026-03-05 (updated post-consolidation)
 - **File**: `server/routes.ts` lines 2045–2086
 - **Auth**: None (data already public once tasting is viewable)
 - **Returns**: CSV or XLSX via `sendExport` helper
-- **Content**: Ranked whiskies with averages (Overall, Nose, Taste, Finish, Balance) + rating count
+- **Content**: Ranked whiskies with averages (Overall, Nose, Taste, Finish) + rating count
 - **Filename**: `CaskSense_{title}_results.{csv|xlsx}`
 - **Added during**: Consolidation refactor (replaces client-side fake-Excel)
 
@@ -431,7 +431,6 @@ app.get("/api/tastings/:id/results/export", async (req, res) => {
         "Avg Nose": avg(rats.map(r => r.nose).filter((v): v is number => v != null))?.toFixed(1) ?? "",
         "Avg Taste": avg(rats.map(r => r.taste).filter((v): v is number => v != null))?.toFixed(1) ?? "",
         "Avg Finish": avg(rats.map(r => r.finish).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-        "Avg Balance": avg(rats.map(r => r.balance).filter((v): v is number => v != null))?.toFixed(1) ?? "",
         Ratings: rats.length,
       };
     })

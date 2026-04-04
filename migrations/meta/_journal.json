@@ -120,6 +120,13 @@
       "when": 1775174400000,
       "tag": "0016_rename_whisky_name_to_name",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1775433600000,
+      "tag": "0017_drop_ratings_balance",
+      "breakpoints": true
     }
   ]
 }

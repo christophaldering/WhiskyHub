@@ -275,7 +275,6 @@ export const ratings = pgTable("ratings", {
   nose: real("nose").default(50),
   taste: real("taste").default(50),
   finish: real("finish").default(50),
-  balance: real("balance").default(50),
   overall: real("overall").default(50),
   notes: text("notes").default(""),
   guessAbv: real("guess_abv"),

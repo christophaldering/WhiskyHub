@@ -34,7 +34,7 @@ A minimal "Simple Mode" UI for first-time users and small circle testing. Three 
 | /enter | Join flow: name/PIN identification → session code entry → tasting room |
 | /log-simple | Quick whisky log: name, score, notes → save to journal or localStorage |
 | /my-taste | Personal taste snapshot with unlock |
-| /tasting-room-simple/:id | Rating room wrapper (sliders for nose/taste/finish/balance/overall + notes) |
+| /tasting-room-simple/:id | Rating room wrapper (sliders for nose/taste/finish/overall + notes) |
 | /simple-test | Happy-path checklist with links to each step |
 | /simple-feedback | Satisfaction + simplicity ratings, free text, clipboard copy |
 

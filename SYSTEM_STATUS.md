@@ -94,7 +94,7 @@ Eine Web-App fuer strukturierte, kollaborative Whisky-Tastings. Nutzer koennen S
 | `tastings`                 | Tasting-Sessions (Status: draft/open/closed/reveal/archived) |
 | `tasting_participants`     | Teilnehmer pro Session                           |
 | `whiskies`                 | Whiskys pro Session                              |
-| `ratings`                  | Bewertungen (Nase/Geschmack/Finish/Balance/Gesamt) |
+| `ratings`                  | Bewertungen (Nase/Geschmack/Finish/Gesamt) |
 | `journal_entries`          | Persoenliches Whisky-Tagebuch                    |
 | `whiskybase_collection`    | Importierte Whiskybase-Sammlung (CSV)            |
 
@@ -143,7 +143,7 @@ Eine Web-App fuer strukturierte, kollaborative Whisky-Tastings. Nutzer koennen S
 ### Tasting-System
 - **Live Tastings**: Host erstellt Session, laedt Teilnehmer ein (QR/Link), Blind-Modus, Fortschrittsanzeige
 - **Solo Drams**: Einzelbewertung mit AI-gestuetzter Whisky-Erkennung (Foto/Text)
-- **Rating-System**: 5 Dimensionen (Nase/Geschmack/Finish/Balance/Gesamt), Flavor-Chips, Sprach-Notizen
+- **Rating-System**: 4 Dimensionen (Nase/Geschmack/Finish/Gesamt), Flavor-Chips, Sprach-Notizen
 - **Hosting Dashboard**: Desktop-first 3-Spalten-Layout fuer Live-Kontrolle
 - **Context Level**: Naked (blind) / Self (eigene Bewertung) / Full (alle sehen alles)
 - **Ergebnisse**: Ranking, Podium, Statistiken, Export (PDF/CSV/Excel/ZIP)

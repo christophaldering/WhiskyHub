@@ -189,7 +189,6 @@ Alle IDs sind UUIDs (`varchar` + `gen_random_uuid()`). Schema definiert in `shar
 | nose | real | Nase-Bewertung (0-100) |
 | taste | real | Geschmack-Bewertung |
 | finish | real | Abgang-Bewertung |
-| balance | real | Balance-Bewertung |
 | overall | real | Gesamt (auto-berechnet + manuell) |
 | notes | text | Persönliche Notizen |
 | guessAbv | real | ABV-Schätzung |
@@ -609,7 +608,7 @@ Persistiert via `zustand/middleware/persist` in localStorage unter Key `casksens
 
 ### 12.1 Bewertungssystem
 
-- 4 Dimensionen: Nose, Taste, Finish, Balance
+- 4 Dimensionen: Nose, Taste, Finish, Overall
 - Dynamische Skalen: 5 / 10 / 20 / 100 Punkte
 - Auto-berechneter Overall-Score mit manuellem Override
 - ABV- und Alters-Schätzung optional

@@ -270,7 +270,6 @@ PostgreSQL mit Drizzle ORM. Alle IDs sind UUIDs.
 | `nose` | real | Nase (0–100) |
 | `taste` | real | Geschmack (0–100) |
 | `finish` | real | Abgang (0–100) |
-| `balance` | real | Balance (0–100) |
 | `overall` | real | Gesamtbewertung (0–100) |
 | `notes` | text | Notizen |
 
@@ -600,7 +599,7 @@ Alle AI-Features nutzen OpenAI GPT-4o (Vision) oder GPT-4o-mini und können übe
 
 ### 10.2 Bewertungssystem
 
-- Skala: 0–100 für jede Dimension (Nose, Taste, Finish, Balance)
+- Skala: 0–100 für jede Dimension (Nose, Taste, Finish, Overall)
 - Overall-Score: Automatisch berechnet aus Detail-Bewertungen, manuell überschreibbar
 - Dynamische Schrittgrößen für Slider
 - Tasting Notes: Vordefinierte Chips + Freitext + Sprachaufnahme
@@ -755,7 +754,7 @@ Der Log-Tab (`/log-simple`) ist die zentrale Seite zum Erfassen eines Whiskys:
 1. **Titel**: "Log"
 2. **WHISKY Section**: Eingabefeld mit integriertem Kamera-Icon (rechts). Enter → AI-Suche. Kamera-Icon → Foto-Picker-Sheet.
 3. **"Add details" Link**: Klappt manuelle Detailfelder auf (Destillerie, Alter, ABV, Fass, Whiskybase-ID, Preis)
-4. **SCORE Section**: "Rate in detail" Accordion (Nose/Taste/Finish/Balance Slider + Flavor-Chips). Score-Slider (0–100) mit berechneter oder manueller Bewertung.
+4. **SCORE Section**: "Rate in detail" Accordion (Nose/Taste/Finish Slider + Flavor-Chips). Score-Slider (0–100) mit berechneter oder manueller Bewertung.
 5. **NOTES Section**: Freitext-Textarea mit optionalem Mikrofon-Icon für Spracheingabe.
 6. **Save Button**: Gesperrt ohne Whisky-Name. Speichert in Journal.
 
