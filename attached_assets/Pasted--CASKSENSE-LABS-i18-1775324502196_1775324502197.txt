@@ -1,0 +1,95 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n NAV-KEYS FIX
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts (16.479 Zeilen)
+Struktur: resources → en.translation (Zeilen 9–8231) + de.translation (Zeilen 8232–Ende)
+
+Es gibt jeweils einen nav-Block in EN (ca. Zeile 1187) und einen in DE (ca. Zeile 9407).
+Beide haben konkrete Fehler die behoben werden müssen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS Keys löschen — nur Werte korrigieren
+❌ NIEMALS die Dateistruktur (Verschachtelung) ändern
+❌ NIEMALS Keys verschieben oder umbenennen
+❌ NIEMALS server/ Dateien anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS neue Keys hinzufügen — nur bestehende Werte korrigieren
+
+✅ NUR die unten genannten Werte in den nav-Blöcken korrigieren
+✅ Exakt die Zeilennummern per sed oder direktem Edit suchen und ersetzen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — EXAKT DIESE WERTE KORRIGIEREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BLOCK 1 — EN nav (ca. Zeile 1187, innerhalb en.translation)
+
+  Suche:    join: "Joyn",
+  Ersetze:  join: "Join",
+
+  (Tippfehler — kein anderer Wert in diesem Block ändern)
+
+
+BLOCK 2 — DE nav (ca. Zeile 9407, innerhalb de.translation)
+
+  Suche:    explore: "Explore",
+  Ersetze:  explore: "Entdecken",
+
+  Suche:    join: "Joyn",
+  Ersetze:  join: "Beitreten",
+
+  Folgende Werte bleiben bewusst auf Englisch (Markenbegriffe):
+    tastings: "Tastings"     ← OK, bleibt
+    circle: "Circle"         ← OK, bleibt
+    myWorld: "Meine Welt"    ← OK, bereits korrekt
+    lobby: "Home"            ← OK, bleibt
+    backToTasting: "Cockpit" ← OK, bleibt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VORGEHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Da die Datei 16.479 Zeilen hat, bitte mit sed arbeiten:
+
+Schritt 1 — Zeilennummern der nav-Blöcke verifizieren:
+  grep -n "nav:" client/src/lib/i18n.ts
+
+Schritt 2 — EN nav join-Tippfehler fixen (im EN-Block, VOR Zeile 8232):
+  In dem nav-Block der sich innerhalb en.translation befindet:
+  join: "Joyn" → join: "Join"
+
+Schritt 3 — DE nav explore und join fixen (im DE-Block, NACH Zeile 8232):
+  In dem nav-Block der sich innerhalb de.translation befindet:
+  explore: "Explore" → explore: "Entdecken"
+  join: "Joyn"       → join: "Beitreten"
+
+Schritt 4 — Verifikation:
+  grep -n "Joyn\|explore.*Explore\|explore.*Entdecken" client/src/lib/i18n.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach den Änderungen prüfen:
+
+□ grep -n "Joyn" client/src/lib/i18n.ts → kein Ergebnis
+□ grep -n "nav:" client/src/lib/i18n.ts → genau 4 Treffer (Struktur unverändert)
+□ wc -l client/src/lib/i18n.ts → exakt 16479 (keine Zeilen gelöscht oder hinzugefügt)
+□ Im DE nav-Block: explore: "Entdecken" vorhanden
+□ Im EN nav-Block: join: "Join" vorhanden
+□ Im DE nav-Block: join: "Beitreten" vorhanden
+□ tsc --noEmit läuft fehlerfrei
