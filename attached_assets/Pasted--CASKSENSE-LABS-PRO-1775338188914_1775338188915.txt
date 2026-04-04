@@ -1,0 +1,129 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — PROFIL-WERTE: Automatische Neuberechnung nach Rating
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die berechneten Profil-Werte in der participants-Tabelle werden aktuell
+NUR beim Generieren eines Connoisseur-Reports neu berechnet:
+  smokeAffinityIndex
+  sweetnessBias
+  ratingStabilityScore
+  explorationIndex
+
+Das bedeutet: Nach neuen Bewertungen sind diese Werte veraltet.
+Sie müssen automatisch neu berechnet werden wenn:
+  1. Eine neue Bewertung gespeichert wird (POST /api/ratings)
+  2. Eine Journal-Bewertung gespeichert wird (POST /api/journal/:pid)
+  3. Ein Solo-Dram gespeichert wird
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS schema.ts ändern
+❌ NIEMALS bestehende Berechnungslogik löschen
+❌ NIEMALS synchron blockieren — async im Hintergrund
+❌ NIEMALS Fehler in der Neuberechnung den Rating-Save blockieren lassen
+
+✅ Die Neuberechnung läuft NACH dem erfolgreichen Speichern
+✅ Fire-and-forget — kein await, kein try/catch der den Response verzögert
+✅ Bestehende getParticipantStats() Funktion wiederverwenden
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — server/storage.ts: updateParticipantIndices() Funktion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Suche die bestehende getParticipantStats() oder
+ähnliche Funktion die Profil-Indizes berechnet:
+  grep -n "smokeAffinityIndex\|ratingStabilityScore\|explorationIndex" server/storage.ts | head -20
+
+Schritt 2: Neue Funktion updateParticipantIndices(participantId) anlegen
+die folgendes tut:
+  a) Alle journal_entries des Participants laden
+  b) Alle ratings des Participants laden
+  c) Berechne:
+     - smokeAffinityIndex: Anteil Whiskies mit peatLevel "Heavy" oder "Medium"
+     - sweetnessBias: Durchschnitt der taste-scores minus nose-scores
+     - ratingStabilityScore: Standardabweichung der overall-scores (niedriger = stabiler)
+     - explorationIndex: Anzahl unique Regionen / Gesamtanzahl Bewertungen
+  d) UPDATE participants SET ... WHERE id = participantId
+
+Beispiel-Implementierung:
+  async updateParticipantIndices(participantId: string): Promise<void> {
+    try {
+      const entries = await db.select().from(journalEntries)
+        .where(eq(journalEntries.participantId, participantId));
+
+      if (entries.length < 3) return; // Nicht genug Daten
+
+      // smokeAffinityIndex
+      const smokyEntries = entries.filter(e =>
+        e.peatLevel === "Heavy" || e.peatLevel === "Medium"
+      );
+      const smokeAffinityIndex = smokyEntries.length / entries.length;
+
+      // explorationIndex
+      const regions = new Set(entries.map(e => e.region).filter(Boolean));
+      const explorationIndex = regions.size / entries.length;
+
+      // ratingStabilityScore (aus overall-scores)
+      const scores = entries
+        .map(e => e.overallScore ?? e.overall)
+        .filter((s): s is number => s != null);
+      let ratingStabilityScore = null;
+      if (scores.length >= 3) {
+        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length;
+        ratingStabilityScore = Math.round((1 - Math.sqrt(variance) / 100) * 10) / 10;
+      }
+
+      await db.update(participants)
+        .set({
+          smokeAffinityIndex,
+          explorationIndex,
+          ratingStabilityScore,
+        })
+        .where(eq(participants.id, participantId));
+    } catch (e) {
+      console.error("[updateParticipantIndices]", e);
+    }
+  }
+
+Schritt 3: Funktion zum IStorage-Interface in server/storage.ts hinzufügen:
+  updateParticipantIndices(participantId: string): Promise<void>;
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — server/routes.ts: Nach Rating-Save aufrufen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: POST /api/ratings Endpoint finden:
+  grep -n "app.post.*api/ratings\|POST.*ratings" server/routes.ts | head -5
+
+Schritt 2: NACH dem erfolgreichen res.json() Aufruf, fire-and-forget:
+  // Fire-and-forget — blockiert nicht
+  if (participantId) {
+    storage.updateParticipantIndices(participantId).catch(() => {});
+  }
+
+Schritt 3: Gleiches Muster für Journal-Einträge:
+  grep -n "app.post.*api/journal" server/routes.ts | head -5
+  Nach dem res.json() ebenfalls updateParticipantIndices aufrufen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "updateParticipantIndices" server/storage.ts → mindestens 2 Treffer
+□ grep -n "updateParticipantIndices" server/routes.ts → mindestens 2 Treffer
+□ tsc --noEmit fehlerfrei
+□ Nach einer neuen Bewertung: participants-Tabelle hat nicht-null Werte
+  für smoke_affinity_index und exploration_index
+□ Der Rating-Save-Response ist nicht verlangsamt (fire-and-forget)
