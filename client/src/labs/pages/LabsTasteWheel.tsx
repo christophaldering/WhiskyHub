@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 import { useQuery } from "@tanstack/react-query";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
@@ -41,7 +42,8 @@ export default function LabsTasteWheel() {
   const session = useSession();
   const pid = session.pid;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const locName = useCallback((item: { en: string }) => item.en, []);
+  const lang = (i18n.language || "en").substring(0, 2) as "en" | "de";
+  const locName = useCallback((item: { en: string; de: string }) => item[lang] || item.en, [lang]);
 
   const { data: journalEntries, isLoading } = useQuery<JournalEntry[]>({
     queryKey: ["journal", pid],
@@ -60,22 +62,23 @@ export default function LabsTasteWheel() {
       ...(journalEntries || []),
       ...(ratingNotes || []).map(r => ({ id: r.id, noseNotes: null, tasteNotes: null, finishNotes: null, body: r.notes })),
     ];
-    if (combined.length === 0) return { categoryFreqs: {} as Record<string, number>, subFreqs: {} as Record<string, Record<string, number>>, totalMentions: 0, topCategory: null as FlavorCategory | null, mostUniqueFlavor: null as { cat: FlavorCategory; sub: { id: string; en: string }; count: number } | null, innerData: [] as { name: string; value: number; actualValue: number; color: string; id: string }[], outerData: [] as { name: string; value: number; actualValue: number; color: string; catId: string; subId: string }[] };
+    if (combined.length === 0) return { categoryFreqs: {} as Record<string, number>, subFreqs: {} as Record<string, Record<string, number>>, totalMentions: 0, topCategory: null as FlavorCategory | null, mostUniqueFlavor: null as { cat: FlavorCategory; sub: { id: string; en: string; de: string }; count: number } | null, innerData: [] as { name: string; value: number; actualValue: number; color: string; id: string }[], outerData: [] as { name: string; value: number; actualValue: number; color: string; catId: string; subId: string }[] };
 
     const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combined);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
     let topCategory: FlavorCategory | null = null;
     let topCount = 0;
     for (const cat of FLAVOR_WHEEL_DATA) { if (categoryFreqs[cat.id] > topCount) { topCount = categoryFreqs[cat.id]; topCategory = cat; } }
-    let mostUniqueFlavor: { cat: FlavorCategory; sub: { id: string; en: string }; count: number } | null = null;
+    let mostUniqueFlavor: { cat: FlavorCategory; sub: { id: string; en: string; de: string }; count: number } | null = null;
     let minC = Infinity;
     for (const cat of FLAVOR_WHEEL_DATA) { for (const sub of cat.subcategories) { const c = subFreqs[cat.id][sub.id]; if (c > 0 && c < minC) { minC = c; mostUniqueFlavor = { cat, sub, count: c }; } } }
 
-    const innerData = FLAVOR_WHEEL_DATA.map(cat => ({ name: cat.en, value: Math.max(categoryFreqs[cat.id], 1), actualValue: categoryFreqs[cat.id], color: cat.color, id: cat.id }));
+    const ln = (item: { en: string; de: string }) => item[lang] || item.en;
+    const innerData = FLAVOR_WHEEL_DATA.map(cat => ({ name: ln(cat), value: Math.max(categoryFreqs[cat.id], 1), actualValue: categoryFreqs[cat.id], color: cat.color, id: cat.id }));
     const outerData: { name: string; value: number; actualValue: number; color: string; catId: string; subId: string }[] = [];
-    for (const cat of FLAVOR_WHEEL_DATA) { for (const sub of cat.subcategories) { outerData.push({ name: sub.en, value: Math.max(subFreqs[cat.id][sub.id], 0.3), actualValue: subFreqs[cat.id][sub.id], color: cat.color, catId: cat.id, subId: sub.id }); } }
+    for (const cat of FLAVOR_WHEEL_DATA) { for (const sub of cat.subcategories) { outerData.push({ name: ln(sub), value: Math.max(subFreqs[cat.id][sub.id], 0.3), actualValue: subFreqs[cat.id][sub.id], color: cat.color, catId: cat.id, subId: sub.id }); } }
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, ratingNotes]);
+  }, [journalEntries, ratingNotes, lang]);
 
   const selectedCatData = selectedCategory ? FLAVOR_WHEEL_DATA.find(c => c.id === selectedCategory) : null;
   const hasData = totalMentions > 0;
@@ -188,7 +191,7 @@ export default function LabsTasteWheel() {
                 <div className="flex items-center gap-2">
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: selectedCatData.color }} />
                   <h2 className="labs-h3" style={{ color: "var(--labs-text)" }}>{locName(selectedCatData)}</h2>
-                  <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({categoryFreqs[selectedCatData.id]} mentions)</span>
+                  <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>({t("labs.wheel.mentions", "{{count}} mentions", { count: categoryFreqs[selectedCatData.id] })})</span>
                 </div>
                 <button onClick={() => setSelectedCategory(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} data-testid="button-close-detail">
                   <X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
