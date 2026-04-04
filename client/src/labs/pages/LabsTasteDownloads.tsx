@@ -15,15 +15,15 @@ import {
 } from "lucide-react";
 
 type AccessLevel = "own" | "extended" | "admin";
-interface ExportCard { type: string; title: string; desc: string; icon: React.ElementType; access: AccessLevel; }
+interface ExportCard { type: string; titleKey: string; descKey: string; titleFallback: string; descFallback: string; icon: React.ElementType; access: AccessLevel; }
 
 const EXPORT_CARDS: ExportCard[] = [
-  { type: "profile", title: "Profile", desc: "Your profile data and preferences", icon: User, access: "own" },
-  { type: "journal", title: "Drams", desc: "All your logged drams", icon: NotebookPen, access: "own" },
-  { type: "wishlist", title: "Wishlist", desc: "Your wishlist entries", icon: Star, access: "own" },
-  { type: "collection", title: "Collection", desc: "Whisky collection data", icon: Archive, access: "own" },
-  { type: "friends", title: "Friends", desc: "Friends list and connections", icon: Users, access: "own" },
-  { type: "tastings", title: "Tastings", desc: "All tasting sessions and results", icon: Wine, access: "extended" },
+  { type: "profile", titleKey: "downloads.exportProfile", descKey: "downloads.exportProfileDesc", titleFallback: "Profile", descFallback: "Your profile data and preferences", icon: User, access: "own" },
+  { type: "journal", titleKey: "downloads.exportDrams", descKey: "downloads.exportDramsDesc", titleFallback: "Drams", descFallback: "All your logged drams", icon: NotebookPen, access: "own" },
+  { type: "wishlist", titleKey: "downloads.exportWishlist", descKey: "downloads.exportWishlistDesc", titleFallback: "Wishlist", descFallback: "Your wishlist entries", icon: Star, access: "own" },
+  { type: "collection", titleKey: "downloads.exportCollection", descKey: "downloads.exportCollectionDesc", titleFallback: "Collection", descFallback: "Whisky collection data", icon: Archive, access: "own" },
+  { type: "friends", titleKey: "downloads.exportFriends", descKey: "downloads.exportFriendsDesc", titleFallback: "Friends", descFallback: "Friends list and connections", icon: Users, access: "own" },
+  { type: "tastings", titleKey: "downloads.exportTastings", descKey: "downloads.exportTastingsDesc", titleFallback: "Tastings", descFallback: "All tasting sessions and results", icon: Wine, access: "extended" },
 ];
 
 export default function LabsTasteDownloads() {
@@ -64,14 +64,14 @@ export default function LabsTasteDownloads() {
     try {
       const url = type === "all" ? `/api/export/all?participantId=${participantId}&format=${format}` : `/api/export/${type}?participantId=${participantId}&format=${format}`;
       const res = await fetch(url);
-      if (res.status === 403) { toast({ description: "No permission", variant: "destructive" }); return; }
+      if (res.status === 403) { toast({ description: t("downloads.toastNoPermission", "No permission"), variant: "destructive" }); return; }
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       downloadBlob(blob, `casksense_${type}_${new Date().toISOString().split("T")[0]}.${format === "xlsx" ? "xlsx" : format}`);
-      toast({ description: "Download ready" });
-    } catch { toast({ description: "No data available", variant: "destructive" }); }
+      toast({ description: t("downloads.toastDownloadReady", "Download ready") });
+    } catch { toast({ description: t("downloads.toastNoData", "No data available"), variant: "destructive" }); }
     finally { setLoading(key, false); }
-  }, [participantId, setLoading, toast]);
+  }, [participantId, setLoading, toast, t]);
 
   const executeFullBundle = useCallback(async () => {
     if (!participantId) return;
@@ -81,36 +81,36 @@ export default function LabsTasteDownloads() {
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       downloadBlob(blob, `casksense_full_${new Date().toISOString().split("T")[0]}.zip`);
-      toast({ description: "Download ready" });
-    } catch { toast({ description: "Export failed", variant: "destructive" }); }
+      toast({ description: t("downloads.toastDownloadReady", "Download ready") });
+    } catch { toast({ description: t("downloads.toastExportFailed", "Export failed"), variant: "destructive" }); }
     finally { setLoading("bundle-zip", false); }
-  }, [participantId, setLoading, toast]);
+  }, [participantId, setLoading, toast, t]);
 
   return (
     <div className="labs-page" data-testid="labs-taste-downloads-page">
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="flex items-center gap-3 mb-1">
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> Taste</button>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("downloads.backTaste", "Taste")}</button>
         <div className="flex items-center gap-2">
           <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">Downloads & Export</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">{t("downloads.title", "Downloads & Export")}</h1>
         </div>
       </div>
-      <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>Export your data and download templates</p>
+      <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{t("downloads.subtitle", "Export your data and download templates")}</p>
 
       <div className="mb-7">
-        <p className="labs-section-label">Printable Templates</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Blank tasting sheets and mats for your next session</p>
+        <p className="labs-section-label">{t("downloads.printableTemplates", "Printable Templates")}</p>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("downloads.printableTemplatesDesc", "Blank tasting sheets and mats for your next session")}</p>
         <div className="flex flex-col gap-2.5">
-          <DownloadButton loading={loadingSheet} onClick={() => { setLoadingSheet(true); try { generateBlankTastingSheet(lang); } finally { setLoadingSheet(false); } }} icon={ClipboardList} label="Blank Score Sheet (PDF)" testId="button-labs-download-sheet" />
-          <DownloadButton loading={loadingMat} onClick={() => { setLoadingMat(true); try { generateBlankTastingMat(lang); } finally { setLoadingMat(false); } }} icon={FileText} label="Blank Tasting Mat (PDF)" testId="button-labs-download-mat" />
+          <DownloadButton loading={loadingSheet} onClick={() => { setLoadingSheet(true); try { generateBlankTastingSheet(lang); } finally { setLoadingSheet(false); } }} icon={ClipboardList} label={t("downloads.blankScoreSheet", "Blank Score Sheet (PDF)")} testId="button-labs-download-sheet" />
+          <DownloadButton loading={loadingMat} onClick={() => { setLoadingMat(true); try { generateBlankTastingMat(lang); } finally { setLoadingMat(false); } }} icon={FileText} label={t("downloads.blankTastingMat", "Blank Tasting Mat (PDF)")} testId="button-labs-download-mat" />
         </div>
       </div>
 
       <div className="mb-7">
-        <p className="labs-section-label">Data Export</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Download your data as CSV or Excel</p>
+        <p className="labs-section-label">{t("downloads.dataExport", "Data Export")}</p>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("downloads.dataExportDesc", "Download your data as CSV or Excel")}</p>
         <div className="flex flex-col gap-3">
           {EXPORT_CARDS.filter(c => hasAccess(c.access)).map(card => {
             const Icon = card.icon;
@@ -121,13 +121,13 @@ export default function LabsTasteDownloads() {
                     <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>{card.title}</h3>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{card.desc}</p>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>{t(card.titleKey, card.titleFallback)}</h3>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{t(card.descKey, card.descFallback)}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <ExportFormatButton loading={!!loadingStates[`${card.type}-csv`]} onClick={() => executeExport(card.type, "csv")} icon={FileText} label="CSV" testId={`button-labs-export-${card.type}-csv`} />
-                  <ExportFormatButton loading={!!loadingStates[`${card.type}-xlsx`]} onClick={() => executeExport(card.type, "xlsx")} icon={FileSpreadsheet} label="Excel" testId={`button-labs-export-${card.type}-xlsx`} />
+                  <ExportFormatButton loading={!!loadingStates[`${card.type}-csv`]} onClick={() => executeExport(card.type, "csv")} icon={FileText} label={t("downloads.formatCsv", "CSV")} testId={`button-labs-export-${card.type}-csv`} />
+                  <ExportFormatButton loading={!!loadingStates[`${card.type}-xlsx`]} onClick={() => executeExport(card.type, "xlsx")} icon={FileSpreadsheet} label={t("downloads.formatExcel", "Excel")} testId={`button-labs-export-${card.type}-xlsx`} />
                 </div>
               </div>
             );
@@ -136,9 +136,9 @@ export default function LabsTasteDownloads() {
       </div>
 
       <div>
-        <p className="labs-section-label">Full Data Bundle</p>
-        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Download everything as a single ZIP file</p>
-        <DownloadButton loading={!!loadingStates["bundle-zip"]} onClick={executeFullBundle} icon={Package} label="Download Full Bundle (ZIP)" testId="button-labs-download-bundle" />
+        <p className="labs-section-label">{t("downloads.fullBundle", "Full Data Bundle")}</p>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("downloads.fullBundleDesc", "Download everything as a single ZIP file")}</p>
+        <DownloadButton loading={!!loadingStates["bundle-zip"]} onClick={executeFullBundle} icon={Package} label={t("downloads.downloadBundle", "Download Full Bundle (ZIP)")} testId="button-labs-download-bundle" />
       </div>
     </div>
   );

@@ -38,27 +38,16 @@ type SortOption = "delta_desc" | "delta_asc" | "your_desc" | "platform_desc" | "
 type DirectionFilter = "all" | "positive" | "negative";
 type DatePeriod = "all" | "30d" | "3m" | "1y";
 
-const DATE_PERIODS: { key: DatePeriod; label: string; days: number }[] = [
-  { key: "all", label: "All time", days: 0 },
-  { key: "30d", label: "30 days", days: 30 },
-  { key: "3m", label: "3 months", days: 90 },
-  { key: "1y", label: "1 year", days: 365 },
+const DATE_PERIOD_KEYS: { key: DatePeriod; days: number }[] = [
+  { key: "all", days: 0 },
+  { key: "30d", days: 30 },
+  { key: "3m", days: 90 },
+  { key: "1y", days: 365 },
 ];
 
-const SORT_OPTIONS: { key: SortOption; label: string }[] = [
-  { key: "delta_desc", label: "Highest delta" },
-  { key: "delta_asc", label: "Lowest delta" },
-  { key: "your_desc", label: "Your score (high)" },
-  { key: "platform_desc", label: "Platform (high)" },
-  { key: "name_az", label: "Name A–Z" },
-];
+const SORT_OPTION_KEYS: SortOption[] = ["delta_desc", "delta_asc", "your_desc", "platform_desc", "name_az"];
 
-const DIMS = [
-  { key: "nose", label: "Nose" },
-  { key: "taste", label: "Taste" },
-  { key: "finish", label: "Finish" },
-  { key: "overall", label: "Overall" },
-];
+const DIM_KEYS = ["nose", "taste", "finish", "overall"] as const;
 
 function parseSearch(s: string) {
   const p = new URLSearchParams(s);
@@ -134,6 +123,28 @@ export default function LabsTasteCompare() {
   const ratedWhiskies = data?.ratedWhiskies || [];
   const whiskyComparison = data?.whiskyComparison || [];
 
+  const datePeriodLabels: Record<DatePeriod, string> = {
+    all: t("compare.periodAll", "All time"),
+    "30d": t("compare.period30d", "30 days"),
+    "3m": t("compare.period3m", "3 months"),
+    "1y": t("compare.period1y", "1 year"),
+  };
+
+  const sortOptionLabels: Record<SortOption, string> = {
+    delta_desc: t("compare.sortDeltaDesc", "Highest delta"),
+    delta_asc: t("compare.sortDeltaAsc", "Lowest delta"),
+    your_desc: t("compare.sortYourDesc", "Your score (high)"),
+    platform_desc: t("compare.sortPlatformDesc", "Platform (high)"),
+    name_az: t("compare.sortNameAz", "Name A–Z"),
+  };
+
+  const dimLabels: Record<string, string> = {
+    nose: t("compare.dimNose", "Nose"),
+    taste: t("compare.dimTaste", "Taste"),
+    finish: t("compare.dimFinish", "Finish"),
+    overall: t("compare.dimOverall", "Overall"),
+  };
+
   const filteredComparison = useMemo(() => {
     let items = [...whiskyComparison];
     if (filters.q) {
@@ -144,7 +155,7 @@ export default function LabsTasteCompare() {
     if (filters.direction === "positive") items = items.filter(w => w.delta > 0);
     else if (filters.direction === "negative") items = items.filter(w => w.delta < 0);
     if (filters.period !== "all") {
-      const days = DATE_PERIODS.find(p => p.key === filters.period)?.days || 0;
+      const days = DATE_PERIOD_KEYS.find(p => p.key === filters.period)?.days || 0;
       if (days > 0) {
         const cutoff = Date.now() - days * 86400000;
         items = items.filter(w => w.ratedAt && new Date(w.ratedAt).getTime() >= cutoff);
@@ -175,9 +186,9 @@ export default function LabsTasteCompare() {
     (r.whisky.distillery || "").toLowerCase().includes(radarSearch.toLowerCase())
   );
 
-  const radarData = DIMS.map(dim => {
-    const entry: Record<string, string | number> = { dimension: dim.label };
-    selected.forEach((item, i) => { entry[`whisky${i}`] = (item.rating as Record<string, number>)[dim.key]; });
+  const radarData = DIM_KEYS.map(key => {
+    const entry: Record<string, string | number> = { dimension: dimLabels[key] };
+    selected.forEach((item, i) => { entry[`whisky${i}`] = (item.rating as unknown as Record<string, number>)[key]; });
     return entry;
   });
 
@@ -197,6 +208,14 @@ export default function LabsTasteCompare() {
     URL.revokeObjectURL(url);
   };
 
+  const tableHeaders = [
+    { key: "Whisky", label: t("compare.headerWhisky", "Whisky") },
+    { key: "You", label: t("compare.headerYou", "You") },
+    { key: "Platform", label: t("compare.headerPlatform", "Platform") },
+    { key: "Delta", label: t("compare.headerDelta", "Delta") },
+    { key: "N", label: t("compare.headerN", "N") },
+  ];
+
   if (!session.signedIn || !pid) {
     return (
       <AuthGateMessage
@@ -211,18 +230,18 @@ export default function LabsTasteCompare() {
     <div className="labs-page" data-testid="labs-taste-compare">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-compare">
-          <ChevronLeft className="w-4 h-4" /> Taste
+          <ChevronLeft className="w-4 h-4" /> {t("compare.backTaste", "Taste")}
         </button>
       </BackLink>
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <GitCompareArrows className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-compare-title">
-          Compare
+          {t("compare.title", "Compare")}
         </h1>
       </div>
       <p className="text-sm mb-4 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        Your scores vs. the platform community
+        {t("compare.subtitle", "Your scores vs. the platform community")}
       </p>
       {data?.hasMultipleScales && (
         <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="compare-normalized-hint">
@@ -236,7 +255,7 @@ export default function LabsTasteCompare() {
       ) : whiskyComparison.length === 0 && ratedWhiskies.length === 0 ? (
         <div className="labs-empty labs-fade-in">
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>Rate whiskies to start comparing your scores</p>
+          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>{t("compare.emptyRate", "Rate whiskies to start comparing your scores")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -248,7 +267,7 @@ export default function LabsTasteCompare() {
                     <Search className="w-4 h-4" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)" }} />
                     <input
                       type="text"
-                      placeholder="Search whiskies..."
+                      placeholder={t("compare.searchPlaceholder", "Search whiskies...")}
                       value={filters.q}
                       onChange={e => setFilter("q", e.target.value)}
                       data-testid="input-compare-table-search"
@@ -266,7 +285,7 @@ export default function LabsTasteCompare() {
                     data-testid="button-toggle-filters"
                   >
                     <Filter className="w-3.5 h-3.5" />
-                    Filters
+                    {t("compare.filters", "Filters")}
                     <ChevronDown className="w-3 h-3" style={{ transform: showFilters ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                   </button>
                 </div>
@@ -274,7 +293,7 @@ export default function LabsTasteCompare() {
                 {showFilters && (
                   <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--labs-border)", display: "flex", flexDirection: "column", gap: 10, background: "var(--labs-bg)" }}>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>Sort:</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>{t("compare.sortLabel", "Sort:")}</span>
                       <select
                         value={filters.sort}
                         onChange={e => setFilter("sort", e.target.value)}
@@ -285,30 +304,30 @@ export default function LabsTasteCompare() {
                           color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit",
                         }}
                       >
-                        {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                        {SORT_OPTION_KEYS.map(key => <option key={key} value={key}>{sortOptionLabels[key]}</option>)}
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>Min N:</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>{t("compare.minNLabel", "Min N:")}</span>
                       {[1, 5, 10, 20].map(n => (
                         <ChipButton key={n} active={filters.minN === n} onClick={() => setFilter("minN", n)} testId={`chip-min-n-${n}`}>
-                          {n === 1 ? "All" : `≥${n}`}
+                          {n === 1 ? t("compare.chipAll", "All") : `≥${n}`}
                         </ChipButton>
                       ))}
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>Delta:</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>{t("compare.deltaLabel", "Delta:")}</span>
                       {(["all", "positive", "negative"] as DirectionFilter[]).map(dir => (
                         <ChipButton key={dir} active={filters.direction === dir} onClick={() => setFilter("direction", dir)} testId={`chip-direction-${dir}`}>
-                          {dir === "all" ? "All" : dir === "positive" ? "Above ↑" : "Below ↓"}
+                          {dir === "all" ? t("compare.chipAll", "All") : dir === "positive" ? t("compare.chipAbove", "Above ↑") : t("compare.chipBelow", "Below ↓")}
                         </ChipButton>
                       ))}
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>Period:</span>
-                      {DATE_PERIODS.map(p => (
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600, width: 60 }}>{t("compare.periodLabel", "Period:")}</span>
+                      {DATE_PERIOD_KEYS.map(p => (
                         <ChipButton key={p.key} active={filters.period === p.key} onClick={() => setFilter("period", p.key)} testId={`chip-period-${p.key}`}>
-                          {p.label}
+                          {datePeriodLabels[p.key]}
                         </ChipButton>
                       ))}
                     </div>
@@ -317,7 +336,7 @@ export default function LabsTasteCompare() {
 
                 <div style={{ padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--labs-border)" }}>
                   <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-                    {filteredComparison.length} {filteredComparison.length === 1 ? "whisky" : "whiskies"}
+                    {filteredComparison.length} {filteredComparison.length === 1 ? t("compare.whisky_one", "whisky") : t("compare.whisky_other", "whiskies")}
                   </span>
                   <button
                     onClick={handleExportCsv}
@@ -325,7 +344,7 @@ export default function LabsTasteCompare() {
                     style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, padding: "4px 8px" }}
                     data-testid="button-export-csv"
                   >
-                    <Download className="w-3 h-3" /> CSV
+                    <Download className="w-3 h-3" /> {t("compare.exportCsv", "CSV")}
                   </button>
                 </div>
 
@@ -333,16 +352,16 @@ export default function LabsTasteCompare() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr style={{ position: "sticky", top: 0, background: "var(--labs-surface-elevated)", zIndex: 1 }}>
-                        {["Whisky", "You", "Platform", "Delta", "N"].map(h => (
-                          <th key={h} style={{
-                            textAlign: h === "Whisky" ? "left" : "right",
+                        {tableHeaders.map(h => (
+                          <th key={h.key} style={{
+                            textAlign: h.key === "Whisky" ? "left" : "right",
                             padding: "8px 10px",
                             color: "var(--labs-text-muted)",
                             fontWeight: 600,
                             borderBottom: "2px solid var(--labs-border)",
                             whiteSpace: "nowrap",
                             fontSize: 11,
-                          }}>{h}</th>
+                          }}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -379,7 +398,7 @@ export default function LabsTasteCompare() {
                       {paginatedItems.length === 0 && (
                         <tr>
                           <td colSpan={5} style={{ textAlign: "center", padding: "20px 10px", color: "var(--labs-text-muted)", fontSize: 13 }}>
-                            No whiskies match your filters
+                            {t("compare.emptyNoMatch", "No whiskies match your filters")}
                           </td>
                         </tr>
                       )}
@@ -390,7 +409,7 @@ export default function LabsTasteCompare() {
                 {totalPages > 1 && (
                   <div style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--labs-border)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Rows:</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("compare.rowsLabel", "Rows:")}</span>
                       {[25, 50, 100].map(n => (
                         <ChipButton key={n} active={filters.perPage === n} onClick={() => setFilter("perPage", n)} testId={`chip-per-page-${n}`}>
                           {n}
@@ -431,18 +450,18 @@ export default function LabsTasteCompare() {
               <div className="flex items-center gap-2 mb-2">
                 <ArrowUpDown className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 <h2 className="labs-h3" style={{ color: "var(--labs-text)" }} data-testid="text-radar-title">
-                  Whisky Radar Overlay
+                  {t("compare.radarTitle", "Whisky Radar Overlay")}
                 </h2>
               </div>
               <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-                Select up to 3 whiskies to overlay their dimension scores
+                {t("compare.radarHint", "Select up to 3 whiskies to overlay their dimension scores")}
               </p>
 
               <div style={{ position: "relative", marginBottom: 10 }}>
                 <Search className="w-4 h-4" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)" }} />
                 <input
                   type="text"
-                  placeholder="Search your rated whiskies..."
+                  placeholder={t("compare.radarSearchPlaceholder", "Search your rated whiskies...")}
                   value={radarSearch}
                   onChange={e => setRadarSearch(e.target.value)}
                   data-testid="input-radar-search"
@@ -525,7 +544,7 @@ export default function LabsTasteCompare() {
                 })}
                 {filteredWhiskiesRadar.length === 0 && (
                   <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 12 }}>
-                    No whiskies found
+                    {t("compare.emptyNotFound", "No whiskies found")}
                   </div>
                 )}
               </div>
@@ -567,7 +586,7 @@ export default function LabsTasteCompare() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--labs-border)" }}>
-                          <th style={{ textAlign: "left", padding: "8px 14px", color: "var(--labs-text-muted)", fontWeight: 600, fontSize: 11 }}>Dimension</th>
+                          <th style={{ textAlign: "left", padding: "8px 14px", color: "var(--labs-text-muted)", fontWeight: 600, fontSize: 11 }}>{t("compare.headerDimension", "Dimension")}</th>
                           {selected.map((item, i) => (
                             <th key={item.whisky.id} style={{
                               textAlign: "center", padding: "8px 6px", color: CHART_COLORS[i], fontWeight: 600, fontSize: 11,
@@ -579,14 +598,14 @@ export default function LabsTasteCompare() {
                         </tr>
                       </thead>
                       <tbody>
-                        {DIMS.map(dim => {
-                          const vals = selected.map(s => (s.rating as Record<string, number>)[dim.key]);
+                        {DIM_KEYS.map(key => {
+                          const vals = selected.map(s => (s.rating as unknown as Record<string, number>)[key]);
                           const maxVal = Math.max(...vals);
                           return (
-                            <tr key={dim.key} style={{ borderBottom: "1px solid var(--labs-border)" }}>
-                              <td style={{ padding: "6px 14px", color: "var(--labs-text)", fontWeight: 500 }}>{dim.label}</td>
+                            <tr key={key} style={{ borderBottom: "1px solid var(--labs-border)" }}>
+                              <td style={{ padding: "6px 14px", color: "var(--labs-text)", fontWeight: 500 }}>{dimLabels[key]}</td>
                               {selected.map((item, i) => {
-                                const val = (item.rating as Record<string, number>)[dim.key];
+                                const val = (item.rating as unknown as Record<string, number>)[key];
                                 return (
                                   <td key={item.whisky.id} style={{
                                     textAlign: "center", padding: "6px", fontVariantNumeric: "tabular-nums",
@@ -608,7 +627,7 @@ export default function LabsTasteCompare() {
 
               {selected.length < 2 && ratedWhiskies.length > 0 && (
                 <div style={{ textAlign: "center", padding: "20px 0", color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-select-more">
-                  Select at least 2 whiskies to compare their radar profiles
+                  {t("compare.radarSelectMore", "Select at least 2 whiskies to compare their radar profiles")}
                 </div>
               )}
             </div>
