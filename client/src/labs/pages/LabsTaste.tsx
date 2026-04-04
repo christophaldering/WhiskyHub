@@ -619,7 +619,7 @@ export default function LabsTaste() {
               )}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
               {[
                 { label: t("labs.statAvgLabel", "Average"), icon: <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statConsistencyLabel", "Consistency"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
@@ -763,14 +763,13 @@ export default function LabsTaste() {
           </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
-            <div className="labs-card" style={{ padding: 16, textAlign: "center" }} data-testid="labs-taste-stat-average">
-              <div style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1, marginBottom: 4 }}>
-                {avgScores.overall > 0 ? avgScores.overall.toFixed(1) : "—"}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
+            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-average">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
+                <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
+                  {avgScores.overall > 0 ? avgScores.overall.toFixed(1) : "—"}
+                </span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, marginBottom: 6 }}>
-                {t("labs.statAvgLabel", "Average")}
-              </p>
               <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden", marginBottom: 6 }}>
                 <div style={{
                   height: "100%",
@@ -780,7 +779,10 @@ export default function LabsTaste() {
                   transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }} />
               </div>
-              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.3, textAlign: "center" }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2 }}>
+                {t("labs.statAvgLabel", "Average")}
+              </p>
+              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
                 {t("labs.statAvgDesc", "Based on {{count}} ratings", { count: whiskyCount ?? 0 })}
               </p>
             </div>
