@@ -1,0 +1,386 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n BLOCK 3: m2.circle.* + explore.* + discover.* + bibliothek.*
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+Struktur: resources.en.translation + resources.de.translation
+
+Dieser Prompt fügt fehlende Keys ein für:
+  m2.circle.* — Circle/Community Seite
+  explore.*   — Entdecken/Datenbank Seite
+  discover.*  — Whisky-Detail und Filter
+  bibliothek.* — Bibliothek Seite
+  exploreStats.* — Statistiken in Entdecken
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Keys löschen oder umbenennen
+❌ NIEMALS die Dateistruktur ändern
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS Keys doppelt einfügen — erst prüfen ob vorhanden
+
+✅ Immer BEIDE Sprachblöcke (EN + DE) aktualisieren
+✅ Markenbegriffe in DE identisch zu EN:
+   Circle, Tastings, Dram, Host, Benchmark, Rabbit Hole,
+   Community, Leaderboard, Taste Twins
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — m2.circle.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in m2.circle-Block einfügen falls nicht vorhanden):
+  tabFriends: "Friends",
+  tabFeed: "Feed",
+  tabBoard: "Leaderboard",
+  tabSessions: "Sessions",
+  tabCommunity: "Community",
+  emptyTitle: "No friends yet",
+  emptyDesc: "Add friends to see their activity",
+  online: "Online",
+  offline: "Offline",
+  active: "Active",
+  lastActive: "Last active",
+  justNow: "Just now",
+  ratings: "Ratings",
+  whiskies: "Whiskies",
+  you: "You",
+  someone: "Someone",
+  joinedTasting: "joined a tasting",
+  joinedTastingGeneric: "joined a tasting",
+  loggedDram: "logged a dram",
+  loggedDramGeneric: "logged a dram",
+  recentTogether: "Recently together",
+  recentSessions: "Recent sessions",
+  sessionsTogether: "Sessions together",
+  sharedTastings: "Shared tastings",
+  noSharedSessionsTitle: "No shared sessions yet",
+  noSharedSessionsDesc: "Join tastings together to see shared history",
+  lbMostActive: "Most active",
+  lbMostActiveSub: "By number of ratings",
+  lbHighestRated: "Highest rated",
+  lbHighestRatedSub: "By average score",
+  lbMostDetailed: "Most detailed",
+  lbMostDetailedSub: "By note length",
+  lbExplorer: "Explorer",
+  lbExplorerSub: "By regions explored",
+  noLeaderboardTitle: "No data yet",
+  noLeaderboardDesc: "Rate more whiskies to appear on the leaderboard",
+  cheersSendTitle: "Send Cheers",
+  cheersSent: "Cheers sent!",
+  cheersSuccess: "Your cheers was delivered",
+  cooldownActive: "Cooldown active",
+  cooldownWait: "Wait before sending again",
+  cooldownWaitTitle: "Please wait",
+  inviteSent: "Invitation sent",
+  inviteSentDesc: "Your friend will receive an invitation",
+  inviteToTasting: "Invite to tasting",
+  invited: "Invited",
+  selectTasting: "Select tasting",
+  sendInvite: "Send invitation",
+  sending: "Sending...",
+  sent: "Sent",
+  resend: "Resend",
+  contact: "Contact",
+  firstNamePlaceholder: "First name",
+  lastNamePlaceholder: "Last name",
+  emailPlaceholder: "Email address",
+  failed: "Failed",
+  cancel: "Cancel",
+  chars: "characters",
+  addToggle: "Add",
+  notYetRegistered: "Not yet registered",
+  friendsRankingsSubtitle: "How you compare to your friends",
+  errorTitle: "Something went wrong",
+
+DE (in m2.circle-Block einfügen falls nicht vorhanden):
+  tabFriends: "Freunde",
+  tabFeed: "Feed",
+  tabBoard: "Rangliste",
+  tabSessions: "Sessions",
+  tabCommunity: "Community",
+  emptyTitle: "Noch keine Freunde",
+  emptyDesc: "Füge Freunde hinzu um ihre Aktivitäten zu sehen",
+  online: "Online",
+  offline: "Offline",
+  active: "Aktiv",
+  lastActive: "Zuletzt aktiv",
+  justNow: "Gerade eben",
+  ratings: "Bewertungen",
+  whiskies: "Whiskies",
+  you: "Du",
+  someone: "Jemand",
+  joinedTasting: "hat an einem Tasting teilgenommen",
+  joinedTastingGeneric: "hat an einem Tasting teilgenommen",
+  loggedDram: "hat einen Dram eingetragen",
+  loggedDramGeneric: "hat einen Dram eingetragen",
+  recentTogether: "Zuletzt zusammen",
+  recentSessions: "Letzte Sessions",
+  sessionsTogether: "Sessions zusammen",
+  sharedTastings: "Gemeinsame Tastings",
+  noSharedSessionsTitle: "Noch keine gemeinsamen Sessions",
+  noSharedSessionsDesc: "Nehmt zusammen an Tastings teil",
+  lbMostActive: "Aktivste",
+  lbMostActiveSub: "Nach Anzahl der Bewertungen",
+  lbHighestRated: "Höchste Bewertungen",
+  lbHighestRatedSub: "Nach Durchschnittsscore",
+  lbMostDetailed: "Detailliertste",
+  lbMostDetailedSub: "Nach Notizlänge",
+  lbExplorer: "Entdecker",
+  lbExplorerSub: "Nach erkundeten Regionen",
+  noLeaderboardTitle: "Noch keine Daten",
+  noLeaderboardDesc: "Bewerte mehr Whiskies für die Rangliste",
+  cheersSendTitle: "Cheers senden",
+  cheersSent: "Cheers gesendet!",
+  cheersSuccess: "Dein Cheers wurde zugestellt",
+  cooldownActive: "Wartezeit aktiv",
+  cooldownWait: "Bitte warte bevor du erneut sendest",
+  cooldownWaitTitle: "Bitte warten",
+  inviteSent: "Einladung gesendet",
+  inviteSentDesc: "Dein Freund erhält eine Einladung",
+  inviteToTasting: "Zum Tasting einladen",
+  invited: "Eingeladen",
+  selectTasting: "Tasting auswählen",
+  sendInvite: "Einladung senden",
+  sending: "Wird gesendet...",
+  sent: "Gesendet",
+  resend: "Erneut senden",
+  contact: "Kontakt",
+  firstNamePlaceholder: "Vorname",
+  lastNamePlaceholder: "Nachname",
+  emailPlaceholder: "E-Mail-Adresse",
+  failed: "Fehlgeschlagen",
+  cancel: "Abbrechen",
+  chars: "Zeichen",
+  addToggle: "Hinzufügen",
+  notYetRegistered: "Noch nicht registriert",
+  friendsRankingsSubtitle: "Wie du im Vergleich zu deinen Freunden abschneidest",
+  errorTitle: "Etwas ist schiefgelaufen",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — explore.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in explore-Block einfügen falls nicht vorhanden):
+  bibliothekCard: "Library",
+  loadMore: "Show more",
+  remaining: "remaining",
+  searchDatabase: "Search whisky database...",
+  clearFilters: "Clear filters",
+  adjustFilters: "Adjust filters",
+  noMatchingWhiskies: "No whiskies match your filters",
+  whiskiesWillAppear: "Whiskies will appear here",
+  sortHighestRated: "Highest rated",
+  sortMostRated: "Most rated",
+  sortAZ: "A–Z",
+  sortZA: "Z–A",
+  sortAge: "Age",
+  sortAbv: "ABV",
+  sortRegion: "Region",
+  sortCategory: "Category",
+  filterRegion: "Region",
+  filterCategory: "Category",
+  filterCountry: "Country",
+  filterPeat: "Peat level",
+
+DE (in explore-Block einfügen falls nicht vorhanden):
+  bibliothekCard: "Bibliothek",
+  loadMore: "Mehr anzeigen",
+  remaining: "weitere",
+  searchDatabase: "Whisky-Datenbank durchsuchen...",
+  clearFilters: "Filter zurücksetzen",
+  adjustFilters: "Filter anpassen",
+  noMatchingWhiskies: "Keine Whiskies entsprechen deinen Filtern",
+  whiskiesWillAppear: "Whiskies erscheinen hier",
+  sortHighestRated: "Höchste Bewertung",
+  sortMostRated: "Meist bewertet",
+  sortAZ: "A–Z",
+  sortZA: "Z–A",
+  sortAge: "Alter",
+  sortAbv: "ABV",
+  sortRegion: "Region",
+  sortCategory: "Kategorie",
+  filterRegion: "Region",
+  filterCategory: "Kategorie",
+  filterCountry: "Land",
+  filterPeat: "Torfgehalt",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — discover.* (fehlende Keys ergänzen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in discover-Block einfügen falls nicht vorhanden):
+  crossLinkTastings: "Tastings",
+  filterLabel: "Filter",
+  filterDone: "Done",
+  filterSearchPlaceholder: "Search...",
+  filteredFrom: "of",
+  noFilterResults: "No matches",
+  resetDimension: "Reset",
+  sortLabel: "Sort",
+  sortAvg: "Avg Score",
+  sortMost: "Most Tastings",
+  sortAlpha: "A-Z",
+  searchDistilleries: "Search distilleries...",
+  loadingMap: "Loading map...",
+  keyFact: "Key fact",
+  testBadge: "Test",
+  rabbitHole: "Rabbit Hole",
+
+DE (in discover-Block einfügen falls nicht vorhanden):
+  crossLinkTastings: "Tastings",
+  filterLabel: "Filter",
+  filterDone: "Fertig",
+  filterSearchPlaceholder: "Suchen...",
+  filteredFrom: "von",
+  noFilterResults: "Keine Treffer",
+  resetDimension: "Zurücksetzen",
+  sortLabel: "Sortieren",
+  sortAvg: "Ø Score",
+  sortMost: "Meist verkostet",
+  sortAlpha: "A-Z",
+  searchDistilleries: "Destillerien suchen...",
+  loadingMap: "Karte wird geladen...",
+  keyFact: "Wissenswertes",
+  testBadge: "Test",
+  rabbitHole: "Rabbit Hole",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — bibliothek.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen falls nicht vorhanden):
+  bibliothek: {
+    title: "Library",
+    subtitle: "Whisky knowledge & community",
+    tabDictionary: "Dictionary",
+    tabFlavourMap: "Flavour Map",
+    tabTemplates: "Templates",
+    lexiconSubtitle: "Terms & definitions",
+    crossTastingInsights: "Cross-tasting insights",
+    statisticsAndTrends: "Statistics & Trends",
+    statisticsAndTrendsDesc: "Platform-wide analytics",
+  },
+
+DE (neu anlegen falls nicht vorhanden):
+  bibliothek: {
+    title: "Bibliothek",
+    subtitle: "Whisky-Wissen & Community",
+    tabDictionary: "Wörterbuch",
+    tabFlavourMap: "Aromakarte",
+    tabTemplates: "Vorlagen",
+    lexiconSubtitle: "Begriffe & Definitionen",
+    crossTastingInsights: "Tasting-übergreifende Insights",
+    statisticsAndTrends: "Statistiken & Trends",
+    statisticsAndTrendsDesc: "Plattformweite Analytik",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — exploreStats.*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (neu anlegen):
+  exploreStats: {
+    title: "Whisky Statistics",
+    tabRankings: "Rankings",
+    tabAnalysis: "Analysis",
+    tabComparisons: "Comparisons",
+    topRated: "Top rated",
+    topRatedSub: "Highest average scores",
+    mostTasted: "Most tasted",
+    mostTastedSub: "By number of tastings",
+    hiddenGems: "Hidden gems",
+    hiddenGemsSub: "High scores, few tastings",
+    divisive: "Most divisive",
+    divisiveSub: "Highest score variance",
+    regionRanking: "By region",
+    regionRankingSub: "Average score per region",
+    distilleryRanking: "By distillery",
+    distilleryRankingSub: "Average score per distillery",
+    caskTypeRanking: "By cask type",
+    caskTypeRankingSub: "Average score per cask type",
+    noseTasteFinish: "Nose vs. Palate vs. Finish",
+    noseTasteFinishSub: "Dimension comparison",
+    bestNose: "Best nose",
+    bestTaste: "Best palate",
+    bestFinish: "Best finish",
+    ageVsScore: "Age vs. score",
+    ageVsScoreSub: "Does age matter?",
+    abvVsScore: "ABV vs. score",
+    abvVsScoreSub: "Does strength matter?",
+    peatVsScore: "Peat vs. score",
+    peatVsScoreSub: "Does smoke matter?",
+    priceValue: "Price vs. value",
+    priceValueSub: "Best value whiskies",
+    wbVsCommunity: "Whiskybase vs. community",
+    wbVsCommunitySub: "Expert vs. community ratings",
+    vintageAnalysis: "Vintage analysis",
+    vintageAnalysisSub: "Scores by distillation year",
+    notEnoughData: "Not enough data yet",
+  },
+
+DE (neu anlegen):
+  exploreStats: {
+    title: "Whisky-Statistiken",
+    tabRankings: "Rankings",
+    tabAnalysis: "Analyse",
+    tabComparisons: "Vergleiche",
+    topRated: "Bestbewertet",
+    topRatedSub: "Höchste Durchschnittswerte",
+    mostTasted: "Meist verkostet",
+    mostTastedSub: "Nach Anzahl der Tastings",
+    hiddenGems: "Hidden Gems",
+    hiddenGemsSub: "Hohe Scores, wenige Tastings",
+    divisive: "Am umstrittensten",
+    divisiveSub: "Höchste Score-Varianz",
+    regionRanking: "Nach Region",
+    regionRankingSub: "Durchschnittsscore pro Region",
+    distilleryRanking: "Nach Destillerie",
+    distilleryRankingSub: "Durchschnittsscore pro Destillerie",
+    caskTypeRanking: "Nach Fasstyp",
+    caskTypeRankingSub: "Durchschnittsscore pro Fasstyp",
+    noseTasteFinish: "Nose vs. Palate vs. Finish",
+    noseTasteFinishSub: "Dimensionsvergleich",
+    bestNose: "Beste Nose",
+    bestTaste: "Bester Gaumen",
+    bestFinish: "Bester Finish",
+    ageVsScore: "Alter vs. Score",
+    ageVsScoreSub: "Spielt das Alter eine Rolle?",
+    abvVsScore: "ABV vs. Score",
+    abvVsScoreSub: "Spielt die Stärke eine Rolle?",
+    peatVsScore: "Torf vs. Score",
+    peatVsScoreSub: "Spielt Rauch eine Rolle?",
+    priceValue: "Preis vs. Wert",
+    priceValueSub: "Beste Preis-Leistung",
+    wbVsCommunity: "Whiskybase vs. Community",
+    wbVsCommunitySub: "Experten- vs. Community-Bewertungen",
+    vintageAnalysis: "Vintage-Analyse",
+    vintageAnalysisSub: "Scores nach Destillationsjahr",
+    notEnoughData: "Noch nicht genug Daten",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ wc -l client/src/lib/i18n.ts → deutlich mehr Zeilen als vorher
+□ grep -n "Rangliste" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Bibliothek" client/src/lib/i18n.ts → mindestens 2 Treffer
+□ grep -n "Entdecker" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Aromakarte" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Whisky-Statistiken" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ tsc --noEmit läuft fehlerfrei
+□ Keine bestehenden Keys wurden gelöscht

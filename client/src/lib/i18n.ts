@@ -5275,6 +5275,8 @@ const resources = {
         whisky_plural: "whiskies",
       },
       labs: {
+        statAvgLabel: "Average",
+        statAvgDesc: "Based on {{count}} ratings",
         statStabilityDesc: "Rating consistency",
         statSmokeDesc: "Peat & smoke affinity",
         heroAvgNeutral: "Your average is based on {{count}} ratings",
