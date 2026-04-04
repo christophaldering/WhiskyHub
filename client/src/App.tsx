@@ -106,6 +106,9 @@ const LabsGuide = lazy(() => import("@/labs/pages/LabsGuide"));
 const LabsResearch = lazy(() => import("@/labs/pages/LabsResearch"));
 const LabsRabbitHole = lazy(() => import("@/labs/pages/LabsRabbitHole"));
 const LabsMethod = lazy(() => import("@/labs/pages/LabsMethod"));
+const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumbers"));
+const LabsTestTheory = lazy(() => import("@/labs/pages/LabsTestTheory"));
+const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMethods"));
 const LabsBackground = lazy(() => import("@/labs/pages/LabsBackground"));
 const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
 const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
@@ -638,6 +641,9 @@ function Router() {
               <Route path="/labs/discover/research" component={LabsResearch} />
               <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
               <Route path="/labs/discover/method" component={LabsMethod} />
+              <Route path="/labs/discover/idea-behind-numbers" component={LabsIdeaBehindNumbers} />
+              <Route path="/labs/discover/test-theory" component={LabsTestTheory} />
+              <Route path="/labs/discover/statistical-methods" component={LabsStatisticalMethods} />
               <Route path="/labs/discover/background" component={LabsBackground} />
               <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
               <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>

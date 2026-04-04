@@ -4,7 +4,7 @@ import BackLink from "@/labs/components/BackLink";
 import {
   BookOpen, Building2, Package, Map,
   BookMarked, ChevronRight, ChevronLeft,
-  Archive, BarChart3, FlaskConical, SlidersHorizontal,
+  Archive, BarChart3, SlidersHorizontal,
   Utensils, Brain, Lightbulb, GraduationCap, TrendingUp, Factory,
 } from "lucide-react";
 import type { ElementType } from "react";
@@ -50,11 +50,10 @@ export const SECTIONS: BibliothekSection[] = [
     titleFallback: "Tasting Knowledge",
     links: [
       { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-bibliothek-guide" },
-      { icon: FlaskConical, labelKey: "bibliothek.howCaskSenseWorks", labelFallback: "How CaskSense Works", descKey: "bibliothek.howCaskSenseWorksDesc", descFallback: "Scoring system explained", href: "/labs/discover/rabbit-hole", testId: "labs-link-bibliothek-how-casksense" },
       { icon: SlidersHorizontal, labelKey: "bibliothek.howProfileCalculated", labelFallback: "How a Profile Is Calculated", descKey: "bibliothek.howProfileCalculatedDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/method", testId: "labs-link-bibliothek-profile-calc" },
-      { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/research#foundations", testId: "labs-link-bibliothek-idea-numbers" },
-      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/research#testTheory", testId: "labs-link-bibliothek-test-theory" },
-      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/research#statistics", testId: "labs-link-bibliothek-stat-methods" },
+      { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/idea-behind-numbers", testId: "labs-link-bibliothek-idea-numbers" },
+      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/test-theory", testId: "labs-link-bibliothek-test-theory" },
+      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/statistical-methods", testId: "labs-link-bibliothek-stat-methods" },
     ],
   },
   {

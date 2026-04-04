@@ -21,20 +21,20 @@ export default function LabsMethod() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-method-page">
-      <BackLink href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-method">
-          <ChevronLeft className="w-4 h-4" /> {t("discover.rabbitHole", "Rabbit Hole")}
+          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
         </button>
       </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
-          {t("methodPage.title", "How Your Profile Is Built")}
+          {t("bibliothek.howProfileCalculated", "How a Profile Is Calculated")}
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 24px", lineHeight: 1.5 }}>
-        {t("methodPage.subtitle", "Transparency matters to us.")}
+        {t("bibliothek.howProfileCalculatedDesc", "Scoring, profiles & dimensions")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
