@@ -1,0 +1,86 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n DIREKTFIX: Bestehende DE-Werte korrigieren
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+
+Das Problem: Die DE-Übersetzungen existieren bereits in der Datei aber haben
+falsche Werte. i18next nimmt immer den ERSTEN Treffer — später angelegte
+Duplikate werden ignoriert.
+
+Diese Werte müssen im ERSTEN (originalen) DE-Block direkt korrigiert werden.
+Der originale DE-Block beginnt bei ca. Zeile 8232.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS Keys löschen
+❌ NIEMALS Struktur ändern
+❌ NIEMALS EN-Block anfassen
+❌ NIEMALS andere Dateien ändern
+
+✅ NUR die Werte der unten genannten Keys im DE-Block (ab Zeile 8232) ändern
+✅ Vorgehen: grep -n nach dem Key suchen, dann den DE-Wert (NACH Zeile 8232)
+   direkt ersetzen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — Diese DE-Werte korrigieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Für jeden Key: erst mit grep -n den Zeilennummer im DE-Block finden
+(Zeile > 8232), dann den Wert ersetzen.
+
+1. myTastePage.title
+   ALT: "Mein Whisky"
+   NEU: "Meine Welt"
+
+2. myTastePage.subtitle
+   ALT: "Deine persönliche Whisky-Sammlung & Insights"
+   NEU: "Dein persönliches Whisky-Universum"
+
+3. explore.title  (im DE-Block nach Zeile 8232)
+   ALT: "Explore" oder "Entdecken" — prüfen welcher Wert aktuell steht
+   NEU: "Entdecken"
+
+4. explore.subtitle (im DE-Block)
+   ALT: "Find whiskies" oder ähnlich
+   NEU: "Whiskies suchen & entdecken"
+
+5. nav.explore (im DE nav-Block nach Zeile 8232)
+   Prüfen ob bereits "Entdecken" — falls nicht:
+   NEU: "Entdecken"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VORGEHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1 — Zeilennummern finden:
+  grep -n "title.*Mein Whisky\|title.*My Whisky" client/src/lib/i18n.ts
+  grep -n "explore.*title\|title.*Explore" client/src/lib/i18n.ts
+
+Schritt 2 — Nur die Zeilen im DE-Block (> 8232) ändern, EN-Block (< 8232) unberührt lassen
+
+Schritt 3 — Auch doppelte Blöcke bereinigen:
+  Falls myTastePage zwei mal im DE-Block vorkommt (einmal original, einmal
+  durch unsere früheren Prompts als Duplikat angelegt): den zweiten
+  (späteren) Block entfernen um Konflikte zu vermeiden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "Mein Whisky" client/src/lib/i18n.ts → kein Treffer mehr
+□ grep -n "Meine Welt" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "myTastePage" client/src/lib/i18n.ts → genau 2 Treffer (EN + DE, kein Duplikat)
+□ tsc --noEmit fehlerfrei
+□ wc -l client/src/lib/i18n.ts → Zeilen weniger als vorher (Duplikate entfernt)
