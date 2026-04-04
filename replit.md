@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Stable Milestone: "Feinschliff" (04.04.2026)
+Feinheiten-Session: Tasks #540-#542 gemerged und deployed. Solo-Rating Speicher-Flow repariert (Draft-Save bleibt im Flow, POST/PATCH-Logik), Rating-Flow Auto-Scroll zu gewaehltem Abschnitt, Finalize-Button erst nach Overall-Bewertung. Alle Flows durchgetestet und stabil. Production live auf casksense.com.
+
 ## Stable Milestone: "Es laeuft" (28.03.2026)
 All core features operational. Tasks #519-#539 merged and deployed. Explore page restructured (Bibliothek + paginated whisky list), Solo draft flow, Connoisseur PDF fix, Navigation restructure (Explore + Bibliothek), Community Insights, Deep-Rate fix, Geschmacksradar journal integration, Drams individual scores, Profile breakdowns crash fix, Benchmark UX cleanup. Production stable on casksense.com.
 
