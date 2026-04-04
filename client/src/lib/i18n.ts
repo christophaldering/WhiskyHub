@@ -6402,6 +6402,10 @@ const resources = {
           signInToRate: "Sign in to rate whiskies",
           ratingsClosed: "Ratings are currently closed",
           blind: "Blind",
+          ratingModels: "Rating Models",
+          moreAromasModels: "More Aromas",
+          moreAromasModelsSub: "Explore additional aroma profiles",
+          studioViewLabel: "Studio View",
         },
         error: {
           title: "Something went wrong",
@@ -7883,6 +7887,7 @@ const resources = {
         titlePlaceholder: "Tasting title",
         descriptionPlaceholder: "Description (optional)",
         locationPlaceholder: "Location",
+        countryPlaceholder: "Country",
         enterLiveSession: "Enter Live Session",
         viewReveal: "View Reveal",
         manageSession: "Manage Session",
@@ -8016,6 +8021,7 @@ const resources = {
         tasters: "Tasters",
         consensus: "Consensus",
         debated: "Debated",
+        ratingsGiven: "Ratings Given",
       },
       liveUi: {
         blindTasting: "Blind Tasting",
@@ -8266,6 +8272,9 @@ const resources = {
         highlandElegant: "Highland & Elegant",
         bourbonClassic: "Bourbon & Classic",
         radar: "Radar",
+        overallAuto: "Average of sub-scores",
+        overallManual: "Manual override",
+        overallReset: "Reset to average",
       },
       exploreStats: {
         title: "Whisky Statistics",
@@ -14706,6 +14715,10 @@ const resources = {
           signInToRate: "Anmelden, um Whiskys zu bewerten",
           ratingsClosed: "Bewertungen sind derzeit geschlossen",
           blind: "Blind",
+          ratingModels: "Bewertungsmodi",
+          moreAromasModels: "Mehr Aromen",
+          moreAromasModelsSub: "Weitere Aromaprofile erkunden",
+          studioViewLabel: "Studio-Ansicht",
         },
         error: {
           title: "Etwas ist schiefgelaufen",
@@ -16185,6 +16198,7 @@ const resources = {
         titlePlaceholder: "Tasting-Titel",
         descriptionPlaceholder: "Beschreibung (optional)",
         locationPlaceholder: "Ort",
+        countryPlaceholder: "Land",
         enterLiveSession: "Live-Session betreten",
         viewReveal: "Enthüllung ansehen",
         manageSession: "Session verwalten",
@@ -16318,6 +16332,7 @@ const resources = {
         tasters: "Verkoster",
         consensus: "Konsens",
         debated: "Umstritten",
+        ratingsGiven: "Abgegebene Bewertungen",
       },
       liveUi: {
         blindTasting: "Blindverkostung",
@@ -16568,6 +16583,9 @@ const resources = {
         highlandElegant: "Highland & Elegant",
         bourbonClassic: "Bourbon & Klassisch",
         radar: "Radar",
+        overallAuto: "Durchschnitt der Teilwertungen",
+        overallManual: "Manuell angepasst",
+        overallReset: "Auf Durchschnitt zurücksetzen",
       },
       exploreStats: {
         title: "Whisky-Statistiken",
