@@ -294,7 +294,10 @@ function ScrollRestoration() {
 
   useEffect(() => {
     if (prevLocationRef.current !== location) {
-      saveScrollPosition(prevLocationRef.current, window.scrollY);
+      const mainEl = document.querySelector("main");
+      const mainScroll = mainEl ? mainEl.scrollTop : 0;
+      const winScroll = window.scrollY;
+      saveScrollPosition(prevLocationRef.current, mainScroll > 0 ? mainScroll : winScroll);
       prevLocationRef.current = location;
 
       const isBack = consumeBackNavigation();
@@ -304,12 +307,21 @@ function ScrollRestoration() {
         let attempts = 0;
         const maxAttempts = 80;
         const tryScroll = () => {
-          const docHeight = document.documentElement.scrollHeight;
-          const canScroll = docHeight >= savedY + window.innerHeight * 0.3;
+          const mainEl = document.querySelector("main");
+          const docHeight = mainEl
+            ? mainEl.scrollHeight
+            : document.documentElement.scrollHeight;
+          const viewportHeight = mainEl
+            ? mainEl.clientHeight
+            : window.innerHeight;
+          const canScroll = docHeight >= savedY + viewportHeight * 0.3;
           if (canScroll || attempts >= maxAttempts) {
+            if (mainEl) mainEl.scrollTop = savedY;
             window.scrollTo(0, savedY);
             requestAnimationFrame(() => {
-              if (Math.abs(window.scrollY - savedY) > 2) {
+              const currentScroll = mainEl ? mainEl.scrollTop : window.scrollY;
+              if (Math.abs(currentScroll - savedY) > 2) {
+                if (mainEl) mainEl.scrollTop = savedY;
                 window.scrollTo(0, savedY);
               }
             });
@@ -321,6 +333,8 @@ function ScrollRestoration() {
         };
         requestAnimationFrame(tryScroll);
       } else {
+        const mainEl = document.querySelector("main");
+        if (mainEl) mainEl.scrollTop = 0;
         window.scrollTo(0, 0);
       }
     }
