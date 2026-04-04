@@ -1,0 +1,155 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — BIBLIOTHEK MENÜ-UMBAU
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die Bibliothek-Seite (/labs/bibliothek) hat eine unklare Menüstruktur
+mit Duplikaten und falschen Zuordnungen. Sie wird komplett neu strukturiert.
+
+NEUE ZIELSTRUKTUR:
+
+1. Community
+   1.1 Statistiken & Trends (/labs/bibliothek/insights)
+   1.2 Archiv (/labs/history)
+
+2. Nachschlagewerke
+   2.1 Lexikon (/labs/discover/lexicon)
+   2.2 Brennereien (/labs/discover/distilleries)
+   2.3 Abfüller (/labs/discover/bottlers)
+   2.4 Whisky-Herstellung (/labs/discover/background)
+
+3. Tasting-Wissen  ← NEUER TITEL (statt "Tasting-Hilfe")
+   3.1 Verkostungs-Guide (/labs/discover/guide)
+   3.2 So funktioniert CaskSense (/labs/discover/rabbit-hole → Auswertungslogik)
+   3.3 So wird ein Profil berechnet (/labs/discover/method)
+   3.4 Die Idee hinter den Zahlen (/labs/discover/research → Kapitel 1)
+   3.5 Testtheorie & Psychometrie (/labs/discover/research → Kapitel 2)
+   3.6 Statistische Methoden (/labs/discover/research → Kapitel 3)
+
+4. Pairings (/labs/taste/pairings)
+   Whisky & Speisen kombinieren
+
+5. Benchmark (/labs/taste/benchmark)
+   Externe Tasting-Daten & Vergleich
+
+6. Deep Dive
+   6.1 Literatur & Studien (/labs/discover/rabbit-hole → Literatur)
+
+GESTRICHEN (Duplikate):
+   - CaskSense Methode (= Duplikat von 3.3)
+   - Forschung (= Duplikat von 3.4–3.6)
+   - "So funktioniert ein Tasting" (irrelevant, streichen)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS bestehende Zielseiten löschen oder umbenennen
+❌ NIEMALS Routen in App.tsx löschen
+
+✅ NUR LabsBibliothek.tsx und LabsEntdecken.tsx anpassen
+✅ Neue Menüstruktur in LabsBibliothek.tsx umsetzen
+✅ Explore-Seite: nur auf /labs/bibliothek linken, nicht auf Unterpunkte
+✅ i18n Keys für neue Bezeichnungen in EN + DE eintragen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsBibliothek.tsx: Neue Menüstruktur
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die SECTIONS-Konstante und das Rendering in LabsBibliothek.tsx
+komplett nach der neuen Zielstruktur oben neu aufbauen.
+
+Jeder Hauptpunkt wird als aufklappbare Sektion dargestellt.
+Jeder Unterpunkt ist ein klickbarer Link zur Zielseite.
+
+Wichtig: Pairings und Benchmark zurück → /labs/bibliothek (nicht /labs/taste)
+Das heißt der Back-Button auf diesen Seiten muss auf /labs/bibliothek zeigen
+wenn man von dort kommt. Das kann über einen query-Parameter gelöst werden:
+  href="/labs/taste/pairings?from=bibliothek"
+  href="/labs/taste/benchmark?from=bibliothek"
+
+Auf den Zielseiten (LabsPairings, LabsBenchmark) prüfen ob ein
+"from"-Parameter vorhanden ist und entsprechend zurücknavigieren.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — LabsEntdecken.tsx: Nur auf Bibliothek linken
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In LabsEntdecken.tsx die Bibliothek-Sektion vereinfachen:
+
+VORHER: 2×2 Karten-Grid mit Chips die direkt auf Unterseiten linken
+NACHHER: Ein einzelner kompakter Link-Block → /labs/bibliothek
+
+Ersetze den gesamten SECTIONS.map()-Block durch einen einzigen
+klickbaren Karten-Eintrag:
+
+  <Link href="/labs/bibliothek">
+    <div className="labs-card-interactive" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+      <BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+          {t("bibliothek.title", "Bibliothek")}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+          {t("bibliothek.subtitle", "Wissen, Referenz & Deep Dive")}
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", marginLeft: "auto" }} />
+    </div>
+  </Link>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 3 — i18n.ts: Neue Bezeichnungen eintragen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in bibliothek-Block ergänzen):
+  tastingWissen: "Tasting Knowledge",
+  community: "Community",
+  nachschlagewerke: "Reference Works",
+  deepDive: "Deep Dive",
+  statisticsAndTrends: "Statistics & Trends",
+  archive: "Archive",
+  howProfileCalculated: "How a profile is calculated",
+  howCaskSenseWorks: "How CaskSense works",
+  ideaBehindNumbers: "The idea behind the numbers",
+  testTheory: "Test theory & psychometrics",
+  statisticalMethods: "Statistical methods",
+  literatureStudies: "Literature & Studies",
+  whiskyProduction: "Whisky production",
+
+DE (in bibliothek-Block ergänzen):
+  tastingWissen: "Tasting-Wissen",
+  community: "Community",
+  nachschlagewerke: "Nachschlagewerke",
+  deepDive: "Deep Dive",
+  statisticsAndTrends: "Statistiken & Trends",
+  archive: "Archiv",
+  howProfileCalculated: "So wird ein Profil berechnet",
+  howCaskSenseWorks: "So funktioniert CaskSense",
+  ideaBehindNumbers: "Die Idee hinter den Zahlen",
+  testTheory: "Testtheorie & Psychometrie",
+  statisticalMethods: "Statistische Methoden",
+  literatureStudies: "Literatur & Studien",
+  whiskyProduction: "Whisky-Herstellung",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ /labs/explore → zeigt nur einen Bibliothek-Link, keine Chips
+□ /labs/bibliothek → zeigt 6 Hauptsektionen in korrekter Reihenfolge
+□ Pairings und Benchmark erscheinen auf /labs/bibliothek
+□ CaskSense Methode und Forschung (Duplikate) sind entfernt
+□ Zurück von Pairings/Benchmark → /labs/bibliothek
+□ tsc --noEmit fehlerfrei

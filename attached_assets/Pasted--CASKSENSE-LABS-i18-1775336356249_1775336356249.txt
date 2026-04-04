@@ -1,0 +1,84 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n FIX: Distilleries + Bottlers
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Zwei Seiten zeigen immer englischen Text:
+1. /labs/discover/distilleries — Keys fehlen in i18n.ts
+2. /labs/discover/bottlers — hardcoded englischer Text im JSX
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS bestehende Keys löschen
+✅ NUR die drei genannten Dateien ändern
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 1 — i18n.ts: Fehlende discover.* Keys eintragen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts den discover-Block suchen und folgende
+Keys in BEIDEN Sprachblöcken eintragen falls nicht vorhanden:
+
+EN (im discover-Block innerhalb en.translation):
+  founded: "Founded {{year}}",
+  found: "{{count}} found",
+  noMatch: "No distilleries match your search.",
+  loading: "Loading...",
+  distilleries: "Distilleries",
+
+DE (im discover-Block innerhalb de.translation):
+  founded: "Gegründet {{year}}",
+  found: "{{count}} gefunden",
+  noMatch: "Keine Destillerien gefunden.",
+  loading: "Lädt...",
+  distilleries: "Destillerien",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 2 — i18n.ts: m2.discover Keys eintragen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Im m2.discover-Block in BEIDEN Sprachblöcken eintragen falls nicht vorhanden:
+
+EN:
+  distilleriesSubtitle: "Explore {{count}} distilleries worldwide",
+  bottlersSubtitle: "Explore {{count}} independent bottlers worldwide",
+
+DE:
+  distilleriesSubtitle: "{{count}} Destillerien weltweit entdecken",
+  bottlersSubtitle: "{{count}} unabhängige Abfüller weltweit entdecken",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 3 — LabsBottlers.tsx: Hardcoded Text ersetzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsBottlers.tsx
+
+Suche (ca. Zeile 120):
+  `Explore ${bottlersList.length} independent bottlers worldwide`
+
+Ersetze mit:
+  t("m2.discover.bottlersSubtitle", "Explore {{count}} independent bottlers worldwide", { count: bottlersList.length })
+
+Sicherstellen dass useTranslation() importiert und { t } destructured ist.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "Destillerien weltweit" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "Gegründet" client/src/lib/i18n.ts → 1 Treffer
+□ grep -n "independent bottlers worldwide" client/src/labs/pages/LabsBottlers.tsx → kein Treffer
+□ tsc --noEmit fehlerfrei
