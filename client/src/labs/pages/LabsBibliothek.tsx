@@ -74,7 +74,7 @@ export const SECTIONS: BibliothekSection[] = [
     titleKey: "bibliothek.sectionDeepDive",
     titleFallback: "Deep Dive",
     links: [
-      { icon: BookMarked, labelKey: "bibliothek.literatureStudies", labelFallback: "Literature & Studies", descKey: "bibliothek.literatureStudiesDesc", descFallback: "Peer-reviewed research & bibliography", href: "/labs/discover/research", testId: "labs-link-bibliothek-literature" },
+      { icon: BookMarked, labelKey: "bibliothek.literatureStudies", labelFallback: "Literature & Studies", descKey: "bibliothek.literatureStudiesDesc", descFallback: "Peer-reviewed research & bibliography", href: "/labs/discover/literature", testId: "labs-link-bibliothek-literature" },
     ],
   },
 ];

@@ -52,7 +52,7 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-type Study = {
+export type Study = {
   titleKey: string;
   journalKey: string;
   year: number;
@@ -77,33 +77,33 @@ type ConceptSection = {
   subtitle: string;
 };
 
-const personalityStudies: Study[] = [
+export const personalityStudies: Study[] = [
   { titleKey: "research.studies.flavourBehaviour.title", journalKey: "research.studies.flavourBehaviour.journal", year: 2016, summaryKey: "research.studies.flavourBehaviour.summary", url: "https://scotchwhisky.com/magazine/latest-news/10461/smws-designs-whisky-personality-test/", tags: ["Big Five", "Whisky"] },
   { titleKey: "research.studies.personalityWine.title", journalKey: "research.studies.personalityWine.journal", year: 2025, summaryKey: "research.studies.personalityWine.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11985116/", tags: ["Big Five", "Wine"] },
   { titleKey: "research.studies.contextPersonality.title", journalKey: "research.studies.contextPersonality.journal", year: 2020, summaryKey: "research.studies.contextPersonality.summary", url: "https://doi.org/10.1016/j.appet.2020.104607", tags: ["Personality", "Context"] },
 ];
 
-const perceptionStudies: Study[] = [
+export const perceptionStudies: Study[] = [
   { titleKey: "research.studies.recencyEffect.title", journalKey: "research.studies.recencyEffect.journal", year: 2018, summaryKey: "research.studies.recencyEffect.summary", url: "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0202732", tags: ["Bias", "Whisky"] },
   { titleKey: "research.studies.alcoholSensory.title", journalKey: "research.studies.alcoholSensory.journal", year: 2015, summaryKey: "research.studies.alcoholSensory.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4388769/", tags: ["Sensory", "Alcohol"] },
   { titleKey: "research.studies.brainConnectivity.title", journalKey: "research.studies.brainConnectivity.journal", year: 2025, summaryKey: "research.studies.brainConnectivity.summary", url: "https://www.nature.com/articles/s41386-025-02058-7", tags: ["Neuroscience", "fMRI"] },
   { titleKey: "research.studies.expertConsumer.title", journalKey: "research.studies.expertConsumer.journal", year: 2023, summaryKey: "research.studies.expertConsumer.summary", url: "https://doi.org/10.1016/j.fqap.2023.104861", tags: ["Language", "Whiskey"] },
 ];
 
-const methodStudies: Study[] = [
+export const methodStudies: Study[] = [
   { titleKey: "research.studies.rapidMethods.title", journalKey: "research.studies.rapidMethods.journal", year: 2023, summaryKey: "research.studies.rapidMethods.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10556146/", tags: ["RATA", "QDA"] },
   { titleKey: "research.studies.whiskyLexicon.title", journalKey: "research.studies.whiskyLexicon.journal", year: 2021, summaryKey: "research.studies.whiskyLexicon.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8303687/", tags: ["NLP", "Deep Learning"] },
   { titleKey: "research.studies.flavourAssessment.title", journalKey: "research.studies.flavourAssessment.journal", year: 2021, summaryKey: "research.studies.flavourAssessment.summary", url: "https://doi.org/10.3390/app11041410", tags: ["Scotch", "Methods"] },
 ];
 
-const measurementStudies: Study[] = [
+export const measurementStudies: Study[] = [
   { titleKey: "research.studies.winePsychology.title", journalKey: "research.studies.winePsychology.journal", year: 2020, summaryKey: "research.studies.winePsychology.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7221102/", tags: ["Psychology", "Bias"] },
   { titleKey: "research.studies.panelPerformance.title", journalKey: "research.studies.panelPerformance.journal", year: 2021, summaryKey: "research.studies.panelPerformance.summary", url: "https://www.mdpi.com/2076-3417/11/24/11977", tags: ["Reliability", "Panels"] },
   { titleKey: "research.studies.sensoryCharacterization.title", journalKey: "research.studies.sensoryCharacterization.journal", year: 2022, summaryKey: "research.studies.sensoryCharacterization.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8834440/", tags: ["Methods", "Profiling"] },
   { titleKey: "research.studies.interRaterKappa.title", journalKey: "research.studies.interRaterKappa.journal", year: 2012, summaryKey: "research.studies.interRaterKappa.summary", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3900052/", tags: ["Kappa", "Statistics"] },
 ];
 
-function StudyCard({ study, index }: { study: Study; index: number }) {
+export function StudyCard({ study, index }: { study: Study; index: number }) {
   const { t } = useTranslation();
 
   return (
