@@ -1,0 +1,102 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — DATENBANKSTRUKTUR REDUNDANZ-ANALYSE
+═══════════════════════════════════════════════════════════════════════════════
+
+BEFUND 1 — Whisky-Daten an 5 verschiedenen Stellen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tabelle              | name | distillery | abv | age | region | category
+---------------------|------|------------|-----|-----|--------|--------
+whiskies             |  ✅  |     ✅     |  ✅ |  ✅ |   ✅   |   ✅
+journal_entries      |  ✅  |     ✅     |  ✅ |  ✅ |   ✅   |   ✅
+wishlist_entries     |  ✅  |     ✅     |  ✅ |  ✅ |   ✅   |   ✅
+benchmark_entries    |  ✅  |     ✅     |  ✅ |  ✅ |   ✅   |   ✅
+whiskybase_collection|  ✅  |     ✅     |  ✅ |  ✅ |   ✅   |   ✅
+
+→ RISIKO: Kein zentrales Whisky-Master-Record.
+  Derselbe Whisky hat in 5 Tabellen separate Datensätze
+  mit potenziell unterschiedlichen Werten.
+
+BEFUND 2 — participants: Berechnete Werte direkt gespeichert
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In der participants-Tabelle:
+  smokeAffinityIndex    (real)
+  sweetnessBias         (real)
+  ratingStabilityScore  (real)
+  explorationIndex      (real)
+
+→ RISIKO: Diese Werte werden irgendwann berechnet und gespeichert.
+  Wenn sich neue Bewertungen dazukommen werden sie möglicherweise
+  nicht automatisch aktualisiert → veraltete Werte in Profil-Anzeigen.
+
+BEFUND 3 — tastings: revealIndex + revealStep + guidedRevealStep
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  revealIndex       (integer)
+  revealStep        (integer)  // 0=blind, 1=name, 2=meta, 3=image
+  guidedRevealStep  (integer)  // 0=blind, 1=name, 2=meta, 3=image+links
+  guidedWhiskyIndex (integer)
+
+→ RISIKO: revealStep und guidedRevealStep haben identische Kommentare
+  (0=blind, 1=name, 2=meta, 3=image) — möglicherweise Duplikat-Logik.
+
+BEFUND 4 — tastings: JSON-Felder für strukturierte Daten
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  dramTimers          (text) // JSON: { [whiskyId]: accumulatedSeconds }
+  lockedDrams         (text) // JSON array of whisky IDs
+  targetCommunityIds  (text) // JSON array of community IDs
+  revealOrder         (text) // JSON: array of field group arrays
+  customPrompts       (text) // JSON array of custom prompt strings
+  aiHighlightsCache   (text) // JSON
+
+→ RISIKO: Text-Felder mit JSON-Inhalt statt JSONB — kein Schema,
+  kein Index möglich, potenzielle Parse-Fehler.
+
+BEFUND 5 — profiles vs participants: Überschneidung
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+participants hat: smokeAffinityIndex, sweetnessBias, ratingStabilityScore
+profiles hat:     (vermutlich ähnliche Felder — muss geprüft werden)
+
+→ RISIKO: Geschmacksprofil-Daten möglicherweise doppelt gespeichert.
+
+BEFUND 6 — benchmark_entries: whiskyNameRaw + distilleryRaw
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          (normalisiert)
+  whiskyNameRaw (original, unverarbeitet)
+  distilleryRaw (original, unverarbeitet)
+
+→ KEIN RISIKO — das ist korrekt (Raw für Audit-Trail).
+
+═══════════════════════════════════════════════════════════════════════════════
+PRIORITÄTEN
+═══════════════════════════════════════════════════════════════════════════════
+
+KRITISCH:
+  Befund 1 — 5 Whisky-Tabellen ohne zentrales Master-Record
+  Befund 2 — Berechnete Profil-Werte möglicherweise veraltet
+
+MITTEL:
+  Befund 3 — revealStep Duplikat-Logik
+  Befund 4 — Text statt JSONB
+
+KEIN AKUTER HANDLUNGSBEDARF:
+  Befund 6 — Raw-Felder bewusst so
+
+═══════════════════════════════════════════════════════════════════════════════
+EMPFOHLENE PRÜFUNGEN IN DER DB
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Sind berechnete Profil-Werte aktuell?
+SELECT p.id, p.name, p.smoke_affinity_index, p.rating_stability_score
+FROM participants p WHERE p.smoke_affinity_index IS NOT NULL LIMIT 5;
+
+2. Wie viele Einträge haben abweichende Werte für denselben Whisky?
+SELECT j1.name, j1.abv, j2.abv
+FROM journal_entries j1
+JOIN journal_entries j2 ON LOWER(TRIM(j1.name)) = LOWER(TRIM(j2.name))
+WHERE j1.abv != j2.abv AND j1.abv IS NOT NULL AND j2.abv IS NOT NULL
+LIMIT 10;
