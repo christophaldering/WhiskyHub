@@ -646,7 +646,7 @@ export default function LabsJoin() {
           style={{ color: "var(--labs-text-muted)" }}
           data-testid="labs-join-signed-in-hint"
         >
-          Signed in as <span style={{ color: "var(--labs-accent)" }}>{currentParticipant?.name}</span>
+          {t("m2.join.signedInAs", "Signed in as")} <span style={{ color: "var(--labs-accent)" }}>{currentParticipant?.name}</span>
         </p>
       )}
     </div>

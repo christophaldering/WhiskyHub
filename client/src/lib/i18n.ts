@@ -5951,6 +5951,7 @@ const resources = {
           title: "Join a Tasting",
           subtitleLoggedIn: "Accept an invitation or enter the code from your host.",
           subtitleGuest: "Enter the code your host shared with you.",
+          signedInAs: "Signed in as",
         },
         host: {
           title: "Host",
@@ -6861,6 +6862,7 @@ const resources = {
           recentTogether: "Recent together",
           sessionsTogether: "{{count}} sessions together",
           you: "You",
+          noFriendsOnline: "None of your friends are online right now",
         },
         results: {
           tonightsLineup: "Tonight's Lineup",
@@ -14318,6 +14320,7 @@ const resources = {
           title: "An einem Tasting teilnehmen",
           subtitleLoggedIn: "Nimm eine Einladung an oder gib den Code deines Hosts ein.",
           subtitleGuest: "Gib den Code ein, den dein Host mit dir geteilt hat.",
+          signedInAs: "Angemeldet als",
         },
         host: {
           title: "Host",
@@ -15606,6 +15609,7 @@ const resources = {
           recentTogether: "Zuletzt gemeinsam",
           sessionsTogether: "{{count}} gemeinsame Sessions",
           you: "Du",
+          noFriendsOnline: "Gerade sind keine deiner Freunde online",
         },
         results: {
           tonightsLineup: "Heutiges Lineup",

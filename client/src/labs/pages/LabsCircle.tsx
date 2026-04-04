@@ -838,7 +838,7 @@ export default function LabsCircle() {
                 </div>
               ) : (
                 <p className="text-xs" style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }} data-testid="labs-circle-nobody-online">
-                  None of your friends are online right now
+                  {t("m2.circle.noFriendsOnline", "None of your friends are online right now")}
                 </p>
               )}
             </div>

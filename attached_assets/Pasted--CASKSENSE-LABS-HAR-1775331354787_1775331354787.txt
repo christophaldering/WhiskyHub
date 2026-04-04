@@ -1,0 +1,114 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — HARDCODED TEXT FIX: Circle + Join + HostDashboard
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Drei Texte erscheinen immer auf Englisch weil sie hardcoded im JSX stehen
+statt über t() aus i18n.ts zu kommen. Diese müssen ersetzt werden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS andere Dateien als die drei genannten ändern
+❌ NIEMALS bestehende i18n-Keys löschen
+
+✅ NUR die drei genannten Stellen in den drei Dateien ändern
+✅ Neue i18n-Keys in BEIDEN Sprachblöcken (EN + DE) eintragen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 1 — LabsCircle.tsx Zeile ~841
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsCircle.tsx
+
+Suche:
+  None of your friends are online right now
+
+Ersetze mit:
+  {t("m2.circle.noFriendsOnline", "None of your friends are online right now")}
+
+Sicherstellen dass useTranslation() bereits importiert und { t } destructured ist.
+
+Dann in client/src/lib/i18n.ts im m2.circle-Block ergänzen:
+
+EN:
+  noFriendsOnline: "None of your friends are online right now",
+
+DE:
+  noFriendsOnline: "Gerade sind keine deiner Freunde online",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 2 — LabsJoin.tsx Zeile ~649
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsJoin.tsx
+
+Suche:
+  Signed in as <span style={{ color: "var(--labs-accent)" }}>{currentParticipant?.name}</span>
+
+Ersetze mit:
+  {t("m2.join.signedInAs", "Signed in as")} <span style={{ color: "var(--labs-accent)" }}>{currentParticipant?.name}</span>
+
+Dann in client/src/lib/i18n.ts im m2.join-Block ergänzen:
+
+EN:
+  signedInAs: "Signed in as",
+
+DE:
+  signedInAs: "Angemeldet als",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 3 — LabsHostDashboard.tsx Zeile ~369 + ~653
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsHostDashboard.tsx
+
+Zeile ~369 — Key zeigt auf falschen Namespace:
+Suche:
+  t("hostDashboard.noActiveTastings", "No active tastings")
+
+Ersetze mit:
+  t("hostDashboardUi.noTastingsYet", "No active tastings")
+
+Zeile ~653 — hostQuickStart.title fehlt in DE:
+Suche:
+  t("hostQuickStart.title", "Start a new tasting")
+
+Bleibt so — aber in client/src/lib/i18n.ts ergänzen:
+
+EN (in hostQuickStart-Block):
+  title: "Start a new tasting",
+
+DE (in hostQuickStart-Block):
+  title: "Neues Tasting starten",
+
+Dann prüfen ob hostDashboardUi.noTastingsYet in DE vorhanden ist:
+  grep -n "noTastingsYet" client/src/lib/i18n.ts
+
+Falls DE fehlt, ergänzen:
+  noTastingsYet: "Keine aktiven Tastings",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "None of your friends are online" client/src/labs/pages/LabsCircle.tsx
+  → kein Treffer (hardcoded Text weg)
+□ grep -n "Signed in as" client/src/labs/pages/LabsJoin.tsx
+  → kein Treffer als reiner String (nur noch via t())
+□ grep -n "noFriendsOnline" client/src/lib/i18n.ts → 2 Treffer (EN + DE)
+□ grep -n "signedInAs" client/src/lib/i18n.ts → 2 Treffer (EN + DE)
+□ grep -n "Neues Tasting starten" client/src/lib/i18n.ts → 1 Treffer
+□ tsc --noEmit läuft fehlerfrei

@@ -366,7 +366,7 @@ function LabsInvitationsPanel({ tastings }: { tastings: { id: string; title: str
             overflowY: "auto",
           }}>
             {activeTastings.length === 0 && (
-              <p style={{ padding: 12, fontSize: 12, color: th.faint }}>{t("hostDashboard.noActiveTastings", "No active tastings")}</p>
+              <p style={{ padding: 12, fontSize: 12, color: th.faint }}>{t("hostDashboardUi.noTastingsYet", "No active tastings")}</p>
             )}
             {activeTastings.map(ta => (
               <button
