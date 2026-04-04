@@ -1,0 +1,155 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — NAVIGATION RESTRUCTURE: PAIRINGS · BENCHMARK · COMMUNITY INSIGHTS
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CaskSense Labs hat 4 Bottom-Nav-Tabs:
+  Tastings → /labs/tastings
+  Meine Welt → /labs/taste        (LabsTaste.tsx)
+  Entdecken → /labs/explore       (LabsEntdecken.tsx)
+  Circle → /labs/circle           (LabsCircle.tsx)
+
+Drei Inhalte sind aktuell falsch zugeordnet und müssen verschoben werden:
+
+  FALSCH: Pairings       in Meine Welt  → RICHTIG: Entdecken (Wissen)
+  FALSCH: Benchmark      in Meine Welt  → RICHTIG: Entdecken (Wissen)
+  FALSCH: Community Insights in Bibliothek → RICHTIG: Circle (Community)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anlegen oder ändern
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS .env Variablen ändern
+❌ NIEMALS Routen in App.tsx ändern — die Ziel-Routen (/labs/taste/pairings etc.) bleiben unverändert
+❌ NIEMALS die Zielseiten (LabsPairings.tsx, LabsBenchmark.tsx etc.) anfassen
+❌ NIEMALS i18n Keys löschen — nur neue hinzufügen falls nötig
+❌ NIEMALS neue npm Packages installieren
+
+✅ NUR die drei genannten Dateien ändern:
+   client/src/labs/pages/LabsTaste.tsx
+   client/src/labs/pages/LabsEntdecken.tsx
+   client/src/labs/pages/LabsCircle.tsx
+✅ Nur NavItem/NavTile Einträge hinzufügen oder entfernen
+✅ Bestehende Importe wiederverwenden
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsTaste.tsx: Pairings & Benchmark entfernen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsTaste.tsx
+
+Entferne diese zwei NavTile-Einträge (beide Vorkommen falls doppelt):
+
+  <NavTile icon={Utensils} label="Pairings" href="/labs/taste/pairings" ... />
+  <NavTile icon={Brain} label="Benchmark" href="/labs/taste/benchmark" ... />
+
+Die Imports (Utensils, Brain) nur entfernen wenn sie danach nirgendwo
+mehr in der Datei verwendet werden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — LabsEntdecken.tsx: Pairings & Benchmark hinzufügen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsEntdecken.tsx
+
+Füge in der Bibliothek-Sektion (unterhalb der bestehenden SECTIONS-Karten,
+vor dem Whisky-Listen-Bereich) zwei neue kompakte Link-Karten ein:
+
+  Karte 1 — Pairings:
+    Icon: Utensils (aus lucide-react)
+    Label: t("taste.pairings", "Pairings")
+    Subtitle: t("taste.pairingsDesc", "Whisky & Speisen kombinieren")
+    href: /labs/taste/pairings
+    data-testid: "link-entdecken-pairings"
+
+  Karte 2 — Benchmark:
+    Icon: Brain (aus lucide-react)
+    Label: t("taste.benchmark", "Benchmark")
+    Subtitle: t("taste.benchmarkDesc", "Externe Tasting-Daten & Vergleich")
+    href: /labs/taste/benchmark
+    data-testid: "link-entdecken-benchmark"
+
+Styling analog zu den bestehenden bib-card Einträgen in der Datei
+(labs-card-interactive, padding 12px 14px, Icon links, Titel + Subtitle,
+ChevronRight rechts).
+
+Imports Utensils und Brain aus lucide-react hinzufügen falls nicht vorhanden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 3 — LabsCircle.tsx: Community Insights hinzufügen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsCircle.tsx
+
+Füge die CommunityInsights-Komponente prominent am Anfang der Seite ein
+(nach dem Page-Header, vor den bestehenden Circle-Inhalten):
+
+  import CommunityInsights from "@/labs/components/CommunityInsights";
+
+  Einbindung:
+  <CommunityInsights compactOnly />
+
+Falls CommunityInsights bereits importiert ist, nur die Einbindung ergänzen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 4 — LabsEntdecken.tsx: Community Insights entfernen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsEntdecken.tsx
+
+Entferne den bestehenden CommunityInsights-Aufruf:
+  <CommunityInsights compactOnly />
+
+Den Import (CommunityInsights) ebenfalls entfernen wenn danach nicht mehr
+verwendet.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 5 — Back-Button Fix (Bonus)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Beide Seiten haben einen fehlerhaften Back-Button der zu /labs/tastings führt.
+Explore und Meine Welt sind Root-Tabs — sie haben kein Eltern-Element.
+
+In client/src/labs/pages/LabsEntdecken.tsx:
+  Entferne den gesamten BackLink-Block:
+  <BackLink href="/labs/tastings" ...>
+    <button ... > ← Home </button>
+  </BackLink>
+
+In client/src/labs/pages/LabsTaste.tsx (Zeile ~560):
+  Entferne den gesamten BackLink-Block:
+  <BackLink href="/labs/tastings" ...>
+    <button ... > ← Home </button>
+  </BackLink>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach den Änderungen prüfen:
+
+□ tsc --noEmit läuft fehlerfrei
+□ Pairings erscheint NICHT mehr in Meine Welt
+□ Benchmark erscheint NICHT mehr in Meine Welt
+□ Pairings erscheint in Entdecken/Bibliothek-Sektion
+□ Benchmark erscheint in Entdecken/Bibliothek-Sektion
+□ Community Insights erscheint in Circle
+□ Community Insights erscheint NICHT mehr in Entdecken
+□ Kein Back-Button auf Explore und Meine Welt
+□ Die Zielseiten /labs/taste/pairings und /labs/taste/benchmark
+  sind weiterhin erreichbar (Routen unverändert)
+□ Keine anderen Dateien wurden geändert

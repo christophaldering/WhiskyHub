@@ -1,0 +1,107 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — NAVIGATION ACTIVE-STATE FIX
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Du arbeitest am Projekt CaskSense auf Replit.
+Die aktive UI läuft unter /labs/* mit dem Shell-File:
+  client/src/labs/LabsLayout.tsx
+
+Dort gibt es eine Bottom-Navigation mit 4 Tabs:
+  Tab 1 — Tastings    → /labs/tastings
+  Tab 2 — Meine Welt  → /labs/taste
+  Tab 3 — Entdecken   → /labs/explore
+  Tab 4 — Circle      → /labs/circle
+
+Der Active-State jedes Tabs wird über eine isActive-Variable berechnet.
+Mehrere Routen sind dort nicht berücksichtigt — diese Tabs leuchten nicht
+auf wenn der Nutzer diese Seiten besucht.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ Dateien anlegen oder ändern
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS drizzle-kit push oder migrate ausführen
+❌ NIEMALS .env Variablen ändern
+❌ NIEMALS navItems[] ändern (Tab-Namen, Icons, hrefs bleiben unberührt)
+❌ NIEMALS andere Teile von LabsLayout.tsx anfassen
+❌ NIEMALS neue Dependencies installieren
+
+✅ NUR den isActive-Block in der navItems.map() in LabsLayout.tsx ändern
+✅ Ausschließlich location.startsWith(...) Einträge ergänzen
+✅ Keine bestehenden Einträge entfernen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — EXAKT DIESE ÄNDERUNG, NICHTS WEITER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/LabsLayout.tsx
+
+Suche den isActive-Block innerhalb von navItems.map(). Er sieht aktuell so aus:
+
+  const isActive =
+    location === item.href ||
+    (item.href === "/labs/tastings" && (
+      location.startsWith("/labs/tastings") || location.startsWith("/labs/live") ||
+      location.startsWith("/labs/results") || location.startsWith("/labs/host") ||
+      location.startsWith("/labs/join") || location.startsWith("/labs/solo")
+    )) ||
+    (item.href === "/labs/explore" && (
+      location.startsWith("/labs/entdecken") || location.startsWith("/labs/explore") ||
+      location.startsWith("/labs/discover") || location.startsWith("/labs/bibliothek")
+    )) ||
+    (item.href === "/labs/taste" && location.startsWith("/labs/taste")) ||
+    (item.href === "/labs/circle" && location.startsWith("/labs/circle"));
+
+Ersetze diesen Block durch:
+
+  const isActive =
+    location === item.href ||
+    (item.href === "/labs/tastings" && (
+      location.startsWith("/labs/tastings") || location.startsWith("/labs/live") ||
+      location.startsWith("/labs/results") || location.startsWith("/labs/host") ||
+      location.startsWith("/labs/join") || location.startsWith("/labs/solo") ||
+      location.startsWith("/labs/history")
+    )) ||
+    (item.href === "/labs/explore" && (
+      location.startsWith("/labs/entdecken") || location.startsWith("/labs/explore") ||
+      location.startsWith("/labs/discover") || location.startsWith("/labs/bibliothek")
+    )) ||
+    (item.href === "/labs/taste" && (
+      location.startsWith("/labs/taste") ||
+      location.startsWith("/labs/bottle-sharing") ||
+      location.startsWith("/labs/splits")
+    )) ||
+    (item.href === "/labs/circle" && (
+      location.startsWith("/labs/circle") ||
+      location.startsWith("/labs/community") ||
+      location.startsWith("/labs/activity")
+    ));
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WAS GEÄNDERT WIRD (Erklärung)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tab 1 — Tastings: + /labs/history (Historische Tastings gehören zum Tasting-Bereich)
+Tab 2 — Meine Welt: + /labs/bottle-sharing + /labs/splits (persönliche Bottle-Features)
+Tab 4 — Circle: + /labs/community + /labs/activity (Community-Seiten gehören zum Circle)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach der Änderung prüfen:
+- Datei client/src/labs/LabsLayout.tsx kompiliert fehlerfrei (tsc --noEmit)
+- navItems[] ist unverändert (4 Tabs, gleiche hrefs, gleiche Icons, gleiche Labels)
+- Nur der isActive-Block wurde geändert
+- Keine anderen Dateien wurden berührt
