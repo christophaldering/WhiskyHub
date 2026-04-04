@@ -234,6 +234,8 @@ export interface IStorage {
   restoreJournalEntryById(id: string): Promise<void>;
   purgeExpiredJournalEntries(olderThanDays: number): Promise<number>;
 
+  updateParticipantIndices(participantId: string): Promise<void>;
+
   // Participant Stats (for badges)
   getParticipantStats(participantId: string): Promise<{
     totalRatings: number;
@@ -1349,6 +1351,112 @@ export class DatabaseStorage implements IStorage {
       ratingStabilityScore,
       explorationIndex,
     };
+  }
+
+  async updateParticipantIndices(participantId: string): Promise<void> {
+    try {
+      const stats = await this.getParticipantStats(participantId);
+      const totalEntries = stats.totalRatings + stats.totalJournalEntries;
+      if (totalEntries < 3) return;
+
+      const { ratingStabilityScore, explorationIndex } = stats;
+
+      const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
+      const whiskyIds = Array.from(new Set(allRatings.map(r => r.whiskyId)));
+      const allWhiskies = whiskyIds.length > 0
+        ? await db.select().from(whiskies).where(inArray(whiskies.id, whiskyIds))
+        : [];
+      const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+
+      const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
+      const tastingRows = tastingIds.length > 0
+        ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
+        : [];
+      const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
+
+      const journalRows = await db.select().from(journalEntries).where(
+        and(
+          eq(journalEntries.participantId, participantId),
+          ne(journalEntries.status, 'draft'),
+          isNull(journalEntries.deletedAt)
+        )
+      );
+
+      let smokeAffinityIndex: number | null = null;
+      const smokyScores: number[] = [];
+      const nonSmokyScores: number[] = [];
+
+      for (const r of allRatings) {
+        const w = whiskyMap.get(r.whiskyId);
+        if (!w || !w.peatLevel) continue;
+        const score = r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100));
+        const level = w.peatLevel.toLowerCase();
+        if (level === "medium" || level === "heavy") {
+          smokyScores.push(score);
+        } else if (level === "none" || level === "light") {
+          nonSmokyScores.push(score);
+        }
+      }
+      for (const j of journalRows) {
+        if (j.personalScore != null && j.personalScore > 0 && j.peatLevel) {
+          const level = j.peatLevel.toLowerCase();
+          if (level === "medium" || level === "heavy") {
+            smokyScores.push(j.personalScore);
+          } else if (level === "none" || level === "light") {
+            nonSmokyScores.push(j.personalScore);
+          }
+        }
+      }
+
+      if (smokyScores.length >= 1 && nonSmokyScores.length >= 1) {
+        const smokyAvg = smokyScores.reduce((a, b) => a + b, 0) / smokyScores.length;
+        const nonSmokyAvg = nonSmokyScores.reduce((a, b) => a + b, 0) / nonSmokyScores.length;
+        const delta = smokyAvg - nonSmokyAvg;
+        smokeAffinityIndex = Math.round(Math.max(0, Math.min(1, 0.5 + delta / 40)) * 100) / 100;
+      }
+
+      let sweetnessBias: number | null = null;
+      const sherryScores: number[] = [];
+      const bourbonScores: number[] = [];
+
+      for (const r of allRatings) {
+        const w = whiskyMap.get(r.whiskyId);
+        if (!w || !w.caskType) continue;
+        const score = r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100));
+        const cask = w.caskType.toLowerCase();
+        if (cask.includes("sherry") || cask.includes("port") || cask.includes("wine") || cask.includes("madeira") || cask.includes("rum")) {
+          sherryScores.push(score);
+        } else if (cask.includes("bourbon") || cask.includes("refill") || cask.includes("virgin")) {
+          bourbonScores.push(score);
+        }
+      }
+      for (const j of journalRows) {
+        if (j.personalScore != null && j.personalScore > 0 && j.caskType) {
+          const cask = j.caskType.toLowerCase();
+          if (cask.includes("sherry") || cask.includes("port") || cask.includes("wine") || cask.includes("madeira") || cask.includes("rum")) {
+            sherryScores.push(j.personalScore);
+          } else if (cask.includes("bourbon") || cask.includes("refill") || cask.includes("virgin")) {
+            bourbonScores.push(j.personalScore);
+          }
+        }
+      }
+
+      if (sherryScores.length >= 1 && bourbonScores.length >= 1) {
+        const sherryAvg = sherryScores.reduce((a, b) => a + b, 0) / sherryScores.length;
+        const bourbonAvg = bourbonScores.reduce((a, b) => a + b, 0) / bourbonScores.length;
+        const delta = sherryAvg - bourbonAvg;
+        sweetnessBias = Math.round(Math.max(0, Math.min(1, 0.5 + delta / 40)) * 100) / 100;
+      }
+
+      await db.update(participants).set({
+        smokeAffinityIndex,
+        sweetnessBias,
+        ratingStabilityScore,
+        explorationIndex,
+      }).where(eq(participants.id, participantId));
+    } catch (err) {
+      console.error(`[updateParticipantIndices] Error for participant ${participantId}:`, err);
+    }
   }
 
   async getFlavorProfile(participantId: string): Promise<{

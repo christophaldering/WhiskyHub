@@ -3174,6 +3174,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const rating = await storage.upsertRating({ ...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });
       if (process.env.LABS_DEBUG) console.log(`[LABS] Rating submitted: participant=${data.participantId} whisky=${data.whiskyId} overall=${data.overall} normalized=${normalizedScore} tasting=${data.tastingId}`);
       res.json(rating);
+      storage.updateParticipantIndices(data.participantId).catch(() => {});
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
@@ -6949,6 +6950,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
       const entry = await storage.createJournalEntry(parsed);
       res.status(201).json(entry);
+      storage.updateParticipantIndices(req.params.participantId).catch(() => {});
     } catch (e: any) {
       if (e.name === "ZodError") return res.status(400).json({ message: "Validation failed", errors: e.errors });
       res.status(500).json({ message: e.message });
