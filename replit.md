@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Laufendes System 5.5.0:33" (05.05.2026)
+Tasks #549-#563 abgeschlossen und deployed. i18n-Korrekturen (DE myTastePage, explore, Bottlers, Analytics, Compare, Downloads, Drams, Wishlist, Flavor Wheel Aroma-Namen). Bibliothek-Umbau (6 Sektionen, Unterseiten aufteilt, Literatur eigenstaendig). Benchmark+Pairings Back-Links auf /labs/bibliothek. Scroll-Position Restoration Fix. Filter-Panels Breitenbegrenzung. Profil-Indizes Auto-Neuberechnung nach Rating. .gitattributes fuer Binaerdateien. Production stable.
+
 ## Checkpoint: "Vor Sprachanpassung" (11.04.2026)
 Nav-Restructure abgeschlossen: Pairings + Benchmark von Meine Welt nach Entdecken verschoben, CommunityInsights von Entdecken nach Circle verschoben, BackLinks auf Root-Tabs entfernt, isActive-States fuer alle Routen korrigiert. Production deployed.
 

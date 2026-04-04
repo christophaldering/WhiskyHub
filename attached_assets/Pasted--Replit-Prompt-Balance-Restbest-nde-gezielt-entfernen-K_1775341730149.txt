@@ -1,0 +1,184 @@
+# Replit-Prompt: Balance-Restbestände gezielt entfernen
+
+## Kontext
+Balance wurde bereits in zwei Sweep-Commits entfernt (vor 18 und vor 8 Tagen).
+Zwischen diesen beiden Cleanups wurden jedoch neue Features committed, die
+Balance noch enthalten könnten. Dieser Prompt zielt gezielt auf diese Lücken.
+
+Die verbleibenden Bewertungsdimensionen sind ausschließlich:
+**Nase · Gaumen (taste) · Abgang (finish) · Gesamt (overall)**
+
+---
+
+## Ziel 1 — `client/src/labs-v2/types/rating.ts`
+
+Diese Datei wurde vor 14 Tagen neu angelegt (Task #249: CaskSense V2 Phase 2)
+und existierte zum Zeitpunkt beider Cleanup-Commits noch nicht.
+
+**Was prüfen:**
+- Gibt es ein `balance`-Feld im Rating-Typ?
+- Gibt es eine `dimensions`-Liste oder ein Array das `"balance"` enthält?
+- Gibt es einen Enum oder eine Konstante mit `balance`?
+
+**Was ändern:**
+Entferne alle `balance`-Felder aus den TypeScript-Typen. Beispiel:
+
+```ts
+// Vorher
+type RatingDimensions = {
+  nose: number;
+  taste: number;
+  finish: number;
+  balance: number;
+  overall: number;
+};
+
+// Nachher
+type RatingDimensions = {
+  nose: number;
+  taste: number;
+  finish: number;
+  overall: number;
+};
+```
+
+Passe alle Stellen an, die diesen Typ verwenden (Initialisierungen, Defaults,
+Berechnungen). Wenn `overall` auto-berechnet wurde als
+`(nose + taste + finish + balance) / 4`, ändere das zu
+`(nose + taste + finish) / 3`.
+
+---
+
+## Ziel 2 — `client/src/labs-v2/` (gesamtes V2-Verzeichnis)
+
+Task #249 hat mehrere neue Dateien angelegt. Durchsuche das gesamte
+`client/src/labs-v2/`-Verzeichnis nach `balance` und entferne alle Vorkommen:
+
+```bash
+grep -r "balance" client/src/labs-v2/
+```
+
+Typische Fundstellen:
+- Rating-Komponenten mit 4 Slider-Tabs (Nose/Taste/Finish/Balance) → Balance-Tab entfernen
+- Initialisierungs-Objekte `{ nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 }` → `balance: 0` entfernen
+- Gate-Logik: "Overall erst aktiv wenn alle 4 Dimensionen > 0" → auf 3 Dimensionen reduzieren
+- Farb-Zuordnungen für Dimensionen (falls Balance eine eigene Farbe hatte) → Zeile entfernen
+
+---
+
+## Ziel 3 — `server/routes.ts` (Connoisseur Report, Task #182)
+
+Der Connoisseur Report wurde vor 15 Tagen neu implementiert — nach dem ersten
+aber vor dem zweiten Cleanup. Prüfe gezielt den Report-Endpunkt:
+
+```bash
+grep -n "balance" server/routes.ts
+```
+
+Suche nach dem Abschnitt, der den AI-Prompt für den Connoisseur Report
+zusammenbaut. Dort könnte `balance` als Dimension übergeben werden:
+
+```ts
+// Beispiel — so könnte es aussehen:
+const prompt = `
+  Nase: ${rating.nose}
+  Gaumen: ${rating.taste}
+  Abgang: ${rating.finish}
+  Balance: ${rating.balance}   ← DIESE ZEILE ENTFERNEN
+  Gesamt: ${rating.overall}
+`;
+```
+
+Entferne `balance` aus dem AI-Prompt-Kontext. Der Report soll nur noch
+Nase, Gaumen, Abgang und Gesamt als Grundlage erhalten.
+
+---
+
+## Ziel 4 — `client/src/labs/components/LabsRatingPanel.tsx`
+
+Diese Datei wurde vor 23 Tagen mit Balance aufgebaut, der 18-Tage-Cleanup
+hat sie zwar angepasst, aber der 8-Tage-Cleanup erwähnt sie nicht explizit.
+
+Prüfe ob noch ein Balance-Tab oder Balance-Slider enthalten ist:
+
+```bash
+grep -n "balance\|Balance" client/src/labs/components/LabsRatingPanel.tsx
+```
+
+Falls ja: Tab und zugehörigen Slider-Inhalt vollständig entfernen.
+Das Tab-Array sollte danach nur noch enthalten: `["nose", "taste", "finish"]`
+(overall ist kein Tab, sondern ein separater Slider am Ende).
+
+---
+
+## Ziel 5 — Overall-Berechnung normalisieren
+
+Task #29 (vor 22 Tagen) hat eine Gate-Logik eingebaut:
+"Overall-Slider erst aktiv wenn alle 4 Dimensionen > 0"
+
+Diese Logik muss auf 3 Dimensionen reduziert werden. Suche nach:
+
+```bash
+grep -rn "nose.*taste.*finish.*balance\|4 dimension\|all 4" client/src/
+```
+
+Ändere alle Gating-Bedingungen von:
+```ts
+const allDimensionsRated = nose > 0 && taste > 0 && finish > 0 && balance > 0;
+```
+zu:
+```ts
+const allDimensionsRated = nose > 0 && taste > 0 && finish > 0;
+```
+
+---
+
+## Ziel 6 — DB-Schema absichern
+
+Führe aus:
+```bash
+grep -n "balance" shared/schema.ts
+```
+
+Falls `balance` noch im Schema ist (als Spalte in der `ratings`-Tabelle):
+- Entferne die Spalte aus `shared/schema.ts`
+- Entferne das Feld aus allen Zod-Schemas
+- Erstelle eine Migration:
+
+```sql
+ALTER TABLE ratings DROP COLUMN IF EXISTS balance;
+```
+
+Falls `balance` bereits aus `schema.ts` entfernt wurde (wahrscheinlich durch
+den 18-Tage-Cleanup): Nur sicherstellen dass keine TypeScript-Fehler entstehen.
+
+---
+
+## Validierung
+
+Nach allen Änderungen:
+
+```bash
+# 1. Keine balance-Reste mehr
+grep -rn "balance" client/src/ server/ shared/ --include="*.ts" --include="*.tsx"
+
+# 2. TypeScript-Fehler prüfen
+npx tsc --noEmit
+
+# 3. Tests
+npm run test
+```
+
+Erwartetes Ergebnis:
+- `grep` findet 0 Treffer (außer evtl. in Kommentaren oder Migrationsdateien)
+- Kein TypeScript-Fehler
+- Alle 67 Tests grün
+
+---
+
+## Nicht anfassen
+
+- `overall`-Dimension bleibt erhalten
+- Normalisierte Spalten (`normalizedNose`, `normalizedTaste`, `normalizedFinish`)
+  aus Task #82 bleiben erhalten — kein `normalizedBalance` existiert laut Commit
+- Flavor-Tags und FlavorTagStrip-Komponente sind unabhängig von Balance
