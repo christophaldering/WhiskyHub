@@ -7361,7 +7361,11 @@ const resources = {
           signature: "— CaskSense",
         },
         analytics: {
+          title: "Analytics",
           subtitle: "Your taste evolution & rating consistency",
+          consistentLabel: "Consistent",
+          aiInsight: "AI Insight",
+          months: "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",
           evolution: "Taste Evolution",
           evolutionDesc: "How your average rating has developed over time.",
           evolutionEmpty: "Start rating whiskies to see how your taste evolves.",
@@ -15738,7 +15742,11 @@ const resources = {
           signature: "— CaskSense",
         },
         analytics: {
+          title: "Analytik",
           subtitle: "Deine Geschmacksentwicklung & Bewertungskonsistenz",
+          consistentLabel: "Konsistent",
+          aiInsight: "KI-Einblick",
+          months: "Jan,Feb,Mär,Apr,Mai,Jun,Jul,Aug,Sep,Okt,Nov,Dez",
           evolution: "Geschmacksentwicklung",
           evolutionDesc: "Wie sich dein Bewertungsdurchschnitt über die Zeit entwickelt hat.",
           evolutionEmpty: "Bewerte Whiskys, um deine Geschmacksentwicklung zu sehen.",
