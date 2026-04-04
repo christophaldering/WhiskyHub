@@ -1,0 +1,200 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — BIBLIOTHEK: Neue Seiten + Back-Buttons + Umbenennung
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Die Bibliothek-Seite (/labs/bibliothek) hat im Bereich "Tasting-Wissen"
+folgende Menüpunkte die noch nicht korrekt funktionieren:
+
+1. "So funktioniert CaskSense" → soll zu /labs/discover/method gehen
+   und auf der Zielseite als "So wird ein Profil berechnet" erscheinen
+
+2. "Die Idee hinter den Zahlen" → neue eigenständige Seite
+3. "Testtheorie & Psychometrie" → neue eigenständige Seite
+4. "Statistische Methoden" → neue eigenständige Seite
+
+Alle Zielseiten haben keinen Zurück-Button der auf /labs/bibliothek zeigt.
+Die Inhalte für 2–4 kommen aus /labs/discover/research (aufgeteilt).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS bestehende Seiten löschen
+❌ NIEMALS Routen in App.tsx löschen
+
+✅ Neue Seiten als neue Dateien anlegen
+✅ Neue Routen in App.tsx nur hinzufügen (append-only)
+✅ Bestehende LabsResearch.tsx als Quelle für Inhalte verwenden
+✅ Back-Buttons auf /labs/bibliothek zeigen lassen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsMethod.tsx: Umbenennung + Back-Button
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsMethod.tsx
+
+Schritt 1: Seitentitel ändern von "CaskSense Methode" / "So funktioniert CaskSense"
+zu "So wird ein Profil berechnet"
+
+Schritt 2: Back-Button hinzufügen der auf /labs/bibliothek zeigt:
+  import { useLabsBack } from "@/labs/LabsLayout";
+  const goBack = useLabsBack("/labs/bibliothek");
+
+  <button onClick={goBack} style={{ ... }}>
+    ← Bibliothek
+  </button>
+
+Schritt 3: LabsBibliothek.tsx — Link zu "So funktioniert CaskSense"
+auf /labs/discover/method ändern falls noch nicht geschehen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — LabsResearch.tsx: Inhalt analysieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Datei lesen und Sektionen identifizieren:
+  head -100 client/src/labs/pages/LabsResearch.tsx
+
+Schritt 2: Die Seite hat vermutlich mehrere Kapitel/Sektionen:
+  - "Die Idee hinter den Zahlen" (Grundlagen der Geschmacksmessung)
+  - "Testtheorie & Psychometrie" (Die Wissenschaft des guten Messens)
+  - "Statistische Methoden" (Muster, Übereinstimmung & Struktur in Daten)
+  - "Literatur & Studien" (bleibt auf LabsResearch)
+
+Identifiziere wo diese Sektionen im Code beginnen und enden.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 3 — Drei neue Seiten erstellen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neue Dateien anlegen:
+  client/src/labs/pages/LabsIdeaBehindNumbers.tsx
+  client/src/labs/pages/LabsTestTheory.tsx
+  client/src/labs/pages/LabsStatisticalMethods.tsx
+
+Jede Seite enthält:
+  1. Back-Button → /labs/bibliothek
+  2. Seitentitel (DE + EN via t())
+  3. Den relevanten Inhalt aus LabsResearch.tsx (ausschneiden, nicht kopieren)
+
+Template für jede neue Seite:
+
+  import { useLabsBack } from "@/labs/LabsLayout";
+  import { ChevronLeft } from "lucide-react";
+  import { useTranslation } from "react-i18next";
+
+  export default function LabsIdeaBehindNumbers() {
+    const { t } = useTranslation();
+    const goBack = useLabsBack("/labs/bibliothek");
+
+    return (
+      <div className="labs-page">
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost mb-4"
+          style={{ display: "flex", alignItems: "center", gap: 4 }}
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("bibliothek.title", "Bibliothek")}
+        </button>
+
+        <h1 className="labs-serif labs-fade-in"
+          style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", marginBottom: 8 }}>
+          {t("bibliothek.ideaBehindNumbers", "Die Idee hinter den Zahlen")}
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 24 }}>
+          {t("bibliothek.ideaBehindNumbersDesc", "Grundlagen der Geschmacksmessung")}
+        </p>
+
+        {/* Inhalt aus LabsResearch.tsx hierher verschieben */}
+      </div>
+    );
+  }
+
+Analog für LabsTestTheory und LabsStatisticalMethods.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 4 — App.tsx: Neue Routen registrieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/App.tsx neue lazy imports hinzufügen:
+  const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumbers"));
+  const LabsTestTheory = lazy(() => import("@/labs/pages/LabsTestTheory"));
+  const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMethods"));
+
+Neue Routen innerhalb des /labs/* Switch hinzufügen (append-only):
+  <Route path="/labs/discover/idea-behind-numbers" component={LabsIdeaBehindNumbers} />
+  <Route path="/labs/discover/test-theory" component={LabsTestTheory} />
+  <Route path="/labs/discover/statistical-methods" component={LabsStatisticalMethods} />
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 5 — LabsBibliothek.tsx: Links aktualisieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In LabsBibliothek.tsx die hrefs der drei Menüpunkte aktualisieren:
+
+  "Die Idee hinter den Zahlen"
+  → href: "/labs/discover/idea-behind-numbers"
+
+  "Testtheorie & Psychometrie"
+  → href: "/labs/discover/test-theory"
+
+  "Statistische Methoden"
+  → href: "/labs/discover/statistical-methods"
+
+  "So funktioniert CaskSense" / "So wird ein Profil berechnet"
+  → href: "/labs/discover/method"
+
+Sicherstellen dass der Rabbit Hole Link aus der Bibliothek entfernt ist —
+/labs/discover/rabbit-hole soll nicht mehr direkt von der Bibliothek
+erreichbar sein.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 6 — i18n.ts: Neue Keys eintragen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN (in bibliothek-Block ergänzen):
+  ideaBehindNumbers: "The idea behind the numbers",
+  ideaBehindNumbersDesc: "Foundations of taste measurement",
+  testTheory: "Test theory & psychometrics",
+  testTheoryDesc: "The science of good measurement",
+  statisticalMethods: "Statistical methods",
+  statisticalMethodsDesc: "Patterns, alignment & structure in data",
+  howProfileCalculated: "How a profile is calculated",
+  howProfileCalculatedDesc: "Rating, profiles & dimensions",
+
+DE (in bibliothek-Block ergänzen):
+  ideaBehindNumbers: "Die Idee hinter den Zahlen",
+  ideaBehindNumbersDesc: "Grundlagen der Geschmacksmessung",
+  testTheory: "Testtheorie & Psychometrie",
+  testTheoryDesc: "Die Wissenschaft des guten Messens",
+  statisticalMethods: "Statistische Methoden",
+  statisticalMethodsDesc: "Muster, Übereinstimmung & Struktur in Daten",
+  howProfileCalculated: "So wird ein Profil berechnet",
+  howProfileCalculatedDesc: "Bewertung, Profile & Dimensionen",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ /labs/discover/idea-behind-numbers → lädt korrekt mit Back-Button "Bibliothek"
+□ /labs/discover/test-theory → lädt korrekt mit Back-Button "Bibliothek"
+□ /labs/discover/statistical-methods → lädt korrekt mit Back-Button "Bibliothek"
+□ /labs/discover/method → zeigt "So wird ein Profil berechnet" als Titel
+□ /labs/discover/method → hat Back-Button "Bibliothek"
+□ /labs/bibliothek → kein Link mehr zu /labs/discover/rabbit-hole
+□ tsc --noEmit fehlerfrei

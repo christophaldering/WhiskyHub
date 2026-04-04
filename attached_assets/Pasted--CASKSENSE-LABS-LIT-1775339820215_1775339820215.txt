@@ -1,0 +1,152 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — LITERATUR & STUDIEN: Neue eigenständige Seite
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Literatur & Studien" in der Bibliothek zeigt aktuell die gesamte
+dahinterliegende Seite (LabsResearch.tsx oder LabsRabbitHole.tsx)
+mit allen Sektionen — also auch Methoden, Idee hinter den Zahlen etc.
+
+Gewünscht: Eine neue eigenständige Seite die NUR den
+"Literatur & Studien" Teil zeigt — mit den Tabs:
+  Persönlichkeit | Wahrnehmung | Methoden | Messen
+
+Der Rest der Quelldatei bleibt unverändert erhalten.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS die Quelldatei (LabsResearch.tsx oder LabsRabbitHole.tsx) löschen
+❌ NIEMALS bestehende Routen entfernen
+
+✅ Neue Datei LabsLiterature.tsx anlegen
+✅ Nur den Literatur-Teil aus der Quelldatei extrahieren
+✅ Neue Route in App.tsx hinzufügen
+✅ Back-Button auf /labs/bibliothek
+✅ LabsBibliothek.tsx Link auf neue Route aktualisieren
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — Quelldatei analysieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Quelldatei finden:
+  grep -rn "Literatur\|Persönlichkeit\|Wahrnehmung\|Messen\|Methoden" \
+    client/src/labs/pages/LabsResearch.tsx \
+    client/src/labs/pages/LabsRabbitHole.tsx | head -30
+
+Schritt 2: Die Sektion "Literatur & Studien" mit den 4 Tabs
+(Persönlichkeit, Wahrnehmung, Methoden, Messen) identifizieren —
+Anfang und Ende der Sektion notieren.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — Neue Seite LabsLiterature.tsx erstellen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/labs/pages/LabsLiterature.tsx
+
+Die neue Seite enthält:
+  1. Back-Button → /labs/bibliothek
+  2. Seitentitel "Literatur & Studien"
+  3. Untertitel "Begutachtete Forschung & Bibliografie"
+  4. NUR die 4-Tab-Sektion (Persönlichkeit | Wahrnehmung | Methoden | Messen)
+     mit den jeweiligen Studien-Karten
+
+Template:
+  import { useLabsBack } from "@/labs/LabsLayout";
+  import { ChevronLeft } from "lucide-react";
+  import { useTranslation } from "react-i18next";
+  import { useState } from "react";
+
+  export default function LabsLiterature() {
+    const { t } = useTranslation();
+    const goBack = useLabsBack("/labs/bibliothek");
+    const [activeTab, setActiveTab] = useState(0);
+
+    return (
+      <div className="labs-page">
+        <button onClick={goBack}
+          className="labs-btn-ghost mb-4"
+          style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <ChevronLeft className="w-4 h-4" />
+          {t("bibliothek.title", "Bibliothek")}
+        </button>
+
+        <h1 className="labs-serif labs-fade-in"
+          style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", marginBottom: 8 }}>
+          {t("bibliothek.literatureStudies", "Literatur & Studien")}
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 24 }}>
+          {t("bibliothek.literatureStudiesDesc", "Begutachtete Forschung & Bibliografie")}
+        </p>
+
+        {/* Hier den Tab-Content aus der Quelldatei einfügen */}
+        {/* NUR die 4 Tabs: Persönlichkeit | Wahrnehmung | Methoden | Messen */}
+        {/* NICHT: andere Sektionen wie Methoden-Erklärungen, Idee hinter Zahlen etc. */}
+      </div>
+    );
+  }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 3 — App.tsx: Neue Route registrieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/App.tsx:
+
+Lazy import hinzufügen:
+  const LabsLiterature = lazy(() => import("@/labs/pages/LabsLiterature"));
+
+Neue Route im /labs/* Switch hinzufügen:
+  <Route path="/labs/discover/literature" component={LabsLiterature} />
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 4 — LabsBibliothek.tsx: Link aktualisieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Literatur & Studien" Link in LabsBibliothek.tsx ändern:
+  ALT: /labs/discover/rabbit-hole (oder was auch immer)
+  NEU: /labs/discover/literature
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 5 — i18n.ts: Keys ergänzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  literatureStudies: "Literature & Studies",
+  literatureStudiesDesc: "Peer-reviewed research & bibliography",
+  tabPersonality: "Personality",
+  tabPerception: "Perception",
+  tabMethods: "Methods",
+  tabMeasurement: "Measurement",
+
+DE:
+  literatureStudies: "Literatur & Studien",
+  literatureStudiesDesc: "Begutachtete Forschung & Bibliografie",
+  tabPersonality: "Persönlichkeit",
+  tabPerception: "Wahrnehmung",
+  tabMethods: "Methoden",
+  tabMeasurement: "Messen",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ /labs/discover/literature → lädt korrekt
+□ Zeigt NUR die 4 Tabs mit Studien-Karten
+□ Kein anderer Inhalt (keine Methoden-Erklärungen, keine anderen Sektionen)
+□ Back-Button → /labs/bibliothek
+□ /labs/bibliothek "Literatur & Studien" → /labs/discover/literature
+□ tsc --noEmit fehlerfrei
