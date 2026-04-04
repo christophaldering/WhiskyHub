@@ -1,0 +1,244 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n BLOCK 1: nav.* + ui.* + common.* KEYS
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+Struktur: resources.en.translation (Zeilen 9–8231) + resources.de.translation (Zeilen 8232–Ende)
+
+75% aller t()-Keys in den Labs-Seiten fehlen in i18n.ts komplett.
+Dadurch wird immer der englische Fallback angezeigt — Sprachswitch funktioniert nicht.
+
+Dieser Prompt fügt die fehlenden nav.*, ui.* und common.* Keys ein.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS bestehende Keys löschen oder umbenennen
+❌ NIEMALS die Dateistruktur (Verschachtelung) ändern
+❌ NIEMALS server/ Dateien anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS andere Dateien als client/src/lib/i18n.ts ändern
+❌ NIEMALS Keys doppelt einfügen — erst prüfen ob bereits vorhanden
+
+✅ Nur neue Keys in bestehende Blöcke einfügen
+✅ EN-Keys in en.translation einfügen
+✅ DE-Keys in de.translation einfügen
+✅ Immer BEIDE Sprachblöcke aktualisieren
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — nav.* KEYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche den bestehenden nav-Block in EN und ergänze fehlende Keys:
+
+EN nav-Block ergänzen (falls nicht vorhanden):
+  circle: "Circle",
+  explore: "Explore",
+  myWorld: "My World",
+  tastings: "Tastings",
+
+DE nav-Block ergänzen (falls nicht vorhanden):
+  circle: "Circle",
+  explore: "Entdecken",
+  myWorld: "Meine Welt",
+  tastings: "Tastings",
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — ui.* KEYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche den bestehenden ui-Block in EN und DE.
+Falls kein ui-Block existiert, neu anlegen.
+Folgende Keys einfügen falls nicht vorhanden:
+
+EN:
+  ui: {
+    add: "Add",
+    anonymous: "Anonymous",
+    back: "Back",
+    cancel: "Cancel",
+    close: "Close",
+    copied: "Copied!",
+    copy: "Copy",
+    copyLink: "Copy link",
+    host: "Host",
+    link: "Link",
+    members: "Members",
+    noNewNotifications: "No new notifications",
+    notifications: "Notifications",
+    of: "of",
+    online: "Online",
+    rated: "Rated",
+    retry: "Retry",
+    save: "Save",
+    saveFailed: "Save failed",
+    saved: "Saved",
+    switchToDark: "Switch to dark mode",
+    switchToLight: "Switch to light mode",
+    tastings: "Tastings",
+  },
+
+DE:
+  ui: {
+    add: "Hinzufügen",
+    anonymous: "Anonym",
+    back: "Zurück",
+    cancel: "Abbrechen",
+    close: "Schließen",
+    copied: "Kopiert!",
+    copy: "Kopieren",
+    copyLink: "Link kopieren",
+    host: "Host",
+    link: "Link",
+    members: "Mitglieder",
+    noNewNotifications: "Keine neuen Benachrichtigungen",
+    notifications: "Benachrichtigungen",
+    of: "von",
+    online: "Online",
+    rated: "Bewertet",
+    retry: "Erneut versuchen",
+    save: "Speichern",
+    saveFailed: "Speichern fehlgeschlagen",
+    saved: "Gespeichert",
+    switchToDark: "Dunkelmodus aktivieren",
+    switchToLight: "Hellmodus aktivieren",
+    tastings: "Tastings",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — common.* KEYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche den bestehenden common-Block in EN und DE.
+Folgende Keys einfügen falls nicht vorhanden:
+
+EN:
+  common: {
+    back: "Back",
+    cancel: "Cancel",
+    close: "Close",
+    copied: "Copied!",
+    done: "Done",
+    error: "An error occurred",
+    loading: "Loading...",
+    name: "Name",
+    retry: "Retry",
+    uploadRightsHint: "Please only upload images you own the rights to.",
+    you: "You",
+  },
+
+DE:
+  common: {
+    back: "Zurück",
+    cancel: "Abbrechen",
+    close: "Schließen",
+    copied: "Kopiert!",
+    done: "Fertig",
+    error: "Ein Fehler ist aufgetreten",
+    loading: "Lädt...",
+    name: "Name",
+    retry: "Erneut versuchen",
+    uploadRightsHint: "Bitte lade nur Bilder hoch, an denen du die Rechte besitzt.",
+    you: "Du",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — myTastePage.* KEYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EN:
+  myTastePage: {
+    title: "My World",
+    subtitle: "Your personal whisky universe",
+    myDrams: "My Drams",
+    myDramsNavDesc: "Your logged drams",
+    myBottles: "My Bottles",
+    myBottlesNavDesc: "Your bottle collection with import",
+    myWishlist: "My Wishlist",
+    myWishlistNavDesc: "Whiskies you want to try",
+    sectionMyCollection: "My Collection",
+    startTitle: "Start your whisky journey",
+    startSubtitle: "Log your first dram to get started",
+    unlockTitle: "Unlock full analytics",
+    unlockSubtitle: "Rate 10 whiskies to unlock your palate profile",
+    logFirst: "Log your first dram",
+    logNext: "Log another dram",
+    progress: "{{count}} of 10 drams logged",
+    addToCollection: "Add to collection",
+    addedToCollection: "Added!",
+    database: "Whisky Database",
+    databaseDesc: "Explore all whiskies",
+  },
+
+DE:
+  myTastePage: {
+    title: "Meine Welt",
+    subtitle: "Dein persönliches Whisky-Universum",
+    myDrams: "Meine Drams",
+    myDramsNavDesc: "Deine bewerteten Drams",
+    myBottles: "Meine Flaschen",
+    myBottlesNavDesc: "Deine Flaschensammlung mit Import",
+    myWishlist: "Meine Wunschliste",
+    myWishlistNavDesc: "Whiskies die du probieren möchtest",
+    sectionMyCollection: "Meine Sammlung",
+    startTitle: "Starte deine Whisky-Reise",
+    startSubtitle: "Bewerte deinen ersten Dram um zu beginnen",
+    unlockTitle: "Vollständige Analytik freischalten",
+    unlockSubtitle: "Bewerte 10 Whiskies um dein Gaumen-Profil freizuschalten",
+    logFirst: "Ersten Dram eintragen",
+    logNext: "Weiteren Dram eintragen",
+    progress: "{{count}} von 10 Drams eingetragen",
+    addToCollection: "Zur Sammlung hinzufügen",
+    addedToCollection: "Hinzugefügt!",
+    database: "Whisky-Datenbank",
+    databaseDesc: "Alle Whiskies entdecken",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE — Bewertungsdimensionen (durchgängig Englisch)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Diese Begriffe bleiben in BEIDEN Sprachen Englisch (Markenbegriffe):
+
+In allen evaluation.*, cockpitUi.*, liveUi.*, resultsUi.* Blöcken:
+  nose: "Nose"      → EN + DE identisch
+  taste: "Palate"   → EN + DE identisch
+  finish: "Finish"  → EN + DE identisch
+  overall: "Overall" → EN + DE identisch
+
+Falls diese Blöcke noch nicht existieren, anlegen:
+
+EN + DE (identisch):
+  evaluation: {
+    nose: "Nose",
+    taste: "Palate",
+    finish: "Finish",
+    overall: "Overall",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach den Änderungen prüfen:
+
+□ wc -l client/src/lib/i18n.ts → mehr Zeilen als vorher (Keys wurden hinzugefügt)
+□ grep -n "myWorld" client/src/lib/i18n.ts → mindestens 2 Treffer (EN + DE)
+□ grep -n "Meine Welt" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Entdecken" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ grep -n "Hinzufügen" client/src/lib/i18n.ts → mindestens 1 Treffer
+□ tsc --noEmit läuft fehlerfrei
+□ Keine bestehenden Keys wurden gelöscht
