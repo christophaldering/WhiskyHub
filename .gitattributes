@@ -1,0 +1,10 @@
+*.jpg binary merge=ours
+*.jpeg binary merge=ours
+*.png binary merge=ours
+*.gif binary merge=ours
+*.svg binary merge=ours
+*.ico binary merge=ours
+*.woff binary merge=ours
+*.woff2 binary merge=ours
+*.ttf binary merge=ours
+*.eot binary merge=ours
