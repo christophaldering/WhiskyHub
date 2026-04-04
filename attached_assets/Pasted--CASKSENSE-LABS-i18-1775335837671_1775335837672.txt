@@ -1,0 +1,180 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n FIX: LabsTasteDrams.tsx + LabsTasteWishlist.tsx
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Zwei Seiten zeigen englische Texte weil hardcoded Strings oder
+fehlende DE-Keys verwendet werden:
+
+1. /labs/taste/drams (LabsTasteDrams.tsx)
+2. /labs/taste/wishlist (LabsTasteWishlist.tsx)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik oder Styling ändern
+❌ NIEMALS bestehende Keys löschen
+
+✅ NUR sichtbare Strings durch t()-Aufrufe ersetzen
+✅ Neue Keys in BEIDEN Sprachblöcken in i18n.ts eintragen
+✅ Diese Begriffe bleiben in DE identisch zu EN:
+   Solo, Tasting, Dram, N/T/F (Score-Labels), Filter
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsTasteDrams.tsx: Hardcoded Texte ersetzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Alle hardcoded sichtbaren Strings in der Datei suchen
+und durch t()-Aufrufe ersetzen:
+
+  "My Drams"
+  → t("drams.title", "My Drams")
+
+  "My Whisky" (im BackLink)
+  → t("myTastePage.title", "My Whisky")
+
+  "drams logged" (z.B. "18 drams logged")
+  → t("drams.dramsLogged", "drams logged")
+
+  "+ Add Dram" / "Add Dram"
+  → t("drams.addDram", "Add Dram")
+
+  "All" (Tab-Label)
+  → t("drams.tabAll", "All")
+
+  "Solo" (Tab-Label) → bleibt "Solo"
+
+  "Tasting" (Tab-Label) → bleibt "Tasting"
+
+  "Drafts" (Tab-Label)
+  → t("drams.tabDrafts", "Drafts")
+
+  "Trash"
+  → t("drams.trash", "Trash")
+
+  "Search drams..."
+  → t("drams.search", "Search drams...")
+
+  "Saved"
+  → t("drams.saved", "Saved")
+
+  "entries" (z.B. "18 entries")
+  → t("drams.entries", "entries")
+
+Schritt 2: i18n.ts — drams-Block in EN + DE eintragen:
+
+EN:
+  drams: {
+    title: "My Drams",
+    dramsLogged: "drams logged",
+    addDram: "Add Dram",
+    tabAll: "All",
+    tabDrafts: "Drafts",
+    trash: "Trash",
+    search: "Search drams...",
+    saved: "Saved",
+    entries: "entries",
+    noEntries: "No drams yet",
+    noEntriesDesc: "Log your first dram to get started",
+    backTaste: "My World",
+  },
+
+DE:
+  drams: {
+    title: "Meine Drams",
+    dramsLogged: "Drams eingetragen",
+    addDram: "Dram hinzufügen",
+    tabAll: "Alle",
+    tabDrafts: "Entwürfe",
+    trash: "Papierkorb",
+    search: "Drams suchen...",
+    saved: "Gespeichert",
+    entries: "Einträge",
+    noEntries: "Noch keine Drams",
+    noEntriesDesc: "Trage deinen ersten Dram ein um zu beginnen",
+    backTaste: "Meine Welt",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — LabsTasteWishlist.tsx: Hardcoded Texte ersetzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Alle hardcoded sichtbaren Strings suchen und ersetzen:
+
+  "Wishlist"
+  → t("wishlist.title", "Wishlist")
+
+  "My Whisky" (im BackLink)
+  → t("myTastePage.title", "My Whisky")
+
+  "Whiskies you want to try"
+  → t("wishlist.subtitle", "Whiskies you want to try")
+
+  "No wishlist entries yet"
+  → t("wishlist.empty", "No wishlist entries yet")
+
+  "Add whiskies you want to try"
+  → t("wishlist.emptyDesc", "Add whiskies you want to try")
+
+  "+ Add First Whisky" / "Add First Whisky"
+  → t("wishlist.addFirst", "Add First Whisky")
+
+  "+ Add Whisky" / "Add Whisky"
+  → t("wishlist.add", "Add Whisky")
+
+  Alle weiteren englischen Labels in der Datei ebenfalls ersetzen.
+
+Schritt 2: i18n.ts — wishlist-Block in EN + DE eintragen
+(falls nicht bereits vorhanden — prüfen mit grep):
+
+EN:
+  wishlist: {
+    title: "Wishlist",
+    subtitle: "Whiskies you want to try",
+    add: "Add Whisky",
+    addFirst: "Add First Whisky",
+    empty: "No wishlist entries yet",
+    emptyDesc: "Add whiskies you want to try",
+    backTaste: "My World",
+    search: "Search wishlist...",
+    noResults: "No matches found",
+    remove: "Remove",
+    movedToJournal: "Moved to journal",
+    addToJournal: "Add to journal",
+  },
+
+DE:
+  wishlist: {
+    title: "Wunschliste",
+    subtitle: "Whiskies die du probieren möchtest",
+    add: "Whisky hinzufügen",
+    addFirst: "Ersten Whisky hinzufügen",
+    empty: "Noch keine Einträge auf der Wunschliste",
+    emptyDesc: "Füge Whiskies hinzu die du probieren möchtest",
+    backTaste: "Meine Welt",
+    search: "Wunschliste durchsuchen...",
+    noResults: "Keine Treffer gefunden",
+    remove: "Entfernen",
+    movedToJournal: "In Journal verschoben",
+    addToJournal: "Zum Journal hinzufügen",
+  },
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "\"My Drams\"\|\"Wishlist\"\|\"Trash\"\|\"Drafts\"" client/src/labs/pages/LabsTasteDrams.tsx → kein Treffer
+□ grep -n "\"No wishlist\"\|\"Add First Whisky\"\|\"Add Whisky\"" client/src/labs/pages/LabsTasteWishlist.tsx → kein Treffer
+□ grep -n "Meine Drams\|Wunschliste\|Entwürfe\|Papierkorb" client/src/lib/i18n.ts → mindestens je 1 Treffer
+□ tsc --noEmit fehlerfrei

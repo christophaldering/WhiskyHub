@@ -1,0 +1,141 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE LABS — i18n FIX: LabsTasteWheel.tsx + vocabCategories Aroma-Namen
+Replit Hard Prompt — kopierfertig
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Das Flavour-Wheel zeigt Aroma-Bezeichnungen immer auf Englisch.
+Die Aroma-Namen kommen aus vocabCategories.* Keys in i18n.ts.
+
+Zwei Probleme:
+1. LabsTasteWheel.tsx hat hardcoded englische UI-Texte
+2. Die vocabCategories.* DE-Übersetzungen für Aroma-Namen fehlen
+   oder sind unvollständig
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen
+❌ NIEMALS schema.ts anfassen
+❌ NIEMALS Logik oder Datenstruktur ändern
+❌ NIEMALS bestehende Keys löschen
+
+✅ NUR sichtbare Strings durch t()-Aufrufe ersetzen
+✅ Neue Keys in BEIDEN Sprachblöcken in i18n.ts eintragen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 1 — LabsTasteWheel.tsx: UI-Texte übersetzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Datei öffnen und alle hardcoded sichtbaren Strings suchen.
+Alle durch t()-Aufrufe mit dem bereits vorhandenen Prefix "labs.wheel."
+ersetzen — diese Keys existieren bereits in i18n.ts:
+
+  labs.wheel.title → "Flavor Wheel" / "Aroma-Rad"
+  labs.wheel.subtitle → "Your aroma fingerprint" / "Dein Aroma-Fingerabdruck"
+  labs.wheel.emptyHint → vorhanden
+  labs.wheel.flavorDistribution → vorhanden
+  labs.wheel.topCategory → vorhanden
+  labs.wheel.totalMentions → vorhanden
+  labs.wheel.mentions → vorhanden
+  labs.wheel.mostUnique → vorhanden
+  labs.wheel.sources → vorhanden
+  labs.wheel.backTaste → vorhanden
+
+Falls weitere hardcoded Strings vorhanden sind die noch kein Key haben:
+  "My Whisky" (BackLink) → t("myTastePage.title", "My Whisky")
+  "Loading..." → t("common.loading", "Loading...")
+  "No data" → t("labs.wheel.emptyHint", "...")
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUFGABE 2 — i18n.ts: vocabCategories DE-Übersetzungen prüfen und ergänzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Schritt 1: Prüfen ob vocabCategories im DE-Block vorhanden ist:
+  grep -n "vocabCategories" client/src/lib/i18n.ts | tail -20
+
+Schritt 2: Falls DE-Block fehlt oder unvollständig ist,
+folgende Haupt-Aroma-Kategorien in DE eintragen.
+
+WICHTIGE ENTSCHEIDUNG: Aroma-Namen sind internationale Fachbegriffe.
+Folgende bleiben in DE identisch zu EN (Fachbegriffe):
+  Vanilla, Caramel, Toffee, Chocolate, Coffee, Sherry, Port,
+  Bourbon, Smoke, Peat, Tar, Phenol, Citrus, Tropical, Floral,
+  Honey, Malt, Grain, Spice, Pepper, Ginger, Cinnamon, Nutmeg,
+  Oak, Cedar, Leather, Tobacco, Mineral, Brine, Maritime
+
+Folgende werden übersetzt:
+  "Fruity" → "Fruchtig"
+  "Sweet" → "Süß"
+  "Smoky" → "Rauchig"
+  "Woody" → "Holzig"
+  "Spicy" → "Würzig"
+  "Floral" → "Blumig"
+  "Nutty" → "Nussig"
+  "Earthy" → "Erdig"
+  "Coastal" → "Küstennah"
+  "Herbal" → "Kräutrig"
+  "Sulfuric" → "Schwefelig"
+  "Meaty" → "Fleischig"
+  "Waxy" → "Wachsartig"
+  "Sour" → "Sauer"
+  "Bitter" → "Bitter"
+  "Dried Fruit" → "Trockenfrüchte"
+  "Stone Fruit" → "Steinobst"
+  "Red Fruit" → "Rote Früchte"
+  "Tropical Fruit" → "Tropische Früchte"
+  "Citrus Fruit" → "Zitrusfrüchte"
+
+Schritt 3: Im DE vocabCategories-Block die name-Keys der Hauptkategorien
+mit den deutschen Bezeichnungen befüllen.
+
+Format im Code: t(`vocabCategories.${id}.name`, fallback)
+Daher müssen die Keys so strukturiert sein:
+  vocabCategories: {
+    fruity: { name: "Fruchtig", ... },
+    sweet: { name: "Süß", ... },
+    smoky: { name: "Rauchig", ... },
+    woody: { name: "Holzig", ... },
+    spicy: { name: "Würzig", ... },
+    floral: { name: "Blumig", ... },
+    ...
+  }
+
+Schritt 4: Sektions-Labels übersetzen:
+  noseSection: "Nose" (bleibt EN)
+  palateSection: "Palate" (bleibt EN)
+  finishSection: "Finish" (bleibt EN)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VORGEHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Erst grep um den aktuellen Stand zu prüfen:
+   grep -n "vocabCategories" client/src/lib/i18n.ts | wc -l
+   grep -n "\"Fruity\"\|\"Sweet\"\|\"Smoky\"" client/src/lib/i18n.ts
+
+2. EN vocabCategories-Block als Referenz lesen (erster Treffer)
+
+3. DE vocabCategories-Block ergänzen — nur name-Keys übersetzen,
+   alle anderen Keys (nose, palate, finish, tips) können gleich bleiben
+   oder ebenfalls übersetzt werden
+
+4. tsc --noEmit prüfen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ grep -n "Fruchtig\|Rauchig\|Würzig" client/src/lib/i18n.ts → mindestens 3 Treffer
+□ grep -n "Aroma-Rad" client/src/lib/i18n.ts → 1 Treffer
+□ tsc --noEmit fehlerfrei
+□ Keine Logik oder Datenstruktur verändert
