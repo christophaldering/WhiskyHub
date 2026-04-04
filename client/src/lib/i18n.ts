@@ -8738,8 +8738,8 @@ const resources = {
         showAllWhiskies: "Alle in Erkunden anzeigen",
       },
       explore: {
-        title: "Explore",
-        subtitle: "Whiskys finden",
+        title: "Entdecken",
+        subtitle: "Whiskies suchen & entdecken",
         bibliothekCard: "Bibliothek",
         bibliothekCardDesc: "Wissen, Guides & Nachschlagewerke",
         sortAZ: "A\u2013Z",
@@ -12658,8 +12658,8 @@ const resources = {
         continueTasting: "Fortsetzen",
       },
       myTastePage: {
-        title: "Mein Whisky",
-        subtitle: "Deine persönliche Whisky-Sammlung & Insights",
+        title: "Meine Welt",
+        subtitle: "Dein persönliches Whisky-Universum",
         signIn: "Anmelden",
         signInDesc: "Melde dich mit deiner registrierten E-Mail an, um auf dein persönliches Geschmacksprofil zuzugreifen.",
         emailPlaceholder: "E-Mail",
