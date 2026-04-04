@@ -1097,14 +1097,23 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
               (item.href === "/labs/tastings" && (
                 location.startsWith("/labs/tastings") || location.startsWith("/labs/live") ||
                 location.startsWith("/labs/results") || location.startsWith("/labs/host") ||
-                location.startsWith("/labs/join") || location.startsWith("/labs/solo")
+                location.startsWith("/labs/join") || location.startsWith("/labs/solo") ||
+                location.startsWith("/labs/history")
               )) ||
               (item.href === "/labs/explore" && (
                 location.startsWith("/labs/entdecken") || location.startsWith("/labs/explore") ||
                 location.startsWith("/labs/discover") || location.startsWith("/labs/bibliothek")
               )) ||
-              (item.href === "/labs/taste" && location.startsWith("/labs/taste")) ||
-              (item.href === "/labs/circle" && location.startsWith("/labs/circle"));
+              (item.href === "/labs/taste" && (
+                location.startsWith("/labs/taste") ||
+                location.startsWith("/labs/bottle-sharing") ||
+                location.startsWith("/labs/splits")
+              )) ||
+              (item.href === "/labs/circle" && (
+                location.startsWith("/labs/circle") ||
+                location.startsWith("/labs/community") ||
+                location.startsWith("/labs/activity")
+              ));
 
             const color = isActive ? "var(--labs-gold, #bf8f3e)" : "var(--labs-text-muted, rgba(255,255,255,0.45))";
             const isCircle = item.href === "/labs/circle";
