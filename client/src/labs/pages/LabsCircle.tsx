@@ -8,6 +8,7 @@ import {
   Globe, Mail, Send,
 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
+import CommunityInsights from "@/labs/components/CommunityInsights";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
@@ -366,6 +367,8 @@ export default function LabsCircle() {
           {t("m2.circle.friendsRankingsSubtitle")}
         </p>
       </div>
+
+      <CommunityInsights compactOnly />
 
       <div ref={tabsWrapperRef} className="labs-circle-tabs-wrapper" style={{ marginBottom: 20, position: "relative" }}>
         <div ref={tabsRef} className="labs-circle-tabs flex overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>

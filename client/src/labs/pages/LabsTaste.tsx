@@ -4,13 +4,12 @@ import { useLocation, Link } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { formatScore } from "@/lib/utils";
 import {
-  Wine, Calendar, ChevronRight, ChevronLeft, BookOpen,
+  Wine, Calendar, ChevronRight, BookOpen,
   BarChart3, Target, Compass,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
-  Download, Brain, Utensils, Library, Info, Star,
+  Download, Library, Info, Star,
   Archive, Heart,
 } from "lucide-react";
-import BackLink from "@/labs/components/BackLink";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
@@ -557,11 +556,6 @@ export default function LabsTaste() {
 
   return (
     <div className="labs-page">
-      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-taste">
-          <ChevronLeft className="w-4 h-4" /> Home
-        </button>
-      </BackLink>
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
         {t("myTastePage.title", "My Whisky")}
       </h1>
@@ -970,8 +964,6 @@ export default function LabsTaste() {
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Utensils} label="Pairings" href="/labs/taste/pairings" testId="labs-taste-link-pairings" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Brain} label="Benchmark" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
           <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
           <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
         </div>

@@ -5,11 +5,11 @@ import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
-import CommunityInsights from "@/labs/components/CommunityInsights";
 import {
-  Search, ChevronRight, ChevronLeft, Wine,
+  Search, ChevronRight, Wine,
   BookOpen, Users, Bookmark, HelpCircle, Layers,
   X, ChevronDown, Check, ArrowUp, ArrowDown,
+  Utensils, Brain,
 } from "lucide-react";
 import { SECTIONS } from "@/labs/pages/LabsBibliothek";
 import type { ElementType } from "react";
@@ -20,7 +20,6 @@ const SECTION_ICONS: Record<string, ElementType> = {
   "bibliothek.sectionTastingHelp": HelpCircle,
   "bibliothek.sectionDeepDive": Layers,
 };
-import BackLink from "@/labs/components/BackLink";
 
 type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
 
@@ -273,19 +272,12 @@ export default function LabsEntdecken() {
 
   return (
     <div className="labs-page" data-testid="labs-entdecken-page">
-      <BackLink href="/labs/tastings" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-entdecken">
-          <ChevronLeft className="w-4 h-4" /> {t("ui.home")}
-        </button>
-      </BackLink>
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
         {t("explore.title", "Explore")}
       </h1>
       <p className="labs-fade-in labs-stagger-1" style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "0 0 24px", opacity: 0.6 }}>
         {t("explore.subtitle", "Find whiskies")}
       </p>
-
-      <CommunityInsights compactOnly />
 
       <div className="labs-fade-in labs-stagger-1" style={{ marginBottom: 24 }}>
         <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
@@ -335,6 +327,29 @@ export default function LabsEntdecken() {
               </Link>
             );
           })}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+          <Link href="/labs/taste/pairings" style={{ textDecoration: "none" }} data-testid="link-entdecken-pairings">
+            <div className="labs-card-interactive" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, height: "100%" }}>
+              <Utensils className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{t("taste.pairings", "Pairings")}</div>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("taste.pairingsDesc", "Whisky & Speisen kombinieren")}</div>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+            </div>
+          </Link>
+          <Link href="/labs/taste/benchmark" style={{ textDecoration: "none" }} data-testid="link-entdecken-benchmark">
+            <div className="labs-card-interactive" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, height: "100%" }}>
+              <Brain className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{t("taste.benchmark", "Benchmark")}</div>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("taste.benchmarkDesc", "Externe Tasting-Daten & Vergleich")}</div>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+            </div>
+          </Link>
         </div>
       </div>
 
