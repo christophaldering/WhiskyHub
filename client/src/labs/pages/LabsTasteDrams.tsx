@@ -36,19 +36,15 @@ interface DramEntry extends JournalEntry {
   savedAt?: string | Date | null;
 }
 
-const FILTERS: { key: FilterValue; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "solo", label: "Solo" },
-  { key: "tasting", label: "Tasting" },
-  { key: "drafts", label: "Drafts" },
-];
+const FILTER_KEYS: FilterValue[] = ["all", "solo", "tasting", "drafts"];
+const FILTER_I18N: Record<FilterValue, string> = { all: "drams.tabAll", solo: "drams.tabSolo", tasting: "drams.tabTasting", drafts: "drams.tabDrafts" };
 
-const DATE_PERIODS: { key: DatePeriod; label: string; days: number }[] = [
-  { key: "all", label: "All time", days: 0 },
-  { key: "7d", label: "7 days", days: 7 },
-  { key: "30d", label: "30 days", days: 30 },
-  { key: "3m", label: "3 months", days: 90 },
-  { key: "1y", label: "1 year", days: 365 },
+const DATE_PERIOD_KEYS: { key: DatePeriod; i18nKey: string; days: number }[] = [
+  { key: "all", i18nKey: "drams.allTime", days: 0 },
+  { key: "7d", i18nKey: "drams.sevenDays", days: 7 },
+  { key: "30d", i18nKey: "drams.thirtyDays", days: 30 },
+  { key: "3m", i18nKey: "drams.threeMonths", days: 90 },
+  { key: "1y", i18nKey: "drams.oneYear", days: 365 },
 ];
 
 function isJsonScoreString(value: string): boolean {
@@ -238,10 +234,10 @@ export default function LabsTasteDrams() {
   const activeFilterChips = useMemo(() => {
     const chips: { label: string; onClear: () => void }[] = [];
     if (datePeriod !== "all") {
-      const label = DATE_PERIODS.find(p => p.key === datePeriod)?.label || datePeriod;
+      const label = t(DATE_PERIOD_KEYS.find(p => p.key === datePeriod)?.i18nKey || "drams.allTime");
       chips.push({ label, onClear: () => setDatePeriod("all") });
     }
-    if (scoreRange !== "all") chips.push({ label: `Score: ${scoreRange}`, onClear: () => setScoreRange("all") });
+    if (scoreRange !== "all") chips.push({ label: t("drams.scoreChip", { range: scoreRange }), onClear: () => setScoreRange("all") });
     if (filterDistillery !== "all") chips.push({ label: filterDistillery, onClear: () => setFilterDistillery("all") });
     if (filterRegion !== "all") chips.push({ label: filterRegion, onClear: () => setFilterRegion("all") });
     if (filterCaskType !== "all") chips.push({ label: filterCaskType, onClear: () => setFilterCaskType("all") });
@@ -270,7 +266,7 @@ export default function LabsTasteDrams() {
       items = items.filter((e: any) => (e.name || e.title || "").toLowerCase().includes(q) || (e.distillery || "").toLowerCase().includes(q));
     }
     if (datePeriod !== "all") {
-      const days = DATE_PERIODS.find(p => p.key === datePeriod)?.days || 0;
+      const days = DATE_PERIOD_KEYS.find(p => p.key === datePeriod)?.days || 0;
       if (days > 0) {
         const cutoff = Date.now() - days * 86400000;
         items = items.filter((e: any) => e.createdAt && new Date(e.createdAt).getTime() >= cutoff);
@@ -497,23 +493,23 @@ export default function LabsTasteDrams() {
       <div className="labs-page" data-testid="labs-drams-trash">
         <div className="flex items-center justify-between mb-5">
           <button onClick={() => setViewState("list")} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-from-trash">
-            <ChevronLeft className="w-4 h-4" /> Drams
+            <ChevronLeft className="w-4 h-4" /> {t("drams.drams")}
           </button>
         </div>
         <div className="flex items-center gap-2 mb-4">
           <Archive className="w-5 h-5" style={{ color: "var(--labs-text-muted)" }} />
-          <h2 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>Trash</h2>
+          <h2 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>{t("drams.trash")}</h2>
         </div>
         <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-          Deleted drams are kept for 30 days before being permanently removed.
+          {t("drams.trashDesc")}
         </p>
         {trashEntries.length === 0 ? (
           <div style={{ padding: "48px 20px", textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <Trash2 className="w-6 h-6" style={{ color: "var(--labs-text-muted)" }} />
             </div>
-            <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>Trash is empty</h3>
-            <p style={{ fontSize: 14, color: "var(--labs-text-muted)" }}>No deleted drams.</p>
+            <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>{t("drams.trashEmpty")}</h3>
+            <p style={{ fontSize: 14, color: "var(--labs-text-muted)" }}>{t("drams.noDeletedDrams")}</p>
           </div>
         ) : (
           <div className="flex flex-col" style={{ gap: 10 }}>
@@ -530,7 +526,7 @@ export default function LabsTasteDrams() {
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3 h-3" style={{ color: daysLeft <= 3 ? "var(--labs-danger)" : "var(--labs-text-muted)" }} />
                         <span style={{ fontSize: 11, color: daysLeft <= 3 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
-                          {daysLeft === 0 ? "Expires today" : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`}
+                          {daysLeft === 0 ? t("drams.expiresToday") : daysLeft === 1 ? t("drams.dayLeft", { count: daysLeft }) : t("drams.daysLeft", { count: daysLeft })}
                         </span>
                       </div>
                     </div>
@@ -560,12 +556,12 @@ export default function LabsTasteDrams() {
         {permanentDeleteTarget && (
           <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-permanent-delete">
             <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
-              <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Permanently Delete</h3>
-              <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This will permanently delete "{permanentDeleteTarget.name || permanentDeleteTarget.title}". This cannot be undone.</p>
+              <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("drams.permanentDelete")}</h3>
+              <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>{t("drams.permanentDeleteDesc", { name: permanentDeleteTarget.name || permanentDeleteTarget.title })}</p>
               <div className="flex justify-end gap-2.5">
-                <button onClick={() => setPermanentDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-cancel-permanent-delete">Cancel</button>
+                <button onClick={() => setPermanentDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-cancel-permanent-delete">{t("drams.cancel")}</button>
                 <button onClick={() => { permanentDeleteMutation.mutate(permanentDeleteTarget.id); setPermanentDeleteTarget(null); }} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-confirm-permanent-delete">
-                  Delete Forever
+                  {t("drams.deleteForever")}
                 </button>
               </div>
             </div>
@@ -580,12 +576,12 @@ export default function LabsTasteDrams() {
       <div className="labs-page" data-testid="labs-dram-detail">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-drams">
-            <ChevronLeft className="w-4 h-4" /> Drams
+            <ChevronLeft className="w-4 h-4" /> {t("drams.drams")}
           </button>
           {isSoloEntry(selectedEntry) && (
             <div className="flex gap-2">
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
-                <Pencil className="w-3.5 h-3.5" /> Edit
+                <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
               </button>
               {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
                 <button
@@ -659,18 +655,18 @@ export default function LabsTasteDrams() {
             {selectedEntry.personalScore != null && (
               <div style={{ textAlign: "right", flexShrink: 0 }}>
                 <div className="labs-h1" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.personalScore).toFixed(1)}</div>
-                <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Score</div>
+                <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.score")}</div>
               </div>
             )}
           </div>
 
           {(selectedEntry.country || selectedEntry.region || selectedEntry.age || selectedEntry.abv || selectedEntry.caskType) && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {selectedEntry.country && <MetaBadge label="Country" value={selectedEntry.country} />}
-              {selectedEntry.region && <MetaBadge label="Region" value={selectedEntry.region} />}
-              {selectedEntry.age && <MetaBadge label="Age" value={selectedEntry.age} />}
-              {selectedEntry.abv && <MetaBadge label="ABV" value={selectedEntry.abv} />}
-              {selectedEntry.caskType && <MetaBadge label="Cask" value={selectedEntry.caskType} />}
+              {selectedEntry.country && <MetaBadge label={t("drams.country")} value={selectedEntry.country} />}
+              {selectedEntry.region && <MetaBadge label={t("drams.region")} value={selectedEntry.region} />}
+              {selectedEntry.age && <MetaBadge label={t("drams.age")} value={selectedEntry.age} />}
+              {selectedEntry.abv && <MetaBadge label={t("drams.abv")} value={selectedEntry.abv} />}
+              {selectedEntry.caskType && <MetaBadge label={t("drams.cask")} value={selectedEntry.caskType} />}
             </div>
           )}
 
@@ -688,19 +684,19 @@ export default function LabsTasteDrams() {
                       {selectedEntry.noseScore != null && (
                         <div data-testid="score-nose" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
                           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.noseScore).toFixed(0)}</div>
-                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Nose</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.nose")}</div>
                         </div>
                       )}
                       {selectedEntry.tasteScore != null && (
                         <div data-testid="score-taste" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
                           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.tasteScore).toFixed(0)}</div>
-                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Taste</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.taste")}</div>
                         </div>
                       )}
                       {selectedEntry.finishScore != null && (
                         <div data-testid="score-finish" style={{ background: "var(--labs-surface-elevated)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
                           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{Number(selectedEntry.finishScore).toFixed(0)}</div>
-                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Finish</div>
+                          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.finish")}</div>
                         </div>
                       )}
                     </div>
@@ -710,10 +706,10 @@ export default function LabsTasteDrams() {
                 {!hasStructuredTags && (
                   <>
                     {selectedEntry.noseNotes && (
-                      <NoteSection label={selectedEntry.source === "tasting" ? "Notes" : "Nose"} value={selectedEntry.noseNotes} />
+                      <NoteSection label={selectedEntry.source === "tasting" ? t("drams.notes") : t("drams.nose")} value={selectedEntry.noseNotes} />
                     )}
-                    {selectedEntry.tasteNotes && !isJsonScoreString(selectedEntry.tasteNotes) && <NoteSection label="Taste" value={selectedEntry.tasteNotes} />}
-                    {selectedEntry.finishNotes && <NoteSection label="Finish" value={selectedEntry.finishNotes} />}
+                    {selectedEntry.tasteNotes && !isJsonScoreString(selectedEntry.tasteNotes) && <NoteSection label={t("drams.taste")} value={selectedEntry.tasteNotes} />}
+                    {selectedEntry.finishNotes && <NoteSection label={t("drams.finish")} value={selectedEntry.finishNotes} />}
                   </>
                 )}
               </>
@@ -724,7 +720,7 @@ export default function LabsTasteDrams() {
 
           {selectedEntry.tastingTitle && (
             <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>
-              <Wine className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} /> From tasting: {selectedEntry.tastingTitle}
+              <Wine className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} /> {t("drams.fromTasting")} {selectedEntry.tastingTitle}
             </div>
           )}
 
@@ -813,10 +809,10 @@ export default function LabsTasteDrams() {
       <div className="labs-page" data-testid="labs-dram-edit">
         <div className="flex items-center justify-between mb-5">
           <button onClick={handleBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="button-labs-cancel-edit">
-            <ChevronLeft className="w-4 h-4" /> Cancel
+            <ChevronLeft className="w-4 h-4" /> {t("drams.cancel")}
           </button>
           <button onClick={handleSaveEdit} disabled={updateMutation.isPending} className="labs-btn-primary" style={{ padding: "8px 20px", fontSize: 14, opacity: updateMutation.isPending ? 0.6 : 1 }} data-testid="button-labs-save-dram">
-            {updateMutation.isPending ? "Saving..." : "Save"}
+            {updateMutation.isPending ? t("drams.saving") : t("drams.save")}
           </button>
         </div>
 
@@ -832,28 +828,28 @@ export default function LabsTasteDrams() {
               testIdPrefix="labs-dram-image"
             />
             <div className="flex-1 flex flex-col gap-2">
-              <EditField label="Whisky Name" value={editForm.name} onChange={(v) => setEditForm({ ...editForm, name: v, title: v })} testId="input-labs-edit-whiskyName" />
-              <EditField label="Distillery" value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
+              <EditField label={t("drams.whiskyName")} value={editForm.name} onChange={(v) => setEditForm({ ...editForm, name: v, title: v })} testId="input-labs-edit-whiskyName" />
+              <EditField label={t("drams.distillery")} value={editForm.distillery} onChange={(v) => setEditForm({ ...editForm, distillery: v })} testId="input-labs-edit-distillery" />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <EditField label="Country" value={editForm.country || ""} onChange={(v) => setEditForm({ ...editForm, country: v })} testId="input-labs-edit-country" />
-            <EditField label="Region" value={editForm.region} onChange={(v) => setEditForm({ ...editForm, region: v })} testId="input-labs-edit-region" />
+            <EditField label={t("drams.country")} value={editForm.country || ""} onChange={(v) => setEditForm({ ...editForm, country: v })} testId="input-labs-edit-country" />
+            <EditField label={t("drams.region")} value={editForm.region} onChange={(v) => setEditForm({ ...editForm, region: v })} testId="input-labs-edit-region" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <EditField label="Age" value={editForm.age} onChange={(v) => setEditForm({ ...editForm, age: v })} testId="input-labs-edit-age" />
-            <EditField label="ABV" value={editForm.abv} onChange={(v) => setEditForm({ ...editForm, abv: v })} testId="input-labs-edit-abv" />
-            <EditField label="Cask Type" value={editForm.caskType} onChange={(v) => setEditForm({ ...editForm, caskType: v })} testId="input-labs-edit-caskType" />
+            <EditField label={t("drams.age")} value={editForm.age} onChange={(v) => setEditForm({ ...editForm, age: v })} testId="input-labs-edit-age" />
+            <EditField label={t("drams.abv")} value={editForm.abv} onChange={(v) => setEditForm({ ...editForm, abv: v })} testId="input-labs-edit-abv" />
+            <EditField label={t("drams.caskType")} value={editForm.caskType} onChange={(v) => setEditForm({ ...editForm, caskType: v })} testId="input-labs-edit-caskType" />
           </div>
-          <EditField label="Score" value={editForm.personalScore} onChange={(v) => setEditForm({ ...editForm, personalScore: v })} testId="input-labs-edit-score" type="number" />
+          <EditField label={t("drams.score")} value={editForm.personalScore} onChange={(v) => setEditForm({ ...editForm, personalScore: v })} testId="input-labs-edit-score" type="number" />
 
           {selectedEntry.status === "draft" && !editStructured && (
             <div>
-              <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Individual Scores</label>
+              <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("drams.individualScores")}</label>
               <div className="grid grid-cols-3 gap-2">
                 {(["nose", "taste", "finish"] as const).map((dim) => (
                   <div key={dim}>
-                    <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
+                    <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{t(`drams.${dim}`)}</label>
                     <input
                       type="number" min="0" max="100"
                       value={editForm[`${dim}Score`] || ""}
@@ -869,13 +865,13 @@ export default function LabsTasteDrams() {
 
           {editStructured ? (
             <div className="flex flex-col gap-3">
-              <EditTextarea label="Notes" value={editStructured.generalNotes} onChange={(v) => setEditStructured({ ...editStructured, generalNotes: v })} testId="input-labs-edit-general-notes" />
+              <EditTextarea label={t("drams.notes")} value={editStructured.generalNotes} onChange={(v) => setEditStructured({ ...editStructured, generalNotes: v })} testId="input-labs-edit-general-notes" />
               <div>
-                <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>Sub-Scores</label>
+                <label className="text-xs font-semibold block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("drams.subScores")}</label>
                 <div className="labs-auto-grid" style={{ "--grid-min": "70px", gap: "0.5rem" } as React.CSSProperties}>
                   {(["nose", "taste", "finish"] as const).map((dim) => (
                     <div key={dim}>
-                      <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{dim}</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider block mb-0.5" style={{ color: "var(--labs-text-muted)" }}>{t(`drams.${dim}`)}</label>
                       <input type="number" min="0" max="100" value={editStructured.scores[dim]} onChange={(e) => setEditStructured({ ...editStructured, scores: { ...editStructured.scores, [dim]: e.target.value } })}
                         style={{ width: "100%", padding: "8px 6px", textAlign: "center", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 8, fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", outline: "none", boxSizing: "border-box" }}
                         data-testid={`input-labs-edit-score-${dim}`} />
@@ -888,20 +884,20 @@ export default function LabsTasteDrams() {
                 if (!d) return null;
                 return (
                   <div key={dim}>
-                    <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{dim.charAt(0).toUpperCase() + dim.slice(1)}</label>
-                    <EditField label="Descriptors" value={d.chips} onChange={(v) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, chips: v } } })} testId={`input-labs-edit-chips-${dim}`} />
-                    <div className="mt-1"><EditTextarea label="Description" value={d.text} onChange={(v) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, text: v } } })} testId={`input-labs-edit-text-${dim}`} /></div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t(`drams.${dim}`)}</label>
+                    <EditField label={t("drams.descriptors")} value={d.chips} onChange={(v) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, chips: v } } })} testId={`input-labs-edit-chips-${dim}`} />
+                    <div className="mt-1"><EditTextarea label={t("drams.description")} value={d.text} onChange={(v) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, text: v } } })} testId={`input-labs-edit-text-${dim}`} /></div>
                   </div>
                 );
               })}
-              <EditTextarea label="Overall" value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
+              <EditTextarea label={t("drams.overall")} value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
             </div>
           ) : (
             <>
-              <EditTextarea label="Nose" value={editForm.noseNotes} onChange={(v) => setEditForm({ ...editForm, noseNotes: v })} testId="input-labs-edit-nose" />
-              <EditTextarea label="Taste" value={editForm.tasteNotes} onChange={(v) => setEditForm({ ...editForm, tasteNotes: v })} testId="input-labs-edit-taste" />
-              <EditTextarea label="Finish" value={editForm.finishNotes} onChange={(v) => setEditForm({ ...editForm, finishNotes: v })} testId="input-labs-edit-finish" />
-              <EditTextarea label="Overall" value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
+              <EditTextarea label={t("drams.nose")} value={editForm.noseNotes} onChange={(v) => setEditForm({ ...editForm, noseNotes: v })} testId="input-labs-edit-nose" />
+              <EditTextarea label={t("drams.taste")} value={editForm.tasteNotes} onChange={(v) => setEditForm({ ...editForm, tasteNotes: v })} testId="input-labs-edit-taste" />
+              <EditTextarea label={t("drams.finish")} value={editForm.finishNotes} onChange={(v) => setEditForm({ ...editForm, finishNotes: v })} testId="input-labs-edit-finish" />
+              <EditTextarea label={t("drams.overall")} value={editForm.overallNotes} onChange={(v) => setEditForm({ ...editForm, overallNotes: v })} testId="input-labs-edit-overall" />
             </>
           )}
         </div>
@@ -913,12 +909,12 @@ export default function LabsTasteDrams() {
     <div className="labs-page" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
       <div>
         <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3" style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="button-labs-back-taste">
-          <ChevronLeft className="w-4 h-4" /> My Whisky
+          <ChevronLeft className="w-4 h-4" /> {t("drams.backTaste")}
         </button>
         <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-          <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">My Drams</h1>
+          <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
           <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "7px 14px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
-            <Plus className="w-4 h-4" strokeWidth={2.5} /> Add Dram
+            <Plus className="w-4 h-4" strokeWidth={2.5} /> {t("drams.addDram")}
           </button>
         </div>
       </div>
@@ -945,17 +941,17 @@ export default function LabsTasteDrams() {
               >
                 <div className="flex items-center gap-3">
                   <span className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{allItems.length}</span>
-                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>drams logged</span>
+                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("drams.dramsLogged")}</span>
                 </div>
                 <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: statsExpanded ? "rotate(180deg)" : "rotate(0)" }} />
               </button>
               {statsExpanded && (
                 <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem", marginTop: 8 } as React.CSSProperties} data-testid="labs-drams-overview">
                   {[
-                    { value: allItems.length, label: "Total" },
-                    { value: journal.filter((e: any) => e.status !== "draft").length, label: "Solo" },
-                    { value: tastingWhiskies.length, label: "Tastings" },
-                    { value: journal.filter((e: any) => e.status === "draft").length, label: "Drafts" },
+                    { value: allItems.length, label: t("drams.total") },
+                    { value: journal.filter((e: any) => e.status !== "draft").length, label: t("drams.solo") },
+                    { value: tastingWhiskies.length, label: t("drams.tastings") },
+                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.drafts") },
                   ].map(s => (
                     <div key={s.label} style={{ textAlign: "center", padding: "10px 4px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", borderRadius: 10, border: "1px solid var(--labs-border)" }}>
                       <div className="labs-h2" style={{ color: "var(--labs-accent)", fontSize: 20 }}>{s.value}</div>
@@ -998,11 +994,11 @@ export default function LabsTasteDrams() {
 
           <div style={{ padding: "0 20px", marginBottom: 12 }}>
             <div className="labs-segmented" style={{ marginBottom: 0 }}>
-              {FILTERS.map(f => (
-                <button key={f.key} onClick={() => setActiveFilter(f.key)}
-                  className={`labs-segmented-btn ${activeFilter === f.key ? "labs-segmented-btn-active" : ""}`}
+              {FILTER_KEYS.map(fk => (
+                <button key={fk} onClick={() => setActiveFilter(fk)}
+                  className={`labs-segmented-btn ${activeFilter === fk ? "labs-segmented-btn-active" : ""}`}
                   style={{ fontSize: 13, padding: "6px 0" }}
-                  data-testid={`labs-filter-${f.key}`}>{f.label}</button>
+                  data-testid={`labs-filter-${fk}`}>{t(FILTER_I18N[fk])}</button>
               ))}
             </div>
           </div>
@@ -1014,7 +1010,7 @@ export default function LabsTasteDrams() {
               style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
               data-testid="button-labs-open-trash"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Trash
+              <Trash2 className="w-3.5 h-3.5" /> {t("drams.trash")}
             </button>
           </div>
 
@@ -1022,7 +1018,7 @@ export default function LabsTasteDrams() {
             <div className="flex items-center gap-2">
               <div className="relative" style={{ flex: 1 }}>
                 <Search className="absolute" style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--labs-text-muted)" }} />
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drams..."
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("drams.search")}
                   className="labs-input" style={{ paddingLeft: 36, fontSize: 14, height: 38, borderRadius: 10 }}
                   data-testid="input-labs-search-drams" />
                 {search && (
@@ -1044,7 +1040,7 @@ export default function LabsTasteDrams() {
                 data-testid="button-labs-open-filters"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Filter
+                {t("drams.filter")}
                 {activeFilterCount > 0 && (
                   <span style={{ background: "var(--labs-accent)", color: "var(--labs-bg, #0e0b05)", fontSize: 11, fontWeight: 700, borderRadius: 999, minWidth: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>{activeFilterCount}</span>
                 )}
@@ -1061,18 +1057,18 @@ export default function LabsTasteDrams() {
                   data-testid="button-sort-dropdown"
                 >
                   {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
-                  {sortBy === "saved" ? "Saved" : sortBy === "date" ? "Date" : sortBy === "score" ? "Score" : "Name"}
+                  {sortBy === "saved" ? t("drams.saved") : sortBy === "date" ? t("drams.date") : sortBy === "score" ? t("drams.score") : t("drams.name")}
                 </button>
                 {sortDropdownOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
                     <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-card-bg, #1a1a2e)", border: "1px solid var(--labs-border, #2a2a4a)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
-                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>Sort by</div>
+                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.sortBy")}</div>
                       {([
-                        { key: "saved" as SortBy, label: "Last saved" },
-                        { key: "date" as SortBy, label: "Date created" },
-                        { key: "score" as SortBy, label: "Score" },
-                        { key: "name" as SortBy, label: "Name" },
+                        { key: "saved" as SortBy, label: t("drams.sortSaved") },
+                        { key: "date" as SortBy, label: t("drams.sortDate") },
+                        { key: "score" as SortBy, label: t("drams.sortScore") },
+                        { key: "name" as SortBy, label: t("drams.sortName") },
                       ]).map(opt => (
                         <button
                           key={opt.key}
@@ -1086,10 +1082,10 @@ export default function LabsTasteDrams() {
                         </button>
                       ))}
                       <div style={{ height: 1, background: "var(--labs-border)", margin: "4px 0" }} />
-                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>Direction</div>
+                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.direction")}</div>
                       {([
-                        { key: "desc" as SortDirection, label: "Descending", icon: <ArrowDown className="w-3.5 h-3.5" /> },
-                        { key: "asc" as SortDirection, label: "Ascending", icon: <ArrowUp className="w-3.5 h-3.5" /> },
+                        { key: "desc" as SortDirection, label: t("drams.descending"), icon: <ArrowDown className="w-3.5 h-3.5" /> },
+                        { key: "asc" as SortDirection, label: t("drams.ascending"), icon: <ArrowUp className="w-3.5 h-3.5" /> },
                       ]).map(opt => (
                         <button
                           key={opt.key}
@@ -1129,7 +1125,7 @@ export default function LabsTasteDrams() {
                   style={{ padding: "4px 8px", fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
                   data-testid="button-labs-clear-all-filters"
                 >
-                  Clear all
+                  {t("drams.clearAll")}
                 </button>
               )}
             </div>
@@ -1141,10 +1137,10 @@ export default function LabsTasteDrams() {
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: "color-mix(in srgb, var(--labs-danger, #ef4444) 12%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
                   <RotateCcw className="w-5 h-5" style={{ color: "var(--labs-danger, #ef4444)" }} />
                 </div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>Failed to load drams</p>
-                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: 16 }}>Something went wrong. Please try again.</p>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4 }}>{t("drams.failedToLoad")}</p>
+                <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: 16 }}>{t("drams.failedToLoadDesc")}</p>
                 <button onClick={() => refetch()} className="labs-btn-secondary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "8px 20px", fontSize: 13 }} data-testid="button-labs-retry">
-                  <RotateCcw className="w-3.5 h-3.5" /> Retry
+                  <RotateCcw className="w-3.5 h-3.5" /> {t("drams.retry")}
                 </button>
               </div>
             ) : isLoading ? (
@@ -1171,10 +1167,10 @@ export default function LabsTasteDrams() {
                     <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                       <BookOpen className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
                     </div>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>No drams yet</h3>
-                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 20, lineHeight: 1.5 }}>Start logging solo drams or join a tasting to build your collection.</p>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>{t("drams.noEntries")}</h3>
+                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 20, lineHeight: 1.5 }}>{t("drams.noEntriesDesc")}</p>
                     <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "10px 20px", fontSize: 14 }} data-testid="button-labs-add-first-dram">
-                      <Plus className="w-4 h-4" /> Log your first dram
+                      <Plus className="w-4 h-4" /> {t("drams.addFirstDram")}
                     </button>
                   </>
                 ) : (
@@ -1182,10 +1178,10 @@ export default function LabsTasteDrams() {
                     <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                       <Search className="w-6 h-6" style={{ color: "var(--labs-text-muted)" }} />
                     </div>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>No matches found</h3>
-                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>Try adjusting your filters or search term.</p>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>{t("drams.noMatches")}</h3>
+                    <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>{t("drams.noMatchesDesc")}</p>
                     <button onClick={resetAllFilters} className="labs-btn-secondary flex items-center gap-1.5" style={{ margin: "0 auto", padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-reset-filters">
-                      <RotateCcw className="w-3.5 h-3.5" /> Clear all filters
+                      <RotateCcw className="w-3.5 h-3.5" /> {t("drams.clearAllFilters")}
                     </button>
                   </>
                 )}
@@ -1193,7 +1189,7 @@ export default function LabsTasteDrams() {
             ) : (
               <div className="flex flex-col" style={{ gap: 10 }}>
                 <div style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: "0 2px" }}>
-                  {hasAnyFilter ? `${filteredEntries.length} of ${allItems.length} entries` : `${filteredEntries.length} entries`}
+                  {hasAnyFilter ? t("drams.entriesOfCount", { filtered: filteredEntries.length, total: allItems.length }) : t("drams.entriesCount", { count: filteredEntries.length })}
                 </div>
                 {filteredEntries.map((entry: any) => (
                   <div key={entry.id} onClick={() => handleView(entry)} className="labs-card labs-card-interactive" style={{ padding: "16px 18px", cursor: "pointer", borderRadius: 14, ...(entry.status === "draft" ? { borderStyle: "dashed", borderColor: "rgba(200,134,26,0.35)", background: "rgba(200,134,26,0.04)" } : {}) }} data-testid={`labs-dram-${entry.id}`}>
@@ -1207,7 +1203,7 @@ export default function LabsTasteDrams() {
                             <span className={getStatusConfig("draft").cssClass} data-testid={`labs-badge-draft-${entry.id}`}>{t(getStatusConfig("draft").labelKey, getStatusConfig("draft").fallbackLabel)}</span>
                           )}
                           {entry.source === "tasting" && (
-                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }}>Tasting</span>
+                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 999, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)" }}>{t("drams.tasting")}</span>
                           )}
                           {entry.createdAt && (
                             <span className="flex items-center gap-1" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
@@ -1284,6 +1280,7 @@ function FilterBottomSheet({
   uniqueDistilleries: string[]; uniqueRegions: string[]; uniqueCaskTypes: string[];
   onClose: () => void; onClear: () => void; activeCount: number;
 }) {
+  const { t } = useTranslation();
   const selectStyle = (isActive: boolean) => ({
     width: "100%", padding: "10px 32px 10px 12px", fontSize: 14, fontWeight: isActive ? 600 : 400,
     color: isActive ? "var(--labs-accent)" : "var(--labs-text)",
@@ -1297,7 +1294,7 @@ function FilterBottomSheet({
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={onClose} />
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "80vh", background: "var(--labs-bg, #0e0b05)", borderRadius: "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
         <div style={{ position: "sticky", top: 0, background: "var(--labs-bg, #0e0b05)", padding: "16px 20px 12px", borderBottom: "1px solid var(--labs-border)", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>Filters</h3>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{t("drams.filters")}</h3>
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-close-filter-sheet">
             <X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
           </button>
@@ -1305,9 +1302,9 @@ function FilterBottomSheet({
 
         <div style={{ padding: "16px 20px" }}>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Date Period</label>
+            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.datePeriod")}</label>
             <div className="flex gap-2 flex-wrap">
-              {DATE_PERIODS.map(p => (
+              {DATE_PERIOD_KEYS.map(p => (
                 <button key={p.key} onClick={() => setDatePeriod(p.key)}
                   style={{
                     padding: "7px 14px", fontSize: 13, fontWeight: datePeriod === p.key ? 600 : 400, borderRadius: 999, cursor: "pointer",
@@ -1316,13 +1313,13 @@ function FilterBottomSheet({
                     color: datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-text-muted)",
                   }}
                   data-testid={`labs-period-${p.key}`}
-                >{p.label}</button>
+                >{t(p.i18nKey)}</button>
               ))}
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Score Range</label>
+            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.scoreRange")}</label>
             <div className="flex gap-2 flex-wrap">
               {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
                 <button key={sr} onClick={() => setScoreRange(sr)}
@@ -1333,17 +1330,17 @@ function FilterBottomSheet({
                     color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)",
                   }}
                   data-testid={`labs-score-${sr}`}
-                >{sr === "all" ? "All" : sr}</button>
+                >{sr === "all" ? t("drams.all") : sr}</button>
               ))}
             </div>
           </div>
 
           {uniqueDistilleries.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Distillery</label>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.distillery")}</label>
               <div style={{ position: "relative" }}>
                 <select value={filterDistillery} onChange={(e) => setFilterDistillery(e.target.value)} style={selectStyle(filterDistillery !== "all")} data-testid="labs-filter-distillery">
-                  <option value="all">All distilleries</option>
+                  <option value="all">{t("drams.allDistilleries")}</option>
                   {uniqueDistilleries.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
                 <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
@@ -1353,10 +1350,10 @@ function FilterBottomSheet({
 
           {uniqueRegions.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Region</label>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.region")}</label>
               <div style={{ position: "relative" }}>
                 <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} style={selectStyle(filterRegion !== "all")} data-testid="labs-filter-region">
-                  <option value="all">All regions</option>
+                  <option value="all">{t("drams.allRegions")}</option>
                   {uniqueRegions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
                 <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
@@ -1366,10 +1363,10 @@ function FilterBottomSheet({
 
           {uniqueCaskTypes.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>Cask Type</label>
+              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.caskType")}</label>
               <div style={{ position: "relative" }}>
                 <select value={filterCaskType} onChange={(e) => setFilterCaskType(e.target.value)} style={selectStyle(filterCaskType !== "all")} data-testid="labs-filter-cask-type">
-                  <option value="all">All cask types</option>
+                  <option value="all">{t("drams.allCaskTypes")}</option>
                   {uniqueCaskTypes.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
                 <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
@@ -1381,11 +1378,11 @@ function FilterBottomSheet({
         <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--labs-border)", display: "flex", gap: 10 }}>
           {activeCount > 0 && (
             <button onClick={() => { onClear(); }} className="labs-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-clear">
-              Clear all
+              {t("drams.clearAll")}
             </button>
           )}
           <button onClick={onClose} className="labs-btn-primary" style={{ flex: activeCount > 0 ? 2 : 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-apply">
-            {activeCount > 0 ? `Done (${activeCount} active)` : "Done"}
+            {activeCount > 0 ? t("drams.doneActive", { count: activeCount }) : t("drams.done")}
           </button>
         </div>
       </div>
@@ -1412,15 +1409,16 @@ function NoteSection({ label, value }: { label: string; value: string }) {
 }
 
 function ParsedNotesSection({ raw }: { raw: string }) {
+  const { t } = useTranslation();
   const { cleanText, scores, dims } = parseNoseNotes(raw);
   const hasScores = Object.keys(scores).length > 0;
   const hasDims = Object.keys(dims).length > 0;
-  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish" };
+  const dimLabels: Record<string, string> = { nose: t("drams.nose"), taste: t("drams.taste"), finish: t("drams.finish") };
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
       {cleanText && (
         <div style={{ marginBottom: hasDims || hasScores ? 12 : 0 }}>
-          <div className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Notes</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("drams.notes")}</div>
           <div className="text-sm" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{cleanText}</div>
         </div>
       )}
@@ -1460,6 +1458,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
 }
 
 function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; transcript?: string | null; duration?: number | null }) {
+  const { t } = useTranslation();
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
@@ -1480,11 +1479,11 @@ function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; 
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--labs-border)" }}>
       <div className="text-[11px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: "var(--labs-text-muted)" }}>
-        <Mic className="w-3 h-3" /> Voice Memo {fmtDuration && <span style={{ fontWeight: 400, fontSize: 11 }}>({fmtDuration})</span>}
+        <Mic className="w-3 h-3" /> {t("drams.voiceMemo")} {fmtDuration && <span style={{ fontWeight: 400, fontSize: 11 }}>({fmtDuration})</span>}
       </div>
       {url && (
         <button type="button" onClick={togglePlay} className="inline-flex items-center gap-1.5 mb-2" style={{ padding: "6px 14px", borderRadius: 8, background: playing ? "color-mix(in srgb, var(--labs-danger) 15%, transparent)" : "var(--labs-accent-muted)", border: `1px solid ${playing ? "color-mix(in srgb, var(--labs-danger) 30%, transparent)" : "color-mix(in srgb, var(--labs-accent) 20%, transparent)"}`, color: playing ? "var(--labs-danger)" : "var(--labs-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }} data-testid="button-labs-play-voice-memo">
-          {playing ? <Pause className="w-3 h-3" /> : <PlayIcon className="w-3 h-3" />} {playing ? "Pause" : "Play"}
+          {playing ? <Pause className="w-3 h-3" /> : <PlayIcon className="w-3 h-3" />} {playing ? t("drams.pause") : t("drams.play")}
         </button>
       )}
       {transcript && (
@@ -1497,6 +1496,7 @@ function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; 
 }
 
 function HistoricalAppearances({ distillery, whiskyName }: { distillery: string; whiskyName: string }) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const session = useSession();
   const pid = session?.pid || "";
@@ -1513,19 +1513,19 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
     <div style={{ marginTop: 20 }} data-testid="labs-historical-appearances">
       <div className="flex items-center gap-2 mb-3">
         <ScrollText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-        <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-text)" }}>Historical Appearances</span>
+        <span className="labs-serif text-sm font-bold" style={{ color: "var(--labs-text)" }}>{t("drams.historicalAppearances")}</span>
       </div>
       <div className="labs-auto-grid mb-3" style={{ "--grid-min": "120px", gap: "0.5rem" } as React.CSSProperties}>
         <div className="labs-card p-2.5 text-center">
           <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>{data.count}</div>
-          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Appearances</div>
+          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.appearances")}</div>
         </div>
         {(data.avgScoreNormalized ?? data.avgScore) != null && (
           <div className="labs-card p-2.5 text-center">
             <div className="labs-h3" style={{ color: "var(--labs-accent)" }}>
               {Math.round(data.avgScoreNormalized ?? (data.avgScore ?? 0) * 10)}<span className="text-xs font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
             </div>
-            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Avg Score</div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.avgScore")}</div>
           </div>
         )}
         {data.bestPlacement && (
@@ -1534,7 +1534,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
               <Trophy className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
               <span className="labs-h3" style={{ color: "var(--labs-accent)" }}>#{data.bestPlacement.rank}</span>
             </div>
-            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Best Rank</div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("drams.bestRank")}</div>
           </div>
         )}
       </div>
@@ -1554,7 +1554,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
                   {Math.round(a.normalizedTotal ?? (a.totalScore ?? 0) * 10)}<span className="text-[11px] font-normal" style={{ color: "var(--labs-text-muted)" }}>/100</span>
                 </div>
               )}
-              {a.totalRank != null && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Rank {a.totalRank}</div>}
+              {a.totalRank != null && <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("drams.rank")} {a.totalRank}</div>}
             </div>
           </button>
         ))}
@@ -1586,15 +1586,16 @@ function EditTextarea({ label, value, onChange, testId }: { label: string; value
 }
 
 function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void; onConfirm: () => void; isPending: boolean }) {
+  const { t } = useTranslation();
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-dram">
       <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
-        <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Dram</h3>
-        <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This entry will be moved to the trash. You can restore it within 30 days.</p>
+        <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("drams.deleteDram")}</h3>
+        <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>{t("drams.deleteDesc")}</p>
         <div className="flex justify-end gap-2.5">
-          <button onClick={onCancel} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-labs-cancel-delete">Cancel</button>
+          <button onClick={onCancel} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-labs-cancel-delete">{t("drams.cancel")}</button>
           <button onClick={onConfirm} disabled={isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: isPending ? 0.6 : 1 }} data-testid="button-labs-confirm-delete">
-            {isPending ? "..." : "Delete"}
+            {isPending ? "..." : t("drams.delete")}
           </button>
         </div>
       </div>

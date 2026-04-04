@@ -64,8 +64,8 @@ export default function LabsTasteWishlist() {
     return (
       <div className="labs-page">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>Wishlist</h1>
+          <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("drams.backTaste")}</button>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }}>{t("wishlist.title")}</h1>
         </div>
         <AuthGateMessage
           icon={<Star className="w-10 h-10" style={{ color: "var(--labs-accent)" }} />}
@@ -93,15 +93,15 @@ export default function LabsTasteWishlist() {
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
-                <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> My Whisky</button>
-                <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">Wishlist</h1>
+                <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("drams.backTaste")}</button>
+                <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">{t("wishlist.title")}</h1>
               </div>
               <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">
-                <Plus className="w-4 h-4" /> Add Whisky
+                <Plus className="w-4 h-4" /> {t("wishlist.addWhisky")}
               </button>
             </div>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>
-              {entries.length > 0 ? `${entries.length} whiskies to try` : "Whiskies you want to try"}
+              {entries.length > 0 ? t("wishlist.whiskiesToTry", { count: entries.length }) : t("wishlist.whiskiesToTryEmpty")}
             </p>
 
             {isLoading ? (
@@ -109,16 +109,16 @@ export default function LabsTasteWishlist() {
             ) : isError ? (
               <div className="labs-empty" style={{ minHeight: 200 }}>
                 <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-danger)", opacity: 0.75 }} />
-                <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Failed to load wishlist</p>
-                <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>Please try again</p>
+                <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>{t("wishlist.failedToLoad")}</p>
+                <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.failedRetry")}</p>
               </div>
             ) : entries.length === 0 ? (
               <div className="labs-empty" style={{ minHeight: 200 }}>
                 <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
-                <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>No wishlist entries yet</p>
-                <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>Add whiskies you want to try</p>
+                <p className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>{t("wishlist.emptyTitle")}</p>
+                <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.emptyDesc")}</p>
                 <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-2" data-testid="button-labs-wishlist-empty-add">
-                  <Plus className="w-4 h-4" /> Add First Whisky
+                  <Plus className="w-4 h-4" /> {t("wishlist.addFirst")}
                 </button>
               </div>
             ) : (
@@ -149,7 +149,7 @@ export default function LabsTasteWishlist() {
                             <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "var(--labs-accent-muted)", border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
-                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>Why Interesting</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>{t("wishlist.whyInteresting")}</span>
                               </div>
                               <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }} data-testid={`text-labs-summary-${entry.id}`}>{entry.aiSummary}</p>
                             </div>
@@ -185,11 +185,11 @@ export default function LabsTasteWishlist() {
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, zIndex: "var(--z-overlay)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)" }} data-testid="dialog-labs-delete-wishlist">
           <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 28 }}>
-            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Entry</h3>
-            <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>Are you sure?</p>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("wishlist.deleteTitle")}</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.deleteConfirmShort")}</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px" }} data-testid="button-labs-cancel-delete">Cancel</button>
-              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-confirm-delete">Delete</button>
+              <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px" }} data-testid="button-labs-cancel-delete">{t("wishlist.cancel")}</button>
+              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-confirm-delete">{t("wishlist.deleteButton")}</button>
             </div>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function LabsTasteWishlist() {
 function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   entry: WishlistEntry | null; onBack: () => void; onSave: (data: any) => void; isSaving: boolean; participantId?: string;
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isFeatureDisabled } = useAIStatus();
   const aiScanDisabled = isFeatureDisabled("wishlist_identify");
   const [whiskyName, setWhiskyName] = useState(entry?.name || "");
@@ -263,11 +263,11 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   return (
     <div style={{ marginTop: 16 }}>
       <button onClick={onBack} className="flex items-center gap-1.5 mb-5" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 0 }} data-testid="button-labs-back-form">
-        <ChevronLeft className="w-4 h-4" /> Back
+        <ChevronLeft className="w-4 h-4" /> {t("wishlist.backLabel")}
       </button>
 
       <h2 className="labs-h3 mb-5" style={{ color: "var(--labs-text)" }} data-testid="text-labs-wishlist-form-title">
-        {entry ? "Edit Entry" : "Add Whisky"}
+        {entry ? t("wishlist.editEntry") : t("wishlist.addWhisky")}
       </h2>
 
       {!aiScanDisabled && (
@@ -275,30 +275,30 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
           <div className="flex items-center gap-3">
             <label htmlFor="wishlist-scan-input" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "var(--labs-accent)", fontSize: 13, fontWeight: 600 }}>
               {scanning ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Camera className="w-4 h-4" />}
-              {scanning ? "Scanning..." : "Scan Label"}
+              {scanning ? t("wishlist.scanning") : t("wishlist.scanLabel")}
             </label>
             <input id="wishlist-scan-input" type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleScan(f); e.target.value = ""; }} data-testid="input-labs-wishlist-scan" />
-            <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Take a photo to auto-fill details</span>
+            <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.scanHintShort")}</span>
           </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Whisky Name *</label>
-          <input value={whiskyName} onChange={(e) => setWhiskyName(e.target.value)} placeholder="e.g. Lagavulin 16" style={inputStyle} required data-testid="input-labs-whisky-name" />
+          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.whiskyName")} *</label>
+          <input value={whiskyName} onChange={(e) => setWhiskyName(e.target.value)} placeholder={t("wishlist.whiskyNamePlaceholder")} style={inputStyle} required data-testid="input-labs-whisky-name" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Distillery</label><input value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-labs-distillery" /></div>
-          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Region</label><input value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle} data-testid="input-labs-region" /></div>
+          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.distillery")}</label><input value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-labs-distillery" /></div>
+          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.region")}</label><input value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle} data-testid="input-labs-region" /></div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Age</label><input value={age} onChange={(e) => setAge(e.target.value)} style={inputStyle} data-testid="input-labs-age" /></div>
-          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>ABV</label><input value={abv} onChange={(e) => setAbv(e.target.value)} style={inputStyle} data-testid="input-labs-abv" /></div>
-          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Cask</label><input value={caskType} onChange={(e) => setCaskType(e.target.value)} style={inputStyle} data-testid="input-labs-cask" /></div>
+          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.age")}</label><input value={age} onChange={(e) => setAge(e.target.value)} style={inputStyle} data-testid="input-labs-age" /></div>
+          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.abv")}</label><input value={abv} onChange={(e) => setAbv(e.target.value)} style={inputStyle} data-testid="input-labs-abv" /></div>
+          <div><label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.cask")}</label><input value={caskType} onChange={(e) => setCaskType(e.target.value)} style={inputStyle} data-testid="input-labs-cask" /></div>
         </div>
         <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Priority</label>
+          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.priority")}</label>
           <div className="flex gap-2">
             {(["high", "medium", "low"] as const).map(p => {
               const pc = PRIORITY_COLORS[p];
@@ -308,30 +308,30 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
                 <button key={p} type="button" onClick={() => setPriority(p)}
                   style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: active ? `2px solid ${pc.border}` : "1px solid var(--labs-border)", background: active ? pc.bg : "transparent", color: active ? pc.text : "var(--labs-text-muted)", fontSize: 12, fontWeight: active ? 600 : 400, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
                   data-testid={`button-labs-priority-${p}`}>
-                  <PI style={{ width: 12, height: 12 }} /> {p.charAt(0).toUpperCase() + p.slice(1)}
+                  <PI style={{ width: 12, height: 12 }} /> {t(`wishlist.priority${p.charAt(0).toUpperCase() + p.slice(1)}Label`)}
                 </button>
               );
             })}
           </div>
         </div>
         <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Notes</label>
+          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.notes")}</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} data-testid="input-labs-notes" />
         </div>
         <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>Source</label>
-          <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Where did you hear about this?" style={inputStyle} data-testid="input-labs-source" />
+          <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("wishlist.source")}</label>
+          <input value={source} onChange={(e) => setSource(e.target.value)} placeholder={t("wishlist.sourcePlaceholder")} style={inputStyle} data-testid="input-labs-source" />
         </div>
 
         {whiskyName && !aiSummary && !generatingSummary && (
           <button type="button" onClick={() => generateSummary({ name: whiskyName, distillery, region, age, abv, caskType })} className="labs-btn-secondary flex items-center gap-2 self-start" style={{ fontSize: 12 }} data-testid="button-labs-generate-summary">
-            <Sparkles className="w-3.5 h-3.5" /> Generate AI Summary
+            <Sparkles className="w-3.5 h-3.5" /> {t("wishlist.generateSummary")}
           </button>
         )}
 
         {generatingSummary && (
           <div className="flex items-center gap-2 text-xs" style={{ color: "var(--labs-accent)" }}>
-            <Loader2 className="w-3.5 h-3.5" style={{ animation: "spin 1s linear infinite" }} /> Generating summary...
+            <Loader2 className="w-3.5 h-3.5" style={{ animation: "spin 1s linear infinite" }} /> {t("wishlist.generatingText")}
           </div>
         )}
 
@@ -339,7 +339,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
           <div className="labs-card p-3" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>AI Summary</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>{t("wishlist.aiSummaryLabel")}</span>
             </div>
             <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>{aiSummary}</p>
           </div>
@@ -347,7 +347,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
 
         <button type="submit" disabled={isSaving || !whiskyName.trim()} className="labs-btn-primary w-full flex items-center justify-center gap-2 mt-2" style={{ opacity: isSaving || !whiskyName.trim() ? 0.5 : 1 }} data-testid="button-labs-save-wishlist">
           {isSaving ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} /> : <Send className="w-4 h-4" />}
-          {isSaving ? "Saving..." : (entry ? "Update" : "Add to Wishlist")}
+          {isSaving ? t("wishlist.savingText") : (entry ? t("wishlist.update") : t("wishlist.addToWishlist"))}
         </button>
       </form>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
