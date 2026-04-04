@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Vor Sprachanpassung" (11.04.2026)
+Nav-Restructure abgeschlossen: Pairings + Benchmark von Meine Welt nach Entdecken verschoben, CommunityInsights von Entdecken nach Circle verschoben, BackLinks auf Root-Tabs entfernt, isActive-States fuer alle Routen korrigiert. Production deployed.
+
 ## Stable Milestone: "Feinschliff" (04.04.2026)
 Feinheiten-Session: Tasks #540-#542 gemerged und deployed. Solo-Rating Speicher-Flow repariert (Draft-Save bleibt im Flow, POST/PATCH-Logik), Rating-Flow Auto-Scroll zu gewaehltem Abschnitt, Finalize-Button erst nach Overall-Bewertung. Alle Flows durchgetestet und stabil. Production live auf casksense.com.
 
