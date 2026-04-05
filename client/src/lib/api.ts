@@ -1,6 +1,7 @@
 import { queryClient } from "./queryClient";
+import { apiUrl } from "./native";
 
-const API_BASE = "/api";
+const API_BASE = apiUrl("/api");
 
 export function getParticipantId(): string | null {
   try {

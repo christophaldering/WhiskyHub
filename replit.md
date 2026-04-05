@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "iOS Capacitor API Fix" (05.04.2026)
+iOS-App konnte nicht einloggen weil API-Calls relativ (`/api/...`) waren und im Capacitor-WebView ins Leere liefen. Fix: `client/src/lib/native.ts` mit Plattform-Detection (`@capacitor/core`), globalem Fetch-Interceptor (leitet `/api/...` auf `https://casksense.com/api/...` um wenn nativ), und `apiUrl()` Helper. CORS-Middleware in `server/index.ts` fuer Capacitor-Origins (`capacitor://localhost`, `ionic://localhost`, `http(s)://localhost:*`). Browser bleibt unveraendert (relative Pfade). Auth ist Header-basiert (`x-participant-id`), keine Cookie/Session-Probleme.
+
 ## Checkpoint: "Balance-Dimension entfernt" (04.04.2026)
 Task #564: Balance-Spalte aus `ratings`-Tabelle in `shared/schema.ts` entfernt. DB-Migration ausgefuehrt. Bewertungsdimensionen jetzt nur noch Nose/Taste/Finish/Overall. Alle Doku-Dateien (replit.md, CaskSense-Projektstand.md, docs/CASKSENSE_DOCUMENTATION.md, docs/v2-notes.md, EXPORT_AUDIT.md, SYSTEM_STATUS.md) aktualisiert. Backward-kompatible Regex-Parser in LabsTasteDrams.tsx bleiben fuer alte Daten erhalten.
 
