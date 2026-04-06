@@ -696,7 +696,9 @@ export default function LabsCircle() {
               data-testid="labs-circle-input-lastname"
             />
             <input
-              type="email"
+              type="text"
+              inputMode="email"
+              autoComplete="email"
               placeholder={t("m2.circle.emailPlaceholder")}
               value={friendEmail}
               onChange={(e) => setFriendEmail(e.target.value)}

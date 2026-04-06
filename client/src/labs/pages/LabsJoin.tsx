@@ -395,7 +395,9 @@ export default function LabsJoin() {
             </label>
             <input
               className="labs-input"
-              type="email"
+              type="text"
+              inputMode="email"
+              autoComplete="email"
               placeholder="your@email.com"
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}

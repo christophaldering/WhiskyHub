@@ -376,7 +376,9 @@ export default function LabsCommunityDetail() {
               {inviteTab === "email" && (
                 <div className="space-y-3">
                   <input
-                    type="email"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="email"
                     className="labs-input w-full"
                     placeholder={t("m2.community.emailPlaceholder")}
                     value={inviteEmail}

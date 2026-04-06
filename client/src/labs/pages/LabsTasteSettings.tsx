@@ -220,10 +220,10 @@ export default function LabsTasteSettings() {
       <div className="labs-card p-5">
         <SectionHeading icon={Shield} label="Account" />
         <div className="flex flex-col gap-3.5 mt-3">
-          <Field label="Email"><input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setConfirmEmail(""); }} placeholder="your@email.com" style={inputStyle} data-testid="input-labs-email" /></Field>
+          <Field label="Email"><input type="text" inputMode="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setConfirmEmail(""); }} placeholder="your@email.com" style={inputStyle} data-testid="input-labs-email" /></Field>
           {emailChanged && (
             <Field label="Confirm Email">
-              <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} placeholder="Repeat new email" style={{ ...inputStyle, borderColor: confirmEmail && confirmEmail !== email ? "var(--labs-danger)" : undefined }} data-testid="input-labs-confirm-email" />
+              <input type="text" inputMode="email" autoComplete="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} placeholder="Repeat new email" style={{ ...inputStyle, borderColor: confirmEmail && confirmEmail !== email ? "var(--labs-danger)" : undefined }} data-testid="input-labs-confirm-email" />
               {confirmEmail && confirmEmail !== email && <p className="text-xs mt-1" style={{ color: "var(--labs-danger)" }}>Emails don't match</p>}
             </Field>
           )}

@@ -517,7 +517,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 <div className="space-y-2">
                   <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
                   <Input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     placeholder={t('login.emailPlaceholder')}
@@ -677,7 +678,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           <div className="space-y-2">
             <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
             <Input
-              type="email"
+              type="text"
+              inputMode="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('login.emailPlaceholder')}

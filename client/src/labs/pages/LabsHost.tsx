@@ -5418,7 +5418,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
               <div className="flex gap-2">
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
+                  autoComplete="email"
                   value={emailInput}
                   onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
