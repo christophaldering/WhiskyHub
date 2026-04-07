@@ -41,7 +41,7 @@ const fr = {
       email: "E-mail",
       emailPlaceholder: "votre@email.fr",
       pin: "PIN",
-      pinPlaceholder: "PIN à 4–6 chiffres",
+      pinPlaceholder: "Mot de passe (min. 4 caractères)",
       pinHint: "Choisissez un PIN pour protéger votre profil",
       newsletterOptIn: "Me tenir informé des nouvelles fonctionnalités et améliorations",
       newsletterHint: "Nous envoyons occasionnellement des mises à jour sur CaskSense — pas de spam, désabonnement possible à tout moment.",

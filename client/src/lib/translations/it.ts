@@ -41,7 +41,7 @@ const it = {
       email: "Email",
       emailPlaceholder: "tua@email.com",
       pin: "PIN",
-      pinPlaceholder: "PIN di 4–6 cifre",
+      pinPlaceholder: "Password (min. 4 caratteri)",
       pinHint: "Scegli un PIN per proteggere il tuo profilo",
       newsletterOptIn: "Tienimi aggiornato su nuove funzionalità e miglioramenti",
       newsletterHint: "Invieremo aggiornamenti occasionali su CaskSense — niente spam, puoi annullare l'iscrizione in qualsiasi momento.",

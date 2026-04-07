@@ -130,7 +130,7 @@ export default function LabsTasteSettings() {
       if (newsletterOptIn !== (participant?.newsletterOptIn || false)) participantUpdates.newsletterOptIn = newsletterOptIn;
       if (preferredRatingScale !== (participant?.preferredRatingScale ?? null)) participantUpdates.preferredRatingScale = preferredRatingScale;
       if (newPin) {
-        if (newPin.length < 4) throw new Error("PIN must be at least 4 characters");
+        if (newPin.length < 4 || newPin.length > 64) throw new Error("Password must be 4–64 characters");
         if (newPin !== confirmPin) throw new Error("PINs don't match");
         if (!currentPin) throw new Error("Current PIN required");
         participantUpdates.currentPin = currentPin; participantUpdates.pin = newPin;
@@ -230,9 +230,9 @@ export default function LabsTasteSettings() {
           <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
             <p className="text-sm font-semibold mb-2.5" style={{ color: "var(--labs-text)" }}>Change PIN</p>
             <div className="flex flex-col gap-2.5">
-              <Field label="Current PIN"><input type="password" value={currentPin} onChange={(e) => setCurrentPin(e.target.value)} maxLength={6} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-labs-current-pin" /></Field>
-              <Field label="New PIN"><input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)} maxLength={6} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-labs-new-pin" /></Field>
-              <Field label="Confirm PIN"><input type="password" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)} maxLength={6} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-labs-confirm-pin" /></Field>
+              <Field label="Current PIN"><input type="password" value={currentPin} onChange={(e) => setCurrentPin(e.target.value)} maxLength={64} style={{ ...inputStyle, letterSpacing: 1 }} data-testid="input-labs-current-pin" /></Field>
+              <Field label="New PIN"><input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)} maxLength={64} style={{ ...inputStyle, letterSpacing: 1 }} data-testid="input-labs-new-pin" /></Field>
+              <Field label="Confirm PIN"><input type="password" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)} maxLength={64} style={{ ...inputStyle, letterSpacing: 1 }} data-testid="input-labs-confirm-pin" /></Field>
             </div>
             {newPin && confirmPin && newPin !== confirmPin && <p className="text-xs mt-2" style={{ color: "var(--labs-danger)" }} data-testid="text-labs-pin-mismatch">PINs don't match</p>}
           </div>
@@ -430,7 +430,7 @@ export default function LabsTasteSettings() {
             ) : (
               <div className="flex flex-col gap-2">
                 <p className="text-xs" style={{ color: "var(--labs-danger)" }}>{t("m2.taste.settings.deleteAccountPinPrompt")}</p>
-                <input type="password" value={deletePin} onChange={(e) => { setDeletePin(e.target.value); setDeletePinError(""); }} maxLength={6} style={{ ...inputStyle, letterSpacing: 3, maxWidth: 200, borderColor: deletePinError ? "var(--labs-danger)" : undefined }} data-testid="input-labs-delete-pin" />
+                <input type="password" value={deletePin} onChange={(e) => { setDeletePin(e.target.value); setDeletePinError(""); }} maxLength={64} style={{ ...inputStyle, letterSpacing: 1, maxWidth: 280, borderColor: deletePinError ? "var(--labs-danger)" : undefined }} data-testid="input-labs-delete-pin" />
                 {deletePinError && <p className="text-xs" style={{ color: "var(--labs-danger)" }}>{deletePinError}</p>}
                 <div className="flex gap-2">
                   <button onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>{t("m2.taste.settings.deleteAccountCancel")}</button>

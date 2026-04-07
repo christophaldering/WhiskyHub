@@ -41,7 +41,7 @@ const zh = {
       email: "电子邮件",
       emailPlaceholder: "your@email.com",
       pin: "PIN",
-      pinPlaceholder: "4–6 位 PIN",
+      pinPlaceholder: "密码（至少4位）",
       pinHint: "选择一个 PIN 来保护您的档案",
       newsletterOptIn: "接收新功能和改进的更新通知",
       newsletterHint: "我们会不定期发送 CaskSense 的更新——绝不发垃圾邮件，随时可退订。",

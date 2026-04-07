@@ -41,7 +41,7 @@ const nl = {
       email: "E-mail",
       emailPlaceholder: "jouw@email.nl",
       pin: "PIN",
-      pinPlaceholder: "4–6 cijferige PIN",
+      pinPlaceholder: "Wachtwoord (min. 4 tekens)",
       pinHint: "Kies een PIN om je profiel te beveiligen",
       newsletterOptIn: "Houd me op de hoogte van nieuwe functies en verbeteringen",
       newsletterHint: "We sturen af en toe updates over CaskSense — geen spam, altijd opzegbaar.",

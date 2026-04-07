@@ -57,7 +57,7 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string, co
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder={t("guestAuth.pinPlaceholder")}
-              maxLength={6}
+              maxLength={64}
               className="text-center text-lg h-12 font-serif"
               onKeyDown={(e) => e.key === "Enter" && canSubmit && onJoin(name.trim(), pin, quickPrivacy)}
               data-testid="input-quick-pin"

@@ -1201,7 +1201,7 @@ export default function NakedTasting() {
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
                       placeholder={t("guestAuth.pinPlaceholder")}
-                      maxLength={6}
+                      maxLength={64}
                       className="text-center h-12 font-serif text-base bg-secondary/20 border-border/30"
                       onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                       data-testid="input-naked-pin"

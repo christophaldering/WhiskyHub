@@ -571,7 +571,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                       value={newPin}
                       onChange={(e) => setNewPin(e.target.value)}
                       placeholder={t('forgotPin.newPinPlaceholder')}
-                      maxLength={6}
+                      maxLength={64}
                       className="bg-secondary/20 pr-10 password-input"
                       data-testid="input-new-pin"
                       onKeyDown={(e) => e.key === "Enter" && handleForgotPinVerify()}
@@ -722,7 +722,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder={t('login.pinPlaceholder')}
-                maxLength={6}
+                maxLength={64}
                 className="bg-secondary/20 pr-10 password-input"
                 data-testid="input-pin"
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}

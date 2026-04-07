@@ -617,6 +617,9 @@ export async function registerRoutes(
   app.post("/api/participants", async (req, res) => {
     try {
       const data = insertParticipantSchema.parse(req.body);
+      if (data.pin && (data.pin.length < 4 || data.pin.length > 64)) {
+        return res.status(400).json({ message: "Password must be 4–64 characters" });
+      }
       const privacyConsent = req.body.privacyConsent === true;
       const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
 
@@ -846,8 +849,8 @@ export async function registerRoutes(
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
       }
-      if (!pin || typeof pin !== "string" || pin.trim().length < 4) {
-        return res.status(400).json({ message: "PIN is required (min. 4 digits)" });
+      if (!pin || typeof pin !== "string" || pin.trim().length < 4 || pin.trim().length > 64) {
+        return res.status(400).json({ message: "Password must be 4–64 characters" });
       }
       const existing = await storage.getParticipantByName(name.trim());
       if (existing) {
@@ -919,8 +922,8 @@ export async function registerRoutes(
   app.patch("/api/participants/:id/pin", async (req, res) => {
     try {
       const { currentPin, newPin } = req.body;
-      if (!newPin || typeof newPin !== "string" || newPin.length < 4) {
-        return res.status(400).json({ message: "New PIN must be at least 4 digits" });
+      if (!newPin || typeof newPin !== "string" || newPin.length < 4 || newPin.length > 64) {
+        return res.status(400).json({ message: "Password must be 4–64 characters" });
       }
       const participant = await storage.getParticipant(req.params.id);
       if (!participant) return res.status(404).json({ message: "Not found" });
@@ -1216,8 +1219,8 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Secure window has expired. Please sign in normally." });
       }
       const { pin, email } = req.body;
-      if (!pin || typeof pin !== "string" || pin.length < 4) {
-        return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      if (!pin || typeof pin !== "string" || pin.length < 4 || pin.length > 64) {
+        return res.status(400).json({ message: "Password must be 4–64 characters" });
       }
       const bcrypt = await import("bcrypt");
       const hashedPin = await bcrypt.hash(pin, 10);
@@ -1406,7 +1409,7 @@ export async function registerRoutes(
     try {
       const { participantId, code, newPin } = req.body;
       if (!participantId || !code || !newPin) return res.status(400).json({ message: "All fields are required" });
-      if (newPin.length < 4) return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      if (newPin.length < 4 || newPin.length > 64) return res.status(400).json({ message: "Password must be 4–64 characters" });
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Not found" });
       if (!participant.verificationCode || participant.verificationCode !== code) {
@@ -3589,8 +3592,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       if (req.body.pin !== undefined) {
-        if (!req.body.pin || req.body.pin.length < 4) {
-          return res.status(400).json({ message: "PIN must be at least 4 characters" });
+        if (!req.body.pin || req.body.pin.length < 4 || req.body.pin.length > 64) {
+          return res.status(400).json({ message: "Password must be 4–64 characters" });
         }
         const existing = await storage.getParticipant(req.params.id);
         if (!existing) return res.status(404).json({ message: "Not found" });
