@@ -12,6 +12,8 @@ import {
   X, ChevronDown, Check, ArrowUp, ArrowDown,
 } from "lucide-react";
 
+const BUILD_STAMP = "EXPLORE-DIAG-2026-04-07-v1";
+
 type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
 
 const ENTDECKEN_FILTER_DIMENSIONS: { key: EntdeckenFilterDimension; labelKey: string; fallback: string }[] = [
@@ -27,6 +29,7 @@ export default function LabsEntdecken() {
   const [, navigate] = useLocation();
   const { currentParticipant } = useSession();
   const pid = currentParticipant?.id;
+  const [diag, setDiag] = useState<any>(null);
 
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
@@ -64,19 +67,60 @@ export default function LabsEntdecken() {
     queryKey: ["discovery-whiskies", search, sort, pid],
     queryFn: async () => {
       const url = apiUrl(`/api/labs/explore/whiskies?search=${encodeURIComponent(search)}&sort=${encodeURIComponent(sort)}`);
-      const res = await fetch(url, {
-        headers: { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) },
-      });
-      if (!res.ok) {
-        console.error("LabsEntdecken whiskies fetch failed", {
+
+      try {
+        const res = await fetch(url, {
+          headers: { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) },
+        });
+
+        const text = await res.text();
+
+        setDiag({
+          build: BUILD_STAMP,
+          native: isNativePlatform(),
+          origin: typeof window !== "undefined" ? window.location.origin : "no-window",
+          url,
           status: res.status,
-          statusText: res.statusText,
+          ok: res.ok,
+          pidPresent: !!pid,
+          preview: text.slice(0, 300),
+          at: new Date().toISOString(),
+        });
+
+        if (!res.ok) {
+          console.error("LabsEntdecken whiskies fetch failed", {
+            status: res.status,
+            statusText: res.statusText,
+            url,
+            native: isNativePlatform(),
+            bodyPreview: text.slice(0, 300),
+          });
+          return [];
+        }
+
+        const json = JSON.parse(text);
+        return Array.isArray(json) ? json : [];
+      } catch (error: any) {
+        setDiag({
+          build: BUILD_STAMP,
+          native: isNativePlatform(),
+          origin: typeof window !== "undefined" ? window.location.origin : "no-window",
+          url,
+          status: "FETCH_THROW",
+          ok: false,
+          pidPresent: !!pid,
+          preview: String(error?.message || error),
+          at: new Date().toISOString(),
+        });
+
+        console.error("LabsEntdecken whiskies fetch exception", {
           url,
           native: isNativePlatform(),
+          error,
         });
+
         return [];
       }
-      return res.json();
     },
   });
 
@@ -186,30 +230,30 @@ export default function LabsEntdecken() {
     dragCurrentY.current = dy;
     if (dy > 0 && filterPanelRef.current) {
       filterPanelRef.current.style.transform = `translateY(${dy}px)`;
-      filterPanelRef.current.style.transition = 'none';
+      filterPanelRef.current.style.transition = "none";
     }
   }, []);
   const handleSheetTouchEnd = useCallback(() => {
     if (dragStartY.current === null) return;
     const dy = dragCurrentY.current;
     if (filterPanelRef.current) {
-      filterPanelRef.current.style.transition = 'transform 200ms ease';
+      filterPanelRef.current.style.transition = "transform 200ms ease";
       if (dy > 100) {
-        filterPanelRef.current.style.transform = 'translateY(100%)';
+        filterPanelRef.current.style.transform = "translateY(100%)";
         setTimeout(() => {
           setExpandedFilter(null);
           setFilterSearch("");
           if (filterPanelRef.current) {
-            filterPanelRef.current.style.transform = '';
-            filterPanelRef.current.style.transition = '';
+            filterPanelRef.current.style.transform = "";
+            filterPanelRef.current.style.transition = "";
           }
         }, 200);
       } else {
-        filterPanelRef.current.style.transform = 'translateY(0)';
+        filterPanelRef.current.style.transform = "translateY(0)";
         setTimeout(() => {
           if (filterPanelRef.current) {
-            filterPanelRef.current.style.transform = '';
-            filterPanelRef.current.style.transition = '';
+            filterPanelRef.current.style.transform = "";
+            filterPanelRef.current.style.transition = "";
           }
         }, 200);
       }
@@ -274,6 +318,24 @@ export default function LabsEntdecken() {
 
   return (
     <div className="labs-page" data-testid="labs-entdecken-page">
+      {diag && (
+        <div
+          style={{
+            padding: 12,
+            margin: "0 0 16px 0",
+            border: "1px solid #555",
+            borderRadius: 8,
+            fontSize: 12,
+            lineHeight: 1.4,
+            whiteSpace: "pre-wrap",
+            background: "#111",
+            color: "#eee",
+          }}
+        >
+          {JSON.stringify(diag, null, 2)}
+        </div>
+      )}
+
       <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
         {t("explore.title", "Explore")}
       </h1>
@@ -678,7 +740,7 @@ export default function LabsEntdecken() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || "—"}</div>
-                  <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` \u00b7 ${w.region}` : ""}</div>
+                  <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` · ${w.region}` : ""}</div>
                   {w.tastingCount > 0 && (
                     <div style={{ fontSize: 11, color: "var(--labs-phase-palate)", marginTop: 2 }}>
                       {t("discover.crossLinkTastings", "Tastings")}: {w.tastingCount}
@@ -707,6 +769,7 @@ export default function LabsEntdecken() {
               </button>
             );
           })}
+
           {whiskies.length === 0 && (
             <div style={{ textAlign: "center", padding: 32, color: "var(--labs-text-muted)", fontSize: 14 }}>
               {(search || activeFilterCount > 0) ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
