@@ -257,7 +257,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetCode.trim() || !resetNewPw.trim()) return;
-    if (resetNewPw.trim().length < 4) { setSiError(t("sessionSheet.pwMinLength")); return; }
+    if (resetNewPw.trim().length < 4 || resetNewPw.trim().length > 64) { setSiError(t("sessionSheet.pwMinLength")); return; }
     setSiLoading(true);
     setSiError("");
     try {
@@ -340,7 +340,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         setEditMsg(t("sessionSheet.emailUpdated"));
       } else if (section === "password") {
         if (!editCurPw.trim() || !editNewPw.trim()) { setEditMsg(t("sessionSheet.fillBothFields")); setEditLoading(false); return; }
-        if (editNewPw.trim().length < 4) { setEditMsg(t("sessionSheet.newPwMinLength")); setEditLoading(false); return; }
+        if (editNewPw.trim().length < 4 || editNewPw.trim().length > 64) { setEditMsg(t("sessionSheet.newPwMinLength")); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}/pin`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "x-participant-id": pid },

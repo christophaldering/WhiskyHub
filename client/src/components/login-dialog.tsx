@@ -260,7 +260,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       setResetError(t('forgotPin.codeAndPinRequired'));
       return;
     }
-    if (newPin.length < 4) {
+    if (newPin.length < 4 || newPin.length > 64) {
       setResetError(t('forgotPin.pinTooShort'));
       return;
     }

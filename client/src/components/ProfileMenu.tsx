@@ -221,7 +221,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       setError(t("m2.register.pinMismatch", "Passwords do not match"));
       return;
     }
-    if (regPin.length < 4) {
+    if (regPin.length < 4 || regPin.length > 64) {
       setError(t("m2.register.pinTooShort", "Password must be at least 4 characters"));
       return;
     }
@@ -344,7 +344,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       setError(t("m2.resetPin.allFieldsRequired", "All fields are required"));
       return;
     }
-    if (resetNewPin.length < 4) {
+    if (resetNewPin.length < 4 || resetNewPin.length > 64) {
       setError(t("m2.resetPin.pinTooShort", "Password must be at least 4 characters"));
       return;
     }
