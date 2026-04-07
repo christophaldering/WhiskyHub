@@ -1,0 +1,59 @@
+Technische Arbeitsanweisung
+Prüfauftrag: Alte persönliche Drams nach Passwort-Reset/Login scheinbar verschwunden
+Ausgangslage
+Christoph konnte sich mit dem alten Passwort nicht mehr einloggen, hat daraufhin das Passwort neu vergeben und kommt jetzt wieder in die App.
+Seitdem zeigt „Meine Welt“ aber nur noch 1 Dram, obwohl zuvor deutlich mehr persönliche Einträge vorhanden waren.
+Arbeitsdiagnose
+Die wahrscheinlichste Ursache ist kein echter Datenverlust, sondern eine falsche Zuordnung zwischen aktuellem Login-User und historischer Participant-ID.
+Es soll geprüft werden, ob nach Passwort-Reset / erneutem Login eine andere interne Identität aktiv ist als diejenige, unter der die früheren Drams gespeichert wurden.
+Bitte konkret prüfen
+1. Aktuelle Identität / Session
+Bitte feststellen:
+mit welcher E-Mail-Adresse Christoph aktuell eingeloggt ist
+welche User-ID diesem Login aktuell zugeordnet ist
+welche Participant-ID (currentParticipant.id) aktuell aktiv ist
+Ziel:
+Feststellen, welche technische Identität „Meine Welt“ aktuell verwendet.
+2. Historische persönliche Daten suchen
+Bitte prüfen, an welcher Identität Christophs frühere persönliche Daten hängen, insbesondere:
+Drams
+Ratings
+Solo-Einträge
+Journal-/Taste-Daten
+sonstige persönliche „Meine Welt“-Daten
+Bitte dabei insbesondere prüfen:
+ob es mehrere User-Datensätze mit Bezug zu Christoph gibt
+ob es mehrere Participant-Datensätze mit Bezug zu Christoph gibt
+an welcher Participant-ID die früheren Drams hängen
+ob der aktuelle Login nur auf einen neueren/anderen Datensatz mit 1 Dram zeigt
+Ziel:
+Feststellen, ob die alten Daten noch vorhanden sind, aber an einer anderen participantId hängen.
+3. Mapping / Zuordnung analysieren
+Bitte prüfen, ob beim Passwort-Reset oder erneuten Login:
+eine neue User-/Participant-Zuordnung entstanden ist
+ein neuer Participant erzeugt wurde
+die Verknüpfung zum alten historischen Participant verloren ging
+oder ob Auth-User und Participant generell nicht mehr konsistent gemappt sind
+Ziel:
+Die eigentliche Ursache des Identitätsbruchs finden.
+Erwartetes wahrscheinlichstes Ergebnis
+Am wahrscheinlichsten ist folgendes Bild:
+aktueller Login funktioniert
+aktueller Login zeigt auf Participant A
+frühere persönliche Drams liegen aber auf Participant B
+deshalb zeigt „Meine Welt“ aktuell nur 1 Dram statt des früheren Bestands
+Falls sich das bestätigt
+Dann bitte Rückmeldung, welche der folgenden Korrekturen am saubersten ist:
+Variante A
+Aktuellen Login wieder auf die alte korrekte Participant-ID umhängen
+Variante B
+Historische persönliche Daten von der alten Participant-ID auf die aktuelle migrieren
+Variante C
+Dubletten bereinigen, falls versehentlich zwei Identitäten für dieselbe Person entstanden sind
+Rückmeldung bitte in dieser Struktur
+aktuelle E-Mail / User-ID / Participant-ID
+alte relevante Participant-ID mit historischem Datenbestand
+Befund: Daten weg oder nur falsch zugeordnet
+empfohlene Korrekturvariante
+Kurzform in einem Satz
+Bitte prüfen, ob Christoph nach Passwort-Reset zwar wieder eingeloggt ist, aber auf einer anderen Participant-ID landet als derjenigen, unter der seine früheren persönlichen Drams gespeichert wurden.
