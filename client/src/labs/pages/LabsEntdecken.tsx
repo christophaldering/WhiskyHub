@@ -5,6 +5,7 @@ import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
+import { apiUrl, isNativePlatform } from "@/lib/native";
 import {
   Search, ChevronRight, Wine,
   BookOpen,
@@ -62,8 +63,19 @@ export default function LabsEntdecken() {
   const { data: whiskiesRaw = [] } = useQuery({
     queryKey: ["discovery-whiskies", search, sort, pid],
     queryFn: async () => {
-      const res = await fetch(`/api/labs/explore/whiskies?search=${search}&sort=${sort}`, { headers: { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) } });
-      if (!res.ok) return [];
+      const url = apiUrl(`/api/labs/explore/whiskies?search=${encodeURIComponent(search)}&sort=${encodeURIComponent(sort)}`);
+      const res = await fetch(url, {
+        headers: { ...pidHeaders(), ...(pid ? { "x-participant-id": pid } : {}) },
+      });
+      if (!res.ok) {
+        console.error("LabsEntdecken whiskies fetch failed", {
+          status: res.status,
+          statusText: res.statusText,
+          url,
+          native: isNativePlatform(),
+        });
+        return [];
+      }
       return res.json();
     },
   });
