@@ -7006,8 +7006,17 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   app.delete("/api/journal/:participantId/:id/permanent", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;
-      if (!requesterId || requesterId !== req.params.participantId) {
+      if (!requesterId) {
         return res.status(403).json({ message: "Forbidden" });
+      }
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Only admins can permanently delete entries" });
+      }
+      const entry = await storage.getJournalEntryById(req.params.id);
+      if (entry) {
+        console.log(`[DATA_GUARD] Permanent delete: journal entry ${entry.id} (name="${entry.name}", participant=${entry.participantId}) by admin ${requesterId}`);
+        await storage.logDataAudit("permanent_delete", "journal_entries", entry.id, requesterId, { name: entry.name, participantId: entry.participantId });
       }
       await storage.permanentlyDeleteJournalEntry(req.params.id, req.params.participantId);
       res.status(204).end();

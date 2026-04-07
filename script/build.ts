@@ -47,6 +47,30 @@ async function preBuildMigrations() {
   const pgMod = await import("pg");
   const pool = new pgMod.default.Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
   try {
+    const criticalTables = ["participants", "journal_entries", "ratings", "tastings", "historical_tastings", "wishlist_entries", "profiles"];
+    const counts: Record<string, number> = {};
+    for (const table of criticalTables) {
+      try {
+        const { rows } = await pool.query(`SELECT count(*)::int as cnt FROM ${table}`);
+        counts[table] = rows[0]?.cnt ?? 0;
+      } catch { counts[table] = -1; }
+    }
+    console.log("pre-build: row counts before migration:", JSON.stringify(counts));
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS _data_guard_snapshots (
+        id serial PRIMARY KEY,
+        snapshot_time timestamptz NOT NULL DEFAULT now(),
+        table_counts jsonb NOT NULL,
+        build_sha text
+      )
+    `);
+    const gitSha = (() => { try { const { execSync: ex } = require("child_process"); return ex("git rev-parse --short HEAD", { encoding: "utf-8" }).trim(); } catch { return "unknown"; } })();
+    await pool.query(
+      `INSERT INTO _data_guard_snapshots (table_counts, build_sha) VALUES ($1, $2)`,
+      [JSON.stringify(counts), gitSha]
+    );
+    console.log("pre-build: data guard snapshot saved");
     const renames: Array<{ table: string; from: string; to: string }> = [
       { table: "journal_entries", from: "whisky_name", to: "name" },
       { table: "benchmark_entries", from: "whisky_name", to: "name" },

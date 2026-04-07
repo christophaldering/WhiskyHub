@@ -234,6 +234,8 @@ export interface IStorage {
   restoreJournalEntryById(id: string): Promise<void>;
   purgeExpiredJournalEntries(olderThanDays: number): Promise<number>;
 
+  logDataAudit(action: string, tableName: string, recordId: string, performedBy: string, details?: Record<string, any>): Promise<void>;
+
   updateParticipantIndices(participantId: string): Promise<void>;
 
   // Participant Stats (for badges)
@@ -1220,7 +1222,34 @@ export class DatabaseStorage implements IStorage {
   async purgeExpiredJournalEntries(olderThanDays: number): Promise<number> {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
     const deleted = await db.delete(journalEntries).where(and(isNotNull(journalEntries.deletedAt), lt(journalEntries.deletedAt, cutoff))).returning();
+    if (deleted.length > 0) {
+      for (const entry of deleted) {
+        console.log(`[DATA_GUARD] Auto-purged expired journal entry: id=${entry.id} name="${entry.name}" participant=${entry.participantId} deletedAt=${entry.deletedAt}`);
+      }
+    }
     return deleted.length;
+  }
+
+  async logDataAudit(action: string, tableName: string, recordId: string, performedBy: string, details?: Record<string, any>): Promise<void> {
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS _data_audit_log (
+          id serial PRIMARY KEY,
+          action text NOT NULL,
+          table_name text NOT NULL,
+          record_id text NOT NULL,
+          performed_by text NOT NULL,
+          details jsonb,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      await db.execute(sql`
+        INSERT INTO _data_audit_log (action, table_name, record_id, performed_by, details)
+        VALUES (${action}, ${tableName}, ${recordId}, ${performedBy}, ${JSON.stringify(details || {})}::jsonb)
+      `);
+    } catch (e: any) {
+      console.error(`[DATA_GUARD] Failed to write audit log: ${e.message}`);
+    }
   }
 
   async getParticipantStats(participantId: string): Promise<{

@@ -548,6 +548,48 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     (async () => {
       try {
         const { db } = await import("./db");
+        const { sql: rawSql } = await import("drizzle-orm");
+        const criticalTables = ["participants", "journal_entries", "ratings", "tastings", "historical_tastings", "wishlist_entries", "profiles"];
+        const currentCounts: Record<string, number> = {};
+        for (const table of criticalTables) {
+          try {
+            const result = await db.execute(rawSql.raw(`SELECT count(*)::int as cnt FROM ${table}`));
+            currentCounts[table] = (result as any).rows?.[0]?.cnt ?? (result as any)[0]?.cnt ?? -1;
+          } catch { currentCounts[table] = -1; }
+        }
+        try {
+          const snapshotResult = await db.execute(rawSql.raw(`SELECT table_counts FROM _data_guard_snapshots ORDER BY id DESC LIMIT 1`));
+          const row = (snapshotResult as any).rows?.[0] ?? (snapshotResult as any)[0];
+          if (row) {
+            const prev = typeof row.table_counts === "string" ? JSON.parse(row.table_counts) : row.table_counts;
+            const warnings: string[] = [];
+            for (const table of criticalTables) {
+              const prevCount = prev[table] ?? -1;
+              const curCount = currentCounts[table] ?? -1;
+              if (prevCount > 0 && curCount === 0) {
+                warnings.push(`${table}: ${prevCount} → 0 (ALL DATA LOST!)`);
+              } else if (prevCount > 10 && curCount >= 0 && curCount < prevCount * 0.5) {
+                warnings.push(`${table}: ${prevCount} → ${curCount} (>50% drop!)`);
+              }
+            }
+            if (warnings.length > 0) {
+              log(`DATA GUARD WARNING — unexpected row count drops:\n  ${warnings.join("\n  ")}`, "startup");
+              log("This may indicate data loss from a migration. Check _data_guard_snapshots for history.", "startup");
+            } else {
+              log("Data guard: all table counts stable", "startup");
+            }
+          }
+        } catch (e: any) {
+          log(`Data guard snapshot check skipped: ${e.message}`, "startup");
+        }
+      } catch (e: any) {
+        log(`Data guard startup check failed: ${e.message}`, "startup");
+      }
+    })();
+
+    (async () => {
+      try {
+        const { db } = await import("./db");
         const { participants } = await import("@shared/schema");
         const { sql, eq, and, lt } = await import("drizzle-orm");
         const cutoff = new Date("2026-03-19T00:00:00Z");
