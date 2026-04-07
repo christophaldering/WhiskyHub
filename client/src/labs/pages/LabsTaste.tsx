@@ -598,7 +598,7 @@ export default function LabsTaste() {
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                 <span style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)" }}>
-                  {t("myTastePage.progress", "Progress")}
+                  {t("myTastePage.progress", "{{count}} of 10 drams logged", { count: whiskyCount })}
                 </span>
                 <span style={{ fontSize: 28, fontWeight: 600, color: "var(--labs-accent)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
                   {whiskyCount}<span style={{ fontSize: 13, fontWeight: 400, color: "var(--labs-text-muted)" }}> / {ANALYTICS_THRESHOLD}</span>
