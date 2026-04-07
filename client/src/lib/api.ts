@@ -186,7 +186,10 @@ export const profileApi = {
   uploadPhoto: async (participantId: string, file: File) => {
     const formData = new FormData();
     formData.append("photo", file);
-    const res = await fetch(`${API_BASE}/profiles/${participantId}/photo`, { method: "POST", body: formData });
+    const headers: Record<string, string> = {};
+    const pid = getParticipantId();
+    if (pid) headers["x-participant-id"] = pid;
+    const res = await fetch(`${API_BASE}/profiles/${participantId}/photo`, { method: "POST", body: formData, headers });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: res.statusText }));
       throw new Error(error.message || "Upload failed");
