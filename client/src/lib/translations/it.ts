@@ -63,7 +63,7 @@ const it = {
       verifyTitle: "Inserisci il Codice di Ripristino",
       verifySubtitle: "Inserisci il codice inviato alla tua email e scegli un nuovo PIN",
       codeAndPinRequired: "Codice e nuovo PIN sono obbligatori",
-      pinTooShort: "Il PIN deve avere almeno 4 caratteri",
+      pinTooShort: "La password deve avere 4–64 caratteri",
       newPin: "Nuovo PIN",
       newPinPlaceholder: "Scegli un nuovo PIN",
       resetPin: "Reimposta PIN",
@@ -80,7 +80,7 @@ const it = {
       emailHint: "Per il recupero del PIN e gli inviti alle sessioni.",
       confirm: "Proteggi il mio Account",
       skip: "Salta per ora",
-      pinTooShort: "Il PIN deve avere almeno 4 caratteri",
+      pinTooShort: "La password deve avere 4–64 caratteri",
     },
     verify: {
       title: "Verifica la tua Email",

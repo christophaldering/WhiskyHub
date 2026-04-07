@@ -63,7 +63,7 @@ const es = {
       verifyTitle: "Introducir Código de Restablecimiento",
       verifySubtitle: "Introduce el código enviado a tu correo electrónico y elige un nuevo PIN",
       codeAndPinRequired: "El código y el nuevo PIN son obligatorios",
-      pinTooShort: "El PIN debe tener al menos 4 caracteres",
+      pinTooShort: "La contraseña debe tener 4–64 caracteres",
       newPin: "Nuevo PIN",
       newPinPlaceholder: "Elige un nuevo PIN",
       resetPin: "Restablecer PIN",
@@ -80,7 +80,7 @@ const es = {
       emailHint: "Para recuperación del PIN e invitaciones.",
       confirm: "Asegurar mi Cuenta",
       skip: "Omitir por ahora",
-      pinTooShort: "El PIN debe tener al menos 4 caracteres",
+      pinTooShort: "La contraseña debe tener 4–64 caracteres",
     },
     verify: {
       title: "Verifica tu Correo Electrónico",

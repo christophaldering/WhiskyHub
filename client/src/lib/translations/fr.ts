@@ -63,7 +63,7 @@ const fr = {
       verifyTitle: "Entrer le Code de Réinitialisation",
       verifySubtitle: "Entrez le code envoyé à votre e-mail et choisissez un nouveau PIN",
       codeAndPinRequired: "Le code et le nouveau PIN sont requis",
-      pinTooShort: "Le PIN doit comporter au moins 4 caractères",
+      pinTooShort: "Le mot de passe doit comporter 4–64 caractères",
       newPin: "Nouveau PIN",
       newPinPlaceholder: "Choisir un nouveau PIN",
       resetPin: "Réinitialiser le PIN",
@@ -80,7 +80,7 @@ const fr = {
       emailHint: "Pour la récupération du PIN et les invitations.",
       confirm: "Sécuriser mon Compte",
       skip: "Passer pour l'instant",
-      pinTooShort: "Le PIN doit comporter au moins 4 caractères",
+      pinTooShort: "Le mot de passe doit comporter 4–64 caractères",
     },
     verify: {
       title: "Vérifiez Votre E-mail",

@@ -63,7 +63,7 @@ const nl = {
       verifyTitle: "Resetcode Invoeren",
       verifySubtitle: "Voer de code in die naar je e-mail is gestuurd en kies een nieuwe PIN",
       codeAndPinRequired: "Code en nieuwe PIN zijn verplicht",
-      pinTooShort: "PIN moet minimaal 4 tekens lang zijn",
+      pinTooShort: "Wachtwoord moet 4–64 tekens lang zijn",
       newPin: "Nieuwe PIN",
       newPinPlaceholder: "Kies een nieuwe PIN",
       resetPin: "PIN Resetten",
@@ -80,7 +80,7 @@ const nl = {
       emailHint: "Voor PIN-herstel en sessie-uitnodigingen.",
       confirm: "Toegang Beveiligen",
       skip: "Nu overslaan",
-      pinTooShort: "PIN moet minstens 4 tekens lang zijn",
+      pinTooShort: "Wachtwoord moet 4–64 tekens lang zijn",
     },
     verify: {
       title: "Verifieer Je E-mail",

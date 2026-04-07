@@ -63,7 +63,7 @@ const zh = {
       verifyTitle: "输入重置码",
       verifySubtitle: "输入发送到您邮箱的重置码，并设置新的 PIN",
       codeAndPinRequired: "需要填写重置码和新 PIN",
-      pinTooShort: "PIN 至少需要 4 位",
+      pinTooShort: "密码长度须为4–64个字符",
       newPin: "新 PIN",
       newPinPlaceholder: "选择新的 PIN",
       resetPin: "重置 PIN",
@@ -80,7 +80,7 @@ const zh = {
       emailHint: "用于 PIN 恢复和品鉴会邀请。",
       confirm: "保护我的账户",
       skip: "暂时跳过",
-      pinTooShort: "PIN 至少需要4个字符",
+      pinTooShort: "密码长度须为4–64个字符",
     },
     verify: {
       title: "验证您的电子邮件",
