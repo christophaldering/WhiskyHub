@@ -222,7 +222,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       return;
     }
     if (regPin.length < 4 || regPin.length > 64) {
-      setError(t("m2.register.pinTooShort", "Password must be at least 4 characters"));
+      setError(t("m2.register.pinTooShort", "Password must be 4–64 characters"));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
@@ -345,7 +345,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       return;
     }
     if (resetNewPin.length < 4 || resetNewPin.length > 64) {
-      setError(t("m2.resetPin.pinTooShort", "Password must be at least 4 characters"));
+      setError(t("m2.resetPin.pinTooShort", "Password must be 4–64 characters"));
       return;
     }
     setError("");
