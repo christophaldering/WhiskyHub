@@ -113,7 +113,7 @@ export default function LabsSolo() {
   const [saveError, setSaveError] = useState(false);
   const [initToken, setInitToken] = useState(0);
   const [fromCollection, setFromCollection] = useState(false);
-  const [addToCollection, setAddToCollection] = useState(true);
+  const [bottleAdded, setBottleAdded] = useState(false);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
   const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isDraftSave, setIsDraftSave] = useState(false);
@@ -248,7 +248,7 @@ export default function LabsSolo() {
   const handleCaptured = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
     setFromCollection(false);
-    setAddToCollection(true);
+    setBottleAdded(false);
     setSoloImageFile(imageFile || null);
     setDraftEntryId(null);
     setStep("form");
@@ -259,7 +259,7 @@ export default function LabsSolo() {
   const handleManual = useCallback(() => {
     setWhisky(null);
     setFromCollection(false);
-    setAddToCollection(true);
+    setBottleAdded(false);
     setSoloImageFile(null);
     setDraftEntryId(null);
     setStep("form");
@@ -271,7 +271,7 @@ export default function LabsSolo() {
     const w: CapturedWhisky = { name: barcode, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
     setWhisky(w);
     setFromCollection(false);
-    setAddToCollection(true);
+    setBottleAdded(false);
     setSoloImageFile(null);
     setDraftEntryId(null);
     setStep("form");
@@ -532,8 +532,9 @@ export default function LabsSolo() {
     }
   }, [ratingResult, handleRatingDone, handleSaveAsDraft, isDraftSave]);
 
-  const saveToCollectionIfNeeded = useCallback(() => {
-    if (addToCollection && !fromCollection && isUserAuthenticated() && whisky?.name && participantId) {
+  const handleAddBottleToCollection = useCallback(() => {
+    if (bottleAdded) return;
+    if (!fromCollection && isUserAuthenticated() && whisky?.name && participantId) {
       fetch(`/api/collection/${participantId}/add`, {
         method: "POST",
         headers: {
@@ -549,17 +550,20 @@ export default function LabsSolo() {
           caskType: whisky.cask || "",
           status: "open",
         }),
-      }).catch(() => {});
+      })
+        .then((res) => {
+          if (res.ok) setBottleAdded(true);
+        })
+        .catch(() => {});
     }
-  }, [addToCollection, fromCollection, whisky, participantId]);
+  }, [bottleAdded, fromCollection, whisky, participantId]);
 
   const handleAnother = useCallback(() => {
-    saveToCollectionIfNeeded();
     setWhisky(null);
     setRatingResult(null);
     setSaveError(false);
     setFromCollection(false);
-    setAddToCollection(true);
+    setBottleAdded(false);
     setRatingMode(null);
     setRatingPhaseIndex(0);
     setRatingInitialData(undefined);
@@ -569,12 +573,11 @@ export default function LabsSolo() {
     setDraftSaving(false);
     setTastingContext(null);
     setStep("capture");
-  }, [saveToCollectionIfNeeded]);
+  }, []);
 
   const handleHub = useCallback(() => {
-    saveToCollectionIfNeeded();
     goBack();
-  }, [saveToCollectionIfNeeded, goBack]);
+  }, [goBack]);
 
   const handleRatingBack = useCallback(() => {
     const currentData = latestRatingDataRef.current;
@@ -846,8 +849,8 @@ export default function LabsSolo() {
         onAnother={handleAnother}
         onHub={handleHub}
         showAddToCollection={authenticated && !fromCollection && !isDraftSave}
-        addToCollection={addToCollection}
-        onToggleAddToCollection={setAddToCollection}
+        onAddToCollection={handleAddBottleToCollection}
+        added={bottleAdded}
         isDraft={isDraftSave}
       />
     );

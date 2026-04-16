@@ -644,7 +644,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
                 {t("v2.solo.collection", "From my Collection")}
               </div>
               <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
-                {t("v2.solo.collectionDesc", "Pick a whisky from your journal or collection")}
+                {t("v2.solo.collectionDesc", "Pick a whisky from your collection to taste")}
               </div>
             </div>
             <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />

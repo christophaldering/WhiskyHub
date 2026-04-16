@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check, FileEdit } from "lucide-react";
+import { Check, FileEdit, Wine } from "lucide-react";
 
 interface Props {
   whiskyName: string;
@@ -7,12 +7,12 @@ interface Props {
   onAnother: () => void;
   onHub: () => void;
   showAddToCollection?: boolean;
-  addToCollection?: boolean;
-  onToggleAddToCollection?: (val: boolean) => void;
+  onAddToCollection?: () => void;
+  added?: boolean;
   isDraft?: boolean;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, addToCollection, onToggleAddToCollection, isDraft }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft }: Props) {
   const { t } = useTranslation();
 
   const scoreBand =
@@ -89,56 +89,37 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
         )}
 
         {showAddToCollection && (
-          <div
-            data-testid="solo-add-to-collection-toggle"
-            onClick={() => onToggleAddToCollection?.(!addToCollection)}
-            role="switch"
-            aria-checked={addToCollection}
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onToggleAddToCollection?.(!addToCollection); } }}
+          <button
+            type="button"
+            data-testid="solo-add-to-collection-link"
+            onClick={() => { if (!added) onAddToCollection?.(); }}
+            disabled={added}
             style={{
-              width: "100%",
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "12px 0",
-              borderTop: "0.5px solid var(--labs-border, rgba(255,255,255,0.1))",
-              cursor: "pointer",
-              userSelect: "none",
+              gap: 6,
+              padding: 0,
+              background: "none",
+              border: "none",
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              color: "var(--labs-accent, #d4a847)",
+              cursor: added ? "default" : "pointer",
+              opacity: added ? 0.7 : 1,
+              WebkitTapHighlightColor: "transparent",
             }}
           >
-            <span style={{
-              fontFamily: "var(--font-ui)",
-              fontSize: 14,
-              color: "var(--labs-text)",
-            }}>
-              {t("v2.solo.addToCollection", "Add to my collection")}
+            {added ? (
+              <Check size={16} style={{ color: "var(--labs-accent, #d4a847)" }} />
+            ) : (
+              <Wine size={16} style={{ color: "var(--labs-accent, #d4a847)" }} />
+            )}
+            <span>
+              {added
+                ? t("v2.solo.bottleAdded", "Added") + " \u2713"
+                : t("v2.solo.addBottleToCollection", "Add bottle to collection")}
             </span>
-            <div
-              style={{
-                width: 44,
-                height: 24,
-                borderRadius: 12,
-                background: addToCollection ? "var(--labs-accent)" : "var(--labs-surface-alt, rgba(255,255,255,0.15))",
-                position: "relative",
-                transition: "background 0.2s ease",
-                flexShrink: 0,
-              }}
-            >
-              <div style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                background: "#fff",
-                position: "absolute",
-                top: 2,
-                left: addToCollection ? 22 : 2,
-                transition: "left 0.2s ease",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              }} />
-            </div>
-          </div>
+          </button>
         )}
       </div>
 
