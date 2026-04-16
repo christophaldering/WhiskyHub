@@ -1,0 +1,145 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — PROMPT 2: LITERATUR & STUDIEN — EIGENSTÄNDIGE SEITE
+Hard Prompt v2 — mit eingebautem Prüfschritt
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PRÜFUNG VOR JEDER ÄNDERUNG (PFLICHT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bevor du irgendetwas änderst, prüfe folgendes und berichte mir die Ergebnisse:
+
+1. Existiert client/src/labs/pages/LabsLiterature.tsx bereits?
+   → Wenn JA: Stopp. Seite existiert bereits. Keine Aktion nötig. Melden.
+   → Wenn NEIN: Weitermachen.
+
+2. Existiert client/src/labs/pages/LabsResearch.tsx?
+   → Wenn NEIN: Stopp. Abbrechen und melden.
+   → Wenn JA: Lese die Datei vollständig und identifiziere:
+     a) Gibt es darin einen Abschnitt mit Tabs oder einer Tab-Struktur?
+     b) Welche Tab-Labels sind vorhanden?
+        (suche nach: Persönlichkeit/Personality, Wahrnehmung/Perception,
+         Methoden/Methods, Messen/Measurement oder ähnlichen Begriffen)
+     c) Notiere die genauen Namen/Keys der Tab-Komponente und der Tab-Inhalte.
+
+3. Existiert in client/src/App.tsx bereits eine Route für /labs/discover/literature?
+   → JA oder NEIN
+
+4. Existiert in client/src/labs/pages/LabsBibliothek.tsx ein Link
+   der auf "Literatur" oder "Literature" verweist?
+   → Notiere die aktuelle Ziel-URL dieses Links.
+
+Berichte alle 4 Prüfergebnisse BEVOR du weitermachst.
+Wenn Prüfergebnis 1 JA ist → Abbruch, Seite existiert bereits.
+Wenn Prüfergebnis 2 NEIN ist → Abbruch, Quelldatei fehlt.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — LabsLiterature.tsx erstellen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Erstelle client/src/labs/pages/LabsLiterature.tsx mit folgenden Anforderungen:
+
+SEITEN-STRUKTUR:
+  - Titel: t("bibliothek.literatureStudies") / "Literatur & Studien"
+  - Subtitle: t("bibliothek.literatureStudiesDesc") / "Begutachtete Forschung & Bibliografie"
+  - Back-Button → /labs/bibliothek, Label: "Bibliothek"
+
+INHALT — NUR der 4-Tab-Abschnitt aus LabsResearch.tsx:
+  Extrahiere AUSSCHLIESSLICH den Tab-Abschnitt aus LabsResearch.tsx.
+  Die 4 Tabs sind (basierend auf Prüfergebnis 2b):
+    Tab 1: Persönlichkeit / Personality
+    Tab 2: Wahrnehmung / Perception
+    Tab 3: Methoden / Methods
+    Tab 4: Messen / Measurement
+
+  WICHTIG: Kopiere NUR diesen Tab-Block — keinen anderen Inhalt
+  aus LabsResearch.tsx. Keine Intro-Texte, keine anderen Sektionen,
+  keine Hero-Bereiche — NUR die 4 Tabs mit ihren Karten/Inhalten.
+
+FALLS der Tab-Abschnitt in LabsResearch.tsx nicht klar isolierbar ist:
+  Erstelle eine sinnvolle Platzhalter-Version mit 4 leeren Tabs und
+  Platzhalter-Karten im Stil der App. NICHT die gesamte Seite kopieren.
+
+DESIGN-REGELN (unverhandelbar):
+  - Keine Emojis — nur SVG Icons
+  - 8px Raster
+  - 44px Touch-Targets
+  - Playfair Display für Titel
+  - Dark warm Theme Tokens aus labs-theme.css
+  - Kein nativer input[type=range]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — App.tsx: Route registrieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/App.tsx:
+
+Lazy import ergänzen (nur wenn noch nicht vorhanden):
+  const LabsLiterature = lazy(() => import("@/labs/pages/LabsLiterature"));
+
+Route ergänzen im /labs/* Switch (nur wenn noch nicht vorhanden):
+  <Route path="/labs/discover/literature" component={LabsLiterature} />
+
+NICHT anfassen: alle anderen Routen, Imports, Redirects.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — LabsBibliothek.tsx: Link korrigieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/labs/pages/LabsBibliothek.tsx:
+
+Den Link für "Literatur & Studien" / "Literature & Studies" ändern:
+  ALT: was auch immer aktuell dort steht (aus Prüfergebnis 4)
+  NEU: /labs/discover/literature
+
+NICHT anfassen: alle anderen Links, Layout, Styles.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — i18n.ts: Keys ergänzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts, NUR wenn diese Keys noch nicht vorhanden sind:
+
+Im EN-Block (bibliothek-Abschnitt):
+  literatureStudies: "Literature & Studies",
+  literatureStudiesDesc: "Peer-reviewed research & bibliography",
+  tabPersonality: "Personality",
+  tabPerception: "Perception",
+  tabMethods: "Methods",
+  tabMeasurement: "Measurement",
+
+Im DE-Block (bibliothek-Abschnitt):
+  literatureStudies: "Literatur & Studien",
+  literatureStudiesDesc: "Begutachtete Forschung & Bibliografie",
+  tabPersonality: "Persönlichkeit",
+  tabPerception: "Wahrnehmung",
+  tabMethods: "Methoden",
+  tabMeasurement: "Messen",
+
+WICHTIG: NIEMALS einen neuen Block ans Ende der Datei hängen.
+Nur im bestehenden bibliothek-Objekt ergänzen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ labs-theme.css
+✗ LabsResearch.tsx — NUR LESEN, nicht verändern
+✗ Alle anderen Labs-Seiten die nicht explizit genannt sind
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATIONS-CHECKLISTE (nach Abschluss berichten)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ /labs/discover/literature → lädt korrekt ohne Fehler
+□ Zeigt NUR die 4 Tabs (Persönlichkeit / Wahrnehmung / Methoden / Messen)
+□ Kein anderer Inhalt aus LabsResearch.tsx sichtbar
+□ Back-Button → /labs/bibliothek
+□ /labs/bibliothek → "Literatur & Studien" zeigt auf /labs/discover/literature
+□ LabsResearch.tsx ist unverändert
+□ tsc --noEmit fehlerfrei

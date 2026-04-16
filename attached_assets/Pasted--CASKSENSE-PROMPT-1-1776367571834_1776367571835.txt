@@ -1,0 +1,172 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — PROMPT 1: BIBLIOTHEK NEUE UNTERSEITEN
+Hard Prompt v2 — mit eingebautem Prüfschritt
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PRÜFUNG VOR JEDER ÄNDERUNG (PFLICHT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bevor du irgendetwas änderst, prüfe folgendes und berichte mir die Ergebnisse:
+
+1. Existiert client/src/labs/pages/LabsBibliothek.tsx?
+   → Wenn NEIN: Stopp. Diese Datei muss zuerst existieren. Abbrechen und melden.
+   → Wenn JA: Notiere welche Links/Routes darin enthalten sind.
+
+2. Existiert client/src/labs/pages/LabsResearch.tsx?
+   → Wenn NEIN: Stopp. Abbrechen und melden.
+   → Wenn JA: Notiere ob darin Abschnitte zu "Literatur", "Methoden",
+     "Testtheorie", "Statistik" oder "Profil-Berechnung" enthalten sind.
+
+3. Existiert client/src/labs/pages/LabsMethod.tsx?
+   → Notiere: JA oder NEIN, und wenn JA: was ist der aktuelle Seiten-Titel?
+
+4. Existieren bereits diese Dateien?
+   - client/src/labs/pages/LabsIdeaBehindNumbers.tsx → JA/NEIN
+   - client/src/labs/pages/LabsTestTheory.tsx → JA/NEIN
+   - client/src/labs/pages/LabsStatisticalMethods.tsx → JA/NEIN
+
+5. Existiert in client/src/App.tsx eine Route für /labs/discover/method?
+   → Notiere den aktuellen Titel/Label dieser Route wenn vorhanden.
+
+Berichte mir alle 5 Prüfergebnisse BEVOR du weitermachst.
+Wenn Prüfergebnis 1 oder 2 NEIN ist → Abbruch, keine Änderungen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — LabsMethod.tsx: Titel anpassen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR wenn LabsMethod.tsx existiert:
+
+Ändere den Seiten-Titel von was auch immer er aktuell ist zu:
+  DE: "So wird ein Profil berechnet"
+  EN: "How a profile is calculated"
+
+Ändere den Back-Button so dass er zu /labs/bibliothek navigiert
+(NICHT zu /labs/discover oder /labs/discover/rabbit-hole).
+
+Ändere NUR diese zwei Dinge — keinen anderen Inhalt der Seite anfassen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — 3 neue Seiten erstellen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR wenn die Dateien aus Prüfschritt 4 noch NICHT existieren:
+
+Erstelle client/src/labs/pages/LabsIdeaBehindNumbers.tsx
+  - Titel: t("bibliothek.ideaBehindNumbers") / "Die Idee hinter den Zahlen"
+  - Subtitle: t("bibliothek.ideaBehindNumbersDesc") / "Grundlagen der Geschmacksmessung"
+  - Back-Button → /labs/bibliothek, Label: "Bibliothek"
+  - Inhalt: Extrahiere den thematisch passenden Abschnitt aus LabsResearch.tsx
+    (Abschnitte zu Geschmackswahrnehmung, sensorischen Grundlagen, Messbarkeit)
+    NICHT die gesamte Seite kopieren — nur den passenden Teil
+
+Erstelle client/src/labs/pages/LabsTestTheory.tsx
+  - Titel: t("bibliothek.testTheory") / "Testtheorie & Psychometrie"
+  - Subtitle: t("bibliothek.testTheoryDesc") / "Die Wissenschaft des guten Messens"
+  - Back-Button → /labs/bibliothek, Label: "Bibliothek"
+  - Inhalt: Extrahiere den thematisch passenden Abschnitt aus LabsResearch.tsx
+    (Abschnitte zu Reliabilität, Validität, Messinstrumenten)
+
+Erstelle client/src/labs/pages/LabsStatisticalMethods.tsx
+  - Titel: t("bibliothek.statisticalMethods") / "Statistische Methoden"
+  - Subtitle: t("bibliothek.statisticalMethodsDesc") / "Muster, Übereinstimmung & Struktur in Daten"
+  - Back-Button → /labs/bibliothek, Label: "Bibliothek"
+  - Inhalt: Extrahiere den thematisch passenden Abschnitt aus LabsResearch.tsx
+    (Abschnitte zu Korrelation, Variance, statistische Auswertung)
+
+WICHTIG: Falls LabsResearch.tsx keinen klar trennbaren Inhalt für diese
+Abschnitte hat, erstelle sinnvolle Platzhalter-Texte im Stil der App
+(warmem Ton, Whisky-Kontext) statt gar nichts zu zeigen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — App.tsx: Neue Routen registrieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/App.tsx lazy imports ergänzen:
+
+  const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumbers"));
+  const LabsTestTheory = lazy(() => import("@/labs/pages/LabsTestTheory"));
+  const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMethods"));
+
+Neue Routen im /labs/* Switch ergänzen:
+
+  <Route path="/labs/discover/idea-behind-numbers" component={LabsIdeaBehindNumbers} />
+  <Route path="/labs/discover/test-theory" component={LabsTestTheory} />
+  <Route path="/labs/discover/statistical-methods" component={LabsStatisticalMethods} />
+
+NICHT anfassen: alle anderen Routen, Imports, Redirects.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — LabsBibliothek.tsx: Links aktualisieren
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In LabsBibliothek.tsx die Links zu den neuen Seiten eintragen:
+
+  "Die Idee hinter den Zahlen"    → /labs/discover/idea-behind-numbers
+  "Testtheorie & Psychometrie"    → /labs/discover/test-theory
+  "Statistische Methoden"         → /labs/discover/statistical-methods
+  "So wird ein Profil berechnet"  → /labs/discover/method
+
+Falls bisher ein Link zu /labs/discover/rabbit-hole auf einen dieser
+Einträge zeigt → durch den korrekten Link ersetzen.
+
+NICHT anfassen: alle anderen Links, Layout, Styles.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 5 — i18n.ts: Keys ergänzen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts im EN-Block (bibliothek-Abschnitt) ergänzen,
+NUR wenn diese Keys noch nicht vorhanden sind:
+
+  ideaBehindNumbers: "The idea behind the numbers",
+  ideaBehindNumbersDesc: "Foundations of taste measurement",
+  testTheory: "Test theory & psychometrics",
+  testTheoryDesc: "The science of good measurement",
+  statisticalMethods: "Statistical methods",
+  statisticalMethodsDesc: "Patterns, alignment & structure in data",
+  howProfileCalculated: "How a profile is calculated",
+  howProfileCalculatedDesc: "Rating, profiles & dimensions",
+
+Im DE-Block (bibliothek-Abschnitt) ergänzen,
+NUR wenn diese Keys noch nicht vorhanden sind:
+
+  ideaBehindNumbers: "Die Idee hinter den Zahlen",
+  ideaBehindNumbersDesc: "Grundlagen der Geschmacksmessung",
+  testTheory: "Testtheorie & Psychometrie",
+  testTheoryDesc: "Die Wissenschaft des guten Messens",
+  statisticalMethods: "Statistische Methoden",
+  statisticalMethodsDesc: "Muster, Übereinstimmung & Struktur in Daten",
+  howProfileCalculated: "So wird ein Profil berechnet",
+  howProfileCalculatedDesc: "Bewertung, Profile & Dimensionen",
+
+WICHTIG: NIEMALS einen neuen Block ans Ende der Datei hängen.
+Nur im bestehenden bibliothek-Objekt ergänzen.
+Wenn ein Key bereits existiert → nicht doppelt eintragen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ labs-theme.css (Design-System)
+✗ Alle anderen Labs-Seiten die nicht explizit genannt sind
+✗ LabsResearch.tsx — NUR LESEN, nicht verändern
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATIONS-CHECKLISTE (nach Abschluss berichten)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ /labs/discover/method → Titel ist "So wird ein Profil berechnet"
+□ /labs/discover/method → Back-Button zeigt auf /labs/bibliothek
+□ /labs/discover/idea-behind-numbers → lädt korrekt
+□ /labs/discover/test-theory → lädt korrekt
+□ /labs/discover/statistical-methods → lädt korrekt
+□ /labs/bibliothek → alle 4 Links zeigen auf korrekte Routes
+□ tsc --noEmit fehlerfrei
+□ Kein Link mehr auf /labs/discover/rabbit-hole (von Bibliothek aus)

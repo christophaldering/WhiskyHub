@@ -1,0 +1,130 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — PROMPT 3: PROFIL-INDIZES AUTOMATISCH NEU BERECHNEN
+Hard Prompt v2 — mit eingebautem Prüfschritt
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PRÜFUNG VOR JEDER ÄNDERUNG (PFLICHT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bevor du irgendetwas änderst, prüfe folgendes und berichte mir die Ergebnisse:
+
+1. Suche in server/routes.ts nach dem POST /api/ratings Endpoint.
+   → Notiere: Zeile, wo der Endpoint beginnt.
+   → Notiere: Gibt es dort bereits einen Aufruf von updateParticipantIndices()
+     oder einer ähnlichen Funktion nach dem Rating-Save? JA/NEIN
+
+2. Suche in server/routes.ts nach dem POST oder PATCH Endpoint für Journal-Ratings
+   (suche nach: /api/journal, solo rating, journal entry save).
+   → Notiere: Welcher Endpoint speichert Solo/Journal-Bewertungen?
+   → Gibt es dort bereits einen Aufruf von updateParticipantIndices()? JA/NEIN
+
+3. Suche in server/storage.ts oder server/routes.ts nach der Funktion
+   die Profil-Indizes berechnet. Suche nach:
+   - updateParticipantIndices
+   - smokeAffinityIndex
+   - ratingStabilityScore
+   - explorationIndex
+   - sweetnessBias
+   → Notiere: In welcher Datei und Funktion werden diese Werte berechnet?
+   → Notiere: Wie heißt die Funktion exakt?
+
+4. Suche in server/routes.ts nach dem Connoisseur-Report Endpoint
+   (POST /api/participants/:id/connoisseur-report).
+   → Notiere: Wird dort die Profil-Berechnungs-Funktion aus Prüfpunkt 3 aufgerufen?
+
+Berichte alle 4 Prüfergebnisse BEVOR du weitermachst.
+
+Wenn Prüfpunkt 1 BEREITS JA → Abbruch. Fix ist bereits implementiert. Melden.
+Wenn Prüfpunkt 3 keine Funktion findet → Abbruch. Basis fehlt. Melden.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — POST /api/ratings: Neuberechnung hinzufügen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in server/routes.ts, NUR am POST /api/ratings Endpoint:
+
+Nach dem erfolgreichen Speichern der Bewertung (nach dem DB-Write, vor dem
+Response) folgenden fire-and-forget Aufruf einfügen:
+
+  // Fire-and-forget: Profil-Indizes nach Rating-Save aktualisieren
+  const participantIdForRecalc = rating.participantId ?? body.participantId;
+  if (participantIdForRecalc) {
+    [EXAKTER_FUNKTIONSNAME_AUS_PRUEFPUNKT_3](participantIdForRecalc).catch(err =>
+      console.error("[ProfileRecalc] Fehler bei Neuberechnung:", err)
+    );
+  }
+
+WICHTIG: Ersetze [EXAKTER_FUNKTIONSNAME_AUS_PRUEFPUNKT_3] durch den
+tatsächlichen Funktionsnamen den du in Schritt 0, Prüfpunkt 3 gefunden hast.
+
+WICHTIG: Dies ist fire-and-forget — kein await, kein try/catch um den
+gesamten Block, kein Warten auf das Ergebnis. Die Response wird sofort
+zurückgegeben, die Neuberechnung läuft im Hintergrund.
+
+WICHTIG: Falls die Funktion aus einem anderen Modul importiert werden muss,
+füge den entsprechenden Import am Anfang von routes.ts hinzu (nur wenn
+der Import nicht bereits vorhanden ist).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — Journal/Solo Rating Endpoint: Neuberechnung hinzufügen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in server/routes.ts, am Endpoint den du in Prüfpunkt 2 identifiziert hast:
+
+Denselben fire-and-forget Aufruf wie in Schritt 1 einfügen, direkt nach
+dem erfolgreichen Speichern des Journal-Eintrags:
+
+  // Fire-and-forget: Profil-Indizes nach Journal-Save aktualisieren
+  const pidForRecalc = [PARTICIPANT_ID_AUS_DIESEM_ENDPOINT];
+  if (pidForRecalc) {
+    [EXAKTER_FUNKTIONSNAME_AUS_PRUEFPUNKT_3](pidForRecalc).catch(err =>
+      console.error("[ProfileRecalc] Fehler bei Journal-Neuberechnung:", err)
+    );
+  }
+
+WICHTIG: Ersetze beide Platzhalter durch die korrekten Werte aus dem
+jeweiligen Endpoint-Kontext.
+
+NUR wenn der Journal-Endpoint klar identifizierbar ist. Falls unsicher:
+NUR Schritt 1 implementieren und in der Verifikation melden.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — PATCH /api/ratings (Update): Neuberechnung hinzufügen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Falls es auch einen PATCH /api/ratings/:id Endpoint gibt (Rating-Update):
+Denselben fire-and-forget Aufruf auch dort ergänzen.
+
+Falls kein solcher Endpoint existiert: diesen Schritt überspringen und melden.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ client/ — keine einzige Datei
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Die Berechnungs-Funktion selbst (nicht verändern, nur aufrufen)
+✗ Den Connoisseur-Report Endpoint (nicht verändern)
+✗ Alle anderen server/ Endpoints die nicht explizit genannt sind
+
+NUR diese Dateien dürfen geändert werden:
+  ✓ server/routes.ts — nur an den explizit genannten Stellen
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATIONS-CHECKLISTE (nach Abschluss berichten)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ POST /api/ratings → fire-and-forget Aufruf ist vorhanden
+□ Journal-Endpoint → fire-and-forget Aufruf ist vorhanden (oder begründete Ausnahme)
+□ PATCH /api/ratings → fire-and-forget Aufruf vorhanden (falls Endpoint existiert)
+□ Kein await vor dem Neuberechnungs-Aufruf
+□ Response-Timing unverändert (Nutzer wartet nicht auf Neuberechnung)
+□ Konsolenausgabe bei Fehler: "[ProfileRecalc] Fehler..."
+□ tsc --noEmit fehlerfrei
+□ Bestehende Tests noch grün (npx vitest run)
+□ Funktionsname der Berechnungs-Funktion: [bitte ausfüllen]
+□ Journal-Endpoint-Pfad: [bitte ausfüllen]
