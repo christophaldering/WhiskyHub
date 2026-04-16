@@ -1,0 +1,138 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P1-C
+BUG #22: CONNOISSEUR REPORT ZEIGT "NOCH KEINE WHISKIES BEWERTET"
+OBWOHL BEWERTUNGEN VORHANDEN SIND
+═══════════════════════════════════════════════════════════════════════════════
+
+KONTEXT: Der Nutzer hat 22 Drams mit echten Scores (N/T/F/Overall) —
+alle sind aber als "Draft" markiert. Der Connoisseur Report zeigt im
+Whiskys-Tab "Noch keine Whiskies bewertet" und im Header "0 Bewertungen",
+obwohl er gleichzeitig einen Ø Score von 89.3 und ein KI-Zitat berechnet.
+Ursache: Die Whiskys-Tab-Query filtert auf nicht-Draft-Status und
+schließt alle Draft-Einträge aus.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in server/routes.ts nach dem Connoisseur-Report Endpoint.
+Suche nach: "connoisseur", "connoisseur-report", "dataSnapshot".
+
+Notiere:
+1. Welcher GET-Endpoint liefert die Daten für den Connoisseur Report?
+   (wahrscheinlich GET /api/participants/:id/connoisseur-report)
+
+2. Suche in diesem Endpoint oder der zugehörigen Storage-Funktion nach
+   der Query die Journal-Einträge / Ratings für den Whiskys-Tab lädt.
+   Gibt es eine Bedingung wie:
+     isDraft = false
+     status = 'completed'
+     status != 'draft'
+     finalized = true
+   → JA oder NEIN, und wenn JA: genaue Zeile
+
+3. Suche nach der Query die den Ø Score (89.3) und die Bewertungsanzahl
+   berechnet. Verwendet diese dieselbe Filter-Bedingung wie Punkt 2?
+   → JA (konsistent) oder NEIN (inkonsistent — das ist der Bug)
+
+4. Suche in server/storage.ts nach der Funktion die Journal-Einträge
+   für einen Teilnehmer lädt. Wie heißt sie?
+   Hat sie einen isDraft-Filter?
+
+Berichte alle 4 Punkte BEVOR du etwas änderst.
+Wenn kein Draft-Filter gefunden → melden, anderweitige Ursache suchen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — WHISKYS-TAB QUERY: DRAFT-FILTER ENTFERNEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei/Funktion die du in Schritt 0, Punkt 2 identifiziert hast.
+
+Die Bedingung die Drafts ausschließt:
+
+  // ENTFERNEN oder ÄNDERN:
+  .where(eq(journalEntries.isDraft, false))
+  // oder:
+  .where(ne(journalEntries.status, 'draft'))
+
+Ersetze durch eine Bedingung die nur Einträge mit mindestens einem
+vorhandenen Score einschließt:
+
+  // NEU — Einträge mit Overall-Score ODER mit mindestens Nose-Score:
+  .where(
+    or(
+      isNotNull(journalEntries.overallScore),
+      isNotNull(journalEntries.noseScore)
+    )
+  )
+
+Das bedeutet: Ein Dram wird im Whiskys-Tab angezeigt wenn er bewertet
+wurde — unabhängig davon ob er als Draft markiert ist.
+
+WICHTIG: Nur diese eine Query-Bedingung ändern. Keine anderen Queries,
+keine anderen Filter, keine anderen Funktionen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — BEWERTUNGS-ZÄHLER KONSISTENT MACHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Aus Schritt 0, Punkt 3: wenn die Zähler-Query und die Score-Query
+NICHT konsistent sind (einer filtert Drafts, der andere nicht):
+
+Finde die Stelle wo "0 Bewertungen" / "ratingCount" berechnet wird
+im Connoisseur Report.
+
+Wende dieselbe Logik an wie in Schritt 1:
+Zähle alle Einträge mit mindestens einem vorhandenen Score —
+unabhängig vom Draft-Status.
+
+  // ALT (wenn vorhanden):
+  count where isDraft = false
+
+  // NEU:
+  count where overallScore IS NOT NULL
+  OR noseScore IS NOT NULL
+
+NICHT anfassen: die Score-Berechnungslogik selbst (Durchschnitt etc.),
+andere Felder des dataSnapshot.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — FRONTEND: WHISKYS-TAB LEERER ZUSTAND PRÜFEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in client/src/labs/ nach der Connoisseur-Report-Seite.
+Suche nach: "Noch keine Whiskies bewertet", "noWhiskiesRated",
+"whiskies.length === 0".
+
+Prüfe: Hat das Frontend eine eigene Filterung die Drafts ausblendet?
+→ NEIN: nichts tun, melden.
+→ JA: dieselbe Draft-Filter-Bedingung wie in Schritt 1 entfernen.
+
+NICHT anfassen: das Layout des Whiskys-Tabs, die Karten-Darstellung,
+andere Tabs (Bericht/Aromen/Verlauf).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Die KI-Generierungslogik des Reports (GPT-4o Prompt)
+✗ Den Radar-Chart (funktioniert bereits korrekt)
+✗ Alle anderen Endpoints in server/routes.ts
+✗ Alle anderen Labs-Seiten
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Connoisseur Report → Whiskys-Tab zeigt bewertete Drams (auch Drafts)
+□ Report-Header: Bewertungsanzahl > 0 (konsistent mit vorhandenen Daten)
+□ Ø Score 89.3 weiterhin korrekt
+□ Radar-Chart unverändert
+□ Draft-Drams mit echten Scores erscheinen in der Liste
+□ Geänderte Datei(en): [eintragen]
+□ Geänderte Funktion(en): [eintragen]
+□ tsc --noEmit fehlerfrei
