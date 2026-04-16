@@ -67,6 +67,7 @@
   position: relative;
   width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
   overflow-x: clip;
 }
 
@@ -1217,6 +1218,7 @@
   padding: 1.5rem 1.25rem 6rem;
   max-width: 672px;
   margin: 0 auto;
+  overflow-x: hidden;
   overflow-x: clip;
   width: 100%;
   box-sizing: border-box;
