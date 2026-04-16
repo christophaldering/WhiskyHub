@@ -5195,17 +5195,33 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const userAvgOverall = flavorProfile.avgScores?.overall ?? null;
       const vsGroupDelta = userAvgOverall != null && groupAvgOverall != null ? Math.round((userAvgOverall - groupAvgOverall) * 10) / 10 : null;
 
-      const whiskySummaries = flavorProfile.ratedWhiskies.slice(0, 20).map(rw => ({
+      const tastingSummaries = flavorProfile.ratedWhiskies.map(rw => ({
         name: rw.whisky.name,
-        distillery: rw.whisky.distillery,
-        region: rw.whisky.region,
+        distillery: rw.whisky.distillery ?? undefined,
+        region: rw.whisky.region ?? undefined,
         scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
         flavors: rw.rating.flavors || [],
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
 
+      const scoredJournalEntries = journalEntries.filter(j => j.personalScore != null || j.noseScore != null);
+      const journalSummaries = scoredJournalEntries.map(j => ({
+        name: j.name || j.title,
+        distillery: j.distillery ?? undefined,
+        region: j.region ?? undefined,
+        scores: { nose: j.noseScore, taste: j.tasteScore, finish: j.finishScore, overall: j.personalScore },
+        flavors: [] as string[],
+        vsGroupOverall: j.personalScore != null && groupAvgOverall != null ? Math.round((j.personalScore - groupAvgOverall) * 10) / 10 : null,
+      }));
+
+      const whiskySummaries = [...tastingSummaries, ...journalSummaries]
+        .sort((a, b) => (b.scores.overall ?? 0) - (a.scores.overall ?? 0))
+        .slice(0, 20);
+
+      const totalRatingsCount = stats.totalRatings + scoredJournalEntries.length;
+
       const dataSnapshot = {
-        totalRatings: stats.totalRatings,
+        totalRatings: totalRatingsCount,
         totalTastings: stats.totalTastings,
         totalJournalEntries: stats.totalJournalEntries,
         collectionSize: collection.length,
