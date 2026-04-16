@@ -23,6 +23,7 @@ export interface VisionIdentifyResult {
   caskType: string;
   region: string;
   confidence: "high" | "medium" | "low";
+  confidenceScore: number;
   ocrText: string;
 }
 
@@ -58,6 +59,7 @@ Return a JSON object with these fields:
 - "caskType": cask/maturation type (e.g. "Ex-Bourbon & Sherry") or "" if not specified
 - "region": whisky region (e.g. "Highland", "Islay", "Speyside") or "" if unknown
 - "confidence": "high" if you can clearly read the label, "medium" if partially visible, "low" if guessing
+- "confidenceScore": a numeric confidence value between 0.0 and 1.0 reflecting how certain you are about the identification (e.g. 0.92 for a crisp, fully readable label; 0.6 for partially visible; 0.3 for a guess). Be honest and varied — avoid always returning the same value.
 - "ocrText": all visible text on the label, transcribed verbatim
 
 Be precise. Read the actual label text. Do not guess if you cannot see the label clearly.`,
@@ -83,6 +85,12 @@ Be precise. Read the actual label text. Do not guess if you cannot see the label
     console.log(`[VISION] identified: "${parsed.name}" by ${parsed.distillery} (${parsed.confidence})`);
 
     const validConfidence = ["high", "medium"].includes(parsed.confidence) ? parsed.confidence : "low";
+    const rawScore = typeof parsed.confidenceScore === "number"
+      ? parsed.confidenceScore
+      : typeof parsed.confidenceScore === "string"
+        ? parseFloat(parsed.confidenceScore)
+        : NaN;
+    const confidenceScore = Number.isFinite(rawScore) && rawScore >= 0 && rawScore <= 1 ? rawScore : 0.5;
 
     return {
       name: parsed.name || "",
@@ -92,6 +100,7 @@ Be precise. Read the actual label text. Do not guess if you cannot see the label
       caskType: parsed.caskType || "",
       region: parsed.region || "",
       confidence: validConfidence as "high" | "medium" | "low",
+      confidenceScore,
       ocrText: parsed.ocrText || "",
     };
   } catch (err: any) {

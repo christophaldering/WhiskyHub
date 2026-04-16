@@ -7960,6 +7960,7 @@ const resources = {
           bullet1: "All tasted drams with notes and ratings",
           bullet2: "Aroma impressions for every single whisky",
           bullet3: "Searchable and filterable",
+          draftBanner: "{{count}} open Drafts — go to Drafts tab →",
         },
         history: {
           title: "Your Tasting History",
@@ -16552,6 +16553,7 @@ const resources = {
           bullet1: "Alle verkosteten Drams mit Notizen und Bewertungen",
           bullet2: "Aroma-Eindrücke zu jedem einzelnen Whisky",
           bullet3: "Durchsuchbar und filterbar",
+          draftBanner: "{{count}} offene Drafts — direkt zum Drafts-Tab →",
         },
         history: {
           title: "Deine Tasting-Geschichte",

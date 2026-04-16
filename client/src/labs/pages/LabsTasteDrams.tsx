@@ -151,6 +151,7 @@ export default function LabsTasteDrams() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
+  const statsInitRef = useRef(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +171,14 @@ export default function LabsTasteDrams() {
     enabled: !!session.pid,
     retry: 2,
   });
+
+  useEffect(() => {
+    if (statsInitRef.current) return;
+    if (isLoading) return;
+    const hasDrafts = journal.some((e: any) => e.status === "draft");
+    if (hasDrafts) setStatsExpanded(true);
+    statsInitRef.current = true;
+  }, [journal, isLoading]);
 
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history", session.pid],
@@ -1070,10 +1079,7 @@ export default function LabsTasteDrams() {
                 <FileEdit style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-                    {t("v2.drams.draftBanner", "Du hast {{count}} unfertige Bewertung(en)", { count: journal.filter((e: any) => e.status === "draft").length })}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                    {t("v2.drams.draftBannerHint", "Jetzt vervollständigen?")}
+                    {t("v2.drams.draftBanner", "{{count}} offene Drafts — direkt zum Drafts-Tab →", { count: journal.filter((e: any) => e.status === "draft").length })}
                   </div>
                 </div>
                 <ChevronLeft style={{ width: 16, height: 16, color: "#c8861a", transform: "rotate(180deg)" }} />

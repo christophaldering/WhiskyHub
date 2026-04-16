@@ -2294,12 +2294,11 @@ export async function registerRoutes(
       const visionResult = await identifyWhiskyFromImage(file.path);
 
       if (visionResult && visionResult.name && visionResult.confidence !== "low") {
-        const confMap: Record<string, number> = { high: 0.95, medium: 0.75, low: 0.45 };
         const aiCandidate = {
           source: "ai_vision" as const,
           name: visionResult.name,
           distillery: visionResult.distillery,
-          confidence: confMap[visionResult.confidence] || 0.45,
+          confidence: visionResult.confidenceScore,
           age: visionResult.age,
           abv: visionResult.abv,
           caskType: visionResult.caskType,
