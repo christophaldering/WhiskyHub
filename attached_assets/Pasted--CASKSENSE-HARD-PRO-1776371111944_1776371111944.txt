@@ -1,0 +1,91 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P1-B
+BUG #3: TAB-HEADER SCORES VERSCHWINDEN BEIM ZURÜCKSPRINGEN
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Das Problem: Im Rating-Flow zeigt der Tab-Header (Nose / Palate / Finish /
+Overall) die gespeicherten Scores mit ✓ an. Wenn der Nutzer von Overall
+zurück zu Palate springt, verschwinden Finish und Overall aus dem Header.
+
+Suche in client/src/labs/ nach der Komponente die:
+  - Die 4 Rating-Tabs (Nose/Palate/Finish/Overall / Nase/Gaumen/Abgang/Gesamt) rendert
+  - Die Score-Anzeige im Tab-Header kontrolliert (z.B. "✓ 82" unter dem Tab)
+
+Suche nach: "noseScore", "palateScore", "finishScore", "overallScore",
+"tabScore", "phaseScore", oder ähnlichen Variablen.
+
+Notiere:
+  1. Dateiname der Komponente
+  2. Wie werden die Scores in den Tab-Header geladen?
+     (aus State? aus Props? direkt aus der Rating-Query?)
+  3. Wird der Score nur angezeigt wenn die Phase "abgeschlossen" ist?
+     Suche nach Bedingungen wie: isCompleted, isDone, phase < currentPhase,
+     tabIndex < activeTab, oder ähnlichem.
+  4. Werden alle 4 Scores beim ersten Laden der Komponente aus der DB geladen,
+     oder nur die bereits besuchten Phasen?
+
+Berichte alle 4 Punkte BEVOR du etwas änderst.
+Wenn du die Komponente nicht eindeutig identifizieren kannst → Abbruch, melden.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — SCORES IMMER ANZEIGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei die du in Schritt 0 identifiziert hast.
+
+Das Ziel: Alle 4 Tab-Header zeigen ihren gespeicherten Score IMMER an —
+unabhängig davon welcher Tab gerade aktiv ist.
+
+Finde die Bedingung die steuert wann ein Score im Tab-Header sichtbar ist.
+Typisches Muster das den Bug verursacht:
+
+  // BUGGY — zeigt Score nur für bereits abgeschlossene Phasen:
+  {tabIndex < activeTabIndex && score > 0 && (
+    <span>✓ {score}</span>
+  )}
+
+Ändere es zu:
+
+  // KORREKT — zeigt Score wenn vorhanden, unabhängig von Tab-Position:
+  {score > 0 && (
+    <span>✓ {score}</span>
+  )}
+
+WICHTIG: Der aktive Tab selbst kann seinen Score weiterhin anders stylen
+(größer, hervorgehoben) — aber er darf den Score nicht verstecken.
+
+WICHTIG: Falls die Scores nicht beim initialen Laden aller 4 Phasen aus
+der DB geladen werden (sondern nur für besuchte Phasen), dann muss
+zusätzlich die initiale Daten-Query erweitert werden um alle 4 Scores
+für das aktuelle Rating zu laden. Das ist die eigentliche Ursache.
+
+NICHT anfassen: das visuelle Styling des aktiven Tabs, die Tab-Navigation,
+den Rating-Slider, die Speicher-Logik.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Den Slider oder Score-Input
+✗ Die Tab-Navigation (Reihenfolge, Routing)
+✗ Alle anderen Seiten/Komponenten die nicht explizit genannt sind
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION (nach Abschluss berichten)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Overall-Tab: Nose ✓82 / Palate ✓87 / Finish ✓85.5 alle sichtbar
+□ Zurück zu Palate: Nose ✓82 / Finish ✓85.5 / Overall ✓85 weiterhin sichtbar
+□ Zurück zu Nose: Palate / Finish / Overall weiterhin alle sichtbar
+□ Aktiver Tab ist weiterhin visuell hervorgehoben
+□ Kein Fehler wenn ein Score noch 0 / null / undefined ist
+□ Geänderte Datei(en): [Namen eintragen]
+□ tsc --noEmit fehlerfrei
