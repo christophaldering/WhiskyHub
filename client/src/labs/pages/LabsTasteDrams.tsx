@@ -13,7 +13,7 @@ import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
-  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit,
+  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -139,6 +139,8 @@ export default function LabsTasteDrams() {
   const [viewState, setViewState] = useState<ViewState>("list");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
+  const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
+  useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
   const [filterDistillery, setFilterDistillery] = useState("all");
   const [filterRegion, setFilterRegion] = useState("all");
@@ -572,6 +574,15 @@ export default function LabsTasteDrams() {
   }
 
   if (viewState === "detail" && selectedEntry) {
+    const openDrafts = journal
+      .filter((e: any) => e.status === "draft" && e.id !== selectedEntry.id)
+      .slice()
+      .sort((a: any, b: any) => {
+        const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return tb - ta;
+      });
+    const showNextDraftButton = isSoloEntry(selectedEntry) && selectedEntry.status === "final" && openDrafts.length > 0;
     return (
       <div className="labs-page" data-testid="labs-dram-detail">
         <div className="flex items-center justify-between mb-5">
@@ -579,7 +590,7 @@ export default function LabsTasteDrams() {
             <ChevronLeft className="w-4 h-4" /> {t("drams.drams")}
           </button>
           {isSoloEntry(selectedEntry) && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
               </button>
@@ -615,12 +626,90 @@ export default function LabsTasteDrams() {
                   <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
                 </button>
               )}
-              <button onClick={() => setDeleteTarget(selectedEntry)} className="flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13, color: "var(--labs-danger)", background: "transparent", border: "1px solid var(--labs-danger)", borderRadius: 8, cursor: "pointer", opacity: 0.8 }} data-testid="button-labs-delete-dram">
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </button>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setDetailMoreMenuOpen(v => !v)}
+                  className="labs-btn-ghost flex items-center justify-center"
+                  style={{ padding: "6px 8px", color: "var(--labs-text-muted)" }}
+                  aria-label="More actions"
+                  data-testid="button-labs-more-menu"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {detailMoreMenuOpen && (
+                  <>
+                    <div
+                      onClick={() => setDetailMoreMenuOpen(false)}
+                      style={{ position: "fixed", inset: 0, zIndex: 10 }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        right: 0,
+                        zIndex: 11,
+                        minWidth: 140,
+                        background: "var(--labs-bg-elevated, var(--labs-bg))",
+                        border: "1px solid var(--labs-border)",
+                        borderRadius: 8,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                        padding: 4,
+                      }}
+                      data-testid="menu-labs-more"
+                    >
+                      <button
+                        onClick={() => {
+                          setDetailMoreMenuOpen(false);
+                          setDeleteTarget(selectedEntry);
+                        }}
+                        className="flex items-center gap-1.5 w-full"
+                        style={{
+                          padding: "8px 12px",
+                          fontSize: 13,
+                          color: "var(--labs-danger)",
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                        data-testid="button-labs-delete-dram"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> {t("drams.delete")}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
+        {showNextDraftButton && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => {
+                const nextDraft = openDrafts[0] as DramEntry;
+                setSelectedEntry({ ...nextDraft, source: (nextDraft as any).source || "solo" });
+                setDetailMoreMenuOpen(false);
+                setViewState("deepRate");
+              }}
+              className="flex items-center gap-1.5"
+              style={{
+                padding: "6px 12px",
+                fontSize: 13,
+                color: "var(--labs-accent)",
+                background: "transparent",
+                border: "1px solid var(--labs-accent)",
+                borderRadius: 8,
+                cursor: "pointer",
+                fontWeight: 500,
+              }}
+              data-testid="button-next-open-draft"
+            >
+              {t("drams.nextOpenDraft", "Next open Draft →")}
+            </button>
+          </div>
+        )}
 
         {selectedEntry.status === "draft" && isSoloEntry(selectedEntry) && (
           <div className="flex gap-2 mb-4">
