@@ -5094,6 +5094,56 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
 
   // ===== CONNOISSEUR REPORTS =====
 
+  type LiveWhiskySummary = {
+    name: string;
+    distillery?: string;
+    region?: string;
+    scores: { nose: number | null; taste: number | null; finish: number | null; overall: number | null };
+    flavors: string[];
+    vsGroupOverall: number | null;
+  };
+
+  function extractSnapshotWhiskySummaries(snapshot: unknown): LiveWhiskySummary[] {
+    if (!snapshot || typeof snapshot !== "object") return [];
+    const candidate = (snapshot as { whiskySummaries?: unknown }).whiskySummaries;
+    return Array.isArray(candidate) ? (candidate as LiveWhiskySummary[]) : [];
+  }
+
+  async function computeLiveWhiskySummaries(participantId: string): Promise<LiveWhiskySummary[]> {
+    try {
+      const flavorProfile = await storage.getFlavorProfile(participantId);
+      const journalEntries = await storage.getJournalEntries(participantId);
+      let groupAvgOverall: number | null = null;
+      try {
+        const allRatings = await storage.getAllRatings();
+        const overalls = allRatings.filter(r => r.overall != null).map(r => r.overall!);
+        if (overalls.length) groupAvgOverall = Math.round((overalls.reduce((s, v) => s + v, 0) / overalls.length) * 10) / 10;
+      } catch {}
+      const tastingSummaries = flavorProfile.ratedWhiskies.map(rw => ({
+        name: rw.whisky.name,
+        distillery: rw.whisky.distillery ?? undefined,
+        region: rw.whisky.region ?? undefined,
+        scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
+        flavors: rw.rating.flavors || [],
+        vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
+      }));
+      const scoredJournalEntries = journalEntries.filter(j => j.personalScore != null || j.noseScore != null);
+      const journalSummaries = scoredJournalEntries.map(j => ({
+        name: j.name || j.title,
+        distillery: j.distillery ?? undefined,
+        region: j.region ?? undefined,
+        scores: { nose: j.noseScore, taste: j.tasteScore, finish: j.finishScore, overall: j.personalScore },
+        flavors: [] as string[],
+        vsGroupOverall: j.personalScore != null && groupAvgOverall != null ? Math.round((j.personalScore - groupAvgOverall) * 10) / 10 : null,
+      }));
+      return [...tastingSummaries, ...journalSummaries]
+        .sort((a, b) => (b.scores.overall ?? 0) - (a.scores.overall ?? 0))
+        .slice(0, 20);
+    } catch {
+      return [];
+    }
+  }
+
   app.post("/api/participants/:id/connoisseur-report", async (req, res) => {
     try {
       if (await isAIDisabled("connoisseur_report")) return res.status(503).json({ message: "AI feature disabled by admin" });
@@ -5371,7 +5421,14 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       }
 
       const reports = await storage.getConnoisseurReports(participantId);
-      res.json(reports);
+      let liveSummaries: Awaited<ReturnType<typeof computeLiveWhiskySummaries>> | null = null;
+      const enriched = await Promise.all(reports.map(async (r) => {
+        const existing = extractSnapshotWhiskySummaries(r.dataSnapshot);
+        if (existing.length > 0) return { ...r, liveWhiskySummaries: existing };
+        if (liveSummaries === null) liveSummaries = await computeLiveWhiskySummaries(participantId);
+        return { ...r, liveWhiskySummaries: liveSummaries };
+      }));
+      res.json(enriched);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -5392,7 +5449,11 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       if (!report || report.participantId !== participantId) {
         return res.status(404).json({ message: "Report not found" });
       }
-      res.json(report);
+      const existing = extractSnapshotWhiskySummaries(report.dataSnapshot);
+      const liveWhiskySummaries = existing.length > 0
+        ? existing
+        : await computeLiveWhiskySummaries(participantId);
+      res.json({ ...report, liveWhiskySummaries });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

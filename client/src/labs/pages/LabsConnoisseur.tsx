@@ -70,6 +70,7 @@ interface ConnoisseurReport {
   summary: string;
   dataSnapshot: DataSnapshot | null;
   language: string;
+  liveWhiskySummaries?: WhiskySummary[];
 }
 
 function RadarChart({ userScores, groupScores, size = 240, legendYou, legendCommunity }: {
@@ -353,8 +354,9 @@ function TabBar({ active, onChange, historyCount, t }: {
   );
 }
 
-function WhiskysTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, fallback: string) => string }) {
-  const whiskySummaries = snapshot.whiskySummaries || [];
+function WhiskysTab({ snapshot, fallback, t }: { snapshot: DataSnapshot; fallback?: WhiskySummary[]; t: (key: string, fallback: string) => string }) {
+  const snapshotSummaries = snapshot.whiskySummaries || [];
+  const whiskySummaries = snapshotSummaries.length > 0 ? snapshotSummaries : (fallback || []);
   const sorted = [...whiskySummaries].sort((a, b) => (b.scores?.overall || 0) - (a.scores?.overall || 0));
 
   if (sorted.length === 0) {
@@ -1216,7 +1218,7 @@ export default function LabsConnoisseur() {
               </div>
             )}
 
-            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} t={t} />}
+            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} fallback={latestReport?.liveWhiskySummaries} t={t} />}
             {activeTab === "aromas" && <AromasTab snapshot={snap} t={t} />}
             {activeTab === "history" && (
               <HistoryTab
