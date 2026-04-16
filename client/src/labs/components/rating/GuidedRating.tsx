@@ -99,6 +99,17 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
     if (!initialData?.scores) return false;
     return initialData.overallExplicit === true;
   });
+  const [ratedPhases, setRatedPhases] = useState<Set<PhaseId>>(() => {
+    const set = new Set<PhaseId>();
+    if (initialData?.scores) {
+      const startIdx = initialPhaseIndex ?? 0;
+      for (let i = 0; i < startIdx && i < PHASES.length; i++) {
+        set.add(PHASES[i]);
+      }
+      if (initialData.overallExplicit === true) set.add("overall");
+    }
+    return set;
+  });
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const computeAutoOverall = (s: PhaseScores) =>
@@ -139,6 +150,14 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
 
   const handleNext = useCallback(() => {
     if (phaseIndex === 3 && !overallRated) return;
+
+    const currentPid = PHASES[phaseIndex];
+    setRatedPhases((prev) => {
+      if (prev.has(currentPid)) return prev;
+      const next = new Set(prev);
+      next.add(currentPid);
+      return next;
+    });
 
     if (phaseIndex < 3 && onSaveAsDraft) {
       onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated });
@@ -190,6 +209,12 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
     if (currentPhase === "overall") {
       setOverallManuallySet(true);
       setOverallRated(true);
+      setRatedPhases((prev) => {
+        if (prev.has("overall")) return prev;
+        const next = new Set(prev);
+        next.add("overall");
+        return next;
+      });
     }
     setScores((prev) => {
       const next = { ...prev, [currentPhase]: v };
@@ -267,7 +292,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
             const pAccent = `var(--labs-phase-${pid})`;
             const pDim = `var(--labs-phase-${pid}-dim)`;
             const isActive = i === phaseIndex;
-            const isDone = i < phaseIndex;
+            const isDone = ratedPhases.has(pid);
             return (
               <button
                 key={pid}
