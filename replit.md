@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Stabiler Tag" (16.04.2026)
+Heute wieder einige wesentliche Funktionen weiterentwickelt — Programm lief bisher stabil! Tasks #565 (PIN/Passwort-Limit von 6 auf 64 Zeichen), #566 (Profil-Indizes nach Journal-Edit neu berechnen) und weitere Verbesserungen abgeschlossen und deployed.
+
 ## Checkpoint: "iOS Capacitor API Fix" (05.04.2026)
 iOS-App konnte nicht einloggen weil API-Calls relativ (`/api/...`) waren und im Capacitor-WebView ins Leere liefen. Fix: `client/src/lib/native.ts` mit Plattform-Detection (`@capacitor/core`), globalem Fetch-Interceptor (leitet `/api/...` auf `https://casksense.com/api/...` um wenn nativ), und `apiUrl()` Helper. CORS-Middleware in `server/index.ts` fuer Capacitor-Origins (`capacitor://localhost`, `ionic://localhost`, `http(s)://localhost:*`). Browser bleibt unveraendert (relative Pfade). Auth ist Header-basiert (`x-participant-id`), keine Cookie/Session-Probleme.
 
