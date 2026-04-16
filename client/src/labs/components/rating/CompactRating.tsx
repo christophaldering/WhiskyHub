@@ -221,9 +221,6 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: "var(--labs-border)", marginLeft: SP.sm, marginRight: SP.sm }}>
                 <div style={{ height: "100%", borderRadius: 2, background: pAccent, width: `${pct}%`, transition: "width 0.2s" }} />
               </div>
-              <span style={{ fontSize: 28, fontWeight: 700, color: getBandColor(scores[pid]), fontFamily: FONT.body, minWidth: 36, textAlign: "right" }}>
-                {scores[pid]}
-              </span>
               {tagCount > 0 && (
                 <span style={{ fontSize: 10, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>{tagCount}</span>
               )}
@@ -420,56 +417,53 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
       }}>
         <div style={{ display: "flex", gap: SP.sm }}>
           <button
-            data-testid="compact-back-btn"
-            onClick={onBack}
-            style={{
-              height: 56,
-              paddingLeft: 20,
-              paddingRight: 20,
-              borderRadius: RADIUS.full,
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              color: "var(--labs-text)",
-              fontFamily: FONT.body,
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            {"\u2190"}
-          </button>
-          <button
             data-testid="compact-submit-btn"
             onClick={handleSubmit}
             disabled={saving || !canFinalize}
-            style={{
-              flex: 1,
-              height: 56,
-              background: saving
-                ? "color-mix(in srgb, var(--labs-success) 13%, transparent)"
-                : canFinalize
-                  ? "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))"
-                  : "var(--labs-surface)",
-              color: saving
-                ? "var(--labs-success)"
-                : canFinalize
-                  ? "var(--labs-accent-dark)"
-                  : "var(--labs-text-muted)",
-              border: saving
-                ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)"
-                : canFinalize
-                  ? "none"
-                  : "1px solid var(--labs-border)",
-              borderRadius: RADIUS.full,
-              fontSize: canFinalize ? 17 : 14,
-              fontWeight: canFinalize ? 700 : 500,
-              fontFamily: FONT.body,
-              cursor: saving || !canFinalize ? "default" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: SP.sm,
-              opacity: canFinalize ? 1 : 0.7,
-            }}
+            style={
+              !saving && !canFinalize
+                ? {
+                    flex: 1,
+                    height: 56,
+                    background: "transparent",
+                    color: "var(--color-text-muted)",
+                    border: "none",
+                    borderRadius: 0,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: FONT.body,
+                    cursor: "default",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: SP.sm,
+                    textAlign: "center",
+                    padding: 0,
+                  }
+                : {
+                    flex: 1,
+                    height: 56,
+                    background: saving
+                      ? "color-mix(in srgb, var(--labs-success) 13%, transparent)"
+                      : "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+                    color: saving
+                      ? "var(--labs-success)"
+                      : "var(--labs-accent-dark)",
+                    border: saving
+                      ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)"
+                      : "none",
+                    borderRadius: RADIUS.full,
+                    fontSize: 17,
+                    fontWeight: 700,
+                    fontFamily: FONT.body,
+                    cursor: saving ? "default" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: SP.sm,
+                    opacity: 1,
+                  }
+            }
           >
             {saving ? (
               <>

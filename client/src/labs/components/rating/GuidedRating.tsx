@@ -521,49 +521,44 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
       }}>
         <div style={{ display: "flex", gap: SP.sm, width: "100%", maxWidth: 672, minWidth: 0 }}>
           <button
-            data-testid="rating-back-btn"
-            onClick={() => {
-              if (phaseIndex > 0) goTo(phaseIndex - 1);
-              else onBack();
-            }}
-            style={{
-              height: 56,
-              paddingLeft: 20,
-              paddingRight: 20,
-              borderRadius: RADIUS.full,
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              color: "var(--labs-text)",
-              fontFamily: FONT.body,
-              fontSize: 15,
-              cursor: "pointer",
-              flexShrink: 0,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {phaseIndex > 0 ? phaseLabel(PHASES[phaseIndex - 1], labels) : "\u2190"}
-          </button>
-          <button
             data-testid="rating-next-btn"
             onClick={handleNext}
             disabled={!canFinalize}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              height: 56,
-              background: canFinalize ? accent : "var(--labs-surface)",
-              color: canFinalize ? "#1a1a1a" : "var(--labs-text-muted)",
-              border: canFinalize ? "none" : "1px solid var(--labs-border)",
-              borderRadius: RADIUS.full,
-              fontSize: canFinalize ? 17 : 14,
-              fontWeight: canFinalize ? 700 : 500,
-              fontFamily: FONT.body,
-              cursor: canFinalize ? "pointer" : "default",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              opacity: canFinalize ? 1 : 0.7,
-            }}
+            style={
+              phaseIndex === 3 && !canFinalize
+                ? {
+                    flex: 1,
+                    minWidth: 0,
+                    height: 56,
+                    background: "transparent",
+                    color: "var(--color-text-muted)",
+                    border: "none",
+                    borderRadius: 0,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: FONT.body,
+                    cursor: "default",
+                    textAlign: "center",
+                    padding: 0,
+                  }
+                : {
+                    flex: 1,
+                    minWidth: 0,
+                    height: 56,
+                    background: canFinalize ? accent : "var(--labs-surface)",
+                    color: canFinalize ? "#1a1a1a" : "var(--labs-text-muted)",
+                    border: canFinalize ? "none" : "1px solid var(--labs-border)",
+                    borderRadius: RADIUS.full,
+                    fontSize: canFinalize ? 17 : 14,
+                    fontWeight: canFinalize ? 700 : 500,
+                    fontFamily: FONT.body,
+                    cursor: canFinalize ? "pointer" : "default",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    opacity: canFinalize ? 1 : 0.7,
+                  }
+            }
           >
             {phaseIndex < 3
               ? isDe
