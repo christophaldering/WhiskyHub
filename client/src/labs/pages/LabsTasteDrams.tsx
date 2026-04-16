@@ -14,6 +14,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
+  Users, Smile,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -758,6 +759,8 @@ export default function LabsTasteDrams() {
             )}
           </div>
 
+          <TastingContextLine raw={selectedEntry.tastingContext} />
+
           {(selectedEntry.country || selectedEntry.region || selectedEntry.age || selectedEntry.abv || selectedEntry.caskType) && (
             <div className="flex flex-wrap gap-2 mb-4">
               {selectedEntry.country && <MetaBadge label={t("drams.country")} value={selectedEntry.country} />}
@@ -1481,6 +1484,91 @@ function FilterBottomSheet({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const PLACE_LABEL_KEYS: Record<string, string> = {
+  atHome: "v2.contextAtHome", fair: "v2.contextFair", restaurant: "v2.contextRestaurant",
+  bar: "v2.contextBar", onTheGo: "v2.contextOnTheGo", other: "v2.contextOther",
+};
+const COMPANY_LABEL_KEYS: Record<string, string> = {
+  alone: "v2.contextAlone", withFriends: "v2.contextWithFriends",
+  withFamily: "v2.contextWithFamily", withColleagues: "v2.contextWithColleagues",
+  other: "v2.contextOther",
+};
+const MOOD_LABEL_KEYS: Record<string, string> = {
+  relaxed: "v2.contextRelaxed", focused: "v2.contextFocused",
+  celebratory: "v2.contextCelebratory", curious: "v2.contextCurious",
+};
+
+interface ParsedTastingContext {
+  place?: string;
+  placeCustom?: string;
+  company?: string;
+  companyCustom?: string;
+  mood?: string;
+}
+
+function parseTastingContext(raw: string | null | undefined): ParsedTastingContext | null {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const obj = value as Record<string, unknown>;
+    const out: ParsedTastingContext = {};
+    if (typeof obj.place === "string") out.place = obj.place;
+    if (typeof obj.placeCustom === "string") out.placeCustom = obj.placeCustom;
+    if (typeof obj.company === "string") out.company = obj.company;
+    if (typeof obj.companyCustom === "string") out.companyCustom = obj.companyCustom;
+    if (typeof obj.mood === "string") out.mood = obj.mood;
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+function TastingContextLine({ raw }: { raw?: string | null }) {
+  const { t } = useTranslation();
+  const parsed = parseTastingContext(raw);
+  if (!parsed) return null;
+
+  const placeLabel = parsed.place === "other"
+    ? (parsed.placeCustom || t("v2.contextOther", "Other"))
+    : (parsed.place ? t(PLACE_LABEL_KEYS[parsed.place] || parsed.place, parsed.place) : "");
+  const companyLabel = parsed.company === "other"
+    ? (parsed.companyCustom || t("v2.contextOther", "Other"))
+    : (parsed.company ? t(COMPANY_LABEL_KEYS[parsed.company] || parsed.company, parsed.company) : "");
+  const moodLabel = parsed.mood ? t(MOOD_LABEL_KEYS[parsed.mood] || parsed.mood, parsed.mood) : "";
+
+  if (!placeLabel && !companyLabel && !moodLabel) return null;
+
+  return (
+    <div
+      data-testid="dram-tasting-context"
+      style={{
+        display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
+        marginTop: 8, marginBottom: 8,
+        fontSize: 12, color: "var(--labs-text-muted)",
+      }}
+    >
+      {placeLabel && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <MapPin style={{ width: 12, height: 12 }} />{placeLabel}
+        </span>
+      )}
+      {placeLabel && (companyLabel || moodLabel) && <span aria-hidden="true">·</span>}
+      {companyLabel && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Users style={{ width: 12, height: 12 }} />{companyLabel}
+        </span>
+      )}
+      {companyLabel && moodLabel && <span aria-hidden="true">·</span>}
+      {moodLabel && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Smile style={{ width: 12, height: 12 }} />{moodLabel}
+        </span>
+      )}
     </div>
   );
 }

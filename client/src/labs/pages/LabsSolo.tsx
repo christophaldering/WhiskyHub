@@ -9,13 +9,22 @@ import { tryAutoResume, getSession } from "@/lib/session";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
+import SoloContextStep from "./solo/SoloContextStep";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
-type Step = "capture" | "form" | "rating" | "quickFollowUp" | "done";
+type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "done";
+
+interface TastingContextState {
+  place: string;
+  placeCustom?: string;
+  company: string;
+  companyCustom?: string;
+  mood: string;
+}
 
 function getExistingParticipantId(storeParticipantId: string | null): string | null {
   try {
@@ -112,6 +121,7 @@ export default function LabsSolo() {
   const [quickFollowUpData, setQuickFollowUpData] = useState<RatingData | null>(null);
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null);
   const [draftSaving, setDraftSaving] = useState(false);
+  const [tastingContext, setTastingContext] = useState<TastingContextState | null>(null);
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
   const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
@@ -273,7 +283,7 @@ export default function LabsSolo() {
     setWhisky(w);
     setFromCollection(true);
     setDraftEntryId(null);
-    setStep("rating");
+    setStep("context");
     saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: true, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
@@ -281,10 +291,15 @@ export default function LabsSolo() {
   const handleFormSubmit = useCallback((w: CapturedWhisky, imageFile?: File | null) => {
     setWhisky(w);
     setSoloImageFile(imageFile ?? null);
-    setStep("rating");
+    setStep("context");
     saveSoloDraft({ step: "rating", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection });
     showDraftFlash();
   }, [fromCollection, showDraftFlash]);
+
+  const handleContextDone = useCallback((ctx: TastingContextState | null) => {
+    setTastingContext(ctx);
+    setStep("rating");
+  }, []);
 
   const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
     const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
@@ -318,8 +333,9 @@ export default function LabsSolo() {
       notes: data.notes.overall || "",
       source: "solo",
       status,
+      ...(tastingContext ? { tastingContext: JSON.stringify(tastingContext) } : {}),
     };
-  }, [whisky, t]);
+  }, [whisky, t, tastingContext]);
 
   const handleRatingDone = useCallback(async (data: RatingData) => {
     setRatingResult(data);
@@ -551,6 +567,7 @@ export default function LabsSolo() {
     setQuickFollowUpData(null);
     setDraftEntryId(null);
     setDraftSaving(false);
+    setTastingContext(null);
     setStep("capture");
   }, [saveToCollectionIfNeeded]);
 
@@ -682,6 +699,15 @@ export default function LabsSolo() {
             fromCollection: false,
           });
         }}
+      />
+    );
+  } else if (step === "context") {
+    content = (
+      <SoloContextStep
+        initial={tastingContext}
+        onContinue={(ctx) => handleContextDone(ctx)}
+        onSkip={() => handleContextDone(null)}
+        onBack={() => setStep(fromCollection ? "capture" : "form")}
       />
     );
   } else if (step === "rating") {

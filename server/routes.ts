@@ -6933,7 +6933,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price", "status"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price", "status"]);
       if (sanitizedBody.abv !== undefined) sanitizedBody.abv = sanitizedBody.abv != null ? (typeof sanitizedBody.abv === "string" ? parseFloat(sanitizedBody.abv.replace(",", ".").replace("%", "")) || null : sanitizedBody.abv) : null;
       if (sanitizedBody.price !== undefined) sanitizedBody.price = sanitizedBody.price != null ? (typeof sanitizedBody.price === "string" ? parseFloat(sanitizedBody.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : sanitizedBody.price) : null;
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
@@ -6961,8 +6961,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
-      const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "region", "country", "peatLevel", "bottler"];
+      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
+      const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "tastingContext", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) {

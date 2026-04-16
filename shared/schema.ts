@@ -322,6 +322,7 @@ export const journalEntries = pgTable("journal_entries", {
   price: real("price"),
   mood: text("mood"),
   occasion: text("occasion"),
+  tastingContext: text("tasting_context"),
   imageUrl: text("image_url"),
   source: text("source").default("casksense"),
   voiceMemoUrl: text("voice_memo_url"),

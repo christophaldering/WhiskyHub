@@ -2133,25 +2133,44 @@ export default function FlavourStudioSheet({
               <div className="ty-label" style={{ marginBottom: "var(--labs-space-xs)" }}>
                 {t("m2.rating.studioQuickAdd", "Quick Add")}
               </div>
-              <div style={{ display: "flex", gap: "var(--labs-space-xs)", overflowX: "auto", paddingBottom: "var(--labs-space-xs)" }}>
-                {quickTerms.map((term) => {
-                  const isS = selectedTerms.has(term.toLowerCase());
-                  const catId = findTermCategory(term, categories);
-                  const color = catId ? CATEGORY_COLORS[catId] : "var(--labs-accent)";
-                  return (
-                    <button key={term} onClick={() => toggleTerm(term)}
-                      className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
-                      data-testid={`studio-quick-${term.replace(/\s+/g, "-").toLowerCase()}`}
-                      style={{
-                        background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : undefined,
-                        color: isS ? "#f5f0e8" : undefined,
-                        borderColor: isS ? color : undefined,
-                      }}
-                    >
-                      {isS ? "✓ " : ""}{term}
-                    </button>
-                  );
-                })}
+              <div style={{ position: "relative" }}>
+                <div
+                  data-testid="studio-quick-scroll"
+                  style={{ display: "flex", flexWrap: "nowrap", gap: "var(--labs-space-xs)", overflowX: "auto", paddingBottom: "var(--labs-space-xs)", paddingRight: 48 }}
+                >
+                  {quickTerms.map((term) => {
+                    const isS = selectedTerms.has(term.toLowerCase());
+                    const catId = findTermCategory(term, categories);
+                    const color = catId ? CATEGORY_COLORS[catId] : "var(--labs-accent)";
+                    return (
+                      <button key={term} onClick={() => toggleTerm(term)}
+                        className={isS ? "labs-chip labs-chip-active" : "labs-chip"}
+                        data-testid={`studio-quick-${term.replace(/\s+/g, "-").toLowerCase()}`}
+                        style={{
+                          flex: "0 0 auto",
+                          background: isS ? (catId ? tintBg(CATEGORY_COLORS[catId], "chip") : "var(--labs-accent)") : undefined,
+                          color: isS ? "#f5f0e8" : undefined,
+                          borderColor: isS ? color : undefined,
+                        }}
+                      >
+                        {isS ? "✓ " : ""}{term}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div
+                  aria-hidden="true"
+                  data-testid="studio-quick-fade"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    bottom: "var(--labs-space-xs)",
+                    width: 48,
+                    pointerEvents: "none",
+                    background: "linear-gradient(to right, transparent, var(--labs-bg))",
+                  }}
+                />
               </div>
             </div>
           )}
