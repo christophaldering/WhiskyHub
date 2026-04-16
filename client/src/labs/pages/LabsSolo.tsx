@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import { Loader2, Check } from "lucide-react";
@@ -93,6 +94,7 @@ async function ensureParticipantId(): Promise<string> {
 export default function LabsSolo() {
   const { t } = useTranslation();
   const goBack = useBackNavigation("/labs/tastings");
+  const [, navigate] = useLocation();
 
   const [step, setStep] = useState<Step>("capture");
   const [whisky, setWhisky] = useState<CapturedWhisky | null>(null);
@@ -579,7 +581,7 @@ export default function LabsSolo() {
     }
   }, []);
 
-  const handleBackDialogSaveDraft = useCallback(() => {
+  const handleBackDialogSaveDraft = useCallback(async () => {
     setShowBackDialog(false);
     const currentData = latestRatingDataRef.current;
     const baseScores = ratingInitialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
@@ -590,8 +592,14 @@ export default function LabsSolo() {
       tags: currentData.tags ? { ...baseTags, ...currentData.tags } : baseTags,
       notes: currentData.notes ? { ...baseNotes, ...currentData.notes } : baseNotes,
     };
-    handleSaveAsDraft(fullData);
-  }, [handleSaveAsDraft, ratingInitialData]);
+    const success = await handleSaveAsDraft(fullData);
+    if (success) {
+      hasUnsavedRef.current = false;
+      latestRatingDataRef.current = {};
+      clearSoloDraft();
+      navigate("/labs/taste/drams");
+    }
+  }, [handleSaveAsDraft, ratingInitialData, navigate]);
 
   const handleBackDialogDiscard = useCallback(() => {
     setShowBackDialog(false);
