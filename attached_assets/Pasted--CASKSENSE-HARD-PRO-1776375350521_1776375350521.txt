@@ -1,0 +1,200 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-C
+SCHNELLAUSWAHL SCROLL + TASTING-KONTEXT FÜR SOLO-DRAMS
+(Befund #10 + Feature-Idee Kontext)
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Notiere:
+1. In welcher Datei befindet sich die "SCHNELLAUSWAHL"-Zeile im
+   Flavour Studio? (suche nach: "Schnellauswahl", "quickSelect", "quick_select")
+2. Welchen CSS-Style hat der Container dieser Zeile?
+   (overflow-x? display flex? flex-wrap?)
+3. In welcher Datei/Tabelle hat journal_entries seine Schema-Definition?
+   Hat sie bereits ein Feld für Kontext/Ort/Anlass?
+   (suche nach: "context", "occasion", "location", "tastingContext")
+
+Berichte alle 3 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — SCHNELLAUSWAHL SCROLL-INDIKATOR (Befund #10)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+Füge dem Container der Schnellauswahl-Zeile folgendes CSS hinzu:
+
+  position: relative (am Container-Parent)
+
+Füge nach dem Container ein Fade-Element ein:
+
+  <div style={{
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '48px',
+    background: 'linear-gradient(to right, transparent, var(--color-background))',
+    pointerEvents: 'none'
+  }} />
+
+Stelle sicher dass der Container overflow-x: auto hat (scrollbar)
+und kein flex-wrap (Tags sollen in einer Zeile bleiben).
+
+NICHT anfassen: die Tags selbst, die Auswahl-Logik, das Styling der Chips.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — TASTING-KONTEXT: DB-SCHEMA ERWEITERN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR wenn in Schritt 0, Punkt 3: kein tastingContext-Feld vorhanden.
+
+In shared/schema.ts, in der journal_entries Tabelle:
+
+Füge ein neues optionales Feld hinzu:
+
+  tastingContext: text("tasting_context"),
+
+Das ist ein einfaches Text-Feld (JSON-String wird vom Frontend serialisiert).
+Keine Enum, kein JSONB — einfaches text() für maximale Kompatibilität.
+
+Erstelle danach eine Migration:
+  npx drizzle-kit generate
+  npx drizzle-kit migrate
+
+NICHT anfassen: alle anderen Felder in schema.ts, andere Tabellen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — TASTING-KONTEXT: UI IM RATING-FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche die Seite/Komponente die direkt nach der Flaschen-Identifikation
+angezeigt wird (vor der Modus-Auswahl "Geführt / Kompakt / Quick").
+Oder falls keine solche Seite existiert: auf der Modus-Auswahl-Seite selbst
+ganz unten als optionaler Abschnitt.
+
+Füge einen neuen optionalen Abschnitt "Kontext" hinzu:
+
+TITEL: "Kontext" (DE) / "Context" (EN)
+UNTERTITEL: "Optional — wo und mit wem?" (DE) / "Optional — where and with whom?" (EN)
+
+3 Zeilen, je eine Auswahl + Freitext-Option:
+
+ZEILE 1 — Ort/Anlass (Single-Select Chips):
+  DE: Zuhause · Messe · Restaurant · Bar · Unterwegs · Anderes
+  EN: At home · Fair · Restaurant · Bar · On the go · Other
+  + Freitext-Feld wenn "Anderes" gewählt
+
+ZEILE 2 — Gesellschaft (Single-Select Chips):
+  DE: Allein · Mit Freunden · Mit Familie · Mit Kollegen · Anderes
+  EN: Alone · With friends · With family · With colleagues · Other
+  + Freitext-Feld wenn "Anderes" gewählt
+
+ZEILE 3 — Stimmung (Single-Select Chips):
+  DE: Entspannt · Konzentriert · Feierlich · Neugierig
+  EN: Relaxed · Focused · Celebratory · Curious
+
+DESIGN:
+  - Chips: labs-chip / labs-chip-active Klassen (aus labs-theme.css)
+  - 44px Touch-Targets
+  - Kein Pflichtfeld — komplett überspringbar
+  - "Überspringen →" Link unter dem Abschnitt
+
+SPEICHERN:
+  Die gewählten Werte als JSON-String in tastingContext serialisieren:
+  JSON.stringify({ place: "Messe", company: "Mit Freunden", mood: "Neugierig" })
+  Beim Speichern des Journal-Eintrags mitsenden.
+
+NICHT anfassen: die Modus-Auswahl-Logik, die Rating-Komponenten,
+den API-Call-Mechanismus (nur das Feld tastingContext ergänzen).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — KONTEXT AUF DRAM-KARTE ANZEIGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche die Dram-Detail-Karte (Post-Rating Screen, Befund #4).
+
+Falls tastingContext vorhanden und nicht leer:
+Zeige unter dem Score-Bereich eine kleine Kontext-Zeile:
+
+  [Ort-Icon] Messe  ·  [Personen-Icon] Mit Freunden  ·  [Mood-Icon] Neugierig
+
+  - Font-size: 12px, color: var(--color-text-muted)
+  - Nur anzeigen wenn Kontext vorhanden — kein Platzhalter wenn leer
+
+NICHT anfassen: das restliche Karten-Layout, Score-Display, Action-Buttons.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 5 — i18n KEYS ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts, NUR wenn Keys nicht existieren,
+im bestehenden Block ergänzen:
+
+EN:
+  tastingContext: "Context",
+  tastingContextDesc: "Optional — where and with whom?",
+  contextAtHome: "At home",
+  contextFair: "Fair",
+  contextRestaurant: "Restaurant",
+  contextBar: "Bar",
+  contextOnTheGo: "On the go",
+  contextOther: "Other",
+  contextAlone: "Alone",
+  contextWithFriends: "With friends",
+  contextWithFamily: "With family",
+  contextWithColleagues: "With colleagues",
+  contextRelaxed: "Relaxed",
+  contextFocused: "Focused",
+  contextCelebratory: "Celebratory",
+  contextCurious: "Curious",
+  skipContext: "Skip →",
+
+DE:
+  tastingContext: "Kontext",
+  tastingContextDesc: "Optional — wo und mit wem?",
+  contextAtHome: "Zuhause",
+  contextFair: "Messe",
+  contextRestaurant: "Restaurant",
+  contextBar: "Bar",
+  contextOnTheGo: "Unterwegs",
+  contextOther: "Anderes",
+  contextAlone: "Allein",
+  contextWithFriends: "Mit Freunden",
+  contextWithFamily: "Mit Familie",
+  contextWithColleagues: "Mit Kollegen",
+  contextRelaxed: "Entspannt",
+  contextFocused: "Konzentriert",
+  contextCelebratory: "Feierlich",
+  contextCurious: "Neugierig",
+  skipContext: "Überspringen →",
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ Alle anderen Felder in shared/schema.ts
+✗ Andere Tabellen als journal_entries
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Rating-Logik / Slider / Score-Berechnung
+✗ Flavour Studio Journey
+✗ server/routes.ts (außer das neue tastingContext-Feld beim Save mitlesen)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Schnellauswahl: rechter Rand mit Fade-out, scrollbar
+□ Schema: tastingContext-Feld in journal_entries vorhanden
+□ Migration erfolgreich gelaufen
+□ Kontext-UI: 3 Zeilen (Ort / Gesellschaft / Stimmung) mit Chips
+□ "Überspringen →" funktioniert
+□ Kontext wird gespeichert (in DB überprüfen: SELECT tasting_context FROM journal_entries LIMIT 1)
+□ Dram-Karte: zeigt Kontext wenn vorhanden
+□ Geänderte Dateien: [eintragen]
+□ tsc --noEmit fehlerfrei

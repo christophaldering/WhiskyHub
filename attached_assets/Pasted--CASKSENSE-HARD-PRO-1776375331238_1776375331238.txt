@@ -1,0 +1,112 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-B
+DRAMS-LISTE POLISH: AKKORDEON + DRAFT-BANNER + KONFIDENZ
+(Befunde #6, #5, #12)
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in client/src/labs/ nach der Drams-Listen-Seite.
+Suche nach: "drams logged", "Drams eingetragen", "draftsCount", accordion.
+
+Notiere:
+1. Dateiname der Drams-Listen-Seite
+2. Ist die Stat-Box (Total/Solo/Tastings/Drafts) ein Akkordeon?
+   → Wie ist der Default-State? (offen/geschlossen)
+3. Suche nach dem Draft-Hinweis-Banner ("Du hast X unfertige Bewertungen").
+   Ist er visuell mit dem Drafts-Tab verbunden?
+4. Suche in server/routes.ts (oder ai-client.ts) nach dem
+   Flaschen-Erkennungs-Endpoint. Suche nach: "confidence", "0.75",
+   "konfidenz", "identif". Wird der Konfidenz-Wert aus dem GPT-Response
+   gelesen oder hardcodiert gesetzt?
+
+Berichte alle 4 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — STAT-BOX DEFAULT OFFEN (Befund #6)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+Die Stat-Box (Total / Solo / Tastings / Drafts) soll standardmäßig
+GEÖFFNET sein, wenn der Nutzer Drafts hat.
+
+Ändere den Default-State des Akkordeons:
+
+  // ALT:
+  const [statsOpen, setStatsOpen] = useState(false);
+
+  // NEU:
+  const [statsOpen, setStatsOpen] = useState(draftsCount > 0);
+
+Falls die Stat-Box kein Akkordeon ist sondern immer sichtbar →
+nichts ändern, melden.
+
+NICHT anfassen: das Layout der Kacheln, die Werte, die Tab-Navigation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — DRAFT-BANNER MIT TAB VERBINDEN (Befund #5)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In derselben Datei.
+
+Finde den Draft-Hinweis-Banner ("Du hast X unfertige Bewertungen /
+Jetzt vervollständigen?").
+
+Ändere NUR den Text und die onClick-Aktion des Banners:
+
+Text (DE): "{draftsCount} offene Drafts — direkt zum Drafts-Tab →"
+Text (EN): "{draftsCount} open Drafts — go to Drafts tab →"
+
+onClick des Banners: Setzt den aktiven Tab auf "Drafts"
+(dasselbe wie wenn der Nutzer manuell auf den Drafts-Tab klickt).
+
+NICHT anfassen: Banner-Styling, Position, die Tab-Logik selbst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — KONFIDENZ-WERT PRÜFEN UND FIXEN (Befund #12)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in server/routes.ts oder server/ai-client.ts.
+
+Aus Schritt 0, Punkt 4: Wenn der Konfidenz-Wert hardcodiert ist (z.B. 0.75):
+
+  Suche die Stelle wo confidence gesetzt wird.
+
+  WENN GPT-4o einen confidence-Wert im Response zurückgibt:
+    → Lese ihn aus dem Response-JSON aus und verwende ihn.
+
+  WENN GPT-4o keinen confidence-Wert zurückgibt:
+    → Erweitere den System-Prompt um folgende Anweisung (am Ende anhängen):
+      "Also include a 'confidence' field (0.0 to 1.0) indicating how
+      certain you are about the identification."
+    → Lese dann confidence aus dem Response.
+    → Fallback wenn nicht vorhanden: 0.5 (nicht 0.75)
+
+NICHT anfassen: den restlichen Prompt-Text, andere Felder des Response,
+die Darstellung auf dem Frontend (nur der Wert ändert sich).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Alle anderen server/-Endpoints
+✗ Tab-Styling und Tab-Layout
+✗ Dram-Karten-Layout
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Stat-Box: standardmäßig offen wenn Drafts > 0
+□ Draft-Banner: klicken → wechselt direkt zum Drafts-Tab
+□ Draft-Banner-Text: "X offene Drafts — direkt zum Drafts-Tab →"
+□ Konfidenz: nicht mehr immer 75% (variiert je nach GPT-Antwort)
+□ Geänderte Datei(en): [eintragen]
+□ tsc --noEmit fehlerfrei

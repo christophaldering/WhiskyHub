@@ -1,0 +1,107 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-A
+NAVIGATION POLISH: BACK-BUTTONS + SCORE-REDUNDANZ + ABSCHLUSS-HINWEIS
+(Befunde #2, #8, #19, #20)
+═══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in client/src/labs/ nach dem Rating-Flow (Guided + Compact).
+Notiere:
+
+1. Gibt es in der unteren Button-Leiste neben dem Haupt-CTA einen
+   zusätzlichen Back-Button (z.B. "Nase", "Gaumen", "Abgang")?
+   → Datei + Zeile
+
+2. Gibt es im Compact-View einen Score der an 3 Stellen gleichzeitig
+   angezeigt wird:
+   a) Ganz oben rechts im Header (avg)
+   b) Rechts neben dem Phasen-Label (z.B. "Nase ——— 87")
+   c) Groß im Slider-Block
+   → Datei + Zeilen für b)
+
+3. Suche nach dem Element "Bewerte Overall um abzuschließen" /
+   "Finalize rating". Ist es ein echter Button (onClick vorhanden)?
+   Oder nur ein disabled Element / reiner Text?
+   → Datei + Zeile + Antwort
+
+Berichte alle 3 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — REDUNDANTE BACK-BUTTONS ENTFERNEN (Befunde #2, #19)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+In der unteren Button-Leiste:
+- Der Haupt-CTA (z.B. "Nase sichern → Gaumen") bleibt
+- Der zusätzliche Back-Button links (z.B. "← Nase", "← Gaumen") wird entfernt
+
+Die Navigation zwischen Tabs erfolgt ausschließlich über die Tab-Leiste oben.
+
+WICHTIG: Nur den zusätzlichen Back-Button in der unteren Leiste entfernen.
+Den ← Zurück-Button ganz oben links (Browser-Navigation) NICHT anfassen.
+Den Haupt-CTA NICHT anfassen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — DREIFACHE SCORE-ANZEIGE REDUZIEREN (Befund #8)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 2.
+
+Entferne die Score-Anzeige rechts neben dem Phasen-Label in der
+Compact-Zeilen-Ansicht (Position b aus Schritt 0).
+
+Beispiel:
+  ALT: <span>Nase ——— 87</span>   ← die "87" hier entfernen
+  NEU: <span>Nase ———</span>       ← nur Label + Linie
+
+Der Score bleibt sichtbar:
+  - Im Slider-Block (groß, beim Bearbeiten)
+  - Im Tab-Header oben (✓ 87, nach P1-B implementiert)
+
+NUR diese eine Stelle entfernen. Nichts anderes anfassen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — ABSCHLUSS-HINWEIS RICHTIG STYLEN (Befund #20)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR bei dem Element "Bewerte Overall um abzuschließen" aus Schritt 0, Punkt 3.
+
+WENN es ein echter disabled Button ist:
+  → Behalte onClick-Logik, ändere nur das Styling:
+    - Kein Button-Shape (kein border, kein background)
+    - Nur Text: font-size 13px, color var(--color-text-muted), text-align center
+    - Kein cursor:pointer
+
+WENN es bereits reiner Text ist:
+  → Nichts ändern, melden.
+
+NICHT anfassen: die Logik die bestimmt wann Overall bewertet ist,
+den eigentlichen Konfirmieren-Button.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ package.json / package-lock.json
+✗ .env
+✗ Tab-Leiste oben (Reihenfolge, Icons, Navigation)
+✗ Haupt-CTA ("Nase sichern → Gaumen" etc.)
+✗ Slider-Komponente
+✗ Speicher-Logik
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Untere Leiste: nur Haupt-CTA, kein Back-Button mehr
+□ Tab-Leiste oben: Navigation zwischen Phasen weiterhin möglich
+□ Compact: Score erscheint nur im Slider-Block + Tab-Header (nicht 3x)
+□ "Bewerte Overall"-Hinweis: kein Button-Shape, nur Muted-Text
+□ Geänderte Datei(en): [eintragen]
+□ tsc --noEmit fehlerfrei
