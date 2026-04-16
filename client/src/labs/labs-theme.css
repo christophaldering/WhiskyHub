@@ -64,6 +64,10 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .labs-auto-grid {
@@ -1213,6 +1217,9 @@
   padding: 1.5rem 1.25rem 6rem;
   max-width: 672px;
   margin: 0 auto;
+  overflow-x: clip;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes labsPulse {

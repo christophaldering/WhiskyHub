@@ -1112,12 +1112,12 @@ export default function LabsTasteDrams() {
             </button>
           </div>
 
-          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)" }}>
-            <div className="flex items-center gap-2">
-              <div className="relative" style={{ flex: 1 }}>
+          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box", overflowX: "clip" }}>
+            <div className="flex items-center gap-2" style={{ minWidth: 0, maxWidth: "100%" }}>
+              <div className="relative" style={{ flex: "1 1 0", minWidth: 0 }}>
                 <Search className="absolute" style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--labs-text-muted)" }} />
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("drams.search")}
-                  className="labs-input" style={{ paddingLeft: 36, fontSize: 14, height: 38, borderRadius: 10 }}
+                  className="labs-input" style={{ paddingLeft: 36, fontSize: 14, height: 38, borderRadius: 10, width: "100%", minWidth: 0 }}
                   data-testid="input-labs-search-drams" />
                 {search && (
                   <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 2 }} data-testid="button-labs-clear-search">

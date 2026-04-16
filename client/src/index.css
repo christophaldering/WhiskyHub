@@ -171,9 +171,16 @@
 html, body {
   overflow-x: hidden;
   overflow-x: clip;
-  max-width: 100vw;
+  max-width: 100%;
+  width: 100%;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-x: none;
+}
+
+#root {
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
 }
 
 iframe, img, video, embed, object, canvas, svg, table, pre {
