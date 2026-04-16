@@ -6975,6 +6975,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, filtered);
       if (!entry) return res.status(404).json({ message: "Journal entry not found" });
       res.json(entry);
+      storage.updateParticipantIndices(req.params.participantId).catch(() => {});
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
