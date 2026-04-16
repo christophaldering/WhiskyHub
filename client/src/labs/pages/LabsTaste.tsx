@@ -528,6 +528,8 @@ export default function LabsTaste() {
     }
   }
 
+  const draftsCount = ((journal || []) as JournalEntry[]).filter((e) => e.status === "draft").length;
+
   const totalTastings = tastings?.length || 0;
   const totalRatings = myRatings.length;
   const statsObj = stats as { totalRatings?: number; totalTastingWhiskies?: number; totalJournalEntries?: number } | null;
@@ -557,7 +559,7 @@ export default function LabsTaste() {
   return (
     <div className="labs-page">
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="labs-taste-title">
-        {t("myTastePage.title", "My Whisky")}
+        {t("myTastePage.title", "My World")}
       </h1>
       <p className="text-sm mb-4 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
         {t("myTastePage.subtitle", "Your personal whisky collection & insights")}
@@ -731,6 +733,11 @@ export default function LabsTaste() {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your logged drams")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              {draftsCount > 0 && (
+                <div style={{ fontSize: 11, color: "#c47a3a", marginTop: -4, marginLeft: 12 }} data-testid="text-open-drafts-hint">
+                  {t("myTastePage.openDrafts", "{{count}} open Drafts", { count: draftsCount })}
+                </div>
+              )}
               <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
               <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
             </div>
@@ -898,6 +905,11 @@ export default function LabsTaste() {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <NavItem icon={BookOpen} label={t("myTastePage.myDrams", "My Drams")} description={t("myTastePage.myDramsNavDesc", "Your logged drams")} href="/labs/taste/drams" testId="labs-taste-link-my-drams" />
+              {draftsCount > 0 && (
+                <div style={{ fontSize: 11, color: "#c47a3a", marginTop: -4, marginLeft: 12 }} data-testid="text-open-drafts-hint">
+                  {t("myTastePage.openDrafts", "{{count}} open Drafts", { count: draftsCount })}
+                </div>
+              )}
               <NavItem icon={Archive} label={t("myTastePage.myBottles", "My Bottles")} description={t("myTastePage.myBottlesNavDesc", "Your bottle collection with import")} href="/labs/taste/collection" testId="labs-taste-link-my-bottles" />
               <NavItem icon={Heart} label={t("myTastePage.myWishlist", "My Wishlist")} description={t("myTastePage.myWishlistNavDesc", "Whiskies you want to try")} href="/labs/taste/wishlist" testId="labs-taste-link-my-wishlist" />
             </div>

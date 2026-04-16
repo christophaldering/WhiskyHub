@@ -158,7 +158,8 @@ export default function FlavorTags({
   onToggle,
   labels,
 }: FlavorTagsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang: "de" | "en" = i18n.language?.startsWith("de") ? "de" : "en";
   const [panel1Open, setPanel1Open] = useState(false);
   const [panel2Open, setPanel2Open] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -197,6 +198,25 @@ export default function FlavorTags({
   const secondaryCategories = useMemo(() => sortedCategories.slice(VISIBLE_GROUP_COUNT), [sortedCategories]);
 
   const selectedSet = useMemo(() => new Set(selected.map((s) => s.toLowerCase())), [selected]);
+
+  const enToLangMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cat of FLAVOR_CATEGORIES) {
+      for (const s of cat.subcategories) {
+        map.set(s.en.toLowerCase(), s[lang]);
+      }
+      if (cat.subgroups) {
+        for (const sg of cat.subgroups) {
+          for (const d of sg.descriptors) {
+            map.set(d.en.toLowerCase(), d[lang]);
+          }
+        }
+      }
+    }
+    return map;
+  }, [lang]);
+
+  const localizeTag = useCallback((tag: string) => enToLangMap.get(tag.toLowerCase()) || tag, [enToLangMap]);
 
   const countInCategories = useCallback((cats: FlavorCategory[]) => {
     let count = 0;
@@ -278,7 +298,7 @@ export default function FlavorTags({
           whiteSpace: "nowrap" as const,
         }}
       >
-        {sub.en}
+        {sub[lang]}
       </button>
     );
   };
@@ -299,7 +319,7 @@ export default function FlavorTags({
             }}
           />
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
-            {cat.en}
+            {cat[lang]}
           </span>
           {count > 0 && (
             <span
@@ -399,7 +419,7 @@ export default function FlavorTags({
                 transition: "all 0.15s",
               }}
             >
-              {tag}
+              {localizeTag(tag)}
               <span style={{ fontSize: 12, opacity: 0.7 }}>×</span>
             </button>
           ))}

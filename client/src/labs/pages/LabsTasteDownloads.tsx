@@ -91,7 +91,7 @@ export default function LabsTasteDownloads() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="flex items-center gap-3 mb-1">
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("downloads.backTaste", "Taste")}</button>
+        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("downloads.backTaste", "My World")}</button>
         <div className="flex items-center gap-2">
           <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
           <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">{t("downloads.title", "Downloads & Export")}</h1>

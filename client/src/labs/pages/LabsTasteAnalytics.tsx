@@ -332,7 +332,7 @@ export default function LabsTasteAnalytics() {
           display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
           color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
         }} data-testid="button-back-analytics">
-          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.myTastePage.title", "My Whisky")}
+          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("myTastePage.title", "My World")}
         </button>
       </BackLink>
 

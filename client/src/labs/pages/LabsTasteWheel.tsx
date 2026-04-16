@@ -97,7 +97,7 @@ export default function LabsTasteWheel() {
     <div className="labs-page" data-testid="labs-taste-wheel">
       <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-wheel">
-          <ChevronLeft className="w-4 h-4" /> {t("labs.wheel.backTaste", "Taste")}
+          <ChevronLeft className="w-4 h-4" /> {t("labs.wheel.backTaste", "My World")}
         </button>
       </BackLink>
 
