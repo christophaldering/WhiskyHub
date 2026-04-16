@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { RatingData } from "./types";
 import { BackIcon } from "./icons";
@@ -39,7 +38,6 @@ interface QuickRatingProps {
 }
 
 export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft }: QuickRatingProps) {
-  const { t } = useTranslation();
   const [score, setScore] = useState(initialData?.scores?.overall ?? 75);
   const [note, setNote] = useState(initialData?.notes?.overall ?? "");
 
@@ -175,36 +173,6 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
         {labels.save}
       </button>
 
-      {onSaveAsDraft && (
-        <button
-          data-testid="quick-save-draft-btn"
-          onClick={() => {
-            const defaultScore = 75;
-            onSaveAsDraft({
-              scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score },
-              tags: { nose: [], palate: [], finish: [], overall: [] },
-              notes: { nose: "", palate: "", finish: "", overall: note },
-            });
-          }}
-          style={{
-            width: "100%",
-            height: 40,
-            marginTop: SP.sm,
-            borderRadius: RADIUS.lg,
-            border: "1px solid var(--labs-border)",
-            background: "var(--labs-surface)",
-            color: "var(--labs-text-muted)",
-            fontSize: 13,
-            fontFamily: FONT.body,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {t("v2.saveDraftInline", "Zwischenstand sichern")}
-        </button>
-      )}
     </div>
   );
 }

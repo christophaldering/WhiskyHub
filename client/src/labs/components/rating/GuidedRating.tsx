@@ -82,7 +82,8 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
 }
 
 export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft }: GuidedRatingProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isDe = (i18n.language || "").toLowerCase().startsWith("de");
   const [phaseIndex, setPhaseIndex] = useState(initialPhaseIndex ?? 0);
   const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
@@ -507,40 +508,6 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         </div>
       )}
 
-      {onSaveAsDraft && (
-        <div style={{
-          position: "fixed",
-          bottom: "calc(136px + env(safe-area-inset-bottom, 8px))",
-          left: 0,
-          right: 0,
-          zIndex: 14,
-          display: "flex",
-          justifyContent: "center",
-          padding: `0 ${SP.md}px`,
-          boxSizing: "border-box",
-        }}>
-          <button
-            data-testid="rating-save-draft-btn"
-            onClick={() => onSaveAsDraft({ scores, tags, notes, overallExplicit: overallRated })}
-            style={{
-              height: 40,
-              paddingLeft: 20,
-              paddingRight: 20,
-              borderRadius: RADIUS.full,
-              border: "1px solid var(--labs-border)",
-              background: "var(--labs-surface)",
-              color: "var(--labs-text-muted)",
-              fontFamily: FONT.body,
-              fontSize: 13,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {t("v2.saveDraftInline", "Zwischenstand sichern")}
-          </button>
-        </div>
-      )}
-
       <div style={{
         position: "fixed",
         bottom: "calc(72px + env(safe-area-inset-bottom, 8px))",
@@ -599,7 +566,9 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
             }}
           >
             {phaseIndex < 3
-              ? `${phaseLabel(currentPhase, labels)} ${labels.save} \u2192 ${nextPhaseLabel}`
+              ? isDe
+                ? `${phaseLabel(currentPhase, labels)} ${labels.save} \u2192 ${nextPhaseLabel}`
+                : `${labels.save} ${phaseLabel(currentPhase, labels)} \u2192 ${nextPhaseLabel}`
               : canFinalize
                 ? labels.finish2
                 : t("v2.rateOverallFirst", "Bewerte Overall um abzuschließen")

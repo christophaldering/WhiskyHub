@@ -506,17 +506,6 @@ export default function LabsSolo() {
     }
   }, [quickFollowUpData]);
 
-  const handleQuickFollowUpDraft = useCallback(async () => {
-    if (quickFollowUpData) {
-      const success = await handleSaveAsDraft(quickFollowUpData);
-      if (success) {
-        clearSoloDraft();
-        hasUnsavedRef.current = false;
-        setStep("done");
-      }
-    }
-  }, [quickFollowUpData, handleSaveAsDraft]);
-
   const handleRetrySave = useCallback(() => {
     if (ratingResult) {
       if (isDraftSave) {
@@ -766,7 +755,11 @@ export default function LabsSolo() {
             alignItems: "center",
             justifyContent: "center",
           }}>
-            <span style={{ fontSize: 28 }}>&#129346;</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--labs-accent)" }} aria-hidden="true">
+              <path d="M6 3h12l-1.2 8.4a5 5 0 0 1-4.8 4.3h-0 a5 5 0 0 1-4.8-4.3L6 3z" />
+              <path d="M12 15.7V21" />
+              <path d="M8.5 21h7" />
+            </svg>
           </div>
 
           <h2 className="labs-h2" style={{ margin: 0, textAlign: "center", fontSize: 18 }} data-testid="quick-followup-title">
@@ -804,7 +797,7 @@ export default function LabsSolo() {
             className="labs-btn-primary"
             style={{ width: "100%", minHeight: 44 }}
           >
-            {t("v2.solo.quickFollowUpDeepen", "Jetzt ergänzen")}
+            {t("v2.solo.quickFollowUpDeepen", "Rate in full →")}
           </button>
 
           <button
@@ -813,25 +806,7 @@ export default function LabsSolo() {
             className="labs-btn-secondary"
             style={{ width: "100%", minHeight: 44 }}
           >
-            {t("v2.solo.quickFollowUpFinish", "Fertig")}
-          </button>
-
-          <button
-            onClick={handleQuickFollowUpDraft}
-            data-testid="quick-followup-draft-btn"
-            style={{
-              width: "100%",
-              minHeight: 40,
-              background: "transparent",
-              border: "1px solid var(--labs-border)",
-              borderRadius: 10,
-              color: "var(--labs-text-muted)",
-              fontSize: 13,
-              fontFamily: "var(--font-ui)",
-              cursor: "pointer",
-            }}
-          >
-            {t("v2.solo.quickFollowUpDraft", "Später (als Entwurf)")}
+            {t("v2.solo.quickFollowUpFinish", "Confirm")}
           </button>
         </div>
       </div>
