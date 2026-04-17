@@ -421,6 +421,7 @@ export default function LabsTaste() {
     consistency: false,
     exploration: false,
   });
+  const [activeTopSection, setActiveTopSection] = useState<"ai" | "profile">("ai");
   const toggleStatInfo = (key: "avg" | "consistency" | "exploration") =>
     setStatInfoOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -573,6 +574,107 @@ export default function LabsTaste() {
       <p className="text-sm mb-4 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)" }}>
         {t("myTastePage.subtitle", "Your personal whisky collection & insights")}
       </p>
+      <div className="labs-fade-in labs-stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+        {(() => {
+          const isAiActive = activeTopSection === "ai";
+          return (
+            <button
+              type="button"
+              onClick={() => setActiveTopSection("ai")}
+              data-testid="tile-meine-welt-ai-insights"
+              style={{
+                minHeight: 80,
+                padding: "14px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                textAlign: "left",
+                cursor: "pointer",
+                borderRadius: 12,
+                border: isAiActive ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                background: isAiActive ? "color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface))" : "var(--labs-surface)",
+                color: isAiActive ? "var(--labs-accent)" : "var(--labs-text)",
+                fontFamily: "inherit",
+                transition: "all 150ms",
+              }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Sparkles className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: isAiActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                  {t("myTastePage.aiInsights", "AI & Insights")}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                  {t("myTastePage.aiInsightsDesc", "Connoisseur, Recommendations & more")}
+                </div>
+              </div>
+            </button>
+          );
+        })()}
+        {(() => {
+          const isProfileActive = activeTopSection === "profile";
+          return (
+            <button
+              type="button"
+              onClick={() => setActiveTopSection("profile")}
+              data-testid="tile-meine-welt-profile-analytics"
+              style={{
+                minHeight: 80,
+                padding: "14px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                textAlign: "left",
+                cursor: "pointer",
+                borderRadius: 12,
+                border: isProfileActive ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                background: isProfileActive ? "color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface))" : "var(--labs-surface)",
+                color: isProfileActive ? "var(--labs-accent)" : "var(--labs-text)",
+                fontFamily: "inherit",
+                transition: "all 150ms",
+              }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Activity className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: isProfileActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                  {t("myTastePage.profileAnalytics", "Profile & Analytics")}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                  {t("myTastePage.profileAnalyticsDesc", "CaskSense, Analytics, Flavor Wheel & more")}
+                </div>
+              </div>
+            </button>
+          );
+        })()}
+      </div>
+
+      {activeTopSection === "ai" && (
+        <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <NavTile icon={Sparkles} label="Connoisseur" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+            <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+            <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+            <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          </div>
+        </div>
+      )}
+
+      {activeTopSection === "profile" && (
+        <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <NavTile icon={Activity} label="CaskSense Profile" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+            <NavTile icon={BarChart3} label="Analytics" href="/labs/taste/analytics" testId="labs-taste-link-analytics" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+            <NavTile icon={PieChart} label="Flavor Wheel" href="/labs/taste/wheel" testId="labs-taste-link-wheel" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+            <NavTile icon={Activity} label={t("myTastePage.whiskyDna", "Whisky DNA")} href="/labs/taste/dna" testId="labs-taste-link-dna" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+            <NavTile icon={GitCompareArrows} label="Compare" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+            <NavTile icon={Download} label="Downloads" href="/labs/taste/downloads" testId="labs-taste-link-downloads" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          </div>
+        </div>
+      )}
+
       {!analyticsLocked && flavorProfile?.hasMultipleScales && (
         <p className="text-xs flex items-center gap-1 mb-6 labs-fade-in labs-stagger-1" style={{ color: "var(--labs-text-muted)", opacity: 0.7 }} data-testid="taste-normalized-hint">
           <Info className="w-3 h-3 flex-shrink-0" />
@@ -1017,33 +1119,6 @@ export default function LabsTaste() {
         </>
       )}
 
-      <div className="mt-8 labs-fade-in labs-stagger-3">
-        <p className="labs-section-label flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          AI & Insights
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <NavTile icon={Sparkles} label="Connoisseur" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-        </div>
-      </div>
-
-      <div className="mt-8 labs-fade-in labs-stagger-3">
-        <p className="labs-section-label flex items-center gap-2">
-          <Activity className="w-3.5 h-3.5" />
-          Profile & Analysis
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <NavTile icon={Activity} label="CaskSense Profile" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-          <NavTile icon={BarChart3} label="Analytics" href="/labs/taste/analytics" testId="labs-taste-link-analytics" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-          <NavTile icon={PieChart} label="Flavor Wheel" href="/labs/taste/wheel" testId="labs-taste-link-wheel" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-          <NavTile icon={Activity} label={t("myTastePage.whiskyDna", "Whisky DNA")} href="/labs/taste/dna" testId="labs-taste-link-dna" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-          <NavTile icon={GitCompareArrows} label="Compare" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-          <NavTile icon={Download} label="Downloads" href="/labs/taste/downloads" testId="labs-taste-link-downloads" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-        </div>
-      </div>
     </div>
   );
 }
