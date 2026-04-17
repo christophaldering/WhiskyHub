@@ -7,8 +7,9 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders, wishlistApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
-import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck } from "lucide-react";
+import { wishlistKey } from "@/lib/wishlistKey";
+import type { WishlistEntry } from "@shared/schema";
+import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X } from "lucide-react";
 
 interface DnaCategory {
   id: string;
@@ -324,10 +325,28 @@ export default function LabsWhiskyDNA() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const savedKeys = useWishlistKeys(pid);
+  const { data: wishlistEntries } = useQuery<WishlistEntry[]>({
+    queryKey: ["wishlist", pid],
+    queryFn: () => wishlistApi.getAll(pid!),
+    enabled: !!pid,
+    staleTime: 60 * 1000,
+  });
+
+  const savedKeys = useMemo(() => {
+    const set = new Set<string>();
+    (wishlistEntries || []).forEach((e) => set.add(wishlistKey(e.name, e.distillery)));
+    return set;
+  }, [wishlistEntries]);
+
+  const wishlistIdByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    (wishlistEntries || []).forEach((e) => map.set(wishlistKey(e.name, e.distillery), e.id));
+    return map;
+  }, [wishlistEntries]);
 
   const [justSavedKeys, setJustSavedKeys] = useState<Set<string>>(new Set());
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [removingKey, setRemovingKey] = useState<string | null>(null);
 
   const saveRecMutation = useMutation({
     mutationFn: async (rec: DnaRecommendation) => {
@@ -360,6 +379,27 @@ export default function LabsWhiskyDNA() {
     },
     onSettled: () => {
       setSavingKey(null);
+    },
+  });
+
+  const removeRecMutation = useMutation({
+    mutationFn: async ({ id }: { id: string; key: string }) => {
+      return wishlistApi.delete(pid!, id);
+    },
+    onMutate: ({ key }) => {
+      setRemovingKey(key);
+    },
+    onSuccess: (_data, { key }) => {
+      setJustSavedKeys((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onSettled: () => {
+      setRemovingKey(null);
     },
   });
 
@@ -623,6 +663,8 @@ export default function LabsWhiskyDNA() {
                   const recKey = wishlistKey(r.name, r.distillery);
                   const isSaved = savedKeys.has(recKey) || justSavedKeys.has(recKey);
                   const isSaving = savingKey === recKey && saveRecMutation.isPending;
+                  const isRemoving = removingKey === recKey && removeRecMutation.isPending;
+                  const wishlistId = wishlistIdByKey.get(recKey);
                   return (
                     <div
                       key={`${r.distillery || ""}|${r.name}|${idx}`}
@@ -675,7 +717,7 @@ export default function LabsWhiskyDNA() {
                             </span>
                           ))}
                         </div>
-                        <div style={{ marginTop: 10 }}>
+                        <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <button
                             type="button"
                             onClick={() => {
@@ -721,6 +763,37 @@ export default function LabsWhiskyDNA() {
                               </>
                             )}
                           </button>
+                          {isSaved && wishlistId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isRemoving) return;
+                                removeRecMutation.mutate({ id: wishlistId, key: recKey });
+                              }}
+                              disabled={isRemoving}
+                              data-testid={`button-remove-recommendation-${idx}`}
+                              aria-label={t("dnaTryNextRemove", "Remove from wishlist")}
+                              title={t("dnaTryNextRemove", "Remove from wishlist")}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                padding: "6px 10px", borderRadius: 999,
+                                fontSize: 11, fontWeight: 600,
+                                cursor: isRemoving ? "default" : "pointer",
+                                background: "transparent",
+                                border: "1px solid color-mix(in srgb, var(--labs-text-muted) 35%, transparent)",
+                                color: "var(--labs-text-muted)",
+                                opacity: isRemoving ? 0.6 : 1,
+                                transition: "all 180ms ease",
+                              }}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>
+                                {isRemoving
+                                  ? t("dnaTryNextRemoving", "Removing…")
+                                  : t("dnaTryNextRemove", "Remove")}
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
