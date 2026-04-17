@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -6202,7 +6202,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
       const tasks: Array<{ isUpdate: boolean; payload: any; previous: any | null }> = [];
       const localEditNames: string[] = [];
-      const LOCAL_EDIT_FIELDS = ["status", "personalRating", "notes", "communityRating", "pricePaid", "avgPrice", "auctionPrice"] as const;
+      const LOCAL_EDIT_FIELDS = ["status", "personalRating", "notes", "communityRating", "pricePaid", "avgPrice", "auctionPrice"] as const satisfies ReadonlyArray<keyof WhiskybaseCollectionItem>;
       for (const row of rows) {
         const rowName = colMap(row, "Name", "name");
         const whiskybaseId = colMap(row, "ID", "id");
@@ -6270,7 +6270,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           // so they only effectively change when existing is null. The numeric
           // and community fields are overwritten directly from the file (incl.
           // null if the file has no value).
-          const effectiveByField: Record<string, unknown> = {
+          const effectiveByField: Pick<WhiskybaseCollectionItem, typeof LOCAL_EDIT_FIELDS[number]> = {
             status,
             personalRating,
             notes,
@@ -6279,15 +6279,15 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
             avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
             auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
           };
+          const existingItem: WhiskybaseCollectionItem = existing!;
+          const normalize = (v: unknown) => (v == null || v === "" ? null : v);
           let conflict = false;
           for (const f of LOCAL_EDIT_FIELDS) {
             if (!localMod[f]) continue;
-            const effective = effectiveByField[f];
-            const existingVal = (existing as any)[f];
-            // Normalize: treat null/undefined/"" as equivalent.
-            const a = effective == null || effective === "" ? null : effective;
-            const b = existingVal == null || existingVal === "" ? null : existingVal;
-            if (a !== b) { conflict = true; break; }
+            if (normalize(effectiveByField[f]) !== normalize(existingItem[f])) {
+              conflict = true;
+              break;
+            }
           }
           if (conflict) localEditNames.push(name);
         }
