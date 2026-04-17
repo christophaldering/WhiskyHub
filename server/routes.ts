@@ -4705,6 +4705,152 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
     }
   });
 
+  // ===== AI WHISKY RECOMMENDATIONS =====
+
+  const aiRecommendationsCache = new Map<string, { suggestions: any[]; timestamp: number }>();
+  const AI_RECOMMENDATIONS_TTL = 20 * 60 * 1000;
+
+  function normalizeForRecMatch(s: string | null | undefined): string {
+    return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  app.post("/api/recommendations/ai", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) {
+        return res.status(auth.status).json({ message: auth.message });
+      }
+      const participantId = auth.participant.id;
+      const { language, force } = req.body || {};
+      if (await isAIDisabled("ai_recommendations")) {
+        return res.status(503).json({ message: "AI feature disabled by admin" });
+      }
+
+      const lang = language === "de" ? "German" : "English";
+      const cacheKey = `${participantId}:${language === "de" ? "de" : "en"}`;
+      const cached = aiRecommendationsCache.get(cacheKey);
+      if (!force && cached && Date.now() - cached.timestamp < AI_RECOMMENDATIONS_TTL) {
+        return res.json({ suggestions: cached.suggestions, cached: true });
+      }
+
+      const profile = await storage.getFlavorProfile(participantId);
+      const ratedCount = profile.ratedWhiskies?.length || 0;
+      if (ratedCount === 0 && (profile.sources?.journalEntries || 0) === 0) {
+        return res.json({ suggestions: [] });
+      }
+
+      const topRated = (profile.ratedWhiskies || [])
+        .slice()
+        .sort((a, b) => (b.rating.overall || 0) - (a.rating.overall || 0))
+        .slice(0, 8)
+        .map(r => ({
+          name: r.whisky.name,
+          distillery: r.whisky.distillery,
+          region: r.whisky.region,
+          cask: r.whisky.caskType,
+          peat: r.whisky.peatLevel,
+          score: Math.round(r.rating.overall || 0),
+        }));
+
+      const topRegions = Object.entries(profile.regionBreakdown || {})
+        .sort((a, b) => b[1].avgScore - a[1].avgScore)
+        .slice(0, 4)
+        .map(([k, v]) => `${k} (${Math.round(v.avgScore)})`);
+      const topCasks = Object.entries(profile.caskBreakdown || {})
+        .sort((a, b) => b[1].avgScore - a[1].avgScore)
+        .slice(0, 4)
+        .map(([k, v]) => `${k} (${Math.round(v.avgScore)})`);
+      const topPeat = Object.entries(profile.peatBreakdown || {})
+        .sort((a, b) => b[1].avgScore - a[1].avgScore)
+        .slice(0, 3)
+        .map(([k, v]) => `${k} (${Math.round(v.avgScore)})`);
+
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(participantId, "ai_recommendations");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED", quotaInfo });
+        return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
+      }
+
+      const systemPrompt = `You are a knowledgeable whisky expert recommending bottles to a taster based on their proven flavor preferences. Always respond in ${lang}. Suggest specific, real-world whisky bottlings (named expressions) that an enthusiast can plausibly find. Provide a concise, personalized reason ("why this fits") for each. Keep reasons under 220 characters. Return STRICT JSON.`;
+
+      const userPrompt = `Taster profile:
+- Average overall: ${profile.avgScores?.overall ?? "n/a"}
+- Top regions (avg score): ${topRegions.join(", ") || "n/a"}
+- Top cask types: ${topCasks.join(", ") || "n/a"}
+- Peat preference: ${topPeat.join(", ") || "n/a"}
+- Highest-rated whiskies: ${topRated.map(w => `${w.name} (${w.distillery || "?"}, ${w.region || "?"}, ${w.score})`).join(" | ") || "n/a"}
+
+Recommend exactly 5 distinct whisky bottlings the taster has likely NOT tried that match these preferences.
+
+Respond with JSON in this exact shape:
+{
+  "suggestions": [
+    { "name": "<full bottling name>", "distillery": "<distillery>", "region": "<region or null>", "caskType": "<cask or null>", "peatLevel": "<None|Light|Medium|Heavy or null>", "reason": "<short personalized reason in ${lang}>" }
+  ]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 1200,
+        temperature: 0.7,
+      });
+
+      const raw = response.choices[0]?.message?.content || "{}";
+      let parsed: any;
+      try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+      const rawSuggestions: any[] = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
+
+      const allWhiskies = await storage.getAllWhiskies();
+      const whiskyIndex = allWhiskies.map(w => ({
+        w,
+        nName: normalizeForRecMatch(w.name),
+        nDist: normalizeForRecMatch(w.distillery),
+      }));
+
+      const suggestions = rawSuggestions.slice(0, 6).map((s: any) => {
+        const name = String(s?.name || "").trim();
+        const distillery = String(s?.distillery || "").trim() || null;
+        const region = s?.region ? String(s.region).trim() : null;
+        const caskType = s?.caskType ? String(s.caskType).trim() : null;
+        const peatLevel = s?.peatLevel ? String(s.peatLevel).trim() : null;
+        const reason = String(s?.reason || "").trim().slice(0, 400);
+
+        let matchedWhiskyId: string | null = null;
+        if (name) {
+          const nName = normalizeForRecMatch(name);
+          const nDist = normalizeForRecMatch(distillery);
+          const exact = whiskyIndex.find(x => x.nName === nName && (!nDist || x.nDist === nDist));
+          if (exact) {
+            matchedWhiskyId = exact.w.id;
+          } else {
+            const partial = whiskyIndex.find(x =>
+              nDist && x.nDist === nDist && (x.nName.includes(nName) || nName.includes(x.nName)) && nName.length > 4
+            );
+            if (partial) matchedWhiskyId = partial.w.id;
+          }
+        }
+
+        return { name, distillery, region, caskType, peatLevel, reason, whiskyId: matchedWhiskyId };
+      }).filter((s: any) => s.name);
+
+      aiRecommendationsCache.set(cacheKey, { suggestions, timestamp: Date.now() });
+      if (aiRecommendationsCache.size > 500) {
+        const cutoff = Date.now() - AI_RECOMMENDATIONS_TTL;
+        for (const [k, v] of aiRecommendationsCache) if (v.timestamp < cutoff) aiRecommendationsCache.delete(k);
+      }
+
+      res.json({ suggestions });
+    } catch (e: any) {
+      console.error("AI recommendations error:", e.message);
+      res.status(500).json({ message: "Could not generate AI recommendations" });
+    }
+  });
+
   // ===== AI SESSION HIGHLIGHTS =====
 
   app.post("/api/tastings/:id/ai-highlights", async (req, res) => {
