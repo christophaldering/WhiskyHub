@@ -8423,6 +8423,10 @@ const resources = {
         importConfirmPreserve: "Your personal status, rating and notes are preserved on existing bottles.",
         importConfirmCancel: "Cancel",
         importConfirmGo: "Import",
+        importCancel: "Cancel import",
+        importCancelling: "Cancelling…",
+        importCancelNote: "Cancelling keeps bottles that have already been imported into your collection.",
+        importCancelledResult: "Import cancelled — {{imported}} bottles kept",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17082,6 +17086,10 @@ const resources = {
         importConfirmPreserve: "Dein persönlicher Status, deine Bewertung und Notizen bleiben bei bestehenden Flaschen erhalten.",
         importConfirmCancel: "Abbrechen",
         importConfirmGo: "Importieren",
+        importCancel: "Import abbrechen",
+        importCancelling: "Wird abgebrochen…",
+        importCancelNote: "Beim Abbruch bleiben bereits importierte Flaschen in deiner Sammlung.",
+        importCancelledResult: "Import abgebrochen — {{imported}} Flaschen behalten",
       },
       bottleSplitUi: {
         claims: "Claims",

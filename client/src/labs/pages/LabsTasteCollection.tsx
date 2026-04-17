@@ -102,6 +102,10 @@ export default function LabsTasteCollection() {
     },
   });
 
+  const cancelImportMutation = useMutation({
+    mutationFn: () => collectionApi.cancelImport(pid!),
+  });
+
   const importMutation = useMutation({
     mutationFn: (file: File) => {
       setIsImporting(true);
@@ -113,10 +117,17 @@ export default function LabsTasteCollection() {
       setPendingImport(null);
       const imported = (result?.imported ?? 0) + (result?.updated ?? 0);
       const skipped = result?.skipped ?? 0;
-      setImportMessage({
-        type: "success",
-        text: t("collectionUi.importResultSuccess", { imported, skipped }),
-      });
+      if (result?.cancelled) {
+        setImportMessage({
+          type: "success",
+          text: t("collectionUi.importCancelledResult", { imported, defaultValue: "Import cancelled — {{imported}} bottles kept" }),
+        });
+      } else {
+        setImportMessage({
+          type: "success",
+          text: t("collectionUi.importResultSuccess", { imported, skipped }),
+        });
+      }
       setTimeout(() => setImportMessage(null), 6000);
     },
     onError: (error: any) => {
@@ -128,6 +139,7 @@ export default function LabsTasteCollection() {
     },
     onSettled: () => {
       setIsImporting(false);
+      cancelImportMutation.reset();
     },
   });
 
@@ -781,6 +793,8 @@ export default function LabsTasteCollection() {
           onImport={() => fileInputRef.current?.click()}
           onSync={() => syncFileInputRef.current?.click()}
           onClose={() => setActivePanel(null)}
+          onCancelImport={() => cancelImportMutation.mutate()}
+          isCancellingImport={cancelImportMutation.isPending || importProgress?.status === "cancelled" || (importMutation.isPending && (importProgress as any)?.cancelRequested)}
         />
       )}
 
@@ -1008,7 +1022,7 @@ function OnboardingStep({ number, icon, title, description }: { number: number; 
   );
 }
 
-function ImportProgressBar({ progress }: { progress?: { status: string; processed: number; total: number } | undefined }) {
+function ImportProgressBar({ progress, onCancel, isCancelling }: { progress?: { status: string; processed: number; total: number } | undefined; onCancel?: () => void; isCancelling?: boolean }) {
   const { t } = useTranslation();
   const total = progress?.total ?? 0;
   const processed = progress?.processed ?? 0;
@@ -1030,18 +1044,41 @@ function ImportProgressBar({ progress }: { progress?: { status: string; processe
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Loader2 className="w-4 h-4" style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
-          <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }} data-testid="text-import-progress-label">
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Loader2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+          <span className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }} data-testid="text-import-progress-label">
             {label}
           </span>
         </div>
-        {hasTotal && (
-          <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }} data-testid="text-import-progress-pct">
-            {pct}%
-          </span>
-        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {hasTotal && (
+            <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }} data-testid="text-import-progress-pct">
+              {pct}%
+            </span>
+          )}
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              disabled={isCancelling}
+              className="text-xs font-semibold"
+              style={{
+                padding: "4px 10px",
+                borderRadius: 8,
+                border: "1px solid var(--labs-border)",
+                background: "transparent",
+                color: "var(--labs-text)",
+                cursor: isCancelling ? "default" : "pointer",
+                opacity: isCancelling ? 0.5 : 1,
+              }}
+              data-testid="button-cancel-import"
+            >
+              {isCancelling
+                ? t("collectionUi.importCancelling", { defaultValue: "Cancelling…" })
+                : t("collectionUi.importCancel", { defaultValue: "Cancel import" })}
+            </button>
+          )}
+        </div>
       </div>
       <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden" }}>
         <div
@@ -1055,6 +1092,11 @@ function ImportProgressBar({ progress }: { progress?: { status: string; processe
           data-testid="import-progress-fill"
         />
       </div>
+      {onCancel && (
+        <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)", lineHeight: 1.4 }} data-testid="text-import-cancel-note">
+          {t("collectionUi.importCancelNote", { defaultValue: "Cancelling keeps bottles that have already been imported into your collection." })}
+        </p>
+      )}
     </div>
   );
 }
@@ -1064,6 +1106,7 @@ function ImportSyncSheet({
   expandedSyncLogId, setExpandedSyncLogId,
   showSyncHistory, setShowSyncHistory,
   onImport, onSync, onClose,
+  onCancelImport, isCancellingImport,
 }: {
   hasCollection: boolean;
   isImporting: boolean;
@@ -1077,6 +1120,8 @@ function ImportSyncSheet({
   onImport: () => void;
   onSync: () => void;
   onClose: () => void;
+  onCancelImport?: () => void;
+  isCancellingImport?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -1143,7 +1188,11 @@ function ImportSyncSheet({
         </div>
 
         {isImporting && (
-          <ImportProgressBar progress={importProgress} />
+          <ImportProgressBar
+            progress={importProgress}
+            onCancel={onCancelImport}
+            isCancelling={isCancellingImport}
+          />
         )}
 
         {hasCollection ? (

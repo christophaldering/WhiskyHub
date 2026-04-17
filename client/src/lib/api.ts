@@ -664,7 +664,7 @@ export const collectionApi = {
   check: (participantId: string) => fetchJSON(`/collection/${participantId}/check`) as Promise<{ items: Record<string, { id: string; status: string | null }> }>,
   getImportProgress: (participantId: string) =>
     fetchJSON(`/collection/${participantId}/import-progress`) as Promise<{
-      status: "idle" | "running" | "completed" | "error";
+      status: "idle" | "running" | "completed" | "error" | "cancelled";
       processed: number;
       total: number;
       imported?: number;
@@ -672,6 +672,8 @@ export const collectionApi = {
       skipped?: number;
       error?: string;
     }>,
+  cancelImport: (participantId: string) =>
+    fetchJSON(`/collection/${participantId}/import-progress/cancel`, { method: "POST" }),
   importFile: async (participantId: string, file: File, opts?: { dryRun?: boolean }) => {
     const formData = new FormData();
     try {

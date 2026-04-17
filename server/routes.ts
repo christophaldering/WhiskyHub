@@ -429,7 +429,7 @@ async function rejectIfArchived(tastingId: string, res: Response): Promise<boole
 }
 
 type ImportProgress = {
-  status: "running" | "completed" | "error" | "idle";
+  status: "running" | "completed" | "error" | "idle" | "cancelled";
   processed: number;
   total: number;
   imported?: number;
@@ -438,6 +438,7 @@ type ImportProgress = {
   error?: string;
   startedAt: number;
   finishedAt?: number;
+  cancelRequested?: boolean;
 };
 const importProgressByPid = new Map<string, ImportProgress>();
 
@@ -6081,6 +6082,20 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
     res.json(progress ?? { status: "idle", processed: 0, total: 0 });
   });
 
+  app.post("/api/collection/:participantId/import-progress/cancel", async (req: Request, res: Response) => {
+    const participantId = req.params.participantId as string;
+    const callerId = req.headers["x-participant-id"] as string | undefined;
+    if (!participantId || !callerId || callerId !== participantId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const cur = importProgressByPid.get(participantId);
+    if (!cur || cur.status !== "running") {
+      return res.status(409).json({ error: "No running import to cancel" });
+    }
+    importProgressByPid.set(participantId, { ...cur, cancelRequested: true });
+    res.json({ ok: true });
+  });
+
   app.post("/api/collection/:participantId/import", docUpload.single("file"), async (req: Request, res: Response) => {
     const participantIdForProgress = req.params.participantId as string;
     try {
@@ -6241,8 +6256,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
         }});
 
-        if (isUpdate) updated++;
-        else imported++;
+        void isUpdate;
       }
 
       const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true" || req.body?.dryRun === "1" || req.body?.dryRun === "true";
@@ -6259,16 +6273,44 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       });
 
       const BATCH_SIZE = 50;
+      let cancelled = false;
       for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+        const beforeBatch = importProgressByPid.get(participantIdForProgress);
+        if (beforeBatch?.cancelRequested) { cancelled = true; break; }
         const batch = tasks.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(t => storage.upsertWhiskybaseCollectionItem(t.payload)));
+        for (const t of batch) {
+          if (t.isUpdate) updated++;
+          else imported++;
+        }
         const prev = importProgressByPid.get(participantIdForProgress);
+        if (prev?.cancelRequested) { cancelled = true; }
         if (prev) {
           importProgressByPid.set(participantIdForProgress, {
             ...prev,
             processed: Math.min(i + batch.length, tasks.length),
           });
         }
+        if (cancelled) break;
+      }
+
+      if (cancelled) {
+        const startedAt = importProgressByPid.get(participantIdForProgress)?.startedAt ?? Date.now();
+        const processed = imported + updated;
+        importProgressByPid.set(participantIdForProgress, {
+          status: "cancelled",
+          processed,
+          total: tasks.length,
+          imported, updated, skipped,
+          startedAt,
+          finishedAt: Date.now(),
+        });
+        setTimeout(() => {
+          const cur = importProgressByPid.get(participantIdForProgress);
+          if (cur && cur.status !== "running") importProgressByPid.delete(participantIdForProgress);
+        }, 30_000);
+        console.log("[Import] Cancelled", { imported, updated, skipped, total: rows.length, processed });
+        return res.json({ cancelled: true, imported, updated, skipped, total: rows.length, processed });
       }
 
       importProgressByPid.set(participantIdForProgress, {
