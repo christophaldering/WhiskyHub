@@ -824,9 +824,6 @@ export default function LabsTasteDrams() {
             whiskyName={selectedEntry.name || selectedEntry.title || ""}
             distillery={selectedEntry.distillery || ""}
             ownOverall={selectedEntry.personalScore ?? null}
-            ownNose={selectedEntry.noseScore ?? null}
-            ownTaste={selectedEntry.tasteScore ?? null}
-            ownFinish={selectedEntry.finishScore ?? null}
           />
 
           {selectedEntry.tastingTitle && (
@@ -1812,17 +1809,11 @@ function FriendsAlsoRated({
   whiskyName,
   distillery,
   ownOverall,
-  ownNose,
-  ownTaste,
-  ownFinish,
 }: {
   pid: string;
   whiskyName: string;
   distillery: string;
   ownOverall: number | null;
-  ownNose: number | null;
-  ownTaste: number | null;
-  ownFinish: number | null;
 }) {
   const { t } = useTranslation();
   const trimmedName = whiskyName.trim();

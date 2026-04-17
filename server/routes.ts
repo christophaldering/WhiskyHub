@@ -7336,34 +7336,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const results: SharedRatingResponse[] = [];
 
       for (const f of friends) {
-        let match: Participant | undefined;
-        try {
-          match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
-          if (!match) {
-            const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
-            if (fullName) match = await storage.getParticipantByName(fullName);
-          }
-        } catch (lookupErr) {
-          console.warn(`shared-ratings: friend ${f.id} participant lookup failed`, lookupErr);
-          continue;
-        }
+        // Resolve friend strictly by email (canonical identifier) to avoid
+        // ambiguous name-collision matches that could leak non-friend data.
+        if (!f.email) continue;
+        const match = await storage.getParticipantByEmail(f.email);
         if (!match) continue;
 
-        let photoUrl: string | null = null;
-        try {
-          const prof = await storage.getProfile(match.id);
-          if (prof?.photoUrl) photoUrl = prof.photoUrl;
-        } catch (profileErr) {
-          console.warn(`shared-ratings: profile fetch failed for participant ${match.id}`, profileErr);
-        }
+        const prof = await storage.getProfile(match.id);
+        const photoUrl: string | null = prof?.photoUrl ?? null;
 
-        let friendEntries: JournalEntry[] = [];
-        try {
-          friendEntries = await storage.getJournalEntries(match.id);
-        } catch (entriesErr) {
-          console.warn(`shared-ratings: journal fetch failed for participant ${match.id}`, entriesErr);
-          continue;
-        }
+        const friendEntries: JournalEntry[] = await storage.getJournalEntries(match.id);
 
         const matchingEntries = friendEntries.filter((e) => {
           if (e.personalScore == null) return false;

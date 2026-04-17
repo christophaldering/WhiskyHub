@@ -1607,7 +1607,6 @@ const resources = {
         scoreChip: "Score: {{range}}",
         friendsAlsoRated: "Also rated by",
         yourScoreVsFriend: "vs. your score",
-        friendsNoneYet: "No friends have rated this whisky yet.",
       },
       downloads: {
         title: "Downloads & Export",
@@ -10306,7 +10305,6 @@ const resources = {
         scoreChip: "Punkte: {{range}}",
         friendsAlsoRated: "Auch bewertet von",
         yourScoreVsFriend: "vs. dir",
-        friendsNoneYet: "Noch keine Freunde haben diesen Whisky bewertet.",
       },
       downloads: {
         title: "Downloads & Export",
