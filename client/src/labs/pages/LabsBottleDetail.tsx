@@ -255,31 +255,35 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
         <div className="mb-6 labs-fade-in labs-stagger-4">
           <p className="labs-section-label">Tasting History</p>
           <div className="space-y-2" data-testid="labs-bottle-tastings">
-            {tastings.map((t: any) => (
-              <div
-                key={t.id}
-                className="labs-card labs-card-interactive flex items-center gap-3 p-4"
-                onClick={() => navigate(`/labs/tastings/${t.id}`)}
-                data-testid={`labs-bottle-tasting-${t.id}`}
-              >
+            {tastings.map((t: any) => {
+              const canOpen = !!t.userParticipated;
+              return (
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "var(--labs-info-muted)" }}
+                  key={t.id}
+                  className={canOpen ? "labs-card labs-card-interactive flex items-center gap-3 p-4" : "labs-card flex items-center gap-3 p-4"}
+                  onClick={canOpen ? () => navigate(`/labs/tastings/${t.id}/recap`) : undefined}
+                  style={canOpen ? undefined : { cursor: "default", opacity: 0.85 }}
+                  data-testid={`labs-bottle-tasting-${t.id}`}
                 >
-                  <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-info)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                    {t.title || "Untitled Tasting"}
-                  </p>
-                  {t.date && (
-                    <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                      {t.date}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "var(--labs-info-muted)" }}
+                  >
+                    <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-info)" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                      {t.title || "Untitled Tasting"}
                     </p>
-                  )}
+                    {t.date && (
+                      <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                        {t.date}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

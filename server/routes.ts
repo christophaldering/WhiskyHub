@@ -1918,6 +1918,12 @@ export async function registerRoutes(
   app.get("/api/tastings/:id/participants", async (req, res) => {
     const auth = await requireAuth(req);
     if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    const tasting = await storage.getTasting(req.params.id);
+    if (!tasting) return res.status(404).json({ message: "Not found" });
+    if (auth.participant.role !== "admin" && tasting.hostId !== auth.participant.id) {
+      const isMember = await storage.isParticipantInTasting(req.params.id, auth.participant.id);
+      if (!isMember) return res.status(403).json({ message: "Forbidden" });
+    }
     const list = await storage.getTastingParticipants(req.params.id);
     const filtered = list.filter((tp: any) => !tp.participant?.email?.endsWith("@casksense.local"));
     const seen = new Set<string>();
@@ -18106,8 +18112,19 @@ Rules:
       }
 
       const relatedTastingIds = sameNameWhiskies.map(w => w.tastingId).filter(Boolean);
-      relatedTastings = allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => ({
+      const relatedTastingsRaw = allTastings.filter(t => relatedTastingIds.includes(t.id));
+      const isAdmin = requester?.role === "admin";
+      const membershipFlags = await Promise.all(
+        relatedTastingsRaw.map(async (t) => {
+          if (!requester) return false;
+          if (isAdmin) return true;
+          if (t.hostId === requester.id) return true;
+          return await storage.isParticipantInTasting(t.id, requester.id);
+        })
+      );
+      relatedTastings = relatedTastingsRaw.map((t, i) => ({
         id: t.id, title: t.title, date: t.date, status: t.status,
+        userParticipated: membershipFlags[i],
       }));
       const relatedScales = new Set(allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => t.ratingScale ?? 100));
       hasNonStandardScale = relatedScales.size > 1 || (relatedScales.size === 1 && !relatedScales.has(100));
