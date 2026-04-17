@@ -1591,14 +1591,14 @@ function ImportSyncSheet({
                                 background: d.action === "added" ? "rgba(34,197,94,0.1)" : d.action === "removed" ? "rgba(239,68,68,0.1)" : d.action === "conflict" ? "rgba(245,158,11,0.15)" : "rgba(59,130,246,0.1)",
                                 color: d.action === "added" ? "var(--labs-success)" : d.action === "removed" ? "var(--labs-danger)" : d.action === "conflict" ? "#e6a800" : "var(--labs-info)",
                                 fontWeight: 600,
-                              }}>{d.action}</span>
+                              }}>{d.action === "added" ? t("collectionUi.syncActionAdded") : d.action === "removed" ? t("collectionUi.syncActionRemoved") : d.action === "conflict" ? t("collectionUi.syncActionConflict") : d.action === "updated" ? t("collectionUi.syncActionUpdated") : d.action}</span>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <span className="text-xs truncate block" style={{ color: "var(--labs-text)" }}>{d.name}</span>
                                 {d.changes && d.changes.length > 0 && (
                                   <div className="mt-1">
                                     {d.changes.map((ch: any, ci: number) => (
                                       <div key={ci} className="text-[10px]" style={{ color: ch.source === "casksense" ? "#e6a800" : "var(--labs-text-muted)" }}>
-                                        {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? "kept (CS)" : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
+                                        {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? t("collectionUi.syncChangeKept") : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
                                       </div>
                                     ))}
                                   </div>
