@@ -5109,6 +5109,50 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
     return Array.isArray(candidate) ? (candidate as LiveWhiskySummary[]) : [];
   }
 
+  type LiveExtremeWhisky = { name: string; score: number | null } | null;
+  type LiveHighestLowest = { highestWhisky: LiveExtremeWhisky; lowestWhisky: LiveExtremeWhisky };
+
+  async function computeLiveHighestLowest(participantId: string): Promise<LiveHighestLowest> {
+    try {
+      const flavorProfile = await storage.getFlavorProfile(participantId);
+      const journalEntries = await storage.getJournalEntries(participantId);
+      const candidates: { name: string; score: number }[] = [];
+      for (const rw of flavorProfile.ratedWhiskies) {
+        if (rw.rating.overall != null) candidates.push({ name: rw.whisky.name, score: rw.rating.overall });
+      }
+      for (const j of journalEntries) {
+        if (j.personalScore != null) candidates.push({ name: j.name || j.title, score: j.personalScore });
+      }
+      if (candidates.length === 0) return { highestWhisky: null, lowestWhisky: null };
+      let top = candidates[0];
+      let bot = candidates[0];
+      for (const c of candidates) {
+        if (c.score > top.score) top = c;
+        if (c.score < bot.score) bot = c;
+      }
+      return {
+        highestWhisky: { name: top.name, score: top.score },
+        lowestWhisky: { name: bot.name, score: bot.score },
+      };
+    } catch {
+      return { highestWhisky: null, lowestWhisky: null };
+    }
+  }
+
+  function mergeLiveHighestLowest<T extends { dataSnapshot?: unknown }>(report: T, live: LiveHighestLowest): T {
+    const snap = (report.dataSnapshot && typeof report.dataSnapshot === "object")
+      ? (report.dataSnapshot as Record<string, unknown>)
+      : {};
+    return {
+      ...report,
+      dataSnapshot: {
+        ...snap,
+        ...(live.highestWhisky ? { highestWhisky: live.highestWhisky } : {}),
+        ...(live.lowestWhisky ? { lowestWhisky: live.lowestWhisky } : {}),
+      },
+    };
+  }
+
   async function computeLiveWhiskySummaries(participantId: string): Promise<LiveWhiskySummary[]> {
     try {
       const flavorProfile = await storage.getFlavorProfile(participantId);
@@ -5421,12 +5465,18 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       }
 
       const reports = await storage.getConnoisseurReports(participantId);
-      let liveSummaries: Awaited<ReturnType<typeof computeLiveWhiskySummaries>> | null = null;
+      let liveSummaries: LiveWhiskySummary[] | null = null;
+      const liveHL = await computeLiveHighestLowest(participantId);
       const enriched = await Promise.all(reports.map(async (r) => {
         const existing = extractSnapshotWhiskySummaries(r.dataSnapshot);
-        if (existing.length > 0) return { ...r, liveWhiskySummaries: existing };
-        if (liveSummaries === null) liveSummaries = await computeLiveWhiskySummaries(participantId);
-        return { ...r, liveWhiskySummaries: liveSummaries };
+        let summaries: LiveWhiskySummary[];
+        if (existing.length > 0) {
+          summaries = existing;
+        } else {
+          if (liveSummaries === null) liveSummaries = await computeLiveWhiskySummaries(participantId);
+          summaries = liveSummaries;
+        }
+        return mergeLiveHighestLowest({ ...r, liveWhiskySummaries: summaries }, liveHL);
       }));
       res.json(enriched);
     } catch (e: any) {
@@ -5453,7 +5503,8 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const liveWhiskySummaries = existing.length > 0
         ? existing
         : await computeLiveWhiskySummaries(participantId);
-      res.json({ ...report, liveWhiskySummaries });
+      const liveHL = await computeLiveHighestLowest(participantId);
+      res.json(mergeLiveHighestLowest({ ...report, liveWhiskySummaries }, liveHL));
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

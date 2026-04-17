@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import {
   ChevronLeft, Sparkles, Copy, Check, Download,
   FileText, Trash2, Globe, Share2, TrendingUp, TrendingDown,
-  Award, BarChart3, Wine, Droplets,
+  Award, BarChart3, Wine, Droplets, Info,
 } from "lucide-react";
 
 interface DimensionScores {
@@ -197,19 +197,39 @@ function RadarChart({ userScores, groupScores, size = 240, legendYou, legendComm
   );
 }
 
-function StatCard({ label, value, suffix, icon: Icon, trend }: {
+function StatCard({ label, value, suffix, icon: Icon, trend, infoText, infoOpen, onToggleInfo, testId }: {
   label: string;
   value: string | number;
   suffix?: string;
   icon: React.ElementType;
   trend?: "up" | "down" | "neutral";
+  infoText?: string;
+  infoOpen?: boolean;
+  onToggleInfo?: () => void;
+  testId?: string;
 }) {
   return (
     <div style={{
       background: "var(--labs-surface)", borderRadius: 14, padding: "14px 12px",
-      display: "flex", flexDirection: "column", gap: 4, minWidth: 0,
+      display: "flex", flexDirection: "column", gap: 4, minWidth: 0, position: "relative",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {infoText && onToggleInfo && (
+        <button
+          type="button"
+          onClick={onToggleInfo}
+          aria-label={`${label} info`}
+          aria-expanded={!!infoOpen}
+          data-testid={testId ? `button-info-${testId}` : undefined}
+          style={{
+            position: "absolute", top: 8, right: 8, padding: 2, background: "transparent",
+            border: "none", cursor: "pointer", color: "var(--labs-text-muted)", opacity: 0.7,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <Info className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
+        </button>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: infoText ? 18 : 0 }}>
         <Icon className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)", flexShrink: 0, opacity: 0.8 }} />
         <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
       </div>
@@ -221,6 +241,17 @@ function StatCard({ label, value, suffix, icon: Icon, trend }: {
         {trend === "up" && <TrendingUp className="w-3 h-3" style={{ color: "var(--labs-success)" }} />}
         {trend === "down" && <TrendingDown className="w-3 h-3" style={{ color: "var(--labs-danger)" }} />}
       </div>
+      {infoOpen && infoText && (
+        <p
+          data-testid={testId ? `text-info-${testId}` : undefined}
+          style={{
+            fontSize: 11, lineHeight: 1.4, color: "var(--labs-text-muted)", margin: "6px 0 0 0",
+            animation: "labsFadeIn 150ms ease-out both",
+          }}
+        >
+          {infoText}
+        </p>
+      )}
     </div>
   );
 }
@@ -744,6 +775,10 @@ export default function LabsConnoisseur() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("report");
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showHighestInfo, setShowHighestInfo] = useState(false);
+  const [showLowestInfo, setShowLowestInfo] = useState(false);
   const [aiLang, setAiLang] = useState<"de" | "en">("en");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
@@ -1112,24 +1147,40 @@ export default function LabsConnoisseur() {
               label={t("labs.connoisseur.avgScore", "Avg Score")}
               value={userAvg != null ? userAvg : "—"}
               icon={BarChart3}
+              infoText={t("labs.connoisseur.connoisseurScoreDesc", "Your average score across all rated whiskies.")}
+              infoOpen={showScoreInfo}
+              onToggleInfo={() => setShowScoreInfo(v => !v)}
+              testId="avg-score"
             />
             <StatCard
               label={t("labs.connoisseur.vsGroup", "vs Group")}
               value={vsGroup != null ? `${Number(vsGroup) > 0 ? "+" : ""}${Number(vsGroup).toFixed(1)}` : "—"}
               icon={TrendingUp}
               trend={vsGroup != null ? (vsGroup > 0 ? "up" : vsGroup < 0 ? "down" : "neutral") : undefined}
+              infoText={t("labs.connoisseur.connoisseurGroupDesc", "How your average compares to the community average. Positive values mean you rate higher than the group.")}
+              infoOpen={showGroupInfo}
+              onToggleInfo={() => setShowGroupInfo(v => !v)}
+              testId="vs-group"
             />
             <StatCard
               label={t("labs.connoisseur.highest", "Highest")}
               value={highest?.score != null ? Math.round(highest.score).toString() : "—"}
-              suffix={highest?.name ? highest.name.slice(0, 16) : undefined}
+              suffix={highest?.name ? highest.name.slice(0, 16) : (highest?.score == null ? t("labs.connoisseur.regenerateToDisplay", "Regenerate the report to display.") : undefined)}
               icon={Award}
+              infoText={t("labs.connoisseur.connoisseurHighestDesc", "The highest-rated whisky from your tastings and journal entries.")}
+              infoOpen={showHighestInfo}
+              onToggleInfo={() => setShowHighestInfo(v => !v)}
+              testId="highest"
             />
             <StatCard
               label={t("labs.connoisseur.lowest", "Lowest")}
               value={lowest?.score != null ? Math.round(lowest.score).toString() : "—"}
-              suffix={lowest?.name ? lowest.name.slice(0, 16) : undefined}
+              suffix={lowest?.name ? lowest.name.slice(0, 16) : (lowest?.score == null ? t("labs.connoisseur.regenerateToDisplay", "Regenerate the report to display.") : undefined)}
               icon={Wine}
+              infoText={t("labs.connoisseur.connoisseurLowestDesc", "The lowest-rated whisky from your tastings and journal entries.")}
+              infoOpen={showLowestInfo}
+              onToggleInfo={() => setShowLowestInfo(v => !v)}
+              testId="lowest"
             />
           </div>
 

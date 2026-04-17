@@ -7712,6 +7712,11 @@ const resources = {
           loadError: "Could not load your reports. Please try again later.",
           resultsCta: "View Your Connoisseur Report",
           resultsCtaDesc: "Discover your personal whisky profile with an AI-powered analysis",
+          connoisseurScoreDesc: "Your average score across all rated whiskies, including tastings and journal entries.",
+          connoisseurGroupDesc: "How your average compares to the community average. Positive means you rate higher than the group.",
+          connoisseurHighestDesc: "The highest-rated whisky from your tastings and journal entries.",
+          connoisseurLowestDesc: "The lowest-rated whisky from your tastings and journal entries.",
+          regenerateToDisplay: "Regenerate the report to display.",
         },
         customPrompt: {
           label: "Focus Hint",
@@ -16343,6 +16348,11 @@ const resources = {
           loadError: "Berichte konnten nicht geladen werden. Bitte versuche es später erneut.",
           resultsCta: "Deinen Connoisseur-Bericht ansehen",
           resultsCtaDesc: "Entdecke dein persönliches Whisky-Profil mit einer KI-gestützten Analyse",
+          connoisseurScoreDesc: "Dein Durchschnittswert über alle bewerteten Whiskys, inklusive Tastings und Journal-Einträgen.",
+          connoisseurGroupDesc: "Wie dein Durchschnitt im Vergleich zur Community liegt. Positiv = du bewertest höher als die Gruppe.",
+          connoisseurHighestDesc: "Der am höchsten bewertete Whisky aus deinen Tastings und Journal-Einträgen.",
+          connoisseurLowestDesc: "Der am niedrigsten bewertete Whisky aus deinen Tastings und Journal-Einträgen.",
+          regenerateToDisplay: "Bericht neu erstellen, um anzuzeigen.",
         },
         customPrompt: {
           label: "Fokus-Hinweis",
