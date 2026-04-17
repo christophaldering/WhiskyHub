@@ -8,13 +8,44 @@ export interface Insight {
   confidence: number;
 }
 
+export type InsightLanguage = "en" | "de";
+
+const INSIGHT_MESSAGES: Record<string, Record<InsightLanguage, string>> = {
+  smoke_bias: {
+    en: "You consistently rate smoky whiskies lower than your average.",
+    de: "Du bewertest rauchige Whiskys konstant niedriger als deinen Durchschnitt.",
+  },
+  smoke_affinity: {
+    en: "You tend to rate smoky whiskies higher than average.",
+    de: "Du bewertest rauchige Whiskys tendenziell höher als deinen Durchschnitt.",
+  },
+  high_abv_preference: {
+    en: "You seem to prefer high-strength whiskies.",
+    de: "Du scheinst Whiskys mit hoher Trinkstärke zu bevorzugen.",
+  },
+  rating_stability_high: {
+    en: "Your ratings are very consistent.",
+    de: "Deine Bewertungen sind sehr konstant.",
+  },
+  rating_stability_low: {
+    en: "You rate very dynamically.",
+    de: "Du bewertest sehr dynamisch.",
+  },
+};
+
+function msg(type: keyof typeof INSIGHT_MESSAGES, language: InsightLanguage): string {
+  const entry = INSIGHT_MESSAGES[type];
+  return entry[language] ?? entry.en;
+}
+
 interface ScoredDataPoint {
   normalizedScore: number;
   peatLevel: string | null;
   abv: number | null;
 }
 
-export async function generateParticipantInsights(participantId: string): Promise<Insight[]> {
+export async function generateParticipantInsights(participantId: string, language: InsightLanguage = "en"): Promise<Insight[]> {
+  const lang: InsightLanguage = language === "de" ? "de" : "en";
   const allRatings = await db
     .select({
       normalizedScore: ratings.normalizedScore,
@@ -101,14 +132,14 @@ export async function generateParticipantInsights(participantId: string): Promis
       const confidence = Math.min(0.95, 0.5 + (delta - 10) / 40 + smokyScores.length / 20);
       insights.push({
         type: "smoke_bias",
-        message: "You consistently rate smoky whiskies lower than your average.",
+        message: msg("smoke_bias", lang),
         confidence: round2(confidence),
       });
     } else if (delta < -10) {
       const confidence = Math.min(0.95, 0.5 + (Math.abs(delta) - 10) / 40 + smokyScores.length / 20);
       insights.push({
         type: "smoke_affinity",
-        message: "You tend to rate smoky whiskies higher than average.",
+        message: msg("smoke_affinity", lang),
         confidence: round2(confidence),
       });
     }
@@ -133,7 +164,7 @@ export async function generateParticipantInsights(participantId: string): Promis
       const confidence = Math.min(0.95, 0.5 + (delta - 8) / 30 + highAbvScores.length / 20);
       insights.push({
         type: "high_abv_preference",
-        message: "You seem to prefer high-strength whiskies.",
+        message: msg("high_abv_preference", lang),
         confidence: round2(confidence),
       });
     }
@@ -144,14 +175,14 @@ export async function generateParticipantInsights(participantId: string): Promis
       const confidence = Math.min(0.95, 0.6 + (5 - globalStdDev) / 10);
       insights.push({
         type: "rating_stability_high",
-        message: "Your ratings are very consistent.",
+        message: msg("rating_stability_high", lang),
         confidence: round2(confidence),
       });
     } else if (globalStdDev > 20) {
       const confidence = Math.min(0.95, 0.5 + (globalStdDev - 20) / 40);
       insights.push({
         type: "rating_stability_low",
-        message: "You rate very dynamically.",
+        message: msg("rating_stability_low", lang),
         confidence: round2(confidence),
       });
     }

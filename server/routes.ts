@@ -7552,7 +7552,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
 
       const { generateParticipantInsights } = await import("./insight-engine");
-      const insights = await generateParticipantInsights(req.params.id);
+      const queryLang = typeof req.query.lang === "string" ? req.query.lang : "";
+      const acceptLang = req.header("accept-language") || "";
+      const langSource = (queryLang || acceptLang).toLowerCase();
+      const language: "en" | "de" = langSource.startsWith("de") ? "de" : "en";
+      const insights = await generateParticipantInsights(req.params.id, language);
       res.json({ insight: insights.length > 0 ? insights[0] : null });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

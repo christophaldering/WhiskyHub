@@ -409,11 +409,20 @@ export default function LabsTaste() {
     enabled: !!pid,
   });
 
+  const insightLang = (i18n.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
   const { data: insightData } = useQuery({
-    queryKey: ["participant-insights", pid],
-    queryFn: () => fetch(`/api/participants/${pid}/insights`, { headers: { "x-participant-id": pid! } }).then(r => r.ok ? r.json() : null),
+    queryKey: ["participant-insights", pid, insightLang],
+    queryFn: () => fetch(`/api/participants/${pid}/insights?lang=${insightLang}`, { headers: { "x-participant-id": pid!, "Accept-Language": insightLang } }).then(r => r.ok ? r.json() : null),
     enabled: !!pid,
   });
+
+  const [statInfoOpen, setStatInfoOpen] = useState<{ avg: boolean; consistency: boolean; exploration: boolean }>({
+    avg: false,
+    consistency: false,
+    exploration: false,
+  });
+  const toggleStatInfo = (key: "avg" | "consistency" | "exploration") =>
+    setStatInfoOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
   const { data: connoisseurReports = [], isFetching: isConnoisseurFetching } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
@@ -770,8 +779,19 @@ export default function LabsTaste() {
           </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }} className="labs-fade-in labs-stagger-1">
-            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-average">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24, alignItems: "start" }} className="labs-fade-in labs-stagger-1">
+            <div>
+            <div className="labs-card" style={{ padding: 16, position: "relative" }} data-testid="labs-taste-stat-average">
+              <button
+                type="button"
+                onClick={() => toggleStatInfo("avg")}
+                aria-label="info"
+                aria-expanded={statInfoOpen.avg}
+                data-testid="button-stat-info-average"
+                style={{ position: "absolute", top: 6, right: 6, background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 0 }}
+              >
+                <Info style={{ width: 14, height: 14 }} />
+              </button>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
                 <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
                   {avgScores.overall > 0 ? avgScores.overall.toFixed(1) : "—"}
@@ -786,15 +806,32 @@ export default function LabsTaste() {
                   transition: "width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }} />
               </div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2, wordBreak: "normal", overflowWrap: "break-word", hyphens: "auto" }}>
                 {t("labs.statAvgLabel", "Average")}
               </p>
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
                 {t("labs.statAvgDesc", "Based on {{count}} ratings", { count: whiskyCount ?? 0 })}
               </p>
             </div>
+            {statInfoOpen.avg && (
+              <div className="labs-fade-in" data-testid="text-stat-info-average" style={{ marginTop: 8, padding: "10px 12px", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface-muted, rgba(255,255,255,0.03))", fontSize: 12, lineHeight: 1.45, color: "var(--labs-text-muted)" }}>
+                {t("labs.statAvgInfo", "Average score across all whiskies you've rated, on a 100-point scale. The bar fills from 60 (lower bound) to 100 (top).")}
+              </div>
+            )}
+            </div>
 
-            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-consistency">
+            <div>
+            <div className="labs-card" style={{ padding: 16, position: "relative" }} data-testid="labs-taste-stat-consistency">
+              <button
+                type="button"
+                onClick={() => toggleStatInfo("consistency")}
+                aria-label="info"
+                aria-expanded={statInfoOpen.consistency}
+                data-testid="button-stat-info-consistency"
+                style={{ position: "absolute", top: 6, right: 6, background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 0 }}
+              >
+                <Info style={{ width: 14, height: 14 }} />
+              </button>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
                 <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
                   {stability != null ? stability.toFixed(1) : "—"}
@@ -816,8 +853,25 @@ export default function LabsTaste() {
                 {t("labs.statConsistencyDesc", "Rating consistency")}
               </p>
             </div>
+            {statInfoOpen.consistency && (
+              <div className="labs-fade-in" data-testid="text-stat-info-consistency" style={{ marginTop: 8, padding: "10px 12px", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface-muted, rgba(255,255,255,0.03))", fontSize: 12, lineHeight: 1.45, color: "var(--labs-text-muted)" }}>
+                {t("labs.statConsistencyInfo", "How tightly your ratings cluster around your own average. 10/10 means very steady — low values mean your scores swing more between drams.")}
+              </div>
+            )}
+            </div>
 
-            <div className="labs-card" style={{ padding: 16 }} data-testid="labs-taste-stat-exploration">
+            <div>
+            <div className="labs-card" style={{ padding: 16, position: "relative" }} data-testid="labs-taste-stat-exploration">
+              <button
+                type="button"
+                onClick={() => toggleStatInfo("exploration")}
+                aria-label="info"
+                aria-expanded={statInfoOpen.exploration}
+                data-testid="button-stat-info-exploration"
+                style={{ position: "absolute", top: 6, right: 6, background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "var(--labs-text-muted)", opacity: 0.7, lineHeight: 0 }}
+              >
+                <Info style={{ width: 14, height: 14 }} />
+              </button>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginBottom: 6 }}>
                 <span style={{ fontSize: 30, fontWeight: 600, color: "var(--labs-text)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
                   {exploration != null ? exploration.toFixed(1) : "—"}
@@ -838,6 +892,12 @@ export default function LabsTaste() {
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
                 {t("labs.statExplorationDesc", "Variety of regions & styles")}
               </p>
+            </div>
+            {statInfoOpen.exploration && (
+              <div className="labs-fade-in" data-testid="text-stat-info-exploration" style={{ marginTop: 8, padding: "10px 12px", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface-muted, rgba(255,255,255,0.03))", fontSize: 12, lineHeight: 1.45, color: "var(--labs-text-muted)" }}>
+                {t("labs.statExplorationInfo", "How varied your tasted whiskies are across regions and styles. Higher values mean a broader range of flavor profiles.")}
+              </div>
+            )}
             </div>
           </div>
 

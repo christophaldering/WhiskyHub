@@ -5590,6 +5590,9 @@ const resources = {
       labs: {
         statAvgLabel: "Average",
         statAvgDesc: "Based on {{count}} ratings",
+        statAvgInfo: "Your mean rating across every whisky you've scored, on a 100-point scale.",
+        statConsistencyInfo: "How steady your ratings are. A high value means your scores stay close to each other; a low value means they swing widely.",
+        statExplorationInfo: "How broad your tasting range is across whisky regions and styles. Higher means more variety.",
         statStabilityDesc: "Rating consistency",
         statSmokeDesc: "Peat & smoke affinity",
         heroAvgNeutral: "Your average is based on {{count}} ratings",
@@ -9336,7 +9339,7 @@ const resources = {
       },
       palateLetter: {
         card: {
-          eyebrow: "DEIN PALATE LETTER",
+          eyebrow: "DEIN PROFIL",
           cta: "Vollständiges Profil lesen",
           locked: "Nach zehn Drams schreibt dir CaskSense ein persönliches Verkostungsprofil — die Muster in deinem Verhalten, die du noch nicht benannt hast.",
           count: "{{count}} von 10 Drams",
@@ -14202,8 +14205,11 @@ const resources = {
         whisky_plural: "Whiskys",
       },
       labs: {
-        statAvgLabel: "Durchschnitt",
+        statAvgLabel: "Ø Score",
         statAvgDesc: "Basierend auf {{count}} Bewertungen",
+        statAvgInfo: "Dein Mittelwert über alle bewerteten Whiskys auf der 100-Punkte-Skala.",
+        statConsistencyInfo: "Wie konstant deine Bewertungen sind. Ein hoher Wert heißt, deine Scores liegen nah beieinander; ein niedriger Wert heißt, sie schwanken stark.",
+        statExplorationInfo: "Wie breit dein Tasting-Spektrum über Whisky-Regionen und -Stile reicht. Höher bedeutet mehr Vielfalt.",
         aiImport: {
           found: "{{count}} gefunden",
           alreadyInLineup: "bereits im Lineup",
