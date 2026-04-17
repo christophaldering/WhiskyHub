@@ -493,7 +493,7 @@ export default function LabsTasteCollection() {
       <div className="flex gap-2 mb-3">
         <div className="relative flex-1">
           <Search className="absolute left-3" style={{ top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)" }} />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search collection..."
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("collectionUi.searchCollection")}
             style={{ width: "100%", padding: "10px 12px 10px 36px", background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 10, fontSize: 14, color: "var(--labs-text)", outline: "none", boxSizing: "border-box" }}
             data-testid="input-labs-search-collection" />
         </div>
@@ -537,7 +537,7 @@ export default function LabsTasteCollection() {
         <EmptyCollectionState onImport={() => openPanel("importSync")} />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="text-xs mb-1" style={{ color: "var(--labs-text-muted)" }}>{filtered.length} of {items.length} bottles</div>
+          <div className="text-xs mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.ofBottles", { count: filtered.length, total: items.length })}</div>
           {filtered.map((item: WhiskybaseCollectionItem) => {
             const expanded = expandedId === item.id;
             const isSelected = selectMode && selectedIds.has(item.id);
@@ -558,13 +558,24 @@ export default function LabsTasteCollection() {
                   )}
                   <WhiskyImage imageUrl={item.imageUrl} name={item.name || ""} size={44} height={56} testId={`img-collection-${item.id}`} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}</div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {item.distillery && <span>{item.distillery}</span>}
-                      {item.country && <span>{item.country}</span>}
-                      {item.statedAge && <span>{item.statedAge}</span>}
-                      {item.abv && <span>{item.abv}</span>}
-                    </div>
+                    {(() => {
+                      const nameLc = (item.name || "").toLowerCase();
+                      const brandLc = (item.brand || "").toLowerCase();
+                      const distLc = (item.distillery || "").toLowerCase();
+                      const showBrandPrefix = !!item.brand && item.brand !== item.name && !(brandLc && nameLc.startsWith(brandLc));
+                      const showDistillery = !!item.distillery && !(distLc && nameLc.startsWith(distLc));
+                      return (
+                        <>
+                          <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{showBrandPrefix ? `${item.brand} ` : ""}{item.name}</div>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            {showDistillery && <span>{item.distillery}</span>}
+                            {item.country && <span>{item.country}</span>}
+                            {item.statedAge && <span>{item.statedAge}</span>}
+                            {item.abv && <span>{t("collectionUi.abvLabel")} {item.abv}</span>}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
@@ -575,11 +586,13 @@ export default function LabsTasteCollection() {
                     >{statusLabel(item.status || "closed")}</button>
                     {item.personalRating != null && item.personalRating > 0 && (
                       <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-accent)" }}>
+                        <span style={{ fontWeight: 500, opacity: 0.8 }}>{t("collectionUi.scoreLabel")}</span>
                         <Star className="w-3 h-3" fill="currentColor" />{item.personalRating.toFixed(1)}
                       </span>
                     )}
                     {item.communityRating != null && item.communityRating > 0 && !item.personalRating && (
                       <span className="text-xs font-bold flex items-center gap-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                        <span style={{ fontWeight: 500, opacity: 0.8 }}>{t("collectionUi.scoreLabel")}</span>
                         <Star className="w-3 h-3" />{item.communityRating.toFixed(1)}
                       </span>
                     )}
@@ -822,6 +835,7 @@ function ImportSyncSheet({
   onSync: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -848,12 +862,12 @@ function ImportSyncSheet({
         <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 16px" }} />
 
         <h2 className="text-lg font-bold mb-1" style={{ color: "var(--labs-text)" }} data-testid="text-sheet-title">
-          {hasCollection ? "Import / Sync" : "Import Collection"}
+          {hasCollection ? t("collectionUi.importSync") : t("collectionUi.importCollection")}
         </h2>
         <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
           {hasCollection
-            ? "Add new bottles or sync your collection with an updated Whiskybase export."
-            : "Upload your Whiskybase collection file to get started."
+            ? t("collectionUi.importSyncDesc")
+            : t("collectionUi.importCollectionDesc")
           }
         </p>
 
@@ -866,7 +880,7 @@ function ImportSyncSheet({
         }}>
           <div className="flex items-center gap-2 mb-2">
             <FileSpreadsheet className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Supported Formats</span>
+            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("collectionUi.supportedFormats")}</span>
           </div>
           <div className="flex gap-2 mb-3">
             {["CSV", "XLS", "XLSX"].map(fmt => (
@@ -877,11 +891,11 @@ function ImportSyncSheet({
             ))}
           </div>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-            Export your collection on{" "}
+            {t("collectionUi.whiskybaseHintBefore")}
             <a href="https://www.whiskybase.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--labs-accent)", textDecoration: "underline" }}>
               whiskybase.com
             </a>
-            {" "}under Profile → Collection → Export as CSV
+            {t("collectionUi.whiskybaseHintAfter")}
           </p>
         </div>
 
@@ -904,8 +918,8 @@ function ImportSyncSheet({
                 : <Upload className="w-5 h-5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
               }
               <div style={{ flex: 1 }}>
-                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>New Import</div>
-                <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Add bottles from a new file</div>
+                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("collectionUi.newImport")}</div>
+                <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.newImportDesc")}</div>
               </div>
               <ArrowRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
             </button>
@@ -927,8 +941,8 @@ function ImportSyncSheet({
                 : <RefreshCw className="w-5 h-5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
               }
               <div style={{ flex: 1 }}>
-                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Sync with Whiskybase</div>
-                <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>Update existing bottles from a newer export</div>
+                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("collectionUi.syncWhiskybase")}</div>
+                <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncWhiskybaseDesc")}</div>
               </div>
               <ArrowRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
             </button>
