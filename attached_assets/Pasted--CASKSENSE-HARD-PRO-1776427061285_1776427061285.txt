@@ -1,0 +1,239 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-G
+ENTDECKEN: DESTILLERIE-ZENTRIERTE GRUPPIERUNG DER WHISKY-LISTE
+═══════════════════════════════════════════════════════════════════════════════
+
+KONTEXT: Die Entdecken-Seite zeigt 562 Whiskies als flache Liste.
+Ziel: Whiskies nach Destillerie gruppieren — Destillerie als Header,
+darunter die einzelnen Flaschen dieser Destillerie.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in client/src/labs/ nach der Entdecken-Seite.
+Suche nach: “LabsExplore”, “562”, “Whiskies”, “Search whiskies”,
+“exploreApi”, “/api/labs/explore”
+
+Notiere:
+
+1. Dateiname der Entdecken-Seite
+1. Welche Felder hat ein Whisky-Objekt in der API-Response?
+   (suche nach dem ersten Objekt in der Liste — notiere alle Felder:
+   name, distillery, region, score, tastingCount, abv, age, imageUrl etc.)
+1. Gibt es bereits ein Feld “distillery” in jedem Whisky-Objekt?
+   → JA/NEIN
+1. Wie ist die aktuelle Sortierung implementiert?
+   (client-seitig oder server-seitig?)
+1. Gibt es Pagination oder wird die gesamte Liste auf einmal geladen?
+
+Berichte alle 5 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — DATEN NACH DESTILLERIE GRUPPIEREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+Füge eine Gruppierungs-Funktion hinzu die die flache Whisky-Liste
+in eine nach Destillerie gruppierte Struktur umwandelt:
+
+// Typ für eine Gruppe
+interface DistilleryGroup {
+distillery: string;
+region: string;
+count: number;
+avgScore: number | null;
+whiskies: WhiskyItem[];
+isExpanded: boolean;
+}
+
+// Gruppierungs-Funktion
+function groupByDistillery(whiskies: WhiskyItem[]): DistilleryGroup[] {
+const groups = new Map<string, DistilleryGroup>();
+
+```
+whiskies.forEach(whisky => {
+  const key = whisky.distillery ?? "Unbekannt";
+  if (!groups.has(key)) {
+    groups.set(key, {
+      distillery: key,
+      region: whisky.region ?? "",
+      count: 0,
+      avgScore: null,
+      whiskies: [],
+      isExpanded: false,
+    });
+  }
+  const group = groups.get(key)!;
+  group.whiskies.push(whisky);
+  group.count++;
+});
+
+// Durchschnittsscore pro Gruppe berechnen
+groups.forEach(group => {
+  const scored = group.whiskies.filter(w => w.avgScore != null);
+  if (scored.length > 0) {
+    group.avgScore = Math.round(
+      scored.reduce((sum, w) => sum + (w.avgScore ?? 0), 0) / scored.length
+    );
+  }
+});
+
+// Alphabetisch nach Destillerie sortieren
+return Array.from(groups.values())
+  .sort((a, b) => a.distillery.localeCompare(b.distillery));
+```
+
+}
+
+State für aufgeklappte Gruppen:
+const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+const toggleGroup = (distillery: string) => {
+setExpandedGroups(prev => {
+const next = new Set(prev);
+if (next.has(distillery)) next.delete(distillery);
+else next.add(distillery);
+return next;
+});
+};
+
+WICHTIG: Die Gruppierung passiert client-seitig auf den bereits geladenen
+Daten — KEIN neuer API-Endpoint, KEINE Änderung in server/routes.ts.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — NEUE RENDER-STRUKTUR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ersetze die aktuelle flache Liste durch die gruppierte Darstellung.
+
+DESTILLERIE-HEADER (pro Gruppe):
+
+┌────────────────────────────────────────────────────┐
+│  [Avatar]  LAGAVULIN              Islay · 3  ›/˅  │
+│            ⌀ 87                                    │
+└────────────────────────────────────────────────────┘
+
+- Avatar: Kreis 36x36px, Hintergrundfabe aus Destillerie-Initial
+  (deterministisch aus Distillerie-Name berechnet — kein Random)
+  Initial: erster Buchstabe der Destillerie, weiß, 16px bold
+- Destillerie-Name: 16px, Playfair Display, bold, color-primary
+- Region · Anzahl: 13px, color-muted, DM Sans
+- Ø Score: 13px, color-gold (#d4a847), NUR anzeigen wenn avgScore != null
+- Pfeil-Icon rechts: ChevronDown wenn aufgeklappt, ChevronRight wenn zu
+- onClick: toggleGroup(distillery)
+- Touch-Target: min 44px Höhe
+- Padding: 12px 16px
+- border-bottom: 1px solid var(–color-border)
+
+WHISKY-ZEILE (pro Flasche, NUR sichtbar wenn Gruppe aufgeklappt):
+
+┌────────────────────────────────────────────────────┐
+│    [Foto/Avatar]  16 Years                  89 ›  │
+│                   18 Jahre · 43% ABV               │
+│                   Tastings: 2                       │
+└────────────────────────────────────────────────────┘
+
+- Einrückung: 16px links (zur Abgrenzung vom Destillerie-Header)
+- Flaschenfoto: 40x40px, border-radius 8px, object-fit cover
+  Falls kein Foto: kleines Glas-Icon (24px), color-muted
+- Whisky-Name: Destillerie-Präfix ENTFERNEN falls vorhanden
+  Logik:
+  const displayName = whisky.name.toLowerCase()
+  .startsWith(whisky.distillery.toLowerCase())
+  ? whisky.name.slice(whisky.distillery.length).trim()
+  : whisky.name;
+  Beispiel: “Lagavulin 16 Years” → “16 Years”
+  Beispiel: “Octomore Single Cask” → “Octomore Single Cask” (bleibt)
+- Alter · ABV: 12px, color-muted, NUR wenn vorhanden
+- Score rechts: goldener Score-Chip (border-radius 12px, padding 2px 8px)
+  NUR anzeigen wenn avgScore != null
+  “Draft”-Badge in Amber wenn isDraft und kein Score
+- “Tastings: X” in 11px color-muted, NUR wenn tastingCount > 0
+- Pfeil rechts: ChevronRight, 16px, color-muted
+- onClick: navigiere zu Whisky-Detail-Seite (bestehende Route)
+- border-bottom: 1px solid var(–color-border) mit 16px left-indent
+- Padding: 10px 16px 10px 32px
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — FILTER UND SUCHE ANPASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche und Filter müssen mit der Gruppierung funktionieren:
+
+SUCHE:
+Wenn Suchtext vorhanden:
+
+- Filtere Whiskies die den Suchtext im Namen ODER Destillerie-Namen enthalten
+- Zeige NUR Gruppen die mindestens einen Treffer haben
+- Klappe Gruppen mit Treffern automatisch auf (isExpanded = true)
+- Hebe den Suchtext in den Ergebnissen hervor (optional)
+
+REGION-FILTER:
+Wenn Region gewählt: zeige nur Gruppen aus dieser Region
+
+SORTIERUNG:
+“Ø Score ↓”: Gruppen nach Durchschnittsscore sortieren (höchste zuerst)
+“Meist verkostet”: Gruppen nach Gesamt-Tastings sortieren
+“A-Z”: Gruppen alphabetisch nach Destillerie-Name
+
+ERGEBNIS-ZÄHLER:
+Statt “562 Whiskies”:
+DE: “X Destillerien · Y Whiskies”
+EN: “X Distilleries · Y Whiskies”
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — i18n-LÜCKEN AUF DIESER SEITE FIXEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In derselben Datei, hardcodierte EN-Strings ersetzen:
+
+“Search whiskies…”  → {t(“searchWhiskies”)}
+“Region”             → {t(“region”)}
+“Distillery”         → {t(“distillery”)}
+“Kategorie”          → bereits DE ✓
+“Tastings: X”        → {t(“tastingsCount”, { count: X })}
+“WHISKIES”           → {t(“whiskies”).toUpperCase()}
+
+In client/src/lib/i18n.ts ergänzen (NUR wenn nicht vorhanden,
+im bestehenden Block, KEIN neuer Block):
+
+EN:
+searchWhiskies: “Search whiskies…”,
+distilleriesAndWhiskies: “{{distilleries}} Distilleries · {{whiskies}} Whiskies”,
+tastingsCount: “{{count}} Tasting(s)”,
+
+DE:
+searchWhiskies: “Whiskies suchen…”,
+distilleriesAndWhiskies: “{{distilleries}} Destillerien · {{whiskies}} Whiskies”,
+tastingsCount: “{{count}} Tasting(s)”,
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Den API-Endpoint /api/labs/explore/whiskies
+✗ Die Whisky-Detail-Seite (LabsBottleDetail)
+✗ Die Bibliothek-Sektion oben auf der Seite
+✗ Alle anderen Labs-Seiten
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Liste zeigt Destillerie-Gruppen statt flache Whisky-Liste
+□ Destillerie-Header: Name / Region / Anzahl / Ø Score sichtbar
+□ Klick auf Header: klappt Gruppe auf/zu
+□ Whisky-Zeilen: kein doppelter Destillerie-Name
+□ Whisky-Zeilen: Score-Chip rechts wenn bewertet
+□ Suche filtert Gruppen korrekt + öffnet Treffer-Gruppen
+□ Sortierung nach Score / Tastings / A-Z funktioniert
+□ Zähler: “X Destillerien · Y Whiskies”
+□ DE: “Whiskies suchen…” statt “Search whiskies…”
+□ Geänderte Datei(en): [eintragen]
+□ tsc –noEmit fehlerfrei
