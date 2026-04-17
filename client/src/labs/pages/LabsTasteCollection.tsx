@@ -663,7 +663,7 @@ export default function LabsTasteCollection() {
       {selectMode && selectedIds.size > 0 && (
         <div className="flex items-center gap-2 mb-3">
           <button onClick={() => setSelectedIds(selectedIds.size === filtered.length ? new Set() : new Set(filtered.map(i => i.id)))} className="labs-btn-secondary" style={{ padding: "5px 10px", fontSize: 11 }} data-testid="button-labs-select-all">{selectedIds.size === filtered.length ? "Deselect All" : "Select All"}</button>
-          <button onClick={() => setBulkDeleteConfirm(true)} style={{ padding: "5px 10px", fontSize: 11, color: "var(--labs-danger)", background: "transparent", border: "1px solid var(--labs-danger)", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-bulk-delete">Delete {selectedIds.size}</button>
+          <button onClick={() => setBulkDeleteConfirm(true)} style={{ padding: "5px 10px", fontSize: 11, color: "var(--labs-danger)", background: "transparent", border: "1px solid var(--labs-danger)", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-bulk-delete">{t("collectionUi.bulkDeleteAction", { count: selectedIds.size })}</button>
           <button onClick={() => downloadCsv(getExportItems())} className="labs-btn-secondary" style={{ padding: "5px 10px", fontSize: 11 }} data-testid="button-labs-export-selected"><Download className="w-3 h-3" /> CSV</button>
         </div>
       )}
@@ -705,7 +705,8 @@ export default function LabsTasteCollection() {
                       const brandLc = (item.brand || "").toLowerCase();
                       const distLc = (item.distillery || "").toLowerCase();
                       const showBrandPrefix = !!item.brand && item.brand !== item.name && !(brandLc && nameLc.startsWith(brandLc));
-                      const showDistillery = !!item.distillery && !(distLc && nameLc.startsWith(distLc));
+                      const renderedTitleLc = `${showBrandPrefix ? `${item.brand} ` : ""}${item.name || ""}`.toLowerCase();
+                      const showDistillery = !!item.distillery && !(distLc && (nameLc.startsWith(distLc) || renderedTitleLc.startsWith(distLc)));
                       return (
                         <>
                           <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{showBrandPrefix ? `${item.brand} ` : ""}{item.name}</div>
@@ -752,7 +753,7 @@ export default function LabsTasteCollection() {
                         background: manual ? "rgba(139,92,246,0.1)" : "rgba(59,130,246,0.1)",
                         color: manual ? "#8b5cf6" : "var(--labs-info)",
                       }} data-testid={`badge-source-${item.id}`}>
-                        {manual ? "Manual" : "Whiskybase Import"}
+                        {manual ? t("collectionUi.sourceManual") : t("collectionUi.sourceWhiskybase")}
                       </span>
                       {wbUrl && (
                         <a href={wbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px]" style={{ color: "var(--labs-accent)", textDecoration: "none" }} data-testid={`link-wb-${item.id}`}>
@@ -762,7 +763,7 @@ export default function LabsTasteCollection() {
                     </div>
 
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>My Rating:</span>
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.myRatingLabel")}</span>
                       {editingRatingId === item.id ? (
                         <div className="flex items-center gap-1">
                           <input
@@ -788,7 +789,7 @@ export default function LabsTasteCollection() {
                           style={{ color: item.personalRating ? "var(--labs-accent)" : "var(--labs-text-muted)", background: "none", border: "1px solid var(--labs-border)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}
                           data-testid={`button-edit-rating-${item.id}`}
                         >
-                          <Star className="w-3 h-3" /> {item.personalRating ? item.personalRating.toFixed(1) : "Rate"}
+                          <Star className="w-3 h-3" /> {item.personalRating ? item.personalRating.toFixed(1) : t("collectionUi.rateAction")}
                         </button>
                       )}
                     </div>
@@ -807,7 +808,7 @@ export default function LabsTasteCollection() {
                       </button>
                       {editingPriceId === item.id ? (
                         <div className="flex items-center gap-1">
-                          <input type="number" value={manualPriceValue} onChange={(e) => setManualPriceValue(e.target.value)} placeholder="Price" style={{ width: 80, padding: "4px 8px", fontSize: 12, background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 6, color: "var(--labs-text)", outline: "none" }} data-testid={`input-labs-manual-price-${item.id}`} />
+                          <input type="number" value={manualPriceValue} onChange={(e) => setManualPriceValue(e.target.value)} placeholder={t("collectionUi.priceInputPlaceholder")} style={{ width: 80, padding: "4px 8px", fontSize: 12, background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 6, color: "var(--labs-text)", outline: "none" }} data-testid={`input-labs-manual-price-${item.id}`} />
                           <button onClick={() => { if (manualPriceValue) manualPriceMutation.mutate({ itemId: item.id, price: parseFloat(manualPriceValue), currency: "EUR" }); }} className="labs-btn-primary" style={{ padding: "4px 8px", fontSize: 11 }}>Set</button>
                           <button onClick={() => { setEditingPriceId(null); setManualPriceValue(""); }} style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}><X className="w-3.5 h-3.5" /></button>
                         </div>
@@ -896,11 +897,11 @@ export default function LabsTasteCollection() {
       {deleteTarget && (
         <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }} data-testid="dialog-labs-delete-collection">
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
-            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete Bottle</h3>
-            <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Remove "{deleteTarget.name}" from your collection?</p>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("collectionUi.deleteBottleTitle")}</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>{t("collectionUi.deleteBottleBody", { name: deleteTarget.name })}</p>
             <div className="flex justify-end gap-2.5">
-              <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>Cancel</button>
-              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} disabled={deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: deleteMutation.isPending ? 0.6 : 1 }}>Delete</button>
+              <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>{t("common.cancel")}</button>
+              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} disabled={deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: deleteMutation.isPending ? 0.6 : 1 }}>{t("collectionUi.deleteAction")}</button>
             </div>
           </div>
         </div>
@@ -909,11 +910,11 @@ export default function LabsTasteCollection() {
       {bulkDeleteConfirm && (
         <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }}>
           <div className="labs-card" style={{ maxWidth: 380, width: "90%", padding: 24 }}>
-            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>Delete {selectedIds.size} bottles?</h3>
-            <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This cannot be undone.</p>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }}>{t("collectionUi.bulkDeleteTitle", { count: selectedIds.size })}</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>{t("collectionUi.bulkDeleteBody")}</p>
             <div className="flex justify-end gap-2.5">
-              <button onClick={() => setBulkDeleteConfirm(false)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>Cancel</button>
-              <button onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))} disabled={bulkDeleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }}>Delete</button>
+              <button onClick={() => setBulkDeleteConfirm(false)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>{t("common.cancel")}</button>
+              <button onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))} disabled={bulkDeleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }}>{t("collectionUi.deleteAction")}</button>
             </div>
           </div>
         </div>
@@ -1638,6 +1639,7 @@ function OverflowItem({ icon, label, onClick, testId }: { icon: React.ReactNode;
 }
 
 function SyncResultDialog({ result, onClose }: { result: { added: number; updated: number; removed: number; conflicts: number; unchanged: number; details?: Array<{ name: string; action: string; changes?: Array<{ field: string; oldValue: string; newValue: string; source: string }> }> }; onClose: () => void }) {
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
   const details = result.details || [];
   const hasChanges = details.length > 0;
@@ -1662,7 +1664,7 @@ function SyncResultDialog({ result, onClose }: { result: { added: number; update
           <div className="mb-3">
             <button onClick={() => setShowDetails(!showDetails)} className="flex items-center gap-1 text-xs" style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }} data-testid="button-toggle-sync-details">
               {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              {showDetails ? "Hide" : "Show"} details ({details.length} bottles)
+              {showDetails ? t("collectionUi.syncDetailsHide", { count: details.length }) : t("collectionUi.syncDetailsShow", { count: details.length })}
             </button>
             {showDetails && (
               <div style={{ maxHeight: 260, overflowY: "auto", marginTop: 8, border: "1px solid var(--labs-border)", borderRadius: 8, padding: 8 }}>
