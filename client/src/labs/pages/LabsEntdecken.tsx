@@ -85,6 +85,43 @@
 
         type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
 
+        const EXPLORE_SNAPSHOT_KEY = "cs_explore_snapshot";
+        const BACK_NAV_KEY = "cs_back_nav";
+
+        type ExploreSnapshot = {
+          activeView: "whiskies" | "bibliothek";
+          search: string;
+          visibleCount: number;
+          sort: string;
+          sortDirection: "desc" | "asc";
+          filterSearch: string;
+          filters: Record<EntdeckenFilterDimension, string[]>;
+          expandedGroups: string[];
+        };
+
+        function readExploreSnapshot(): ExploreSnapshot | null {
+          if (typeof window === "undefined") return null;
+          try {
+            const isBack = window.sessionStorage.getItem(BACK_NAV_KEY) === "1";
+            if (!isBack) {
+              window.sessionStorage.removeItem(EXPLORE_SNAPSHOT_KEY);
+              return null;
+            }
+            const raw = window.sessionStorage.getItem(EXPLORE_SNAPSHOT_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw) as ExploreSnapshot;
+          } catch {
+            return null;
+          }
+        }
+
+        function writeExploreSnapshot(snap: ExploreSnapshot): void {
+          if (typeof window === "undefined") return;
+          try {
+            window.sessionStorage.setItem(EXPLORE_SNAPSHOT_KEY, JSON.stringify(snap));
+          } catch {}
+        }
+
         const ENTDECKEN_FILTER_DIMENSIONS: { key: EntdeckenFilterDimension; labelKey: string; fallback: string }[] = [
           { key: "region", labelKey: "explore.filterRegion", fallback: "Region" },
           { key: "distillery", labelKey: "discover.filterDistillery", fallback: "Distillery" },
@@ -101,18 +138,28 @@
           const savedKeys = useWishlistKeys(pid);
           const collectionKeys = useCollectionKeys(pid);
 
-          const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">("whiskies");
-          const [search, setSearch] = useState("");
-          const [visibleCount, setVisibleCount] = useState(20);
-          const [sort, setSort] = useState("avg");
-          const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
-          const [filterSearch, setFilterSearch] = useState("");
-          const [filters, setFilters] = useState<Record<EntdeckenFilterDimension, Set<string>>>({
-            region: new Set(),
-            distillery: new Set(),
-            category: new Set(),
-            country: new Set(),
-            peatLevel: new Set(),
+          const [initialSnapshot] = useState<ExploreSnapshot | null>(() => readExploreSnapshot());
+          const restoredFromSnapshotRef = useRef<boolean>(initialSnapshot !== null);
+
+          const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">(
+            () => initialSnapshot?.activeView ?? "whiskies",
+          );
+          const [search, setSearch] = useState<string>(() => initialSnapshot?.search ?? "");
+          const [visibleCount, setVisibleCount] = useState<number>(() => initialSnapshot?.visibleCount ?? 20);
+          const [sort, setSort] = useState<string>(() => initialSnapshot?.sort ?? "avg");
+          const [sortDirection, setSortDirection] = useState<"desc" | "asc">(
+            () => initialSnapshot?.sortDirection ?? "desc",
+          );
+          const [filterSearch, setFilterSearch] = useState<string>(() => initialSnapshot?.filterSearch ?? "");
+          const [filters, setFilters] = useState<Record<EntdeckenFilterDimension, Set<string>>>(() => {
+            const f = initialSnapshot?.filters;
+            return {
+              region: new Set<string>(f?.region ?? []),
+              distillery: new Set<string>(f?.distillery ?? []),
+              category: new Set<string>(f?.category ?? []),
+              country: new Set<string>(f?.country ?? []),
+              peatLevel: new Set<string>(f?.peatLevel ?? []),
+            };
           });
           const [expandedFilter, setExpandedFilter] = useState<EntdeckenFilterDimension | null>(null);
           const filterDropdownRef = useRef<HTMLDivElement>(null);
@@ -361,7 +408,9 @@
           const totalDistilleryCount = distilleryGroups.length;
           const visibleGroups = useMemo(() => distilleryGroups.slice(0, visibleCount), [distilleryGroups, visibleCount]);
 
-          const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+          const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+            () => new Set<string>(initialSnapshot?.expandedGroups ?? []),
+          );
           const toggleGroup = useCallback((key: string) => {
             setExpandedGroups(prev => {
               const next = new Set(prev);
@@ -375,9 +424,33 @@
             [expandedGroups, search],
           );
 
+          const skipVisibleCountResetRef = useRef<boolean>(restoredFromSnapshotRef.current);
           useEffect(() => {
+            if (skipVisibleCountResetRef.current) {
+              skipVisibleCountResetRef.current = false;
+              return;
+            }
             setVisibleCount(20);
           }, [search, filters, sort, sortDirection]);
+
+          useEffect(() => {
+            writeExploreSnapshot({
+              activeView,
+              search,
+              visibleCount,
+              sort,
+              sortDirection,
+              filterSearch,
+              filters: {
+                region: Array.from(filters.region),
+                distillery: Array.from(filters.distillery),
+                category: Array.from(filters.category),
+                country: Array.from(filters.country),
+                peatLevel: Array.from(filters.peatLevel),
+              },
+              expandedGroups: Array.from(expandedGroups),
+            });
+          }, [activeView, search, visibleCount, sort, sortDirection, filterSearch, filters, expandedGroups]);
 
           useEffect(() => {
             if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
