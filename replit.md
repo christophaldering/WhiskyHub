@@ -1,5 +1,17 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Feature-Tag" (17.04.2026)
+Grosser Feature-Tag mit vielen UX-Verbesserungen umgesetzt und deployed:
+- **Destillerie-Gruppierung**: Whiskys in Entdecken nach Destillerie gruppiert dargestellt.
+- **Bibliothek-Tab-Kachel**: Neue Kachel im Bibliothek-Tab fuer schnellen Zugriff.
+- **Info-Icons**: Info-Icons mit Erklaerungen an relevanten Stellen ergaenzt.
+- **Connoisseur-Fix**: Anzeige- und Berechnungsfehler im Connoisseur-Bereich behoben.
+- **Draft-Terminologie**: Einheitliche Begrifflichkeit fuer Entwuerfe ueber alle Flows.
+- **Post-Rating-Flow**: Verbesserter Ablauf direkt nach Abgabe einer Bewertung.
+- **Sammlung i18n**: DE/EN-Uebersetzungen im Sammlungsbereich vervollstaendigt.
+- **Import-Fehlermeldung**: Verstaendlichere Fehlermeldungen beim Import.
+- **Naechster-Draft-Button**: Button zum direkten Wechsel auf den naechsten Entwurf.
+
 ## Checkpoint: "Stabiler Tag" (16.04.2026)
 Heute wieder einige wesentliche Funktionen weiterentwickelt — Programm lief bisher stabil! Tasks #565 (PIN/Passwort-Limit von 6 auf 64 Zeichen), #566 (Profil-Indizes nach Journal-Edit neu berechnen) und weitere Verbesserungen abgeschlossen und deployed.
 
