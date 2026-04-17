@@ -1837,9 +1837,11 @@ function FriendsAlsoRated({
   if (friends.length === 0) return null;
 
   const fmt = (v: number | null | undefined) => (v == null ? "—" : Number(v).toFixed(0));
+  // Delta is "friend vs your score": positive when friend rated higher.
+  // Green = friend higher, amber = friend lower, muted = equal.
   const deltaFor = (own: number | null, theirs: number | null) => {
     if (own == null || theirs == null) return null;
-    const diff = own - theirs;
+    const diff = theirs - own;
     if (Math.abs(diff) < 0.05) return { value: 0, color: "var(--labs-text-muted)" };
     if (diff > 0) return { value: diff, color: "#10b981" };
     return { value: diff, color: "#f59e0b" };

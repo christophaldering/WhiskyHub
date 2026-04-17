@@ -7345,10 +7345,11 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
             if (e.status && e.status !== "final") return false;
             const eName = (e.name || e.title || "").trim().toLowerCase();
             if (!eName || eName !== whiskyName) return false;
-            if (distilleryFilter) {
-              return ((e.distillery || "").trim().toLowerCase()) === distilleryFilter;
-            }
-            return true;
+            // Strict case-insensitive distillery equality (spec: name + distillery match).
+            // Empty-on-both-sides counts as a match so entries without a distillery
+            // can still pair when the requester also has none.
+            const eDistillery = (e.distillery || "").trim().toLowerCase();
+            return eDistillery === distilleryFilter;
           });
 
           if (matchingEntries.length === 0) continue;
