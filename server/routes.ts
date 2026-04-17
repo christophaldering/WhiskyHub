@@ -7309,6 +7309,77 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   });
 
   // ===== Journal Entries =====
+  // Friends Shared Ratings — must be registered BEFORE /:participantId routes
+  // so the static "shared-ratings" segment isn't captured as a participantId.
+  app.get("/api/journal/shared-ratings/:whiskyName", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const requesterId = auth.participant.id;
+
+      const whiskyName = (req.params.whiskyName || "").trim().toLowerCase();
+      const distilleryFilter = ((req.query.distillery as string) || "").trim().toLowerCase();
+      if (!whiskyName) return res.json([]);
+
+      const friends = await storage.getWhiskyFriends(requesterId);
+      const results: any[] = [];
+
+      for (const f of friends) {
+        try {
+          let match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
+          if (!match) {
+            const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
+            if (fullName) match = await storage.getParticipantByName(fullName);
+          }
+          if (!match) continue;
+
+          let photoUrl: string | null = null;
+          try {
+            const prof = await storage.getProfile(match.id);
+            if (prof?.photoUrl) photoUrl = prof.photoUrl;
+          } catch {}
+
+          const friendEntries = await storage.getJournalEntries(match.id);
+          const matchingEntries = friendEntries.filter((e: any) => {
+            if (e.personalScore == null) return false;
+            if (e.status && e.status !== "final") return false;
+            const eName = (e.name || e.title || "").trim().toLowerCase();
+            if (!eName || eName !== whiskyName) return false;
+            if (distilleryFilter) {
+              return ((e.distillery || "").trim().toLowerCase()) === distilleryFilter;
+            }
+            return true;
+          });
+
+          if (matchingEntries.length === 0) continue;
+
+          // Pick latest entry per friend so we surface one row per friend.
+          matchingEntries.sort((a: any, b: any) => {
+            const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tb - ta;
+          });
+          const entry = matchingEntries[0];
+
+          results.push({
+            friendId: f.id,
+            name: `${f.firstName || ""} ${f.lastName || ""}`.trim() || f.email || "Friend",
+            photoUrl,
+            noseScore: entry.noseScore ?? null,
+            tasteScore: entry.tasteScore ?? null,
+            finishScore: entry.finishScore ?? null,
+            overallScore: entry.personalScore ?? null,
+            ratedAt: entry.createdAt,
+          });
+        } catch {}
+      }
+
+      res.json(results);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/journal/:participantId", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;

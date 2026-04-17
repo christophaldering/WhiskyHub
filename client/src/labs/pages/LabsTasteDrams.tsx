@@ -819,6 +819,16 @@ export default function LabsTasteDrams() {
 
           <VoiceMemoSection url={selectedEntry.voiceMemoUrl} transcript={selectedEntry.voiceMemoTranscript} duration={selectedEntry.voiceMemoDuration} />
 
+          <FriendsAlsoRated
+            pid={session.pid || ""}
+            whiskyName={selectedEntry.name || selectedEntry.title || ""}
+            distillery={selectedEntry.distillery || ""}
+            ownOverall={selectedEntry.personalScore ?? null}
+            ownNose={selectedEntry.noseScore ?? null}
+            ownTaste={selectedEntry.tasteScore ?? null}
+            ownFinish={selectedEntry.finishScore ?? null}
+          />
+
           {selectedEntry.tastingTitle && (
             <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>
               <Wine className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} /> {t("drams.fromTasting")} {selectedEntry.tastingTitle}
@@ -1781,6 +1791,138 @@ function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void
             {isPending ? "..." : t("drams.delete")}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function FriendsAlsoRated({
+  pid,
+  whiskyName,
+  distillery,
+  ownOverall,
+  ownNose,
+  ownTaste,
+  ownFinish,
+}: {
+  pid: string;
+  whiskyName: string;
+  distillery: string;
+  ownOverall: number | null;
+  ownNose: number | null;
+  ownTaste: number | null;
+  ownFinish: number | null;
+}) {
+  const { t } = useTranslation();
+  const trimmedName = whiskyName.trim();
+  const enabled = !!pid && !!trimmedName;
+
+  const { data, isLoading } = useQuery<any[]>({
+    queryKey: ["shared-ratings", pid, trimmedName.toLowerCase(), distillery.trim().toLowerCase()],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (distillery.trim()) params.set("distillery", distillery.trim());
+      const url = `/api/journal/shared-ratings/${encodeURIComponent(trimmedName)}${params.toString() ? `?${params.toString()}` : ""}`;
+      const res = await fetch(url, { headers: { "x-participant-id": pid } });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : [];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+
+  if (!enabled || isLoading) return null;
+  const friends = data || [];
+  if (friends.length === 0) return null;
+
+  const fmt = (v: number | null | undefined) => (v == null ? "—" : Number(v).toFixed(0));
+  const deltaFor = (own: number | null, theirs: number | null) => {
+    if (own == null || theirs == null) return null;
+    const diff = own - theirs;
+    if (Math.abs(diff) < 0.05) return { value: 0, color: "var(--labs-text-muted)" };
+    if (diff > 0) return { value: diff, color: "#10b981" };
+    return { value: diff, color: "#f59e0b" };
+  };
+
+  return (
+    <div
+      className="labs-card"
+      style={{ marginTop: 16, padding: 16 }}
+      data-testid="friends-also-rated"
+    >
+      <div
+        className="text-xs uppercase tracking-wider mb-3"
+        style={{ color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 6 }}
+      >
+        <Users style={{ width: 14, height: 14 }} />
+        {t("drams.friendsAlsoRated", "Also rated by")} ({friends.length})
+      </div>
+      <div className="flex flex-col gap-3">
+        {friends.map((f: any, idx: number) => {
+          const initial = (f.name || "?").trim().charAt(0).toUpperCase();
+          const overallDelta = deltaFor(ownOverall, f.overallScore);
+          return (
+            <div
+              key={`${f.friendId}-${idx}`}
+              data-testid={`friend-rating-${f.friendId}-${idx}`}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "8px 0",
+                borderTop: idx === 0 ? "none" : "1px solid var(--labs-border)",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: f.photoUrl ? `center/cover no-repeat url(${JSON.stringify(f.photoUrl)})` : "var(--labs-surface-elevated)",
+                  color: "var(--labs-accent)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 700, fontSize: 14, flexShrink: 0,
+                  border: "1px solid var(--labs-border)",
+                }}
+              >
+                {!f.photoUrl && initial}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  className="text-sm"
+                  style={{
+                    color: "var(--labs-text)", fontWeight: 500,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}
+                  data-testid={`friend-name-${f.friendId}-${idx}`}
+                >
+                  {f.name}
+                </div>
+                <div
+                  className="text-[11px]"
+                  style={{ color: "var(--labs-text-muted)", display: "flex", flexWrap: "wrap", gap: 8, marginTop: 2 }}
+                >
+                  <span>N {fmt(f.noseScore)}</span>
+                  <span>P {fmt(f.tasteScore)}</span>
+                  <span>F {fmt(f.finishScore)}</span>
+                  <span style={{ fontWeight: 600 }}>Ø {fmt(f.overallScore)}</span>
+                </div>
+              </div>
+              {overallDelta && (
+                <div
+                  style={{ textAlign: "right", flexShrink: 0 }}
+                  data-testid={`friend-delta-${f.friendId}-${idx}`}
+                  title={t("drams.yourScoreVsFriend", "vs. your score") as string}
+                >
+                  <div style={{ color: overallDelta.color, fontWeight: 700, fontSize: 14 }}>
+                    {overallDelta.value === 0 ? "±0" : `${overallDelta.value > 0 ? "+" : ""}${overallDelta.value.toFixed(1)}`}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>
+                    {t("drams.yourScoreVsFriend", "vs. your score")}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
