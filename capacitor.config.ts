@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'CaskSense',
   webDir: 'dist/public',
   server: {
+    url: 'https://casksense.com',
+    cleartext: false,
     androidScheme: 'https',
   },
   plugins: {
