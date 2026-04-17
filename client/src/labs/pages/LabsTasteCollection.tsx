@@ -57,7 +57,7 @@ export default function LabsTasteCollection() {
   const [showSyncHistoryInSheet, setShowSyncHistoryInSheet] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [pendingImport, setPendingImport] = useState<{ file: File; preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[] } } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ file: File; preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[]; localEditNames: string[]; localEditCount: number } } | null>(null);
 
   const pid = session.pid;
 
@@ -125,6 +125,8 @@ export default function LabsTasteCollection() {
           addedNames: result?.addedNames ?? [],
           updatedNames: result?.updatedNames ?? [],
           skippedNames: result?.skippedNames ?? [],
+          localEditNames: result?.localEditNames ?? [],
+          localEditCount: result?.localEditCount ?? 0,
         },
       });
     },
@@ -880,15 +882,16 @@ export default function LabsTasteCollection() {
 function ImportConfirmDialog({
   preview, isImporting, onCancel, onConfirm,
 }: {
-  preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[] };
+  preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[]; localEditNames: string[]; localEditCount: number };
   isImporting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
   const hasOverwrites = preview.updated > 0;
+  const hasLocalEdits = (preview.localEditCount ?? 0) > 0;
   const [showDetails, setShowDetails] = useState(false);
-  const hasAnyNames = preview.addedNames.length + preview.updatedNames.length + preview.skippedNames.length > 0;
+  const hasAnyNames = preview.addedNames.length + preview.updatedNames.length + preview.skippedNames.length + (preview.localEditNames?.length ?? 0) > 0;
   return (
     <div
       className="labs-overlay"
@@ -950,6 +953,20 @@ function ImportConfirmDialog({
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#e6a800" }} />
             <span>{t("collectionUi.importConfirmPreserve")}</span>
+          </div>
+        )}
+
+        {hasLocalEdits && (
+          <div
+            className="flex items-start gap-2 mb-4 text-xs"
+            style={{
+              background: "rgba(255,120,80,0.10)", border: "1px solid rgba(255,120,80,0.30)",
+              borderRadius: 10, padding: 10, color: "var(--labs-text-secondary)", lineHeight: 1.5,
+            }}
+            data-testid="banner-import-local-edits-warning"
+          >
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#e07a3a" }} />
+            <span>{t("collectionUi.importConfirmLocalEdits", { count: preview.localEditCount })}</span>
           </div>
         )}
 

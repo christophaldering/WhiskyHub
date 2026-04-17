@@ -6201,6 +6201,8 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, item]));
 
       const tasks: Array<{ isUpdate: boolean; payload: any; previous: any | null }> = [];
+      const localEditNames: string[] = [];
+      const LOCAL_EDIT_FIELDS = ["status", "personalRating", "notes", "communityRating", "pricePaid", "avgPrice", "auctionPrice"] as const;
       for (const row of rows) {
         const rowName = colMap(row, "Name", "name");
         const whiskybaseId = colMap(row, "ID", "id");
@@ -6260,7 +6262,35 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
         }});
 
-        if (isUpdate) updatedNames.push(name);
+        if (isUpdate) {
+          updatedNames.push(name);
+          const localMod = (existing!.locallyModified as Record<string, boolean> | null) || {};
+          // Effective values that will actually be written to the row.
+          // status/personalRating/notes are preserved when existing has a value,
+          // so they only effectively change when existing is null. The numeric
+          // and community fields are overwritten directly from the file (incl.
+          // null if the file has no value).
+          const effectiveByField: Record<string, unknown> = {
+            status,
+            personalRating,
+            notes,
+            communityRating: parseFloat2(colMap(row, "Bewertung", "Rating")),
+            pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
+            avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
+            auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
+          };
+          let conflict = false;
+          for (const f of LOCAL_EDIT_FIELDS) {
+            if (!localMod[f]) continue;
+            const effective = effectiveByField[f];
+            const existingVal = (existing as any)[f];
+            // Normalize: treat null/undefined/"" as equivalent.
+            const a = effective == null || effective === "" ? null : effective;
+            const b = existingVal == null || existingVal === "" ? null : existingVal;
+            if (a !== b) { conflict = true; break; }
+          }
+          if (conflict) localEditNames.push(name);
+        }
         else addedNames.push(name);
       }
 
@@ -6268,8 +6298,8 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       if (dryRun) {
         const dryImported = addedNames.length;
         const dryUpdated = updatedNames.length;
-        console.log("[Import] Dry-Run", { imported: dryImported, updated: dryUpdated, skipped, total: rows.length });
-        return res.json({ dryRun: true, imported: dryImported, updated: dryUpdated, skipped, total: rows.length, addedNames, updatedNames, skippedNames });
+        console.log("[Import] Dry-Run", { imported: dryImported, updated: dryUpdated, skipped, total: rows.length, localEdit: localEditNames.length });
+        return res.json({ dryRun: true, imported: dryImported, updated: dryUpdated, skipped, total: rows.length, addedNames, updatedNames, skippedNames, localEditNames, localEditCount: localEditNames.length });
       }
 
       importProgressByPid.set(participantIdForProgress, {
