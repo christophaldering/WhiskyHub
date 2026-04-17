@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import BackLink from "@/labs/components/BackLink";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
-import { pidHeaders } from "@/lib/api";
-import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass } from "lucide-react";
+import { pidHeaders, wishlistApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import type { WishlistEntry } from "@shared/schema";
+import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck } from "lucide-react";
+
+function wishlistKey(name: string | null | undefined, distillery: string | null | undefined) {
+  return `${(name || "").trim().toLowerCase()}|${(distillery || "").trim().toLowerCase()}`;
+}
 
 interface DnaCategory {
   id: string;
@@ -322,6 +328,56 @@ export default function LabsWhiskyDNA() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: wishlistEntries } = useQuery<WishlistEntry[]>({
+    queryKey: ["wishlist", pid],
+    queryFn: () => wishlistApi.getAll(pid!),
+    enabled: !!pid,
+    staleTime: 60 * 1000,
+  });
+
+  const savedKeys = useMemo(() => {
+    const set = new Set<string>();
+    (wishlistEntries || []).forEach((e) => set.add(wishlistKey(e.name, e.distillery)));
+    return set;
+  }, [wishlistEntries]);
+
+  const [justSavedKeys, setJustSavedKeys] = useState<Set<string>>(new Set());
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  const saveRecMutation = useMutation({
+    mutationFn: async (rec: DnaRecommendation) => {
+      const categoryLabel = rec.matchedCategories.length
+        ? rec.matchedCategories.map((mc) => (lang === "de" ? mc.de : mc.en)).join(", ")
+        : rec.category || null;
+      const notes = categoryLabel
+        ? (lang === "de" ? `Kategorie: ${categoryLabel}` : `Category: ${categoryLabel}`)
+        : null;
+      return wishlistApi.create(pid!, {
+        name: rec.name,
+        distillery: rec.distillery || null,
+        region: rec.region || null,
+        notes,
+        priority: "medium",
+        source: "whisky-dna",
+      });
+    },
+    onMutate: (rec) => {
+      setSavingKey(wishlistKey(rec.name, rec.distillery));
+    },
+    onSuccess: (_data, rec) => {
+      const key = wishlistKey(rec.name, rec.distillery);
+      setJustSavedKeys((prev) => {
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onSettled: () => {
+      setSavingKey(null);
+    },
+  });
+
   const labels = useMemo(() => ({
     upper: t("dnaUpperBound", "Upper bound"),
     point: t("dnaPointEstimate", "Point estimate"),
@@ -579,6 +635,9 @@ export default function LabsWhiskyDNA() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {recs.recommendations.map((r, idx) => {
                   const subtitleParts = [r.distillery, r.region, r.category].filter(Boolean) as string[];
+                  const recKey = wishlistKey(r.name, r.distillery);
+                  const isSaved = savedKeys.has(recKey) || justSavedKeys.has(recKey);
+                  const isSaving = savingKey === recKey && saveRecMutation.isPending;
                   return (
                     <div
                       key={`${r.distillery || ""}|${r.name}|${idx}`}
@@ -586,8 +645,13 @@ export default function LabsWhiskyDNA() {
                       style={{
                         display: "flex", alignItems: "flex-start", gap: 12,
                         padding: 12, borderRadius: 10,
-                        background: "color-mix(in srgb, var(--labs-gold) 6%, transparent)",
-                        border: "1px solid color-mix(in srgb, var(--labs-gold) 18%, transparent)",
+                        background: isSaved
+                          ? "color-mix(in srgb, var(--labs-accent) 8%, transparent)"
+                          : "color-mix(in srgb, var(--labs-gold) 6%, transparent)",
+                        border: isSaved
+                          ? "1px solid color-mix(in srgb, var(--labs-accent) 35%, transparent)"
+                          : "1px solid color-mix(in srgb, var(--labs-gold) 18%, transparent)",
+                        transition: "background 200ms ease, border-color 200ms ease",
                       }}
                     >
                       <div style={{
@@ -625,6 +689,53 @@ export default function LabsWhiskyDNA() {
                               {lang === "de" ? mc.de : mc.en}
                             </span>
                           ))}
+                        </div>
+                        <div style={{ marginTop: 10 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSaved || isSaving) return;
+                              saveRecMutation.mutate(r);
+                            }}
+                            disabled={isSaved || isSaving}
+                            data-testid={`button-save-recommendation-${idx}`}
+                            aria-label={isSaved
+                              ? t("dnaTryNextSaved", "Saved to wishlist")
+                              : t("dnaTryNextSave", "Save to wishlist")}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              padding: "6px 12px", borderRadius: 999,
+                              fontSize: 11, fontWeight: 600,
+                              cursor: isSaved || isSaving ? "default" : "pointer",
+                              background: isSaved
+                                ? "color-mix(in srgb, var(--labs-accent) 18%, transparent)"
+                                : "color-mix(in srgb, var(--labs-gold) 14%, transparent)",
+                              border: isSaved
+                                ? "1px solid color-mix(in srgb, var(--labs-accent) 50%, transparent)"
+                                : "1px solid color-mix(in srgb, var(--labs-gold) 40%, transparent)",
+                              color: isSaved ? "var(--labs-accent)" : "var(--labs-gold)",
+                              opacity: isSaving ? 0.7 : 1,
+                              transition: "all 180ms ease",
+                            }}
+                          >
+                            {isSaved ? (
+                              <>
+                                <BookmarkCheck className="w-3.5 h-3.5" />
+                                <span data-testid={`text-save-status-${idx}`}>
+                                  {t("dnaTryNextSaved", "Saved to wishlist")}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <BookmarkPlus className="w-3.5 h-3.5" />
+                                <span>
+                                  {isSaving
+                                    ? t("dnaTryNextSaving", "Saving…")
+                                    : t("dnaTryNextSave", "Save to wishlist")}
+                                </span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
