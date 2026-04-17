@@ -1019,6 +1019,19 @@ export default function LabsTaste() {
 
       <div className="mt-8 labs-fade-in labs-stagger-3">
         <p className="labs-section-label flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          AI & Insights
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <NavTile icon={Sparkles} label="Connoisseur" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+          <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
+        </div>
+      </div>
+
+      <div className="mt-8 labs-fade-in labs-stagger-3">
+        <p className="labs-section-label flex items-center gap-2">
           <Activity className="w-3.5 h-3.5" />
           Profile & Analysis
         </p>
@@ -1029,18 +1042,6 @@ export default function LabsTaste() {
           <NavTile icon={Activity} label={t("myTastePage.whiskyDna", "Whisky DNA")} href="/labs/taste/dna" testId="labs-taste-link-dna" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={GitCompareArrows} label="Compare" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={Download} label="Downloads" href="/labs/taste/downloads" testId="labs-taste-link-downloads" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
-        </div>
-      </div>
-
-      <div className="mt-8 labs-fade-in labs-stagger-3">
-        <p className="labs-section-label flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          AI & Insights
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <NavTile icon={Sparkles} label="Recommendations" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Library} label="Collection Analysis" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
-          <NavTile icon={Compass} label="AI Curation" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" color="var(--labs-phase-palate)" bgColor="color-mix(in srgb, var(--labs-phase-palate) 15%, transparent)" />
         </div>
       </div>
     </div>
