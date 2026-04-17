@@ -415,10 +415,13 @@ export default function LabsWhiskyDNA() {
     stability: t("dnaStability", "Stability"),
   }), [t, lang]);
 
+  const noAromasDetected = !!dna && dna.n >= 5 && dna.categories.every((c) => c.pct === 0);
+
   useEffect(() => {
     if (!dna || !canvasRef.current || dna.n < 5) return;
+    if (noAromasDetected) return;
     drawRadar(canvasRef.current, dna, lang, labels);
-  }, [dna, lang, labels]);
+  }, [dna, lang, labels, noAromasDetected]);
 
   const phaseLabel = useCallback((phase: DnaResponse["phase"]) => {
     switch (phase) {
@@ -612,17 +615,49 @@ export default function LabsWhiskyDNA() {
             </div>
           </div>
 
-          {/* Radar canvas */}
-          <div className="labs-card labs-fade-in" style={{ padding: 16, marginBottom: 16, display: "flex", justifyContent: "center" }}>
-            <canvas
-              ref={canvasRef}
-              data-testid="canvas-dna-radar"
-              style={{ maxWidth: "100%", height: "auto", borderRadius: 12 }}
-              aria-label={t("dna95Confidence", "95% confidence")}
-            />
-          </div>
+          {/* Radar canvas (or no-aromas hint) */}
+          {noAromasDetected ? (
+            <div
+              className="labs-card labs-fade-in"
+              style={{ padding: 24, marginBottom: 16, textAlign: "center" }}
+              data-testid="dna-no-aromas-state"
+            >
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
+                background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-gold) 15%, transparent), color-mix(in srgb, var(--labs-accent) 10%, transparent))",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Sparkles className="w-7 h-7" style={{ color: "var(--labs-gold)" }} />
+              </div>
+              <p
+                data-testid="text-no-aromas-yet"
+                style={{ color: "var(--labs-text)", fontSize: 14, lineHeight: 1.6, fontWeight: 600 }}
+              >
+                {t("dnaNoAromasYet", "We couldn't pick up any aromas in your notes yet.")}
+              </p>
+              <p
+                data-testid="text-no-aromas-hint"
+                style={{ color: "var(--labs-text-muted)", fontSize: 13, lineHeight: 1.6, marginTop: 8, maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}
+              >
+                {t(
+                  "dnaNoAromasHint",
+                  "Add nose, palate or finish notes — German or English aroma words like \"sweet\", \"spicy\", \"vanilla\", \"oak\" or \"peat\" — so your DNA can take shape.",
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="labs-card labs-fade-in" style={{ padding: 16, marginBottom: 16, display: "flex", justifyContent: "center" }}>
+              <canvas
+                ref={canvasRef}
+                data-testid="canvas-dna-radar"
+                style={{ maxWidth: "100%", height: "auto", borderRadius: 12 }}
+                aria-label={t("dna95Confidence", "95% confidence")}
+              />
+            </div>
+          )}
 
           {/* Top aromas */}
+          {!noAromasDetected && (
           <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 10 }}>
               {t("dnaTopAromas", "Top aromas in your notes")}
@@ -645,6 +680,7 @@ export default function LabsWhiskyDNA() {
               })}
             </div>
           </div>
+          )}
 
           {/* Try next — recommendations to strengthen weak axes */}
           {recs && recs.recommendations.length > 0 && (

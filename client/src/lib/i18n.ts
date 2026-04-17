@@ -1112,6 +1112,8 @@ const resources = {
       dnaShareImage: "Save as image",
       dnaCopy: "Copy summary",
       dnaEmptyState: "Log at least 5 drams with tasting notes to see your Whisky DNA emerge.",
+      dnaNoAromasYet: "We couldn't pick up any aromas in your notes yet.",
+      dnaNoAromasHint: "Add nose, palate or finish notes — German or English aroma words like \"sweet\", \"spicy\", \"vanilla\", \"oak\" or \"peat\" — so your DNA can take shape.",
       account: {
         title: "Account",
         subtitle: "Manage your personal settings and data",
@@ -9854,6 +9856,8 @@ const resources = {
       dnaShareImage: "Als Bild speichern",
       dnaCopy: "Zusammenfassung kopieren",
       dnaEmptyState: "Erfasse mindestens 5 Drams mit Tasting-Notizen, damit deine Whisky-DNA sichtbar wird.",
+      dnaNoAromasYet: "Wir konnten in deinen Notizen noch keine Aromen erkennen.",
+      dnaNoAromasHint: "Ergänze Nase, Gaumen oder Abgang – deutsche oder englische Aromabegriffe wie „süß“, „würzig“, „Vanille“, „Eiche“ oder „Torf“ – damit deine DNA Form annimmt.",
       account: {
         title: "Account",
         subtitle: "Verwalte deine persönlichen Einstellungen und Daten",

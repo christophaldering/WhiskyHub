@@ -5565,7 +5565,9 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const keywordRegexes = WHISKY_DNA_CATEGORIES.map((cat) => ({
         cat,
-        regexes: cat.keywords.map((k) => new RegExp(`\\b${escapeRe(k)}\\b`, "i")),
+        regexes: cat.keywords.map(
+          (k) => new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRe(k)}(?![\\p{L}\\p{N}_])`, "iu"),
+        ),
       }));
 
       const keywordCounts: Record<string, number> = {};
@@ -5657,7 +5659,9 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const keywordRegexes = WHISKY_DNA_CATEGORIES.map((cat) => ({
         cat,
-        regexes: cat.keywords.map((k) => new RegExp(`\\b${escapeRe(k)}\\b`, "i")),
+        regexes: cat.keywords.map(
+          (k) => new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRe(k)}(?![\\p{L}\\p{N}_])`, "iu"),
+        ),
       }));
 
       // 1) Compute the user's category percentages from their journal entries
