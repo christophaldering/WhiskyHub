@@ -1026,6 +1026,7 @@ export default function LabsTaste() {
           <NavTile icon={Activity} label="CaskSense Profile" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={BarChart3} label="Analytics" href="/labs/taste/analytics" testId="labs-taste-link-analytics" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={PieChart} label="Flavor Wheel" href="/labs/taste/wheel" testId="labs-taste-link-wheel" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
+          <NavTile icon={Activity} label={t("myTastePage.whiskyDna", "Whisky DNA")} href="/labs/taste/dna" testId="labs-taste-link-dna" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={GitCompareArrows} label="Compare" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
           <NavTile icon={Download} label="Downloads" href="/labs/taste/downloads" testId="labs-taste-link-downloads" color="var(--labs-phase-nose)" bgColor="color-mix(in srgb, var(--labs-phase-nose) 15%, transparent)" />
         </div>
