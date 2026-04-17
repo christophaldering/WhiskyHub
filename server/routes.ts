@@ -6192,18 +6192,22 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       let imported = 0;
       let updated = 0;
       let skipped = 0;
-      
+      const addedNames: string[] = [];
+      const updatedNames: string[] = [];
+      const skippedNames: string[] = [];
+
       const existingItems = await storage.getWhiskybaseCollection(participantId as string);
       const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, item]));
       const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, item]));
 
       const tasks: Array<{ isUpdate: boolean; payload: any }> = [];
       for (const row of rows) {
+        const rowName = colMap(row, "Name", "name");
         const whiskybaseId = colMap(row, "ID", "id");
-        if (!whiskybaseId) { skipped++; continue; }
+        if (!whiskybaseId) { skipped++; skippedNames.push(rowName || "(unnamed)"); continue; }
 
-        const name = colMap(row, "Name", "name");
-        if (!name) { skipped++; continue; }
+        const name = rowName;
+        if (!name) { skipped++; skippedNames.push(`ID ${whiskybaseId}`); continue; }
 
         const collId = colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID");
         const existing = collId
@@ -6256,13 +6260,16 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
         }});
 
-        void isUpdate;
+        if (isUpdate) updatedNames.push(name);
+        else addedNames.push(name);
       }
 
       const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true" || req.body?.dryRun === "1" || req.body?.dryRun === "true";
       if (dryRun) {
-        console.log("[Import] Dry-Run", { imported, updated, skipped, total: rows.length });
-        return res.json({ dryRun: true, imported, updated, skipped, total: rows.length });
+        const dryImported = addedNames.length;
+        const dryUpdated = updatedNames.length;
+        console.log("[Import] Dry-Run", { imported: dryImported, updated: dryUpdated, skipped, total: rows.length });
+        return res.json({ dryRun: true, imported: dryImported, updated: dryUpdated, skipped, total: rows.length, addedNames, updatedNames, skippedNames });
       }
 
       importProgressByPid.set(participantIdForProgress, {

@@ -57,7 +57,7 @@ export default function LabsTasteCollection() {
   const [showSyncHistoryInSheet, setShowSyncHistoryInSheet] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [pendingImport, setPendingImport] = useState<{ file: File; preview: { imported: number; updated: number; skipped: number; total: number } } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ file: File; preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[] } } | null>(null);
 
   const pid = session.pid;
 
@@ -91,6 +91,9 @@ export default function LabsTasteCollection() {
           updated: result?.updated ?? 0,
           skipped: result?.skipped ?? 0,
           total: result?.total ?? 0,
+          addedNames: result?.addedNames ?? [],
+          updatedNames: result?.updatedNames ?? [],
+          skippedNames: result?.skippedNames ?? [],
         },
       });
     },
@@ -843,13 +846,15 @@ export default function LabsTasteCollection() {
 function ImportConfirmDialog({
   preview, isImporting, onCancel, onConfirm,
 }: {
-  preview: { imported: number; updated: number; skipped: number; total: number };
+  preview: { imported: number; updated: number; skipped: number; total: number; addedNames: string[]; updatedNames: string[]; skippedNames: string[] };
   isImporting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
   const hasOverwrites = preview.updated > 0;
+  const [showDetails, setShowDetails] = useState(false);
+  const hasAnyNames = preview.addedNames.length + preview.updatedNames.length + preview.skippedNames.length > 0;
   return (
     <div
       className="labs-overlay"
@@ -860,7 +865,7 @@ function ImportConfirmDialog({
       }}
       data-testid="dialog-import-confirm"
     >
-      <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 24 }}>
+      <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 24, maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
         <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }} data-testid="text-import-confirm-title">
           {t("collectionUi.importConfirmTitle")}
         </h3>
@@ -911,6 +916,54 @@ function ImportConfirmDialog({
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#e6a800" }} />
             <span>{t("collectionUi.importConfirmPreserve")}</span>
+          </div>
+        )}
+
+        {hasAnyNames && (
+          <div className="mb-4" style={{ minHeight: 0, display: "flex", flexDirection: "column" }}>
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="flex items-center gap-1 text-xs"
+              style={{ color: "var(--labs-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+              data-testid="button-toggle-import-details"
+            >
+              {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {showDetails ? t("collectionUi.importDetailsHide") : t("collectionUi.importDetailsShow")}
+            </button>
+            {showDetails && (
+              <div style={{ maxHeight: 240, overflowY: "auto", marginTop: 8, border: "1px solid var(--labs-border)", borderRadius: 8, padding: 8 }} data-testid="list-import-details">
+                {preview.updatedNames.length > 0 && (
+                  <div className="mb-2">
+                    <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--labs-info)", fontWeight: 700 }}>
+                      {t("collectionUi.importConfirmUpdated")} ({preview.updatedNames.length})
+                    </div>
+                    {preview.updatedNames.map((n, i) => (
+                      <div key={`u-${i}`} className="text-xs truncate py-0.5" style={{ color: "var(--labs-text)" }} data-testid={`text-import-overwrite-${i}`}>{n}</div>
+                    ))}
+                  </div>
+                )}
+                {preview.addedNames.length > 0 && (
+                  <div className="mb-2">
+                    <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--labs-success)", fontWeight: 700 }}>
+                      {t("collectionUi.importConfirmAdded")} ({preview.addedNames.length})
+                    </div>
+                    {preview.addedNames.map((n, i) => (
+                      <div key={`a-${i}`} className="text-xs truncate py-0.5" style={{ color: "var(--labs-text)" }} data-testid={`text-import-add-${i}`}>{n}</div>
+                    ))}
+                  </div>
+                )}
+                {preview.skippedNames.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--labs-text-muted)", fontWeight: 700 }}>
+                      {t("collectionUi.importConfirmSkipped")} ({preview.skippedNames.length})
+                    </div>
+                    {preview.skippedNames.map((n, i) => (
+                      <div key={`s-${i}`} className="text-xs truncate py-0.5" style={{ color: "var(--labs-text-muted)" }} data-testid={`text-import-skip-${i}`}>{n}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

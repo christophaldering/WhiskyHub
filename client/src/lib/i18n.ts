@@ -8427,6 +8427,8 @@ const resources = {
         importCancelling: "Cancelling…",
         importCancelNote: "Cancelling keeps bottles that have already been imported into your collection.",
         importCancelledResult: "Import cancelled — {{imported}} bottles kept",
+        importDetailsShow: "Show affected bottles",
+        importDetailsHide: "Hide affected bottles",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17090,6 +17092,8 @@ const resources = {
         importCancelling: "Wird abgebrochen…",
         importCancelNote: "Beim Abbruch bleiben bereits importierte Flaschen in deiner Sammlung.",
         importCancelledResult: "Import abgebrochen — {{imported}} Flaschen behalten",
+        importDetailsShow: "Betroffene Flaschen anzeigen",
+        importDetailsHide: "Betroffene Flaschen ausblenden",
       },
       bottleSplitUi: {
         claims: "Claims",
