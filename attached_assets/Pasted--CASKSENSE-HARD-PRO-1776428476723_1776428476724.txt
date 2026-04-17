@@ -1,0 +1,232 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-H
+ENTDECKEN: BIBLIOTHEK GLEICHWERTIG PROMINENT ALS TAB-KACHEL
+═══════════════════════════════════════════════════════════════════════════════
+
+KONTEXT: Auf der Entdecken-Seite ist die Bibliothek als kleine Karte
+versteckt. Ziel: Zwei gleichwertige Tab-Kacheln oben (“Whiskies” und
+“Bibliothek”) — der Inhalt darunter wechselt je nach aktiver Kachel.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in client/src/labs/ nach der Entdecken-Seite.
+Suche nach: “LabsExplore”, “Bibliothek”, “Entdecken”, “exploreApi”
+
+Notiere:
+
+1. Dateiname der Entdecken-Seite
+1. Wie ist die Bibliothek-Karte aktuell implementiert?
+   (Link zu /labs/bibliothek? Eigene Komponente? Hardcoded?)
+1. Hat die Seite bereits einen Tab-State oder activeView-State?
+1. Welche Route hat die Bibliothek? (/labs/bibliothek oder anders?)
+1. Welche Komponenten/Sektionen gibt es aktuell auf der Seite?
+   (Bibliothek-Karte, Suche, Filter, Whisky-Liste etc.)
+
+Berichte alle 5 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — TAB-STATE HINZUFÜGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+Füge einen activeView-State hinzu:
+
+type ExploreView = “whiskies” | “bibliothek”;
+const [activeView, setActiveView] = useState<ExploreView>(“whiskies”);
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — ZWEI TAB-KACHELN OBEN EINFÜGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Direkt unter dem Seiten-Titel (“Entdecken / Whiskies suchen & entdecken”):
+
+Entferne die bestehende Bibliothek-Karte von ihrer aktuellen Position.
+
+Füge stattdessen zwei gleichwertige Kacheln ein:
+
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
+    padding: '0 16px 20px',
+  }}>
+
+```
+{/* Kachel 1: Whiskies */}
+<button
+  onClick={() => setActiveView("whiskies")}
+  style={{
+    padding: '16px',
+    borderRadius: '16px',
+    border: activeView === "whiskies"
+      ? '2px solid var(--color-gold)'
+      : '1px solid var(--color-border)',
+    background: activeView === "whiskies"
+      ? 'var(--color-gold-subtle)'   /* leicht getönter Hintergrund */
+      : 'var(--color-surface)',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  }}
+>
+  {/* Glas-Icon oben */}
+  <div style={{ marginBottom: '8px' }}>
+    {/* SVG Whisky-Glas Icon, 24x24px, color: activeView=whiskies ? gold : muted */}
+  </div>
+  <div style={{
+    fontSize: '15px',
+    fontWeight: '600',
+    fontFamily: 'Playfair Display',
+    color: activeView === "whiskies"
+      ? 'var(--color-gold)'
+      : 'var(--color-text-primary)',
+    marginBottom: '4px',
+  }}>
+    {t("whiskies")}
+  </div>
+  <div style={{
+    fontSize: '12px',
+    color: 'var(--color-text-muted)',
+    fontFamily: 'DM Sans',
+  }}>
+    {t("whiskiesExploreDesc")}
+    {/* DE: "562 Whiskies entdecken" / EN: "Explore 562 whiskies" */}
+    {/* Zahl dynamisch aus whiskies.length */}
+  </div>
+</button>
+
+{/* Kachel 2: Bibliothek */}
+<button
+  onClick={() => setActiveView("bibliothek")}
+  style={{
+    padding: '16px',
+    borderRadius: '16px',
+    border: activeView === "bibliothek"
+      ? '2px solid var(--color-gold)'
+      : '1px solid var(--color-border)',
+    background: activeView === "bibliothek"
+      ? 'var(--color-gold-subtle)'
+      : 'var(--color-surface)',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  }}
+>
+  {/* Buch-Icon oben (BookOpen aus lucide-react) */}
+  <div style={{ marginBottom: '8px' }}>
+    {/* BookOpen Icon, 24x24px */}
+  </div>
+  <div style={{
+    fontSize: '15px',
+    fontWeight: '600',
+    fontFamily: 'Playfair Display',
+    color: activeView === "bibliothek"
+      ? 'var(--color-gold)'
+      : 'var(--color-text-primary)',
+    marginBottom: '4px',
+  }}>
+    {t("library")}
+    {/* DE: "Bibliothek" / EN: "Library" */}
+  </div>
+  <div style={{
+    fontSize: '12px',
+    color: 'var(--color-text-muted)',
+    fontFamily: 'DM Sans',
+  }}>
+    {t("libraryExploreDesc")}
+    {/* DE: "Wissen, Referenz & Deep Dive" */}
+    {/* EN: "Knowledge, Reference & Deep Dive" */}
+  </div>
+</button>
+```
+
+  </div>
+
+WICHTIG: Touch-Target beider Kacheln mind. 80px Höhe.
+NICHT anfassen: den Seiten-Titel, die Bottom-Navigation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — INHALT CONDITIONAL RENDERN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Den Inhalt unter den Kacheln bedingt rendern:
+
+{activeView === “whiskies” && (
+<>
+{/* Bestehende Whisky-Sektion: Suche + Filter + Liste */}
+{/* UNVERÄNDERT — nur verschoben */}
+</>
+)}
+
+{activeView === “bibliothek” && (
+<>
+{/* Bibliothek-Inhalt */}
+{/* Verwende die bestehende Bibliothek-Komponente oder
+navigiere zu /labs/bibliothek */}
+</>
+)}
+
+FÜR DEN BIBLIOTHEK-INHALT: Zwei Optionen:
+
+Option A (einfacher): Bei Klick auf Bibliothek-Kachel:
+→ Navigiere direkt zu /labs/bibliothek (bestehende Route)
+→ setActiveView wird nicht benötigt für Bibliothek
+→ Kachel ist dann ein Link, kein Toggle
+
+Option B (nahtloser): Bibliothek-Inhalt inline laden:
+→ Importiere LabsBibliothek-Komponente
+→ Rendere sie direkt unter den Kacheln wenn activeView === “bibliothek”
+
+Wähle Option A wenn LabsBibliothek eine eigenständige Seite mit
+eigenem Layout ist. Wähle Option B wenn sie eine einfache
+Inhalts-Komponente ohne eigenes Layout ist.
+
+Berichte welche Option du gewählt hast.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — i18n KEYS ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts, NUR wenn nicht vorhanden,
+im bestehenden Block ergänzen (KEIN neuer Block):
+
+EN:
+whiskiesExploreDesc: “Explore {{count}} whiskies”,
+libraryExploreDesc: “Knowledge, Reference & Deep Dive”,
+
+DE:
+whiskiesExploreDesc: “{{count}} Whiskies entdecken”,
+libraryExploreDesc: “Wissen, Referenz & Deep Dive”,
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ server/ — keine einzige Datei
+✗ shared/schema.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ LabsBibliothek.tsx — nicht verändern, nur verwenden
+✗ Die Whisky-Such- und Filter-Logik
+✗ Den API-Endpoint /api/labs/explore/whiskies
+✗ Alle anderen Labs-Seiten
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Zwei gleichwertige Kacheln unter dem Seitentitel sichtbar
+□ “Whiskies” Kachel: gold markiert beim ersten Laden (default)
+□ “Bibliothek” Kachel: gleiches visuelles Gewicht
+□ Klick “Whiskies”: zeigt Suche + Filter + Whisky-Liste
+□ Klick “Bibliothek”: zeigt Bibliothek-Inhalt (Option A oder B)
+□ Alte Bibliothek-Karte zwischen Titel und Liste: entfernt
+□ Whisky-Anzahl in Kachel-Beschreibung dynamisch
+□ DE: “Bibliothek / Wissen, Referenz & Deep Dive”
+□ EN: “Library / Knowledge, Reference & Deep Dive”
+□ Geänderte Datei(en): [eintragen]
+□ Gewählte Option (A/B): [eintragen]
+□ tsc –noEmit fehlerfrei
