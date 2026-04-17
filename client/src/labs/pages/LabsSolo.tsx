@@ -852,6 +852,7 @@ export default function LabsSolo() {
         onAddToCollection={handleAddBottleToCollection}
         added={bottleAdded}
         isDraft={isDraftSave}
+        tastingContext={tastingContext}
       />
     );
   }

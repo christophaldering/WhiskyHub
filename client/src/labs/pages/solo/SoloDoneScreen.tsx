@@ -1,5 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { Check, FileEdit, Wine } from "lucide-react";
+import { Check, FileEdit, MapPin, Sparkles, Users, Wine } from "lucide-react";
+
+interface TastingContextLike {
+  place?: string;
+  placeCustom?: string;
+  placeOther?: string;
+  company?: string;
+  companyCustom?: string;
+  companyOther?: string;
+  mood?: string;
+}
 
 interface Props {
   whiskyName: string;
@@ -10,10 +20,70 @@ interface Props {
   onAddToCollection?: () => void;
   added?: boolean;
   isDraft?: boolean;
+  tastingContext?: TastingContextLike | string | null;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft }: Props) {
+const PLACE_LABEL_KEY: Record<string, string> = {
+  atHome: "v2.contextAtHome",
+  fair: "v2.contextFair",
+  restaurant: "v2.contextRestaurant",
+  bar: "v2.contextBar",
+  onTheGo: "v2.contextOnTheGo",
+  other: "v2.contextOther",
+};
+
+const COMPANY_LABEL_KEY: Record<string, string> = {
+  alone: "v2.contextAlone",
+  withFriends: "v2.contextWithFriends",
+  withFamily: "v2.contextWithFamily",
+  withColleagues: "v2.contextWithColleagues",
+  other: "v2.contextOther",
+};
+
+const MOOD_LABEL_KEY: Record<string, string> = {
+  relaxed: "v2.contextRelaxed",
+  focused: "v2.contextFocused",
+  celebratory: "v2.contextCelebratory",
+  curious: "v2.contextCurious",
+};
+
+function parseContext(input?: TastingContextLike | string | null): TastingContextLike | null {
+  if (!input) return null;
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      return parsed && typeof parsed === "object" ? (parsed as TastingContextLike) : null;
+    } catch {
+      return null;
+    }
+  }
+  return input;
+}
+
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext }: Props) {
   const { t } = useTranslation();
+
+  const ctx = parseContext(tastingContext);
+  const contextItems: { icon: JSX.Element; label: string }[] = [];
+  if (ctx) {
+    const placeFreetext = (ctx.placeCustom || ctx.placeOther || "").trim();
+    if (ctx.place) {
+      const label = ctx.place === "other" && placeFreetext
+        ? placeFreetext
+        : t(PLACE_LABEL_KEY[ctx.place] || ctx.place, ctx.place);
+      contextItems.push({ icon: <MapPin size={12} />, label });
+    }
+    const companyFreetext = (ctx.companyCustom || ctx.companyOther || "").trim();
+    if (ctx.company) {
+      const label = ctx.company === "other" && companyFreetext
+        ? companyFreetext
+        : t(COMPANY_LABEL_KEY[ctx.company] || ctx.company, ctx.company);
+      contextItems.push({ icon: <Users size={12} />, label });
+    }
+    if (ctx.mood) {
+      contextItems.push({ icon: <Sparkles size={12} />, label: t(MOOD_LABEL_KEY[ctx.mood] || ctx.mood, ctx.mood) });
+    }
+  }
 
   const scoreBand =
     score >= 90 ? "var(--labs-success)" :
@@ -64,6 +134,33 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
         }} data-testid="solo-done-score">
           {score}
         </div>
+
+        {contextItems.length > 0 && (
+          <div
+            data-testid="text-tasting-context"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 6,
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              color: "var(--labs-text-muted)",
+              lineHeight: 1.4,
+            }}
+          >
+            {contextItems.map((item, idx) => (
+              <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {idx > 0 && <span aria-hidden style={{ opacity: 0.6 }}>·</span>}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  {item.icon}
+                  {item.label}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
 
         <p style={{
           fontFamily: "var(--font-ui)",
