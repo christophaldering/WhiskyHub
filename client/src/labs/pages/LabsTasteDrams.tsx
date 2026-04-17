@@ -817,14 +817,14 @@ export default function LabsTasteDrams() {
             );
           })()}
 
-          <VoiceMemoSection url={selectedEntry.voiceMemoUrl} transcript={selectedEntry.voiceMemoTranscript} duration={selectedEntry.voiceMemoDuration} />
-
           <FriendsAlsoRated
             pid={session.pid || ""}
             whiskyName={selectedEntry.name || selectedEntry.title || ""}
             distillery={selectedEntry.distillery || ""}
             ownOverall={selectedEntry.personalScore ?? null}
           />
+
+          <VoiceMemoSection url={selectedEntry.voiceMemoUrl} transcript={selectedEntry.voiceMemoTranscript} duration={selectedEntry.voiceMemoDuration} />
 
           {selectedEntry.tastingTitle && (
             <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-secondary)" }}>
@@ -1876,19 +1876,32 @@ function FriendsAlsoRated({
                 borderTop: idx === 0 ? "none" : "1px solid var(--labs-border)",
               }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: f.photoUrl ? `center/cover no-repeat url(${JSON.stringify(f.photoUrl)})` : "var(--labs-surface-elevated)",
-                  color: "var(--labs-accent)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: 14, flexShrink: 0,
-                  border: "1px solid var(--labs-border)",
-                }}
-              >
-                {!f.photoUrl && initial}
-              </div>
+              {f.photoUrl ? (
+                <img
+                  src={f.photoUrl}
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    objectFit: "cover", flexShrink: 0,
+                    border: "1px solid var(--labs-border)",
+                  }}
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: "var(--labs-surface-elevated)",
+                    color: "var(--labs-accent)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 700, fontSize: 14, flexShrink: 0,
+                    border: "1px solid var(--labs-border)",
+                  }}
+                >
+                  {initial}
+                </div>
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   className="text-sm"
