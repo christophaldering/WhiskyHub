@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -7311,6 +7311,17 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   // ===== Journal Entries =====
   // Friends Shared Ratings — must be registered BEFORE /:participantId routes
   // so the static "shared-ratings" segment isn't captured as a participantId.
+  type SharedRatingResponse = {
+    friendId: string;
+    name: string;
+    photoUrl: string | null;
+    noseScore: number | null;
+    tasteScore: number | null;
+    finishScore: number | null;
+    overallScore: number | null;
+    ratedAt: Date | string | null;
+  };
+
   app.get("/api/journal/shared-ratings/:whiskyName", async (req, res) => {
     try {
       const auth = await requireAuth(req);
@@ -7322,62 +7333,77 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       if (!whiskyName) return res.json([]);
 
       const friends = await storage.getWhiskyFriends(requesterId);
-      const results: any[] = [];
+      const results: SharedRatingResponse[] = [];
 
       for (const f of friends) {
+        let match: Participant | undefined;
         try {
-          let match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
+          match = f.email ? await storage.getParticipantByEmail(f.email) : undefined;
           if (!match) {
             const fullName = `${f.firstName || ""} ${f.lastName || ""}`.trim();
             if (fullName) match = await storage.getParticipantByName(fullName);
           }
-          if (!match) continue;
+        } catch (lookupErr) {
+          console.warn(`shared-ratings: friend ${f.id} participant lookup failed`, lookupErr);
+          continue;
+        }
+        if (!match) continue;
 
-          let photoUrl: string | null = null;
-          try {
-            const prof = await storage.getProfile(match.id);
-            if (prof?.photoUrl) photoUrl = prof.photoUrl;
-          } catch {}
+        let photoUrl: string | null = null;
+        try {
+          const prof = await storage.getProfile(match.id);
+          if (prof?.photoUrl) photoUrl = prof.photoUrl;
+        } catch (profileErr) {
+          console.warn(`shared-ratings: profile fetch failed for participant ${match.id}`, profileErr);
+        }
 
-          const friendEntries = await storage.getJournalEntries(match.id);
-          const matchingEntries = friendEntries.filter((e: any) => {
-            if (e.personalScore == null) return false;
-            if (e.status && e.status !== "final") return false;
-            const eName = (e.name || e.title || "").trim().toLowerCase();
-            if (!eName || eName !== whiskyName) return false;
-            // Strict case-insensitive distillery equality (spec: name + distillery match).
-            // Empty-on-both-sides counts as a match so entries without a distillery
-            // can still pair when the requester also has none.
-            const eDistillery = (e.distillery || "").trim().toLowerCase();
-            return eDistillery === distilleryFilter;
-          });
+        let friendEntries: JournalEntry[] = [];
+        try {
+          friendEntries = await storage.getJournalEntries(match.id);
+        } catch (entriesErr) {
+          console.warn(`shared-ratings: journal fetch failed for participant ${match.id}`, entriesErr);
+          continue;
+        }
 
-          if (matchingEntries.length === 0) continue;
+        const matchingEntries = friendEntries.filter((e) => {
+          if (e.personalScore == null) return false;
+          if (e.status && e.status !== "final") return false;
+          const eName = (e.name || e.title || "").trim().toLowerCase();
+          if (!eName || eName !== whiskyName) return false;
+          // Strict case-insensitive distillery equality (spec: name + distillery match).
+          // Empty-on-both-sides counts as a match so entries without a distillery
+          // still pair when the requester also has none.
+          const eDistillery = (e.distillery || "").trim().toLowerCase();
+          return eDistillery === distilleryFilter;
+        });
 
-          // Pick latest entry per friend so we surface one row per friend.
-          matchingEntries.sort((a: any, b: any) => {
-            const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return tb - ta;
-          });
-          const entry = matchingEntries[0];
+        if (matchingEntries.length === 0) continue;
 
-          results.push({
-            friendId: f.id,
-            name: `${f.firstName || ""} ${f.lastName || ""}`.trim() || f.email || "Friend",
-            photoUrl,
-            noseScore: entry.noseScore ?? null,
-            tasteScore: entry.tasteScore ?? null,
-            finishScore: entry.finishScore ?? null,
-            overallScore: entry.personalScore ?? null,
-            ratedAt: entry.createdAt,
-          });
-        } catch {}
+        // Pick latest entry per friend so we surface one row per friend.
+        matchingEntries.sort((a, b) => {
+          const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return tb - ta;
+        });
+        const entry = matchingEntries[0];
+
+        results.push({
+          friendId: f.id,
+          name: `${f.firstName || ""} ${f.lastName || ""}`.trim() || f.email || "Friend",
+          photoUrl,
+          noseScore: entry.noseScore ?? null,
+          tasteScore: entry.tasteScore ?? null,
+          finishScore: entry.finishScore ?? null,
+          overallScore: entry.personalScore ?? null,
+          ratedAt: entry.createdAt,
+        });
       }
 
       res.json(results);
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      console.error("shared-ratings: unexpected error", e);
+      res.status(500).json({ message: msg });
     }
   });
 

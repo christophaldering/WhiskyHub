@@ -1796,6 +1796,17 @@ function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void
   );
 }
 
+type SharedRatingRow = {
+  friendId: string;
+  name: string;
+  photoUrl: string | null;
+  noseScore: number | null;
+  tasteScore: number | null;
+  finishScore: number | null;
+  overallScore: number | null;
+  ratedAt: string | null;
+};
+
 function FriendsAlsoRated({
   pid,
   whiskyName,
@@ -1817,7 +1828,7 @@ function FriendsAlsoRated({
   const trimmedName = whiskyName.trim();
   const enabled = !!pid && !!trimmedName;
 
-  const { data, isLoading } = useQuery<any[]>({
+  const { data, isLoading } = useQuery<SharedRatingRow[]>({
     queryKey: ["shared-ratings", pid, trimmedName.toLowerCase(), distillery.trim().toLowerCase()],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -1825,8 +1836,8 @@ function FriendsAlsoRated({
       const url = `/api/journal/shared-ratings/${encodeURIComponent(trimmedName)}${params.toString() ? `?${params.toString()}` : ""}`;
       const res = await fetch(url, { headers: { "x-participant-id": pid } });
       if (!res.ok) return [];
-      const json = await res.json();
-      return Array.isArray(json) ? json : [];
+      const json = (await res.json()) as unknown;
+      return Array.isArray(json) ? (json as SharedRatingRow[]) : [];
     },
     enabled,
     staleTime: 60_000,
@@ -1861,7 +1872,7 @@ function FriendsAlsoRated({
         {t("drams.friendsAlsoRated", "Also rated by")} ({friends.length})
       </div>
       <div className="flex flex-col gap-3">
-        {friends.map((f: any, idx: number) => {
+        {friends.map((f: SharedRatingRow, idx: number) => {
           const initial = (f.name || "?").trim().charAt(0).toUpperCase();
           const overallDelta = deltaFor(ownOverall, f.overallScore);
           return (
