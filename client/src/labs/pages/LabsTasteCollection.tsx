@@ -1647,17 +1647,17 @@ function SyncResultDialog({ result, onClose }: { result: { added: number; update
   return (
     <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999 }} data-testid="dialog-sync-result">
       <div className="labs-card" style={{ maxWidth: 480, width: "90%", padding: 24, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
-        <h3 className="labs-h3 mb-3" style={{ color: "var(--labs-text)" }}>Sync Complete</h3>
+        <h3 className="labs-h3 mb-3" style={{ color: "var(--labs-text)" }}>{t("collectionUi.syncCompleteTitle")}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-          {result.added > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-success)", fontWeight: 700 }}>+{result.added}</span> <span style={{ color: "var(--labs-text-muted)" }}>added</span></div>}
-          {result.updated > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-info)", fontWeight: 700 }}>{result.updated}</span> <span style={{ color: "var(--labs-text-muted)" }}>updated</span></div>}
-          {result.removed > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-danger)", fontWeight: 700 }}>-{result.removed}</span> <span style={{ color: "var(--labs-text-muted)" }}>removed</span></div>}
-          {result.conflicts > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "#e6a800", fontWeight: 700 }}>{result.conflicts}</span> <span style={{ color: "var(--labs-text-muted)" }}>conflicts (CS kept)</span></div>}
-          {result.unchanged > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-text-muted)", fontWeight: 700 }}>{result.unchanged}</span> <span style={{ color: "var(--labs-text-muted)" }}>unchanged</span></div>}
+          {result.added > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-success)", fontWeight: 700 }}>+{result.added}</span> <span style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncStatAdded")}</span></div>}
+          {result.updated > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-info)", fontWeight: 700 }}>{result.updated}</span> <span style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncStatUpdated")}</span></div>}
+          {result.removed > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-danger)", fontWeight: 700 }}>-{result.removed}</span> <span style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncStatRemoved")}</span></div>}
+          {result.conflicts > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "#e6a800", fontWeight: 700 }}>{result.conflicts}</span> <span style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncStatConflicts")}</span></div>}
+          {result.unchanged > 0 && <div className="flex items-center gap-2 text-sm"><span style={{ color: "var(--labs-text-muted)", fontWeight: 700 }}>{result.unchanged}</span> <span style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.syncStatUnchanged")}</span></div>}
         </div>
         {result.conflicts > 0 && (
           <p className="text-xs mb-3" style={{ color: "#e6a800" }}>
-            Fields you changed in CaskSense were kept. Whiskybase values were logged but not applied.
+            {t("collectionUi.syncConflictsNote")}
           </p>
         )}
         {hasChanges && (
@@ -1674,14 +1674,14 @@ function SyncResultDialog({ result, onClose }: { result: { added: number; update
                       background: d.action === "added" ? "rgba(34,197,94,0.1)" : d.action === "removed" ? "rgba(239,68,68,0.1)" : d.action === "conflict" ? "rgba(245,158,11,0.15)" : "rgba(59,130,246,0.1)",
                       color: d.action === "added" ? "var(--labs-success)" : d.action === "removed" ? "var(--labs-danger)" : d.action === "conflict" ? "#e6a800" : "var(--labs-info)",
                       fontWeight: 600,
-                    }}>{d.action}</span>
+                    }}>{t(`collectionUi.syncAction${d.action.charAt(0).toUpperCase()}${d.action.slice(1)}`, { defaultValue: d.action })}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span className="text-xs truncate block" style={{ color: "var(--labs-text)" }}>{d.name}</span>
                       {d.changes && d.changes.length > 0 && (
                         <div className="mt-1">
                           {d.changes.map((ch, ci) => (
                             <div key={ci} className="text-[10px]" style={{ color: ch.source === "casksense" ? "#e6a800" : "var(--labs-text-muted)" }}>
-                              {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? "kept (CS)" : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
+                              {ch.field}: {String(ch.oldValue ?? "-")} {ch.source === "casksense" ? t("collectionUi.syncChangeKept") : `\u2192 ${String(ch.newValue ?? "-")} (WB)`}
                             </div>
                           ))}
                         </div>
