@@ -9,8 +9,76 @@
         import {
           Search, ChevronRight, Wine,
           BookOpen,
-          X, ChevronDown, Check, ArrowUp, ArrowDown,
+          X, ChevronDown, Check, ArrowUp, ArrowDown, Star,
         } from "lucide-react";
+
+        type DistilleryGroup = {
+          key: string;
+          name: string;
+          region: string | null;
+          whiskies: any[];
+          avgScore: number | null;
+          totalRatings: number;
+          totalTastings: number;
+        };
+
+        function stripDistilleryPrefix(name: string, distillery: string | null | undefined): string {
+          if (!name) return "";
+          if (!distillery) return name;
+          const dl = distillery.trim().toLowerCase();
+          if (!dl) return name;
+          const lower = name.toLowerCase();
+          if (lower === dl) return name;
+          if (lower.startsWith(dl + " ")) return name.slice(distillery.length + 1).trim();
+          if (lower.startsWith(dl + "-")) return name.slice(distillery.length + 1).trim();
+          return name;
+        }
+
+        function getDistilleryColor(name: string): string {
+          let hash = 0;
+          for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+          const hue = Math.abs(hash) % 360;
+          return `hsl(${hue}, 42%, 32%)`;
+        }
+
+        function getDistilleryInitial(name: string): string {
+          const trimmed = (name || "").trim();
+          if (!trimmed) return "?";
+          return trimmed.charAt(0).toUpperCase();
+        }
+
+        function groupByDistillery(whiskies: any[]): DistilleryGroup[] {
+          const map = new Map<string, DistilleryGroup>();
+          for (const w of whiskies) {
+            const distRaw = (w.distillery || "").trim();
+            const name = distRaw || (w.name || "Unknown");
+            const key = name.toLowerCase();
+            let g = map.get(key);
+            if (!g) {
+              g = { key, name, region: w.region || null, whiskies: [], avgScore: null, totalRatings: 0, totalTastings: 0 };
+              map.set(key, g);
+            }
+            g.whiskies.push(w);
+            if (!g.region && w.region) g.region = w.region;
+            g.totalRatings += w.ratingCount || 0;
+            g.totalTastings += w.tastingCount || 0;
+          }
+          const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+          const groups: DistilleryGroup[] = Array.from(map.values());
+          for (const g of groups) {
+            const scored = g.whiskies.filter((w: any) => {
+              const v = w.avgScore ?? w.avgOverall;
+              return v != null && v > 0;
+            });
+            g.avgScore = scored.length > 0
+              ? scored.reduce((s: number, w: any) => s + (w.avgScore ?? w.avgOverall ?? 0), 0) / scored.length
+              : null;
+            g.whiskies.sort((a: any, b: any) =>
+              collator.compare(stripDistilleryPrefix(a.name || "", g.name), stripDistilleryPrefix(b.name || "", g.name))
+            );
+          }
+          return groups;
+        }
 
         type EntdeckenFilterDimension = "region" | "distillery" | "category" | "country" | "peatLevel";
 
@@ -259,6 +327,48 @@
             return result;
           }, [whiskiesRaw, filters, activeFilterCount, sort, sortDirection]);
 
+          const distilleryGroups = useMemo(() => {
+            const groups = groupByDistillery(whiskies);
+            const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+            const desc = sortDirection === "desc";
+            if (sort === "avg") {
+              groups.sort((a, b) => {
+                const aHas = a.avgScore != null ? 1 : 0;
+                const bHas = b.avgScore != null ? 1 : 0;
+                if (aHas !== bHas) return bHas - aHas;
+                const av = a.avgScore || 0;
+                const bv = b.avgScore || 0;
+                const cmp = desc ? bv - av : av - bv;
+                return cmp || collator.compare(a.name, b.name);
+              });
+            } else if (sort === "most") {
+              groups.sort((a, b) => {
+                const cmp = desc ? b.totalTastings - a.totalTastings : a.totalTastings - b.totalTastings;
+                return cmp || collator.compare(a.name, b.name);
+              });
+            } else {
+              groups.sort((a, b) => (desc ? -1 : 1) * collator.compare(a.name, b.name));
+            }
+            return groups;
+          }, [whiskies, sort, sortDirection]);
+
+          const totalDistilleryCount = distilleryGroups.length;
+          const visibleGroups = useMemo(() => distilleryGroups.slice(0, visibleCount), [distilleryGroups, visibleCount]);
+
+          const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+          const toggleGroup = useCallback((key: string) => {
+            setExpandedGroups(prev => {
+              const next = new Set(prev);
+              if (next.has(key)) next.delete(key);
+              else next.add(key);
+              return next;
+            });
+          }, []);
+          const isGroupExpanded = useCallback(
+            (key: string) => search.trim().length > 0 || expandedGroups.has(key),
+            [expandedGroups, search],
+          );
+
           useEffect(() => {
             setVisibleCount(20);
           }, [search, filters, sort, sortDirection]);
@@ -309,7 +419,7 @@
                     <input
                       value={search}
                       onChange={e => setSearch(e.target.value)}
-                      placeholder={t("discover.searchWhiskies", "Search whiskies...")}
+                      placeholder={t("explore.searchWhiskies", "Search whiskies\u2026")}
                       data-testid="input-discovery-whisky-search"
                       style={{
                         width: "100%",
@@ -637,7 +747,11 @@
                     }}
                   >
                     <span className="whisky-count-transition" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-                      {whiskies.length} {t("discover.whiskies", "Whiskies")}
+                      {t("explore.distilleriesAndWhiskies", {
+                        defaultValue: "{{distilleries}} distilleries · {{whiskies}} whiskies",
+                        distilleries: totalDistilleryCount,
+                        whiskies: whiskies.length,
+                      })}
                     </span>
                     {activeFilterCount > 0 && (
                       <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
@@ -646,76 +760,234 @@
                     )}
                   </div>
 
-                  {whiskies.slice(0, visibleCount).map((w: any, i: number) => {
-                    const score = (w.avgScore ?? w.avgOverall) ? Math.round(w.avgScore ?? w.avgOverall) : null;
-                    const scoreColor = score != null
-                      ? score > 85 ? "#D4A017" : score > 75 ? "#A0A0A0" : "var(--labs-text-muted)"
-                      : "var(--labs-text-muted)";
-                    const scoreBg = score != null
-                      ? score > 85 ? "rgba(212, 160, 23, 0.12)" : score > 75 ? "rgba(160, 160, 160, 0.12)" : "rgba(128,128,128,0.08)"
-                      : "transparent";
-                    const scoreBorder = score != null
-                      ? score > 85 ? "rgba(212, 160, 23, 0.3)" : score > 75 ? "rgba(160, 160, 160, 0.25)" : "rgba(128,128,128,0.15)"
-                      : "transparent";
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => w.id && navigate(`/labs/explore/bottles/${w.id}`)}
-                        data-testid={`whisky-card-${w.id || i}`}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "12px 0",
-                          background: "none",
-                          border: "none",
-                          borderBottomWidth: 1,
-                          borderBottomStyle: "solid",
-                          borderBottomColor: "var(--labs-border)",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          gap: 10,
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{w.name || "—"}</div>
-                          <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{w.distillery}{w.region ? ` · ${w.region}` : ""}</div>
-                          {w.tastingCount > 0 && (
-                            <div style={{ fontSize: 11, color: "var(--labs-phase-palate)", marginTop: 2 }}>
-                              {t("discover.crossLinkTastings", "Tastings")}: {w.tastingCount}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {visibleGroups.map((g: DistilleryGroup) => {
+                      const expanded = isGroupExpanded(g.key);
+                      const color = getDistilleryColor(g.name);
+                      const initial = getDistilleryInitial(g.name);
+                      return (
+                        <div
+                          key={g.key}
+                          style={{
+                            background: "var(--labs-surface)",
+                            border: "1px solid var(--labs-border)",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                          }}
+                          data-testid={`distillery-group-${g.key}`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleGroup(g.key)}
+                            aria-expanded={expanded}
+                            data-testid={`distillery-group-header-${g.key}`}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 12,
+                              width: "100%",
+                              minHeight: 56,
+                              padding: "10px 14px",
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              fontFamily: "inherit",
+                              color: "var(--labs-text)",
+                            }}
+                          >
+                            <div
+                              aria-hidden="true"
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: "50%",
+                                background: color,
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontWeight: 700,
+                                fontSize: 16,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {initial}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div
+                                className="labs-serif"
+                                style={{
+                                  fontSize: 16,
+                                  fontWeight: 700,
+                                  color: "var(--labs-text)",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                                data-testid={`distillery-name-${g.key}`}
+                              >
+                                {g.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  color: "var(--labs-text-muted)",
+                                  marginTop: 2,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {g.region ? `${g.region} · ` : ""}
+                                {t("explore.whiskyCount", { count: g.whiskies.length })}
+                              </div>
+                            </div>
+                            {g.avgScore != null && (
+                              <div
+                                style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}
+                                data-testid={`distillery-avg-${g.key}`}
+                              >
+                                <Star className="w-3.5 h-3.5" style={{ color: "#D4A017" }} />
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#D4A017" }}>{g.avgScore.toFixed(1)}</span>
+                              </div>
+                            )}
+                            {expanded ? (
+                              <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                            )}
+                          </button>
+                          {expanded && (
+                            <div
+                              style={{ borderTop: "1px solid var(--labs-border)", display: "flex", flexDirection: "column" }}
+                              data-testid={`distillery-bottles-${g.key}`}
+                            >
+                              {g.whiskies.map((w: any, i: number) => {
+                                const displayName = stripDistilleryPrefix(w.name || "", g.name) || w.name || "—";
+                                const ageText = w.age ? (/\d$/.test(String(w.age)) ? `${w.age}y` : String(w.age)) : null;
+                                const abvText = w.abv != null && w.abv !== "" ? (/\d$/.test(String(w.abv)) ? `${w.abv}%` : String(w.abv)) : null;
+                                const meta = [ageText, abvText].filter(Boolean).join(" · ");
+                                const scoreVal = w.avgScore ?? w.avgOverall;
+                                const score = scoreVal != null && scoreVal > 0 ? Number(scoreVal) : null;
+                                return (
+                                  <button
+                                    key={w.id || i}
+                                    onClick={() => w.id && navigate(`/labs/explore/bottles/${w.id}`)}
+                                    data-testid={`whisky-card-${w.id || i}`}
+                                    style={{
+                                      width: "100%",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      padding: "10px 14px 10px 28px",
+                                      minHeight: 56,
+                                      background: "none",
+                                      border: "none",
+                                      borderTopWidth: 1,
+                                      borderTopStyle: "solid",
+                                      borderTopColor: "var(--labs-border)",
+                                      cursor: "pointer",
+                                      textAlign: "left",
+                                      fontFamily: "inherit",
+                                      color: "var(--labs-text)",
+                                    }}
+                                  >
+                                    <div
+                                      aria-hidden="true"
+                                      style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 8,
+                                        background: w.imageUrl
+                                          ? `center/cover no-repeat url("${w.imageUrl}")`
+                                          : "var(--labs-surface-elevated)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexShrink: 0,
+                                        border: "1px solid var(--labs-border)",
+                                      }}
+                                    >
+                                      {!w.imageUrl && <Wine className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div
+                                        style={{
+                                          fontSize: 14,
+                                          fontWeight: 600,
+                                          color: "var(--labs-text)",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        data-testid={`text-whisky-name-${w.id || i}`}
+                                      >
+                                        {displayName}
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2, flexWrap: "wrap" }}>
+                                        {meta && <span>{meta}</span>}
+                                        {w.tastingCount > 0 && (
+                                          <span data-testid={`text-tastings-${w.id || i}`}>
+                                            {t("explore.tastingsCount", { count: w.tastingCount, defaultValue: "{{count}} tastings" })}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {score != null ? (
+                                      <div
+                                        data-testid={`score-chip-${w.id || i}`}
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 4,
+                                          padding: "3px 8px",
+                                          borderRadius: 999,
+                                          background: "rgba(212, 160, 23, 0.12)",
+                                          border: "1px solid rgba(212, 160, 23, 0.3)",
+                                          flexShrink: 0,
+                                        }}
+                                      >
+                                        <Star className="w-3 h-3" style={{ color: "#D4A017" }} />
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: "#D4A017" }}>{score.toFixed(1)}</span>
+                                      </div>
+                                    ) : w.isDraft ? (
+                                      <div
+                                        data-testid={`draft-badge-${w.id || i}`}
+                                        style={{
+                                          padding: "3px 8px",
+                                          borderRadius: 999,
+                                          background: "var(--labs-surface-elevated)",
+                                          border: "1px solid var(--labs-border)",
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          color: "var(--labs-text-muted)",
+                                          flexShrink: 0,
+                                          textTransform: "uppercase",
+                                          letterSpacing: "0.5px",
+                                        }}
+                                      >
+                                        {t("explore.draft", "Draft")}
+                                      </div>
+                                    ) : null}
+                                    <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
-                        {score != null && (
-                          <div
-                            data-testid={`score-badge-${w.id || i}`}
-                            style={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 20,
-                              border: `2px solid ${scoreBorder}`,
-                              background: scoreBg,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <span style={{ fontSize: 14, fontWeight: 700, color: scoreColor }}>{score}</span>
-                          </div>
-                        )}
-                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5, flexShrink: 0 }} />
-                      </button>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
 
-                  {whiskies.length === 0 && (
+                  {distilleryGroups.length === 0 && (
                     <div style={{ textAlign: "center", padding: 32, color: "var(--labs-text-muted)", fontSize: 14 }}>
                       {(search || activeFilterCount > 0) ? t("discover.noResults", "No results found.") : t("discover.noWhiskies", "No whiskies yet.")}
                     </div>
                   )}
 
-                  {visibleCount < whiskies.length && (
+                  {visibleCount < distilleryGroups.length && (
                     <button
                       onClick={() => setVisibleCount(prev => prev + 20)}
                       data-testid="button-show-more-whiskies"
@@ -737,7 +1009,7 @@
                         background: "var(--labs-surface)",
                       }}
                     >
-                      {t("explore.loadMore", "Show more")} ({whiskies.length - visibleCount} {t("explore.remaining", "remaining")})
+                      {t("explore.loadMore", "Show more")} ({distilleryGroups.length - visibleCount} {t("explore.remaining", "remaining")})
                       <ChevronDown className="w-4 h-4" />
                     </button>
                   )}
