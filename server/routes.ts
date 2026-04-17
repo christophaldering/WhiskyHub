@@ -7332,6 +7332,18 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const distilleryFilter = ((req.query.distillery as string) || "").trim().toLowerCase();
       if (!whiskyName) return res.json([]);
 
+      // Privacy contract: only disclose friends' scores for whiskies the
+      // requester has also rated themselves (same normalized name + distillery).
+      const requesterEntries = await storage.getJournalEntries(requesterId);
+      const requesterHasMatch = requesterEntries.some((e) => {
+        if (e.personalScore == null) return false;
+        const eName = (e.name || e.title || "").trim().toLowerCase();
+        if (!eName || eName !== whiskyName) return false;
+        const eDistillery = (e.distillery || "").trim().toLowerCase();
+        return eDistillery === distilleryFilter;
+      });
+      if (!requesterHasMatch) return res.json([]);
+
       const friends = await storage.getWhiskyFriends(requesterId);
       const results: SharedRatingResponse[] = [];
 
