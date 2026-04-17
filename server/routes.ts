@@ -5508,6 +5508,132 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
     }
   });
 
+  // --- Whisky-DNA Aroma-Radar (on-the-fly, no persistence) ---
+  const WHISKY_DNA_CATEGORIES: Array<{ id: string; en: string; de: string; color: string; keywords: string[] }> = [
+    { id: "fruity", en: "Fruity", de: "Fruchtig", color: "#E07B4C", keywords: ["apple","apfel","pear","birne","citrus","zitrus","lemon","zitrone","orange","lime","grapefruit","berry","beere","strawberry","raspberry","blackberry","blueberry","tropical","mango","pineapple","ananas","banana","banane","passion fruit","raisin","date","fig","feige","prune","sultana","trockenfrucht","frucht","fruit","apricot","aprikose","peach","pfirsich","cherry","kirsche","plum","pflaume"] },
+    { id: "floral", en: "Floral", de: "Blumig", color: "#C77DBA", keywords: ["rose","lavender","lavendel","heather","heidekraut","elderflower","holunder","jasmine","jasmin","blossom","blüte","floral","blumig","violet","veilchen"] },
+    { id: "sweet", en: "Sweet", de: "Süß", color: "#D4A853", keywords: ["honey","honig","vanilla","vanille","caramel","karamell","butterscotch","toffee","fudge","chocolate","schokolade","cocoa","kakao","marzipan","brown sugar","brauner zucker","molasses","melasse","treacle","sugar","zucker","sweet","süß","syrup","sirup","maple"] },
+    { id: "creamy", en: "Creamy", de: "Cremig", color: "#D4B896", keywords: ["butter","buttery","buttrig","cream","sahne","creamy","cremig","custard","pudding","crème","milk","milch","yoghurt","joghurt","yogurt","vanilla pudding","mascarpone"] },
+    { id: "malty", en: "Malty", de: "Malzig", color: "#B8934A", keywords: ["cereal","getreide","grain","barley","gerste","malt","malz","malty","malzig","biscuit","keks","cookie","shortbread","bread","brot","dough","teig","toast","toasted","geröstet","oatmeal","haferflocken","oat","hafer","porridge"] },
+    { id: "herbal", en: "Herbal", de: "Kräuter", color: "#6B8E5A", keywords: ["mint","minze","menthol","eucalyptus","eukalyptus","grass","gras","hay","heu","tea","tee","green tea","thyme","thymian","rosemary","rosmarin","herbal","kräuter","kräutrig","sage","salbei","basil","basilikum"] },
+    { id: "nutty", en: "Nutty", de: "Nussig", color: "#9B7653", keywords: ["walnut","walnuss","hazelnut","haselnuss","coconut","kokos","kokosnuss","almond","mandel","pecan","pekannuss","nutty","nussig","nuss","nut"] },
+    { id: "woody", en: "Woody", de: "Holzig", color: "#8B6F47", keywords: ["oak","eiche","eichenholz","cedar","zeder","sandalwood","sandelholz","pine","kiefer","resin","harz","sawdust","sägemehl","wood","holz","woody","holzig","balsamic","balsamisch"] },
+    { id: "spicy", en: "Spicy", de: "Würzig", color: "#C04E3E", keywords: ["cinnamon","zimt","pepper","pfeffer","ginger","ingwer","clove","nelke","gewürznelke","nutmeg","muskat","muskatnuss","anise","anis","liquorice","licorice","lakritz","spicy","würzig","spice","gewürz","cardamom","kardamom","chili","chilli"] },
+    { id: "earthy", en: "Earthy", de: "Erdig", color: "#7A6855", keywords: ["leather","leder","tobacco","tabak","cigar","zigarre","mushroom","pilz","truffle","trüffel","moss","moos","forest floor","waldboden","soil","erde","earth","loam","earthy","erdig","humus"] },
+    { id: "smoky", en: "Smoky", de: "Rauchig", color: "#6B7280", keywords: ["peat","torf","peaty","torfig","campfire","lagerfeuer","bonfire","smoke","rauch","smoky","rauchig","charcoal","holzkohle","ash","asche","tar","teer","bbq","grill","smoked","geräuchert","bacon","speck"] },
+    { id: "maritime", en: "Maritime", de: "Maritim", color: "#4A90A4", keywords: ["sea salt","meersalz","salt","salz","salty","salzig","brine","salzlake","briny","iodine","jod","medicinal","medizinisch","seaweed","seetang","kelp","algae","alge","oyster","auster","shellfish","maritime","maritim","ocean","meer","sea","see"] },
+  ];
+
+  app.get("/api/participants/:id/whisky-dna", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== participantId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
+      const allEntries = await storage.getJournalEntries(participantId);
+      const hasOverallScore = (e: unknown): e is { overallScore: number | null } =>
+        typeof e === "object" && e !== null && "overallScore" in e;
+      const entries = allEntries.filter((e) => {
+        if (e.source === "casksense-database") return false;
+        const overallScore = hasOverallScore(e) ? e.overallScore : null;
+        return (
+          e.noseScore != null ||
+          e.tasteScore != null ||
+          e.finishScore != null ||
+          overallScore != null ||
+          e.personalScore != null
+        );
+      });
+
+      const n = entries.length;
+
+      const entryTexts = entries.map((e) =>
+        [e.noseNotes, e.tasteNotes, e.finishNotes].filter(Boolean).join(" ").toLowerCase()
+      );
+
+      const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const keywordRegexes = WHISKY_DNA_CATEGORIES.map((cat) => ({
+        cat,
+        regexes: cat.keywords.map((k) => new RegExp(`\\b${escapeRe(k)}\\b`, "i")),
+      }));
+
+      const keywordCounts: Record<string, number> = {};
+
+      const categories = keywordRegexes.map(({ cat, regexes }) => {
+        let count = 0;
+        for (let i = 0; i < entryTexts.length; i++) {
+          const text = entryTexts[i];
+          if (!text) continue;
+          let matchedInEntry = false;
+          for (let k = 0; k < cat.keywords.length; k++) {
+            const kw = cat.keywords[k];
+            const re = regexes[k];
+            if (re.test(text)) {
+              keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+              if (!matchedInEntry) matchedInEntry = true;
+            }
+          }
+          if (matchedInEntry) count++;
+        }
+        const pct = n > 0 ? count / n : 0;
+        const ciHalf = n > 0 ? Math.min(0.42, 0.42 / Math.sqrt(n)) : 0.42;
+        const lower = Math.max(0, Math.min(1, pct - ciHalf));
+        const upper = Math.max(0, Math.min(1, pct + ciHalf));
+        return {
+          id: cat.id,
+          en: cat.en,
+          de: cat.de,
+          color: cat.color,
+          count,
+          pct,
+          lower,
+          upper,
+        };
+      });
+
+      const ciHalf = n > 0 ? Math.min(0.42, 0.42 / Math.sqrt(n)) : 0.42;
+      const stability = Math.round(100 * (1 - Math.exp(-n / 25)));
+
+      let phase: "unknown" | "emerging" | "stable" | "crystal";
+      if (n < 10) phase = "unknown";
+      else if (n < 30) phase = "emerging";
+      else if (n < 60) phase = "stable";
+      else phase = "crystal";
+
+      const nForCI10 = Math.max(0, Math.ceil(Math.pow(0.42 / 0.10, 2)) - n);
+
+      const topKeywords = Object.entries(keywordCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([keyword, count]) => ({ keyword, count }));
+
+      const sortedByPct = [...categories].sort((a, b) => b.pct - a.pct);
+      const dominantCategory = sortedByPct.length && sortedByPct[0].pct > 0 ? sortedByPct[0].id : null;
+      const sortedAsc = [...categories].filter((c) => c.pct > 0).sort((a, b) => a.pct - b.pct);
+      const rareCategory = sortedAsc.length ? sortedAsc[0].id : null;
+
+      res.json({
+        n,
+        stability,
+        ciHalf,
+        nForCI10,
+        phase,
+        categories,
+        topKeywords,
+        dominantCategory,
+        rareCategory,
+      });
+    } catch (e: any) {
+      console.error("Whisky-DNA error:", e?.message || e);
+      res.status(500).json({ message: e?.message || "Failed to compute Whisky-DNA" });
+    }
+  });
+
   app.get("/api/participants/:id/connoisseur-reports/:reportId", async (req, res) => {
     try {
       const participantId = req.params.id;

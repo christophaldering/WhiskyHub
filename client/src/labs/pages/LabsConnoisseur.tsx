@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { pidHeaders, profileApi } from "@/lib/api";
@@ -8,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import {
   ChevronLeft, Sparkles, Copy, Check, Download,
   FileText, Trash2, Globe, Share2, TrendingUp, TrendingDown,
-  Award, BarChart3, Wine, Droplets, Info,
+  Award, BarChart3, Wine, Droplets, Info, Activity, ChevronRight,
 } from "lucide-react";
 
 interface DimensionScores {
@@ -1394,6 +1395,41 @@ export default function LabsConnoisseur() {
           </div>
         </div>
       )}
+
+      {/* Whisky-DNA Link Card */}
+      <Link
+        href="/labs/taste/dna"
+        data-testid="link-card-whisky-dna"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          marginTop: 16,
+          padding: "16px 18px",
+          borderRadius: 16,
+          textDecoration: "none",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-gold) 8%, var(--labs-bg)), color-mix(in srgb, var(--labs-accent) 5%, var(--labs-bg)))",
+          border: "1px solid color-mix(in srgb, var(--labs-gold) 22%, transparent)",
+          color: "var(--labs-text)",
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "color-mix(in srgb, var(--labs-gold) 18%, transparent)",
+        }}>
+          <Activity className="w-5 h-5" style={{ color: "var(--labs-gold)" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }} data-testid="text-dna-card-title">
+            {t("whiskyDna", "Your Whisky DNA")}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+            {t("whiskyDnaDesc", "A 12-axis aroma radar with a 95% confidence band that shrinks as you log more drams.")}
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      </Link>
     </div>
   );
 }
