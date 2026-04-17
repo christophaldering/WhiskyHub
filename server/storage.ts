@@ -1,5 +1,6 @@
 import { eq, ne, and, asc, desc, sql, inArray, gte, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "./db";
+import { markJournalUpdated } from "./whiskyDnaCache";
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
@@ -1196,24 +1197,29 @@ export class DatabaseStorage implements IStorage {
 
   async createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry> {
     const [result] = await db.insert(journalEntries).values(data).returning();
+    if (result) markJournalUpdated(result.participantId);
     return result;
   }
 
   async updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined> {
     const [result] = await db.update(journalEntries).set({ ...data, updatedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId))).returning();
+    if (result) markJournalUpdated(participantId);
     return result;
   }
 
   async deleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.update(journalEntries).set({ deletedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+    markJournalUpdated(participantId);
   }
 
   async restoreJournalEntry(id: string, participantId: string): Promise<void> {
     await db.update(journalEntries).set({ deletedAt: null }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+    markJournalUpdated(participantId);
   }
 
   async permanentlyDeleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+    markJournalUpdated(participantId);
   }
 
   async getDeletedJournalEntries(participantId: string): Promise<JournalEntry[]> {
@@ -1226,15 +1232,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async restoreJournalEntryById(id: string): Promise<void> {
-    await db.update(journalEntries).set({ deletedAt: null }).where(eq(journalEntries.id, id));
+    const [updated] = await db.update(journalEntries).set({ deletedAt: null }).where(eq(journalEntries.id, id)).returning();
+    if (updated) markJournalUpdated(updated.participantId);
   }
 
   async purgeExpiredJournalEntries(olderThanDays: number): Promise<number> {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
     const deleted = await db.delete(journalEntries).where(and(isNotNull(journalEntries.deletedAt), lt(journalEntries.deletedAt, cutoff))).returning();
     if (deleted.length > 0) {
+      const seen = new Set<string>();
       for (const entry of deleted) {
         console.log(`[DATA_GUARD] Auto-purged expired journal entry: id=${entry.id} name="${entry.name}" participant=${entry.participantId} deletedAt=${entry.deletedAt}`);
+        if (entry.participantId && !seen.has(entry.participantId)) {
+          seen.add(entry.participantId);
+          markJournalUpdated(entry.participantId);
+        }
       }
     }
     return deleted.length;

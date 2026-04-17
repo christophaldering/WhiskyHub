@@ -16,6 +16,7 @@ import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { addConnection, broadcastToTasting } from "./sse";
+import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { hashPassword, verifyPassword } from "./lib/auth";
@@ -5535,6 +5536,11 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         }
       }
 
+      const { version: versionAtStart, data: cached } = getCachedWhiskyDna(participantId);
+      if (cached !== undefined) {
+        return res.json(cached);
+      }
+
       const allEntries = await storage.getJournalEntries(participantId);
       const hasOverallScore = (e: unknown): e is { overallScore: number | null } =>
         typeof e === "object" && e !== null && "overallScore" in e;
@@ -5617,7 +5623,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const sortedAsc = [...categories].filter((c) => c.pct > 0).sort((a, b) => a.pct - b.pct);
       const rareCategory = sortedAsc.length ? sortedAsc[0].id : null;
 
-      res.json({
+      const payload = {
         n,
         stability,
         ciHalf,
@@ -5627,7 +5633,9 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         topKeywords,
         dominantCategory,
         rareCategory,
-      });
+      };
+      setCachedWhiskyDna(participantId, versionAtStart, payload);
+      res.json(payload);
     } catch (e: any) {
       console.error("Whisky-DNA error:", e?.message || e);
       res.status(500).json({ message: e?.message || "Failed to compute Whisky-DNA" });
