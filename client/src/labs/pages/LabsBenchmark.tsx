@@ -4,6 +4,8 @@ import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
+import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
+import WishlistBadge from "@/labs/components/WishlistBadge";
 import {
   ChevronLeft, Upload, FileText, Loader2, Check, X, Trash2, Save, Brain,
   AlertCircle, ChevronDown, ChevronUp, Search, Database, User, Clock,
@@ -100,6 +102,7 @@ export default function LabsBenchmark() {
   const session = useSession();
   const pid = session.pid || "";
   const queryClient = useQueryClient();
+  const savedKeys = useWishlistKeys(pid || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<LibraryTab>("tasting_notes");
@@ -353,6 +356,9 @@ export default function LabsBenchmark() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="labs-serif text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>{entry.name}</span>
                             {entry.distillery && <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>by {entry.distillery}</span>}
+                            {savedKeys.has(wishlistKey(entry.name, entry.distillery)) && (
+                              <WishlistBadge size="xs" testId={`badge-wishlist-extracted-${idx}`} />
+                            )}
                             {entry.score != null && <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}</span>}
                             {entry.region && <span className="text-[11px]" style={{ padding: "1px 6px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{entry.region}</span>}
                           </div>
@@ -475,7 +481,14 @@ export default function LabsBenchmark() {
                     <tbody>
                       {filteredSaved.map(entry => (
                         <tr key={entry.id} style={{ borderBottom: "1px solid var(--labs-border)" }} data-testid={`saved-entry-${entry.id}`}>
-                          <td className="labs-serif" style={{ padding: 8, fontWeight: 600, color: "var(--labs-accent)" }}>{entry.name}</td>
+                          <td className="labs-serif" style={{ padding: 8, fontWeight: 600, color: "var(--labs-accent)" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              {entry.name}
+                              {savedKeys.has(wishlistKey(entry.name, entry.distillery)) && (
+                                <WishlistBadge size="xs" testId={`badge-wishlist-saved-${entry.id}`} />
+                              )}
+                            </span>
+                          </td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.distillery || "—"}</td>
                           <td style={{ padding: 8, color: "var(--labs-text-muted)" }}>{entry.region || "—"}</td>
                           <td style={{ padding: 8 }}>{entry.score != null ? <span className="labs-badge labs-badge-accent" style={{ fontSize: 11, padding: "1px 6px" }}>{entry.score}</span> : "—"}</td>

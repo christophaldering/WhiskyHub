@@ -5,6 +5,8 @@
         import { useQuery } from "@tanstack/react-query";
         import { useSession } from "@/lib/session";
         import { pidHeaders } from "@/lib/api";
+        import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
+        import WishlistBadge from "@/labs/components/WishlistBadge";
         import { apiUrl } from "@/lib/native";
         import {
           Search, ChevronRight, Wine,
@@ -95,6 +97,7 @@
           const [, navigate] = useLocation();
           const { currentParticipant } = useSession();
           const pid = currentParticipant?.id;
+          const savedKeys = useWishlistKeys(pid);
 
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">("whiskies");
           const [search, setSearch] = useState("");
@@ -969,18 +972,23 @@
                                       {!w.imageUrl && <Wine className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div
-                                        style={{
-                                          fontSize: 14,
-                                          fontWeight: 600,
-                                          color: "var(--labs-text)",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          whiteSpace: "nowrap",
-                                        }}
-                                        data-testid={`text-whisky-name-${w.id || i}`}
-                                      >
-                                        {displayName}
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                        <div
+                                          style={{
+                                            fontSize: 14,
+                                            fontWeight: 600,
+                                            color: "var(--labs-text)",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                          data-testid={`text-whisky-name-${w.id || i}`}
+                                        >
+                                          {displayName}
+                                        </div>
+                                        {savedKeys.has(wishlistKey(w.name, w.distillery)) && (
+                                          <WishlistBadge size="xs" testId={`badge-wishlist-${w.id || i}`} />
+                                        )}
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2, flexWrap: "wrap" }}>
                                         {meta && <span>{meta}</span>}

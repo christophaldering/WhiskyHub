@@ -7,12 +7,8 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders, wishlistApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import type { WishlistEntry } from "@shared/schema";
+import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
 import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck } from "lucide-react";
-
-function wishlistKey(name: string | null | undefined, distillery: string | null | undefined) {
-  return `${(name || "").trim().toLowerCase()}|${(distillery || "").trim().toLowerCase()}`;
-}
 
 interface DnaCategory {
   id: string;
@@ -328,18 +324,7 @@ export default function LabsWhiskyDNA() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: wishlistEntries } = useQuery<WishlistEntry[]>({
-    queryKey: ["wishlist", pid],
-    queryFn: () => wishlistApi.getAll(pid!),
-    enabled: !!pid,
-    staleTime: 60 * 1000,
-  });
-
-  const savedKeys = useMemo(() => {
-    const set = new Set<string>();
-    (wishlistEntries || []).forEach((e) => set.add(wishlistKey(e.name, e.distillery)));
-    return set;
-  }, [wishlistEntries]);
+  const savedKeys = useWishlistKeys(pid);
 
   const [justSavedKeys, setJustSavedKeys] = useState<Set<string>>(new Set());
   const [savingKey, setSavingKey] = useState<string | null>(null);
