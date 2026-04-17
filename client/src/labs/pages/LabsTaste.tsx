@@ -602,10 +602,10 @@ export default function LabsTaste() {
                 <Sparkles className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: isAiActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                <div className="labs-serif" style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.15, color: isAiActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
                   {t("myTastePage.aiInsights", "AI & Insights")}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.3 }}>
                   {t("myTastePage.aiInsightsDesc", "Connoisseur, Recommendations & more")}
                 </div>
               </div>
@@ -639,10 +639,10 @@ export default function LabsTaste() {
                 <Activity className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: isProfileActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                <div className="labs-serif" style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.15, color: isProfileActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
                   {t("myTastePage.profileAnalytics", "Profile & Analytics")}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.3 }}>
                   {t("myTastePage.profileAnalyticsDesc", "CaskSense, Analytics, Flavor Wheel & more")}
                 </div>
               </div>
