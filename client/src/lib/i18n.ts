@@ -10305,7 +10305,7 @@ const resources = {
         all: "Alle",
         scoreChip: "Punkte: {{range}}",
         friendsAlsoRated: "Auch bewertet von",
-        yourScoreVsFriend: "vs. dein Score",
+        yourScoreVsFriend: "vs. dir",
         friendsNoneYet: "Noch keine Freunde haben diesen Whisky bewertet.",
       },
       downloads: {

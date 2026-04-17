@@ -1926,7 +1926,7 @@ function FriendsAlsoRated({
                   title={t("drams.yourScoreVsFriend", "vs. your score") as string}
                 >
                   <div style={{ color: overallDelta.color, fontWeight: 700, fontSize: 14 }}>
-                    {overallDelta.value === 0 ? "±0" : `${overallDelta.value > 0 ? "+" : ""}${overallDelta.value.toFixed(1)}`}
+                    {overallDelta.value === 0 ? "=" : `${overallDelta.value > 0 ? "+" : ""}${overallDelta.value.toFixed(1)}`}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>
                     {t("drams.yourScoreVsFriend", "vs. your score")}
