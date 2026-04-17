@@ -5191,7 +5191,9 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         flavors: rw.rating.flavors || [],
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
-      const scoredJournalEntries = journalEntries.filter(j => j.personalScore != null || j.noseScore != null);
+      const scoredJournalEntries = journalEntries.filter(j =>
+        j.personalScore != null || j.noseScore != null || j.tasteScore != null || j.finishScore != null
+      );
       const journalSummaries = scoredJournalEntries.map(j => ({
         name: j.name || j.title,
         distillery: j.distillery ?? undefined,
@@ -5318,7 +5320,9 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
 
-      const scoredJournalEntries = journalEntries.filter(j => j.personalScore != null || j.noseScore != null);
+      const scoredJournalEntries = journalEntries.filter(j =>
+        j.personalScore != null || j.noseScore != null || j.tasteScore != null || j.finishScore != null
+      );
       const journalSummaries = scoredJournalEntries.map(j => ({
         name: j.name || j.title,
         distillery: j.distillery ?? undefined,
