@@ -7537,8 +7537,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
-      const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "mood", "occasion", "tastingContext", "region", "country", "peatLevel", "bottler"];
+      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "notes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"];
+      const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) {
