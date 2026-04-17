@@ -662,6 +662,16 @@ export const collectionApi = {
   add: (participantId: string, data: { name: string; distillery?: string; whiskybaseId?: string; brand?: string; statedAge?: string; abv?: string; caskType?: string; status?: string; imageUrl?: string }) =>
     fetchJSON(`/collection/${participantId}/add`, { method: "POST", body: JSON.stringify(data) }),
   check: (participantId: string) => fetchJSON(`/collection/${participantId}/check`) as Promise<{ items: Record<string, { id: string; status: string | null }> }>,
+  getImportProgress: (participantId: string) =>
+    fetchJSON(`/collection/${participantId}/import-progress`) as Promise<{
+      status: "idle" | "running" | "completed" | "error";
+      processed: number;
+      total: number;
+      imported?: number;
+      updated?: number;
+      skipped?: number;
+      error?: string;
+    }>,
   importFile: async (participantId: string, file: File) => {
     const formData = new FormData();
     try {

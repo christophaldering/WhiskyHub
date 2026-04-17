@@ -428,6 +428,19 @@ async function rejectIfArchived(tastingId: string, res: Response): Promise<boole
   return false;
 }
 
+type ImportProgress = {
+  status: "running" | "completed" | "error" | "idle";
+  processed: number;
+  total: number;
+  imported?: number;
+  updated?: number;
+  skipped?: number;
+  error?: string;
+  startedAt: number;
+  finishedAt?: number;
+};
+const importProgressByPid = new Map<string, ImportProgress>();
+
 async function rejectIfWhiskyArchived(whiskyId: string, res: Response): Promise<boolean> {
   const whisky = await storage.getWhisky(whiskyId);
   if (!whisky) return false;
@@ -6058,7 +6071,18 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
     }
   });
 
+  app.get("/api/collection/:participantId/import-progress", async (req: Request, res: Response) => {
+    const participantId = req.params.participantId as string;
+    const callerId = req.headers["x-participant-id"] as string | undefined;
+    if (!participantId || !callerId || callerId !== participantId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const progress = importProgressByPid.get(participantId);
+    res.json(progress ?? { status: "idle", processed: 0, total: 0 });
+  });
+
   app.post("/api/collection/:participantId/import", docUpload.single("file"), async (req: Request, res: Response) => {
+    const participantIdForProgress = req.params.participantId as string;
     try {
       console.log("[Import] Request empfangen", {
         contentType: req.headers["content-type"],
@@ -6204,16 +6228,53 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         else imported++;
       }
 
+      importProgressByPid.set(participantIdForProgress, {
+        status: "running",
+        processed: 0,
+        total: tasks.length,
+        startedAt: Date.now(),
+      });
+
       const BATCH_SIZE = 50;
       for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
         const batch = tasks.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(t => storage.upsertWhiskybaseCollectionItem(t.payload)));
+        const prev = importProgressByPid.get(participantIdForProgress);
+        if (prev) {
+          importProgressByPid.set(participantIdForProgress, {
+            ...prev,
+            processed: Math.min(i + batch.length, tasks.length),
+          });
+        }
       }
+
+      importProgressByPid.set(participantIdForProgress, {
+        status: "completed",
+        processed: tasks.length,
+        total: tasks.length,
+        imported, updated, skipped,
+        startedAt: importProgressByPid.get(participantIdForProgress)?.startedAt ?? Date.now(),
+        finishedAt: Date.now(),
+      });
+      setTimeout(() => {
+        const cur = importProgressByPid.get(participantIdForProgress);
+        if (cur && cur.status !== "running") importProgressByPid.delete(participantIdForProgress);
+      }, 30_000);
 
       console.log("[Import] Erfolg", { imported, updated, skipped, total: rows.length });
       res.json({ imported, updated, skipped, total: rows.length });
     } catch (error: any) {
       console.error("[Import] Fehler:", error?.message, error?.stack);
+      const prev = importProgressByPid.get(participantIdForProgress);
+      importProgressByPid.set(participantIdForProgress, {
+        status: "error",
+        processed: prev?.processed ?? 0,
+        total: prev?.total ?? 0,
+        error: error?.message || "Import failed",
+        startedAt: prev?.startedAt ?? Date.now(),
+        finishedAt: Date.now(),
+      });
+      setTimeout(() => importProgressByPid.delete(participantIdForProgress), 30_000);
       res.status(500).json({ error: error?.message || "Import failed", details: error?.stack });
     }
   });

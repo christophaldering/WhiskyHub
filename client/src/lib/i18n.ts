@@ -8413,6 +8413,8 @@ const resources = {
         importSkipped: "{{count}} entries skipped",
         importError: "Import failed",
         importResultSuccess: "{{imported}} bottles imported, {{skipped}} skipped",
+        importProgress: "Imported {{processed}} of {{total}}…",
+        importPreparing: "Preparing import…",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17062,6 +17064,8 @@ const resources = {
         importSkipped: "{{count}} Einträge übersprungen",
         importError: "Import fehlgeschlagen",
         importResultSuccess: "{{imported}} Flaschen importiert, {{skipped}} übersprungen",
+        importProgress: "{{processed}} von {{total}} importiert…",
+        importPreparing: "Import wird vorbereitet…",
       },
       bottleSplitUi: {
         claims: "Claims",

@@ -56,8 +56,17 @@ export default function LabsTasteCollection() {
   const [showTopDistilleries, setShowTopDistilleries] = useState(false);
   const [showSyncHistoryInSheet, setShowSyncHistoryInSheet] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const pid = session.pid;
+
+  const { data: importProgress } = useQuery({
+    queryKey: ["collection-import-progress", pid],
+    queryFn: () => collectionApi.getImportProgress(pid!),
+    enabled: !!pid && isImporting,
+    refetchInterval: isImporting ? 800 : false,
+    refetchIntervalInBackground: true,
+  });
 
   const { data: items = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["collection", pid],
@@ -72,7 +81,10 @@ export default function LabsTasteCollection() {
   });
 
   const importMutation = useMutation({
-    mutationFn: (file: File) => collectionApi.importFile(pid!, file),
+    mutationFn: (file: File) => {
+      setIsImporting(true);
+      return collectionApi.importFile(pid!, file);
+    },
     onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["collection"] });
       setActivePanel(null);
@@ -89,6 +101,9 @@ export default function LabsTasteCollection() {
         type: "error",
         text: `${t("collectionUi.importError")}: ${error?.message || "Unknown error"}`,
       });
+    },
+    onSettled: () => {
+      setIsImporting(false);
     },
   });
 
@@ -732,6 +747,7 @@ export default function LabsTasteCollection() {
         <ImportSyncSheet
           hasCollection={hasCollection}
           isImporting={importMutation.isPending}
+          importProgress={importMutation.isPending ? importProgress : undefined}
           isSyncing={syncMutation.isPending || syncApplyMutation.isPending}
           syncHistory={syncHistory}
           expandedSyncLogId={expandedSyncLogId}
@@ -859,14 +875,66 @@ function OnboardingStep({ number, icon, title, description }: { number: number; 
   );
 }
 
+function ImportProgressBar({ progress }: { progress?: { status: string; processed: number; total: number } | undefined }) {
+  const { t } = useTranslation();
+  const total = progress?.total ?? 0;
+  const processed = progress?.processed ?? 0;
+  const hasTotal = total > 0;
+  const pct = hasTotal ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+  const label = hasTotal
+    ? t("collectionUi.importProgress", { processed, total, defaultValue: "Imported {{processed}} of {{total}}…" })
+    : t("collectionUi.importPreparing", { defaultValue: "Preparing import…" });
+  return (
+    <div
+      style={{
+        background: "var(--labs-surface)",
+        border: "1px solid var(--labs-border)",
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+      }}
+      data-testid="import-progress"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4" style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+          <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }} data-testid="text-import-progress-label">
+            {label}
+          </span>
+        </div>
+        {hasTotal && (
+          <span className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }} data-testid="text-import-progress-pct">
+            {pct}%
+          </span>
+        )}
+      </div>
+      <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden" }}>
+        <div
+          style={{
+            height: "100%",
+            width: hasTotal ? `${pct}%` : "30%",
+            background: "var(--labs-accent)",
+            transition: "width 0.3s ease-out",
+            animation: hasTotal ? undefined : "pulse 1.5s ease-in-out infinite",
+          }}
+          data-testid="import-progress-fill"
+        />
+      </div>
+    </div>
+  );
+}
+
 function ImportSyncSheet({
-  hasCollection, isImporting, isSyncing, syncHistory,
+  hasCollection, isImporting, importProgress, isSyncing, syncHistory,
   expandedSyncLogId, setExpandedSyncLogId,
   showSyncHistory, setShowSyncHistory,
   onImport, onSync, onClose,
 }: {
   hasCollection: boolean;
   isImporting: boolean;
+  importProgress?: { status: string; processed: number; total: number } | undefined;
   isSyncing: boolean;
   syncHistory: any[];
   expandedSyncLogId: string | null;
@@ -940,6 +1008,10 @@ function ImportSyncSheet({
             {t("collectionUi.whiskybaseHintAfter")}
           </p>
         </div>
+
+        {isImporting && (
+          <ImportProgressBar progress={importProgress} />
+        )}
 
         {hasCollection ? (
           <div className="flex flex-col gap-3 mb-4">
