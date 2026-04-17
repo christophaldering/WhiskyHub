@@ -1,0 +1,230 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT FEATURE-TRIO
+TASTING-KONTEXT + VERGLEICHS-FLOW + MESSE-MODUS
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ ABSOLUTE SICHERHEITSREGEL — BITTE ZUERST LESEN ⚠️
+
+Dieser Prompt beschreibt 3 neue Features. Bevor du IRGENDETWAS änderst:
+
+1. Lies ALLE 3 Feature-Beschreibungen vollständig durch
+2. Erstelle einen detaillierten Umsetzungsplan mit EXAKTEN Dateinamen
+   und Zeilennummern die du ändern willst
+3. Präsentiere diesen Plan und warte auf EXPLIZITE Bestätigung
+4. Erst nach "JA, so machen" oder "Bestätigt" darfst du beginnen
+
+NIEMALS:
+✗ Andere Dateien ändern als die im bestätigten Plan genannten
+✗ Bestehende Funktionalität verändern ohne Rückfrage
+✗ Mehr als das Beschriebene implementieren
+✗ "Verbesserungen" hinzufügen die nicht explizit angefragt wurden
+✗ Styling, Layout oder i18n anderer Seiten anpassen
+
+Bei JEDER Unklarheit: Fragen, nicht raten.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE 1 — TASTING-KONTEXT FÜR SOLO-DRAMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ZIEL: Beim Erfassen eines Solo-Drams kann der Nutzer optional angeben
+wo, mit wem und in welcher Stimmung er den Whisky getrunken hat.
+
+SCHRITT 0 — PRÜFUNG (keine Änderungen):
+  Prüfe ob shared/schema.ts in journal_entries bereits ein Feld
+  "tastingContext" oder ähnliches hat.
+  Prüfe ob der Journal-Save-Endpoint in server/routes.ts bereits
+  ein tastingContext-Feld verarbeitet.
+  → Berichte JA/NEIN bevor du weitermachst.
+
+DB-SCHEMA (NUR wenn tastingContext noch nicht existiert):
+  In shared/schema.ts, in der journal_entries Tabelle:
+  tastingContext: text("tasting_context"),
+  Danach: npx drizzle-kit generate && npx drizzle-kit migrate
+
+BACKEND (NUR wenn tastingContext noch nicht im Endpoint):
+  In server/routes.ts, beim Journal-Entry-Save-Endpoint:
+  tastingContext aus req.body lesen und beim DB-Insert mitspeichern.
+  NUR diese eine Zeile ergänzen — nichts anderes ändern.
+
+FRONTEND — Kontext-UI:
+  Suche die Seite/Komponente die direkt nach der Modus-Auswahl
+  (Geführt/Kompakt/Quick) angezeigt wird, ODER die Capture-Seite.
+
+  Füge dort einen neuen OPTIONALEN Abschnitt hinzu:
+
+  Titel: t("tastingContext") — DE: "Kontext" / EN: "Context"
+  Subtitle: t("tastingContextDesc")
+    DE: "Optional — wo und mit wem?" / EN: "Optional — where and with whom?"
+
+  ZEILE 1 — Ort (Single-Select Chips, labs-chip Klasse):
+    DE: Zuhause · Messe · Restaurant · Bar · Unterwegs · Anderes
+    EN: At home · Fair · Restaurant · Bar · On the go · Other
+    Bei "Anderes/Other": Freitext-Input erscheint
+
+  ZEILE 2 — Gesellschaft (Single-Select Chips):
+    DE: Allein · Mit Freunden · Mit Familie · Mit Kollegen · Anderes
+    EN: Alone · With friends · With family · With colleagues · Other
+    Bei "Anderes/Other": Freitext-Input erscheint
+
+  ZEILE 3 — Stimmung (Single-Select Chips):
+    DE: Entspannt · Konzentriert · Feierlich · Neugierig
+    EN: Relaxed · Focused · Celebratory · Curious
+
+  "Überspringen →" / "Skip →" Link am Ende — komplett optional.
+
+  SPEICHERN: Gewählte Werte als JSON-String:
+    JSON.stringify({ place: "Messe", company: "Mit Freunden", mood: "Neugierig" })
+  Beim Journal-Save in tastingContext-Feld schreiben.
+
+ANZEIGE auf Dram-Karte (Post-Rating Screen):
+  Wenn tastingContext vorhanden:
+  Kleine Zeile unter dem Score:
+    🗺 Messe  ·  👥 Mit Freunden  ·  ✨ Neugierig
+  Font 12px, color-muted. NUR anzeigen wenn Kontext vorhanden.
+  (Icons als SVG oder Lucide, keine Emojis wenn SVG verfügbar)
+
+i18n Keys (im bestehenden Block ergänzen, KEIN neuer Block):
+  EN: tastingContext / tastingContextDesc / contextAtHome / contextFair /
+      contextRestaurant / contextBar / contextOnTheGo / contextOther /
+      contextAlone / contextWithFriends / contextWithFamily /
+      contextWithColleagues / contextRelaxed / contextFocused /
+      contextCelebratory / contextCurious / skipContext
+  DE: (entsprechende Übersetzungen wie oben beschrieben)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE 2 — VERGLEICHS-FLOW: "DU UND [FREUND] HABEN DENSELBEN WHISKY BEWERTET"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ZIEL: Wenn zwei befreundete Nutzer denselben Whisky bewertet haben,
+soll das sichtbar und vergleichbar werden — auf der Dram-Detailseite
+und/oder im Circle-Feed.
+
+SCHRITT 0 — PRÜFUNG (keine Änderungen):
+  Prüfe welche API-Endpunkte es gibt für:
+  a) Freundesliste des Nutzers
+  b) Journal-Einträge anderer Nutzer (mit Privacy-Check)
+  c) Den Labs Explore Bottle-Detail Endpoint
+  Berichte die gefundenen Endpunkte bevor du weitermachst.
+
+BACKEND:
+  Neuer Endpoint (NUR dieser, nichts anderes):
+  GET /api/journal/shared-ratings/:whiskyName
+
+  Logik:
+  1. Lade alle akzeptierten Freunde des anfragenden Nutzers
+  2. Suche in journal_entries nach Einträgen mit ähnlichem Whisky-Namen
+     (case-insensitive, distillery-Match) für diese Freunde
+  3. Gib zurück: [{ participantName, overallScore, noseScore,
+     palateScore, finishScore, notes, createdAt }]
+  4. NUR für akzeptierte Freunde — kein Zugriff auf andere Nutzer
+
+FRONTEND — Dram-Detailseite:
+  Suche die Seite die einen einzelnen bewerteten Dram zeigt.
+  Füge dort UNTER dem eigenen Score-Bereich einen neuen Abschnitt hinzu:
+
+  NUR wenn die API Freundes-Ratings zurückgibt (length > 0):
+
+  Titel: t("friendsAlsoRated")
+    DE: "Auch bewertet von" / EN: "Also rated by"
+
+  Pro Freund eine Zeile:
+    [Avatar-Initial]  Rudi          Nase 88 · Gaumen 85 · Abgang 87 · ⌀ 86
+
+  Diff zu eigenem Score:
+    Wenn Freund höher: "+3" in Grün
+    Wenn Freund niedriger: "-2" in Amber
+    Wenn gleich: "=" in Grau
+
+  NICHT anzeigen wenn keine Freunde denselben Whisky bewertet haben.
+  NICHT die Notes/Tasting-Notizen anderer Nutzer anzeigen (Privacy).
+
+i18n Keys (im bestehenden Block ergänzen):
+  EN: friendsAlsoRated: "Also rated by"
+      yourScoreVsFriend: "vs. you"
+  DE: friendsAlsoRated: "Auch bewertet von"
+      yourScoreVsFriend: "vs. dir"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE 3 — MESSE-MODUS: SCHNELL 5-10 DRAMS HINTEREINANDER ERFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ZIEL: Ein spezieller Modus der optimiert ist für Messen/Events —
+schnell viele Drams fotografieren und grob bewerten, später verfeinern.
+
+SCHRITT 0 — PRÜFUNG (keine Änderungen):
+  Prüfe die Capture-First-Flow Seite (soloView states).
+  Prüfe ob es bereits eine "Batch"-Funktionalität gibt.
+  Berichte bevor du weitermachst.
+
+EINSTIEGSPUNKT:
+  Auf der Drams-Hub-Seite (wo "+ Dram hinzufügen" steht):
+  Neuer Button neben "+ Dram hinzufügen":
+    Label: t("fairMode") — DE: "Messe-Modus" / EN: "Fair Mode"
+    Icon: QueueList oder Collection Icon (Lucide)
+    Styling: outlined, kein goldener Fill — sekundärer Button
+
+MESSE-MODUS ABLAUF:
+  Screen 1 — Batch-Capture:
+    Titel: DE: "Messe-Modus" / EN: "Fair Mode"
+    Subtitle: DE: "Fotografiere mehrere Drams — bewerte später"
+               EN: "Capture multiple drams — rate later"
+
+    Großer Kamera-Button (wie bestehender Capture-Flow)
+    Nach jeder Aufnahme: Whisky wird identifiziert und als Draft gespeichert
+    Unter dem Kamera-Button: Liste der bereits erfassten Drams dieser Session
+      (kleines Thumbnail, Name, "Draft" Badge)
+    Button: "+ Nächster Dram" — nimmt direkt das nächste Foto
+    Button: "Fertig — Drams bewerten →" — beendet Batch-Capture
+
+  Screen 2 — Batch-Review (nach "Fertig"):
+    Zeigt alle in dieser Session erfassten Drams als Liste
+    Jeder Dram hat:
+      - Thumbnail + Name
+      - Quick-Rate Slider (Overall Score, 60-100)
+      - Optional: kurze Notiz
+    "Alle sichern" Button speichert alle Draft-Scores
+    Jeder Dram bleibt als Draft für spätere Detail-Bewertung
+
+  TECHNISCH:
+    Verwende den bestehenden Journal-Entry-Create-Endpoint
+    Speichere einen sessionTag: "fair-mode-[datum]" im tastingContext
+    (damit man später alle Messe-Drams filtern kann)
+    Kein neuer Endpoint nötig — nur neue UI
+
+i18n Keys (im bestehenden Block ergänzen):
+  EN: fairMode / fairModeDesc / fairModeCapture / fairModeNext /
+      fairModeDone / fairModeSaveAll / fairModeSessionTag
+  DE: (entsprechende Übersetzungen)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REIHENFOLGE DER UMSETZUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implementiere die Features in dieser Reihenfolge:
+  1. Feature 1 (Tasting-Kontext) — kleinste DB-Änderung, Frontend-only
+  2. Feature 2 (Vergleichs-Flow) — neuer Endpoint + kleine UI
+  3. Feature 3 (Messe-Modus) — größte UI, kein neuer Endpoint
+
+Nach JEDEM Feature:
+  □ tsc --noEmit fehlerfrei
+  □ Kurz beschreiben was geändert wurde (Dateien + Zeilen)
+  □ Auf Bestätigung warten bevor das nächste Feature beginnt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — ABSOLUT — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ Bestehende Rating-Logik (Slider, Score-Berechnung)
+✗ Bestehende Speicher-Flows (Draft/Konfirmieren)
+✗ LabsLive.tsx, LabsResults.tsx, LabsTastings.tsx
+✗ server/routes.ts außer den explizit genannten Stellen
+✗ shared/schema.ts außer dem tastingContext-Feld in Feature 1
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ labs-theme.css
+✗ Alle anderen Seiten die nicht explizit genannt sind
+✗ i18n.ts — NUR Keys ergänzen, NIEMALS bestehende Keys ändern
+
+WIEDERHOLUNG DER WICHTIGSTEN REGEL:
+Vor jeder Änderung: Plan präsentieren → auf Bestätigung warten → dann umsetzen.
