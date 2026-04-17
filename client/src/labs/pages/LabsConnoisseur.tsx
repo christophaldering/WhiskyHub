@@ -4,8 +4,9 @@ import { Link } from "wouter";
 import BackLink from "@/labs/components/BackLink";
 import { useSession } from "@/lib/session";
 import { pidHeaders, profileApi } from "@/lib/api";
-import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
+import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
 import WishlistBadge from "@/labs/components/WishlistBadge";
+import CollectionBadge from "@/labs/components/CollectionBadge";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
@@ -388,7 +389,7 @@ function TabBar({ active, onChange, historyCount, t }: {
   );
 }
 
-function WhiskysTab({ snapshot, fallback, savedKeys, t }: { snapshot: DataSnapshot; fallback?: WhiskySummary[]; savedKeys: Set<string>; t: (key: string, fallback: string) => string }) {
+function WhiskysTab({ snapshot, fallback, savedKeys, collectionKeys, t }: { snapshot: DataSnapshot; fallback?: WhiskySummary[]; savedKeys: Set<string>; collectionKeys: import("@/lib/wishlistKey").CollectionMatcher; t: (key: string, fallback: string) => string }) {
   const snapshotSummaries = snapshot.whiskySummaries || [];
   const whiskySummaries = snapshotSummaries.length > 0 ? snapshotSummaries : (fallback || []);
   const sorted = [...whiskySummaries].sort((a, b) => (b.scores?.overall || 0) - (a.scores?.overall || 0));
@@ -418,6 +419,9 @@ function WhiskysTab({ snapshot, fallback, savedKeys, t }: { snapshot: DataSnapsh
                 <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>{w.name}</p>
                 {savedKeys.has(wishlistKey(w.name, w.distillery)) && (
                   <WishlistBadge size="xs" testId={`badge-wishlist-whisky-${i}`} />
+                )}
+                {collectionKeys.has(w.name, w.distillery) && (
+                  <CollectionBadge size="xs" testId={`badge-collection-whisky-${i}`} />
                 )}
               </div>
               {(w.distillery || w.country || w.region) && <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>{[w.distillery, w.country, w.region].filter(Boolean).join(" · ")}</p>}
@@ -771,6 +775,7 @@ export default function LabsConnoisseur() {
   const pid = session.pid;
   const queryClient = useQueryClient();
   const savedKeys = useWishlistKeys(pid);
+  const collectionKeys = useCollectionKeys(pid);
   const urlParams = useMemo(() => {
     try {
       const p = new URLSearchParams(window.location.search);
@@ -1278,7 +1283,7 @@ export default function LabsConnoisseur() {
               </div>
             )}
 
-            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} fallback={latestReport?.liveWhiskySummaries} savedKeys={savedKeys} t={t} />}
+            {activeTab === "whiskys" && <WhiskysTab snapshot={snap} fallback={latestReport?.liveWhiskySummaries} savedKeys={savedKeys} collectionKeys={collectionKeys} t={t} />}
             {activeTab === "aromas" && <AromasTab snapshot={snap} t={t} />}
             {activeTab === "history" && (
               <HistoryTab

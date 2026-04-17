@@ -7,7 +7,8 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders, wishlistApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { wishlistKey } from "@/lib/wishlistKey";
+import { wishlistKey, useCollectionKeys } from "@/lib/wishlistKey";
+import CollectionBadge from "@/labs/components/CollectionBadge";
 import type { WishlistEntry } from "@shared/schema";
 import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X } from "lucide-react";
 
@@ -344,6 +345,8 @@ export default function LabsWhiskyDNA() {
     return map;
   }, [wishlistEntries]);
 
+  const collectionKeys = useCollectionKeys(pid);
+
   const [justSavedKeys, setJustSavedKeys] = useState<Set<string>>(new Set());
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [removingKey, setRemovingKey] = useState<string | null>(null);
@@ -665,6 +668,7 @@ export default function LabsWhiskyDNA() {
                   const isSaving = savingKey === recKey && saveRecMutation.isPending;
                   const isRemoving = removingKey === recKey && removeRecMutation.isPending;
                   const wishlistId = wishlistIdByKey.get(recKey);
+                  const isInCollection = collectionKeys.has(r.name, r.distillery);
                   return (
                     <div
                       key={`${r.distillery || ""}|${r.name}|${idx}`}
@@ -690,8 +694,13 @@ export default function LabsWhiskyDNA() {
                         {idx + 1}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div data-testid={`text-recommendation-name-${idx}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                          {r.name}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <div data-testid={`text-recommendation-name-${idx}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                            {r.name}
+                          </div>
+                          {isInCollection && (
+                            <CollectionBadge size="xs" testId={`badge-collection-recommendation-${idx}`} />
+                          )}
                         </div>
                         {subtitleParts.length > 0 && (
                           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, lineHeight: 1.4 }}>

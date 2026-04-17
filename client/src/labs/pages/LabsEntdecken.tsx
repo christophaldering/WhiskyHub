@@ -5,8 +5,9 @@
         import { useQuery } from "@tanstack/react-query";
         import { useSession } from "@/lib/session";
         import { pidHeaders } from "@/lib/api";
-        import { wishlistKey, useWishlistKeys } from "@/lib/wishlistKey";
+        import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
         import WishlistBadge from "@/labs/components/WishlistBadge";
+        import CollectionBadge from "@/labs/components/CollectionBadge";
         import { apiUrl } from "@/lib/native";
         import {
           Search, ChevronRight, Wine,
@@ -98,6 +99,7 @@
           const { currentParticipant } = useSession();
           const pid = currentParticipant?.id;
           const savedKeys = useWishlistKeys(pid);
+          const collectionKeys = useCollectionKeys(pid);
 
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">("whiskies");
           const [search, setSearch] = useState("");
@@ -988,6 +990,9 @@
                                         </div>
                                         {savedKeys.has(wishlistKey(w.name, w.distillery)) && (
                                           <WishlistBadge size="xs" testId={`badge-wishlist-${w.id || i}`} />
+                                        )}
+                                        {collectionKeys.has(w.name, w.distillery, w.whiskybaseId) && (
+                                          <CollectionBadge size="xs" testId={`badge-collection-${w.id || i}`} />
                                         )}
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2, flexWrap: "wrap" }}>
