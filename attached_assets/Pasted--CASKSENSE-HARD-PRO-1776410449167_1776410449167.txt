@@ -1,0 +1,174 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P4-E
+INFO-ICONS AUF CONNOISSEUR-KACHELN + HÖCHSTE/NIEDRIGSTE LEER
+(Befunde #27, #28)
+═══════════════════════════════════════════════════════════════════════════════
+
+KONTEXT: Der Connoisseur Report zeigt 4 Kacheln:
+Ø Score / VS. Gruppe / Höchste / Niedrigste.
+Problem 1: Keine Kachel hat ein ⓘ-Icon mit Erklärung.
+Problem 2: Höchste und Niedrigste zeigen “—” obwohl Bewertungen vorhanden sind.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — PFLICHT-PRÜFUNG VOR JEDER ÄNDERUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Öffne client/src/labs/ und suche nach der Connoisseur-Report Seite.
+Suche nach: “LabsConnoisseur”, “Ø Score”, “VS. GRUPPE”, “HÖCHSTE”,
+“NIEDRIGSTE”, “highestWhisky”, “lowestWhisky”
+
+Notiere:
+
+1. Dateiname der Connoisseur-Seite
+1. Aus welchem Datenfeld liest die “Höchste”-Kachel?
+   (z.B. report.dataSnapshot.highestWhisky oder report.highestWhisky)
+1. Aus welchem Datenfeld liest die “Niedrigste”-Kachel?
+1. Sind die Felder null/undefined/leer in den aktuellen Daten?
+1. Gibt es bereits Info-Icons (aus P4-D) in dieser Datei? JA/NEIN
+
+Berichte alle 5 Punkte BEVOR du etwas änderst.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — INFO-ICONS AUF ALLEN 4 CONNOISSEUR-KACHELN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in der Datei aus Schritt 0, Punkt 1.
+
+Verwende exakt dasselbe Pattern wie in P4-D implementiert:
+
+- Info-Icon aus lucide-react: import { Info } from “lucide-react”
+- 14px, color muted, position absolute top-2 right-2
+- useState pro Kachel für toggle
+- Erklärungstext erscheint direkt UNTER der Kachel (kein Modal)
+- Fade-in Animation 150ms
+
+State-Variablen:
+const [showScoreInfo, setShowScoreInfo] = useState(false);
+const [showGroupInfo, setShowGroupInfo] = useState(false);
+const [showHighestInfo, setShowHighestInfo] = useState(false);
+const [showLowestInfo, setShowLowestInfo] = useState(false);
+
+ERKLÄRUNGSTEXTE:
+
+Kachel “Ø Score” / “Ø SCORE”:
+DE: “Dein durchschnittlicher Gesamtscore über alle bewerteten Whiskys.”
+EN: “Your average overall score across all rated whiskies.”
+
+Kachel “VS. Gruppe” / “VS. GROUP”:
+DE: “Vergleich deines Durchschnitts mit dem Gruppen-Durchschnitt aller CaskSense-Nutzer. Ein positiver Wert bedeutet: du bewertest höher als der Durchschnitt.”
+EN: “Comparison of your average with the group average of all CaskSense users. A positive value means you rate higher than average.”
+
+Kachel “Höchste” / “HIGHEST”:
+DE: “Dein am höchsten bewerteter Whisky über alle Dimensionen.”
+EN: “Your highest rated whisky across all dimensions.”
+
+Kachel “Niedrigste” / “LOWEST”:
+DE: “Dein am niedrigsten bewerteter Whisky über alle Dimensionen.”
+EN: “Your lowest rated whisky across all dimensions.”
+
+NICHT anfassen: die Kachel-Layouts, Zahlenwerte, den Radar-Chart,
+die Tab-Struktur (Bericht/Whiskys/Aromen/Verlauf).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — HÖCHSTE / NIEDRIGSTE: LEERE KACHELN FIXEN (Befund #27)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Das Problem: highestWhisky und lowestWhisky sind leer weil der
+dataSnapshot beim Generieren keine Draft-Einträge eingeschlossen hat.
+
+OPTION A — Live-Query (bevorzugt, wenn einfach umsetzbar):
+Statt aus dataSnapshot zu lesen: lade highestWhisky und lowestWhisky
+direkt live aus journal_entries für diesen Teilnehmer.
+
+In server/routes.ts, im GET-Endpoint für connoisseur-report:
+Füge nach dem Laden des Reports eine zusätzliche Query hinzu:
+
+// Höchster bewerteter Whisky (inkl. Drafts mit Score)
+const highestEntry = await db
+.select()
+.from(journalEntries)
+.where(
+and(
+eq(journalEntries.participantId, participantId),
+isNotNull(journalEntries.overallScore)
+)
+)
+.orderBy(desc(journalEntries.overallScore))
+.limit(1);
+
+// Niedrigster bewerteter Whisky (inkl. Drafts mit Score)
+const lowestEntry = await db
+.select()
+.from(journalEntries)
+.where(
+and(
+eq(journalEntries.participantId, participantId),
+isNotNull(journalEntries.overallScore)
+)
+)
+.orderBy(asc(journalEntries.overallScore))
+.limit(1);
+
+Ergänze diese Werte in der API-Response neben den dataSnapshot-Daten:
+highestWhisky: highestEntry[0] ?? null,
+lowestWhisky: lowestEntry[0] ?? null,
+
+OPTION B — Fallback im Frontend (falls Option A zu komplex):
+In der Connoisseur-Seite: wenn highestWhisky null ist, zeige statt “—”
+den Text:
+DE: “Bericht neu erstellen um anzuzeigen”
+EN: “Regenerate report to display”
+in 11px muted color — kein “—” mehr.
+
+WICHTIG: Implementiere NUR eine der beiden Optionen.
+Wähle Option A wenn der Aufwand überschaubar ist, sonst Option B.
+Berichte welche Option umgesetzt wurde.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — i18n KEYS ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts, NUR wenn nicht bereits vorhanden,
+im bestehenden Block ergänzen (KEIN neuer Block):
+
+EN:
+connoisseurScoreDesc: “Your average overall score across all rated whiskies.”,
+connoisseurGroupDesc: “Comparison of your average with the group average of all CaskSense users. A positive value means you rate higher than average.”,
+connoisseurHighestDesc: “Your highest rated whisky across all dimensions.”,
+connoisseurLowestDesc: “Your lowest rated whisky across all dimensions.”,
+regenerateToDisplay: “Regenerate report to display”,
+
+DE:
+connoisseurScoreDesc: “Dein durchschnittlicher Gesamtscore über alle bewerteten Whiskys.”,
+connoisseurGroupDesc: “Vergleich deines Durchschnitts mit dem Gruppen-Durchschnitt aller CaskSense-Nutzer. Ein positiver Wert bedeutet: du bewertest höher als der Durchschnitt.”,
+connoisseurHighestDesc: “Dein am höchsten bewerteter Whisky über alle Dimensionen.”,
+connoisseurLowestDesc: “Dein am niedrigsten bewerteter Whisky über alle Dimensionen.”,
+regenerateToDisplay: “Bericht neu erstellen um anzuzeigen”,
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Die KI-Generierungslogik (GPT-4o Prompt)
+✗ Den Radar-Chart
+✗ Die Tab-Struktur (Bericht/Whiskys/Aromen/Verlauf)
+✗ Alle anderen Endpoints in server/routes.ts
+✗ Alle anderen Labs-Seiten
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Alle 4 Kacheln haben ⓘ-Icon oben rechts
+□ Tippen auf ⓘ → Erklärungstext direkt unter Kachel
+□ DE/EN Texte korrekt
+□ Höchste-Kachel: zeigt Whisky-Name statt “—” (Option A)
+ODER zeigt Hinweistext statt “—” (Option B)
+□ Niedrigste-Kachel: gleiche Logik
+□ Umgesetzte Option: [A oder B eintragen]
+□ Geänderte Datei(en): [eintragen]
+□ tsc –noEmit fehlerfrei
