@@ -14,7 +14,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile,
+  Users, Smile, Layers,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -1021,9 +1021,27 @@ export default function LabsTasteDrams() {
         </button>
         <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
           <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
-          <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "7px 14px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
-            <Plus className="w-4 h-4" strokeWidth={2.5} /> {t("drams.addDram")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/labs/fair-mode")}
+              className="labs-btn-secondary flex items-center gap-1.5"
+              style={{
+                padding: "7px 12px",
+                fontSize: 13,
+                borderRadius: 10,
+                background: "transparent",
+                border: "1px solid var(--labs-accent)",
+                color: "var(--labs-accent)",
+              }}
+              data-testid="button-labs-fair-mode"
+              title={t("fairMode.title")}
+            >
+              <Layers className="w-4 h-4" strokeWidth={2} /> {t("fairMode.title")}
+            </button>
+            <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "7px 14px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
+              <Plus className="w-4 h-4" strokeWidth={2.5} /> {t("drams.addDram")}
+            </button>
+          </div>
         </div>
       </div>
 

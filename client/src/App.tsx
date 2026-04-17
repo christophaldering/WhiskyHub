@@ -73,6 +73,7 @@ const LabsTasteWheel = lazy(() => import("@/labs/pages/LabsTasteWheel"));
 const LabsTasteCompare = lazy(() => import("@/labs/pages/LabsTasteCompare"));
 const LabsCircle = lazy(() => import("@/labs/pages/LabsCircle"));
 const LabsSolo = lazy(() => import("@/labs/pages/LabsSolo"));
+const LabsFairMode = lazy(() => import("@/labs/pages/LabsFairMode"));
 const LabsBottleDetail = lazy(() => import("@/labs/pages/LabsBottleDetail"));
 const LabsPaperScan = lazy(() => import("@/labs/pages/LabsPaperScan"));
 const LabsTastingRecap = lazy(() => import("@/labs/pages/LabsTastingRecap"));
@@ -674,6 +675,7 @@ function Router() {
               <Route path="/labs/splits" component={LabsBottleSplit} />
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo" component={LabsSolo} />
+              <Route path="/labs/fair-mode" component={LabsFairMode} />
               <Route path="/labs/about" component={LabsAbout} />
               <Route path="/labs/donate" component={LabsDonate} />
               <Route path="/labs/impressum" component={LabsImpressum} />
