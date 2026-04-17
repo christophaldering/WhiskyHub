@@ -160,8 +160,10 @@ const docUpload = multer({
     const allowed = [
       "application/pdf",
       "text/plain", "text/csv", "text/comma-separated-values",
+      "application/csv",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-excel",
+      "application/octet-stream",
       "image/jpeg", "image/png", "image/webp",
     ];
     const ext = (file.originalname || "").toLowerCase().split(".").pop();
@@ -6058,10 +6060,28 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
   app.post("/api/collection/:participantId/import", docUpload.single("file"), async (req: Request, res: Response) => {
     try {
+      console.log("[Import] Request empfangen", {
+        contentType: req.headers["content-type"],
+        fileName: req.file?.originalname,
+        fileSize: req.file?.size,
+        bodyKeys: Object.keys(req.body || {}),
+      });
+
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) {
+        return res.status(401).json({ error: "Missing participantId" });
+      }
+      if (!callerId) {
+        return res.status(401).json({ error: "Missing x-participant-id header" });
+      }
+      if (callerId !== participantId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file provided" });
-      
-      const participantId = req.params.participantId as string;
+
       let rows: any[] = [];
       
       const fileName = file.originalname.toLowerCase();
@@ -6137,20 +6157,21 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const existingItems = await storage.getWhiskybaseCollection(participantId as string);
       const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, true]));
       const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, true]));
-      
+
+      const tasks: Array<{ isUpdate: boolean; payload: any }> = [];
       for (const row of rows) {
         const whiskybaseId = colMap(row, "ID", "id");
         if (!whiskybaseId) { skipped++; continue; }
-        
+
         const name = colMap(row, "Name", "name");
         if (!name) { skipped++; continue; }
-        
+
         const collId = colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID");
         const isUpdate = collId
           ? existingByCollection.has(collId)
           : existingByWb.has(whiskybaseId);
-        
-        await storage.upsertWhiskybaseCollectionItem({
+
+        tasks.push({ isUpdate, payload: {
           participantId: participantId as string,
           whiskybaseId,
           collectionId: colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID") || null,
@@ -6177,16 +6198,23 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           auctionCurrency: colMap(row, "Währung Whisky_2", "Currency Whisky_2") || null,
           notes: colMap(row, "Notizen", "Notes") || null,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
-        });
-        
+        }});
+
         if (isUpdate) updated++;
         else imported++;
       }
-      
+
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+        const batch = tasks.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(t => storage.upsertWhiskybaseCollectionItem(t.payload)));
+      }
+
+      console.log("[Import] Erfolg", { imported, updated, skipped, total: rows.length });
       res.json({ imported, updated, skipped, total: rows.length });
     } catch (error: any) {
-      console.error("Collection import error:", error);
-      res.status(500).json({ error: error.message });
+      console.error("[Import] Fehler:", error?.message, error?.stack);
+      res.status(500).json({ error: error?.message || "Import failed", details: error?.stack });
     }
   });
 

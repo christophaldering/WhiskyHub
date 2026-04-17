@@ -8408,6 +8408,11 @@ const resources = {
         syncHistory: "Sync History",
         badgeUpd: "upd",
         badgeConf: "conf",
+        importLoading: "Importing collection…",
+        importSuccess: "Collection imported successfully",
+        importSkipped: "{{count}} entries skipped",
+        importError: "Import failed",
+        importResultSuccess: "{{imported}} bottles imported, {{skipped}} skipped",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17052,6 +17057,11 @@ const resources = {
         syncHistory: "Sync-Verlauf",
         badgeUpd: "akt.",
         badgeConf: "Konf.",
+        importLoading: "Sammlung wird importiert…",
+        importSuccess: "Sammlung erfolgreich importiert",
+        importSkipped: "{{count}} Einträge übersprungen",
+        importError: "Import fehlgeschlagen",
+        importResultSuccess: "{{imported}} Flaschen importiert, {{skipped}} übersprungen",
       },
       bottleSplitUi: {
         claims: "Claims",

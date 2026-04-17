@@ -55,6 +55,7 @@ export default function LabsTasteCollection() {
   const [showOverflow, setShowOverflow] = useState(false);
   const [showTopDistilleries, setShowTopDistilleries] = useState(false);
   const [showSyncHistoryInSheet, setShowSyncHistoryInSheet] = useState(false);
+  const [importMessage, setImportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const pid = session.pid;
 
@@ -72,7 +73,23 @@ export default function LabsTasteCollection() {
 
   const importMutation = useMutation({
     mutationFn: (file: File) => collectionApi.importFile(pid!, file),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["collection"] }); setActivePanel(null); },
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["collection"] });
+      setActivePanel(null);
+      const imported = (result?.imported ?? 0) + (result?.updated ?? 0);
+      const skipped = result?.skipped ?? 0;
+      setImportMessage({
+        type: "success",
+        text: t("collectionUi.importResultSuccess", { imported, skipped }),
+      });
+      setTimeout(() => setImportMessage(null), 6000);
+    },
+    onError: (error: any) => {
+      setImportMessage({
+        type: "error",
+        text: `${t("collectionUi.importError")}: ${error?.message || "Unknown error"}`,
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -344,6 +361,31 @@ export default function LabsTasteCollection() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {importMessage && (
+        <div
+          className="labs-card p-3 mb-4 flex items-start gap-3"
+          style={{
+            background: importMessage.type === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+            border: `1px solid ${importMessage.type === "success" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.35)"}`,
+          }}
+          data-testid={importMessage.type === "success" ? "banner-import-success" : "banner-import-error"}
+        >
+          {importMessage.type === "success"
+            ? <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "var(--labs-success)" }} />
+            : <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "var(--labs-danger)" }} />}
+          <p className="text-xs" style={{ color: importMessage.type === "success" ? "var(--labs-text-secondary)" : "var(--labs-danger)", flex: 1, lineHeight: 1.5 }}>
+            {importMessage.text}
+          </p>
+          <button
+            onClick={() => setImportMessage(null)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)" }}
+            data-testid="button-dismiss-import-message"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -918,7 +960,9 @@ function ImportSyncSheet({
                 : <Upload className="w-5 h-5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
               }
               <div style={{ flex: 1 }}>
-                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("collectionUi.newImport")}</div>
+                <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
+                  {isImporting ? t("collectionUi.importLoading") : t("collectionUi.newImport")}
+                </div>
                 <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("collectionUi.newImportDesc")}</div>
               </div>
               <ArrowRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
@@ -962,7 +1006,7 @@ function ImportSyncSheet({
               ? <Loader2 className="w-5 h-5" style={{ animation: "spin 1s linear infinite" }} />
               : <Upload className="w-5 h-5" />
             }
-            {t("collectionUi.chooseFile")}
+            {isImporting ? t("collectionUi.importLoading") : t("collectionUi.chooseFile")}
           </button>
         )}
 

@@ -664,8 +664,14 @@ export const collectionApi = {
   check: (participantId: string) => fetchJSON(`/collection/${participantId}/check`) as Promise<{ items: Record<string, { id: string; status: string | null }> }>,
   importFile: async (participantId: string, file: File) => {
     const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch(`/api/collection/${participantId}/import`, { method: "POST", body: formData });
+    try {
+      const buffer = await file.arrayBuffer();
+      const blob = new Blob([buffer], { type: file.type || "application/octet-stream" });
+      formData.append("file", blob, file.name);
+    } catch {
+      formData.append("file", file);
+    }
+    const res = await fetch(`/api/collection/${participantId}/import`, { method: "POST", body: formData, headers: pidHeaders() });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: "Import failed" }));
       throw new Error(error.error || "Import failed");
