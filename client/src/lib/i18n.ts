@@ -1606,7 +1606,7 @@ const resources = {
         all: "All",
         scoreChip: "Score: {{range}}",
         friendsAlsoRated: "Also rated by",
-        yourScoreVsFriend: "vs. your score",
+        yourScoreVsFriend: "vs. you",
       },
       downloads: {
         title: "Downloads & Export",
