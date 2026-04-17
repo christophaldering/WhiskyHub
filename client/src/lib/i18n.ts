@@ -8404,6 +8404,10 @@ const resources = {
         syncWhiskybaseDesc: "Update existing bottles from a newer export",
         abvLabel: "ABV",
         scoreLabel: "avg",
+        chooseFile: "Choose File",
+        syncHistory: "Sync History",
+        badgeUpd: "upd",
+        badgeConf: "conf",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17044,6 +17048,10 @@ const resources = {
         syncWhiskybaseDesc: "Bestehende Flaschen aus einem neueren Export aktualisieren",
         abvLabel: "ABV",
         scoreLabel: "Ø",
+        chooseFile: "Datei auswählen",
+        syncHistory: "Sync-Verlauf",
+        badgeUpd: "akt.",
+        badgeConf: "Konf.",
       },
       bottleSplitUi: {
         claims: "Claims",

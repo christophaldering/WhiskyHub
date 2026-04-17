@@ -962,7 +962,7 @@ function ImportSyncSheet({
               ? <Loader2 className="w-5 h-5" style={{ animation: "spin 1s linear infinite" }} />
               : <Upload className="w-5 h-5" />
             }
-            Choose File
+            {t("collectionUi.chooseFile")}
           </button>
         )}
 
@@ -975,7 +975,7 @@ function ImportSyncSheet({
               data-testid="button-labs-sync-history"
             >
               <History className="w-3.5 h-3.5" />
-              <span className="text-xs">Sync History ({syncHistory.length})</span>
+              <span className="text-xs">{t("collectionUi.syncHistory")} ({syncHistory.length})</span>
               {showSyncHistory ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
             </button>
 
@@ -991,8 +991,8 @@ function ImportSyncSheet({
                         <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>{new Date(log.syncedAt).toLocaleDateString("de-DE")} {new Date(log.syncedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>
                         <div className="flex gap-1.5 ml-auto">
                           {s.added > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "var(--labs-success)" }}>+{s.added}</span>}
-                          {s.updated > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(59,130,246,0.1)", color: "var(--labs-info)" }}>{s.updated} upd</span>}
-                          {s.conflicts > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(245,158,11,0.1)", color: "#e6a800" }}>{s.conflicts} conf</span>}
+                          {s.updated > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(59,130,246,0.1)", color: "var(--labs-info)" }}>{s.updated} {t("collectionUi.badgeUpd")}</span>}
+                          {s.conflicts > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(245,158,11,0.1)", color: "#e6a800" }}>{s.conflicts} {t("collectionUi.badgeConf")}</span>}
                           {s.removed > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "var(--labs-danger)" }}>-{s.removed}</span>}
                         </div>
                         {expanded ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />}
