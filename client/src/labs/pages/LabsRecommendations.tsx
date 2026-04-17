@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import BackLink from "@/labs/components/BackLink";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   ChevronLeft, Sparkles, Wine, MapPin, Droplets, Flame, Users,
-  Info, Bot, RefreshCw, ExternalLink,
+  Info, Bot, RefreshCw, ExternalLink, Calendar, Percent,
 } from "lucide-react";
 
 interface Whisky {
@@ -59,6 +60,7 @@ interface AISuggestion {
   peatLevel: string | null;
   reason: string;
   whiskyId: string | null;
+  whisky?: Whisky | null;
 }
 
 function computeRecommendations(
@@ -190,16 +192,37 @@ function RecommendationCard({ rec, index, t }: { rec: Recommendation; index: num
   );
 }
 
-function AISuggestionCard({ s, index, t }: { s: AISuggestion; index: number; t: (k: string, d?: any, o?: any) => string }) {
+function AISuggestionCard({ s, index, t, communityScores }: { s: AISuggestion; index: number; t: (k: string, d?: any, o?: any) => string; communityScores?: CommunityScore[] }) {
+  const w = s.whisky;
+  const community = useMemo(() => {
+    if (!w || !communityScores) return undefined;
+    const key = w.whiskybaseId
+      ? `wb:${w.whiskybaseId}`
+      : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+    return communityScores.find(cs => cs.whiskyKey === key);
+  }, [w, communityScores]);
+
   const inner = (
     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-      <div style={{
-        width: 44, height: 44, flexShrink: 0, borderRadius: 12,
-        background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <Bot style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
-      </div>
+      {w ? (
+        <WhiskyImage
+          imageUrl={w.imageUrl}
+          name={w.name}
+          size={56}
+          height={56}
+          whiskyId={w.id}
+          testId={`img-ai-recommendation-${index}`}
+        />
+      ) : (
+        <div style={{
+          width: 56, height: 56, flexShrink: 0, borderRadius: 12,
+          background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "1px solid var(--labs-border)",
+        }}>
+          <Bot style={{ width: 24, height: 24, color: "var(--labs-accent)" }} />
+        </div>
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
@@ -218,6 +241,16 @@ function AISuggestionCard({ s, index, t }: { s: AISuggestion; index: number; t: 
           </div>
         )}
         <div className="flex flex-wrap gap-1.5 mt-2">
+          {w?.age && (
+            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-text-muted) 12%, transparent)", color: "var(--labs-text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <Calendar style={{ width: 9, height: 9 }} />{w.age}
+            </span>
+          )}
+          {w?.abv != null && (
+            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-text-muted) 12%, transparent)", color: "var(--labs-text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <Percent style={{ width: 9, height: 9 }} />{w.abv}%
+            </span>
+          )}
           {s.region && (
             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", color: "var(--labs-accent)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
               <MapPin style={{ width: 9, height: 9 }} />{s.region}
@@ -240,6 +273,12 @@ function AISuggestionCard({ s, index, t }: { s: AISuggestion; index: number; t: 
               {t("labs.recommendations.aiReason", "Why this fits you")}:
             </span>
             {s.reason}
+          </div>
+        )}
+        {community && community.totalRaters >= 2 && (
+          <div style={{ marginTop: 4, fontSize: 11, color: "var(--labs-text-muted)" }} data-testid={`text-ai-community-${index}`}>
+            <Users style={{ width: 10, height: 10, display: "inline", verticalAlign: "text-bottom", marginRight: 3 }} />
+            {t("labs.recommendations.communityRating", "Community: {{score}} ({{count}} ratings)", { score: community.avgOverall.toFixed(1), count: community.totalRaters })}
           </div>
         )}
       </div>
@@ -463,7 +502,7 @@ export default function LabsRecommendations() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {aiQuery.data.suggestions.map((s, i) => (
-                  <AISuggestionCard key={`${s.name}-${i}`} s={s} index={i} t={t} />
+                  <AISuggestionCard key={`${s.name}-${i}`} s={s} index={i} t={t} communityScores={communityScores} />
                 ))}
               </div>
             )}

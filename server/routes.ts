@@ -4820,22 +4820,46 @@ Respond with JSON in this exact shape:
         const peatLevel = s?.peatLevel ? String(s.peatLevel).trim() : null;
         const reason = String(s?.reason || "").trim().slice(0, 400);
 
-        let matchedWhiskyId: string | null = null;
+        let matchedWhisky: typeof allWhiskies[number] | null = null;
         if (name) {
           const nName = normalizeForRecMatch(name);
           const nDist = normalizeForRecMatch(distillery);
           const exact = whiskyIndex.find(x => x.nName === nName && (!nDist || x.nDist === nDist));
           if (exact) {
-            matchedWhiskyId = exact.w.id;
+            matchedWhisky = exact.w;
           } else {
             const partial = whiskyIndex.find(x =>
               nDist && x.nDist === nDist && (x.nName.includes(nName) || nName.includes(x.nName)) && nName.length > 4
             );
-            if (partial) matchedWhiskyId = partial.w.id;
+            if (partial) matchedWhisky = partial.w;
           }
         }
 
-        return { name, distillery, region, caskType, peatLevel, reason, whiskyId: matchedWhiskyId };
+        const whisky = matchedWhisky
+          ? {
+              id: matchedWhisky.id,
+              name: matchedWhisky.name,
+              distillery: matchedWhisky.distillery,
+              age: matchedWhisky.age,
+              abv: matchedWhisky.abv,
+              region: matchedWhisky.region,
+              caskType: matchedWhisky.caskType,
+              peatLevel: matchedWhisky.peatLevel,
+              imageUrl: matchedWhisky.imageUrl,
+              whiskybaseId: matchedWhisky.whiskybaseId,
+            }
+          : null;
+
+        return {
+          name,
+          distillery,
+          region: whisky?.region ?? region,
+          caskType: whisky?.caskType ?? caskType,
+          peatLevel: whisky?.peatLevel ?? peatLevel,
+          reason,
+          whiskyId: matchedWhisky?.id ?? null,
+          whisky,
+        };
       }).filter((s: any) => s.name);
 
       aiRecommendationsCache.set(cacheKey, { suggestions, timestamp: Date.now() });
