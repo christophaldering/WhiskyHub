@@ -8430,6 +8430,7 @@ const resources = {
         importCancelledResult: "Import cancelled — {{imported}} bottles kept",
         importDetailsShow: "Show affected bottles",
         importDetailsHide: "Hide affected bottles",
+        importDetailsLocalEdits: "Local edits to be overwritten",
       },
       bottleSplitUi: {
         claims: "Claims",
@@ -17096,6 +17097,7 @@ const resources = {
         importCancelledResult: "Import abgebrochen — {{imported}} Flaschen behalten",
         importDetailsShow: "Betroffene Flaschen anzeigen",
         importDetailsHide: "Betroffene Flaschen ausblenden",
+        importDetailsLocalEdits: "Lokale Bearbeitungen werden überschrieben",
       },
       bottleSplitUi: {
         claims: "Claims",

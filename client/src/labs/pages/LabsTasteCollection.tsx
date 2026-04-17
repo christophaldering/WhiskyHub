@@ -1049,6 +1049,16 @@ function ImportConfirmDialog({
                     ))}
                   </div>
                 )}
+                {preview.localEditNames && preview.localEditNames.length > 0 && (
+                  <div className="mb-2">
+                    <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "#e07a3a", fontWeight: 700 }}>
+                      {t("collectionUi.importDetailsLocalEdits")} ({preview.localEditNames.length})
+                    </div>
+                    {preview.localEditNames.map((n, i) => (
+                      <div key={`l-${i}`} className="text-xs truncate py-0.5" style={{ color: "var(--labs-text)" }} data-testid={`text-import-local-edit-${i}`}>{n}</div>
+                    ))}
+                  </div>
+                )}
                 {preview.addedNames.length > 0 && (
                   <div className="mb-2">
                     <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--labs-success)", fontWeight: 700 }}>
