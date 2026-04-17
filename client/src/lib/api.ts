@@ -672,7 +672,7 @@ export const collectionApi = {
       skipped?: number;
       error?: string;
     }>,
-  importFile: async (participantId: string, file: File) => {
+  importFile: async (participantId: string, file: File, opts?: { dryRun?: boolean }) => {
     const formData = new FormData();
     try {
       const buffer = await file.arrayBuffer();
@@ -681,7 +681,8 @@ export const collectionApi = {
     } catch {
       formData.append("file", file);
     }
-    const res = await fetch(`/api/collection/${participantId}/import`, { method: "POST", body: formData, headers: pidHeaders() });
+    const url = `/api/collection/${participantId}/import${opts?.dryRun ? "?dryRun=1" : ""}`;
+    const res = await fetch(url, { method: "POST", body: formData, headers: pidHeaders() });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: "Import failed" }));
       throw new Error(error.error || "Import failed");

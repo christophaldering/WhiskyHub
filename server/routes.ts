@@ -6179,8 +6179,8 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       let skipped = 0;
       
       const existingItems = await storage.getWhiskybaseCollection(participantId as string);
-      const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, true]));
-      const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, true]));
+      const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, item]));
+      const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, item]));
 
       const tasks: Array<{ isUpdate: boolean; payload: any }> = [];
       for (const row of rows) {
@@ -6191,9 +6191,26 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         if (!name) { skipped++; continue; }
 
         const collId = colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID");
-        const isUpdate = collId
-          ? existingByCollection.has(collId)
-          : existingByWb.has(whiskybaseId);
+        const existing = collId
+          ? existingByCollection.get(collId)
+          : existingByWb.get(whiskybaseId);
+        const isUpdate = !!existing;
+
+        const filePersonalRating = parseFloat2(colMap(row, "Meine Bewertung", "My rating"));
+        const fileNotes = colMap(row, "Notizen", "Notes") || null;
+        const fileStatus = colMap(row, "Status", "status") || null;
+
+        // Preserve user's local personal fields on overwrite. Only fall back to
+        // values from the file when the existing record has no value.
+        const personalRating = isUpdate
+          ? (existing!.personalRating ?? filePersonalRating)
+          : filePersonalRating;
+        const notes = isUpdate
+          ? (existing!.notes ?? fileNotes)
+          : fileNotes;
+        const status = isUpdate
+          ? (existing!.status ?? fileStatus)
+          : fileStatus;
 
         tasks.push({ isUpdate, payload: {
           participantId: participantId as string,
@@ -6202,14 +6219,14 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           brand: colMap(row, "Marke", "Brand") || null,
           name,
           bottlingSeries: colMap(row, "Abfüllserie", "Bottling serie", "Bottling series") || null,
-          status: colMap(row, "Status", "status") || null,
+          status,
           statedAge: colMap(row, "Deklariertes Alter", "Stated Age") || null,
           size: colMap(row, "Größe", "Size") || null,
           abv: colMap(row, "Stärke", "Strength") || null,
           unit: colMap(row, "Einheit", "Unit") || null,
           caskType: colMap(row, "Fasstyp", "Cask type") || null,
           communityRating: parseFloat2(colMap(row, "Bewertung", "Rating")),
-          personalRating: parseFloat2(colMap(row, "Meine Bewertung", "My rating")),
+          personalRating,
           pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
           currency: colMap(row, "Währung", "Currency") || null,
           avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
@@ -6220,12 +6237,18 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           imageUrl: colMap(row, "Bild", "Image") || null,
           auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
           auctionCurrency: colMap(row, "Währung Whisky_2", "Currency Whisky_2") || null,
-          notes: colMap(row, "Notizen", "Notes") || null,
+          notes,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
         }});
 
         if (isUpdate) updated++;
         else imported++;
+      }
+
+      const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true" || req.body?.dryRun === "1" || req.body?.dryRun === "true";
+      if (dryRun) {
+        console.log("[Import] Dry-Run", { imported, updated, skipped, total: rows.length });
+        return res.json({ dryRun: true, imported, updated, skipped, total: rows.length });
       }
 
       importProgressByPid.set(participantIdForProgress, {

@@ -57,6 +57,7 @@ export default function LabsTasteCollection() {
   const [showSyncHistoryInSheet, setShowSyncHistoryInSheet] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{ file: File; preview: { imported: number; updated: number; skipped: number; total: number } } | null>(null);
 
   const pid = session.pid;
 
@@ -80,6 +81,27 @@ export default function LabsTasteCollection() {
     enabled: !!pid,
   });
 
+  const importPreviewMutation = useMutation({
+    mutationFn: (file: File) => collectionApi.importFile(pid!, file, { dryRun: true }),
+    onSuccess: (result: any, file) => {
+      setPendingImport({
+        file,
+        preview: {
+          imported: result?.imported ?? 0,
+          updated: result?.updated ?? 0,
+          skipped: result?.skipped ?? 0,
+          total: result?.total ?? 0,
+        },
+      });
+    },
+    onError: (error: any) => {
+      setImportMessage({
+        type: "error",
+        text: `${t("collectionUi.importError")}: ${error?.message || "Unknown error"}`,
+      });
+    },
+  });
+
   const importMutation = useMutation({
     mutationFn: (file: File) => {
       setIsImporting(true);
@@ -88,6 +110,7 @@ export default function LabsTasteCollection() {
     onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["collection"] });
       setActivePanel(null);
+      setPendingImport(null);
       const imported = (result?.imported ?? 0) + (result?.updated ?? 0);
       const skipped = result?.skipped ?? 0;
       setImportMessage({
@@ -97,6 +120,7 @@ export default function LabsTasteCollection() {
       setTimeout(() => setImportMessage(null), 6000);
     },
     onError: (error: any) => {
+      setPendingImport(null);
       setImportMessage({
         type: "error",
         text: `${t("collectionUi.importError")}: ${error?.message || "Unknown error"}`,
@@ -242,7 +266,7 @@ export default function LabsTasteCollection() {
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) { importMutation.mutate(f); e.target.value = ""; }
+    if (f) { importPreviewMutation.mutate(f); e.target.value = ""; }
   };
 
   const handleSyncFile = async (file: File) => {
@@ -421,7 +445,7 @@ export default function LabsTasteCollection() {
           <button
             onClick={() => openPanel("importSync")}
             className="flex items-center gap-2"
-            disabled={importMutation.isPending || syncMutation.isPending || syncApplyMutation.isPending}
+            disabled={importMutation.isPending || importPreviewMutation.isPending || syncMutation.isPending || syncApplyMutation.isPending}
             style={{
               padding: "10px 18px",
               borderRadius: 12,
@@ -431,12 +455,12 @@ export default function LabsTasteCollection() {
               color: "var(--labs-bg)",
               fontSize: 13,
               fontWeight: 600,
-              opacity: importMutation.isPending || syncMutation.isPending ? 0.5 : 1,
+              opacity: importMutation.isPending || importPreviewMutation.isPending || syncMutation.isPending ? 0.5 : 1,
               transition: "all 0.15s",
             }}
             data-testid="button-labs-import-sync"
           >
-            {(importMutation.isPending || syncMutation.isPending || syncApplyMutation.isPending)
+            {(importMutation.isPending || importPreviewMutation.isPending || syncMutation.isPending || syncApplyMutation.isPending)
               ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />
               : <Upload className="w-4 h-4" />
             }
@@ -746,7 +770,7 @@ export default function LabsTasteCollection() {
       {activePanel === "importSync" && (
         <ImportSyncSheet
           hasCollection={hasCollection}
-          isImporting={importMutation.isPending}
+          isImporting={importMutation.isPending || importPreviewMutation.isPending}
           importProgress={importMutation.isPending ? importProgress : undefined}
           isSyncing={syncMutation.isPending || syncApplyMutation.isPending}
           syncHistory={syncHistory}
@@ -789,6 +813,115 @@ export default function LabsTasteCollection() {
       {syncResultDialog && (
         <SyncResultDialog result={syncResultDialog} onClose={() => setSyncResultDialog(null)} />
       )}
+
+      {pendingImport && (
+        <ImportConfirmDialog
+          preview={pendingImport.preview}
+          isImporting={importMutation.isPending}
+          onCancel={() => setPendingImport(null)}
+          onConfirm={() => importMutation.mutate(pendingImport.file)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ImportConfirmDialog({
+  preview, isImporting, onCancel, onConfirm,
+}: {
+  preview: { imported: number; updated: number; skipped: number; total: number };
+  isImporting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  const hasOverwrites = preview.updated > 0;
+  return (
+    <div
+      className="labs-overlay"
+      style={{
+        position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)",
+        WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 9999,
+      }}
+      data-testid="dialog-import-confirm"
+    >
+      <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 24 }}>
+        <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }} data-testid="text-import-confirm-title">
+          {t("collectionUi.importConfirmTitle")}
+        </h3>
+        <p className="text-sm mb-4" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>
+          {t("collectionUi.importConfirmIntro")}
+        </p>
+
+        <div className="flex flex-col gap-2 mb-4" style={{
+          background: "var(--labs-surface)", borderRadius: 12, padding: 14,
+          border: "1px solid var(--labs-border)",
+        }}>
+          <div className="flex items-center gap-2 text-sm" data-testid="row-import-added">
+            <span style={{ color: "var(--labs-success)", fontWeight: 700, minWidth: 36 }}>
+              +{preview.imported}
+            </span>
+            <span style={{ color: "var(--labs-text-secondary)" }}>
+              {t("collectionUi.importConfirmAdded")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm" data-testid="row-import-updated">
+            <span style={{ color: "var(--labs-info)", fontWeight: 700, minWidth: 36 }}>
+              {preview.updated}
+            </span>
+            <span style={{ color: "var(--labs-text-secondary)" }}>
+              {t("collectionUi.importConfirmUpdated")}
+            </span>
+          </div>
+          {preview.skipped > 0 && (
+            <div className="flex items-center gap-2 text-sm" data-testid="row-import-skipped">
+              <span style={{ color: "var(--labs-text-muted)", fontWeight: 700, minWidth: 36 }}>
+                {preview.skipped}
+              </span>
+              <span style={{ color: "var(--labs-text-secondary)" }}>
+                {t("collectionUi.importConfirmSkipped")}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {hasOverwrites && (
+          <div
+            className="flex items-start gap-2 mb-4 text-xs"
+            style={{
+              background: "rgba(255,180,0,0.08)", border: "1px solid rgba(255,180,0,0.25)",
+              borderRadius: 10, padding: 10, color: "var(--labs-text-secondary)", lineHeight: 1.5,
+            }}
+            data-testid="banner-import-overwrite-warning"
+          >
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#e6a800" }} />
+            <span>{t("collectionUi.importConfirmPreserve")}</span>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2.5">
+          <button
+            onClick={onCancel}
+            disabled={isImporting}
+            className="labs-btn-secondary"
+            style={{ padding: "8px 16px", fontSize: 14, opacity: isImporting ? 0.6 : 1 }}
+            data-testid="button-import-confirm-cancel"
+          >
+            {t("collectionUi.importConfirmCancel")}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isImporting}
+            className="labs-btn-primary flex items-center gap-2"
+            style={{ padding: "8px 16px", fontSize: 14, opacity: isImporting ? 0.7 : 1 }}
+            data-testid="button-import-confirm-go"
+          >
+            {isImporting && <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />}
+            {t("collectionUi.importConfirmGo")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
