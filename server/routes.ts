@@ -6200,7 +6200,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, item]));
       const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, item]));
 
-      const tasks: Array<{ isUpdate: boolean; payload: any }> = [];
+      const tasks: Array<{ isUpdate: boolean; payload: any; previous: any | null }> = [];
       for (const row of rows) {
         const rowName = colMap(row, "Name", "name");
         const whiskybaseId = colMap(row, "ID", "id");
@@ -6231,7 +6231,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           ? (existing!.status ?? fileStatus)
           : fileStatus;
 
-        tasks.push({ isUpdate, payload: {
+        tasks.push({ isUpdate, previous: existing ? { ...existing } : null, payload: {
           participantId: participantId as string,
           whiskybaseId,
           collectionId: colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID") || null,
@@ -6281,14 +6281,33 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
       const BATCH_SIZE = 50;
       let cancelled = false;
+      const importDetails: Array<{ itemId: string; whiskybaseId: string | null; name: string; action: "added" | "updated"; previous?: Record<string, any> | null }> = [];
       for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
         const beforeBatch = importProgressByPid.get(participantIdForProgress);
         if (beforeBatch?.cancelRequested) { cancelled = true; break; }
         const batch = tasks.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(t => storage.upsertWhiskybaseCollectionItem(t.payload)));
-        for (const t of batch) {
-          if (t.isUpdate) updated++;
-          else imported++;
+        const results = await Promise.all(batch.map(t => storage.upsertWhiskybaseCollectionItem(t.payload)));
+        for (let j = 0; j < batch.length; j++) {
+          const t = batch[j];
+          const result = results[j];
+          if (t.isUpdate) {
+            updated++;
+            importDetails.push({
+              itemId: result.id,
+              whiskybaseId: result.whiskybaseId ?? null,
+              name: result.name,
+              action: "updated",
+              previous: t.previous,
+            });
+          } else {
+            imported++;
+            importDetails.push({
+              itemId: result.id,
+              whiskybaseId: result.whiskybaseId ?? null,
+              name: result.name,
+              action: "added",
+            });
+          }
         }
         const prev = importProgressByPid.get(participantIdForProgress);
         if (prev?.cancelRequested) { cancelled = true; }
@@ -6316,6 +6335,18 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           const cur = importProgressByPid.get(participantIdForProgress);
           if (cur && cur.status !== "running") importProgressByPid.delete(participantIdForProgress);
         }, 30_000);
+        if (importDetails.length > 0) {
+          try {
+            await storage.createCollectionImportLog({
+              participantId: participantId as string,
+              filename: file.originalname || null,
+              summary: { imported, updated, skipped, total: rows.length },
+              details: importDetails,
+            });
+          } catch (logErr: any) {
+            console.error("[Import] Failed to write import log (cancelled):", logErr?.message);
+          }
+        }
         console.log("[Import] Cancelled", { imported, updated, skipped, total: rows.length, processed });
         return res.json({ cancelled: true, imported, updated, skipped, total: rows.length, processed });
       }
@@ -6333,8 +6364,23 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         if (cur && cur.status !== "running") importProgressByPid.delete(participantIdForProgress);
       }, 30_000);
 
-      console.log("[Import] Erfolg", { imported, updated, skipped, total: rows.length });
-      res.json({ imported, updated, skipped, total: rows.length });
+      let importLogId: string | null = null;
+      if (importDetails.length > 0) {
+        try {
+          const logRow = await storage.createCollectionImportLog({
+            participantId: participantId as string,
+            filename: file.originalname || null,
+            summary: { imported, updated, skipped, total: rows.length },
+            details: importDetails,
+          });
+          importLogId = logRow.id;
+        } catch (logErr: any) {
+          console.error("[Import] Failed to write import log:", logErr?.message);
+        }
+      }
+
+      console.log("[Import] Erfolg", { imported, updated, skipped, total: rows.length, importLogId });
+      res.json({ imported, updated, skipped, total: rows.length, importLogId });
     } catch (error: any) {
       console.error("[Import] Fehler:", error?.message, error?.stack);
       const prev = importProgressByPid.get(participantIdForProgress);
@@ -6470,6 +6516,74 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       res.json(log);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/collection/:participantId/import-history", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+      const logs = await storage.getCollectionImportLogs(participantId);
+      const trimmed = logs.map(l => ({
+        id: l.id,
+        importedAt: l.importedAt,
+        filename: l.filename,
+        summary: l.summary,
+        undone: l.undone,
+        undoneAt: l.undoneAt,
+        addedCount: (l.details || []).filter(d => d.action === "added").length,
+        updatedCount: (l.details || []).filter(d => d.action === "updated").length,
+      }));
+      res.json(trimmed);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/collection/:participantId/import-log/:logId/undo", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string;
+      if (!callerId || callerId !== participantId) return res.status(403).json({ error: "Forbidden" });
+
+      const log = await storage.getCollectionImportLog(req.params.logId as string);
+      if (!log || log.participantId !== participantId) return res.status(404).json({ error: "Not found" });
+      if (log.undone) return res.status(409).json({ error: "Import already undone" });
+
+      const details = log.details || [];
+      let removed = 0;
+      let restored = 0;
+      let missing = 0;
+      const SKIP_FIELDS = new Set(["id", "participantId", "createdAt", "updatedAt"]);
+
+      for (const d of details) {
+        if (d.action === "added") {
+          const existing = await storage.getWhiskybaseCollectionItem(d.itemId, participantId);
+          if (existing) {
+            await storage.deleteWhiskybaseCollectionItem(d.itemId, participantId);
+            removed++;
+          } else {
+            missing++;
+          }
+        } else if (d.action === "updated" && d.previous) {
+          const existing = await storage.getWhiskybaseCollectionItem(d.itemId, participantId);
+          if (!existing) { missing++; continue; }
+          const fields: Record<string, any> = {};
+          for (const [k, v] of Object.entries(d.previous)) {
+            if (SKIP_FIELDS.has(k)) continue;
+            fields[k] = v;
+          }
+          await storage.restoreCollectionItemFields(d.itemId, participantId, fields);
+          restored++;
+        }
+      }
+
+      await storage.markCollectionImportLogUndone(log.id);
+      res.json({ ok: true, removed, restored, missing });
+    } catch (error: any) {
+      console.error("[Import Undo] Fehler:", error?.message, error?.stack);
+      res.status(500).json({ error: error?.message || "Undo failed" });
     }
   });
 

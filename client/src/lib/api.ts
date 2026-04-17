@@ -711,6 +711,10 @@ export const collectionApi = {
     fetchJSON(`/collection/${participantId}/sync-history`),
   getSyncLogDetail: (participantId: string, logId: string) =>
     fetchJSON(`/collection/${participantId}/sync-history/${logId}`),
+  getImportHistory: (participantId: string) =>
+    fetchJSON(`/collection/${participantId}/import-history`),
+  undoImport: (participantId: string, logId: string) =>
+    fetchJSON(`/collection/${participantId}/import-log/${logId}/undo`, { method: "POST" }),
   toJournal: (participantId: string, id: string) =>
     fetchJSON(`/collection/${participantId}/${id}/to-journal`, { method: "POST" }),
   estimatePrice: (participantId: string, itemIds: string[]) =>

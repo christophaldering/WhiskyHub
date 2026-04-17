@@ -476,6 +476,30 @@ export const insertCollectionSyncLogSchema = createInsertSchema(collectionSyncLo
 export type InsertCollectionSyncLog = z.infer<typeof insertCollectionSyncLogSchema>;
 export type CollectionSyncLog = typeof collectionSyncLog.$inferSelect;
 
+// --- Collection Import Log (for Undo) ---
+export type CollectionImportLogDetail = {
+  itemId: string;
+  whiskybaseId: string | null;
+  name: string;
+  action: "added" | "updated";
+  previous?: Record<string, any> | null;
+};
+
+export const collectionImportLog = pgTable("collection_import_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  importedAt: timestamp("imported_at").defaultNow(),
+  filename: text("filename"),
+  summary: jsonb("summary").$type<{ imported: number; updated: number; skipped: number; total: number }>().notNull(),
+  details: jsonb("details").$type<CollectionImportLogDetail[]>().notNull(),
+  undone: boolean("undone").default(false),
+  undoneAt: timestamp("undone_at"),
+});
+
+export const insertCollectionImportLogSchema = createInsertSchema(collectionImportLog).omit({ id: true, importedAt: true, undone: true, undoneAt: true });
+export type InsertCollectionImportLog = z.infer<typeof insertCollectionImportLogSchema>;
+export type CollectionImportLog = typeof collectionImportLog.$inferSelect;
+
 // --- Tasting Reminders ---
 
 export const tastingReminders = pgTable("tasting_reminders", {

@@ -24,6 +24,8 @@ import {
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
   collectionSyncLog,
   type InsertCollectionSyncLog, type CollectionSyncLog,
+  collectionImportLog,
+  type InsertCollectionImportLog, type CollectionImportLog,
   type InsertTastingReminder, type TastingReminder,
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
   type InsertTastingPhoto, type TastingPhoto,
@@ -366,6 +368,13 @@ export interface IStorage {
   createCollectionSyncLog(data: InsertCollectionSyncLog): Promise<CollectionSyncLog>;
   getCollectionSyncLogs(participantId: string): Promise<CollectionSyncLog[]>;
   getCollectionSyncLog(id: string): Promise<CollectionSyncLog | undefined>;
+
+  // Collection Import Log (Undo)
+  createCollectionImportLog(data: InsertCollectionImportLog): Promise<CollectionImportLog>;
+  getCollectionImportLogs(participantId: string): Promise<CollectionImportLog[]>;
+  getCollectionImportLog(id: string): Promise<CollectionImportLog | undefined>;
+  markCollectionImportLogUndone(id: string): Promise<void>;
+  restoreCollectionItemFields(id: string, participantId: string, fields: Record<string, any>): Promise<void>;
 
   // Encyclopedia Suggestions
   getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
@@ -1939,6 +1948,33 @@ export class DatabaseStorage implements IStorage {
   async getCollectionSyncLog(id: string): Promise<CollectionSyncLog | undefined> {
     const [result] = await db.select().from(collectionSyncLog).where(eq(collectionSyncLog.id, id));
     return result;
+  }
+
+  // --- Collection Import Log (Undo) ---
+  async createCollectionImportLog(data: InsertCollectionImportLog): Promise<CollectionImportLog> {
+    const [result] = await db.insert(collectionImportLog).values(data).returning();
+    return result;
+  }
+
+  async getCollectionImportLogs(participantId: string): Promise<CollectionImportLog[]> {
+    return db.select().from(collectionImportLog).where(eq(collectionImportLog.participantId, participantId)).orderBy(desc(collectionImportLog.importedAt));
+  }
+
+  async getCollectionImportLog(id: string): Promise<CollectionImportLog | undefined> {
+    const [result] = await db.select().from(collectionImportLog).where(eq(collectionImportLog.id, id));
+    return result;
+  }
+
+  async markCollectionImportLogUndone(id: string): Promise<void> {
+    await db.update(collectionImportLog)
+      .set({ undone: true, undoneAt: new Date() })
+      .where(eq(collectionImportLog.id, id));
+  }
+
+  async restoreCollectionItemFields(id: string, participantId: string, fields: Record<string, any>): Promise<void> {
+    await db.update(whiskybaseCollection)
+      .set({ ...fields, updatedAt: new Date() })
+      .where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)));
   }
 
   // --- Tasting Reminders ---

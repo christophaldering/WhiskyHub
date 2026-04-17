@@ -81,6 +81,37 @@ export default function LabsTasteCollection() {
     enabled: !!pid,
   });
 
+  const { data: importHistory = [] } = useQuery<any[]>({
+    queryKey: ["import-history", pid],
+    queryFn: () => collectionApi.getImportHistory(pid!),
+    enabled: !!pid,
+  });
+
+  const undoImportMutation = useMutation({
+    mutationFn: (logId: string) => collectionApi.undoImport(pid!, logId),
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["collection"] });
+      queryClient.invalidateQueries({ queryKey: ["import-history"] });
+      const removed = result?.removed ?? 0;
+      const restored = result?.restored ?? 0;
+      setImportMessage({
+        type: "success",
+        text: t("collectionUi.importUndoneResult", {
+          removed,
+          restored,
+          defaultValue: "Import undone — {{removed}} bottles removed, {{restored}} restored",
+        }),
+      });
+      setTimeout(() => setImportMessage(null), 6000);
+    },
+    onError: (error: any) => {
+      setImportMessage({
+        type: "error",
+        text: `${t("collectionUi.importError")}: ${error?.message || "Undo failed"}`,
+      });
+    },
+  });
+
   const importPreviewMutation = useMutation({
     mutationFn: (file: File) => collectionApi.importFile(pid!, file, { dryRun: true }),
     onSuccess: (result: any, file) => {
@@ -798,6 +829,9 @@ export default function LabsTasteCollection() {
           onClose={() => setActivePanel(null)}
           onCancelImport={() => cancelImportMutation.mutate()}
           isCancellingImport={cancelImportMutation.isPending || importProgress?.status === "cancelled" || (importMutation.isPending && (importProgress as any)?.cancelRequested)}
+          importHistory={importHistory}
+          onUndoImport={(logId: string) => undoImportMutation.mutate(logId)}
+          undoingImportId={undoImportMutation.isPending ? (undoImportMutation.variables as string) : null}
         />
       )}
 
@@ -1160,6 +1194,7 @@ function ImportSyncSheet({
   showSyncHistory, setShowSyncHistory,
   onImport, onSync, onClose,
   onCancelImport, isCancellingImport,
+  importHistory, onUndoImport, undoingImportId,
 }: {
   hasCollection: boolean;
   isImporting: boolean;
@@ -1175,8 +1210,13 @@ function ImportSyncSheet({
   onClose: () => void;
   onCancelImport?: () => void;
   isCancellingImport?: boolean;
+  importHistory?: any[];
+  onUndoImport?: (logId: string) => void;
+  undoingImportId?: string | null;
 }) {
   const { t } = useTranslation();
+  const [confirmUndoId, setConfirmUndoId] = useState<string | null>(null);
+  const history = importHistory || [];
   return (
     <div
       style={{
@@ -1315,6 +1355,117 @@ function ImportSyncSheet({
             }
             {isImporting ? t("collectionUi.importLoading") : t("collectionUi.chooseFile")}
           </button>
+        )}
+
+        {history.length > 0 && (
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12, marginBottom: 12 }} data-testid="labs-import-history-panel">
+            <div className="flex items-center gap-2 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+              <History className="w-3.5 h-3.5" />
+              <span className="text-xs">
+                {t("collectionUi.importHistory", { defaultValue: "Recent imports" })} ({history.length})
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {history.slice(0, 5).map((log: any) => {
+                const s = log.summary || { imported: 0, updated: 0, skipped: 0, total: 0 };
+                const undone = !!log.undone;
+                const isUndoing = undoingImportId === log.id;
+                const canUndo = !undone && (log.addedCount > 0 || log.updatedCount > 0);
+                return (
+                  <div
+                    key={log.id}
+                    style={{
+                      border: "1px solid var(--labs-border)",
+                      borderRadius: 8,
+                      padding: "10px 12px",
+                      opacity: undone ? 0.55 : 1,
+                    }}
+                    data-testid={`import-log-${log.id}`}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                      <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                        {new Date(log.importedAt).toLocaleDateString("de-DE")} {new Date(log.importedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <div className="flex gap-1.5 ml-auto">
+                        {s.imported > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "var(--labs-success)" }}>
+                            +{s.imported}
+                          </span>
+                        )}
+                        {s.updated > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(59,130,246,0.1)", color: "var(--labs-info)" }}>
+                            {s.updated} {t("collectionUi.badgeUpd")}
+                          </span>
+                        )}
+                        {s.skipped > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(148,163,184,0.15)", color: "var(--labs-text-muted)" }}>
+                            {s.skipped} skipped
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {log.filename && (
+                      <div className="text-[10px] mt-1 truncate" style={{ color: "var(--labs-text-muted)" }}>
+                        {log.filename}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      {undone ? (
+                        <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                          {t("collectionUi.importUndone", { defaultValue: "Undone" })}
+                          {log.undoneAt ? ` · ${new Date(log.undoneAt).toLocaleDateString("de-DE")}` : ""}
+                        </span>
+                      ) : confirmUndoId === log.id ? (
+                        <>
+                          <span className="text-[11px]" style={{ color: "var(--labs-text-secondary)", flex: 1 }}>
+                            {t("collectionUi.importUndoConfirm", {
+                              added: log.addedCount,
+                              updated: log.updatedCount,
+                              defaultValue: "Remove {{added}} added bottles and restore {{updated}} previous values?",
+                            })}
+                          </span>
+                          <button
+                            onClick={() => setConfirmUndoId(null)}
+                            disabled={isUndoing}
+                            style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text-muted)", cursor: "pointer" }}
+                            data-testid={`button-cancel-undo-${log.id}`}
+                          >
+                            {t("collectionUi.cancel", { defaultValue: "Cancel" })}
+                          </button>
+                          <button
+                            onClick={() => { onUndoImport?.(log.id); setConfirmUndoId(null); }}
+                            disabled={isUndoing}
+                            style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: "none", background: "var(--labs-danger)", color: "var(--labs-bg)", fontWeight: 600, cursor: "pointer", opacity: isUndoing ? 0.6 : 1 }}
+                            data-testid={`button-confirm-undo-import-${log.id}`}
+                          >
+                            {isUndoing ? <Loader2 className="w-3 h-3 inline" style={{ animation: "spin 1s linear infinite" }} /> : t("collectionUi.importUndoConfirmBtn", { defaultValue: "Yes, undo" })}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmUndoId(log.id)}
+                          disabled={!canUndo || isUndoing}
+                          style={{
+                            padding: "4px 10px", fontSize: 11, borderRadius: 6,
+                            border: "1px solid var(--labs-border)",
+                            background: "transparent",
+                            color: canUndo ? "var(--labs-danger)" : "var(--labs-text-muted)",
+                            cursor: canUndo ? "pointer" : "not-allowed",
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                          }}
+                          data-testid={`button-undo-import-${log.id}`}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          {t("collectionUi.undoImport", { defaultValue: "Undo import" })}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {syncHistory.length > 0 && (
