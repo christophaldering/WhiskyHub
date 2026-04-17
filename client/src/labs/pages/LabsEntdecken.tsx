@@ -96,6 +96,7 @@
           const { currentParticipant } = useSession();
           const pid = currentParticipant?.id;
 
+          const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">("whiskies");
           const [search, setSearch] = useState("");
           const [visibleCount, setVisibleCount] = useState(20);
           const [sort, setSort] = useState("avg");
@@ -392,21 +393,77 @@
                 {t("explore.subtitle", "Find whiskies")}
               </p>
 
-              <div className="labs-fade-in labs-stagger-1" style={{ marginBottom: 24 }}>
-                <Link href="/labs/bibliothek" style={{ textDecoration: "none" }} data-testid="link-entdecken-bibliothek">
-                  <div className="labs-card-interactive" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="labs-fade-in labs-stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+                {(() => {
+                  const isWhiskiesActive = activeView === "whiskies";
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setActiveView("whiskies")}
+                      data-testid="tab-explore-whiskies"
+                      style={{
+                        minHeight: 80,
+                        padding: "14px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        textAlign: "left",
+                        cursor: "pointer",
+                        borderRadius: 12,
+                        border: isWhiskiesActive ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                        background: isWhiskiesActive ? "color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface))" : "var(--labs-surface)",
+                        color: isWhiskiesActive ? "var(--labs-accent)" : "var(--labs-text)",
+                        fontFamily: "inherit",
+                        transition: "all 150ms",
+                      }}
+                    >
+                      <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Wine className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: isWhiskiesActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                          {t("discover.whiskies", "Whiskies")}
+                        </div>
+                        <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                          {t("explore.whiskiesExploreDesc", "Explore {{count}} whiskies", { count: whiskies.length })}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })()}
+                <Link href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+                  <div
+                    data-testid="tab-explore-bibliothek"
+                    style={{
+                      minHeight: 80,
+                      padding: "14px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                      borderRadius: 12,
+                      border: "1px solid var(--labs-border)",
+                      background: "var(--labs-surface)",
+                      color: "var(--labs-text)",
+                      transition: "all 150ms",
+                    }}
+                  >
                     <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <BookOpen className="w-[18px] h-[18px]" style={{ color: "var(--labs-accent)" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("bibliothek.title", "Library")}</div>
-                      <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>{t("explore.bibliothekSub", "Knowledge, reference & deep dive")}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>
+                        {t("bibliothek.title", "Library")}
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                        {t("explore.libraryExploreDesc", "Knowledge, Reference & Deep Dive")}
+                      </div>
                     </div>
-                    <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0 }} />
                   </div>
                 </Link>
               </div>
 
+              {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
                 <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
                   <Wine className="w-3.5 h-3.5" />
@@ -1015,6 +1072,7 @@
                   )}
                 </div>
               </div>
+              )}
             </div>
           );
         }
