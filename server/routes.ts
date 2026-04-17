@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToSheet, jsonToCsv, buildExcelBuffer, type SimpleWorkbook } from "./excel-utils";
 // @ts-ignore
 import AdmZip from "adm-zip";
-import { storage, getUniquePersonCount, deduplicateParticipantList } from "./storage";
+import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -2997,20 +2997,20 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const idx = Math.abs(seed) % allWhiskies.length;
       const whisky = allWhiskies[idx];
 
-      const whiskyRatings = await storage.getRatingsForWhisky(whisky.id);
+      const allCommunityRatings = await getAllCommunityRatings();
+      const targetKey = buildCommunityWhiskyKey(whisky.name, whisky.distillery, whisky.whiskybaseId);
+      const whiskyRatings = allCommunityRatings.filter(r => r.whiskyKey === targetKey);
       const count = whiskyRatings.length;
-      const allTastingsWotd = await storage.getAllTastings();
-      const tastingScaleWotd = new Map(allTastingsWotd.map(t => [t.id, t.ratingScale ?? 100]));
-      const normWotd = (r: typeof whiskyRatings[0]) => 100 / (tastingScaleWotd.get(r.tastingId) ?? 100);
 
       let avgRating = 0;
       let categories = { nose: 0, taste: 0, finish: 0 };
       if (count > 0) {
-        avgRating = Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedScore ?? r.overall * normWotd(r)), 0) / count) * 10) / 10;
+        const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : 0;
+        avgRating = avg(whiskyRatings.map(r => r.score));
         categories = {
-          nose: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedNose ?? r.nose * normWotd(r)), 0) / count) * 10) / 10,
-          taste: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedTaste ?? r.taste * normWotd(r)), 0) / count) * 10) / 10,
-          finish: Math.round((whiskyRatings.reduce((s, r) => s + (r.normalizedFinish ?? r.finish * normWotd(r)), 0) / count) * 10) / 10,
+          nose: avg(whiskyRatings.map(r => r.nose).filter((v): v is number => v != null)),
+          taste: avg(whiskyRatings.map(r => r.taste).filter((v): v is number => v != null)),
+          finish: avg(whiskyRatings.map(r => r.finish).filter((v): v is number => v != null)),
         };
       }
 
@@ -10009,20 +10009,35 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     try {
       const requesterId = req.headers["x-participant-id"] as string | undefined;
 
-      const allTastings = await storage.getAllTastings();
-      const allRatings: Array<Record<string, unknown>> = [];
-      for (const t of allTastings) {
-        const ratings = await storage.getRatingsForTasting(t.id);
-        allRatings.push(...ratings);
-      }
+      // Aggregate leaderboard activity from real user-rating sources:
+      //   - tasting ratings (groups + bottle-sharing, excludes test data)
+      //   - journal entries with personalScore (solo)
+      //   - historical_personal_ratings (retroactive)
+      // Collection personal ratings are intentionally excluded — they reflect a
+      // catalog import rather than active rating behaviour for the leaderboard.
+      const communityRatings = await getAllCommunityRatings();
+      const leaderboardRatings = communityRatings.filter(r => r.source !== 'collection');
 
-      const participantData = new Map<string, { ratings: Array<Record<string, unknown>> }>();
-      for (const r of allRatings) {
-        const pId = r.participantId as string;
-        if (!participantData.has(pId)) {
-          participantData.set(pId, { ratings: [] });
+      type LbRating = { whiskyKey: string; score: number; notes: string };
+      const participantData = new Map<string, { ratings: LbRating[] }>();
+      for (const r of leaderboardRatings) {
+        let p = participantData.get(r.participantId);
+        if (!p) { p = { ratings: [] }; participantData.set(r.participantId, p); }
+        p.ratings.push({ whiskyKey: r.whiskyKey, score: r.score, notes: '' });
+      }
+      // Notes-length tracking still uses tasting-source notes only (other sources
+      // don't have a comparable per-rating notes field exposed in the helper).
+      const tastingNotesByParticipant = new Map<string, number[]>();
+      const allTastings = await storage.getAllTastings();
+      const testTastingIds = new Set(allTastings.filter(t => t.isTestData).map(t => t.id));
+      for (const t of allTastings) {
+        if (testTastingIds.has(t.id)) continue;
+        const ratings = await storage.getRatingsForTasting(t.id);
+        for (const r of ratings) {
+          let arr = tastingNotesByParticipant.get(r.participantId);
+          if (!arr) { arr = []; tastingNotesByParticipant.set(r.participantId, arr); }
+          arr.push((r.notes || "").length);
         }
-        participantData.get(pId)!.ratings.push(r);
       }
 
       let friendEmails = new Set<string>();
@@ -10072,11 +10087,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         Array.from(participantData.entries()).map(async ([pId, data]) => {
           const participant = await storage.getParticipant(pId);
           const ratingsCount = data.ratings.length;
-          const notesLengths = data.ratings.map(r => ((r.notes as string) || "").length);
-          const avgNotesLength = Math.round(notesLengths.reduce((a: number, b: number) => a + b, 0) / ratingsCount);
-          const overalls = data.ratings.map(r => r.overall as number | null).filter((v): v is number => v != null);
+          const notesLengths = tastingNotesByParticipant.get(pId) || [];
+          const avgNotesLength = notesLengths.length > 0
+            ? Math.round(notesLengths.reduce((a: number, b: number) => a + b, 0) / notesLengths.length)
+            : 0;
+          const overalls = data.ratings.map(r => r.score);
           const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a, b) => a + b, 0) / overalls.length) * 10) / 10 : 0;
-          const uniqueWhiskies = new Set(data.ratings.map(r => r.whiskyId as string).filter(Boolean)).size;
+          const uniqueWhiskies = new Set(data.ratings.map(r => r.whiskyKey).filter(Boolean)).size;
 
           const realName = participant?.name || "Unknown";
           const showReal = isFriendOrSelf(pId);

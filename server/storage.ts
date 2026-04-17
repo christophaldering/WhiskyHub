@@ -101,6 +101,202 @@ export async function deduplicateParticipantList(allParticipantRecords: { id: st
   return seen.size;
 }
 
+// ---------- Unified community ratings helper ----------
+//
+// The community-aggregate views must combine four real user-rating sources:
+//   - ratings           (group tastings, including bottle-sharing)
+//   - journalEntries    (solo / "Meine Welt" with personalScore)
+//   - whiskybaseCollection (personalRating)
+//   - historicalPersonalRatings (retroactive overall scores)
+//
+// Bottle sharing is a regular tasting (tastingType='bottle-sharing') so its
+// ratings already flow through the `ratings` source — verified explicitly by
+// this helper (no special branch required, but documented for posterity).
+
+export type CommunityRatingSource = 'rating' | 'journal' | 'collection' | 'historical';
+
+export interface CommunityRatingEntry {
+  source: CommunityRatingSource;
+  whiskyKey: string;
+  whiskyId: string | null;     // present only for `rating` source
+  whiskybaseId: string | null;
+  name: string;
+  distillery: string | null;
+  region: string | null;
+  category: string | null;
+  caskType: string | null;
+  peatLevel: string | null;
+  age: string | null;
+  abv: number | null;
+  imageUrl: string | null;
+  participantId: string;
+  score: number;               // 0-100 normalized
+  nose: number | null;
+  taste: number | null;
+  finish: number | null;
+}
+
+export function buildCommunityWhiskyKey(name: string | null | undefined, distillery: string | null | undefined, whiskybaseId: string | null | undefined): string {
+  if (whiskybaseId) return `wb:${whiskybaseId}`;
+  return `name:${(name || '').toLowerCase().trim()}|${(distillery || '').toLowerCase().trim()}`;
+}
+
+let communityRatingsCache: { data: CommunityRatingEntry[]; expiresAt: number } | null = null;
+const COMMUNITY_RATINGS_TTL_MS = 60 * 1000;
+
+export function invalidateCommunityRatingsCache() {
+  communityRatingsCache = null;
+}
+
+export async function getAllCommunityRatings(): Promise<CommunityRatingEntry[]> {
+  const now = Date.now();
+  if (communityRatingsCache && communityRatingsCache.expiresAt > now) {
+    return communityRatingsCache.data;
+  }
+
+  const [allRatings, allTastings, allWhiskies, allJournals, allCollection, allHistRatings, allHistEntries] = await Promise.all([
+    db.select().from(ratings),
+    db.select().from(tastings),
+    db.select().from(whiskies),
+    db.select().from(journalEntries).where(and(isNull(journalEntries.deletedAt), ne(journalEntries.status, 'draft'))),
+    db.select().from(whiskybaseCollection),
+    db.select().from(historicalPersonalRatings),
+    db.select().from(historicalTastingEntries),
+  ]);
+
+  const tastingScale = new Map(allTastings.map(t => [t.id, t.ratingScale ?? 100]));
+  const testTastingIds = new Set(allTastings.filter(t => t.isTestData).map(t => t.id));
+  const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+  const histEntryMap = new Map(allHistEntries.map(e => [e.id, e]));
+
+  const result: CommunityRatingEntry[] = [];
+  // Per (source, participant, whiskyKey) dedup so the same person/whisky/source
+  // never inflates the count even if two rows exist.
+  const dedup = new Set<string>();
+  const pushEntry = (entry: CommunityRatingEntry) => {
+    const dk = `${entry.source}::${entry.participantId}::${entry.whiskyKey}`;
+    if (dedup.has(dk)) return;
+    dedup.add(dk);
+    result.push(entry);
+  };
+
+  // 1) ratings (group tastings + bottle-sharing tastings — both flow here)
+  for (const r of allRatings) {
+    if (testTastingIds.has(r.tastingId)) continue;
+    const w = whiskyMap.get(r.whiskyId);
+    if (!w) continue;
+    const scale = 100 / (tastingScale.get(r.tastingId) ?? 100);
+    const score = r.normalizedScore ?? (r.overall != null ? r.overall * scale : null);
+    if (score == null) continue;
+    pushEntry({
+      source: 'rating',
+      whiskyKey: buildCommunityWhiskyKey(w.name, w.distillery, w.whiskybaseId),
+      whiskyId: w.id,
+      whiskybaseId: w.whiskybaseId ?? null,
+      name: w.name,
+      distillery: w.distillery ?? null,
+      region: w.region ?? null,
+      category: w.category ?? null,
+      caskType: w.caskType ?? null,
+      peatLevel: w.peatLevel ?? null,
+      age: w.age ?? null,
+      abv: w.abv ?? null,
+      imageUrl: w.imageUrl ?? null,
+      participantId: r.participantId,
+      score,
+      nose: r.normalizedNose ?? (r.nose != null ? r.nose * scale : null),
+      taste: r.normalizedTaste ?? (r.taste != null ? r.taste * scale : null),
+      finish: r.normalizedFinish ?? (r.finish != null ? r.finish * scale : null),
+    });
+  }
+
+  // 2) journal entries with a personal score (already 0-100)
+  for (const j of allJournals) {
+    if (j.personalScore == null) continue;
+    const name = j.name || j.title;
+    if (!name) continue;
+    pushEntry({
+      source: 'journal',
+      whiskyKey: buildCommunityWhiskyKey(name, j.distillery, j.whiskybaseId),
+      whiskyId: null,
+      whiskybaseId: j.whiskybaseId ?? null,
+      name,
+      distillery: j.distillery ?? null,
+      region: j.region ?? null,
+      category: j.category ?? null,
+      caskType: j.caskType ?? null,
+      peatLevel: j.peatLevel ?? null,
+      age: j.age ?? null,
+      abv: j.abv ?? null,
+      imageUrl: j.imageUrl ?? null,
+      participantId: j.participantId,
+      score: j.personalScore,
+      nose: j.noseScore ?? null,
+      taste: j.tasteScore ?? null,
+      finish: j.finishScore ?? null,
+    });
+  }
+
+  // 3) whiskybase collection personal ratings (already 0-100)
+  for (const c of allCollection) {
+    if (c.personalRating == null) continue;
+    if (!c.name) continue;
+    pushEntry({
+      source: 'collection',
+      whiskyKey: buildCommunityWhiskyKey(c.name, c.distillery, c.whiskybaseId),
+      whiskyId: null,
+      whiskybaseId: c.whiskybaseId ?? null,
+      name: c.name,
+      distillery: c.distillery ?? null,
+      region: c.region ?? null,
+      category: null,
+      caskType: c.caskType ?? null,
+      peatLevel: null,
+      age: c.statedAge ?? null,
+      abv: c.abv ?? null,
+      imageUrl: c.imageUrl ?? null,
+      participantId: c.participantId,
+      score: c.personalRating,
+      nose: null,
+      taste: null,
+      finish: null,
+    });
+  }
+
+  // 4) historical personal ratings (retroactive scores; already 0-100)
+  for (const h of allHistRatings) {
+    if (h.overall == null) continue;
+    const entry = histEntryMap.get(h.historicalTastingEntryId);
+    if (!entry) continue;
+    const name = entry.whiskyNameRaw || entry.distilleryRaw || '';
+    if (!name) continue;
+    const distillery = entry.distilleryRaw || null;
+    pushEntry({
+      source: 'historical',
+      whiskyKey: buildCommunityWhiskyKey(name, distillery, null),
+      whiskyId: null,
+      whiskybaseId: null,
+      name,
+      distillery,
+      region: entry.normalizedRegion || entry.regionRaw || null,
+      category: entry.normalizedType || entry.typeRaw || null,
+      caskType: entry.normalizedCask || entry.caskRaw || null,
+      peatLevel: null,
+      age: entry.ageRaw || null,
+      abv: null,
+      imageUrl: null,
+      participantId: h.participantId,
+      score: h.overall,
+      nose: h.nose ?? null,
+      taste: h.taste ?? null,
+      finish: h.finish ?? null,
+    });
+  }
+
+  communityRatingsCache = { data: result, expiresAt: now + COMMUNITY_RATINGS_TTL_MS };
+  return result;
+}
+
 export interface WhiskyOfTheDay {
   whisky: Whisky;
   avgRating: number;
@@ -943,9 +1139,11 @@ export class DatabaseStorage implements IStorage {
         .set({ ...data, updatedAt: new Date() })
         .where(eq(ratings.id, existing.id))
         .returning();
+      invalidateCommunityRatingsCache();
       return result;
     }
     const [result] = await db.insert(ratings).values(data).returning();
+    invalidateCommunityRatingsCache();
     return result;
   }
 
@@ -1198,28 +1396,33 @@ export class DatabaseStorage implements IStorage {
   async createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry> {
     const [result] = await db.insert(journalEntries).values(data).returning();
     if (result) markJournalUpdated(result.participantId);
+    invalidateCommunityRatingsCache();
     return result;
   }
 
   async updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined> {
     const [result] = await db.update(journalEntries).set({ ...data, updatedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId))).returning();
     if (result) markJournalUpdated(participantId);
+    invalidateCommunityRatingsCache();
     return result;
   }
 
   async deleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.update(journalEntries).set({ deletedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
     markJournalUpdated(participantId);
+    invalidateCommunityRatingsCache();
   }
 
   async restoreJournalEntry(id: string, participantId: string): Promise<void> {
     await db.update(journalEntries).set({ deletedAt: null }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
     markJournalUpdated(participantId);
+    invalidateCommunityRatingsCache();
   }
 
   async permanentlyDeleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
     markJournalUpdated(participantId);
+    invalidateCommunityRatingsCache();
   }
 
   async getDeletedJournalEntries(participantId: string): Promise<JournalEntry[]> {
@@ -1897,10 +2100,12 @@ export class DatabaseStorage implements IStorage {
         .set({ ...data, updatedAt: new Date() })
         .where(eq(whiskybaseCollection.id, existing.id))
         .returning();
+      invalidateCommunityRatingsCache();
       return updated;
     }
     
     const [created] = await db.insert(whiskybaseCollection).values(data).returning();
+    invalidateCommunityRatingsCache();
     return created;
   }
 
@@ -1909,6 +2114,7 @@ export class DatabaseStorage implements IStorage {
       eq(whiskybaseCollection.id, id),
       eq(whiskybaseCollection.participantId, participantId)
     ));
+    invalidateCommunityRatingsCache();
   }
 
   async getWhiskybaseCollectionItem(id: string, participantId: string): Promise<WhiskybaseCollectionItem | undefined> {
@@ -2200,65 +2406,93 @@ export class DatabaseStorage implements IStorage {
     abv: number | null;
     imageUrl: string | null;
   }>> {
-    const allWhiskyRows = await db.select().from(whiskies);
-    const allRatings = await db.select().from(ratings);
-    const allTastingsRows = await db.select().from(tastings);
-    const tastingScaleMap = new Map(allTastingsRows.map(t => [t.id, t.ratingScale ?? 100]));
+    const all = await getAllCommunityRatings();
 
-    const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
-
-    const grouped: Record<string, {
-      ratings: Array<{ nose: number; taste: number; finish: number; overall: number; participantId: string }>;
-      whisky: typeof whiskies.$inferSelect;
-    }> = {};
-
-    for (const r of allRatings) {
-      const w = whiskyMap.get(r.whiskyId);
-      if (!w) continue;
-
-      const key = w.whiskybaseId
-        ? `wb:${w.whiskybaseId}`
-        : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
-
-      if (!grouped[key]) {
-        grouped[key] = { ratings: [], whisky: w };
+    type Group = {
+      entries: CommunityRatingEntry[];
+      meta: {
+        name: string;
+        distillery: string | null;
+        whiskybaseId: string | null;
+        region: string | null;
+        category: string | null;
+        caskType: string | null;
+        peatLevel: string | null;
+        age: string | null;
+        abv: number | null;
+        imageUrl: string | null;
+      };
+    };
+    const sourcePriority: Record<CommunityRatingSource, number> = { rating: 0, journal: 1, collection: 2, historical: 3 };
+    const grouped = new Map<string, Group>();
+    for (const e of all) {
+      let g = grouped.get(e.whiskyKey);
+      if (!g) {
+        g = {
+          entries: [],
+          meta: {
+            name: e.name,
+            distillery: e.distillery,
+            whiskybaseId: e.whiskybaseId,
+            region: e.region,
+            category: e.category,
+            caskType: e.caskType,
+            peatLevel: e.peatLevel,
+            age: e.age,
+            abv: e.abv,
+            imageUrl: e.imageUrl,
+          },
+        };
+        grouped.set(e.whiskyKey, g);
       }
-      if (!grouped[key].whisky.imageUrl && w.imageUrl) {
-        grouped[key].whisky = w;
-      }
-      const scaleNorm = 100 / (tastingScaleMap.get(r.tastingId) ?? 100);
-      grouped[key].ratings.push({
-        nose: r.normalizedNose ?? r.nose * scaleNorm, taste: r.normalizedTaste ?? r.taste * scaleNorm, finish: r.normalizedFinish ?? r.finish * scaleNorm,
-        overall: r.normalizedScore ?? r.overall * scaleNorm, participantId: r.participantId,
-      });
+      g.entries.push(e);
+      // Prefer the most-canonical source's metadata (rating > journal > collection > historical)
+      // and fill in any missing fields from later sources.
+      const m = g.meta;
+      const fillIfMissing = <K extends keyof typeof m>(k: K, v: typeof m[K]) => { if (m[k] == null && v != null) m[k] = v; };
+      fillIfMissing('imageUrl', e.imageUrl);
+      fillIfMissing('region', e.region);
+      fillIfMissing('category', e.category);
+      fillIfMissing('caskType', e.caskType);
+      fillIfMissing('peatLevel', e.peatLevel);
+      fillIfMissing('age', e.age);
+      fillIfMissing('abv', e.abv);
+      fillIfMissing('whiskybaseId', e.whiskybaseId);
     }
 
-    const results = [];
-    for (const [key, data] of Object.entries(grouped)) {
-      const { ratings: rList, whisky: w } = data;
-      if (rList.length < 2) continue;
+    const avg = (arr: number[]) => Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
 
-      const raters = new Set(rList.map(r => r.participantId));
-      const avg = (arr: number[]) => Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+    const results = [];
+    for (const [key, data] of grouped) {
+      const { entries, meta } = data;
+      if (entries.length < 2) continue;
+
+      // Pick the canonical name/distillery from the highest-priority source present.
+      const canonical = [...entries].sort((a, b) => sourcePriority[a.source] - sourcePriority[b.source])[0];
+      const overalls = entries.map(e => e.score);
+      const noses = entries.map(e => e.nose).filter((v): v is number => v != null);
+      const tastes = entries.map(e => e.taste).filter((v): v is number => v != null);
+      const finishes = entries.map(e => e.finish).filter((v): v is number => v != null);
+      const raters = new Set(entries.map(e => e.participantId));
 
       results.push({
         whiskyKey: key,
-        name: w.name,
-        distillery: w.distillery,
-        whiskybaseId: w.whiskybaseId,
-        avgOverall: avg(rList.map(r => r.overall)),
-        avgNose: avg(rList.map(r => r.nose)),
-        avgTaste: avg(rList.map(r => r.taste)),
-        avgFinish: avg(rList.map(r => r.finish)),
-        totalRatings: rList.length,
+        name: canonical.name || meta.name,
+        distillery: canonical.distillery ?? meta.distillery,
+        whiskybaseId: meta.whiskybaseId,
+        avgOverall: avg(overalls),
+        avgNose: noses.length ? avg(noses) : 0,
+        avgTaste: tastes.length ? avg(tastes) : 0,
+        avgFinish: finishes.length ? avg(finishes) : 0,
+        totalRatings: entries.length,
         totalRaters: raters.size,
-        region: w.region,
-        category: w.category,
-        caskType: w.caskType,
-        peatLevel: w.peatLevel,
-        age: w.age,
-        abv: w.abv,
-        imageUrl: w.imageUrl,
+        region: meta.region,
+        category: meta.category,
+        caskType: meta.caskType,
+        peatLevel: meta.peatLevel,
+        age: meta.age,
+        abv: meta.abv,
+        imageUrl: meta.imageUrl,
       });
     }
 
@@ -2273,42 +2507,53 @@ export class DatabaseStorage implements IStorage {
     flavorTrends: { peatLevels: Record<string, number>; caskTypes: Record<string, number> };
     divisiveDrams: Array<{ name: string; distillery: string | null; region: string | null; avgOverall: number; variance: number; ratingCount: number; imageUrl: string | null }>;
   }> {
-    const allWhiskyRows = await db.select().from(whiskies);
-    const allRatings = await db.select().from(ratings);
-    const allTastingsRows = await db.select().from(tastings);
-    const tastingScaleMap = new Map(allTastingsRows.map(t => [t.id, t.ratingScale ?? 100]));
-    const testTastingIds = new Set(allTastingsRows.filter(t => t.isTestData).map(t => t.id));
+    const all = await getAllCommunityRatings();
 
-    const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
-
-    const grouped: Record<string, {
+    type Group = {
       scores: number[];
-      whisky: typeof whiskies.$inferSelect;
       participantIds: Set<string>;
-    }> = {};
-
-    for (const r of allRatings) {
-      if (testTastingIds.has(r.tastingId)) continue;
-      const w = whiskyMap.get(r.whiskyId);
-      if (!w) continue;
-
-      const key = w.whiskybaseId
-        ? `wb:${w.whiskybaseId}`
-        : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
-
-      if (!grouped[key]) {
-        grouped[key] = { scores: [], whisky: w, participantIds: new Set() };
+      meta: {
+        name: string;
+        distillery: string | null;
+        region: string | null;
+        peatLevel: string | null;
+        caskType: string | null;
+        imageUrl: string | null;
+      };
+    };
+    const sourcePriority: Record<CommunityRatingSource, number> = { rating: 0, journal: 1, collection: 2, historical: 3 };
+    const groupedMap = new Map<string, Group>();
+    for (const e of all) {
+      let g = groupedMap.get(e.whiskyKey);
+      if (!g) {
+        g = {
+          scores: [],
+          participantIds: new Set(),
+          meta: { name: e.name, distillery: e.distillery, region: e.region, peatLevel: e.peatLevel, caskType: e.caskType, imageUrl: e.imageUrl },
+        };
+        groupedMap.set(e.whiskyKey, g);
       }
-      if (!grouped[key].whisky.imageUrl && w.imageUrl) {
-        grouped[key].whisky = w;
-      }
-      const scaleNorm = 100 / (tastingScaleMap.get(r.tastingId) ?? 100);
-      grouped[key].scores.push(r.normalizedScore ?? r.overall * scaleNorm);
-      grouped[key].participantIds.add(r.participantId);
+      g.scores.push(e.score);
+      g.participantIds.add(e.participantId);
+      const m = g.meta;
+      if (!m.imageUrl && e.imageUrl) m.imageUrl = e.imageUrl;
+      if (!m.region && e.region) m.region = e.region;
+      if (!m.peatLevel && e.peatLevel) m.peatLevel = e.peatLevel;
+      if (!m.caskType && e.caskType) m.caskType = e.caskType;
+    }
+    // Replace name/distillery with the canonical (highest-priority) source representation.
+    const bySource = new Map<string, CommunityRatingEntry>();
+    for (const e of all) {
+      const cur = bySource.get(e.whiskyKey);
+      if (!cur || sourcePriority[e.source] < sourcePriority[cur.source]) bySource.set(e.whiskyKey, e);
+    }
+    for (const [key, g] of groupedMap) {
+      const c = bySource.get(key);
+      if (c) { g.meta.name = c.name; g.meta.distillery = c.distillery; }
     }
 
     const allParticipantIds = new Set<string>();
-    const entries = Object.values(grouped).filter(g => g.scores.length >= 1);
+    const entries = Array.from(groupedMap.values()).filter(g => g.scores.length >= 1);
     for (const g of entries) {
       for (const pid of g.participantIds) allParticipantIds.add(pid);
     }
@@ -2331,14 +2576,14 @@ export class DatabaseStorage implements IStorage {
     };
 
     const scored = entries.map(g => ({
-      name: g.whisky.name,
-      distillery: g.whisky.distillery,
-      region: g.whisky.region,
+      name: g.meta.name,
+      distillery: g.meta.distillery,
+      region: g.meta.region,
       avgOverall: avg(g.scores),
       ratingCount: g.scores.length,
-      imageUrl: g.whisky.imageUrl,
-      peatLevel: g.whisky.peatLevel,
-      caskType: g.whisky.caskType,
+      imageUrl: g.meta.imageUrl,
+      peatLevel: g.meta.peatLevel,
+      caskType: g.meta.caskType,
       variance: variance(g.scores),
     }));
 
@@ -2385,38 +2630,41 @@ export class DatabaseStorage implements IStorage {
     correlation: number;
     sharedWhiskies: number;
   }>> {
-    const myRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
-    if (myRatings.length === 0) return [];
+    const all = await getAllCommunityRatings();
 
-    const myWhiskyIds = myRatings.map(r => r.whiskyId);
-    const otherRatings = await db.select().from(ratings)
-      .where(and(
-        ne(ratings.participantId, participantId),
-        inArray(ratings.whiskyId, myWhiskyIds)
-      ));
-
-    const allTastingsForTwins = await db.select().from(tastings);
-    const twinsScaleMap = new Map(allTastingsForTwins.map(t => [t.id, t.ratingScale ?? 100]));
-    const twinsNorm = (r: typeof myRatings[0]) => 100 / (twinsScaleMap.get(r.tastingId) ?? 100);
-
-    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.normalizedScore ?? r.overall * twinsNorm(r)]));
-
-    const byParticipant: Record<string, Array<{ whiskyId: string; score: number }>> = {};
-    for (const r of otherRatings) {
-      if (!byParticipant[r.participantId]) byParticipant[r.participantId] = [];
-      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, score: r.normalizedScore ?? r.overall * twinsNorm(r) });
+    // Average per (participant, whiskyKey) so multiple sources for the same person/whisky collapse.
+    const perPerson = new Map<string, Map<string, number[]>>();
+    for (const e of all) {
+      let p = perPerson.get(e.participantId);
+      if (!p) { p = new Map(); perPerson.set(e.participantId, p); }
+      let arr = p.get(e.whiskyKey);
+      if (!arr) { arr = []; p.set(e.whiskyKey, arr); }
+      arr.push(e.score);
     }
+    const collapsed = new Map<string, Map<string, number>>();
+    for (const [pid, m] of perPerson) {
+      const inner = new Map<string, number>();
+      for (const [k, scores] of m) {
+        inner.set(k, scores.reduce((a, b) => a + b, 0) / scores.length);
+      }
+      collapsed.set(pid, inner);
+    }
+
+    const myScores = collapsed.get(participantId);
+    if (!myScores || myScores.size === 0) return [];
 
     const allParticipants = await db.select().from(participants);
     const nameMap = new Map(allParticipants.map(p => [p.id, p.name]));
 
     const twins = [];
-    for (const [pid, pRatings] of Object.entries(byParticipant)) {
-      if (pRatings.length < 3) continue;
+    for (const [pid, theirScores] of collapsed) {
+      if (pid === participantId) continue;
 
-      const pairs = pRatings
-        .filter(r => myScores.has(r.whiskyId))
-        .map(r => ({ mine: myScores.get(r.whiskyId)!, theirs: r.score }));
+      const pairs: Array<{ mine: number; theirs: number }> = [];
+      for (const [k, mine] of myScores) {
+        const theirs = theirScores.get(k);
+        if (theirs != null) pairs.push({ mine, theirs });
+      }
 
       if (pairs.length < 3) continue;
 
@@ -3699,6 +3947,7 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+    invalidateCommunityRatingsCache();
     return result;
   }
 
