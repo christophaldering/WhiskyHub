@@ -5642,6 +5642,182 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
     }
   });
 
+  // --- Whisky-DNA "Try next" recommendations (whiskies that strengthen weak axes) ---
+  app.get("/api/participants/:id/whisky-dna/recommendations", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== participantId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
+      const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const keywordRegexes = WHISKY_DNA_CATEGORIES.map((cat) => ({
+        cat,
+        regexes: cat.keywords.map((k) => new RegExp(`\\b${escapeRe(k)}\\b`, "i")),
+      }));
+
+      // 1) Compute the user's category percentages from their journal entries
+      const allEntries = await storage.getJournalEntries(participantId);
+      const hasOverallScore = (e: unknown): e is { overallScore: number | null } =>
+        typeof e === "object" && e !== null && "overallScore" in e;
+      const userEntries = allEntries.filter((e) => {
+        if (e.source === "casksense-database") return false;
+        const overallScore = hasOverallScore(e) ? e.overallScore : null;
+        return (
+          e.noseScore != null ||
+          e.tasteScore != null ||
+          e.finishScore != null ||
+          overallScore != null ||
+          e.personalScore != null
+        );
+      });
+      const n = userEntries.length;
+      const userTexts = userEntries.map((e) =>
+        [e.noseNotes, e.tasteNotes, e.finishNotes].filter(Boolean).join(" ").toLowerCase()
+      );
+
+      const userCatPct: Record<string, number> = {};
+      for (const { cat, regexes } of keywordRegexes) {
+        let count = 0;
+        for (const text of userTexts) {
+          if (!text) continue;
+          if (regexes.some((re) => re.test(text))) count++;
+        }
+        userCatPct[cat.id] = n > 0 ? count / n : 0;
+      }
+
+      // 2) Pick the user's 3 weakest axes (lowest percentage). Ties broken by category order.
+      const weakCategories = [...WHISKY_DNA_CATEGORIES]
+        .sort((a, b) => userCatPct[a.id] - userCatPct[b.id])
+        .slice(0, 3);
+      const weakIds = new Set(weakCategories.map((c) => c.id));
+
+      // 3) Build a tasted-set of (distillery|name) keys to encourage exploration
+      const norm = (s: string | null | undefined) => (s || "").trim().toLowerCase();
+      const tastedKeys = new Set<string>();
+      for (const e of allEntries) {
+        const key = `${norm(e.distillery)}|${norm(e.name || e.title)}`;
+        if (key !== "|") tastedKeys.add(key);
+      }
+
+      // 4) Score candidates from whiskies + benchmark entries
+      type Candidate = {
+        key: string;
+        name: string;
+        distillery: string | null;
+        region: string | null;
+        category: string | null;
+        imageUrl: string | null;
+        source: "whisky" | "benchmark";
+        weakMatches: Record<string, number>;
+        score: number;
+      };
+
+      const scoreText = (text: string): { weakMatches: Record<string, number>; score: number } => {
+        const lower = text.toLowerCase();
+        const weakMatches: Record<string, number> = {};
+        let score = 0;
+        for (const { cat, regexes } of keywordRegexes) {
+          if (!weakIds.has(cat.id)) continue;
+          let hits = 0;
+          for (const re of regexes) {
+            if (re.test(lower)) hits++;
+          }
+          if (hits > 0) {
+            weakMatches[cat.id] = hits;
+            score += hits;
+          }
+        }
+        return { weakMatches, score };
+      };
+
+      const candidates: Candidate[] = [];
+
+      const whiskies = await storage.getAllWhiskies();
+      for (const w of whiskies) {
+        const text = [w.notes, w.hostNotes, w.hostSummary].filter(Boolean).join(" ");
+        if (!text.trim()) continue;
+        const { weakMatches, score } = scoreText(text);
+        if (score < 2 || Object.keys(weakMatches).length === 0) continue;
+        const key = `${norm(w.distillery)}|${norm(w.name)}`;
+        if (tastedKeys.has(key)) continue;
+        candidates.push({
+          key,
+          name: w.name,
+          distillery: w.distillery,
+          region: w.region,
+          category: w.category,
+          imageUrl: w.imageUrl,
+          source: "whisky",
+          weakMatches,
+          score,
+        });
+      }
+
+      const benchmarks = await storage.getBenchmarkEntries();
+      for (const b of benchmarks) {
+        const text = [b.noseNotes, b.tasteNotes, b.finishNotes, b.overallNotes].filter(Boolean).join(" ");
+        if (!text.trim()) continue;
+        const { weakMatches, score } = scoreText(text);
+        if (score < 2 || Object.keys(weakMatches).length === 0) continue;
+        const key = `${norm(b.distillery)}|${norm(b.name)}`;
+        if (tastedKeys.has(key)) continue;
+        candidates.push({
+          key,
+          name: b.name,
+          distillery: b.distillery,
+          region: b.region,
+          category: b.category,
+          imageUrl: null,
+          source: "benchmark",
+          weakMatches,
+          score,
+        });
+      }
+
+      // 5) De-duplicate by (distillery|name), keeping the highest-scoring entry
+      const byKey = new Map<string, Candidate>();
+      for (const c of candidates) {
+        const existing = byKey.get(c.key);
+        if (!existing || c.score > existing.score) byKey.set(c.key, c);
+      }
+
+      // 6) Sort: prefer candidates that hit MORE distinct weak categories first, then total score
+      const ranked = Array.from(byKey.values()).sort((a, b) => {
+        const da = Object.keys(a.weakMatches).length;
+        const db = Object.keys(b.weakMatches).length;
+        if (db !== da) return db - da;
+        return b.score - a.score;
+      });
+
+      const recommendations = ranked.slice(0, 5).map((c) => ({
+        name: c.name,
+        distillery: c.distillery,
+        region: c.region,
+        category: c.category,
+        imageUrl: c.imageUrl,
+        source: c.source,
+        matchedCategories: Object.keys(c.weakMatches).map((id) => {
+          const cat = WHISKY_DNA_CATEGORIES.find((x) => x.id === id)!;
+          return { id, en: cat.en, de: cat.de, color: cat.color, hits: c.weakMatches[id] };
+        }),
+        score: c.score,
+      }));
+
+      res.json({
+        weakCategories: weakCategories.map((c) => ({ id: c.id, en: c.en, de: c.de, color: c.color, pct: userCatPct[c.id] })),
+        recommendations,
+      });
+    } catch (e: any) {
+      console.error("Whisky-DNA recommendations error:", e?.message || e);
+      res.status(500).json({ message: e?.message || "Failed to compute recommendations" });
+    }
+  });
+
   app.get("/api/participants/:id/connoisseur-reports/:reportId", async (req, res) => {
     try {
       const participantId = req.params.id;

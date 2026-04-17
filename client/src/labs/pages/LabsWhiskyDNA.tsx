@@ -6,7 +6,7 @@ import BackLink from "@/labs/components/BackLink";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
-import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft } from "lucide-react";
+import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass } from "lucide-react";
 
 interface DnaCategory {
   id: string;
@@ -17,6 +17,22 @@ interface DnaCategory {
   pct: number;
   lower: number;
   upper: number;
+}
+
+interface DnaRecommendation {
+  name: string;
+  distillery: string | null;
+  region: string | null;
+  category: string | null;
+  imageUrl: string | null;
+  source: "whisky" | "benchmark";
+  matchedCategories: Array<{ id: string; en: string; de: string; color: string; hits: number }>;
+  score: number;
+}
+
+interface DnaRecommendationsResponse {
+  weakCategories: Array<{ id: string; en: string; de: string; color: string; pct: number }>;
+  recommendations: DnaRecommendation[];
 }
 
 interface DnaResponse {
@@ -293,6 +309,19 @@ export default function LabsWhiskyDNA() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: recs } = useQuery<DnaRecommendationsResponse>({
+    queryKey: ["whisky-dna-recs", pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${pid}/whisky-dna/recommendations`, {
+        headers: pidHeaders(),
+      });
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      return res.json();
+    },
+    enabled: !!pid && !!dna && dna.n >= 5,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const labels = useMemo(() => ({
     upper: t("dnaUpperBound", "Upper bound"),
     point: t("dnaPointEstimate", "Point estimate"),
@@ -532,6 +561,78 @@ export default function LabsWhiskyDNA() {
               })}
             </div>
           </div>
+
+          {/* Try next — recommendations to strengthen weak axes */}
+          {recs && recs.recommendations.length > 0 && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="section-try-next">
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                <Compass className="w-3.5 h-3.5" />
+                {t("dnaTryNext", "Try next")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5, marginBottom: 12 }} data-testid="text-try-next-intro">
+                {t(
+                  "dnaTryNextDesc",
+                  "Whiskies that prominently feature aromas your DNA hasn't explored yet: {{cats}}.",
+                  { cats: recs.weakCategories.map((c) => (lang === "de" ? c.de : c.en)).join(", ") },
+                )}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {recs.recommendations.map((r, idx) => {
+                  const subtitleParts = [r.distillery, r.region, r.category].filter(Boolean) as string[];
+                  return (
+                    <div
+                      key={`${r.distillery || ""}|${r.name}|${idx}`}
+                      data-testid={`card-recommendation-${idx}`}
+                      style={{
+                        display: "flex", alignItems: "flex-start", gap: 12,
+                        padding: 12, borderRadius: 10,
+                        background: "color-mix(in srgb, var(--labs-gold) 6%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--labs-gold) 18%, transparent)",
+                      }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                        background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-gold) 25%, transparent), color-mix(in srgb, var(--labs-accent) 15%, transparent))",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "var(--labs-gold)", fontWeight: 700, fontSize: 14,
+                      }}>
+                        {idx + 1}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div data-testid={`text-recommendation-name-${idx}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                          {r.name}
+                        </div>
+                        {subtitleParts.length > 0 && (
+                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, lineHeight: 1.4 }}>
+                            {subtitleParts.join(" · ")}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                          {r.matchedCategories.map((mc) => (
+                            <span
+                              key={mc.id}
+                              data-testid={`chip-recommendation-${idx}-${mc.id}`}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                padding: "2px 8px", borderRadius: 999,
+                                background: `color-mix(in srgb, ${mc.color} 18%, transparent)`,
+                                border: `1px solid color-mix(in srgb, ${mc.color} 40%, transparent)`,
+                                color: mc.color,
+                                fontSize: 10, fontWeight: 600,
+                              }}
+                            >
+                              <span style={{ width: 6, height: 6, borderRadius: 999, background: mc.color }} />
+                              {lang === "de" ? mc.de : mc.en}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Share buttons */}
           <div className="labs-fade-in" style={{ display: "flex", gap: 10 }}>
