@@ -1,0 +1,246 @@
+═══════════════════════════════════════════════════════════════════════════════
+CASKSENSE — HARD PROMPT P5-A
+KRITISCHER BUG: IMPORT/SYNC VERARBEITET DATEI NICHT
+(Befund #33)
+═══════════════════════════════════════════════════════════════════════════════
+
+SYMPTOM: Nutzer wählt eine Whiskybase CSV/XLSX Datei (300+ Einträge) über
+“New Import”. Die App springt zurück, zeigt eine kurze Animation
+(Millisekunden), aber die Sammlung bleibt unverändert (10 Flaschen).
+Keine Fehlermeldung sichtbar. Der Import schlägt still fehl.
+
+WICHTIG: Lies jeden Schritt vollständig. Berichte nach jedem Schritt
+das Ergebnis bevor du weitergehst. Mache keine Änderungen bis
+Schritt 0 vollständig abgeschlossen ist.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — DIAGNOSE (KEINE ÄNDERUNGEN)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TEIL A — Frontend finden:
+
+Suche in client/src/labs/ nach dem Import/Sync File-Picker.
+Suche nach: “New Import”, “newImport”, “file”, “FileReader”,
+“FormData”, “whiskybase”, “collection”, “import”
+
+Notiere:
+
+1. Dateiname der Import-Komponente
+1. Wie wird die Datei gelesen? (FileReader? fetch? FormData?)
+1. An welchen API-Endpoint wird die Datei gesendet?
+   (z.B. POST /api/collection/import oder ähnlich)
+1. Gibt es einen try/catch oder Error-Handler um den API-Call?
+   → JA/NEIN. Wenn JA: was passiert im Fehlerfall?
+1. Gibt es ein Loading-State oder Toast nach dem Import?
+
+TEIL B — Backend finden:
+
+Suche in server/routes.ts nach dem Import-Endpoint.
+Suche nach: “import”, “whiskybase”, “collection/import”,
+“csv”, “xlsx”, “ExcelJS”, “multer”, “multipart”
+
+Notiere:
+6. Exakter Endpoint-Pfad (z.B. POST /api/collection/import)
+7. Wie wird die Datei empfangen? (multer? raw body? base64?)
+8. Gibt es Console.log oder error logging im Endpoint?
+9. Gibt es einen try/catch? Was passiert im catch?
+10. Wie viele Einträge werden maximal verarbeitet?
+Gibt es ein Limit oder einen Batch-Size-Parameter?
+
+→ Berichte alle 10 Punkte. Mache noch keine Änderungen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — FEHLER SICHTBAR MACHEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bevor der eigentliche Bug gefixt wird: Fehler müssen sichtbar sein.
+
+NUR in der Frontend-Datei aus Schritt 0, Teil A:
+
+Stelle sicher dass es nach dem Import-API-Call einen sichtbaren
+Fehler-Toast gibt:
+
+try {
+const result = await importApi(…);
+// Erfolg
+toast.success(t(“importSuccess”, { count: result.imported }));
+} catch (error) {
+// Fehler SICHTBAR machen — nicht still schlucken
+console.error(”[Import] Fehler:”, error);
+toast.error(t(“importError”) + “: “ + (error.message ?? “Unbekannt”));
+}
+
+Falls bereits ein try/catch vorhanden ist aber kein Toast:
+Ergänze den Toast im catch-Block.
+
+Falls kein toast-System vorhanden: verwende eine Alert-Komponente
+oder einen roten Text unter dem Import-Button.
+
+NICHT anfassen: die Import-Logik selbst, den API-Endpoint.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — BACKEND LOGGING ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR in server/routes.ts, NUR im Import-Endpoint aus Schritt 0, Teil B:
+
+Füge am Anfang des Endpoint-Handlers folgende Logs hinzu:
+
+console.log(”[Import] Request empfangen”);
+console.log(”[Import] Content-Type:”, req.headers[“content-type”]);
+console.log(”[Import] File:”, req.file?.originalname, req.file?.size, “bytes”);
+console.log(”[Import] Body keys:”, Object.keys(req.body ?? {}));
+
+Füge im catch-Block hinzu (falls vorhanden):
+console.error(”[Import] Fehler:”, error);
+console.error(”[Import] Stack:”, error.stack);
+
+Falls kein try/catch vorhanden: wrap den gesamten Handler-Body in:
+try {
+// … bestehender Code …
+} catch (error) {
+console.error(”[Import] Unbehandelter Fehler:”, error);
+res.status(500).json({ error: “Import fehlgeschlagen”, details: error.message });
+}
+
+NICHT anfassen: die eigentliche Import-Logik, Datenbankoperationen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — HÄUFIGE URSACHEN PRÜFEN UND FIXEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Basierend auf Schritt 0: Prüfe folgende häufige Ursachen und fixe
+die zutreffende:
+
+URSACHE A — Datei wird nicht korrekt gesendet (iOS File-Picker):
+Symptom: req.file ist undefined oder null im Backend-Log
+Fix im Frontend:
+Lies die Datei als ArrayBuffer und sende als Blob:
+const arrayBuffer = await file.arrayBuffer();
+const blob = new Blob([arrayBuffer], { type: file.type });
+formData.append(“file”, blob, file.name);
+
+URSACHE B — MIME-Type wird abgelehnt:
+Symptom: Server loggt “unsupported file type” oder ähnlich
+Fix im Backend-Endpoint:
+Erweitere akzeptierte MIME-Types:
+const ALLOWED_TYPES = [
+“text/csv”,
+“application/csv”,
+“application/vnd.ms-excel”,
+“application/vnd.openxmlformats-officedocument.spreadsheetml.sheet”,
+“application/octet-stream”,  // iOS sendet manchmal diesen Typ
+];
+if (!ALLOWED_TYPES.includes(req.file.mimetype)) {
+// Trotzdem versuchen anhand der Dateiendung
+const ext = path.extname(req.file.originalname).toLowerCase();
+if (![’.csv’, ‘.xls’, ‘.xlsx’].includes(ext)) {
+return res.status(400).json({ error: “Nicht unterstütztes Format” });
+}
+}
+
+URSACHE C — Timeout bei großen Dateien (300+ Einträge):
+Symptom: Request bricht nach ~30s ab
+Fix im Backend:
+Verarbeite Einträge in Batches von 50:
+const BATCH_SIZE = 50;
+for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+const batch = entries.slice(i, i + BATCH_SIZE);
+await db.insert(whiskybaseCollection).values(batch)
+.onConflictDoUpdate({ … });
+}
+
+URSACHE D — Silent Error wegen fehlendem participantId:
+Symptom: Import läuft durch aber speichert nichts
+Prüfe: Wird participantId korrekt aus dem Session-Header gelesen?
+const participantId = req.headers[“x-participant-id”];
+if (!participantId) {
+return res.status(401).json({ error: “Nicht authentifiziert” });
+}
+
+Implementiere den Fix für die identifizierte Ursache.
+Falls mehrere Ursachen: alle beheben.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — IMPORT-FEEDBACK VERBESSERN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NUR im Frontend, NUR in der Import-Komponente.
+
+Ergänze einen Loading-State während des Imports:
+
+const [importing, setImporting] = useState(false);
+const [importResult, setImportResult] = useState(null);
+
+const handleImport = async (file) => {
+setImporting(true);
+setImportResult(null);
+try {
+const result = await importApi(file);
+setImportResult({
+success: true,
+count: result.imported,
+skipped: result.skipped ?? 0
+});
+} catch (error) {
+setImportResult({ success: false, error: error.message });
+} finally {
+setImporting(false);
+}
+};
+
+Zeige während des Imports einen Lade-Spinner mit Text:
+DE: “Importiere Sammlung…” / EN: “Importing collection…”
+
+Zeige nach dem Import das Ergebnis:
+Erfolg: “X Flaschen importiert, Y übersprungen”
+Fehler: roter Text mit Fehlermeldung
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 5 — i18n KEYS ERGÄNZEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In client/src/lib/i18n.ts, NUR wenn nicht vorhanden,
+im bestehenden Block ergänzen (KEIN neuer Block):
+
+EN:
+importSuccess: “{{count}} bottles imported successfully”,
+importSkipped: “{{count}} skipped (already in collection)”,
+importError: “Import failed”,
+importLoading: “Importing collection…”,
+importResultSuccess: “{{count}} bottles imported, {{skipped}} skipped”,
+
+DE:
+importSuccess: “{{count}} Flaschen erfolgreich importiert”,
+importSkipped: “{{count}} übersprungen (bereits in Sammlung)”,
+importError: “Import fehlgeschlagen”,
+importLoading: “Sammlung wird importiert…”,
+importResultSuccess: “{{count}} Flaschen importiert, {{skipped}} übersprungen”,
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SICHERHEITSREGELN — NIEMALS ANFASSEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ shared/schema.ts
+✗ drizzle.config.ts
+✗ package.json / package-lock.json
+✗ .env / capacitor.config.ts
+✗ Alle anderen server/-Endpoints
+✗ Die Datenbank-Tabellen-Struktur
+✗ Den Sync-with-Whiskybase Flow (nur New Import ist betroffen)
+✗ Alle anderen Labs-Seiten
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Identifizierte Ursache(n): [A / B / C / D eintragen]
+□ Backend-Log zeigt “[Import] Request empfangen” beim Datei-Upload
+□ Backend-Log zeigt Dateiname und Größe
+□ Fehlermeldung ist jetzt sichtbar (nicht mehr still)
+□ Loading-Spinner erscheint während Import
+□ Nach Import: Erfolgsmeldung mit Anzahl importierter Flaschen
+□ Sammlung zeigt nach Import mehr als 10 Flaschen
+□ Geänderte Datei(en): [eintragen]
+□ Identifizierte Ursache laut Logs: [eintragen]
+□ tsc –noEmit fehlerfrei
