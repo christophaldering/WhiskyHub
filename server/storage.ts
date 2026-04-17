@@ -362,6 +362,7 @@ export interface IStorage {
   patchWhiskybaseCollectionItem(id: string, participantId: string, fields: Partial<{ status: string; personalRating: number | null; notes: string | null }>): Promise<WhiskybaseCollectionItem | null>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
   deleteWhiskybaseCollection(participantId: string): Promise<void>;
+  restoreCollectionItemSnapshot(snapshot: WhiskybaseCollectionItem): Promise<void>;
   updateWhiskybaseCollectionItemPrice(id: string, participantId: string, price: number, currency: string, source: string): Promise<WhiskybaseCollectionItem | null>;
 
   // Collection Sync Log
@@ -1925,6 +1926,16 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWhiskybaseCollection(participantId: string): Promise<void> {
     await db.delete(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId));
+  }
+
+  async restoreCollectionItemSnapshot(snapshot: WhiskybaseCollectionItem): Promise<void> {
+    const { id, participantId, createdAt, ...rest } = snapshot as any;
+    await db.update(whiskybaseCollection)
+      .set({ ...rest, updatedAt: snapshot.updatedAt ?? new Date() })
+      .where(and(
+        eq(whiskybaseCollection.id, id),
+        eq(whiskybaseCollection.participantId, participantId),
+      ));
   }
 
   async updateWhiskybaseCollectionItemPrice(id: string, participantId: string, price: number, currency: string, source: string): Promise<WhiskybaseCollectionItem | null> {

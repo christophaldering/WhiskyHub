@@ -672,8 +672,11 @@ export const collectionApi = {
       skipped?: number;
       error?: string;
     }>,
-  cancelImport: (participantId: string) =>
-    fetchJSON(`/collection/${participantId}/import-progress/cancel`, { method: "POST" }),
+  cancelImport: (participantId: string, opts?: { discard?: boolean }) =>
+    fetchJSON(`/collection/${participantId}/import-progress/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ discard: !!opts?.discard }),
+    }),
   importFile: async (participantId: string, file: File, opts?: { dryRun?: boolean }) => {
     const formData = new FormData();
     try {

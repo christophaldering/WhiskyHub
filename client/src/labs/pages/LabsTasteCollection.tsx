@@ -138,8 +138,10 @@ export default function LabsTasteCollection() {
     },
   });
 
+  const [showCancelChoice, setShowCancelChoice] = useState(false);
   const cancelImportMutation = useMutation({
-    mutationFn: () => collectionApi.cancelImport(pid!),
+    mutationFn: (opts?: { discard?: boolean }) => collectionApi.cancelImport(pid!, opts),
+    onSettled: () => setShowCancelChoice(false),
   });
 
   const importMutation = useMutation({
@@ -154,10 +156,21 @@ export default function LabsTasteCollection() {
       const imported = (result?.imported ?? 0) + (result?.updated ?? 0);
       const skipped = result?.skipped ?? 0;
       if (result?.cancelled) {
-        setImportMessage({
-          type: "success",
-          text: t("collectionUi.importCancelledResult", { imported, defaultValue: "Import cancelled — {{imported}} bottles kept" }),
-        });
+        if (result?.discarded) {
+          const rolled = (result?.rolledBackInserts ?? 0) + (result?.rolledBackUpdates ?? 0);
+          setImportMessage({
+            type: "success",
+            text: t("collectionUi.importCancelledDiscarded", {
+              rolled,
+              defaultValue: "Import cancelled — {{rolled}} bottles discarded",
+            }),
+          });
+        } else {
+          setImportMessage({
+            type: "success",
+            text: t("collectionUi.importCancelledResult", { imported, defaultValue: "Import cancelled — {{imported}} bottles kept" }),
+          });
+        }
       } else {
         setImportMessage({
           type: "success",
@@ -829,12 +842,55 @@ export default function LabsTasteCollection() {
           onImport={() => fileInputRef.current?.click()}
           onSync={() => syncFileInputRef.current?.click()}
           onClose={() => setActivePanel(null)}
-          onCancelImport={() => cancelImportMutation.mutate()}
+          onCancelImport={() => setShowCancelChoice(true)}
           isCancellingImport={cancelImportMutation.isPending || importProgress?.status === "cancelled" || (importMutation.isPending && (importProgress as any)?.cancelRequested)}
           importHistory={importHistory}
           onUndoImport={(logId: string) => undoImportMutation.mutate(logId)}
           undoingImportId={undoImportMutation.isPending ? (undoImportMutation.variables as string) : null}
         />
+      )}
+
+      {showCancelChoice && (
+        <div className="labs-overlay" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)", zIndex: 10000 }} data-testid="dialog-cancel-import-choice">
+          <div className="labs-card" style={{ maxWidth: 420, width: "90%", padding: 24 }}>
+            <h3 className="labs-h3 mb-2" style={{ color: "var(--labs-text)" }} data-testid="text-cancel-import-title">
+              {t("collectionUi.cancelImportTitle", { defaultValue: "Cancel import?" })}
+            </h3>
+            <p className="text-sm mb-3" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>
+              {t("collectionUi.cancelImportBody", { defaultValue: "Choose what should happen to the bottles already imported in this run." })}
+            </p>
+            <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+              {t("collectionUi.cancelImportUpdatesNote", { defaultValue: "Discarding restores updated bottles to their previous values where possible." })}
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => cancelImportMutation.mutate({ discard: true })}
+                disabled={cancelImportMutation.isPending}
+                style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: cancelImportMutation.isPending ? "default" : "pointer", opacity: cancelImportMutation.isPending ? 0.6 : 1 }}
+                data-testid="button-cancel-import-discard"
+              >
+                {t("collectionUi.cancelImportDiscard", { defaultValue: "Cancel & discard imported bottles" })}
+              </button>
+              <button
+                onClick={() => cancelImportMutation.mutate({ discard: false })}
+                disabled={cancelImportMutation.isPending}
+                style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-text)", background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 8, cursor: cancelImportMutation.isPending ? "default" : "pointer", opacity: cancelImportMutation.isPending ? 0.6 : 1 }}
+                data-testid="button-cancel-import-keep"
+              >
+                {t("collectionUi.cancelImportKeep", { defaultValue: "Cancel & keep imported bottles" })}
+              </button>
+              <button
+                onClick={() => setShowCancelChoice(false)}
+                disabled={cancelImportMutation.isPending}
+                className="labs-btn-secondary"
+                style={{ padding: "8px 16px", fontSize: 13 }}
+                data-testid="button-cancel-import-back"
+              >
+                {t("collectionUi.cancelImportBack", { defaultValue: "Continue importing" })}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {deleteTarget && (
@@ -1198,7 +1254,7 @@ function ImportProgressBar({ progress, onCancel, isCancelling }: { progress?: { 
       </div>
       {onCancel && (
         <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)", lineHeight: 1.4 }} data-testid="text-import-cancel-note">
-          {t("collectionUi.importCancelNote", { defaultValue: "Cancelling keeps bottles that have already been imported into your collection." })}
+          {t("collectionUi.importCancelNote", { defaultValue: "Cancelling lets you choose: keep the bottles already imported, or discard them to start over with a clean slate." })}
         </p>
       )}
     </div>

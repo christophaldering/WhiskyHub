@@ -439,6 +439,10 @@ type ImportProgress = {
   startedAt: number;
   finishedAt?: number;
   cancelRequested?: boolean;
+  discardOnCancel?: boolean;
+  discarded?: boolean;
+  rolledBackInserts?: number;
+  rolledBackUpdates?: number;
 };
 const importProgressByPid = new Map<string, ImportProgress>();
 
@@ -6092,8 +6096,9 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
     if (!cur || cur.status !== "running") {
       return res.status(409).json({ error: "No running import to cancel" });
     }
-    importProgressByPid.set(participantId, { ...cur, cancelRequested: true });
-    res.json({ ok: true });
+    const discard = req.body?.discard === true || req.body?.discard === "true" || req.query.discard === "1";
+    importProgressByPid.set(participantId, { ...cur, cancelRequested: true, discardOnCancel: !!discard });
+    res.json({ ok: true, discard: !!discard });
   });
 
   app.post("/api/collection/:participantId/import", docUpload.single("file"), async (req: Request, res: Response) => {
@@ -6312,6 +6317,8 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       const BATCH_SIZE = 50;
       let cancelled = false;
       const importDetails: Array<{ itemId: string; whiskybaseId: string | null; name: string; action: "added" | "updated"; previous?: Record<string, any> | null }> = [];
+      const insertedIds: string[] = [];
+      const updatedSnapshots: any[] = [];
       for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
         const beforeBatch = importProgressByPid.get(participantIdForProgress);
         if (beforeBatch?.cancelRequested) { cancelled = true; break; }
@@ -6322,6 +6329,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
           const result = results[j];
           if (t.isUpdate) {
             updated++;
+            if (t.previous) updatedSnapshots.push(t.previous);
             importDetails.push({
               itemId: result.id,
               whiskybaseId: result.whiskybaseId ?? null,
@@ -6331,6 +6339,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
             });
           } else {
             imported++;
+            if (result?.id) insertedIds.push(result.id);
             importDetails.push({
               itemId: result.id,
               whiskybaseId: result.whiskybaseId ?? null,
@@ -6352,33 +6361,71 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
       if (cancelled) {
         const startedAt = importProgressByPid.get(participantIdForProgress)?.startedAt ?? Date.now();
-        const processed = imported + updated;
+        const discardOnCancel = !!importProgressByPid.get(participantIdForProgress)?.discardOnCancel;
+        let rolledBackInserts = 0;
+        let rolledBackUpdates = 0;
+        if (discardOnCancel) {
+          for (const id of insertedIds) {
+            try {
+              await storage.deleteWhiskybaseCollectionItem(id, participantId as string);
+              rolledBackInserts++;
+            } catch (e: any) {
+              console.error("[Import] Rollback delete failed", id, e?.message);
+            }
+          }
+          for (const snap of updatedSnapshots) {
+            try {
+              await storage.restoreCollectionItemSnapshot(snap);
+              rolledBackUpdates++;
+            } catch (e: any) {
+              console.error("[Import] Rollback restore failed", snap.id, e?.message);
+            }
+          }
+        }
+        const keptImported = discardOnCancel ? Math.max(0, imported - rolledBackInserts) : imported;
+        const keptUpdated = discardOnCancel ? Math.max(0, updated - rolledBackUpdates) : updated;
+        const processed = keptImported + keptUpdated;
         importProgressByPid.set(participantIdForProgress, {
           status: "cancelled",
           processed,
           total: tasks.length,
-          imported, updated, skipped,
+          imported: keptImported,
+          updated: keptUpdated,
+          skipped,
           startedAt,
           finishedAt: Date.now(),
+          discarded: discardOnCancel,
+          rolledBackInserts,
+          rolledBackUpdates,
         });
         setTimeout(() => {
           const cur = importProgressByPid.get(participantIdForProgress);
           if (cur && cur.status !== "running") importProgressByPid.delete(participantIdForProgress);
         }, 30_000);
-        if (importDetails.length > 0) {
+        if (importDetails.length > 0 && !discardOnCancel) {
           try {
             await storage.createCollectionImportLog({
               participantId: participantId as string,
               filename: file.originalname || null,
-              summary: { imported, updated, skipped, total: rows.length },
+              summary: { imported: keptImported, updated: keptUpdated, skipped, total: rows.length },
               details: importDetails,
             });
           } catch (logErr: any) {
             console.error("[Import] Failed to write import log (cancelled):", logErr?.message);
           }
         }
-        console.log("[Import] Cancelled", { imported, updated, skipped, total: rows.length, processed });
-        return res.json({ cancelled: true, imported, updated, skipped, total: rows.length, processed });
+        console.log("[Import] Cancelled", { imported: keptImported, updated: keptUpdated, skipped, total: rows.length, processed, discarded: discardOnCancel, rolledBackInserts, rolledBackUpdates });
+        return res.json({
+          cancelled: true,
+          discarded: discardOnCancel,
+          imported: keptImported,
+          updated: keptUpdated,
+          skipped,
+          total: rows.length,
+          processed,
+          rolledBackInserts,
+          rolledBackUpdates,
+        });
       }
 
       importProgressByPid.set(participantIdForProgress, {
