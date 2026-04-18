@@ -179,7 +179,12 @@ export default function FunnelLivePage() {
         </div>
         <div className="flex items-center gap-2">
           <select value={hours} onChange={e => setHours(parseInt(e.target.value, 10))}
-            className="text-xs h-8 px-2 rounded border bg-background"
+            className="text-xs h-8 px-2 rounded"
+            style={{
+              border: "1px solid var(--labs-border, hsl(var(--border)))",
+              background: "var(--labs-surface, hsl(var(--background)))",
+              color: "var(--labs-text, hsl(var(--foreground)))",
+            }}
             data-testid="select-funnel-hours">
             <option value={1}>1h</option>
             <option value={6}>6h</option>
@@ -192,7 +197,12 @@ export default function FunnelLivePage() {
             value={filterSource}
             onChange={e => setFilterSource(e.target.value)}
             placeholder="UTM-Source filtern (z.B. whatsapp)"
-            className="text-xs h-8 px-2 rounded border bg-background w-56"
+            className="text-xs h-8 px-2 rounded w-56 placeholder:text-muted-foreground"
+            style={{
+              border: "1px solid var(--labs-border, hsl(var(--border)))",
+              background: "var(--labs-surface, hsl(var(--background)))",
+              color: "var(--labs-text, hsl(var(--foreground)))",
+            }}
             data-testid="input-utm-filter"
           />
           <Button variant="outline" size="sm" onClick={refreshAll} disabled={refreshing} data-testid="button-refresh-funnel">
