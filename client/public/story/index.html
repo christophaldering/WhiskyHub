@@ -1338,16 +1338,12 @@ body::before {
 .credits__scroll {
   position: absolute;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(100vh);
   width: 100%;
   max-width: 640px;
   padding: 0 2rem;
   text-align: center;
-  animation: creditsRoll 60s linear forwards;
-  animation-play-state: paused;
-}
-.credits.is-rolling .credits__scroll {
-  animation-play-state: running;
+  will-change: transform;
 }
 @keyframes creditsRoll {
   0%   { transform: translateX(-50%) translateY(100vh); }
@@ -1472,6 +1468,47 @@ body::before {
   align-items: center;
 }
 .credits.is-rolling .credits__controls { display: flex; }
+.credits__progress {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80vw, 520px);
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(212, 168, 71, 0.18);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  z-index: 11;
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+.credits.is-rolling .credits__progress { display: block; }
+.credits__progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 2px solid var(--ink-bg, #0a0a0a);
+  box-shadow: 0 0 0 1px var(--amber);
+  cursor: grab;
+}
+.credits__progress::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 2px solid var(--ink-bg, #0a0a0a);
+  box-shadow: 0 0 0 1px var(--amber);
+  cursor: grab;
+}
+.credits__progress:active::-webkit-slider-thumb { cursor: grabbing; }
+.credits__progress:active::-moz-range-thumb { cursor: grabbing; }
 .credits.is-rolling .credits__start-hint { display: none; }
 .credits__ctrl-btn {
   background: none;
@@ -2754,10 +2791,12 @@ body::before {
     <button class="credits__start-hint">▶ Abspann starten</button>
 
     <div class="credits__controls">
-      <button class="credits__ctrl-btn" id="creditsRewind">↩ Zurück</button>
-      <button class="credits__ctrl-btn" id="creditsPause">⏸ Pause</button>
-      <button class="credits__ctrl-btn" id="creditsRestart">↺ Neustart</button>
+      <button class="credits__ctrl-btn" id="creditsRewind" title="5 Sekunden zurück">↩ −5s</button>
+      <button class="credits__ctrl-btn" id="creditsPause" title="Pause / Weiter">⏸ Pause</button>
+      <button class="credits__ctrl-btn" id="creditsForward" title="5 Sekunden vor">↪ +5s</button>
+      <button class="credits__ctrl-btn" id="creditsRestart" title="Von vorne">↺ Neustart</button>
     </div>
+    <input type="range" id="creditsProgress" class="credits__progress" min="0" max="1000" value="0" step="1" aria-label="Abspann-Position" />
 
     <div class="credits__scroll">
 
@@ -3156,66 +3195,125 @@ const state = {};
 // =========================================================
 document.querySelectorAll('.act').forEach(el => actIO.observe(el));
 
-// ── FILMISCHER ABSPANN ──────────────────────────────
+// ── FILMISCHER ABSPANN (mit Pause / Scrub / +-5s) ──
 (function() {
   const credits = document.querySelector('.credits');
   const startBtn = document.querySelector('.credits__start-hint');
   const pauseBtn = document.getElementById('creditsPause');
   const rewindBtn = document.getElementById('creditsRewind');
+  const forwardBtn = document.getElementById('creditsForward');
   const restartBtn = document.getElementById('creditsRestart');
+  const progress = document.getElementById('creditsProgress');
   const scroll = document.querySelector('.credits__scroll');
   if (!credits || !startBtn || !scroll) return;
 
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DURATION_MS = 60000;
+  let anim = null;
   let paused = false;
+  let scrubbing = false;
+  let rafId = 0;
+
+  function setPauseLabel() {
+    if (!pauseBtn) return;
+    if (paused) { pauseBtn.textContent = '▶ Weiter'; pauseBtn.classList.add('is-paused'); }
+    else { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+  }
+
+  function buildAnim() {
+    if (anim) return anim;
+    anim = scroll.animate([
+      { transform: 'translateX(-50%) translateY(100vh)' },
+      { transform: 'translateX(-50%) translateY(-100%)' }
+    ], { duration: DURATION_MS, fill: 'forwards', easing: 'linear' });
+    anim.pause();
+    return anim;
+  }
 
   function start() {
     credits.classList.add('is-rolling');
-    scroll.style.animationPlayState = 'running';
-    paused = false;
-    if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
-  }
-
-  function pause() {
-    if (!paused) {
-      scroll.style.animationPlayState = 'paused';
-      paused = true;
-      if (pauseBtn) { pauseBtn.textContent = '▶ Weiter'; pauseBtn.classList.add('is-paused'); }
-    } else {
-      scroll.style.animationPlayState = 'running';
-      paused = false;
-      if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+    if (reduceMotion) {
+      scroll.style.transform = 'translateX(-50%) translateY(0)';
+      return;
     }
+    buildAnim();
+    if (paused) anim.pause(); else anim.play();
+    setPauseLabel();
+    loop();
   }
 
-  function rewind() {
-    // Animation kurz zurücksetzen um 10% der Laufzeit
-    const style = window.getComputedStyle(scroll);
-    const duration = parseFloat(style.animationDuration) * 1000;
-    const elapsed = parseFloat(style.animationDelay);
-    scroll.style.animationPlayState = 'paused';
-    // Delay um 8s erhöhen (zurückspulen)
-    const currentDelay = parseFloat(scroll.style.animationDelay || '0');
-    scroll.style.animationDelay = Math.min(0, currentDelay + 8) + 's';
-    scroll.style.animation = 'none';
-    scroll.offsetHeight; // reflow
-    scroll.style.animation = '';
-    scroll.style.animationDelay = (currentDelay + 8) + 's';
-    if (!paused) scroll.style.animationPlayState = 'running';
+  function togglePause() {
+    if (!anim) return;
+    if (paused) { anim.play(); paused = false; }
+    else { anim.pause(); paused = true; }
+    setPauseLabel();
+    if (!paused) loop();
+  }
+
+  function seekDelta(deltaMs) {
+    if (!anim) return;
+    const cur = Number(anim.currentTime) || 0;
+    anim.currentTime = Math.max(0, Math.min(DURATION_MS, cur + deltaMs));
+    updateProgress();
+  }
+
+  function seekToPct(pct) {
+    if (!anim) buildAnim();
+    anim.currentTime = Math.max(0, Math.min(DURATION_MS, (pct / 1000) * DURATION_MS));
+    updateProgress();
   }
 
   function restart() {
-    scroll.style.animation = 'none';
-    scroll.offsetHeight;
-    scroll.style.animation = '';
-    scroll.style.animationPlayState = 'running';
+    if (!anim) buildAnim();
+    anim.currentTime = 0;
+    anim.play();
     paused = false;
-    if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+    setPauseLabel();
+    updateProgress();
+    loop();
+  }
+
+  function updateProgress() {
+    if (!progress || !anim) return;
+    if (scrubbing) return;
+    const cur = Number(anim.currentTime) || 0;
+    progress.value = String(Math.round((cur / DURATION_MS) * 1000));
+  }
+
+  function loop() {
+    cancelAnimationFrame(rafId);
+    const tick = () => {
+      updateProgress();
+      if (anim && anim.playState === 'running') rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
   }
 
   startBtn.addEventListener('click', start);
-  if (pauseBtn) pauseBtn.addEventListener('click', pause);
-  if (rewindBtn) rewindBtn.addEventListener('click', restart); // Zurück = Neustart ist zuverlässiger
+  if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
+  if (rewindBtn) rewindBtn.addEventListener('click', () => seekDelta(-5000));
+  if (forwardBtn) forwardBtn.addEventListener('click', () => seekDelta(5000));
   if (restartBtn) restartBtn.addEventListener('click', restart);
+
+  if (progress) {
+    const beginScrub = () => {
+      scrubbing = true;
+      if (anim && anim.playState === 'running') { anim.pause(); }
+    };
+    const endScrub = () => {
+      scrubbing = false;
+      if (anim && !paused) { anim.play(); loop(); }
+    };
+    progress.addEventListener('input', () => {
+      if (!scrubbing) beginScrub();
+      seekToPct(Number(progress.value));
+    });
+    progress.addEventListener('mousedown', beginScrub);
+    progress.addEventListener('touchstart', beginScrub, { passive: true });
+    progress.addEventListener('change', endScrub);
+    progress.addEventListener('mouseup', endScrub);
+    progress.addEventListener('touchend', endScrub);
+  }
 
   // Auto-start beim Reinscrolln
   const io = new IntersectionObserver((entries) => {
