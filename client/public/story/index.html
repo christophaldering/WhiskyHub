@@ -1344,7 +1344,29 @@ body::before {
   padding: 0 2rem;
   text-align: center;
   will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
 }
+.credits.is-rolling .credits__viewport { cursor: grab; }
+.credits.is-rolling .credits__viewport.is-grabbing { cursor: grabbing; }
+.credits__scrub-hint {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 10;
+}
+.credits.is-rolling .credits__scrub-hint { opacity: 0.6; }
+.credits.is-rolling .credits__viewport.is-grabbing ~ .credits__scrub-hint,
+.credits.is-rolling .credits__scrub-hint.is-fading { opacity: 0; }
 @keyframes creditsRoll {
   0%   { transform: translateX(-50%) translateY(100vh); }
   100% { transform: translateX(-50%) translateY(-100%); }
@@ -2797,6 +2819,7 @@ body::before {
       <button class="credits__ctrl-btn" id="creditsRestart" title="Von vorne">↺ Neustart</button>
     </div>
     <input type="range" id="creditsProgress" class="credits__progress" min="0" max="1000" value="0" step="1" aria-label="Abspann-Position" />
+    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Ziehen zum Spulen</div>
 
     <div class="credits__scroll">
 
@@ -3313,6 +3336,90 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
     progress.addEventListener('change', endScrub);
     progress.addEventListener('mouseup', endScrub);
     progress.addEventListener('touchend', endScrub);
+  }
+
+  // Drag-to-scrub anywhere in the credits viewport
+  const viewport = credits.querySelector('.credits__viewport');
+  const scrubHint = document.getElementById('creditsScrubHint');
+  if (viewport) {
+    let dragging = false;
+    let startY = 0;
+    let startTimeMs = 0;
+    let resumeAfterDrag = false;
+    let totalTravelPx = 0;
+
+    function isInteractive(target) {
+      if (!(target instanceof Element)) return false;
+      return !!target.closest('button, input, a, .credits__progress, .credits__controls, .credits__start-hint');
+    }
+
+    function recomputeTravel() {
+      const vh = viewport.clientHeight || window.innerHeight;
+      const sh = scroll.scrollHeight || vh;
+      totalTravelPx = vh + sh;
+      if (totalTravelPx < 200) totalTravelPx = window.innerHeight * 2;
+    }
+
+    function beginDrag(clientY, target) {
+      if (isInteractive(target)) return;
+      if (!credits.classList.contains('is-rolling')) return;
+      if (!anim) buildAnim();
+      recomputeTravel();
+      dragging = true;
+      scrubbing = true;
+      startY = clientY;
+      startTimeMs = Number(anim.currentTime) || 0;
+      resumeAfterDrag = !paused;
+      if (anim.playState === 'running') anim.pause();
+      viewport.classList.add('is-grabbing');
+      if (scrubHint) scrubHint.classList.add('is-fading');
+    }
+
+    function moveDrag(clientY) {
+      if (!dragging || !anim) return;
+      const deltaY = clientY - startY;
+      // dragging down = rewind (text moves with finger)
+      const deltaMs = -(deltaY / totalTravelPx) * DURATION_MS;
+      const next = Math.max(0, Math.min(DURATION_MS, startTimeMs + deltaMs));
+      anim.currentTime = next;
+      if (progress) progress.value = String(Math.round((next / DURATION_MS) * 1000));
+    }
+
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      scrubbing = false;
+      viewport.classList.remove('is-grabbing');
+      if (anim && resumeAfterDrag && !paused) { anim.play(); loop(); }
+    }
+
+    viewport.addEventListener('mousedown', (e) => { beginDrag(e.clientY, e.target); });
+    window.addEventListener('mousemove', (e) => { if (dragging) { e.preventDefault(); moveDrag(e.clientY); } });
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('mouseleave', endDrag);
+
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      beginDrag(e.touches[0].clientY, e.target);
+    }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (!dragging || e.touches.length !== 1) return;
+      moveDrag(e.touches[0].clientY);
+    }, { passive: true });
+    window.addEventListener('touchend', endDrag);
+    window.addEventListener('touchcancel', endDrag);
+
+    // Wheel scrub: scrolling inside the credits seeks instead of page-scrolling
+    viewport.addEventListener('wheel', (e) => {
+      if (!credits.classList.contains('is-rolling')) return;
+      if (!anim) return;
+      e.preventDefault();
+      recomputeTravel();
+      const cur = Number(anim.currentTime) || 0;
+      const deltaMs = (e.deltaY / totalTravelPx) * DURATION_MS;
+      anim.currentTime = Math.max(0, Math.min(DURATION_MS, cur + deltaMs));
+      if (progress) progress.value = String(Math.round((Number(anim.currentTime) / DURATION_MS) * 1000));
+    }, { passive: false });
   }
 
   // Auto-start beim Reinscrolln
