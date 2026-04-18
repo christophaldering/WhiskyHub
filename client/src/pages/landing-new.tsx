@@ -444,7 +444,7 @@ function HeroSection() {
               {t("landing.story.eyebrow", "Story")}
             </span>
             <span style={{ color: v.text }}>
-              {t("landing.story.label", "CaskSense in action")}
+              {t("landing.story.label", "Die CaskSense-Story")}
             </span>
             <ChevronRight style={{ width: 14, height: 14, color: ACCENT }} />
           </a>
