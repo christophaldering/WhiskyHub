@@ -763,6 +763,43 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/daily-report/send", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { sendDailyReport } = await import("./daily-report");
+      const result = await sendDailyReport();
+      if (!result.sent) {
+        return res.status(502).json({ sent: false, reason: result.reason, metrics: result.metrics });
+      }
+      res.json({ sent: true, metrics: result.metrics });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/daily-report/preview", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { gatherDailyMetrics, buildDailyReportEmail } = await import("./daily-report");
+      const metrics = await gatherDailyMetrics(new Date());
+      const { subject, html } = buildDailyReportEmail(metrics);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(`<!-- Subject: ${subject} -->\n${html}`);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/lookup", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;

@@ -1,5 +1,13 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Daily Report" (18.04.2026)
+Automatisierter Tagesbericht per Mail an christoph.aldering@googlemail.com:
+- **Modul `server/daily-report.ts`**: Sammelt Metriken (neue Teilnehmer/Tastings/Bewertungen/Journal-Eintraege, Page Views, eindeutige Besucher, Sessions, Top-Seiten, 7-Tage-Vergleich, Gesamtbestaende) und versendet stilisiertes HTML-Mail via Gmail-Connector.
+- **Scheduler**: `startDailyReportScheduler()` in `server/index.ts` prueft alle 5 min ab 08:00 Europe/Berlin und sendet einmal pro Tag.
+- **Idempotenz**: Neue Tabelle `daily_report_log` (PK = report_date) verhindert Doppelversand bei Instanz-Restarts via `INSERT ... ON CONFLICT DO NOTHING`.
+- **Admin-Endpoints**: `POST /api/admin/daily-report/send` (manueller Trigger) und `GET /api/admin/daily-report/preview` (HTML-Vorschau im Browser) — beide nur fuer role=admin.
+- **Override**: Empfaenger via `ADMIN_REPORT_EMAIL`-Env konfigurierbar.
+
 ## Checkpoint: "Feature-Tag" (17.04.2026)
 Grosser Feature-Tag mit vielen UX-Verbesserungen umgesetzt und deployed:
 - **Destillerie-Gruppierung**: Whiskys in Entdecken nach Destillerie gruppiert dargestellt.

@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { APP_NAME, getVersionInfo } from "@shared/version";
 import { warmupGmailToken, sendEmail, buildReminderEmail } from "./email";
+import { startDailyReportScheduler } from "./daily-report";
 import { storage } from "./storage";
 
 declare module "http" {
@@ -730,6 +731,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
         log(`Reminder scheduler error: ${(e as Error).message}`, "scheduler");
       }
     }, 5 * 60 * 1000);
+
+    startDailyReportScheduler();
   } catch (err) {
     console.error("Failed to initialize application:", err);
     process.exit(1);

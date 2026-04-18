@@ -1092,3 +1092,10 @@ export const utmVisits = pgTable("utm_visits", {
   index("idx_utm_visits_created").on(table.createdAt),
 ]);
 export type UtmVisit = typeof utmVisits.$inferSelect;
+
+// --- Daily Report Log (idempotency for daily admin emails) ---
+export const dailyReportLog = pgTable("daily_report_log", {
+  reportDate: text("report_date").primaryKey(),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+});
+export type DailyReportLog = typeof dailyReportLog.$inferSelect;
