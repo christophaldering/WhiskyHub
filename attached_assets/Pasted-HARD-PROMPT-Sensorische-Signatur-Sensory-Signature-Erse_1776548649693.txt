@@ -1,0 +1,153 @@
+HARD PROMPT — "Sensorische Signatur" / "Sensory Signature"
+Ersetzt das Konstrukt "Konsistenz" / "Consistency" überall im Programm.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 0 — VOLLSTÄNDIGE BESTANDSAUFNAHME (vor jeder Änderung)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Führe folgende Suchen aus und liste ALLE Treffer mit Dateiname
+und Zeilennummer:
+
+grep -rn "Konsistenz\|consistency\|Consistency\|ratingStability\|statConsistency\|consistencyDesc\|insightConsistent\|sehr konstant\|very consistent\|consistent\." \
+  client/ server/ shared/ --include="*.ts" --include="*.tsx" \
+  --include="*.js" --include="*.jsx"
+
+Berichte jeden Treffer BEVOR du irgendetwas änderst.
+Ändere NICHTS in Schritt 0.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 1 — i18n.ts: LABEL-ÄNDERUNGEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Datei: client/src/lib/i18n.ts
+NUR diese Keys ändern — alle anderen Keys unberührt lassen.
+
+DEUTSCH (DE-Block):
+
+  ALT: consistency: "Konsistenz"
+  NEU: consistency: "Sensorische Signatur"
+
+  ALT: statConsistencyLabel: "Konsistenz"
+  NEU: statConsistencyLabel: "Sensorische Signatur"
+
+  ALT: statConsistencyDesc: "Bewertungskonsistenz"
+  NEU: statConsistencyDesc: "Dein sensorisches Muster über Zeit und Kontext"
+
+  ALT: consistencyDesc: "Misst wie gleichmäßig du bewertest. Hohe Konsistenz
+       bedeutet: ähnliche Whiskys bekommen ähnliche Scores — dein Gaumen
+       ist verlässlich."
+  NEU: consistencyDesc: "Zeigt, wie stark deine Bewertungen über Zeit und
+       Kontext variieren. Ein hoher Wert bedeutet ein stabiles inneres
+       Referenzsystem — ein niedrigerer Wert kann auf ausgeprägte
+       Kontextsensitivität hinweisen. Beides ist eine gültige sensorische
+       Eigenschaft, keine Schwäche."
+
+ENGLISCH (EN-Block):
+
+  ALT: consistency: "Consistency"
+  NEU: consistency: "Sensory Signature"
+
+  ALT: statConsistencyLabel: "Consistency"
+  NEU: statConsistencyLabel: "Sensory Signature"
+
+  ALT: statConsistencyDesc: "Rating consistency"
+  NEU: statConsistencyDesc: "Your sensory pattern over time and context"
+
+  ALT: consistencyDesc: "Measures how consistently you rate. High consistency
+       means similar whiskies get similar scores from you — your palate
+       is reliable."
+  NEU: consistencyDesc: "Shows how much your ratings vary across time and
+       context. A high value indicates a stable internal reference system —
+       a lower value may reflect heightened context sensitivity. Both are
+       valid sensory characteristics, not flaws."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 2 — INSIGHT-TEXT: NEUTRAL UMFORMULIEREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche nach der Stelle, die den Insight-Text generiert oder
+hardcodiert ausgibt ("Deine Bewertungen sind sehr konstant." /
+"Your ratings are very consistent.").
+
+Kann sein in:
+- einer API-Route in server/routes.ts
+- einem Connoisseur-Report-Generator
+- einer React-Komponente (hardcodiert)
+- einem i18n-Key (insightConsistent o. ä.)
+
+WENN i18n-Key:
+  DE: insightConsistent: "Deine sensorische Signatur ist ausgeprägt —
+      deine Scores liegen nah beieinander."
+  EN: insightConsistent: "Your sensory signature is well-defined —
+      your scores cluster closely together."
+
+WENN hardcodiert in einer Komponente:
+  Ersetze den String direkt.
+  Melde Datei und Zeile im Bericht.
+
+WENN generiert durch KI/Prompt:
+  Passe den Prompt-Text an: ersetze "consistent" / "Konsistenz" durch
+  "sensory signature" / "sensorische Signatur". Kein Werturteil.
+  Melde die Prompt-Datei und Zeile im Bericht.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 3 — KOMPONENTEN: KACHEL-ÜBERSCHRIFT PRÜFEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche in allen .tsx/.jsx Dateien nach:
+
+  grep -rn "Konsistenz\|Consistency\|consistency" client/src \
+    --include="*.tsx" --include="*.jsx"
+
+Für jeden Treffer prüfen:
+- Ist es ein i18n-Key-Aufruf (t("consistency") o. ä.)? → bereits durch
+  Schritt 1 abgedeckt, KEINE weitere Änderung nötig.
+- Ist es ein hardcodierter String? → ersetzen durch:
+  DE: "Sensorische Signatur"
+  EN: "Sensory Signature"
+
+Melde jeden Treffer mit Datei und Zeile.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 4 — TOOLTIP / INFO-TEXT PRÜFEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Suche nach bestehenden Tooltip- oder Info-Texten zur Konsistenz-Kachel:
+
+  grep -rn "consistencyDesc\|consistency.*tooltip\|tooltip.*consistency" \
+    client/src --include="*.tsx" --include="*.jsx"
+
+Falls ein ⓘ-Icon mit Erklärungstext existiert:
+  Ersetze den Erklärungstext durch den neuen Wortlaut aus Schritt 1.
+
+Falls kein ⓘ-Icon existiert: NICHTS hinzufügen — das ist eine
+separate Aufgabe und nicht Teil dieses Prompts.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHRITT 5 — VERIFIKATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nach allen Änderungen:
+
+□ grep -rn "Konsistenz" client/ → 0 Treffer (außer Kommentare)
+□ grep -rn "\"Consistency\"" client/ → 0 Treffer
+□ grep -rn "Sensorische Signatur" client/ → mindestens 2 Treffer
+□ grep -rn "Sensory Signature" client/ → mindestens 2 Treffer
+□ tsc --noEmit → keine Fehler
+□ App startet ohne Fehler
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE SICHERHEITSREGELN — KEINE AUSNAHMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ NIEMALS server/ anfassen außer Schritt 2 (Insight-Text)
+❌ NIEMALS schema.ts, drizzle, .env, package.json ändern
+❌ NIEMALS ratingStabilityScore umbenennen — nur das Label ändert sich
+❌ NIEMALS andere Keys in i18n.ts löschen oder umbenennen
+❌ NIEMALS einen zweiten i18n-Block ans Ende anhängen —
+   immer im bestehenden Block ergänzen/ersetzen
+❌ NIEMALS UI-Layout, Kachel-Struktur oder Balken-Visualisierung ändern
+
+✅ Erst Schritt 0 vollständig ausführen und berichten
+✅ Dann Schritte 1–4 der Reihe nach
+✅ Abschließend Schritt 5 verifizieren und Bericht erstellen

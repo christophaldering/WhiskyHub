@@ -1,0 +1,47 @@
+AUFGABE: Neuen Menüpunkt "Themenspeicher" in der Rabbit-Hole-Sektion anlegen.
+
+SCHRITT 1 — Analyse
+Öffne die Datei, die das "Rabbit Hole" enthält (wahrscheinlich in client/src/labs/ 
+oder ähnlich). Lies den aktuellen Inhalt und identifiziere die Menüstruktur.
+
+SCHRITT 2 — Neuer Menüpunkt "Themenspeicher"
+Füge einen neuen Navigationsreiter oder Abschnitt namens "Themenspeicher" hinzu.
+Dieser Bereich sammelt offene Fragen und Ideen zur späteren Vertiefung.
+
+SCHRITT 3 — Erster Eintrag: Kontextabhängigkeit & Varianz
+Füge folgenden Themenspeicher-Eintrag ein:
+
+Titel: "Kontextabhängigkeit von Whisky-Bewertungen"
+
+Inhalt:
+"Welche Variablen beeinflussen die Bewertung eines Whiskys — unabhängig 
+vom Whisky selbst?
+
+Bekannte Einflussvariablen:
+• Position im Flight (Reihenfolgeeffekte, Adaptation, Kontrast)
+• Solo vs. Gruppe (soziale Erwünschtheit, Gruppenkonformität)
+• Tageszeit / Erschöpfung (sensorische Kapazität)
+• Kontext / Anlass (Feier vs. Alltag, Stimmung)
+• Was vorher konsumiert wurde (Gaumen-Reset)
+• Temperatur des Whiskys und des Raums
+• Erwartungshaltung (Label bekannt vs. blind)
+
+Kernüberlegung:
+In der psychologischen Diagnostik ist hohe Retest-Reliabilität ein 
+Gütekriterium — weil das gemessene Konstrukt stabil sein soll. 
+Beim Whisky-Tasting ist Kontextvarianz jedoch valide Information, 
+nicht Messfehler. Dieselbe Flasche kann an einem verregneten Dienstag 
+solo anders erlebt werden als am Freitag mit Freunden — und das gehört dazu.
+
+Idee für spätere Entwicklung:
+CaskSense könnte Kontextvariablen systematisch erfassen (Solo/Gruppe, 
+Anlass, Position im Flight, Stimmung) und dann zeigen, wie stark ein 
+Nutzer kontextsensitiv ist. Nicht als Schwäche — als Charakteristikum.
+
+Forschungsfrage: Lässt sich aus den gesammelten Daten ableiten, welche 
+Variablen den stärksten Einfluss auf die Gesamtbewertung haben? 
+Und unterscheidet sich das zwischen Nutzern?"
+
+SCHRITT 4 — Sicherheit
+Nur additive Änderungen. Keine bestehenden Inhalte löschen oder umbenennen.
+Nicht anfassen: server/, schema.ts, .env, package.json.
