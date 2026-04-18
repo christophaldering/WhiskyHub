@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import BackLink from "@/labs/components/BackLink";
 import {
   BookOpen, Building2, Package, Map,
-  BookMarked, ChevronRight, ChevronLeft,
+  BookMarked, ChevronLeft,
   Archive, BarChart3, SlidersHorizontal,
   Utensils, Brain, Lightbulb, GraduationCap, TrendingUp, Factory,
+  Microscope,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -42,7 +43,7 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "bibliothek.lexiconDescNav", descFallback: "Dictionary, templates & flavour map", href: "/labs/discover/lexicon", testId: "labs-link-bibliothek-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-bibliothek-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-bibliothek-bottlers" },
-      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Whisky Production", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Background & knowledge", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
+      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
     ],
   },
   {
@@ -54,6 +55,7 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/idea-behind-numbers", testId: "labs-link-bibliothek-idea-numbers" },
       { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/test-theory", testId: "labs-link-bibliothek-test-theory" },
       { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/statistical-methods", testId: "labs-link-bibliothek-stat-methods" },
+      { icon: Microscope, labelKey: "bibliothek.researchSensory", labelFallback: "Research & Sensory", descKey: "bibliothek.researchSensoryDesc", descFallback: "Concepts, studies & sensory science", href: "/labs/discover/research", testId: "labs-link-bibliothek-research-sensory" },
     ],
   },
   {
@@ -74,28 +76,38 @@ export const SECTIONS: BibliothekSection[] = [
     titleKey: "bibliothek.sectionDeepDive",
     titleFallback: "Deep Dive",
     links: [
-      { icon: BookMarked, labelKey: "bibliothek.literatureStudies", labelFallback: "Literature & Studies", descKey: "bibliothek.literatureStudiesDesc", descFallback: "Peer-reviewed research & bibliography", href: "/labs/discover/literature", testId: "labs-link-bibliothek-literature" },
       { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-bibliothek-rabbit-hole" },
     ],
   },
 ];
 
-function LinkRow({ link, t }: { link: BibliothekLink; t: (key: string, fallback: string) => string }) {
+function Tile({ link, t }: { link: BibliothekLink; t: (key: string, fallback: string) => string }) {
   return (
     <Link href={link.href} style={{ textDecoration: "none" }}>
-      <div className="labs-list-row" data-testid={link.testId} style={link.indent ? { paddingLeft: 30 } : undefined}>
+      <div
+        className="labs-card"
+        data-testid={link.testId}
+        style={{
+          minHeight: 92,
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
+          cursor: "pointer",
+          height: "100%",
+        }}
+      >
         <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <link.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
             {t(link.labelKey, link.labelFallback)}
           </div>
-          <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 1 }}>
+          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
             {t(link.descKey, link.descFallback)}
           </div>
         </div>
-        <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", opacity: 0.75, flexShrink: 0 }} />
       </div>
     </Link>
   );
@@ -123,12 +135,12 @@ export default function LabsBibliothek() {
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {SECTIONS.map((section) => (
           <div key={section.titleKey}>
-            <div className="labs-section-label" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 8, paddingLeft: 4 }}>
+            <div className="labs-section-label" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 8, paddingLeft: 4, textTransform: "uppercase" }}>
               {t(section.titleKey, section.titleFallback)}
             </div>
-            <div className="labs-grouped-list">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {section.links.map((link) => (
-                <LinkRow key={link.testId} link={link} t={t} />
+                <Tile key={link.testId} link={link} t={t} />
               ))}
             </div>
           </div>

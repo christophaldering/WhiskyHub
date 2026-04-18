@@ -27,7 +27,7 @@ function SectionHeader({ icon: Icon, title, tagline, color }: { icon: ElementTyp
 }
 
 export default function LabsBackground() {
-  const goBackToRabbitHole = useBackNavigation("/labs/discover/rabbit-hole");
+  const goBackToBibliothek = useBackNavigation("/labs/bibliothek");
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -62,8 +62,8 @@ export default function LabsBackground() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-background-page">
-      <button onClick={goBackToRabbitHole} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-background">
-        <ChevronLeft className="w-4 h-4" /> {t("discover.rabbitHole", "Rabbit Hole")}
+      <button onClick={goBackToBibliothek} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-background">
+        <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>

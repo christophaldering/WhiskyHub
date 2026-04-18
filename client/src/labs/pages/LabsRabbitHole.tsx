@@ -1,13 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { FlaskConical, BookOpen, Archive, ChevronRight, ChevronLeft } from "lucide-react";
+import { FlaskConical, Archive, ChevronLeft } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import type { ElementType } from "react";
 
 interface RCard { icon: ElementType; titleKey: string; descKey: string; href: string; testId: string; }
 
 const CARDS: RCard[] = [
-  { icon: BookOpen, titleKey: "rabbitHole.researchTitle", descKey: "rabbitHole.researchDesc", href: "/labs/discover/research", testId: "labs-rabbit-research" },
   { icon: Archive, titleKey: "rabbitHole.themenspeicherTitle", descKey: "rabbitHole.themenspeicherDesc", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-rabbit-themenspeicher" },
 ];
 
@@ -29,21 +28,31 @@ export default function LabsRabbitHole() {
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>
-        {t("rabbitHole.subtitle", "Dive deep into rating models, statistics & research")}
+        {t("rabbitHole.subtitle", "Open questions and topics worth exploring later.")}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
         {CARDS.map((card) => (
           <Link key={card.testId} href={card.href} style={{ textDecoration: "none" }}>
-            <div className="labs-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, cursor: "pointer" }} data-testid={card.testId}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <card.icon style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
+            <div
+              className="labs-card"
+              data-testid={card.testId}
+              style={{
+                minHeight: 92,
+                padding: "14px 16px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <card.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", marginBottom: 2 }}>{t(card.titleKey)}</div>
-                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>{t(card.descKey)}</div>
+                <div className="labs-serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>{t(card.titleKey)}</div>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>{t(card.descKey)}</div>
               </div>
-              <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
             </div>
           </Link>
         ))}
