@@ -10,7 +10,8 @@ import { queryClient } from "@/lib/queryClient";
 import { wishlistKey, useCollectionKeys } from "@/lib/wishlistKey";
 import CollectionBadge from "@/labs/components/CollectionBadge";
 import type { WishlistEntry } from "@shared/schema";
-import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X } from "lucide-react";
+import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X, Database, Bot, RefreshCw, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 
 interface DnaCategory {
   id: string;
@@ -38,6 +39,32 @@ interface DnaRecommendationsResponse {
   weakCategories: Array<{ id: string; en: string; de: string; color: string; pct: number }>;
   recommendations: DnaRecommendation[];
 }
+
+interface AiSuggestion {
+  name: string;
+  distillery: string | null;
+  region: string | null;
+  caskType: string | null;
+  peatLevel: string | null;
+  reason: string;
+  whiskyId: string | null;
+  whisky?: {
+    id: string;
+    name: string;
+    distillery: string | null;
+    region: string | null;
+    caskType: string | null;
+    peatLevel: string | null;
+    imageUrl: string | null;
+  } | null;
+}
+
+interface AiRecommendationsResponse {
+  suggestions: AiSuggestion[];
+  cached?: boolean;
+}
+
+type RecSource = "data" | "ai";
 
 interface DnaResponse {
   n: number;
@@ -299,6 +326,8 @@ export default function LabsWhiskyDNA() {
   const lang = ((i18n.language || "en").substring(0, 2) as "en" | "de");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [copied, setCopied] = useState(false);
+  const [recSource, setRecSource] = useState<RecSource>("data");
+  const [aiRefreshKey, setAiRefreshKey] = useState(0);
 
   const { data: dna, isLoading, error } = useQuery<DnaResponse>({
     queryKey: ["whisky-dna", pid],
@@ -324,6 +353,26 @@ export default function LabsWhiskyDNA() {
     },
     enabled: !!pid && !!dna && dna.n >= 5,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const aiLanguage = lang === "de" ? "de" : "en";
+  const aiQuery = useQuery<AiRecommendationsResponse>({
+    queryKey: ["whisky-dna-ai-recs", pid, aiLanguage, aiRefreshKey],
+    queryFn: async () => {
+      const res = await fetch("/api/recommendations/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...pidHeaders(),
+        },
+        body: JSON.stringify({ language: aiLanguage, force: aiRefreshKey > 0 }),
+      });
+      if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
+      return res.json();
+    },
+    enabled: !!pid && !!dna && dna.n >= 5 && recSource === "ai",
+    staleTime: 15 * 60 * 1000,
+    retry: 0,
   });
 
   const { data: wishlistEntries } = useQuery<WishlistEntry[]>({
@@ -532,6 +581,103 @@ export default function LabsWhiskyDNA() {
 
       {dna && !isLoading && dna.n >= 5 && (
         <>
+          {/* Recommendation source tiles — top of page so users don't miss the AI option */}
+          <div
+            className="labs-fade-in"
+            style={{ marginBottom: 14 }}
+            data-testid="section-rec-source-tiles"
+            role="radiogroup"
+            aria-label={t("dnaRecSourceLabel", "Recommendation source")}
+          >
+            <p
+              style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.06em", color: "var(--labs-text-muted)", marginBottom: 8,
+              }}
+            >
+              {t("dnaRecSourceLabel", "Recommendation source")}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              {([
+                {
+                  id: "data" as const,
+                  icon: Database,
+                  title: t("dnaRecSourceData", "From your data"),
+                  desc: t("dnaRecSourceDataDesc", "Picks built from your collection and aromas"),
+                  testId: "tile-rec-source-data",
+                },
+                {
+                  id: "ai" as const,
+                  icon: Bot,
+                  title: t("dnaRecSourceAi", "AI generated"),
+                  desc: t("dnaRecSourceAiDesc", "Personalized AI suggestions for your profile"),
+                  testId: "tile-rec-source-ai",
+                },
+              ]).map((opt) => {
+                const Icon = opt.icon;
+                const active = recSource === opt.id;
+                return (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setRecSource(opt.id)}
+                    data-testid={opt.testId}
+                    data-active={active ? "true" : "false"}
+                    className="labs-card"
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                      border: active
+                        ? "1px solid color-mix(in srgb, var(--labs-gold) 70%, transparent)"
+                        : "1px solid var(--labs-border)",
+                      background: active
+                        ? "color-mix(in srgb, var(--labs-gold) 10%, transparent)"
+                        : "var(--labs-card)",
+                      boxShadow: active
+                        ? "0 0 0 2px color-mix(in srgb, var(--labs-gold) 25%, transparent)"
+                        : "none",
+                      transition: "background 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                      display: "flex", alignItems: "flex-start", gap: 10,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: active
+                          ? "color-mix(in srgb, var(--labs-gold) 22%, transparent)"
+                          : "color-mix(in srgb, var(--labs-text-muted) 12%, transparent)",
+                        color: active ? "var(--labs-gold)" : "var(--labs-text-muted)",
+                      }}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: active ? "var(--labs-text)" : "var(--labs-text)",
+                        }}
+                      >
+                        {opt.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, lineHeight: 1.4 }}>
+                        {opt.desc}
+                      </div>
+                    </div>
+                    {active && (
+                      <Check className="w-4 h-4" style={{ color: "var(--labs-gold)", flexShrink: 0, marginTop: 2 }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Phase badge + explanation */}
           <div className="labs-card labs-fade-in" style={{ padding: "16px 18px", marginBottom: 12, textAlign: "center" }}>
             <span
@@ -682,8 +828,8 @@ export default function LabsWhiskyDNA() {
           </div>
           )}
 
-          {/* Try next — recommendations to strengthen weak axes */}
-          {recs && recs.recommendations.length > 0 && (
+          {/* Try next — recommendations to strengthen weak axes (data-based) */}
+          {recSource === "data" && recs && recs.recommendations.length > 0 && (
             <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="section-try-next">
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
                 <Compass className="w-3.5 h-3.5" />
@@ -845,6 +991,121 @@ export default function LabsWhiskyDNA() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* AI suggestions — generated on demand */}
+          {recSource === "ai" && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="section-ai-recs">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+                  <Bot className="w-3.5 h-3.5" />
+                  {t("dnaAiSectionTitle", "AI suggestions")}
+                </p>
+                <button
+                  type="button"
+                  className="labs-btn-ghost"
+                  onClick={() => setAiRefreshKey((k) => k + 1)}
+                  disabled={aiQuery.isFetching}
+                  data-testid="button-refresh-ai-recommendations"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, padding: "4px 8px" }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5" style={{ opacity: aiQuery.isFetching ? 0.5 : 1 }} />
+                  {t("dnaAiRefresh", "Refresh")}
+                </button>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5, marginBottom: 12 }} data-testid="text-ai-recs-intro">
+                {t("dnaAiSectionDesc", "Bottlings the AI thinks fit your DNA — generated on demand.")}
+              </p>
+
+              {aiQuery.isLoading || aiQuery.isFetching ? (
+                <div style={{ padding: 16, textAlign: "center" }} data-testid="state-ai-loading">
+                  <div className="labs-spinner mx-auto mb-2" />
+                  <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+                    {t("dnaAiLoading", "Generating AI suggestions…")}
+                  </p>
+                </div>
+              ) : aiQuery.isError ? (
+                <p style={{ fontSize: 12, color: "var(--labs-danger)" }} data-testid="state-ai-error">
+                  {t("dnaAiError", "AI suggestions are not available right now.")}
+                </p>
+              ) : !aiQuery.data || aiQuery.data.suggestions.length === 0 ? (
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)" }} data-testid="state-ai-empty">
+                  {t("dnaAiEmpty", "No AI suggestions yet. Try refreshing in a moment.")}
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {aiQuery.data.suggestions.map((s, idx) => {
+                    const inner = (
+                      <div
+                        style={{
+                          display: "flex", alignItems: "flex-start", gap: 12,
+                          padding: 12, borderRadius: 10,
+                          background: "color-mix(in srgb, var(--labs-accent) 6%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--labs-accent) 22%, transparent)",
+                        }}
+                      >
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 25%, transparent), color-mix(in srgb, var(--labs-gold) 12%, transparent))",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "var(--labs-accent)",
+                        }}>
+                          <Bot className="w-4 h-4" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <div data-testid={`text-ai-recommendation-name-${idx}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                              {s.name}
+                            </div>
+                            {!s.whiskyId && (
+                              <span style={{
+                                display: "inline-flex", alignItems: "center", gap: 3,
+                                fontSize: 10, padding: "2px 6px", borderRadius: 6,
+                                background: "color-mix(in srgb, var(--labs-text-muted) 15%, transparent)",
+                                color: "var(--labs-text-muted)", fontWeight: 500,
+                              }}>
+                                <ExternalLink style={{ width: 9, height: 9 }} />
+                                {t("dnaAiExternal", "External suggestion")}
+                              </span>
+                            )}
+                          </div>
+                          {(s.distillery || s.region || s.caskType || s.peatLevel) && (
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, lineHeight: 1.4 }}>
+                              {[s.distillery, s.region, s.caskType, s.peatLevel].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                          {s.reason && (
+                            <div style={{ marginTop: 8, fontSize: 12, color: "var(--labs-text-secondary)", borderLeft: "2px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)", paddingLeft: 8, lineHeight: 1.55 }}>
+                              <span style={{ fontWeight: 600, color: "var(--labs-text)", marginRight: 4 }}>
+                                {t("dnaAiReason", "Why this fits you")}:
+                              </span>
+                              {s.reason}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                    if (s.whiskyId) {
+                      return (
+                        <Link
+                          key={`${s.whiskyId}-${idx}`}
+                          href={`/labs/explore/bottles/${s.whiskyId}`}
+                          data-testid={`card-ai-recommendation-${idx}`}
+                          style={{ textDecoration: "none", color: "inherit" }}
+                        >
+                          {inner}
+                        </Link>
+                      );
+                    }
+                    return (
+                      <div key={`ai-${idx}`} data-testid={`card-ai-recommendation-${idx}`}>
+                        {inner}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
