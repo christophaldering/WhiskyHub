@@ -1,6 +1,7 @@
 interface LiveEvent {
   ts: number;
   type: string;
+  page: string;
   detail?: string;
 }
 
@@ -68,6 +69,7 @@ export function recordHeartbeat(input: LiveHeartbeatInput): void {
   const ev: LiveEvent = {
     ts: now,
     type: (input.type || "heartbeat").slice(0, 32),
+    page: (input.page || s.currentPage || "").slice(0, 128),
     detail: input.detail ? input.detail.slice(0, 96) : undefined,
   };
   s.events.push(ev);
@@ -177,7 +179,7 @@ export function getSessionTimeline(shortCode: string): SessionTimelineResult {
         events: s.events.map(e => ({
           ts: e.ts,
           type: e.type,
-          page: s.currentPage,
+          page: e.page || s.currentPage,
           detail: e.detail || "",
         })),
       };

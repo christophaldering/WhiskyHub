@@ -30,9 +30,14 @@ interface FunnelSummary {
 interface AnomalyItem { hour: string; metric: string; current: number; median7d: number; deltaPct: number; message: string }
 
 interface SessionTimeline {
+  found: boolean;
   shortCode: string;
   firstSeen: number;
   lastSeen: number;
+  currentPage: string;
+  source: string;
+  device: string;
+  country: string;
   events: Array<{ ts: number; type: string; page: string; detail: string }>;
 }
 
@@ -343,7 +348,12 @@ export default function FunnelLivePage() {
               <Button size="sm" variant="ghost" onClick={() => { setTimeline(null); }} data-testid="button-close-timeline">Schliessen</Button>
             </div>
             {timelineLoading && <div className="text-xs text-muted-foreground"><Loader2 className="w-3 h-3 inline animate-spin mr-1" />Lade Timeline…</div>}
-            {timeline && (
+            {timeline && !timeline.found && (
+              <div className="text-xs text-amber-600 py-2" data-testid="session-expired">
+                Session abgelaufen oder nicht mehr aktiv (5-Minuten-TTL).
+              </div>
+            )}
+            {timeline && timeline.found && (
               <div className="space-y-1 max-h-72 overflow-y-auto text-xs" data-testid="session-timeline">
                 {timeline.events.length === 0 && <div className="text-muted-foreground">Keine Events in dieser Session</div>}
                 {timeline.events.map((e, i) => (
