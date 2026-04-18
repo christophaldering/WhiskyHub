@@ -1,7 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { trackSignupView } from "@/lib/funnelTracker";
+import {
+  trackSignupView,
+  trackSignupFieldFocus,
+  trackSignupFieldBlurEmpty,
+  trackSignupValidationError,
+  trackSignupSubmitAttempt,
+} from "@/lib/funnelTracker";
 
 const ACCENT_GOLD = "rgba(201,151,43,1)";
 const ACCENT_GOLD_DIM = "rgba(201,151,43,0.6)";
@@ -111,6 +117,7 @@ export default function LabsOnboarding() {
   const [, navigate] = useLocation();
   const [joinOpen, setJoinOpen] = useState(false);
   const [code, setCode] = useState("");
+  const [codeFocusedOnce, setCodeFocusedOnce] = useState(false);
 
   const [alreadySeen] = useState(() => hasSeenOnboardingToday());
 
@@ -120,9 +127,16 @@ export default function LabsOnboarding() {
 
   const handleJoin = useCallback(() => {
     const trimmed = code.trim().toUpperCase();
-    if (trimmed) {
-      completeOnboarding(`/labs/join/${trimmed}`);
+    trackSignupSubmitAttempt("labs-onboarding-join");
+    if (!trimmed) {
+      trackSignupValidationError("code", "empty");
+      return;
     }
+    if (trimmed.length < 3) {
+      trackSignupValidationError("code", "too_short");
+      return;
+    }
+    completeOnboarding(`/labs/join/${trimmed}`);
   }, [code, completeOnboarding]);
 
   useEffect(() => {
@@ -340,6 +354,15 @@ export default function LabsOnboarding() {
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  onFocus={() => {
+                    if (!codeFocusedOnce) {
+                      setCodeFocusedOnce(true);
+                      trackSignupFieldFocus("code");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!code.trim()) trackSignupFieldBlurEmpty("code");
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                   placeholder="CODE"
                   autoFocus
