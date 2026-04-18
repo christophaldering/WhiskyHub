@@ -372,7 +372,7 @@ export default function LabsWhiskyDNA() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: recs } = useQuery<DnaRecommendationsResponse>({
+  const { data: recs, isLoading: recsLoading } = useQuery<DnaRecommendationsResponse>({
     queryKey: ["whisky-dna-recs", pid],
     queryFn: async () => {
       const res = await fetch(`/api/participants/${pid}/whisky-dna/recommendations`, {
@@ -724,6 +724,98 @@ export default function LabsWhiskyDNA() {
                 );
               })}
             </div>
+
+            {/* Inline status / feedback right under the source tiles */}
+            {(() => {
+              const isData = recSource === "data";
+              const isAi = recSource === "ai";
+              const dataCount = recs?.recommendations.length ?? 0;
+              const aiCount = aiQuery.data?.suggestions.length ?? 0;
+
+              let label = "";
+              let tone: "muted" | "accent" | "warn" | "danger" = "muted";
+              let busy = false;
+
+              if (isData) {
+                if (recsLoading) {
+                  label = t("dnaRecStatusDataLoading", "Lade Empfehlungen aus deinen Daten…");
+                  busy = true;
+                } else if (dataCount === 0) {
+                  label = t(
+                    "dnaRecStatusDataEmpty",
+                    "Noch keine passenden Bottlings gefunden — bewerte mehr Drams, dann werden die Vorschläge stärker.",
+                  );
+                  tone = "warn";
+                } else {
+                  label = t(
+                    "dnaRecStatusDataReady",
+                    "{{count}} Empfehlung weiter unten.",
+                    { count: dataCount, defaultValue_plural: "{{count}} Empfehlungen weiter unten." },
+                  );
+                  tone = "accent";
+                }
+              } else if (isAi) {
+                if (aiQuery.isLoading || aiQuery.isFetching) {
+                  label = t("dnaRecStatusAiLoading", "KI generiert deine Vorschläge…");
+                  busy = true;
+                } else if (aiQuery.isError) {
+                  label = t(
+                    "dnaRecStatusAiError",
+                    "KI-Vorschläge konnten nicht geladen werden. Versuch es später erneut.",
+                  );
+                  tone = "danger";
+                } else if (!aiQuery.data || aiCount === 0) {
+                  label = t("dnaRecStatusAiEmpty", "Noch keine KI-Vorschläge — tippe auf Refresh, um neue zu generieren.");
+                  tone = "warn";
+                } else {
+                  label = t(
+                    "dnaRecStatusAiReady",
+                    "{{count}} KI-Vorschlag weiter unten.",
+                    { count: aiCount, defaultValue_plural: "{{count}} KI-Vorschläge weiter unten." },
+                  );
+                  tone = "accent";
+                }
+              }
+
+              const colorMap: Record<typeof tone, string> = {
+                muted: "var(--labs-text-muted)",
+                accent: "var(--labs-accent)",
+                warn: "var(--labs-gold)",
+                danger: "var(--labs-danger)",
+              };
+
+              return (
+                <div
+                  data-testid="status-rec-source"
+                  data-rec-source={recSource}
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 11,
+                    color: colorMap[tone],
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {busy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: colorMap[tone],
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <span data-testid="text-rec-source-status">{label}</span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Phase badge + explanation */}
