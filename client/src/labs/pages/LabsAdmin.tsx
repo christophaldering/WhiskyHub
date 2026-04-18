@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import BackButton from "@/components/navigation/BackButton";
 import { adminApi, feedbackApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import FunnelLivePage from "@/pages/admin/funnel-live";
 import { apiRequest } from "@/lib/queryClient";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useAIStatus } from "@/hooks/use-ai-status";
@@ -38,7 +39,7 @@ function formatDurationGlobal(sec: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas" | "trash";
+type AdminTab = "participants" | "tastings" | "online" | "activity" | "sessions" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of" | "aromas" | "trash" | "funnel";
 
 const ADMIN_GROUPS = [
   {
@@ -97,6 +98,7 @@ const ADMIN_GROUPS = [
       { id: "settings",     labelKey: "admin.tabSettings" },
       { id: "cleanup",      labelKey: "admin.tabCleanup" },
       { id: "analytics",    labelKey: "admin.tabAnalytics" },
+      { id: "funnel",       labelKey: "admin.tabFunnel" },
       { id: "trash",        labelKey: "admin.tabTrash" },
     ],
   },
@@ -418,6 +420,7 @@ export default function LabsAdmin() {
           {activeTab === "making-of"    && <MakingOfTab pid={pid} participants={data.participants} />}
           {activeTab === "aromas"       && <AromasTab pid={pid} />}
           {activeTab === "trash"        && <AdminTrashTab pid={pid} />}
+          {activeTab === "funnel"       && <FunnelLivePage />}
         </div>
       </div>
     </div>

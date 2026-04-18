@@ -82,6 +82,8 @@ export default function FunnelLivePage() {
   const [error, setError] = useState<string>("");
   const [timeline, setTimeline] = useState<SessionTimeline | null>(null);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshAt, setLastRefreshAt] = useState<number>(0);
 
   const pid = getParticipantId();
 
@@ -102,7 +104,7 @@ export default function FunnelLivePage() {
   }, [pid, navigate]);
 
   const loadLive = async () => {
-    try { setLive(await api<LiveSnapshot>("/api/admin/funnel/live")); }
+    try { setLive(await api<LiveSnapshot>("/api/admin/funnel/live")); setError(""); }
     catch (e) { setError(`Live: ${(e as Error).message}`); }
   };
   const loadSummary = async () => {
@@ -110,11 +112,22 @@ export default function FunnelLivePage() {
       const qs = new URLSearchParams({ hours: String(hours) });
       if (filterSource) qs.set("utmSource", filterSource);
       setSummary(await api<FunnelSummary>(`/api/admin/funnel/summary?${qs}`));
+      setError("");
     } catch (e) { setError(`Summary: ${(e as Error).message}`); }
   };
   const loadAnomalies = async () => {
     try { const r = await api<{ anomalies: AnomalyItem[] }>("/api/admin/funnel/anomalies"); setAnomalies(r.anomalies || []); }
     catch {}
+  };
+
+  const refreshAll = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadLive(), loadSummary(), loadAnomalies()]);
+      setLastRefreshAt(Date.now());
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -182,9 +195,17 @@ export default function FunnelLivePage() {
             className="text-xs h-8 px-2 rounded border bg-background w-56"
             data-testid="input-utm-filter"
           />
-          <Button variant="outline" size="sm" onClick={() => { loadLive(); loadSummary(); loadAnomalies(); }} data-testid="button-refresh-funnel">
-            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh
+          <Button variant="outline" size="sm" onClick={refreshAll} disabled={refreshing} data-testid="button-refresh-funnel">
+            {refreshing
+              ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+            {refreshing ? "Lädt…" : "Refresh"}
           </Button>
+          {lastRefreshAt > 0 && !refreshing && (
+            <span className="text-[10px] text-muted-foreground">
+              {`aktualisiert ${rel(lastRefreshAt)}`}
+            </span>
+          )}
         </div>
       </div>
 
