@@ -403,6 +403,52 @@ function HeroSection() {
 
           <JoinCodeInput />
 
+          <a
+            href="/story"
+            data-testid="link-story-hero"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "11px 22px",
+              borderRadius: 50,
+              border: `1.5px solid ${ACCENT}55`,
+              background: `${ACCENT}10`,
+              color: v.text,
+              fontFamily: font.body,
+              fontSize: 13,
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              textDecoration: "none",
+              transition: "background 0.2s, border-color 0.2s, transform 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = `${ACCENT}1f`;
+              e.currentTarget.style.borderColor = `${ACCENT}88`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = `${ACCENT}10`;
+              e.currentTarget.style.borderColor = `${ACCENT}55`;
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: ACCENT_DIM,
+              }}
+            >
+              {t("landing.story.eyebrow", "Story")}
+            </span>
+            <span style={{ color: v.text }}>
+              {t("landing.story.label", "CaskSense in action")}
+            </span>
+            <ChevronRight style={{ width: 14, height: 14, color: ACCENT }} />
+          </a>
+
         </div>
       </FadeUp>
 
