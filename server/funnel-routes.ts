@@ -86,9 +86,11 @@ export function registerFunnelRoutes(app: Express): void {
     try {
       const meta = extractRequestMeta(req);
       const body = req.body || {};
-      const items: any[] = Array.isArray(body) ? body : (body.events ? body.events : [body]);
-      for (const item of items.slice(0, 20)) {
-        if (!item || !item.token) continue;
+      const items: unknown[] = Array.isArray(body) ? body : (body && typeof body === "object" && Array.isArray((body as { events?: unknown[] }).events) ? (body as { events: unknown[] }).events : [body]);
+      for (const raw of items.slice(0, 20)) {
+        if (!raw || typeof raw !== "object") continue;
+        const item = raw as Record<string, unknown>;
+        if (!item.token) continue;
         recordHeartbeat({
           token: String(item.token),
           page: String(item.page || ""),

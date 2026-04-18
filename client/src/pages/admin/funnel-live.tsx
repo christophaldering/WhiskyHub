@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Activity, Target, TrendingDown, AlertTriangle, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, Users, Activity, Target, TrendingDown, AlertTriangle, Sparkles, RefreshCw, type LucideIcon } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 
 interface LiveSnapshot {
@@ -51,7 +51,7 @@ function rel(ts: number): string {
   return r ? `vor ${m}m ${r}s` : `vor ${m}m`;
 }
 
-function StatCard({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string | number; sub?: string; color?: string }) {
+function StatCard({ icon: Icon, label, value, sub, color }: { icon: LucideIcon; label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <Card>
       <CardContent className="p-4 text-center">

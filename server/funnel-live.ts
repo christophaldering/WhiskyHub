@@ -143,22 +143,55 @@ export function getSnapshot(): LiveSnapshot {
   };
 }
 
-export function getSessionTimeline(shortCode: string): { found: boolean; events?: LiveEvent[]; meta?: { currentPage: string; source: string; device: string; country: string; firstSeen: number; lastSeen: number } } {
+export interface SessionTimelineEvent {
+  ts: number;
+  type: string;
+  page: string;
+  detail: string;
+}
+
+export interface SessionTimelineResult {
+  found: boolean;
+  shortCode: string;
+  firstSeen: number;
+  lastSeen: number;
+  currentPage: string;
+  source: string;
+  device: string;
+  country: string;
+  events: SessionTimelineEvent[];
+}
+
+export function getSessionTimeline(shortCode: string): SessionTimelineResult {
   for (const s of SESSIONS.values()) {
     if (s.shortCode === shortCode) {
       return {
         found: true,
-        events: s.events.slice(),
-        meta: {
-          currentPage: s.currentPage,
-          source: s.source,
-          device: s.device,
-          country: s.country,
-          firstSeen: s.firstSeen,
-          lastSeen: s.lastSeen,
-        },
+        shortCode: s.shortCode,
+        firstSeen: s.firstSeen,
+        lastSeen: s.lastSeen,
+        currentPage: s.currentPage,
+        source: s.source,
+        device: s.device,
+        country: s.country,
+        events: s.events.map(e => ({
+          ts: e.ts,
+          type: e.type,
+          page: s.currentPage,
+          detail: e.detail || "",
+        })),
       };
     }
   }
-  return { found: false };
+  return {
+    found: false,
+    shortCode,
+    firstSeen: 0,
+    lastSeen: 0,
+    currentPage: "",
+    source: "",
+    device: "",
+    country: "",
+    events: [],
+  };
 }

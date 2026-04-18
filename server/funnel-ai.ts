@@ -1,17 +1,17 @@
 import { getAIClient } from "./ai-client";
 import { getCountersInRange, getDimensionsInRange, sumCounters, type CounterRow } from "./funnel-store";
 
-interface CacheEntry { ts: number; value: any }
+interface CacheEntry<T = unknown> { ts: number; value: T }
 const CACHE = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
-function cacheGet(key: string): any | null {
+function cacheGet<T = unknown>(key: string): T | null {
   const e = CACHE.get(key);
   if (!e) return null;
   if (Date.now() - e.ts > CACHE_TTL_MS) { CACHE.delete(key); return null; }
   return e.value;
 }
-function cacheSet(key: string, value: any): void {
+function cacheSet<T = unknown>(key: string, value: T): void {
   CACHE.set(key, { ts: Date.now(), value });
 }
 
