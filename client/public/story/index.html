@@ -1429,6 +1429,34 @@ body::before {
   line-height: 1.8;
   margin-bottom: 1rem;
 }
+.credits__prelude {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink-dim);
+  line-height: 1.9;
+  margin: 4rem auto 1.5rem;
+  max-width: 28rem;
+  opacity: 0.85;
+}
+.credits__prelude-line {
+  display: block;
+  margin-bottom: 0.6rem;
+}
+.credits__prelude-line + .credits__prelude-line { color: var(--ink-faint); }
+.credits__prelude-cue {
+  display: block;
+  margin-top: 2.5rem;
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  font-style: normal;
+}
+.credits__spacer { display: block; }
+.credits__spacer--lg { height: 8rem; }
+.credits__spacer--xl { height: 14rem; }
 .credits__quote {
   font-family: var(--serif);
   font-style: italic;
@@ -2834,8 +2862,23 @@ body::before {
 
       <div class="credits__divider"></div>
 
+      <!-- DRAMATURGISCHER ÜBERGANG ZUR BESETZUNG -->
+      <div class="credits__spacer credits__spacer--lg"></div>
+
+      <p class="credits__prelude">
+        <span class="credits__prelude-line">Diese Geschichte hat keine Hauptrolle.</span>
+        <span class="credits__prelude-line">Sie hat einen Tisch.</span>
+        <span class="credits__prelude-line">Zwölf Gläser.</span>
+        <span class="credits__prelude-line">Und Menschen, die wiederkommen.</span>
+        <span class="credits__prelude-cue">— Es folgt die Besetzung —</span>
+      </p>
+
+      <div class="credits__spacer credits__spacer--xl"></div>
+
       <!-- BESETZUNG — vollständig mit Kurzcharakteristik -->
       <div class="credits__section-title">Wer an diesem Abend dabei war</div>
+
+      <div class="credits__spacer credits__spacer--lg"></div>
 
       <div class="credits__role">Gastgeber · Entwickler · Empiriker</div>
       <div class="credits__name">Christoph</div>
