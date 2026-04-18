@@ -1040,6 +1040,7 @@ function Footer() {
             href="/CaskSense_Labs_Praesentation.pdf"
             target="_blank"
             rel="noopener noreferrer"
+            download
             data-testid="link-footer-presentation"
             style={{
               fontFamily: font.body,
