@@ -412,7 +412,10 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     {
       const path = await import("path");
       const fs = await import("fs");
-      const here = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
+      const here =
+        typeof __dirname !== "undefined"
+          ? __dirname
+          : (import.meta as { dirname?: string }).dirname ?? process.cwd();
       const storyDevPath = path.resolve(here, "..", "client", "public", "story", "index.html");
       const storyProdPath = path.resolve(here, "public", "story", "index.html");
       const sendStory = (_req: Request, res: Response) => {
