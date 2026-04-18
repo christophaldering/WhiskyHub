@@ -164,13 +164,13 @@ body::before {
   z-index: -1;
   background-size: cover;
   background-position: center;
-  filter: brightness(0.75) contrast(1.05);
+  filter: brightness(0.55) contrast(1.1);
 }
 .hero__bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(11,9,6,0.15) 0%, rgba(11,9,6,0.4) 60%, var(--bg) 100%);
+  background: linear-gradient(to bottom, rgba(11,9,6,0.3) 0%, rgba(11,9,6,0.6) 60%, var(--bg) 100%);
 }
 .hero__content {
   max-width: var(--max-width);
@@ -214,20 +214,6 @@ body::before {
   line-height: 1.5;
   opacity: 0;
   animation: fadeUp 1.2s ease-out 0.9s forwards;
-}
-.hero__claim {
-  margin-top: 1.5rem;
-  font-family: var(--serif);
-  font-size: clamp(1.15rem, 1.9vw, 1.5rem);
-  letter-spacing: 0.02em;
-  color: var(--amber);
-  max-width: 640px;
-  line-height: 1.4;
-  opacity: 0;
-  animation: fadeUp 1.2s ease-out 1.05s forwards;
-}
-.hero__claim strong {
-  font-weight: 700;
 }
 .hero__meta {
   margin-top: 2.5rem;
@@ -409,6 +395,7 @@ body::before {
   aspect-ratio: 3 / 2;
   object-fit: cover;
 }
+.station__image { display: block; }
 .station--full .station__image {
   width: 100%;
   aspect-ratio: auto;
@@ -1349,8 +1336,7 @@ body::before {
   <div class="hero__content">
     <div class="hero__eyebrow">Eine Geschichte in acht Akten</div>
     <h1 class="hero__title">Ein <em>Jahr.</em></h1>
-    <p class="hero__lede">Sechzehn Jahre. Zweiunddreißig Abende. Und jetzt eine Ergänzung, die den Abend nicht verändert — aber bereichert. Auswertungen, Einsichten, Reflexion.</p>
-    <p class="hero__claim"><strong>Where Tasting becomes Reflection.</strong></p>
+    <p class="hero__lede">Sechzehn Jahre. Zweiunddreißig Abende. Und jetzt eine Ergänzung, die den Abend nicht verändert — aber bereichert. Auswertungen, Einsichten, Reflexion. Where Tasting becomes Reflection.</p>
     <div class="hero__meta">53 Stationen · 8 Akte · 4 Momente für dich</div>
   </div>
   <div class="hero__scroll-hint">Scroll</div>
@@ -1794,100 +1780,6 @@ body::before {
   </div>
 </section>
 
-<section class="station station--split">
-  <div class="station__inner">
-    <div class="station__text reveal">
-      <span class="station__eyebrow">Die Pause · nach sechs Whiskys</span>
-      <h2 class="station__heading">Schwarzbrot, Mett, <em>und ein Bier.</em></h2>
-      <div class="station__body">
-        <p>Nach dem sechsten Whisky ist Pause. Lucia bringt, was beim Whisky traditionell immer folgt und manchen Kenner verwundert: Schwarzbrot. Mett mit Zwiebeln. Schinken und Wurst. Der Gaumen wird mit Bier neutralisiert. Nicht edel — aber genau richtig.</p>
-        <p>Christoph macht draußen die Feuerschale an. Alle stehen drum herum, Bier in der Hand, Sammy mittendrin. Der Abend ist dunkel, das Feuer warm. Niemand redet über Whisky. Richtig gemütlich.</p>
-        <p>Dirk schmunzelt. <em>„Warten wir noch ein bisschen."</em></p>
-      </div>
-    </div>
-    <div class="station__media reveal reveal--delay-1">
-      <img src="images/station-schwarzbrot.png" alt="Schwarzbrot mit Mett, Schinken, Wurst und Bier auf rustikalem Holztisch, Kerzenlicht" class="station__image">
-    </div>
-  </div>
-</section>
-
-<section class="station station--full">
-  <div class="station__media reveal" style="position:relative;overflow:hidden;">
-    <img src="images/station-feuerschale.png" alt="Gruppe um die Feuerschale im Garten, Bier in der Hand, Sammy dabei" class="station__image">
-    <svg class="fire-overlay" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <radialGradient id="fg1" cx="50%" cy="100%" r="60%">
-          <stop offset="0%" stop-color="#FF6B00" stop-opacity="0.45"/>
-          <stop offset="100%" stop-color="#FF6B00" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="fg2" cx="50%" cy="100%" r="50%">
-          <stop offset="0%" stop-color="#FFA040" stop-opacity="0.3"/>
-          <stop offset="100%" stop-color="#FFA040" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <ellipse cx="400" cy="420" rx="180" ry="80" fill="url(#fg1)" class="flame-glow"/>
-      <path class="flame f1" d="M380,420 Q360,360 375,300 Q385,260 400,240 Q415,260 420,310 Q430,360 410,420 Z" fill="#FF8C00" opacity="0.35"/>
-      <path class="flame f2" d="M395,420 Q370,370 385,310 Q395,275 408,255 Q422,278 425,320 Q435,375 415,420 Z" fill="#FFA500" opacity="0.28"/>
-      <path class="flame f3" d="M365,420 Q340,375 358,318 Q368,282 380,265 Q393,285 395,330 Q402,378 385,420 Z" fill="#FF6600" opacity="0.22"/>
-      <path class="flame f4" d="M415,420 Q395,380 410,325 Q420,290 432,272 Q445,292 447,338 Q452,385 432,420 Z" fill="#FFB347" opacity="0.2"/>
-      <ellipse cx="400" cy="418" rx="140" ry="30" fill="#FF4500" opacity="0.18" class="flame-base"/>
-    </svg>
-  </div>
-  <div class="station__text reveal reveal--delay-1" style="margin: 0 auto;">
-    <span class="station__eyebrow">Draußen · Feuerschale</span>
-    <h2 class="station__heading">Das Feuer <em>brennt.</em></h2>
-  </div>
-</section>
-
-<!-- ================================================
-     AKT IV — DER REVEAL
-     ================================================ -->
-<section class="station station--cinematic reveal">
-  <img class="cinematic__img" src="images/station-highland-cattle.png" alt="Zwei Highland-Rinder auf nebliger Heide in den schottischen Highlands" loading="lazy">
-  <div class="cinematic__overlay"></div>
-  <div class="cinematic__caption">Scottish Highlands</div>
-</section>
-
-<div class="act" id="akt-4">
-  <div class="act__number">Akt IV · Enthüllung</div>
-  <div class="act__title">Der Reveal</div>
-  <p class="act__subtitle">Christoph steuert den Abend vom Laptop. Dirk sagt, was keiner weiß. Thomas wird zum Thomas, der die App mag.</p>
-</div>
-
-<section class="station station--split">
-  <div class="station__inner">
-    <div class="station__text reveal">
-      <span class="station__eyebrow">Host-Cockpit · Desktop</span>
-      <h2 class="station__heading">Rudi <em>hostet.</em></h2>
-      <div class="station__body">
-        <p>Am anderen Ende des Zimmers, auf dem Sideboard, steht sein Laptop aufgeklappt. Rudi übernimmt das Steuer — er kennt die App, kennt die Gruppe, kennt den richtigen Moment. Eine zweite Ansicht, nur für ihn: wer ist fertig, wer schreibt noch, wer ist zwischen Nase und Gaumen hängen geblieben.</p>
-        <p>Keine Namen, kein Druck. Nur ein ruhiger Überblick für denjenigen, der den Abend führt.</p>
-        <p>Rudi wartet, bis alle auf „Abgeschickt" getippt haben. Dann drückt er: <em>Enthüllen.</em></p>
-      </div>
-    </div>
-    <div class="station__media reveal reveal--delay-1">
-      <div class="app-frame app-frame--wide">
-        <img src="images/app-rudi-cockpit.png" alt="CaskSense Live-Cockpit — Rudi hostet, Teilnehmerstatus, Gäste-Ansicht">
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="station station--full">
-  <div class="station__media reveal">
-    <img src="images/station-14.png" alt="Dirks Moment — konzentriert am Glas" class="station__image">
-  </div>
-  <div class="station__text reveal reveal--delay-1" style="margin: 0 auto;">
-    <span class="station__eyebrow">Dirks Moment · vor dem Reveal</span>
-    <h2 class="station__heading" style="margin: 0 auto 1.5rem;"><em>„Ein PMC. 2013."</em></h2>
-    <div class="station__body" style="max-width: 620px; margin: 0 auto;">
-      <p>Bevor das Label erscheint, sagt Dirk — gut hörbar, ohne Zögern:</p>
-      <p class="station__quote" style="display: inline-block; text-align: left;">„Das ist ein PMC, würde ich sagen. 2013. Erstbefüllung Bourbon, mit einem kurzen Port-Finish am Ende."</p>
-      <p>Schweigen. Rudi zieht die Augenbrauen hoch. Michael lehnt sich zurück und schüttelt langsam den Kopf — nicht ungläubig, sondern anerkennend.</p>
-    </div>
-  </div>
-</section>
-
 <!-- ================================================
      INTERAKTIV · REVEAL-BUTTON (vor Multi-Act-Reveal)
      ================================================ -->
@@ -1897,7 +1789,7 @@ body::before {
       <span class="station__eyebrow">Jetzt bist Du dran</span>
       <h2 class="station__heading">Bereit für den <em>Reveal?</em></h2>
       <div class="station__body">
-        <p>Rudi wartet. Die Gruppe wartet. Die Bewertungen sind abgegeben — jetzt enthüllt ein einziger Klick, was bisher nur Dirk zu wissen schien.</p>
+        <p>Rudi wartet. Die Gruppe wartet. Die Bewertungen sind abgegeben — jetzt enthüllt ein einziger Klick, was im Glas war.</p>
       <p style="font-family: var(--sans); font-size: 0.85rem; color: var(--amber); letter-spacing: 0.05em; margin-top: 0.5rem;">↓ Scroll weiter und drück den Button — er funktioniert wirklich.</p>
       </div>
 
@@ -1972,7 +1864,7 @@ body::before {
     </div>
     <div class="station__media reveal reveal--delay-1">
       <div class="app-frame">
-        <img src="images/app-taste-overview.png" alt="CaskSense My Scores Overview mit Whisky-Liste und Bewertungen">
+        <img src="images/app-score-summary.png" alt="CaskSense Score Summary — Nose, Taste, Finish, Overall mit Übersicht aller Whiskys">
       </div>
     </div>
   </div>
@@ -2018,6 +1910,85 @@ body::before {
       <div class="station__body">
         <p>Gesprochen wurde den ganzen Abend — das ist der Sinn der Sache. Aber jetzt, nach der Auswertung, löst sich etwas. Die Zahlen liegen offen, und mit ihnen die Fragen. Berti erklärt, warum er bei 88 lag. <em>„Der Abgang hat mich gekriegt — dieser Salzwind am Ende."</em> Lucia fragt Dirk, woher er das mit dem Fass weiß. Dirk lächelt. <em>„Die Süße war zu präsent für Ex-Bourbon alleine. Und der kurze dunkle Ton am Ende — das ist Port."</em></p>
         <p>Das Gespräch beginnt, wo die Bewertung endet. Genau so, wie es sein soll.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="station station--split">
+  <div class="station__inner">
+    <div class="station__text reveal">
+      <span class="station__eyebrow">Die Pause · nach sechs Whiskys</span>
+      <h2 class="station__heading">Schwarzbrot, Mett, <em>und ein Bier.</em></h2>
+      <div class="station__body">
+        <p>Nach dem sechsten Whisky ist Pause. Lucia bringt, was beim Whisky traditionell immer folgt und manchen Kenner verwundert: Schwarzbrot. Mett mit Zwiebeln. Schinken und Wurst. Der Gaumen wird mit Bier neutralisiert. Nicht edel — aber genau richtig.</p>
+        <p>Christoph macht draußen die Feuerschale an. Alle stehen drum herum, Bier in der Hand, Sammy mittendrin. Der Abend ist dunkel, das Feuer warm. Niemand redet über Whisky. Richtig gemütlich.</p>
+        <p>Dirk schmunzelt. <em>„Warten wir noch ein bisschen."</em></p>
+      </div>
+    </div>
+    <div class="station__media reveal reveal--delay-1">
+      <img src="images/station-schwarzbrot.png" alt="Schwarzbrot mit Mett, Schinken, Wurst und Bier auf rustikalem Holztisch, Kerzenlicht" class="station__image">
+    </div>
+  </div>
+</section>
+
+<section class="station station--full">
+  <div class="station__media reveal" style="position:relative;overflow:hidden;">
+    <img src="images/station-feuerschale.png" alt="Gruppe um die Feuerschale im Garten, Bier in der Hand, Sammy dabei" class="station__image">
+    <svg class="fire-overlay" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="fg1" cx="50%" cy="100%" r="60%">
+          <stop offset="0%" stop-color="#FF6B00" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#FF6B00" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="fg2" cx="50%" cy="100%" r="50%">
+          <stop offset="0%" stop-color="#FFA040" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#FFA040" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="400" cy="420" rx="180" ry="80" fill="url(#fg1)" class="flame-glow"/>
+      <path class="flame f1" d="M380,420 Q360,360 375,300 Q385,260 400,240 Q415,260 420,310 Q430,360 410,420 Z" fill="#FF8C00" opacity="0.35"/>
+      <path class="flame f2" d="M395,420 Q370,370 385,310 Q395,275 408,255 Q422,278 425,320 Q435,375 415,420 Z" fill="#FFA500" opacity="0.28"/>
+      <path class="flame f3" d="M365,420 Q340,375 358,318 Q368,282 380,265 Q393,285 395,330 Q402,378 385,420 Z" fill="#FF6600" opacity="0.22"/>
+      <path class="flame f4" d="M415,420 Q395,380 410,325 Q420,290 432,272 Q445,292 447,338 Q452,385 432,420 Z" fill="#FFB347" opacity="0.2"/>
+      <ellipse cx="400" cy="418" rx="140" ry="30" fill="#FF4500" opacity="0.18" class="flame-base"/>
+    </svg>
+  </div>
+  <div class="station__text reveal reveal--delay-1" style="margin: 0 auto;">
+    <span class="station__eyebrow">Draußen · Feuerschale</span>
+    <h2 class="station__heading">Das Feuer <em>brennt.</em></h2>
+  </div>
+</section>
+
+<!-- ================================================
+     AKT IV — DER REVEAL
+     ================================================ -->
+<section class="station station--cinematic reveal">
+  <img class="cinematic__img" src="images/station-highland-cattle.png" alt="Zwei Highland-Rinder auf nebliger Heide in den schottischen Highlands" loading="lazy">
+  <div class="cinematic__overlay"></div>
+  <div class="cinematic__caption">Scottish Highlands</div>
+</section>
+
+<div class="act" id="akt-4">
+  <div class="act__number">Akt IV · Enthüllung</div>
+  <div class="act__title">Der Reveal</div>
+  <p class="act__subtitle">Christoph steuert den Abend vom Laptop. Dirk sagt, was keiner weiß. Thomas wird zum Thomas, der die App mag.</p>
+</div>
+
+<section class="station station--split">
+  <div class="station__inner">
+    <div class="station__text reveal">
+      <span class="station__eyebrow">Host-Cockpit · Desktop</span>
+      <h2 class="station__heading">Rudi <em>hostet.</em></h2>
+      <div class="station__body">
+        <p>Am anderen Ende des Zimmers, auf dem Sideboard, steht sein Laptop aufgeklappt. Rudi übernimmt das Steuer — er kennt die App, kennt die Gruppe, kennt den richtigen Moment. Eine zweite Ansicht, nur für ihn: wer ist fertig, wer schreibt noch, wer ist zwischen Nase und Gaumen hängen geblieben.</p>
+        <p>Keine Namen, kein Druck. Nur ein ruhiger Überblick für denjenigen, der den Abend führt.</p>
+        <p>Rudi wartet, bis alle auf „Abgeschickt" getippt haben. Dann drückt er: <em>Enthüllen.</em></p>
+      </div>
+    </div>
+    <div class="station__media reveal reveal--delay-1">
+      <div class="app-frame app-frame--wide">
+        <img src="images/app-rudi-cockpit.png" alt="CaskSense Live-Cockpit — Rudi hostet, Teilnehmerstatus, Gäste-Ansicht">
       </div>
     </div>
   </div>
@@ -2148,10 +2119,10 @@ body::before {
   <div class="station__inner">
     <div class="station__text reveal">
       <span class="station__eyebrow">Rating Consistency</span>
-      <h2 class="station__heading">Wie stabil sind <em>deine Urteile?</em></h2>
+      <h2 class="station__heading">Muster. <em>Keine Urteile.</em></h2>
       <div class="station__body">
-        <p>Ein zweiter Score, der Christoph interessiert: Consistency. Wenn er denselben Whisky zweimal blind verkostet — wie dicht liegen die Bewertungen beieinander?</p>
-        <p>Das ist keine Bewertung seines Könnens. Es ist eine Eigenschaft seines Musters. Manche Menschen streuen stärker, andere weniger. Beides ist möglich. Beides ist sichtbar.</p>
+        <p>Ein und derselbe Whisky kann zu verschiedenen Zeiten sehr unterschiedlich erlebt werden — je nach Stimmung, Kontext, was man vorher hatte. Das ist kein Makel, das ist menschlich.</p>
+        <p>CaskSense macht sichtbar, wie die eigenen Bewertungen über Zeit streuen. Nicht als Urteil — sondern als Spiegel. Wer viel streut, ist offen für Schwankungen. Wer wenig streut, hat ein konsistentes Muster. Beides hat seinen Wert.</p>
       </div>
     </div>
     <div class="station__media reveal reveal--delay-1">
@@ -2279,6 +2250,22 @@ body::before {
   </div>
 </section>
 
+<section class="station station--split">
+  <div class="station__inner">
+    <div class="station__text reveal">
+      <span class="station__eyebrow">Online-Tasting · von Michael geführt</span>
+      <h2 class="station__heading">Zwanzig Teilnehmer, <em>verteilt über die Republik.</em></h2>
+      <div class="station__body">
+        <p>Michael hostet seine Online-Tastings direkt über CaskSense. Zwanzig Teilnehmer. Blind, synchron — verteilt über ganz Deutschland, von Hamburg bis München, von Köln bis Berlin.</p>
+        <p>Das Cockpit sieht genau gleich aus wie bei Christophs Wohnzimmer-Runde. Nur die Zahl der Lämpchen im Teilnehmerstatus ist größer. Michael spricht live über Videostream, die App führt die Bewertungen. Kein Medienbruch.</p>
+      </div>
+    </div>
+    <div class="station__media reveal reveal--delay-1">
+      <img src="images/station-29.png" alt="Webcam mit Ringlicht für Online-Tasting" class="station__image">
+    </div>
+  </div>
+</section>
+
 <section class="station station--reverse">
   <div class="station__inner">
     <div class="station__text reveal">
@@ -2376,18 +2363,17 @@ body::before {
   </div>
 </section>
 
-<section class="station station--split">
-  <div class="station__inner">
-    <div class="station__text reveal">
-      <span class="station__eyebrow">Online-Tasting · von Michael geführt</span>
-      <h2 class="station__heading">Zwanzig Teilnehmer, <em>verteilt über die Republik.</em></h2>
-      <div class="station__body">
-        <p>Michael hostet seine Online-Tastings direkt über CaskSense. Zwanzig Teilnehmer. Blind, synchron — verteilt über ganz Deutschland, von Hamburg bis München, von Köln bis Berlin.</p>
-        <p>Das Cockpit sieht genau gleich aus wie bei Christophs Wohnzimmer-Runde. Nur die Zahl der Lämpchen im Teilnehmerstatus ist größer. Michael spricht live über Videostream, die App führt die Bewertungen. Kein Medienbruch.</p>
-      </div>
-    </div>
-    <div class="station__media reveal reveal--delay-1">
-      <img src="images/station-29.png" alt="Webcam mit Ringlicht für Online-Tasting" class="station__image">
+<section class="station station--full">
+  <div class="station__media reveal">
+    <img src="images/station-14.png" alt="Dirk — konzentriert am Glas" class="station__image">
+  </div>
+  <div class="station__text reveal reveal--delay-1" style="margin: 0 auto;">
+    <span class="station__eyebrow">Dirk · auch remote dabei</span>
+    <h2 class="station__heading" style="margin: 0 auto 1.5rem;"><em>„Ein PMC. 2013."</em></h2>
+    <div class="station__body" style="max-width: 620px; margin: 0 auto;">
+      <p>Nicht jedes Tasting findet am selben Tisch statt. Dirk ist manchmal nur per App dabei — und trotzdem präsent. Er tippt seine Bewertung, schreibt eine Notiz. Und dann, bevor das Label erscheint, schreibt er in den Chat:</p>
+      <p class="station__quote" style="display: inline-block; text-align: left;">„Das ist ein PMC, würde ich sagen. 2013. Erstbefüllung Bourbon, mit einem kurzen Port-Finish am Ende."</p>
+      <p>Rudi schickt ein Augenbrauen-Emoji zurück. Michael schreibt: „Unglaublich." Es stimmt natürlich.</p>
     </div>
   </div>
 </section>
@@ -2592,7 +2578,7 @@ body::before {
       </div>
       <div class="cast__item">
         <div class="cast__name">Brigitte</div>
-        <div class="cast__role">Rudis Frau. Dabei, wenn der Abend es erlaubt — und dann mit vollem Einsatz.
+        <div class="cast__role">Rudis Frau. Trinkt nicht mit, ist als Rudis Göttergattin quasi zwangsweise zur Whisky-Kennerin geworden :-)
       </div>
       <div class="cast__person">
         <div class="cast__name">Berti</div>
