@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { ArrowLeft, Camera, ChevronRight, Loader2, AlertTriangle, Layers, Plus, Wine, Check, X, Save } from "lucide-react";
 import { useSession, getSession } from "@/lib/session";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { queryClient } from "@/lib/queryClient";
 import type { JournalEntry } from "@shared/schema";
 
@@ -28,6 +29,7 @@ function getSessionTag(): string {
 export default function LabsFairMode() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useBackNavigation("/labs/taste/drams");
   const session = useSession();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -327,7 +329,7 @@ export default function LabsFairMode() {
     <div className="labs-page" style={{ paddingBottom: 32 }} data-testid="labs-fair-mode-capture">
       <div style={{ padding: "0 20px" }}>
         <button
-          onClick={() => navigate("/labs/taste/drams")}
+          onClick={goBack}
           className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3"
           style={{ color: "var(--labs-text-muted)", fontSize: 13 }}
           data-testid="button-fair-mode-exit"

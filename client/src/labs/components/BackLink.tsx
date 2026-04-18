@@ -1,6 +1,5 @@
 import { useCallback, type ReactNode } from "react";
-import { useLocation } from "wouter";
-import { markBackNavigation, popRoute } from "@/lib/navStack";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 
 interface BackLinkProps {
   href: string;
@@ -11,17 +10,15 @@ interface BackLinkProps {
 }
 
 export default function BackLink({ href, className, style, children, "data-testid": testId }: BackLinkProps) {
-  const [, navigate] = useLocation();
+  const goBack = useBackNavigation(href);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
       e.preventDefault();
-      const prev = popRoute();
-      markBackNavigation();
-      navigate(prev || href);
+      goBack();
     },
-    [href, navigate],
+    [goBack],
   );
 
   return (
