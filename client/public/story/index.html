@@ -2812,14 +2812,8 @@ body::before {
   <div class="credits__viewport">
     <button class="credits__start-hint">▶ Abspann starten</button>
 
-    <div class="credits__controls">
-      <button class="credits__ctrl-btn" id="creditsRewind" title="5 Sekunden zurück">↩ −5s</button>
-      <button class="credits__ctrl-btn" id="creditsPause" title="Pause / Weiter">⏸ Pause</button>
-      <button class="credits__ctrl-btn" id="creditsForward" title="5 Sekunden vor">↪ +5s</button>
-      <button class="credits__ctrl-btn" id="creditsRestart" title="Von vorne">↺ Neustart</button>
-    </div>
     <input type="range" id="creditsProgress" class="credits__progress" min="0" max="1000" value="0" step="1" aria-label="Abspann-Position" />
-    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Ziehen zum Spulen</div>
+    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Ziehen oder Scrollen zum Spulen</div>
 
     <div class="credits__scroll">
 
@@ -3222,10 +3216,6 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
 (function() {
   const credits = document.querySelector('.credits');
   const startBtn = document.querySelector('.credits__start-hint');
-  const pauseBtn = document.getElementById('creditsPause');
-  const rewindBtn = document.getElementById('creditsRewind');
-  const forwardBtn = document.getElementById('creditsForward');
-  const restartBtn = document.getElementById('creditsRestart');
   const progress = document.getElementById('creditsProgress');
   const scroll = document.querySelector('.credits__scroll');
   if (!credits || !startBtn || !scroll) return;
@@ -3237,11 +3227,7 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
   let scrubbing = false;
   let rafId = 0;
 
-  function setPauseLabel() {
-    if (!pauseBtn) return;
-    if (paused) { pauseBtn.textContent = '▶ Weiter'; pauseBtn.classList.add('is-paused'); }
-    else { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
-  }
+  function setPauseLabel() { /* buttons removed; kept as no-op for back-compat */ }
 
   function buildAnim() {
     if (anim) return anim;
@@ -3313,10 +3299,15 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
   }
 
   startBtn.addEventListener('click', start);
-  if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
-  if (rewindBtn) rewindBtn.addEventListener('click', () => seekDelta(-5000));
-  if (forwardBtn) forwardBtn.addEventListener('click', () => seekDelta(5000));
-  if (restartBtn) restartBtn.addEventListener('click', restart);
+
+  // Click on credits viewport (without dragging) toggles pause
+  credits.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('.credits__progress, .credits__start-hint, a, button')) return;
+    if (!credits.classList.contains('is-rolling')) return;
+    togglePause();
+  });
 
   if (progress) {
     const beginScrub = () => {
