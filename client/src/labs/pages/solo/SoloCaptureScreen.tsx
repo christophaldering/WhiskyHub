@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X } from "lucide-react";
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X, Layers } from "lucide-react";
+import { useLocation } from "wouter";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
@@ -30,6 +31,7 @@ type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barco
 
 export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack }: Props) {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
@@ -650,6 +652,31 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
             <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => navigate("/labs/fair-mode")}
+          data-testid="solo-fair-mode-btn"
+          className="labs-list-row"
+          style={{ gap: 12, width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            background: "var(--labs-accent-muted)",
+          }}>
+            <Layers className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("v2.solo.fairMode", "Messe-Modus")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+              {t("v2.solo.fairModeDesc", "Capture multiple drams in quick succession")}
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+        </button>
       </div>
 
       {showCollectionPicker && (

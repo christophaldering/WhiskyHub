@@ -14,7 +14,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile, Layers,
+  Users, Smile,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -1019,29 +1019,26 @@ export default function LabsTasteDrams() {
         <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3" style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="button-labs-back-taste">
           <ChevronLeft className="w-4 h-4" /> {t("drams.backTaste")}
         </button>
-        <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }}>
           <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate("/labs/fair-mode")}
-              className="labs-btn-secondary flex items-center gap-1.5"
-              style={{
-                padding: "7px 12px",
-                fontSize: 13,
-                borderRadius: 10,
-                background: "transparent",
-                border: "1px solid var(--labs-accent)",
-                color: "var(--labs-accent)",
-              }}
-              data-testid="button-labs-fair-mode"
-              title={t("fairMode.title")}
-            >
-              <Layers className="w-4 h-4" strokeWidth={2} /> {t("fairMode.title")}
-            </button>
-            <button onClick={() => navigate("/labs/solo")} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "7px 14px", fontSize: 13, borderRadius: 10 }} data-testid="button-labs-add-dram">
-              <Plus className="w-4 h-4" strokeWidth={2.5} /> {t("drams.addDram")}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/labs/solo")}
+            data-testid="link-labs-drams-capture-hint"
+            style={{
+              marginTop: 6,
+              padding: 0,
+              background: "transparent",
+              border: "none",
+              color: "var(--labs-text-muted)",
+              fontSize: 12,
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            {t("drams.captureHint", "Neue Drams erfasst du im Tastings-Tab unter Solo.")}
+            <span style={{ color: "var(--labs-accent)", marginLeft: 4 }}>{t("drams.captureHintCta", "Solo öffnen →")}</span>
+          </button>
         </div>
       </div>
 
