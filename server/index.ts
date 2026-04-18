@@ -409,6 +409,21 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       return res.status(status).json({ message });
     });
 
+    {
+      const path = await import("path");
+      const fs = await import("fs");
+      const here = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
+      const storyDevPath = path.resolve(here, "..", "client", "public", "story", "index.html");
+      const storyProdPath = path.resolve(here, "public", "story", "index.html");
+      const sendStory = (_req: Request, res: Response) => {
+        const candidate = fs.existsSync(storyProdPath) ? storyProdPath : storyDevPath;
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.sendFile(candidate);
+      };
+      app.get("/story", sendStory);
+      app.get("/story/", sendStory);
+    }
+
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
