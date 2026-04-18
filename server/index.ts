@@ -423,7 +423,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         res.sendFile(candidate);
       };
-      app.get("/story", sendStory);
+      app.get("/story", (_req, res) => res.redirect(301, "/story/"));
       app.get("/story/", sendStory);
     }
 
