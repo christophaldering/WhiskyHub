@@ -1432,24 +1432,43 @@ body::before {
 .credits__prelude {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 1.15rem;
-  color: var(--ink-dim);
-  line-height: 1.9;
+  color: var(--ink);
+  line-height: 1.5;
   margin: 4rem auto 1.5rem;
-  max-width: 28rem;
-  opacity: 0.85;
+  max-width: 36rem;
+}
+.credits__prelude-overture {
+  display: block;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.65rem;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 3rem;
 }
 .credits__prelude-line {
   display: block;
-  margin-bottom: 0.6rem;
+  font-weight: 500;
+  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+  letter-spacing: -0.005em;
+  margin-bottom: 1.1rem;
+  color: var(--ink);
 }
-.credits__prelude-line + .credits__prelude-line { color: var(--ink-faint); }
+.credits__prelude-line:nth-of-type(2) { color: rgba(245, 237, 224, 0.78); }
+.credits__prelude-line:nth-of-type(3) { color: rgba(245, 237, 224, 0.6); font-size: clamp(1.4rem, 2.8vw, 2rem); }
+.credits__prelude-line:last-of-type {
+  color: var(--amber);
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  margin-top: 1.6rem;
+  margin-bottom: 0;
+}
 .credits__prelude-cue {
   display: block;
-  margin-top: 2.5rem;
+  margin-top: 3.5rem;
   font-family: var(--sans);
   font-size: 0.6rem;
-  letter-spacing: 0.4em;
+  letter-spacing: 0.45em;
   text-transform: uppercase;
   color: var(--amber-dim);
   font-style: normal;
@@ -2841,7 +2860,7 @@ body::before {
     <button class="credits__start-hint">▶ Abspann starten</button>
 
     <input type="range" id="creditsProgress" class="credits__progress" min="0" max="1000" value="0" step="1" aria-label="Abspann-Position" />
-    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Ziehen oder Scrollen zum Spulen</div>
+    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Mit der Maus ziehen zum Spulen · Klick pausiert</div>
 
     <div class="credits__scroll">
 
@@ -2866,6 +2885,7 @@ body::before {
       <div class="credits__spacer credits__spacer--lg"></div>
 
       <p class="credits__prelude">
+        <span class="credits__prelude-overture">Ouvertüre</span>
         <span class="credits__prelude-line">Diese Geschichte hat keine Hauptrolle.</span>
         <span class="credits__prelude-line">Sie hat einen Tisch.</span>
         <span class="credits__prelude-line">Zwölf Gläser.</span>
@@ -3443,17 +3463,8 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
     window.addEventListener('touchend', endDrag);
     window.addEventListener('touchcancel', endDrag);
 
-    // Wheel scrub: scrolling inside the credits seeks instead of page-scrolling
-    viewport.addEventListener('wheel', (e) => {
-      if (!credits.classList.contains('is-rolling')) return;
-      if (!anim) return;
-      e.preventDefault();
-      recomputeTravel();
-      const cur = Number(anim.currentTime) || 0;
-      const deltaMs = (e.deltaY / totalTravelPx) * DURATION_MS;
-      anim.currentTime = Math.max(0, Math.min(DURATION_MS, cur + deltaMs));
-      if (progress) progress.value = String(Math.round((Number(anim.currentTime) / DURATION_MS) * 1000));
-    }, { passive: false });
+    // Note: wheel events are intentionally NOT captured — the page must remain
+    // freely scrollable so the visitor can leave the credits section any time.
   }
 
   // Auto-start beim Reinscrolln
