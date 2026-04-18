@@ -420,10 +420,22 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       const storyProdPath = path.resolve(here, "public", "story", "index.html");
       const sendStory = (_req: Request, res: Response) => {
         const candidate = fs.existsSync(storyProdPath) ? storyProdPath : storyDevPath;
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.sendFile(candidate);
+        try {
+          let html = fs.readFileSync(candidate, "utf-8");
+          if (!/<base\s/i.test(html)) {
+            html = html.replace(
+              /<head([^>]*)>/i,
+              `<head$1><base href="/story/">`,
+            );
+          }
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.send(html);
+        } catch (e) {
+          res.status(500).send("Story unavailable");
+        }
       };
-      app.get("/story", (_req, res) => res.redirect(301, "/story/"));
+      app.get("/story", sendStory);
       app.get("/story/", sendStory);
     }
 
