@@ -537,6 +537,38 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS deleted_at timestamp`);
       log("Ensured journal_entries has all schema columns", "startup");
 
+      await dbJournal.execute(sqlJ`
+        CREATE TABLE IF NOT EXISTS funnel_counters (
+          id serial PRIMARY KEY,
+          bucket_hour timestamp NOT NULL,
+          event_name text NOT NULL,
+          page_path text NOT NULL DEFAULT '',
+          utm_source text NOT NULL DEFAULT '',
+          utm_medium text NOT NULL DEFAULT '',
+          utm_campaign text NOT NULL DEFAULT '',
+          country text NOT NULL DEFAULT '',
+          language text NOT NULL DEFAULT '',
+          device_type text NOT NULL DEFAULT '',
+          count integer NOT NULL DEFAULT 0
+        )
+      `);
+      await dbJournal.execute(sqlJ`CREATE INDEX IF NOT EXISTS idx_funnel_counters_bucket ON funnel_counters (bucket_hour)`);
+      await dbJournal.execute(sqlJ`CREATE INDEX IF NOT EXISTS idx_funnel_counters_event ON funnel_counters (event_name)`);
+      await dbJournal.execute(sqlJ`CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_counters_dim ON funnel_counters (bucket_hour, event_name, page_path, utm_source, utm_medium, utm_campaign, country, language, device_type)`);
+      await dbJournal.execute(sqlJ`
+        CREATE TABLE IF NOT EXISTS funnel_dimension_buckets (
+          id serial PRIMARY KEY,
+          bucket_hour timestamp NOT NULL,
+          page_path text NOT NULL DEFAULT '',
+          dimension text NOT NULL,
+          bucket_label text NOT NULL,
+          count integer NOT NULL DEFAULT 0
+        )
+      `);
+      await dbJournal.execute(sqlJ`CREATE INDEX IF NOT EXISTS idx_funnel_dim_bucket ON funnel_dimension_buckets (bucket_hour)`);
+      await dbJournal.execute(sqlJ`CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_dim_key ON funnel_dimension_buckets (bucket_hour, page_path, dimension, bucket_label)`);
+      log("Ensured funnel_counters and funnel_dimension_buckets exist", "startup");
+
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preferred_cask_type text`);
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS openai_api_key text`);
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS friend_notifications_enabled boolean DEFAULT true`);

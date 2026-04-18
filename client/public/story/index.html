@@ -3253,5 +3253,138 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
 
 </script>
 
+<script>
+(function () {
+  if (window.__cs_funnel_init) return;
+  window.__cs_funnel_init = true;
+  var TRACK_URL = "/api/funnel/track";
+  var BEACON_URL = "/api/funnel/beacon";
+  var HEARTBEAT_URL = "/api/funnel/live-heartbeat";
+  var token = null;
+  try { token = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2); } catch (_) { token = String(Date.now()); }
+  var startTs = Date.now();
+  var lastActivity = startTs;
+  var maxScrollPct = 0;
+  var sentEngaged = false;
+  var sentFinished = false;
+  var ctaCount = 0;
+  var sectionsSeen = Object.create(null);
+  var queue = [];
+  var page = "/story";
+  function utm() {
+    var p = new URLSearchParams(window.location.search);
+    return {
+      utmSource: p.get("utm_source") || "",
+      utmMedium: p.get("utm_medium") || "",
+      utmCampaign: p.get("utm_campaign") || ""
+    };
+  }
+  var u = utm();
+  function deviceType() {
+    var w = window.innerWidth || 0;
+    if (w < 600) return "mobile";
+    if (w < 1024) return "tablet";
+    return "desktop";
+  }
+  function lang() { return (navigator.language || "").slice(0, 5); }
+  function enqueue(event, opts) {
+    var ev = { event: event, page: page, utmSource: u.utmSource, utmMedium: u.utmMedium, utmCampaign: u.utmCampaign, language: lang(), deviceType: deviceType() };
+    if (opts && opts.histogram) ev.histogram = opts.histogram;
+    queue.push(ev);
+    if (queue.length >= 6) flush(false);
+  }
+  function flush(useBeacon) {
+    if (!queue.length) return;
+    var payload = JSON.stringify({ events: queue.splice(0, queue.length) });
+    try {
+      if (useBeacon && navigator.sendBeacon) {
+        navigator.sendBeacon(BEACON_URL, new Blob([payload], { type: "text/plain" }));
+      } else {
+        fetch(TRACK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true }).catch(function () {});
+      }
+    } catch (_) {}
+  }
+  function heartbeat(type, detail) {
+    try {
+      var body = JSON.stringify({ token: token, type: type, page: page, detail: detail || "", source: u.utmSource, language: lang(), deviceType: deviceType() });
+      fetch(HEARTBEAT_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: body, keepalive: true }).catch(function () {});
+    } catch (_) {}
+  }
+  function scrollBucket(p) {
+    if (p < 25) return "0-25";
+    if (p < 50) return "25-50";
+    if (p < 75) return "50-75";
+    if (p < 100) return "75-99";
+    return "100";
+  }
+  function readBucket(s) {
+    if (s < 10) return "0-10s";
+    if (s < 30) return "10-30s";
+    if (s < 60) return "30-60s";
+    if (s < 180) return "1-3m";
+    if (s < 600) return "3-10m";
+    return "10m+";
+  }
+  enqueue("story_view");
+  heartbeat("page_view", page);
+  setInterval(function () {
+    var d = window.document.documentElement;
+    var sh = (d.scrollHeight - d.clientHeight) || 1;
+    var pct = Math.min(100, Math.round((window.scrollY / sh) * 100));
+    if (pct > maxScrollPct) maxScrollPct = pct;
+    var activeSec = Math.round((lastActivity - startTs) / 1000);
+    if (!sentEngaged && (activeSec >= 30 || maxScrollPct >= 25)) {
+      sentEngaged = true;
+      enqueue("story_engaged");
+    }
+    if (!sentFinished && maxScrollPct >= 95) {
+      sentFinished = true;
+      enqueue("story_finished");
+    }
+  }, 1500);
+  ["scroll", "mousemove", "keydown", "touchstart"].forEach(function (ev) {
+    window.addEventListener(ev, function () { lastActivity = Date.now(); }, { passive: true });
+  });
+  setInterval(function () { heartbeat("active", page); }, 25000);
+  var sections = document.querySelectorAll("section");
+  if (window.IntersectionObserver && sections.length) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+          var id = e.target.id || e.target.className.split(/\s+/)[0] || "section";
+          if (!sectionsSeen[id]) {
+            sectionsSeen[id] = Date.now();
+            enqueue("story_section_view");
+          }
+        }
+      });
+    }, { threshold: [0.5] });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+  document.addEventListener("click", function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest("a");
+    if (!a) return;
+    var href = (a.getAttribute("href") || "").toLowerCase();
+    var isExternal = href.indexOf("http") === 0;
+    var isPdf = href.indexOf(".pdf") !== -1;
+    var isCs = href.indexOf("casksense.com") !== -1;
+    if (isExternal && (isCs || isPdf)) {
+      ctaCount++;
+      enqueue("story_cta_click");
+      if (isPdf) enqueue("pdf_download");
+      flush(false);
+    }
+  }, true);
+  function finalReport() {
+    var activeSec = Math.min(Math.round((lastActivity - startTs) / 1000), 7200);
+    enqueue("story_dwell_histogram", { histogram: { dimension: "scroll_depth", bucket: scrollBucket(maxScrollPct) } });
+    enqueue("story_dwell_histogram", { histogram: { dimension: "read_time", bucket: readBucket(activeSec) } });
+    flush(true);
+  }
+  window.addEventListener("pagehide", finalReport);
+  window.addEventListener("beforeunload", finalReport);
+  setInterval(function () { flush(false); }, 8000);
+})();
+</script>
 </body>
 </html>

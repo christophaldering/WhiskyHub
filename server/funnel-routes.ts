@@ -146,7 +146,7 @@ export function registerFunnelRoutes(app: Express): void {
     res.json({ counters, dims });
   });
 
-  app.post("/api/admin/funnel/ai-analyze", async (req, res) => {
+  app.post("/api/admin/funnel/ai-analyze", rateLimit, express.json({ limit: "4kb" }), async (req, res) => {
     if (!(await requireAdmin(req, res))) return;
     const rangeHours = Math.min(Math.max(parseInt(String(req.body?.hours || "24"), 10) || 24, 1), 24 * 30);
     const filter = req.body?.utmSource ? { utmSource: String(req.body.utmSource) } : undefined;
