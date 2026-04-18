@@ -2,8 +2,8 @@
 // Session token lives only in module memory and is gone when the tab closes.
 
 const SESSION_TOKEN: string =
-  (typeof crypto !== "undefined" && (crypto as any).randomUUID)
-    ? (crypto as any).randomUUID()
+  (typeof crypto !== "undefined" && typeof (crypto as Crypto).randomUUID === "function")
+    ? (crypto as Crypto).randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 let utm: { source: string; medium: string; campaign: string } = { source: "", medium: "", campaign: "" };
@@ -64,9 +64,9 @@ function flush(useBeacon = false): void {
   const batch = queue.splice(0, queue.length);
   const payload = JSON.stringify({ events: batch });
   try {
-    if (useBeacon && typeof navigator !== "undefined" && (navigator as any).sendBeacon) {
+    if (useBeacon && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
       const blob = new Blob([payload], { type: "text/plain" });
-      (navigator as any).sendBeacon("/api/funnel/beacon", blob);
+      navigator.sendBeacon("/api/funnel/beacon", blob);
       return;
     }
     fetch("/api/funnel/track", {
@@ -198,4 +198,39 @@ export function startGlobalTracker(): void {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") finalReport();
   });
+
+  const sectionsSeen = new Set<string>();
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      const path = window.location.pathname;
+      entries.forEach((e) => {
+        if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+          const el = e.target as HTMLElement;
+          const id = (el.dataset.section || el.id || "").toString().slice(0, 64);
+          if (!id) return;
+          const key = path + ":" + id;
+          if (sectionsSeen.has(key)) return;
+          sectionsSeen.add(key);
+          enqueue("landing_section_view", { page: path + ":" + id });
+        }
+      });
+    }, { threshold: [0.5] });
+    const observe = () => {
+      document.querySelectorAll<HTMLElement>("[data-section]").forEach((el) => {
+        if (!el.dataset.csObserved) { el.dataset.csObserved = "1"; io.observe(el); }
+      });
+    };
+    observe();
+    const mo = new MutationObserver(observe);
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  document.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement | null;
+    if (!target) return;
+    const cta = target.closest<HTMLElement>("[data-cta]");
+    if (!cta) return;
+    const ctaId = (cta.getAttribute("data-cta") || "cta").slice(0, 64);
+    enqueue("landing_cta_click", { page: window.location.pathname + ":" + ctaId });
+  }, { passive: true });
 }

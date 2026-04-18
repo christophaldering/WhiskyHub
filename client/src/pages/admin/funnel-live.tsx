@@ -29,6 +29,13 @@ interface FunnelSummary {
 
 interface AnomalyItem { hour: string; metric: string; current: number; median7d: number; deltaPct: number; message: string }
 
+interface SessionTimeline {
+  shortCode: string;
+  firstSeen: number;
+  lastSeen: number;
+  events: Array<{ ts: number; type: string; page: string; detail: string }>;
+}
+
 const REFRESH_MS = 5000;
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -68,8 +75,22 @@ export default function FunnelLivePage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [timeline, setTimeline] = useState<SessionTimeline | null>(null);
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   const pid = getParticipantId();
+
+  const openTimeline = async (shortCode: string) => {
+    setTimelineLoading(true); setTimeline(null);
+    try {
+      const t = await api<SessionTimeline>(`/api/admin/funnel/live/${encodeURIComponent(shortCode)}`);
+      setTimeline(t);
+    } catch (e) {
+      setError(`Timeline ${shortCode}: ${(e as Error).message}`);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!pid) { navigate("/"); return; }
@@ -233,13 +254,18 @@ export default function FunnelLivePage() {
             <h3 className="font-serif font-semibold text-sm mb-3">Aktive Sessions ({live?.activeCount ?? 0})</h3>
             <div className="space-y-1 max-h-72 overflow-y-auto text-xs">
               {(live?.sessions || []).map(s => (
-                <div key={s.shortCode} className="flex items-center justify-between gap-2 py-1 border-b border-muted/30" data-testid={`live-session-${s.shortCode}`}>
+                <button
+                  key={s.shortCode}
+                  onClick={() => openTimeline(s.shortCode)}
+                  className="w-full flex items-center justify-between gap-2 py-1 border-b border-muted/30 hover:bg-muted/30 text-left cursor-pointer"
+                  data-testid={`live-session-${s.shortCode}`}
+                >
                   <Badge variant="outline" className="font-mono text-[10px]">{s.shortCode}</Badge>
                   <div className="flex-1 truncate">{s.currentPage}</div>
                   <div className="text-muted-foreground">{s.source || "direct"}</div>
                   <div className="text-muted-foreground">{s.device}</div>
                   <div className="text-muted-foreground">{rel(s.lastSeen)}</div>
-                </div>
+                </button>
               ))}
               {(live?.sessions || []).length === 0 && <div className="text-muted-foreground text-center py-3">Niemand aktiv</div>}
             </div>
@@ -306,6 +332,34 @@ export default function FunnelLivePage() {
           </CardContent>
         </Card>
       </div>
+
+      {(timeline || timelineLoading) && (
+        <Card className="border-primary/40">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-serif font-semibold text-sm">
+                Session-Timeline {timeline?.shortCode ? <Badge variant="outline" className="ml-2 font-mono text-[10px]">{timeline.shortCode}</Badge> : null}
+              </h3>
+              <Button size="sm" variant="ghost" onClick={() => { setTimeline(null); }} data-testid="button-close-timeline">Schliessen</Button>
+            </div>
+            {timelineLoading && <div className="text-xs text-muted-foreground"><Loader2 className="w-3 h-3 inline animate-spin mr-1" />Lade Timeline…</div>}
+            {timeline && (
+              <div className="space-y-1 max-h-72 overflow-y-auto text-xs" data-testid="session-timeline">
+                {timeline.events.length === 0 && <div className="text-muted-foreground">Keine Events in dieser Session</div>}
+                {timeline.events.map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 py-1 border-b border-muted/20" data-testid={`timeline-event-${i}`}>
+                    <div className="text-muted-foreground w-16">{rel(e.ts)}</div>
+                    <Badge variant="secondary" className="font-mono text-[10px]">{e.type}</Badge>
+                    <div className="flex-1 truncate">{e.page}</div>
+                    {e.detail && <div className="text-muted-foreground truncate">{e.detail}</div>}
+                  </div>
+                ))}
+                <div className="text-[10px] text-muted-foreground pt-2">In-Memory, max. 5 Min Lebensdauer.</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {summary && Object.keys(summary.histograms).length > 0 && (
         <Card>

@@ -539,7 +539,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
       await dbJournal.execute(sqlJ`
         CREATE TABLE IF NOT EXISTS funnel_counters (
-          id serial PRIMARY KEY,
+          id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
           bucket_hour timestamp NOT NULL,
           event_name text NOT NULL,
           page_path text NOT NULL DEFAULT '',
@@ -557,7 +557,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_counters_dim ON funnel_counters (bucket_hour, event_name, page_path, utm_source, utm_medium, utm_campaign, country, language, device_type)`);
       await dbJournal.execute(sqlJ`
         CREATE TABLE IF NOT EXISTS funnel_dimension_buckets (
-          id serial PRIMARY KEY,
+          id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
           bucket_hour timestamp NOT NULL,
           page_path text NOT NULL DEFAULT '',
           dimension text NOT NULL,

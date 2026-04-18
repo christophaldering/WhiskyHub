@@ -3351,10 +3351,18 @@ document.querySelectorAll('.act').forEach(el => actIO.observe(el));
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (e.isIntersecting && e.intersectionRatio >= 0.5) {
-          var id = e.target.id || e.target.className.split(/\s+/)[0] || "section";
-          if (!sectionsSeen[id]) {
-            sectionsSeen[id] = Date.now();
-            enqueue("story_section_view");
+          var sec = e.target;
+          var id = sec.id || (sec.className || "").toString().split(/\s+/).filter(function (c) { return c && c.indexOf("station") !== 0 && c.indexOf("reveal") !== 0; })[0] || sec.tagName.toLowerCase();
+          var sectionKey = String(id).slice(0, 64);
+          if (!sectionsSeen[sectionKey]) {
+            sectionsSeen[sectionKey] = Date.now();
+            queue.push({
+              event: "story_section_view",
+              page: "/story:" + sectionKey,
+              utmSource: u.utmSource, utmMedium: u.utmMedium, utmCampaign: u.utmCampaign,
+              language: lang(), deviceType: deviceType()
+            });
+            if (queue.length >= 6) flush(false);
           }
         }
       });

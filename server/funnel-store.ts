@@ -152,6 +152,14 @@ export interface CounterRow {
   count: number;
 }
 
+type DbRow = Record<string, unknown>;
+function extractRows(res: unknown): DbRow[] {
+  if (res && typeof res === "object" && Array.isArray((res as { rows?: unknown }).rows)) {
+    return (res as { rows: DbRow[] }).rows;
+  }
+  return Array.isArray(res) ? (res as DbRow[]) : [];
+}
+
 export async function getCountersInRange(hoursBack: number): Promise<CounterRow[]> {
   const start = new Date(Date.now() - hoursBack * 3600 * 1000);
   start.setUTCMinutes(0, 0, 0);
@@ -162,17 +170,17 @@ export async function getCountersInRange(hoursBack: number): Promise<CounterRow[
     WHERE bucket_hour >= ${start}
     ORDER BY bucket_hour DESC
   `);
-  const rows = ((res as any).rows ?? res) as any[];
+  const rows = extractRows(res);
   return rows.map(r => ({
     bucketHour: r.bucket_hour instanceof Date ? r.bucket_hour.toISOString() : String(r.bucket_hour),
-    eventName: r.event_name,
-    pagePath: r.page_path || "",
-    utmSource: r.utm_source || "",
-    utmMedium: r.utm_medium || "",
-    utmCampaign: r.utm_campaign || "",
-    country: r.country || "",
-    language: r.language || "",
-    deviceType: r.device_type || "",
+    eventName: String(r.event_name),
+    pagePath: String(r.page_path || ""),
+    utmSource: String(r.utm_source || ""),
+    utmMedium: String(r.utm_medium || ""),
+    utmCampaign: String(r.utm_campaign || ""),
+    country: String(r.country || ""),
+    language: String(r.language || ""),
+    deviceType: String(r.device_type || ""),
     count: Number(r.count) || 0,
   }));
 }
@@ -194,12 +202,12 @@ export async function getDimensionsInRange(hoursBack: number): Promise<Dimension
     WHERE bucket_hour >= ${start}
     ORDER BY bucket_hour DESC
   `);
-  const rows = ((res as any).rows ?? res) as any[];
+  const rows = extractRows(res);
   return rows.map(r => ({
     bucketHour: r.bucket_hour instanceof Date ? r.bucket_hour.toISOString() : String(r.bucket_hour),
-    pagePath: r.page_path || "",
-    dimension: r.dimension,
-    bucketLabel: r.bucket_label,
+    pagePath: String(r.page_path || ""),
+    dimension: String(r.dimension),
+    bucketLabel: String(r.bucket_label),
     count: Number(r.count) || 0,
   }));
 }
