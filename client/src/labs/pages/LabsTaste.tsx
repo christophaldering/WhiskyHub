@@ -735,7 +735,7 @@ export default function LabsTaste() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20, opacity: 0.4, pointerEvents: "none" }}>
               {[
                 { label: t("labs.statAvgLabel", "Average"), icon: <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
-                { label: t("labs.statConsistencyLabel", "Consistency"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
+                { label: t("labs.statConsistencyLabel", "Sensory Signature"), icon: <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
                 { label: t("labs.statExplorationLabel", "Exploration"), icon: <Compass className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} /> },
               ].map(s => (
                 <div key={s.label} style={{ background: "var(--labs-surface-hover)", borderRadius: 10, padding: "12px 8px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -949,15 +949,15 @@ export default function LabsTaste() {
                 }} />
               </div>
               <p style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", marginBottom: 2 }}>
-                {t("labs.statConsistencyLabel", "Consistency")}
+                {t("labs.statConsistencyLabel", "Sensory Signature")}
               </p>
               <p style={{ fontSize: 11, color: "var(--labs-text-muted)", opacity: 0.7, margin: 0, lineHeight: 1.3, textAlign: "center" }}>
-                {t("labs.statConsistencyDesc", "Rating consistency")}
+                {t("labs.statConsistencyDesc", "Your sensory pattern over time and context")}
               </p>
             </div>
             {statInfoOpen.consistency && (
               <div className="labs-fade-in" data-testid="text-stat-info-consistency" style={{ marginTop: 8, padding: "10px 12px", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface-muted, rgba(255,255,255,0.03))", fontSize: 12, lineHeight: 1.45, color: "var(--labs-text-muted)" }}>
-                {t("labs.statConsistencyInfo", "How tightly your ratings cluster around your own average. 10/10 means very steady — low values mean your scores swing more between drams.")}
+                {t("labs.statConsistencyInfo", "Your sensory signature reflects how tightly your ratings cluster around your own average. A high value means your scores stay close together — a low value means they vary more across drams. Neither is better; both describe a different sensory pattern.")}
               </div>
             )}
             </div>

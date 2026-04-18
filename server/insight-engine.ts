@@ -24,8 +24,8 @@ const INSIGHT_MESSAGES: Record<string, Record<InsightLanguage, string>> = {
     de: "Du scheinst Whiskys mit hoher Trinkstärke zu bevorzugen.",
   },
   rating_stability_high: {
-    en: "Your ratings are very consistent.",
-    de: "Deine Bewertungen sind sehr konstant.",
+    en: "Your sensory signature is well-defined — your scores cluster closely together.",
+    de: "Deine sensorische Signatur ist ausgeprägt — deine Scores liegen nah beieinander.",
   },
   rating_stability_low: {
     en: "You rate very dynamically.",
