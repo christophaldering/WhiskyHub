@@ -1324,52 +1324,18 @@ body::before {
 .credits {
   background: #000;
   position: relative;
-  overflow: hidden;
-  padding: 0;
+  padding: 6rem 0 8rem;
 }
 .credits__viewport {
-  height: 100vh;
-  overflow: hidden;
   position: relative;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 .credits__scroll {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%) translateY(100vh);
   width: 100%;
   max-width: 640px;
   padding: 0 2rem;
   text-align: center;
-  will-change: transform;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.credits.is-rolling .credits__viewport { cursor: grab; }
-.credits.is-rolling .credits__viewport.is-grabbing { cursor: grabbing; }
-.credits__scrub-hint {
-  position: absolute;
-  top: 1.25rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--sans);
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 10;
-}
-.credits.is-rolling .credits__scrub-hint { opacity: 0.6; }
-.credits.is-rolling .credits__viewport.is-grabbing ~ .credits__scrub-hint,
-.credits.is-rolling .credits__scrub-hint.is-fading { opacity: 0; }
-@keyframes creditsRoll {
-  0%   { transform: translateX(-50%) translateY(100vh); }
-  100% { transform: translateX(-50%) translateY(-100%); }
 }
 .credits__logo {
   font-family: var(--serif);
@@ -1502,7 +1468,7 @@ body::before {
   padding-bottom: 2px;
 }
 .credits__final-link:hover { color: var(--ink); border-color: var(--ink); }
-.credits__start-hint {
+.credits__start-hint { display: none;
   position: absolute;
   bottom: 2rem;
   left: 50%;
@@ -1520,65 +1486,9 @@ body::before {
   padding: 0.6rem 1.5rem;
 }
 .credits__start-hint:hover { color: var(--amber); border-color: var(--amber); }
-.credits.is-rolling .credits__start-hint { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .credits__scroll { animation: none; transform: translateX(-50%) translateY(0); }
-  .credits__viewport { height: auto; overflow: visible; padding: 4rem 0; }
-}
-
-.credits__controls {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  gap: 1rem;
-  z-index: 10;
-  align-items: center;
-}
-.credits.is-rolling .credits__controls { display: flex; }
-.credits__progress {
-  position: absolute;
-  bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(80vw, 520px);
-  height: 3px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(212, 168, 71, 0.18);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-  z-index: 11;
-  display: none;
-  margin: 0;
-  padding: 0;
-}
-.credits.is-rolling .credits__progress { display: block; }
-.credits__progress::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--amber);
-  border: 2px solid var(--ink-bg, #0a0a0a);
-  box-shadow: 0 0 0 1px var(--amber);
-  cursor: grab;
-}
-.credits__progress::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--amber);
-  border: 2px solid var(--ink-bg, #0a0a0a);
-  box-shadow: 0 0 0 1px var(--amber);
-  cursor: grab;
-}
-.credits__progress:active::-webkit-slider-thumb { cursor: grabbing; }
-.credits__progress:active::-moz-range-thumb { cursor: grabbing; }
-.credits.is-rolling .credits__start-hint { display: none; }
+.credits__controls,
+.credits__progress,
+.credits__scrub-hint { display: none !important; }
 .credits__ctrl-btn {
   background: none;
   border: 1px solid var(--ink-faint);
@@ -2857,11 +2767,6 @@ body::before {
 
 <section class="credits">
   <div class="credits__viewport">
-    <button class="credits__start-hint">▶ Abspann starten</button>
-
-    <input type="range" id="creditsProgress" class="credits__progress" min="0" max="1000" value="0" step="1" aria-label="Abspann-Position" />
-    <div class="credits__scrub-hint" id="creditsScrubHint">↕ Mit der Maus ziehen zum Spulen · Klick pausiert</div>
-
     <div class="credits__scroll">
 
       <!-- LOGO -->
@@ -3275,209 +3180,7 @@ const state = {};
 // =========================================================
 document.querySelectorAll('.act').forEach(el => actIO.observe(el));
 
-// ── FILMISCHER ABSPANN (mit Pause / Scrub / +-5s) ──
-(function() {
-  const credits = document.querySelector('.credits');
-  const startBtn = document.querySelector('.credits__start-hint');
-  const progress = document.getElementById('creditsProgress');
-  const scroll = document.querySelector('.credits__scroll');
-  if (!credits || !startBtn || !scroll) return;
-
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const DURATION_MS = 135000;
-  let anim = null;
-  let paused = false;
-  let scrubbing = false;
-  let rafId = 0;
-
-  function setPauseLabel() { /* buttons removed; kept as no-op for back-compat */ }
-
-  function buildAnim() {
-    if (anim) return anim;
-    anim = scroll.animate([
-      { transform: 'translateX(-50%) translateY(100vh)' },
-      { transform: 'translateX(-50%) translateY(-100%)' }
-    ], { duration: DURATION_MS, fill: 'forwards', easing: 'linear' });
-    anim.pause();
-    return anim;
-  }
-
-  function start() {
-    credits.classList.add('is-rolling');
-    if (reduceMotion) {
-      scroll.style.transform = 'translateX(-50%) translateY(0)';
-      return;
-    }
-    buildAnim();
-    if (paused) anim.pause(); else anim.play();
-    setPauseLabel();
-    loop();
-  }
-
-  function togglePause() {
-    if (!anim) return;
-    if (paused) { anim.play(); paused = false; }
-    else { anim.pause(); paused = true; }
-    setPauseLabel();
-    if (!paused) loop();
-  }
-
-  function seekDelta(deltaMs) {
-    if (!anim) return;
-    const cur = Number(anim.currentTime) || 0;
-    anim.currentTime = Math.max(0, Math.min(DURATION_MS, cur + deltaMs));
-    updateProgress();
-  }
-
-  function seekToPct(pct) {
-    if (!anim) buildAnim();
-    anim.currentTime = Math.max(0, Math.min(DURATION_MS, (pct / 1000) * DURATION_MS));
-    updateProgress();
-  }
-
-  function restart() {
-    if (!anim) buildAnim();
-    anim.currentTime = 0;
-    anim.play();
-    paused = false;
-    setPauseLabel();
-    updateProgress();
-    loop();
-  }
-
-  function updateProgress() {
-    if (!progress || !anim) return;
-    if (scrubbing) return;
-    const cur = Number(anim.currentTime) || 0;
-    progress.value = String(Math.round((cur / DURATION_MS) * 1000));
-  }
-
-  function loop() {
-    cancelAnimationFrame(rafId);
-    const tick = () => {
-      updateProgress();
-      if (anim && anim.playState === 'running') rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-  }
-
-  startBtn.addEventListener('click', start);
-
-  // Click on credits viewport (without dragging) toggles pause
-  credits.addEventListener('click', (e) => {
-    const target = e.target;
-    if (!(target instanceof Element)) return;
-    if (target.closest('.credits__progress, .credits__start-hint, a, button')) return;
-    if (!credits.classList.contains('is-rolling')) return;
-    togglePause();
-  });
-
-  if (progress) {
-    const beginScrub = () => {
-      scrubbing = true;
-      if (anim && anim.playState === 'running') { anim.pause(); }
-    };
-    const endScrub = () => {
-      scrubbing = false;
-      if (anim && !paused) { anim.play(); loop(); }
-    };
-    progress.addEventListener('input', () => {
-      if (!scrubbing) beginScrub();
-      seekToPct(Number(progress.value));
-    });
-    progress.addEventListener('mousedown', beginScrub);
-    progress.addEventListener('touchstart', beginScrub, { passive: true });
-    progress.addEventListener('change', endScrub);
-    progress.addEventListener('mouseup', endScrub);
-    progress.addEventListener('touchend', endScrub);
-  }
-
-  // Drag-to-scrub anywhere in the credits viewport
-  const viewport = credits.querySelector('.credits__viewport');
-  const scrubHint = document.getElementById('creditsScrubHint');
-  if (viewport) {
-    let dragging = false;
-    let startY = 0;
-    let startTimeMs = 0;
-    let resumeAfterDrag = false;
-    let totalTravelPx = 0;
-
-    function isInteractive(target) {
-      if (!(target instanceof Element)) return false;
-      return !!target.closest('button, input, a, .credits__progress, .credits__controls, .credits__start-hint');
-    }
-
-    function recomputeTravel() {
-      const vh = viewport.clientHeight || window.innerHeight;
-      const sh = scroll.scrollHeight || vh;
-      totalTravelPx = vh + sh;
-      if (totalTravelPx < 200) totalTravelPx = window.innerHeight * 2;
-    }
-
-    function beginDrag(clientY, target) {
-      if (isInteractive(target)) return;
-      if (!credits.classList.contains('is-rolling')) return;
-      if (!anim) buildAnim();
-      recomputeTravel();
-      dragging = true;
-      scrubbing = true;
-      startY = clientY;
-      startTimeMs = Number(anim.currentTime) || 0;
-      resumeAfterDrag = !paused;
-      if (anim.playState === 'running') anim.pause();
-      viewport.classList.add('is-grabbing');
-      if (scrubHint) scrubHint.classList.add('is-fading');
-    }
-
-    function moveDrag(clientY) {
-      if (!dragging || !anim) return;
-      const deltaY = clientY - startY;
-      // dragging down = rewind (text moves with finger)
-      const deltaMs = -(deltaY / totalTravelPx) * DURATION_MS;
-      const next = Math.max(0, Math.min(DURATION_MS, startTimeMs + deltaMs));
-      anim.currentTime = next;
-      if (progress) progress.value = String(Math.round((next / DURATION_MS) * 1000));
-    }
-
-    function endDrag() {
-      if (!dragging) return;
-      dragging = false;
-      scrubbing = false;
-      viewport.classList.remove('is-grabbing');
-      if (anim && resumeAfterDrag && !paused) { anim.play(); loop(); }
-    }
-
-    viewport.addEventListener('mousedown', (e) => { beginDrag(e.clientY, e.target); });
-    window.addEventListener('mousemove', (e) => { if (dragging) { e.preventDefault(); moveDrag(e.clientY); } });
-    window.addEventListener('mouseup', endDrag);
-    window.addEventListener('mouseleave', endDrag);
-
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
-      beginDrag(e.touches[0].clientY, e.target);
-    }, { passive: true });
-    window.addEventListener('touchmove', (e) => {
-      if (!dragging || e.touches.length !== 1) return;
-      moveDrag(e.touches[0].clientY);
-    }, { passive: true });
-    window.addEventListener('touchend', endDrag);
-    window.addEventListener('touchcancel', endDrag);
-
-    // Note: wheel events are intentionally NOT captured — the page must remain
-    // freely scrollable so the visitor can leave the credits section any time.
-  }
-
-  // Auto-start beim Reinscrolln
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        setTimeout(start, 800);
-        io.unobserve(credits);
-      }
-    });
-  }, { threshold: 0.3 });
-  io.observe(credits);
-})();
+// ── ABSPANN: statisch, normaler Seitenscroll (kein JS nötig) ──
 
 // =========================================================
 // Cinematic Parallax
