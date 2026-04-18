@@ -431,18 +431,6 @@ function HeroSection() {
               e.currentTarget.style.borderColor = `${ACCENT}55`;
             }}
           >
-            <span
-              aria-hidden
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: ACCENT_DIM,
-              }}
-            >
-              {t("landing.story.eyebrow", "Story")}
-            </span>
             <span style={{ color: v.text }}>
               {t("landing.story.label", "Die CaskSense-Story")}
             </span>
