@@ -6,15 +6,28 @@ import type { ElementType } from "react";
 interface EntrySection {
   key: string;
   icon: ElementType;
-  titleKey: string;
-  bodyKey: string;
+  titleSuffix: "variablesTitle" | "coreTitle" | "ideaTitle" | "questionTitle";
+  bodySuffix: "variablesBody" | "coreBody" | "ideaBody" | "questionBody";
 }
 
-const SECTIONS: EntrySection[] = [
-  { key: "variables", icon: Layers, titleKey: "rabbitHole.themenspeicher.entry1.variablesTitle", bodyKey: "rabbitHole.themenspeicher.entry1.variablesBody" },
-  { key: "core", icon: Lightbulb, titleKey: "rabbitHole.themenspeicher.entry1.coreTitle", bodyKey: "rabbitHole.themenspeicher.entry1.coreBody" },
-  { key: "idea", icon: Sparkles, titleKey: "rabbitHole.themenspeicher.entry1.ideaTitle", bodyKey: "rabbitHole.themenspeicher.entry1.ideaBody" },
-  { key: "question", icon: HelpCircle, titleKey: "rabbitHole.themenspeicher.entry1.questionTitle", bodyKey: "rabbitHole.themenspeicher.entry1.questionBody" },
+const SECTION_TEMPLATE: EntrySection[] = [
+  { key: "variables", icon: Layers, titleSuffix: "variablesTitle", bodySuffix: "variablesBody" },
+  { key: "core", icon: Lightbulb, titleSuffix: "coreTitle", bodySuffix: "coreBody" },
+  { key: "idea", icon: Sparkles, titleSuffix: "ideaTitle", bodySuffix: "ideaBody" },
+  { key: "question", icon: HelpCircle, titleSuffix: "questionTitle", bodySuffix: "questionBody" },
+];
+
+interface Entry {
+  id: string;
+  i18nKey: string;
+  testId: string;
+}
+
+const ENTRIES: Entry[] = [
+  { id: "context", i18nKey: "entry1", testId: "entry-themenspeicher-context" },
+  { id: "learning", i18nKey: "entry2", testId: "entry-themenspeicher-learning" },
+  { id: "language", i18nKey: "entry3", testId: "entry-themenspeicher-language" },
+  { id: "expectations", i18nKey: "entry4", testId: "entry-themenspeicher-expectations" },
 ];
 
 export default function LabsThemenspeicher() {
@@ -39,28 +52,30 @@ export default function LabsThemenspeicher() {
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <article className="labs-card" style={{ padding: 18 }} data-testid="entry-themenspeicher-context">
-          <h2 className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 6px" }} data-testid="text-entry-title-context">
-            {t("rabbitHole.themenspeicher.entry1.title", "Kontextabhängigkeit von Whisky-Bewertungen")}
-          </h2>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
-            {t("rabbitHole.themenspeicher.entry1.subtitle", "Wie Setting, Stimmung und Begleitung Bewertungen prägen.")}
-          </p>
+        {ENTRIES.map((entry) => (
+          <article key={entry.id} className="labs-card" style={{ padding: 18 }} data-testid={entry.testId}>
+            <h2 className="labs-serif" style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 6px" }} data-testid={`text-entry-title-${entry.id}`}>
+              {t(`rabbitHole.themenspeicher.${entry.i18nKey}.title`)}
+            </h2>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
+              {t(`rabbitHole.themenspeicher.${entry.i18nKey}.subtitle`)}
+            </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {SECTIONS.map((section) => (
-              <div key={section.key} style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
-                <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
-                  <section.icon style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-                  {t(section.titleKey)}
-                </h3>
-                <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>
-                  {t(section.bodyKey)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </article>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {SECTION_TEMPLATE.map((section) => (
+                <div key={section.key} style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12 }}>
+                  <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <section.icon style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                    {t(`rabbitHole.themenspeicher.${entry.i18nKey}.${section.titleSuffix}`)}
+                  </h3>
+                  <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>
+                    {t(`rabbitHole.themenspeicher.${entry.i18nKey}.${section.bodySuffix}`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
