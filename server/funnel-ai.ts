@@ -1,6 +1,10 @@
 import { getAIClient } from "./ai-client";
 import { getCountersInRange, getDimensionsInRange, sumCounters, type CounterRow } from "./funnel-store";
 
+// NOTE: utmSource filtering applies to funnel_counters only. funnel_dimension_buckets
+// (histograms for scroll_depth / read_time) does not carry source/device/language columns,
+// so histogram distributions in AI/summary output are not source-filtered. This is by design
+// to keep the dimension table cardinality bounded; extending it would multiply row count.
 interface CacheEntry<T = unknown> { ts: number; value: T }
 const CACHE = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
