@@ -13,7 +13,7 @@ import LabsErrorBoundary from "./LabsErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import LabsGlobalSearch from "./components/LabsGlobalSearch";
 import { triggerHaptic } from "./hooks/useHaptic";
-import { markBackNavigation } from "@/lib/navStack";
+import { markBackNavigation, popRoute } from "@/lib/navStack";
 import "./labs-theme.css";
 
 interface OnlineUserInfo {
@@ -603,8 +603,9 @@ function useVerificationBanner() {
 export function useLabsBack(fallback: string) {
   const [, navigate] = useLocation();
   return useCallback(() => {
+    const prev = popRoute();
     markBackNavigation();
-    navigate(fallback);
+    navigate(prev || fallback);
   }, [fallback, navigate]);
 }
 

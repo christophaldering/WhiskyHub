@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { markBackNavigation } from "@/lib/navStack";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { recapApi, collectionApi, getParticipantId } from "@/lib/api";
@@ -34,6 +34,7 @@ export default function LabsTastingRecap() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
+  const goBack = useLabsBack(`/labs/tastings/${tastingId}`);
 
   const { data: recap, isLoading, isError, refetch } = useQuery<RecapData>({
     queryKey: ["recap", tastingId],
@@ -347,7 +348,7 @@ export default function LabsTastingRecap() {
       `}</style>
 
       <button
-        onClick={() => { markBackNavigation(); navigate(`/labs/tastings/${tastingId}`); }}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="button-recap-back"

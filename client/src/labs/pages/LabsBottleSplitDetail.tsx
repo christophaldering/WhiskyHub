@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { ArrowLeft, Loader2, Scissors, Trash2, Play, Check, X, Wine } from "lucide-react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useLabsBack } from "@/labs/LabsLayout";
 
 type ViewTab = "overview" | "claims" | "rate" | "results";
 
@@ -24,6 +25,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/splits");
 
   const [split, setSplit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
 
   if (!split) return (
     <div className="labs-page">
-      <button onClick={() => navigate("/labs/splits")} data-testid="button-split-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}>
+      <button onClick={goBack} data-testid="button-split-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />{t("ui.back")}
       </button>
       <p style={{ textAlign: "center", color: "var(--labs-text-muted)", marginTop: 40 }}>{t("bottleSplitUi.splitNotFound")}</p>
@@ -230,7 +232,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
 
   return (
     <div className="labs-page labs-fade-in">
-      <button onClick={() => navigate("/labs/splits")} data-testid="button-split-detail-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
+      <button onClick={goBack} data-testid="button-split-detail-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />{t("ui.back")}
       </button>
 

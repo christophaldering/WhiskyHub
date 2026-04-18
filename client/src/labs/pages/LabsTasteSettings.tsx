@@ -11,6 +11,7 @@ import { useLocation, Link } from "wouter";
 import { downloadBlob } from "@/lib/download";
 import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
   ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
@@ -27,9 +28,7 @@ export default function LabsTasteSettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const goBack = useCallback(() => {
-    navigate("/labs/taste/profile");
-  }, [navigate]);
+  const goBack = useBackNavigation("/labs/taste/profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");

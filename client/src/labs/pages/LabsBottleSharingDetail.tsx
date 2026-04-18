@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { ArrowLeft, Clock, Loader2, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useLabsBack } from "@/labs/LabsLayout";
 
 type ViewTab = "overview" | "rate" | "results";
 
@@ -11,6 +12,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useLabsBack("/labs/bottle-sharing");
 
   const [sharing, setSharing] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>("overview");
@@ -137,7 +139,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
 
   if (!sharing) return (
     <div className="labs-page">
-      <button onClick={() => navigate("/labs/bottle-sharing")} data-testid="button-sharing-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}><ArrowLeft size={16} />{t("bottleSharing.back")}</button>
+      <button onClick={goBack} data-testid="button-sharing-notfound-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 14, padding: 0 }}><ArrowLeft size={16} />{t("bottleSharing.back")}</button>
       <p style={{ textAlign: "center", color: "var(--labs-text-muted)", marginTop: 40 }}>Sharing not found or access denied.</p>
     </div>
   );
@@ -154,7 +156,7 @@ export default function LabsBottleSharingDetail({ id }: { id: string }) {
 
   return (
     <div className="labs-page labs-fade-in">
-      <button onClick={() => navigate("/labs/bottle-sharing")} data-testid="button-sharing-view-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
+      <button onClick={goBack} data-testid="button-sharing-view-back" className="labs-back-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-sm)", fontSize: 14, padding: 0 }}>
         <ArrowLeft size={16} />{t("bottleSharing.back")}
       </button>
 

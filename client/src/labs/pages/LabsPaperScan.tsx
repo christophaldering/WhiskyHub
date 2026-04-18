@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useSearch, useLocation } from "wouter";
-import { markBackNavigation } from "@/lib/navStack";
+import { useLabsBack } from "@/labs/LabsLayout";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
@@ -19,6 +19,7 @@ export default function LabsPaperScan() {
   const tastingId = params?.id || "";
   const urlParams = new URLSearchParams(search);
   const urlParticipantId = urlParams.get("participant") || "";
+  const goBack = useLabsBack(tastingId ? `/labs/tastings/${tastingId}` : "/labs/tastings");
 
   const [selectedParticipantId, setSelectedParticipantId] = useState(urlParticipantId);
   const participantId = selectedParticipantId;
@@ -144,7 +145,7 @@ export default function LabsPaperScan() {
       margin: "0 auto",
     }} data-testid="labs-paper-scan-page">
       <button
-        onClick={() => { markBackNavigation(); navigate(tastingId ? `/labs/tastings/${tastingId}` : "/labs/tastings"); }}
+        onClick={goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-paper-scan-back"
