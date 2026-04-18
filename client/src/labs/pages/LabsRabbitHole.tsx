@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { FlaskConical, SlidersHorizontal, BarChart3, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import { FlaskConical, SlidersHorizontal, BarChart3, BookOpen, Archive, ChevronRight, ChevronLeft } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import type { ElementType } from "react";
 
@@ -10,6 +10,7 @@ const CARDS: RCard[] = [
   { icon: SlidersHorizontal, titleKey: "rabbitHole.ratingModelsTitle", descKey: "rabbitHole.ratingModelsDesc", href: "/labs/discover/method", testId: "labs-rabbit-rating-models" },
   { icon: BarChart3, titleKey: "rabbitHole.statisticsTitle", descKey: "rabbitHole.statisticsDesc", href: "/labs/discover/background", testId: "labs-rabbit-statistics" },
   { icon: BookOpen, titleKey: "rabbitHole.researchTitle", descKey: "rabbitHole.researchDesc", href: "/labs/discover/research", testId: "labs-rabbit-research" },
+  { icon: Archive, titleKey: "rabbitHole.themenspeicherTitle", descKey: "rabbitHole.themenspeicherDesc", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-rabbit-themenspeicher" },
 ];
 
 export default function LabsRabbitHole() {
