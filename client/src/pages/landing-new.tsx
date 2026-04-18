@@ -1036,9 +1036,11 @@ function Footer() {
             flexWrap: "wrap",
           }}
         >
-          <Link
-            href="/feature-overview"
-            data-testid="link-footer-features"
+          <a
+            href="/CaskSense_Labs_Praesentation.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="link-footer-presentation"
             style={{
               fontFamily: font.body,
               fontSize: 12,
@@ -1047,7 +1049,7 @@ function Footer() {
             }}
           >
             {t("premium.footerFeatures")}
-          </Link>
+          </a>
           <Link
             href="/impressum"
             data-testid="link-footer-impressum"

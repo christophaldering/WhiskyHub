@@ -42,7 +42,7 @@ export default function Impressum() {
             <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, marginBottom: 8 }}>
               {t("legal.impressum.responsibleTitle")}
             </h2>
-            <p style={{ color: c.text, lineHeight: 1.7, margin: 0 }}>
+            <p style={{ color: c.muted, fontSize: 14, lineHeight: 1.7, margin: 0 }}>
               Christoph Aldering<br />
               Jakob-Troost-Straße 8<br />
               46446 Emmerich am Rhein<br />
