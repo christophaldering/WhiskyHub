@@ -2,6 +2,8 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { sendEmail } from "./email";
 import { log } from "./index";
+import { getCountersInRange, sumCounters } from "./funnel-store";
+import { analyzePeriod, detectAnomalies } from "./funnel-ai";
 
 const ADMIN_REPORT_EMAIL =
   process.env.ADMIN_REPORT_EMAIL || "christoph.aldering@googlemail.com";
@@ -37,6 +39,22 @@ interface DailyMetrics {
   totalJournalEntries: number;
   newsletterOptIns: number;
   activeTastings: number;
+  funnel: {
+    storyView: number;
+    storyEngaged: number;
+    storyFinished: number;
+    storyCtaClick: number;
+    landingView: number;
+    pdfDownload: number;
+    signupView: number;
+    signupSubmitAttempt: number;
+    signupSubmitSuccess: number;
+    topSources: Array<{ source: string; count: number }>;
+    topCountries: Array<{ country: string; count: number }>;
+    aiSummary: string;
+    aiAvailable: boolean;
+    anomalies: string[];
+  };
 }
 
 async function scalar(query: any): Promise<number> {
@@ -132,7 +150,61 @@ export async function gatherDailyMetrics(now: Date = new Date()): Promise<DailyM
     totalJournalEntries,
     newsletterOptIns,
     activeTastings,
+    funnel: await gatherFunnelMetrics(),
   };
+}
+
+async function gatherFunnelMetrics(): Promise<DailyMetrics["funnel"]> {
+  const empty: DailyMetrics["funnel"] = {
+    storyView: 0, storyEngaged: 0, storyFinished: 0, storyCtaClick: 0,
+    landingView: 0, pdfDownload: 0,
+    signupView: 0, signupSubmitAttempt: 0, signupSubmitSuccess: 0,
+    topSources: [], topCountries: [],
+    aiSummary: "", aiAvailable: false, anomalies: [],
+  };
+  try {
+    const rows = await getCountersInRange(24);
+    const sourceMap = new Map<string, number>();
+    const countryMap = new Map<string, number>();
+    for (const r of rows) {
+      if (r.utm_source) sourceMap.set(r.utm_source, (sourceMap.get(r.utm_source) ?? 0) + r.count);
+      if (r.country) countryMap.set(r.country, (countryMap.get(r.country) ?? 0) + r.count);
+    }
+    const topSources = [...sourceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([source, count]) => ({ source, count }));
+    const topCountries = [...countryMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([country, count]) => ({ country, count }));
+
+    let aiSummary = ""; let aiAvailable = false;
+    try {
+      const ai = await analyzePeriod(24);
+      aiAvailable = ai.available;
+      aiSummary = ai.text || ai.reason || "";
+    } catch {}
+
+    let anomalies: string[] = [];
+    try {
+      const anos = await detectAnomalies();
+      anomalies = anos.map(a => a.message);
+    } catch {}
+
+    return {
+      storyView: sumCounters(rows, "story_view"),
+      storyEngaged: sumCounters(rows, "story_engaged"),
+      storyFinished: sumCounters(rows, "story_finished"),
+      storyCtaClick: sumCounters(rows, "story_cta_click"),
+      landingView: sumCounters(rows, "landing_view"),
+      pdfDownload: sumCounters(rows, "pdf_download"),
+      signupView: sumCounters(rows, "signup_view"),
+      signupSubmitAttempt: sumCounters(rows, "signup_submit_attempt"),
+      signupSubmitSuccess: sumCounters(rows, "signup_submit_success"),
+      topSources, topCountries,
+      aiSummary, aiAvailable, anomalies,
+    };
+  } catch (err) {
+    log(`gatherFunnelMetrics failed: ${(err as Error).message}`);
+    return empty;
+  }
 }
 
 function trendArrow(current: number, baseline: number): string {
@@ -200,6 +272,39 @@ export function buildDailyReportEmail(metrics: DailyMetrics): { subject: string;
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         ${topPathsRows}
       </table>
+
+      <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#7a6f5e;font-weight:600;">Story-Funnel (cookie-frei)</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${row("Story Aufrufe", metrics.funnel.storyView)}
+        ${row("Engaged (≥30s)", metrics.funnel.storyEngaged)}
+        ${row("Ende erreicht", metrics.funnel.storyFinished)}
+        ${row("CTA geklickt", metrics.funnel.storyCtaClick)}
+        ${row("Landing Aufrufe", metrics.funnel.landingView)}
+        ${row("PDF-Downloads", metrics.funnel.pdfDownload)}
+      </table>
+
+      <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#7a6f5e;font-weight:600;">Anmelde-Funnel</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${row("Anmelde-Screen gesehen", metrics.funnel.signupView)}
+        ${row("Submit versucht", metrics.funnel.signupSubmitAttempt)}
+        ${row("Submit erfolgreich", metrics.funnel.signupSubmitSuccess)}
+      </table>
+
+      ${metrics.funnel.topSources.length > 0 ? `
+      <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#7a6f5e;font-weight:600;">Top Quellen (UTM)</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        ${metrics.funnel.topSources.map(s => `<tr><td style="padding:6px 0;color:#4a5568;font-family:monospace;">${escapeHtml(s.source)}</td><td style="padding:6px 0;text-align:right;color:#2d3748;font-weight:600;">${s.count}</td></tr>`).join("")}
+      </table>` : ""}
+
+      ${metrics.funnel.anomalies.length > 0 ? `
+      <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#c97064;font-weight:600;">Auffälligkeiten</h2>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#4a5568;line-height:1.6;">
+        ${metrics.funnel.anomalies.map(a => `<li>${escapeHtml(a)}</li>`).join("")}
+      </ul>` : ""}
+
+      ${metrics.funnel.aiAvailable && metrics.funnel.aiSummary ? `
+      <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#7a6f5e;font-weight:600;">KI-Sicht "Erkläre mir das"</h2>
+      <div style="font-size:13px;color:#4a5568;line-height:1.7;white-space:pre-wrap;background:#faf8f3;padding:14px 16px;border-radius:4px;border:1px solid #e5e5e0;">${escapeHtml(metrics.funnel.aiSummary)}</div>` : ""}
 
       <h2 style="margin:24px 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;color:#7a6f5e;font-weight:600;">Gesamtbestand</h2>
       <table style="width:100%;border-collapse:collapse;font-size:14px;">

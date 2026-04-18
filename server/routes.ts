@@ -15,6 +15,8 @@ import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import { registerFunnelRoutes } from "./funnel-routes";
+import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
@@ -713,6 +715,7 @@ export async function registerRoutes(
       }
       const participant = await storage.createParticipant(data);
       await storage.setPrivacyConsent(participant.id);
+      recordFunnelEvents([{ event: "signup_submit_success", page: "/labs/onboarding" }], req).catch(() => undefined);
 
       if (participant.email?.toLowerCase() === ADMIN_EMAIL && participant.role !== "admin") {
         await storage.updateParticipantRole(participant.id, "admin");
@@ -2301,6 +2304,7 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
   registerObjectStorageRoutes(app);
+  registerFunnelRoutes(app);
 
   const scanUpload = multer({
     storage: multer.diskStorage({

@@ -1319,6 +1319,215 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .station--cinematic .cinematic__img { transition: none; }
 }
+
+/* ── FILMISCHER ABSPANN ─────────────────────────────── */
+.credits {
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+.credits__viewport {
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.credits__scroll {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 640px;
+  padding: 0 2rem;
+  text-align: center;
+  animation: creditsRoll 60s linear forwards;
+  animation-play-state: paused;
+}
+.credits.is-rolling .credits__scroll {
+  animation-play-state: running;
+}
+@keyframes creditsRoll {
+  0%   { transform: translateX(-50%) translateY(100vh); }
+  100% { transform: translateX(-50%) translateY(-100%); }
+}
+.credits__logo {
+  font-family: var(--serif);
+  font-size: 3rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.credits__tagline-main {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  margin-bottom: 4rem;
+}
+.credits__divider {
+  width: 3rem;
+  height: 1px;
+  background: var(--amber-dim);
+  margin: 3rem auto;
+  opacity: 0.4;
+}
+.credits__section-title {
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  margin-bottom: 1.5rem;
+  opacity: 0.6;
+}
+.credits__role {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.25rem;
+}
+.credits__name {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+.credits__name em {
+  font-style: italic;
+  color: var(--amber);
+}
+.credits__thanks {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--ink-dim);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+.credits__quote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.3rem;
+  color: var(--amber);
+  margin: 2rem 0;
+  line-height: 1.6;
+}
+.credits__final-logo {
+  font-family: var(--serif);
+  font-size: 2.5rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+  margin-top: 4rem;
+}
+.credits__final-link {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  text-decoration: none;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--amber-dim);
+  padding-bottom: 2px;
+}
+.credits__final-link:hover { color: var(--ink); border-color: var(--ink); }
+.credits__start-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+  z-index: 10;
+  transition: color 0.3s;
+  background: none;
+  border: 1px solid var(--ink-faint);
+  padding: 0.6rem 1.5rem;
+}
+.credits__start-hint:hover { color: var(--amber); border-color: var(--amber); }
+.credits.is-rolling .credits__start-hint { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .credits__scroll { animation: none; transform: translateX(-50%) translateY(0); }
+  .credits__viewport { height: auto; overflow: visible; padding: 4rem 0; }
+}
+
+.credits__controls {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 1rem;
+  z-index: 10;
+  align-items: center;
+}
+.credits.is-rolling .credits__controls { display: flex; }
+.credits.is-rolling .credits__start-hint { display: none; }
+.credits__ctrl-btn {
+  background: none;
+  border: 1px solid var(--ink-faint);
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.credits__ctrl-btn:hover { color: var(--amber); border-color: var(--amber); }
+.credits__ctrl-btn.is-paused { color: var(--amber); border-color: var(--amber); }
+
+.credits__cta-block {
+  margin-top: 3rem;
+  padding: 2.5rem 2rem;
+  border: 1px solid rgba(201,169,97,0.25);
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.credits__cta-heading {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--ink);
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+.credits__cta-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+.credits__cta-btn {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0b0906;
+  background: var(--amber);
+  padding: 0.9rem 2.5rem;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+}
+.credits__cta-btn:hover {
+  background: var(--ink);
+  transform: translateY(-2px);
+}
 </style>
 </head>
 <body>
@@ -2540,94 +2749,141 @@ body::before {
   </div>
 </section>
 
-<section class="closing">
-  <div class="closing__inner">
-    <p class="closing__tagline">Einen Monat später.<br>
-    Zwölf neue Whiskys.<br>
-    <strong>Gleiche Runde.</strong></p>
+<section class="credits">
+  <div class="credits__viewport">
+    <button class="credits__start-hint">▶ Abspann starten</button>
 
-    <p style="font-family: var(--serif); font-style: italic; font-size: 1.15rem; color: var(--ink-dim); margin-top: 1rem; max-width: 520px; margin-left: auto; margin-right: auto;">Diesmal bringt Rudi Brigitte mit. Lucia hat Baguette gemacht. Sammy dreht seine Kreise.</p>
-  </div>
-</section>
-
-<section style="background: #0a0704; padding: 6rem 2rem; text-align: center; position: relative; overflow: hidden;">
-  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,169,97,0.08) 0%, transparent 70%); pointer-events: none;"></div>
-  <div style="position: relative; z-index: 1; max-width: 600px; margin: 0 auto;">
-    <div style="font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--amber-dim); margin-bottom: 2rem;">— Where Tasting becomes Reflection —</div>
-    <div style="font-family: var(--serif); font-size: clamp(2rem, 6vw, 4rem); color: var(--ink); font-weight: 400; margin-bottom: 0.5rem; letter-spacing: -0.01em;">CaskSense</div>
-    <div style="width: 3rem; height: 1px; background: var(--amber); margin: 1.5rem auto;"></div>
-    <p style="font-family: var(--serif); font-size: 1.1rem; color: var(--ink-dim); margin-bottom: 3rem; line-height: 1.7;">Whisky-Tastings. Tasting-Journale. Blind Tests.<br>Connoisseur-Reports. Community. Empirie.</p>
-    <a href="https://casksense.com" style="display: inline-block; font-family: var(--sans); font-size: 1.1rem; font-weight: 500; color: var(--bg); background: var(--amber); padding: 1rem 3rem; text-decoration: none; letter-spacing: 0.05em; transition: opacity 0.2s;">casksense.com</a>
-    <p style="font-family: var(--sans); font-size: 0.75rem; color: var(--ink-faint); margin-top: 3rem;">Web · iOS · Deutsch · English</p>
-  </div>
-</section>
-
-<!-- ================================================
-     FIGURENLISTE
-     ================================================ -->
-<section class="cast">
-  <div class="cast__inner">
-    <div class="cast__eyebrow">Die Runde</div>
-    <h3 class="cast__heading">Wer an diesem Abend dabei war.</h3>
-
-    <div class="cast__grid">
-      <div class="cast__person">
-        <div class="cast__name">Christoph</div>
-        <div class="cast__role">Der Gastgeber. Entwickelt CaskSense, weil er genau solche Abende festhalten wollte.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Lucia</div>
-        <div class="cast__role">Christophs Frau. Trägt den Abend mit — das Baguette, das Wasser, die Wärme zwischen den Gläsern.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Sammy</div>
-        <div class="cast__role">Golden Retriever. Dreht sich drei Mal im Kreis, wenn er sich freut. Liegt unter dem Tisch.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Rudi</div>
-        <div class="cast__role">Christophs Freund. Kennt CaskSense seit den ersten Versionen. Stellt das Lineup zusammen — mit Handouts, Notizen und großer Sorgfalt.</div>
-      </div>
-      <div class="cast__item">
-        <div class="cast__name">Brigitte</div>
-        <div class="cast__role">Rudis Frau. Trinkt nicht mit, ist als Rudis Göttergattin quasi zwangsweise zur Whisky-Kennerin geworden :-)
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Berti</div>
-        <div class="cast__role">Alter Klassenkamerad. Absoluter Whisky-Kenner. Bringt immer eine Flasche „für danach" mit.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Michael</div>
-        <div class="cast__role">Vierzig Tastings im Jahr, hostet selbst online. Organisiert Flaschenteilungen für zehn.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Dirk</div>
-        <div class="cast__role">Erschmeckt Destille, Jahrgang und Fass. Kommunikativ, präzise, mit einer Sensorik, die ihresgleichen sucht.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Burkhard</div>
-        <div class="cast__role">Alter Pfadfinder-Freund. Schreibt mit Kugelschreiber auf Papier. Nutzt sein Handy nur für WhatsApp. Lässt sich nicht vom Digitalen bekehren.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Doris &amp; Thomas</div>
-        <div class="cast__role">Liebe Freunde. Skeptisch gegenüber Handys am Tisch. Finden später ihren eigenen, leichteren Weg.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Axel-Islay</div>
-        <div class="cast__role">Wie der Name sagt: Islay-Fan. Zweihundert Kilometer weg. Teilt Flaschen auf Distanz.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Volker</div>
-        <div class="cast__role">War mit auf Islay — damals, vor vielen Jahren. Teilt heute Bunnahabhain mit Christoph.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Charly, Stefan, Willi, Friedhelm</div>
-        <div class="cast__role">Die anderen Pfadfinder. Zusammen mit Burkhard eine Community, die einmal im Monat asynchron verkostet. Friedhelm trinkt keinen Whisky — er ist trotzdem immer dabei.</div>
-      </div>
-      <div class="cast__person">
-        <div class="cast__name">Gerhard &amp; Christiane</div>
-        <div class="cast__role">In den letzten Jahren dazugekommen. Christiane überraschend: sie mag den rauchigen.</div>
-      </div>
+    <div class="credits__controls">
+      <button class="credits__ctrl-btn" id="creditsRewind">↩ Zurück</button>
+      <button class="credits__ctrl-btn" id="creditsPause">⏸ Pause</button>
+      <button class="credits__ctrl-btn" id="creditsRestart">↺ Neustart</button>
     </div>
+
+    <div class="credits__scroll">
+
+      <!-- LOGO -->
+      <div class="credits__logo">CaskSense</div>
+      <div class="credits__tagline-main">— Where Tasting becomes Reflection —</div>
+
+      <div class="credits__divider"></div>
+
+      <!-- DANKE -->
+      <div class="credits__section-title">Ein herzliches Dankeschön</div>
+      <p class="credits__thanks">
+        An alle, die diesen Abend möglich machen.<br>
+        Die verkostet, bewertet, diskutiert und gelacht haben.<br>
+        Die eine Meinung hatten — und sie stehen ließen.<br>
+        Die wiederkommen. Immer wieder.
+      </p>
+
+      <div class="credits__divider"></div>
+
+      <!-- BESETZUNG — vollständig mit Kurzcharakteristik -->
+      <div class="credits__section-title">Wer an diesem Abend dabei war</div>
+
+      <div class="credits__role">Gastgeber · Entwickler · Empiriker</div>
+      <div class="credits__name">Christoph</div>
+
+      <div class="credits__role">Die gute Seele des Abends</div>
+      <div class="credits__name">Lucia</div>
+
+      <div class="credits__role">Lineup · Handouts · großer Sorgfalt</div>
+      <div class="credits__name">Rudi</div>
+
+      <div class="credits__role">Rudis Göttergattin · quasi zwangsweise Whisky-Kennerin</div>
+      <div class="credits__name">Brigitte</div>
+
+      <div class="credits__role">Sensorik · Destille · Jahrgang · Fass</div>
+      <div class="credits__name">Dirk</div>
+
+      <div class="credits__role">Islay-Spezialist · enzyklopädisch</div>
+      <div class="credits__name">Axel</div>
+
+      <div class="credits__role">Online-Host · Flaschenteilung · 40 Tastings im Jahr</div>
+      <div class="credits__name">Michael</div>
+
+      <div class="credits__role">Alter Klassenkamerad · immer mit besonderer Flasche</div>
+      <div class="credits__name">Berti</div>
+
+      <div class="credits__role">Kugelschreiber · Papier · Pfadfinder</div>
+      <div class="credits__name">Burkhard</div>
+
+      <div class="credits__role">Neugierig · offen · wiedergekommen</div>
+      <div class="credits__name">Doris & Thomas</div>
+
+      <div class="credits__role">Bottle Split auf Distanz · war mit auf Islay</div>
+      <div class="credits__name">Volker</div>
+
+      <div class="credits__role">Die Pfadfinder-Community</div>
+      <div class="credits__name">Charly · Stefan · Willi · Friedhelm</div>
+
+      <div class="credits__role">Neu dabei · Christiane mag den Rauchigen</div>
+      <div class="credits__name">Gerhard & Christiane</div>
+
+      <div class="credits__role">Chefkritiker · immer dabei · dreht sich drei Mal im Kreis</div>
+      <div class="credits__name"><em>Sammy</em></div>
+
+      <div class="credits__divider"></div>
+
+      <!-- CREDITS -->
+      <div class="credits__section-title">Credits</div>
+
+      <div class="credits__role">Idee, Konzept & Regie</div>
+      <div class="credits__name">Christoph Aldering</div>
+
+      <div class="credits__role">Drehbuch & Dramaturgie</div>
+      <div class="credits__name">Sechzehn Jahre Whisky-Abende</div>
+
+      <div class="credits__role">Scroll-Telling & Design</div>
+      <div class="credits__name">CaskSense Labs</div>
+
+      <div class="credits__role">Atmosphärische Fotografie</div>
+      <div class="credits__name">KI-generiert · Stil: 35mm Editorial</div>
+
+      <div class="credits__role">App-Entwicklung</div>
+      <div class="credits__name">Christoph Aldering</div>
+
+      <div class="credits__role">KI-Unterstützung</div>
+      <div class="credits__name">GPT-4o · Claude</div>
+
+      <div class="credits__role">Technische Plattform</div>
+      <div class="credits__name">React · Node.js · PostgreSQL</div>
+
+      <div class="credits__role">Spenden an</div>
+      <div class="credits__name">Christina-Kleintjes-Hospiz-Stiftung, Emmerich</div>
+
+      <div class="credits__divider"></div>
+
+      <!-- SCHLUSSZITAT -->
+      <p class="credits__quote">
+        „Der beste Whisky ist der,<br>
+        über den man noch reden kann."
+      </p>
+
+      <div class="credits__divider"></div>
+
+      <!-- FINALE -->
+      <div class="credits__final-logo" style="margin-top: 5rem;">CaskSense</div>
+      <p style="font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 2rem;">Web · iOS · DE · EN · und bald mehr</p>
+      <a href="https://casksense.com" class="credits__final-link">casksense.com</a>
+
+      <div style="height: 40vh;"></div>
+
+    </div>
+  </div>
+</section>
+
+<section style="background: #000; padding: 8rem 2rem; text-align: center; position: relative;">
+  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,169,97,0.07) 0%, transparent 65%); pointer-events: none;"></div>
+  <div style="position: relative; z-index: 1; max-width: 520px; margin: 0 auto;">
+    <div style="font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--amber-dim); margin-bottom: 2rem;">— Probiere es selbst —</div>
+    <h2 style="font-family: var(--serif); font-size: clamp(1.8rem, 4vw, 2.8rem); color: var(--ink); margin-bottom: 1rem; line-height: 1.2;">Jetzt selbst <em style="color: var(--amber); font-style: italic;">verkosten.</em></h2>
+    <p style="font-family: var(--serif); font-style: italic; font-size: 1.05rem; color: var(--ink-dim); margin-bottom: 2.5rem; line-height: 1.7;">Kostenlos. Ohne Abo. Ohne Werbung.<br>Für den nächsten Abend — oder gleich jetzt,<br>solo, mit dem was im Regal steht.</p>
+    <a href="https://casksense.com" style="display: inline-block; font-family: var(--sans); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #0b0906; background: var(--amber); padding: 1rem 3rem; text-decoration: none; transition: background 0.2s, transform 0.2s;" onmouseover="this.style.background='#f5ede0';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#d4a847';this.style.transform='translateY(0)'">Zu CaskSense →</a>
+    <p style="font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-top: 2rem;">casksense.com</p>
+    <p style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.06);">
+      <a href="https://casksense.com/CaskSense_Labs_Praesentation.pdf" target="_blank" style="font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-faint); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#d4a847'" onmouseout="this.style.color='#6B5F4F'">↓ Ausführliche Präsentation (PDF)</a>
+    </p>
   </div>
 </section>
 
@@ -2899,6 +3155,80 @@ const state = {};
 // Re-observe act sections after dynamic inserts
 // =========================================================
 document.querySelectorAll('.act').forEach(el => actIO.observe(el));
+
+// ── FILMISCHER ABSPANN ──────────────────────────────
+(function() {
+  const credits = document.querySelector('.credits');
+  const startBtn = document.querySelector('.credits__start-hint');
+  const pauseBtn = document.getElementById('creditsPause');
+  const rewindBtn = document.getElementById('creditsRewind');
+  const restartBtn = document.getElementById('creditsRestart');
+  const scroll = document.querySelector('.credits__scroll');
+  if (!credits || !startBtn || !scroll) return;
+
+  let paused = false;
+
+  function start() {
+    credits.classList.add('is-rolling');
+    scroll.style.animationPlayState = 'running';
+    paused = false;
+    if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+  }
+
+  function pause() {
+    if (!paused) {
+      scroll.style.animationPlayState = 'paused';
+      paused = true;
+      if (pauseBtn) { pauseBtn.textContent = '▶ Weiter'; pauseBtn.classList.add('is-paused'); }
+    } else {
+      scroll.style.animationPlayState = 'running';
+      paused = false;
+      if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+    }
+  }
+
+  function rewind() {
+    // Animation kurz zurücksetzen um 10% der Laufzeit
+    const style = window.getComputedStyle(scroll);
+    const duration = parseFloat(style.animationDuration) * 1000;
+    const elapsed = parseFloat(style.animationDelay);
+    scroll.style.animationPlayState = 'paused';
+    // Delay um 8s erhöhen (zurückspulen)
+    const currentDelay = parseFloat(scroll.style.animationDelay || '0');
+    scroll.style.animationDelay = Math.min(0, currentDelay + 8) + 's';
+    scroll.style.animation = 'none';
+    scroll.offsetHeight; // reflow
+    scroll.style.animation = '';
+    scroll.style.animationDelay = (currentDelay + 8) + 's';
+    if (!paused) scroll.style.animationPlayState = 'running';
+  }
+
+  function restart() {
+    scroll.style.animation = 'none';
+    scroll.offsetHeight;
+    scroll.style.animation = '';
+    scroll.style.animationPlayState = 'running';
+    paused = false;
+    if (pauseBtn) { pauseBtn.textContent = '⏸ Pause'; pauseBtn.classList.remove('is-paused'); }
+  }
+
+  startBtn.addEventListener('click', start);
+  if (pauseBtn) pauseBtn.addEventListener('click', pause);
+  if (rewindBtn) rewindBtn.addEventListener('click', restart); // Zurück = Neustart ist zuverlässiger
+  if (restartBtn) restartBtn.addEventListener('click', restart);
+
+  // Auto-start beim Reinscrolln
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(start, 800);
+        io.unobserve(credits);
+      }
+    });
+  }, { threshold: 0.3 });
+  io.observe(credits);
+})();
+
 // =========================================================
 // Cinematic Parallax
 // =========================================================

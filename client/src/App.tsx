@@ -32,6 +32,7 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 import LandingNew from "@/pages/landing-new";
+import FunnelLivePage from "@/pages/admin/funnel-live";
 import PublicLanding from "@/pages/public-landing";
 import FeatureOverview from "@/pages/feature-overview";
 import QuickTasting from "@/pages/quick-tasting";
@@ -262,6 +263,13 @@ function RouteTracker() {
     pushRoute(location);
     incrementNavIdx();
     trackPageView(location);
+    import("@/lib/funnelTracker").then(m => {
+      m.startGlobalTracker();
+      m.trackPageView(location);
+      if (location === "/" || location.startsWith("/labs") || location.startsWith("/landing")) {
+        m.trackEvent("landing_view", { live: { type: "page_view", detail: location } });
+      }
+    }).catch(() => {});
   }, [location]);
   useEffect(() => {
     if (utmSentRef.current) return;
@@ -517,6 +525,11 @@ function Router() {
         <Route path="/intro" component={Intro} />
 
         {/* ── Admin Backoffice ── */}
+        <Route path="/admin/funnel-live">
+          <AdminLayout>
+            <FunnelLivePage />
+          </AdminLayout>
+        </Route>
         <Route path="/admin">
           <AdminLayout>
             <AdminPanel />

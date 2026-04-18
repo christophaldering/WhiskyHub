@@ -1093,6 +1093,45 @@ export const utmVisits = pgTable("utm_visits", {
 ]);
 export type UtmVisit = typeof utmVisits.$inferSelect;
 
+// --- Funnel Counters (cookie-free aggregate tracking) ---
+export const funnelCounters = pgTable("funnel_counters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bucketHour: timestamp("bucket_hour").notNull(),
+  eventName: text("event_name").notNull(),
+  pagePath: text("page_path").notNull().default(""),
+  utmSource: text("utm_source").notNull().default(""),
+  utmMedium: text("utm_medium").notNull().default(""),
+  utmCampaign: text("utm_campaign").notNull().default(""),
+  country: text("country").notNull().default(""),
+  language: text("language").notNull().default(""),
+  deviceType: text("device_type").notNull().default(""),
+  count: integer("count").notNull().default(0),
+}, (table) => [
+  index("idx_funnel_counters_bucket").on(table.bucketHour),
+  index("idx_funnel_counters_event").on(table.eventName),
+  uniqueIndex("uq_funnel_counters_dim").on(
+    table.bucketHour, table.eventName, table.pagePath,
+    table.utmSource, table.utmMedium, table.utmCampaign,
+    table.country, table.language, table.deviceType,
+  ),
+]);
+export type FunnelCounter = typeof funnelCounters.$inferSelect;
+
+export const funnelDimensionBuckets = pgTable("funnel_dimension_buckets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bucketHour: timestamp("bucket_hour").notNull(),
+  pagePath: text("page_path").notNull().default(""),
+  dimension: text("dimension").notNull(),
+  bucketLabel: text("bucket_label").notNull(),
+  count: integer("count").notNull().default(0),
+}, (table) => [
+  index("idx_funnel_dim_bucket").on(table.bucketHour),
+  uniqueIndex("uq_funnel_dim_key").on(
+    table.bucketHour, table.pagePath, table.dimension, table.bucketLabel,
+  ),
+]);
+export type FunnelDimensionBucket = typeof funnelDimensionBuckets.$inferSelect;
+
 // --- Daily Report Log (idempotency for daily admin emails) ---
 export const dailyReportLog = pgTable("daily_report_log", {
   reportDate: text("report_date").primaryKey(),

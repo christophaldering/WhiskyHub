@@ -5342,7 +5342,7 @@ const resources = {
           },
           localStorage: {
             title: "4. Cookies & Local Storage",
-            text: "CaskSense does not use tracking cookies, analytics tools, or third-party tracking scripts.\n\nWe use your browser's local storage (localStorage / sessionStorage) exclusively for:\n• Session persistence (participant ID)\n• User preferences (language, theme, experience level, UI settings)\n\nThis data remains on your device and is not transmitted to third parties. No advertising networks or social media plugins are integrated.",
+            text: "CaskSense does not use tracking cookies, analytics tools, or third-party tracking scripts.\n\nWe use your browser's local storage (localStorage / sessionStorage) exclusively for:\n• Session persistence (participant ID)\n• User preferences (language, theme, experience level, UI settings)\n\nThis data remains on your device and is not transmitted to third parties. No advertising networks or social media plugins are integrated.\n\nFor product improvement we keep aggregated, cookie-free counters (e.g. how many people viewed the story, finished it or signed up). These counters store only hourly totals plus coarse buckets (UTM source, country derived from IP and discarded, device class, browser language). No IP addresses, no fingerprints, no individual user profiles, no cross-session linking and no cross-device tracking.",
           },
           aiProcessing: {
             title: "5. AI Processing (OpenAI)",
@@ -14130,7 +14130,7 @@ const resources = {
           },
           localStorage: {
             title: "4. Cookies & Lokaler Speicher",
-            text: "CaskSense verwendet keine Tracking-Cookies, Analyse-Tools oder Tracking-Scripts von Drittanbietern.\n\nWir nutzen den lokalen Speicher (localStorage / sessionStorage) deines Browsers ausschließlich für:\n• Sitzungspersistenz (Teilnehmer-ID)\n• Benutzereinstellungen (Sprache, Theme, Erfahrungslevel, UI-Einstellungen)\n\nDiese Daten verbleiben auf deinem Gerät und werden nicht an Dritte übermittelt. Es sind keine Werbenetzwerke oder Social-Media-Plugins integriert.",
+            text: "CaskSense verwendet keine Tracking-Cookies, Analyse-Tools oder Tracking-Scripts von Drittanbietern.\n\nWir nutzen den lokalen Speicher (localStorage / sessionStorage) deines Browsers ausschließlich für:\n• Sitzungspersistenz (Teilnehmer-ID)\n• Benutzereinstellungen (Sprache, Theme, Erfahrungslevel, UI-Einstellungen)\n\nDiese Daten verbleiben auf deinem Gerät und werden nicht an Dritte übermittelt. Es sind keine Werbenetzwerke oder Social-Media-Plugins integriert.\n\nZur Produktverbesserung führen wir aggregierte, cookie-freie Zähler (z. B. wie viele Personen die Story aufgerufen, sie zu Ende gelesen oder sich angemeldet haben). Gespeichert werden ausschließlich stündliche Summen sowie grobe Buckets (UTM-Quelle, aus der IP abgeleitetes Land — die IP wird sofort verworfen, Geräteklasse, Browsersprache). Keine IP-Adressen, keine Fingerprints, keine individuellen Nutzerprofile, keine sitzungs- oder geräteübergreifende Verfolgung.",
           },
           aiProcessing: {
             title: "5. KI-Verarbeitung (OpenAI)",

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { trackSignupView } from "@/lib/funnelTracker";
 
 const ACCENT_GOLD = "rgba(201,151,43,1)";
 const ACCENT_GOLD_DIM = "rgba(201,151,43,0.6)";
@@ -129,6 +130,7 @@ export default function LabsOnboarding() {
       navigate("/labs/tastings", { replace: true });
     } else {
       markOnboardingSeen();
+      trackSignupView("labs-onboarding");
     }
   }, [alreadySeen, navigate]);
 
