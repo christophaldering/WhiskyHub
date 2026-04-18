@@ -1,8 +1,13 @@
 type CacheEntry = {
   version: number;
+  schemaVersion: number;
   storedAt: number;
   data: unknown;
 };
+
+// Bump this whenever the Whisky-DNA payload shape or computation changes,
+// so old cached values are invalidated for every participant.
+const SCHEMA_VERSION = 2;
 
 const cache = new Map<string, CacheEntry>();
 const journalVersion = new Map<string, number>();
@@ -26,7 +31,7 @@ export function getCachedWhiskyDna(
   const version = getJournalVersion(participantId);
   const entry = cache.get(participantId);
   if (!entry) return { version, data: undefined };
-  if (entry.version !== version) {
+  if (entry.version !== version || entry.schemaVersion !== SCHEMA_VERSION) {
     cache.delete(participantId);
     return { version, data: undefined };
   }
@@ -46,7 +51,7 @@ export function setCachedWhiskyDna(
   if (version !== current) {
     return;
   }
-  cache.set(participantId, { version, storedAt: Date.now(), data });
+  cache.set(participantId, { version, schemaVersion: SCHEMA_VERSION, storedAt: Date.now(), data });
 }
 
 export function clearWhiskyDnaCache(): void {

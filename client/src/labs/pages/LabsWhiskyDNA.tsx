@@ -22,6 +22,28 @@ interface DnaCategory {
   pct: number;
   lower: number;
   upper: number;
+  affinity?: number;
+  meanCentered?: number;
+  sample?: number;
+  sufficient?: boolean;
+  frequency?: { count: number; pct: number };
+}
+
+interface StructuralBucket {
+  id: string;
+  label: { en: string; de: string };
+  sample: number;
+  affinity: number;
+  meanCentered: number;
+}
+
+interface StructuralPreferences {
+  region: StructuralBucket[];
+  caskType: StructuralBucket[];
+  peatLevel: StructuralBucket[];
+  ageBand: StructuralBucket[];
+  abvBand: StructuralBucket[];
+  distillery: StructuralBucket[];
 }
 
 interface DnaRecommendation {
@@ -76,6 +98,14 @@ interface DnaResponse {
   topKeywords: Array<{ keyword: string; count: number }>;
   dominantCategory: string | null;
   rareCategory: string | null;
+  baseline?: { n: number; mean: number; stddev: number };
+  affinity?: Array<{
+    id: string; en: string; de: string; color: string;
+    affinity: number; sample: number; meanCentered: number; sufficient: boolean;
+    ciLower: number; ciUpper: number;
+  }>;
+  samplePerAxis?: Record<string, number>;
+  structural?: StructuralPreferences;
 }
 
 const RADIUS = 150;
@@ -464,7 +494,7 @@ export default function LabsWhiskyDNA() {
     stability: t("dnaStability", "Stability"),
   }), [t, lang]);
 
-  const noAromasDetected = !!dna && dna.n >= 5 && dna.categories.every((c) => c.pct === 0);
+  const noAromasDetected = !!dna && dna.n >= 5 && dna.categories.every((c) => (c.frequency?.count ?? c.count) === 0);
 
   useEffect(() => {
     if (!dna || !canvasRef.current || dna.n < 5) return;
@@ -528,6 +558,24 @@ export default function LabsWhiskyDNA() {
   }
 
   const sortedTop = dna ? [...dna.categories].sort((a, b) => b.pct - a.pct).slice(0, 5) : [];
+  const affinityRows = dna ? [...dna.categories].sort((a, b) => (b.affinity ?? 50) - (a.affinity ?? 50)) : [];
+  const sortedFrequency = dna
+    ? [...dna.categories]
+        .map((c) => ({ ...c, freqPct: c.frequency?.pct ?? c.pct, freqCount: c.frequency?.count ?? c.count }))
+        .sort((a, b) => b.freqPct - a.freqPct)
+        .slice(0, 5)
+    : [];
+  const noRatedDrams = !!dna && dna.n >= 5 && (dna.baseline?.n ?? 0) < 3;
+  const structuralDimensions: Array<{ key: keyof StructuralPreferences; label: string }> = [
+    { key: "region", label: t("dnaStructRegion", "Regions") },
+    { key: "caskType", label: t("dnaStructCask", "Cask types") },
+    { key: "peatLevel", label: t("dnaStructPeat", "Peat level") },
+    { key: "ageBand", label: t("dnaStructAge", "Age band") },
+    { key: "abvBand", label: t("dnaStructAbv", "ABV") },
+    { key: "distillery", label: t("dnaStructDistillery", "Distilleries") },
+  ];
+  const hasStructural = !!dna?.structural &&
+    structuralDimensions.some((d) => (dna.structural?.[d.key]?.length ?? 0) > 0);
 
   return (
     <div className="labs-page" data-testid="labs-whisky-dna">
@@ -543,7 +591,7 @@ export default function LabsWhiskyDNA() {
           <span data-testid="text-page-title">{t("whiskyDna", "Your Whisky DNA")}</span>
         </h1>
         <p style={{ color: "var(--labs-text-muted)", fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
-          {t("whiskyDnaDesc", "A 12-axis aroma radar with a 95% confidence band that shrinks as you log more drams.")}
+          {t("whiskyDnaDesc", "A preference radar: each axis shows how strongly an aroma appears in your highly-rated drams. Bands narrow as more rated drams accumulate per axis.")}
         </p>
       </div>
 
@@ -802,16 +850,131 @@ export default function LabsWhiskyDNA() {
             </div>
           )}
 
-          {/* Top aromas */}
+          {/* Methodology explainer */}
+          <div className="labs-card p-4 labs-fade-in" style={{ marginBottom: 16, background: "color-mix(in srgb, var(--labs-accent) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 18%, transparent)" }} data-testid="card-dna-methodology">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
+              {t("dnaMethodTitle", "How this is computed")}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.55 }}>
+              {t(
+                "dnaMethodDesc",
+                "Each aroma axis is scored by how much your ratings deviate from your personal average when that aroma is present. 50 = neutral; higher means you tend to rate drams with that aroma above your baseline. Axes with fewer than 3 rated drams are dampened toward neutral. Baseline: {{n}} rated drams, mean {{mean}}, stddev {{stddev}}.",
+                {
+                  n: dna.baseline?.n ?? 0,
+                  mean: (dna.baseline?.mean ?? 0).toFixed(1),
+                  stddev: (dna.baseline?.stddev ?? 0).toFixed(1),
+                },
+              )}
+            </p>
+            {noRatedDrams && (
+              <p style={{ fontSize: 12, color: "var(--labs-gold)", marginTop: 8, lineHeight: 1.5 }} data-testid="text-dna-no-ratings">
+                {t("dnaNoRatings", "You have logged drams but few of them carry a personal/overall score. Add ratings to your notes to see meaningful affinities.")}
+              </p>
+            )}
+          </div>
+
+          {/* Per-axis affinity with sample counts */}
+          <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-affinity-per-axis">
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 4 }}>
+              {t("dnaAffinityTitle", "Affinity per aroma axis")}
+            </p>
+            <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10, lineHeight: 1.5 }}>
+              {t("dnaAffinityDesc", "Higher = you tend to rate drams with this aroma above your personal baseline. Axes with too few rated drams are dampened toward neutral and flagged.")}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {affinityRows.map((c) => {
+                const aff = Math.round(c.affinity ?? 50);
+                const sample = c.sample ?? 0;
+                const sufficient = c.sufficient !== false && sample >= 3;
+                return (
+                  <div key={c.id} data-testid={`row-affinity-${c.id}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
+                    <div style={{ flex: 1, fontSize: 13, color: "var(--labs-text)" }}>
+                      {lang === "de" ? c.de : c.en}
+                    </div>
+                    <div style={{ position: "relative", width: 110, height: 6, borderRadius: 3, background: "color-mix(in srgb, var(--labs-text) 10%, transparent)", overflow: "hidden", flexShrink: 0 }}>
+                      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${aff}%`, background: c.color, opacity: sufficient ? 1 : 0.45 }} />
+                      <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "color-mix(in srgb, var(--labs-text) 30%, transparent)" }} />
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)", minWidth: 32, textAlign: "right" }} data-testid={`text-affinity-value-${c.id}`}>
+                      {aff}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", minWidth: 36, textAlign: "right" }} data-testid={`text-affinity-sample-${c.id}`}>
+                      n={sample}
+                    </div>
+                    {!sufficient && (
+                      <span
+                        data-testid={`badge-affinity-insufficient-${c.id}`}
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          padding: "2px 6px",
+                          borderRadius: 999,
+                          background: "color-mix(in srgb, var(--labs-gold) 16%, transparent)",
+                          color: "var(--labs-gold)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {t("dnaInsufficient", "low data")}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Structural preferences */}
+          {hasStructural && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-structural-preferences">
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
+                {t("dnaStructuralTitle", "Structural preferences")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                {t("dnaStructuralDesc", "Where your ratings consistently exceed your personal baseline.")}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                {structuralDimensions.map((dim) => {
+                  const items = dna.structural?.[dim.key] ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={dim.key} data-testid={`group-structural-${dim.key}`}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+                        {dim.label}
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {items.map((b) => (
+                          <div key={b.id} data-testid={`row-struct-${dim.key}-${b.id}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {lang === "de" ? b.label.de : b.label.en}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              {Math.round(b.affinity)} <span style={{ opacity: 0.6 }}>· n={b.sample}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Aroma vocabulary frequency (legacy view, supplemental) */}
           {!noAromasDetected && (
-          <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 10 }}>
-              {t("dnaTopAromas", "Top aromas in your notes")}
+          <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-aroma-frequency">
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 4 }}>
+              {t("dnaAromaFrequencyTitle", "Aroma vocabulary frequency")}
+            </p>
+            <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10, lineHeight: 1.5 }}>
+              {t("dnaAromaFrequencyDesc", "How often you mention each aroma family — independent of how you rate them.")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sortedTop.map((c) => {
-                const pct = Math.round(c.pct * 100);
-                const ciPct = Math.round(((c.upper - c.lower) / 2) * 100);
+              {sortedFrequency.map((c) => {
+                const pct = Math.round(c.freqPct * 100);
                 return (
                   <div key={c.id} data-testid={`row-aroma-${c.id}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
@@ -819,7 +982,7 @@ export default function LabsWhiskyDNA() {
                       {lang === "de" ? c.de : c.en}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-                      {pct}% <span style={{ opacity: 0.6 }}>±{ciPct}%</span>
+                      {pct}% <span style={{ opacity: 0.6 }}>· {c.freqCount}</span>
                     </div>
                   </div>
                 );
@@ -838,7 +1001,7 @@ export default function LabsWhiskyDNA() {
               <p style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5, marginBottom: 12 }} data-testid="text-try-next-intro">
                 {t(
                   "dnaTryNextDesc",
-                  "Whiskies that prominently feature aromas your DNA hasn't explored yet: {{cats}}.",
+                  "Whiskies that hit aromas you tend to rate highly: {{cats}}.",
                   { cats: recs.weakCategories.map((c) => (lang === "de" ? c.de : c.en)).join(", ") },
                 )}
               </p>

@@ -5701,6 +5701,50 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
     { id: "maritime", en: "Maritime", de: "Maritim", color: "#4A90A4", keywords: ["sea salt","meersalz","salt","salz","salty","salzig","brine","salzlake","briny","iodine","jod","medicinal","medizinisch","seaweed","seetang","kelp","algae","alge","oyster","auster","shellfish","maritime","maritim","ocean","meer","sea","see"] },
   ];
 
+  // ---------- Whisky-DNA preference helpers ----------
+  // Per-dram preference score 0..100 (personalScore -> overallScore -> mean of nose/taste/finish)
+  const dramPrefScore = (e: any): number | null => {
+    if (typeof e?.personalScore === "number") return e.personalScore;
+    if (typeof e?.overallScore === "number") return e.overallScore;
+    const parts = [e?.noseScore, e?.tasteScore, e?.finishScore].filter((v) => typeof v === "number") as number[];
+    if (parts.length === 0) return null;
+    return parts.reduce((a, b) => a + b, 0) / parts.length;
+  };
+
+  const parseAge = (s: string | null | undefined): number | null => {
+    if (!s) return null;
+    const m = String(s).match(/(\d{1,3})/);
+    if (!m) return null;
+    const v = parseInt(m[1], 10);
+    return Number.isFinite(v) && v > 0 && v < 100 ? v : null;
+  };
+
+  const ageBand = (s: string | null | undefined): { id: string; en: string; de: string } | null => {
+    const a = parseAge(s);
+    if (a == null) {
+      const txt = (s || "").toString().toLowerCase();
+      if (/nas|no age/.test(txt)) return { id: "nas", en: "NAS", de: "Ohne Altersangabe" };
+      return null;
+    }
+    if (a < 10) return { id: "young", en: "Young (3–9 yrs)", de: "Jung (3–9 J.)" };
+    if (a < 18) return { id: "classic", en: "Classic (10–17 yrs)", de: "Klassisch (10–17 J.)" };
+    if (a < 26) return { id: "mature", en: "Mature (18–25 yrs)", de: "Reif (18–25 J.)" };
+    return { id: "old", en: "Old (25+ yrs)", de: "Alt (25+ J.)" };
+  };
+
+  const abvBand = (v: number | null | undefined): { id: string; en: string; de: string } | null => {
+    if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) return null;
+    if (v < 40) return { id: "low", en: "Low (<40%)", de: "Niedrig (<40%)" };
+    if (v < 46) return { id: "standard", en: "Standard (40–46%)", de: "Standard (40–46%)" };
+    if (v < 50) return { id: "highish", en: "Higher strength (46–50%)", de: "Höhere Stärke (46–50%)" };
+    if (v < 55) return { id: "high", en: "High strength (50–55%)", de: "Hohe Stärke (50–55%)" };
+    return { id: "cask", en: "Cask strength (55%+)", de: "Fassstärke (55%+)" };
+  };
+
+  // Map a centred-z value to 0..100 affinity for radar display.
+  // 50 = neutral, +2σ ≈ 100, −2σ ≈ 0.
+  const zToAffinity = (z: number) => Math.max(0, Math.min(100, 50 + 25 * z));
+
   app.get("/api/participants/:id/whisky-dna", async (req, res) => {
     try {
       const participantId = req.params.id;
@@ -5720,6 +5764,8 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const allEntries = await storage.getJournalEntries(participantId);
       const hasOverallScore = (e: unknown): e is { overallScore: number | null } =>
         typeof e === "object" && e !== null && "overallScore" in e;
+      // Frequency pool: every non-DB entry that has *any* note or score —
+      // identical inclusion rule as before, so the legacy "Top aromas" stays comparable.
       const entries = allEntries.filter((e) => {
         if (e.source === "casksense-database") return false;
         const overallScore = hasOverallScore(e) ? e.overallScore : null;
@@ -5734,6 +5780,29 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
 
       const n = entries.length;
 
+      // Affinity pool: entries that yield a usable preference score (0..100).
+      const ratedEntries = entries
+        .map((e) => ({ entry: e, score: dramPrefScore(e) }))
+        .filter((x): x is { entry: any; score: number } => typeof x.score === "number");
+      const ratedScores = ratedEntries.map((x) => x.score);
+      const nRated = ratedScores.length;
+      const baselineMean = nRated > 0 ? ratedScores.reduce((a, b) => a + b, 0) / nRated : 0;
+      const baselineVar =
+        nRated > 1
+          ? ratedScores.reduce((a, b) => a + (b - baselineMean) * (b - baselineMean), 0) / (nRated - 1)
+          : 0;
+      const baselineStd = Math.sqrt(baselineVar);
+      // Avoid division by zero: when stddev is 0 use centred raw delta with a soft scale of 10.
+      const stdForZ = baselineStd > 0 ? baselineStd : 10;
+
+      const ratedWithStats = ratedEntries.map(({ entry, score }) => {
+        const centered = score - baselineMean;
+        const z = centered / stdForZ;
+        const text = [entry.noseNotes, entry.tasteNotes, entry.finishNotes].filter(Boolean).join(" ").toLowerCase();
+        return { entry, score, centered, z, text };
+      });
+
+      // Texts for the legacy frequency view (uses ALL entries in the DNA pool).
       const entryTexts = entries.map((e) =>
         [e.noseNotes, e.tasteNotes, e.finishNotes].filter(Boolean).join(" ").toLowerCase()
       );
@@ -5748,8 +5817,11 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
 
       const keywordCounts: Record<string, number> = {};
 
+      const MIN_AXIS_SAMPLE = 3;
+
       const categories = keywordRegexes.map(({ cat, regexes }) => {
-        let count = 0;
+        // Frequency (legacy) — drams with at least one keyword match
+        let freqCount = 0;
         for (let i = 0; i < entryTexts.length; i++) {
           const text = entryTexts[i];
           if (!text) continue;
@@ -5762,44 +5834,137 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
               if (!matchedInEntry) matchedInEntry = true;
             }
           }
-          if (matchedInEntry) count++;
+          if (matchedInEntry) freqCount++;
         }
-        const pct = n > 0 ? count / n : 0;
-        const ciHalf = n > 0 ? Math.min(0.42, 0.42 / Math.sqrt(n)) : 0.42;
-        const lower = Math.max(0, Math.min(1, pct - ciHalf));
-        const upper = Math.max(0, Math.min(1, pct + ciHalf));
+        const freqPct = n > 0 ? freqCount / n : 0;
+
+        // Affinity — average centred-z over rated drams whose notes mention this aroma.
+        const matched = ratedWithStats.filter((r) => r.text && regexes.some((re) => re.test(r.text)));
+        const sample = matched.length;
+        const meanZ = sample > 0 ? matched.reduce((a, r) => a + r.z, 0) / sample : 0;
+        const meanCentered = sample > 0 ? matched.reduce((a, r) => a + r.centered, 0) / sample : 0;
+        const sufficient = sample >= MIN_AXIS_SAMPLE;
+        // Damped affinity for low-sample axes — pull toward neutral 50.
+        const rawAff = zToAffinity(meanZ);
+        const affinity = sufficient ? rawAff : 50 + (rawAff - 50) * (sample / MIN_AXIS_SAMPLE);
+        const pct = affinity / 100;
+        // CI half-width derived from THIS axis' sample, not the global pool.
+        const ciHalfAxis = sample > 0 ? Math.min(0.42, 0.42 / Math.sqrt(sample)) : 0.42;
+        const lower = Math.max(0, Math.min(1, pct - ciHalfAxis));
+        const upper = Math.max(0, Math.min(1, pct + ciHalfAxis));
         return {
           id: cat.id,
           en: cat.en,
           de: cat.de,
           color: cat.color,
-          count,
+          // Legacy field — now backed by affinity so the radar shows preference.
+          count: freqCount,
           pct,
           lower,
           upper,
+          // New, explicit fields
+          affinity: Math.round(affinity * 10) / 10,
+          meanCentered: Math.round(meanCentered * 10) / 10,
+          sample,
+          sufficient,
+          frequency: { count: freqCount, pct: freqPct },
         };
       });
 
       const ciHalf = n > 0 ? Math.min(0.42, 0.42 / Math.sqrt(n)) : 0.42;
-      const stability = Math.round(100 * (1 - Math.exp(-n / 25)));
+      const stability = Math.round(100 * (1 - Math.exp(-nRated / 25)));
 
       let phase: "unknown" | "emerging" | "stable" | "crystal";
-      if (n < 10) phase = "unknown";
-      else if (n < 30) phase = "emerging";
-      else if (n < 60) phase = "stable";
+      if (nRated < 10) phase = "unknown";
+      else if (nRated < 30) phase = "emerging";
+      else if (nRated < 60) phase = "stable";
       else phase = "crystal";
 
-      const nForCI10 = Math.max(0, Math.ceil(Math.pow(0.42 / 0.10, 2)) - n);
+      const nForCI10 = Math.max(0, Math.ceil(Math.pow(0.42 / 0.10, 2)) - nRated);
 
       const topKeywords = Object.entries(keywordCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
         .map(([keyword, count]) => ({ keyword, count }));
 
-      const sortedByPct = [...categories].sort((a, b) => b.pct - a.pct);
-      const dominantCategory = sortedByPct.length && sortedByPct[0].pct > 0 ? sortedByPct[0].id : null;
-      const sortedAsc = [...categories].filter((c) => c.pct > 0).sort((a, b) => a.pct - b.pct);
+      const sortedByAff = [...categories].sort((a, b) => b.affinity - a.affinity);
+      const dominantCategory = sortedByAff.find((c) => c.sufficient && c.affinity > 50)?.id ?? null;
+      const sortedAsc = [...categories]
+        .filter((c) => c.sufficient)
+        .sort((a, b) => a.affinity - b.affinity);
       const rareCategory = sortedAsc.length ? sortedAsc[0].id : null;
+
+      // ---------- Structural preferences ----------
+      type Bucket = { id: string; label: { en: string; de: string }; sample: number; sumZ: number; sumCentered: number };
+      const dimensions: Record<
+        string,
+        { buckets: Map<string, Bucket>; minSample: number }
+      > = {
+        region: { buckets: new Map(), minSample: 2 },
+        caskType: { buckets: new Map(), minSample: 2 },
+        peatLevel: { buckets: new Map(), minSample: 2 },
+        ageBand: { buckets: new Map(), minSample: 2 },
+        abvBand: { buckets: new Map(), minSample: 2 },
+        distillery: { buckets: new Map(), minSample: 2 },
+      };
+
+      const addBucket = (
+        dim: string,
+        id: string | null,
+        labelEn: string,
+        labelDe: string,
+        z: number,
+        centered: number,
+      ) => {
+        if (!id) return;
+        const map = dimensions[dim].buckets;
+        const b = map.get(id) ?? { id, label: { en: labelEn, de: labelDe }, sample: 0, sumZ: 0, sumCentered: 0 };
+        b.sample += 1;
+        b.sumZ += z;
+        b.sumCentered += centered;
+        map.set(id, b);
+      };
+
+      for (const r of ratedWithStats) {
+        const e: any = r.entry;
+        if (e.region) addBucket("region", String(e.region).trim() || null, String(e.region).trim(), String(e.region).trim(), r.z, r.centered);
+        if (e.caskType) addBucket("caskType", String(e.caskType).trim() || null, String(e.caskType).trim(), String(e.caskType).trim(), r.z, r.centered);
+        if (e.peatLevel) addBucket("peatLevel", String(e.peatLevel).trim() || null, String(e.peatLevel).trim(), String(e.peatLevel).trim(), r.z, r.centered);
+        const ab = ageBand(e.age);
+        if (ab) addBucket("ageBand", ab.id, ab.en, ab.de, r.z, r.centered);
+        const vb = abvBand(typeof e.abv === "number" ? e.abv : null);
+        if (vb) addBucket("abvBand", vb.id, vb.en, vb.de, r.z, r.centered);
+        if (e.distillery) addBucket("distillery", String(e.distillery).trim() || null, String(e.distillery).trim(), String(e.distillery).trim(), r.z, r.centered);
+      }
+
+      const buildTop = (dim: string, limit: number) => {
+        const cfg = dimensions[dim];
+        const arr = Array.from(cfg.buckets.values()).map((b) => {
+          const meanZ = b.sample > 0 ? b.sumZ / b.sample : 0;
+          const meanCentered = b.sample > 0 ? b.sumCentered / b.sample : 0;
+          const affinity = zToAffinity(meanZ);
+          return {
+            id: b.id,
+            label: b.label,
+            sample: b.sample,
+            affinity: Math.round(affinity * 10) / 10,
+            meanCentered: Math.round(meanCentered * 10) / 10,
+          };
+        });
+        return arr
+          .filter((x) => x.sample >= cfg.minSample && x.affinity > 50)
+          .sort((a, b) => b.affinity - a.affinity)
+          .slice(0, limit);
+      };
+
+      const structural = {
+        region: buildTop("region", 5),
+        caskType: buildTop("caskType", 5),
+        peatLevel: buildTop("peatLevel", 4),
+        ageBand: buildTop("ageBand", 4),
+        abvBand: buildTop("abvBand", 4),
+        distillery: buildTop("distillery", 5),
+      };
 
       const payload = {
         n,
@@ -5811,6 +5976,26 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         topKeywords,
         dominantCategory,
         rareCategory,
+        // New affinity-model fields
+        baseline: {
+          n: nRated,
+          mean: Math.round(baselineMean * 10) / 10,
+          stddev: Math.round(baselineStd * 10) / 10,
+        },
+        affinity: categories.map((c) => ({
+          id: c.id,
+          en: c.en,
+          de: c.de,
+          color: c.color,
+          affinity: c.affinity,
+          sample: c.sample,
+          meanCentered: c.meanCentered,
+          sufficient: c.sufficient,
+          ciLower: c.lower,
+          ciUpper: c.upper,
+        })),
+        samplePerAxis: Object.fromEntries(categories.map((c) => [c.id, c.sample])),
+        structural,
       };
       setCachedWhiskyDna(participantId, versionAtStart, payload);
       res.json(payload);
@@ -5840,7 +6025,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         ),
       }));
 
-      // 1) Compute the user's category percentages from their journal entries
+      // 1) Compute the user's per-axis affinity from rated journal entries.
       const allEntries = await storage.getJournalEntries(participantId);
       const hasOverallScore = (e: unknown): e is { overallScore: number | null } =>
         typeof e === "object" && e !== null && "overallScore" in e;
@@ -5855,36 +6040,82 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
           e.personalScore != null
         );
       });
-      const n = userEntries.length;
-      const userTexts = userEntries.map((e) =>
-        [e.noseNotes, e.tasteNotes, e.finishNotes].filter(Boolean).join(" ").toLowerCase()
-      );
 
-      const userCatPct: Record<string, number> = {};
+      const ratedEntries = userEntries
+        .map((e) => ({ entry: e as any, score: dramPrefScore(e) }))
+        .filter((x): x is { entry: any; score: number } => typeof x.score === "number");
+      const ratedScores = ratedEntries.map((x) => x.score);
+      const baselineMean = ratedScores.length > 0 ? ratedScores.reduce((a, b) => a + b, 0) / ratedScores.length : 0;
+      const baselineVar =
+        ratedScores.length > 1
+          ? ratedScores.reduce((a, b) => a + (b - baselineMean) * (b - baselineMean), 0) / (ratedScores.length - 1)
+          : 0;
+      const baselineStd = Math.sqrt(baselineVar);
+      const stdForZ = baselineStd > 0 ? baselineStd : 10;
+
+      const ratedWithStats = ratedEntries.map(({ entry, score }) => {
+        const z = (score - baselineMean) / stdForZ;
+        const text = [entry.noseNotes, entry.tasteNotes, entry.finishNotes].filter(Boolean).join(" ").toLowerCase();
+        return { entry, score, z, text };
+      });
+
+      const MIN_AXIS_SAMPLE = 3;
+      const userAffinity: Record<string, { affinity: number; sample: number; sufficient: boolean }> = {};
       for (const { cat, regexes } of keywordRegexes) {
-        let count = 0;
-        for (const text of userTexts) {
-          if (!text) continue;
-          if (regexes.some((re) => re.test(text))) count++;
-        }
-        userCatPct[cat.id] = n > 0 ? count / n : 0;
+        const matched = ratedWithStats.filter((r) => r.text && regexes.some((re) => re.test(r.text)));
+        const sample = matched.length;
+        const meanZ = sample > 0 ? matched.reduce((a, r) => a + r.z, 0) / sample : 0;
+        const sufficient = sample >= MIN_AXIS_SAMPLE;
+        const rawAff = zToAffinity(meanZ);
+        const affinity = sufficient ? rawAff : 50 + (rawAff - 50) * (sample / MIN_AXIS_SAMPLE);
+        userAffinity[cat.id] = { affinity, sample, sufficient };
       }
 
-      // 2) Pick the user's 3 weakest axes (lowest percentage). Ties broken by category order.
-      const weakCategories = [...WHISKY_DNA_CATEGORIES]
-        .sort((a, b) => userCatPct[a.id] - userCatPct[b.id])
-        .slice(0, 3);
-      const weakIds = new Set(weakCategories.map((c) => c.id));
+      // 2) Positive-affinity axes (favourites) — at least one with sufficient sample, else fall back
+      // to the strongest axes overall so we still produce useful suggestions.
+      const positiveCats = WHISKY_DNA_CATEGORIES
+        .filter((c) => userAffinity[c.id].sufficient && userAffinity[c.id].affinity > 55)
+        .sort((a, b) => userAffinity[b.id].affinity - userAffinity[a.id].affinity);
+      const fallbackCats = [...WHISKY_DNA_CATEGORIES].sort(
+        (a, b) => userAffinity[b.id].affinity - userAffinity[a.id].affinity,
+      );
+      const targetCats = (positiveCats.length > 0 ? positiveCats : fallbackCats).slice(0, 4);
+      const targetIds = new Set(targetCats.map((c) => c.id));
 
-      // 3) Build a tasted-set of (distillery|name) keys to encourage exploration
+      // 3) Aggregate structural preferences from rated entries.
+      const accumulate = (key: (e: any) => string | null) => {
+        const map = new Map<string, { sumZ: number; sample: number }>();
+        for (const r of ratedWithStats) {
+          const k = key(r.entry);
+          if (!k) continue;
+          const b = map.get(k) ?? { sumZ: 0, sample: 0 };
+          b.sumZ += r.z;
+          b.sample += 1;
+          map.set(k, b);
+        }
+        const out = new Map<string, number>(); // key -> affinity 0..100
+        map.forEach((v, k) => {
+          if (v.sample < 2) return;
+          const aff = zToAffinity(v.sumZ / v.sample);
+          if (aff > 55) out.set(k, aff);
+        });
+        return out;
+      };
       const norm = (s: string | null | undefined) => (s || "").trim().toLowerCase();
+      const preferredRegions = accumulate((e) => (e.region ? norm(e.region) : null));
+      const preferredCasks = accumulate((e) => (e.caskType ? norm(e.caskType) : null));
+      const preferredPeat = accumulate((e) => (e.peatLevel ? norm(e.peatLevel) : null));
+      const preferredAge = accumulate((e) => ageBand(e.age)?.id ?? null);
+      const preferredAbv = accumulate((e) => abvBand(typeof e.abv === "number" ? e.abv : null)?.id ?? null);
+
+      // 4) Build a tasted-set of (distillery|name) keys to encourage exploration
       const tastedKeys = new Set<string>();
       for (const e of allEntries) {
         const key = `${norm(e.distillery)}|${norm(e.name || e.title)}`;
         if (key !== "|") tastedKeys.add(key);
       }
 
-      // 4) Score candidates from whiskies + benchmark entries
+      // 5) Score candidates from whiskies + benchmark entries
       type Candidate = {
         key: string;
         name: string;
@@ -5893,26 +6124,47 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         category: string | null;
         imageUrl: string | null;
         source: "whisky" | "benchmark";
-        weakMatches: Record<string, number>;
+        matched: Record<string, number>;
+        structuralBonus: number;
         score: number;
       };
 
-      const scoreText = (text: string): { weakMatches: Record<string, number>; score: number } => {
+      const scoreText = (text: string): { matched: Record<string, number>; score: number } => {
         const lower = text.toLowerCase();
-        const weakMatches: Record<string, number> = {};
+        const matched: Record<string, number> = {};
         let score = 0;
         for (const { cat, regexes } of keywordRegexes) {
-          if (!weakIds.has(cat.id)) continue;
+          if (!targetIds.has(cat.id)) continue;
           let hits = 0;
           for (const re of regexes) {
             if (re.test(lower)) hits++;
           }
           if (hits > 0) {
-            weakMatches[cat.id] = hits;
-            score += hits;
+            matched[cat.id] = hits;
+            // Weight aroma hits by the user's affinity for that axis.
+            const w = (userAffinity[cat.id]?.affinity ?? 50) / 50; // ~0..2
+            score += hits * w;
           }
         }
-        return { weakMatches, score };
+        return { matched, score };
+      };
+
+      const structuralBonusFor = (
+        region: string | null,
+        cask: string | null,
+        peat: string | null,
+        age: string | null,
+        abv: number | null,
+      ) => {
+        let bonus = 0;
+        if (region && preferredRegions.has(norm(region))) bonus += (preferredRegions.get(norm(region))! - 50) / 25;
+        if (cask && preferredCasks.has(norm(cask))) bonus += (preferredCasks.get(norm(cask))! - 50) / 25;
+        if (peat && preferredPeat.has(norm(peat))) bonus += (preferredPeat.get(norm(peat))! - 50) / 25;
+        const ab = ageBand(age);
+        if (ab && preferredAge.has(ab.id)) bonus += (preferredAge.get(ab.id)! - 50) / 25;
+        const vb = abvBand(typeof abv === "number" ? abv : null);
+        if (vb && preferredAbv.has(vb.id)) bonus += (preferredAbv.get(vb.id)! - 50) / 25;
+        return bonus;
       };
 
       const candidates: Candidate[] = [];
@@ -5921,10 +6173,11 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       for (const w of whiskies) {
         const text = [w.notes, w.hostNotes, w.hostSummary].filter(Boolean).join(" ");
         if (!text.trim()) continue;
-        const { weakMatches, score } = scoreText(text);
-        if (score < 2 || Object.keys(weakMatches).length === 0) continue;
+        const { matched, score } = scoreText(text);
+        if (score < 2 || Object.keys(matched).length === 0) continue;
         const key = `${norm(w.distillery)}|${norm(w.name)}`;
         if (tastedKeys.has(key)) continue;
+        const structuralBonus = structuralBonusFor(w.region, w.caskType, w.peatLevel, (w as any).age ?? null, typeof (w as any).abv === "number" ? (w as any).abv : null);
         candidates.push({
           key,
           name: w.name,
@@ -5933,8 +6186,9 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
           category: w.category,
           imageUrl: w.imageUrl,
           source: "whisky",
-          weakMatches,
-          score,
+          matched,
+          structuralBonus,
+          score: score + structuralBonus,
         });
       }
 
@@ -5942,10 +6196,11 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       for (const b of benchmarks) {
         const text = [b.noseNotes, b.tasteNotes, b.finishNotes, b.overallNotes].filter(Boolean).join(" ");
         if (!text.trim()) continue;
-        const { weakMatches, score } = scoreText(text);
-        if (score < 2 || Object.keys(weakMatches).length === 0) continue;
+        const { matched, score } = scoreText(text);
+        if (score < 2 || Object.keys(matched).length === 0) continue;
         const key = `${norm(b.distillery)}|${norm(b.name)}`;
         if (tastedKeys.has(key)) continue;
+        const structuralBonus = structuralBonusFor(b.region, b.caskType ?? null, null, (b as any).age ?? null, typeof (b as any).abv === "number" ? (b as any).abv : null);
         candidates.push({
           key,
           name: b.name,
@@ -5954,22 +6209,23 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
           category: b.category,
           imageUrl: null,
           source: "benchmark",
-          weakMatches,
-          score,
+          matched,
+          structuralBonus,
+          score: score + structuralBonus,
         });
       }
 
-      // 5) De-duplicate by (distillery|name), keeping the highest-scoring entry
+      // 6) De-duplicate by (distillery|name), keeping the highest-scoring entry
       const byKey = new Map<string, Candidate>();
       for (const c of candidates) {
         const existing = byKey.get(c.key);
         if (!existing || c.score > existing.score) byKey.set(c.key, c);
       }
 
-      // 6) Sort: prefer candidates that hit MORE distinct weak categories first, then total score
+      // 7) Sort: prefer candidates that hit MORE distinct preferred categories first, then total score
       const ranked = Array.from(byKey.values()).sort((a, b) => {
-        const da = Object.keys(a.weakMatches).length;
-        const db = Object.keys(b.weakMatches).length;
+        const da = Object.keys(a.matched).length;
+        const db = Object.keys(b.matched).length;
         if (db !== da) return db - da;
         return b.score - a.score;
       });
@@ -5981,15 +6237,23 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         category: c.category,
         imageUrl: c.imageUrl,
         source: c.source,
-        matchedCategories: Object.keys(c.weakMatches).map((id) => {
+        matchedCategories: Object.keys(c.matched).map((id) => {
           const cat = WHISKY_DNA_CATEGORIES.find((x) => x.id === id)!;
-          return { id, en: cat.en, de: cat.de, color: cat.color, hits: c.weakMatches[id] };
+          return { id, en: cat.en, de: cat.de, color: cat.color, hits: c.matched[id] };
         }),
-        score: c.score,
+        score: Math.round(c.score * 10) / 10,
       }));
 
       res.json({
-        weakCategories: weakCategories.map((c) => ({ id: c.id, en: c.en, de: c.de, color: c.color, pct: userCatPct[c.id] })),
+        // Field name kept for backward-compatibility with the frontend, but the meaning is
+        // now "axes we are recommending for" (the user's positive-affinity axes), not weak ones.
+        weakCategories: targetCats.map((c) => ({
+          id: c.id,
+          en: c.en,
+          de: c.de,
+          color: c.color,
+          pct: (userAffinity[c.id]?.affinity ?? 50) / 100,
+        })),
         recommendations,
       });
     } catch (e: any) {
