@@ -247,7 +247,7 @@ export default function LabsHandoutLibrary() {
 
   if (!hostId) {
     return (
-      <div className="labs-shell" style={{ padding: 24 }}>
+      <div style={{ padding: 24, color: "var(--labs-text)" }}>
         <p>{t("labs.handoutLibrary.loginRequired")}</p>
         <Link href="/labs/host" data-testid="link-back-host">{t("labs.handoutLibrary.back")}</Link>
       </div>
@@ -255,7 +255,7 @@ export default function LabsHandoutLibrary() {
   }
 
   return (
-    <div className="labs-shell" style={{ padding: "24px 16px 64px", maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ padding: "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         <Link
           href="/labs/host"
@@ -320,7 +320,7 @@ export default function LabsHandoutLibrary() {
 
       {error && (
         <div
-          style={{ background: "var(--labs-error-muted, var(--labs-accent-muted))", color: "var(--labs-error, var(--labs-accent))", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13, border: "1px solid var(--labs-border)" }}
+          style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13, border: "1px solid var(--labs-border)" }}
           data-testid="text-handout-library-error"
         >
           {error}
@@ -564,7 +564,7 @@ export default function LabsHandoutLibrary() {
                   }
                 }}
                 disabled={bulkDeleteMut.isPending}
-                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", color: "var(--labs-error, var(--labs-accent))" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", color: "var(--labs-danger)" }}
                 data-testid="button-bulk-delete"
               >
                 <Trash2 style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkDelete")}
@@ -602,17 +602,36 @@ export default function LabsHandoutLibrary() {
 
           {!listQuery.isLoading && filtered.length === 0 && (
             <div
-              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)", background: "var(--labs-surface)" }}
+              className="labs-card"
+              style={{ padding: "40px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}
               data-testid="text-handout-library-empty"
             >
-              <Library style={{ width: 28, height: 28, opacity: 0.4, marginBottom: 8 }} />
-              <p style={{ margin: 0, fontSize: 14 }}>
-                {search ? t("labs.handoutLibrary.emptyNoMatch") : t("labs.handoutLibrary.emptyNoEntries")}
-              </p>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-accent-muted)", display: "inline-flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
+                <Library style={{ width: 26, height: 26, color: "var(--labs-accent)" }} strokeWidth={1.6} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)" }}>
+                {search ? t("labs.handoutLibrary.emptyNoMatch") : t("labs.handoutLibrary.emptyTitle")}
+              </div>
+              {!search && (
+                <p style={{ margin: 0, fontSize: 13, color: "var(--labs-text-muted)", maxWidth: 360, lineHeight: 1.5 }}>
+                  {t("labs.handoutLibrary.emptyNoEntries")}
+                </p>
+              )}
+              {!search && (
+                <button
+                  type="button"
+                  className="labs-btn-primary text-xs"
+                  onClick={() => { setUploadOpen(true); setError(null); setInfo(null); }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", marginTop: 4 }}
+                  data-testid="button-handout-library-empty-upload"
+                >
+                  <Upload style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.emptyCta")}
+                </button>
+              )}
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
             {filtered.map((entry) => {
               const isEditing = editing?.id === entry.id;
               const isPdf = entry.contentType === "application/pdf";
@@ -839,7 +858,7 @@ export default function LabsHandoutLibrary() {
                         }
                       }}
                       disabled={deleteMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-error, var(--labs-accent))" }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-danger)" }}
                       data-testid={`button-handout-delete-${entry.id}`}
                       title={t("labs.handoutLibrary.actionDelete")}
                       aria-label={t("labs.handoutLibrary.actionDelete")}
@@ -895,17 +914,23 @@ export default function LabsHandoutLibrary() {
 
           {!communityQuery.isLoading && community.length === 0 && (
             <div
-              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)", background: "var(--labs-surface)" }}
+              className="labs-card"
+              style={{ padding: "40px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}
               data-testid="text-handout-community-empty"
             >
-              <Globe style={{ width: 28, height: 28, opacity: 0.4, marginBottom: 8 }} />
-              <p style={{ margin: 0, fontSize: 14 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-accent-muted)", display: "inline-flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
+                <Globe style={{ width: 26, height: 26, color: "var(--labs-accent)" }} strokeWidth={1.6} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--labs-text)" }}>
+                {communitySearch ? t("labs.handoutLibrary.emptyNoMatch") : t("labs.handoutLibrary.communityEmptyTitle")}
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--labs-text-muted)", maxWidth: 360, lineHeight: 1.5 }}>
                 {communitySearch ? t("labs.handoutLibrary.communityEmptySearch") : t("labs.handoutLibrary.communityEmpty")}
               </p>
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
             {community.map((entry) => {
               const isPdf = entry.contentType === "application/pdf";
               const metaParts = [
