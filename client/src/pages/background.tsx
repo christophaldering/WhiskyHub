@@ -1,10 +1,11 @@
+import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import {
-  Wine, Search, Star, Beaker, BookOpen,
+  Wine, Search, Star, BookOpen,
   SlidersHorizontal, Eye, PartyPopper, Radar, NotebookPen,
-  Award, Heart, BarChart3, Activity, TrendingUp, ShieldCheck, Ban
+  Award, Heart, ChevronRight
 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
@@ -108,52 +109,18 @@ export default function Background() {
                 <p className="text-xs text-amber-600 font-medium">{t("background.dimensions.tagline")}</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">{t("background.dimensions.intro")}</p>
-            <div className="space-y-3">
-              {["nose", "palate", "finish", "overall"].map((dim) => (
-                <div key={dim} className="bg-card border border-amber-500/20 rounded-lg p-4">
-                  <p className="text-xs text-muted-foreground leading-relaxed">{t(`background.dimensions.${dim}`)}</p>
+            <Link href="/labs/discover/method" className="block bg-card border border-amber-500/30 rounded-lg p-4 hover:border-amber-500/60 transition-colors" data-testid="link-dimensions-method">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
+                  <SlidersHorizontal className="w-4 h-4" />
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
-              <h3 className="font-serif font-semibold text-primary text-sm mb-2 flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-amber-600" />
-                {t("background.dimensions.scalesTitle")}
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{t("background.dimensions.scales")}</p>
-            </div>
-          </motion.section>
-
-          <motion.section id="science" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="scroll-mt-20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center">
-                <Beaker className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-serif font-bold text-primary">{t("background.science.title")}</h2>
-                <p className="text-xs text-purple-600 font-medium">{t("background.science.tagline")}</p>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">{t("background.science.intro")}</p>
-            <div className="space-y-3">
-              {[
-                { key: "norm", titleKey: "normTitle", icon: BarChart3 },
-                { key: "median", titleKey: "medianTitle", icon: Activity },
-                { key: "kendall", titleKey: "kendallTitle", icon: TrendingUp },
-                { key: "correl", titleKey: "correlTitle", icon: TrendingUp },
-                { key: "iqr", titleKey: "iqrTitle", icon: ShieldCheck },
-                { key: "noRank", titleKey: "noRankTitle", icon: Ban },
-              ].map((item) => (
-                <div key={item.key} className="bg-card border border-purple-500/20 rounded-lg p-4">
-                  <h3 className="font-serif font-semibold text-primary text-sm mb-2 flex items-center gap-2">
-                    <item.icon className="w-4 h-4 text-purple-600" />
-                    {t(`background.science.${item.titleKey}`)}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{t(`background.science.${item.key}`)}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{t("background.dimensions.teaser")}</p>
+                  <p className="text-xs text-amber-600 font-semibold mt-1">{t("bibliothek.howProfileCalculated", "How a Profile Is Calculated")}</p>
                 </div>
-              ))}
-            </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </div>
+            </Link>
           </motion.section>
         </div>
       </div>

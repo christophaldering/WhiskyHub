@@ -1,16 +1,16 @@
+import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import {
-  Wine, Search, Star, Beaker, BookOpen,
+  Wine, Search, Star, BookOpen,
   SlidersHorizontal, Eye, PartyPopper, Radar, NotebookPen,
-  Award, Heart, BarChart3, Activity, TrendingUp, ShieldCheck, Ban, ChevronLeft
+  Award, Heart, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import type { ElementType } from "react";
 
 interface StepCard { key: string; icon: ElementType; num: string; }
 interface ItemCard { key: string; icon: ElementType; }
-interface ScienceCard { key: string; titleKey: string; icon: ElementType; }
 
 function SectionHeader({ icon: Icon, title, tagline, color }: { icon: ElementType; title: string; tagline: string; color: string }) {
   return (
@@ -49,15 +49,6 @@ export default function LabsBackground() {
     { key: "journal", icon: NotebookPen },
     { key: "badges", icon: Award },
     { key: "wishlist", icon: Heart },
-  ];
-
-  const scienceCards: ScienceCard[] = [
-    { key: "norm", titleKey: "normTitle", icon: BarChart3 },
-    { key: "median", titleKey: "medianTitle", icon: Activity },
-    { key: "kendall", titleKey: "kendallTitle", icon: TrendingUp },
-    { key: "correl", titleKey: "correlTitle", icon: TrendingUp },
-    { key: "iqr", titleKey: "iqrTitle", icon: ShieldCheck },
-    { key: "noRank", titleKey: "noRankTitle", icon: Ban },
   ];
 
   return (
@@ -119,43 +110,26 @@ export default function LabsBackground() {
 
         <section id="dimensions" style={{ scrollMarginTop: 80 }}>
           <SectionHeader icon={Star} title={t("background.dimensions.title")} tagline={t("background.dimensions.tagline")} color="var(--labs-accent)" />
-          <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, marginBottom: 14 }}>{t("background.dimensions.intro")}</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {["nose", "palate", "finish", "overall"].map((dim) => (
-              <div key={dim} className="labs-card" style={{ padding: 14 }}>
-                <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.5, margin: 0 }}>
-                  {t(`background.dimensions.${dim}`)}
+          <Link href="/labs/discover/method" style={{ textDecoration: "none" }}>
+            <div
+              className="labs-card"
+              data-testid="link-dimensions-method"
+              style={{ padding: 16, display: "flex", gap: 12, alignItems: "center", cursor: "pointer", borderColor: "var(--labs-accent)", borderWidth: 1 }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(218,165,32,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <SlidersHorizontal style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.5, margin: 0 }}>
+                  {t("background.dimensions.teaser")}
+                </p>
+                <p style={{ fontSize: 12, color: "var(--labs-accent)", fontWeight: 600, marginTop: 6, marginBottom: 0 }}>
+                  {t("bibliothek.howProfileCalculated", "How a Profile Is Calculated")}
                 </p>
               </div>
-            ))}
-          </div>
-          <div className="labs-card" style={{ padding: 14, marginTop: 10, borderColor: "var(--labs-accent)", borderWidth: 1 }}>
-            <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              <SlidersHorizontal style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-              {t("background.dimensions.scalesTitle")}
-            </h3>
-            <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.5, margin: 0 }}>
-              {t("background.dimensions.scales")}
-            </p>
-          </div>
-        </section>
-
-        <section id="science" style={{ scrollMarginTop: 80 }}>
-          <SectionHeader icon={Beaker} title={t("background.science.title")} tagline={t("background.science.tagline")} color="#a78bfa" />
-          <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, marginBottom: 14 }}>{t("background.science.intro")}</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {scienceCards.map((item) => (
-              <div key={item.key} className="labs-card" style={{ padding: 14 }}>
-                <h3 className="labs-serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                  <item.icon style={{ width: 14, height: 14, color: "#a78bfa" }} />
-                  {t(`background.science.${item.titleKey}`)}
-                </h3>
-                <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.5, margin: 0 }}>
-                  {t(`background.science.${item.key}`)}
-                </p>
-              </div>
-            ))}
-          </div>
+              <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+            </div>
+          </Link>
         </section>
       </div>
     </div>
