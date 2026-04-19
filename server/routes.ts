@@ -14,7 +14,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
-import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
@@ -230,6 +230,108 @@ async function uploadBufferToObjectStorage(
     throw new Error(`Object storage upload failed (${resp.status})`);
   }
   return objectStorage.normalizeObjectEntityPath(uploadURL);
+}
+
+// Image cache proxy: lazily fetches, compresses and stores remote images
+// (currently whiskybase) in our object storage so the browser hits one
+// origin (us) and we serve with a long immutable cache.
+const REMOTE_IMAGE_ALLOWED_HOSTS = new Set<string>([
+  "static.whiskybase.com",
+]);
+const remoteImageInflight = new Map<string, Promise<{ buffer: Buffer; contentType: string }>>();
+const remoteImageMemCache = new LRUCacheImpl<{ buffer: Buffer; contentType: string }>(500, 60 * 60 * 1000);
+
+function parseStoragePath(fullPath: string): { bucketName: string; objectName: string } {
+  const parts = fullPath.split("/").filter((p) => p.length > 0);
+  if (parts.length < 2) {
+    throw new Error(`Invalid storage path: ${fullPath}`);
+  }
+  return { bucketName: parts[0], objectName: parts.slice(1).join("/") };
+}
+
+function getRemoteCacheFile(objectStorage: ObjectStorageService, hash: string) {
+  const dir = objectStorage.getPrivateObjectDir();
+  const trimmed = dir.endsWith("/") ? dir.slice(0, -1) : dir;
+  const fullPath = `${trimmed}/remote-cache/${hash}.webp`;
+  const { bucketName, objectName } = parseStoragePath(fullPath);
+  return objectStorageClient.bucket(bucketName).file(objectName);
+}
+
+async function fetchAndCompressRemoteImage(url: string): Promise<{ buffer: Buffer; contentType: string }> {
+  // redirect: "error" prevents an attacker-supplied URL on an allowed host from
+  // bouncing the server to an internal endpoint via 30x redirects.
+  const resp = await fetch(url, {
+    headers: { "User-Agent": "CaskSenseImageCache/1.0" },
+    redirect: "error",
+  });
+  if (!resp.ok) {
+    throw new Error(`Remote fetch failed: ${resp.status}`);
+  }
+  const ct = (resp.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!ct.startsWith("image/")) {
+    throw new Error(`Remote response not an image: ${ct}`);
+  }
+  const raw = Buffer.from(await resp.arrayBuffer());
+  if (raw.length === 0) {
+    throw new Error("Remote response empty");
+  }
+  if (raw.length > 25 * 1024 * 1024) {
+    throw new Error("Remote response too large");
+  }
+  const compressed = await maybeCompressImage(raw, ct);
+  return compressed;
+}
+
+async function getOrCacheRemoteImage(
+  objectStorage: ObjectStorageService,
+  url: string
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const hash = crypto.createHash("sha256").update(url).digest("hex");
+  const memHit = remoteImageMemCache.get(hash);
+  if (memHit) return memHit;
+
+  const file = getRemoteCacheFile(objectStorage, hash);
+
+  // Try a direct download first (skips a separate exists() roundtrip).
+  try {
+    const [buffer] = await file.download();
+    let contentType = "image/webp";
+    try {
+      const [metadata] = await file.getMetadata();
+      if (metadata.contentType) contentType = metadata.contentType;
+    } catch {
+      // ignore metadata read errors; default content type is fine
+    }
+    const hit = { buffer, contentType };
+    remoteImageMemCache.set(hash, hit);
+    return hit;
+  } catch {
+    // not cached yet, fall through
+  }
+
+  const inflight = remoteImageInflight.get(hash);
+  if (inflight) return inflight;
+
+  const promise = (async () => {
+    try {
+      const result = await fetchAndCompressRemoteImage(url);
+      try {
+        await file.save(result.buffer, {
+          contentType: result.contentType,
+          resumable: false,
+          metadata: { cacheControl: "public, max-age=31536000, immutable" },
+        });
+      } catch (saveErr) {
+        console.warn("[img-cache] save failed, serving without persistence:", saveErr);
+      }
+      remoteImageMemCache.set(hash, result);
+      return result;
+    } finally {
+      remoteImageInflight.delete(hash);
+    }
+  })();
+  remoteImageInflight.set(hash, promise);
+  return promise;
 }
 
 const COLUMN_MAP: Record<string, string> = {
@@ -499,6 +601,42 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const objectStorage = new ObjectStorageService();
+
+  // Lazy image cache proxy. The browser caches by URL; on cache hit here,
+  // we serve from object storage with an immutable 1-year header.
+  app.get("/api/img-cache", async (req: Request, res: Response) => {
+    const u = typeof req.query.u === "string" ? req.query.u : "";
+    if (!u) {
+      return res.status(400).json({ error: "Missing url parameter" });
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(u);
+    } catch {
+      return res.status(400).json({ error: "Invalid url" });
+    }
+    if (
+      parsed.protocol !== "https:" ||
+      !REMOTE_IMAGE_ALLOWED_HOSTS.has(parsed.hostname) ||
+      parsed.username !== "" ||
+      parsed.password !== "" ||
+      (parsed.port !== "" && parsed.port !== "443")
+    ) {
+      return res.status(400).json({ error: "Host not allowed" });
+    }
+    try {
+      const { buffer, contentType } = await getOrCacheRemoteImage(objectStorage, u);
+      res.set({
+        "Content-Type": contentType,
+        "Content-Length": String(buffer.length),
+        "Cache-Control": "public, max-age=31536000, immutable",
+      });
+      return res.end(buffer);
+    } catch (err) {
+      console.warn("[img-cache] failed for", u, err);
+      return res.status(502).json({ error: "Upstream image fetch failed" });
+    }
+  });
 
   const ADMIN_NOTIFICATION_EMAIL = "christoph.aldering@googlemail.com";
 

@@ -23,6 +23,23 @@ function hashName(name: string): number {
 
 const galleryCountCache = new Map<string, number>();
 
+// Route remote images through our cache proxy so the browser uses one
+// origin and gets a long immutable cache + WebP compression.
+const REMOTE_IMAGE_HOSTS = new Set(["static.whiskybase.com"]);
+function rewriteImageUrl(url: string | null | undefined): string | null | undefined {
+  if (!url) return url;
+  if (!url.startsWith("https://")) return url;
+  try {
+    const parsed = new URL(url);
+    if (REMOTE_IMAGE_HOSTS.has(parsed.hostname)) {
+      return `/api/img-cache?u=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
+}
+
 interface WhiskyImageProps {
   imageUrl?: string | null;
   name: string;
@@ -35,7 +52,8 @@ interface WhiskyImageProps {
   priority?: boolean;
 }
 
-export default function WhiskyImage({ imageUrl, name, size = 44, height, className = "", testId, whiskyId, galleryCount, priority = false }: WhiskyImageProps) {
+export default function WhiskyImage({ imageUrl: rawImageUrl, name, size = 44, height, className = "", testId, whiskyId, galleryCount, priority = false }: WhiskyImageProps) {
+  const imageUrl = rewriteImageUrl(rawImageUrl);
   const [broken, setBroken] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [fetchedCount, setFetchedCount] = useState<number>(whiskyId ? (galleryCountCache.get(whiskyId) ?? -1) : 0);
