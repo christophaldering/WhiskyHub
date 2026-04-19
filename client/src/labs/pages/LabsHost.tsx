@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
+import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ChevronLeft, Loader2,
@@ -2628,6 +2629,7 @@ function clearDraft() {
 function CreateTastingForm() {
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
+  const isEmbedded = useIsEmbeddedInTastings();
   const { t } = useTranslation();
   const { currentParticipant, openAuthDialog } = useAppStore();
 
@@ -2779,15 +2781,17 @@ function CreateTastingForm() {
   return (
     <div className="labs-page labs-fade-in" style={{ paddingBottom: 0 }}>
       <div>
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-create-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Zurück
-      </button>
+      {!isEmbedded && (
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-create-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Zurück
+        </button>
+      )}
       <h1
         className="labs-h2 mb-2"
         style={{ color: "var(--labs-text)" }}
@@ -6767,18 +6771,21 @@ function HostPreview() {
   const { t } = useTranslation();
   const { openAuthDialog } = useAppStore();
   const goBack = useLabsBack("/labs/tastings");
+  const isEmbedded = useIsEmbeddedInTastings();
 
   return (
     <div className="labs-page labs-fade-in">
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-host-preview-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        {t("common.back", "Back")}
-      </button>
+      {!isEmbedded && (
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-host-preview-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("common.back", "Back")}
+        </button>
+      )}
 
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <Crown className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />

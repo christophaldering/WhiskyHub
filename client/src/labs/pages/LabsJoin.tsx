@@ -3,6 +3,7 @@ import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar } from "lucide-react";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
+import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, inviteApi } from "@/lib/api";
 import { signIn } from "@/lib/session";
@@ -26,6 +27,7 @@ export default function LabsJoin() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
+  const isEmbedded = useIsEmbeddedInTastings();
   const session = useSession();
   const { currentParticipant } = useAppStore();
   const params = useParams<{ code?: string }>();
@@ -465,15 +467,17 @@ export default function LabsJoin() {
 
   return (
     <div className="labs-page labs-fade-in">
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-join-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Tastings
-      </button>
+      {!isEmbedded && (
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-join-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Tastings
+        </button>
+      )}
       <div className="text-center mb-8">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"

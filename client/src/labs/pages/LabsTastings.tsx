@@ -13,6 +13,7 @@ import LabsJoin from "@/labs/pages/LabsJoin";
 import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
+import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
 
@@ -396,66 +397,58 @@ export default function LabsTastings() {
         </div>
       </div>
 
-      <div className="labs-hub-tile-grid labs-hub-tile-grid--auto labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
+      <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
         <button
           type="button"
           onClick={() => handleTabClick("join")}
-          className={`labs-hub-tile labs-hub-tile--button${activeTab === "join" ? " labs-hub-tile--active" : ""}`}
+          className={`labs-action-bar-item labs-action-bar-item--button${activeTab === "join" ? " labs-action-bar-item--active" : ""}`}
           data-testid="labs-action-join"
           aria-pressed={activeTab === "join"}
         >
-          <div className="labs-hub-tile-icon">
-            <Users className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
+          <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+            <Users className="w-5 h-5" style={{ color: "var(--labs-accent)" }} strokeWidth={1.8} />
           </div>
-          <div className="labs-hub-tile-body">
-            <div className="labs-hub-tile-label">{t("tastingActions.join", "Join")}</div>
-            <div className="labs-hub-tile-desc">{t("tastingActions.joinDesc", "Enter a tasting code")}</div>
-          </div>
+          <span className="labs-action-bar-label">{t("tastingActions.join", "Join")}</span>
+          <span className="labs-action-bar-sublabel">{t("tastingActions.joinDesc", "Enter a tasting code")}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabClick("solo")}
-          className={`labs-hub-tile labs-hub-tile--button${activeTab === "solo" ? " labs-hub-tile--active" : ""}`}
+          className={`labs-action-bar-item labs-action-bar-item--button${activeTab === "solo" ? " labs-action-bar-item--active" : ""}`}
           data-testid="labs-action-solo"
           aria-pressed={activeTab === "solo"}
         >
-          <div className="labs-hub-tile-icon">
-            <PenLine className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
+          <div className="labs-action-bar-icon labs-action-bar-icon--surface">
+            <PenLine className="w-5 h-5" style={{ color: "var(--labs-text-secondary)" }} strokeWidth={1.8} />
           </div>
-          <div className="labs-hub-tile-body">
-            <div className="labs-hub-tile-label">{t("tastingActions.solo", "Solo")}</div>
-            <div className="labs-hub-tile-desc">{t("tastingActions.soloDesc", "Taste & log on your own")}</div>
-          </div>
+          <span className="labs-action-bar-label">{t("tastingActions.solo", "Solo")}</span>
+          <span className="labs-action-bar-sublabel">{t("tastingActions.soloDesc", "Taste & log on your own")}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabClick("host")}
-          className={`labs-hub-tile labs-hub-tile--button${activeTab === "host" ? " labs-hub-tile--active" : ""}`}
+          className={`labs-action-bar-item labs-action-bar-item--button${activeTab === "host" ? " labs-action-bar-item--active" : ""}`}
           data-testid="labs-action-host"
           aria-pressed={activeTab === "host"}
         >
-          <div className="labs-hub-tile-icon">
-            <Crown className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
+          <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+            <Crown className="w-5 h-5" style={{ color: "var(--labs-accent)" }} strokeWidth={1.8} />
           </div>
-          <div className="labs-hub-tile-body">
-            <div className="labs-hub-tile-label">{t("tastingActions.host", "Host")}</div>
-            <div className="labs-hub-tile-desc">{t("tastingActions.hostDesc", "Create & run a tasting")}</div>
-          </div>
+          <span className="labs-action-bar-label">{t("tastingActions.host", "Host")}</span>
+          <span className="labs-action-bar-sublabel">{t("tastingActions.hostDesc", "Create & run a tasting")}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabClick("share")}
-          className={`labs-hub-tile labs-hub-tile--button${activeTab === "share" ? " labs-hub-tile--active" : ""}`}
+          className={`labs-action-bar-item labs-action-bar-item--button${activeTab === "share" ? " labs-action-bar-item--active" : ""}`}
           data-testid="labs-action-bottle-sharing"
           aria-pressed={activeTab === "share"}
         >
-          <div className="labs-hub-tile-icon">
-            <Share2 className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
+          <div className="labs-action-bar-icon labs-action-bar-icon--success">
+            <Share2 className="w-5 h-5" style={{ color: "var(--labs-success, #4ade80)" }} strokeWidth={1.8} />
           </div>
-          <div className="labs-hub-tile-body">
-            <div className="labs-hub-tile-label">{t("tastingActions.share", "Share")}</div>
-            <div className="labs-hub-tile-desc">{t("tastingActions.shareDesc", "Split a bottle with friends")}</div>
-          </div>
+          <span className="labs-action-bar-label">{t("tastingActions.share", "Share")}</span>
+          <span className="labs-action-bar-sublabel">{t("tastingActions.shareDesc", "Split a bottle with friends")}</span>
         </button>
       </div>
 
@@ -464,10 +457,12 @@ export default function LabsTastings() {
           className="labs-tastings-inline-content labs-fade-in"
           data-testid={`labs-tastings-inline-${activeTab}`}
         >
-          {activeTab === "join" && <LabsJoin />}
-          {activeTab === "solo" && <LabsSolo />}
-          {activeTab === "host" && <LabsHost />}
-          {activeTab === "share" && <LabsBottleSharing />}
+          <EmbeddedTastingsProvider>
+            {activeTab === "join" && <LabsJoin />}
+            {activeTab === "solo" && <LabsSolo />}
+            {activeTab === "host" && <LabsHost />}
+            {activeTab === "share" && <LabsBottleSharing />}
+          </EmbeddedTastingsProvider>
         </div>
       )}
 

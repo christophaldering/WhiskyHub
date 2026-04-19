@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
@@ -103,6 +104,7 @@ async function ensureParticipantId(): Promise<string> {
 export default function LabsSolo() {
   const { t } = useTranslation();
   const goBack = useBackNavigation("/labs/tastings");
+  const isEmbedded = useIsEmbeddedInTastings();
   const [, navigate] = useLocation();
 
   const [step, setStep] = useState<Step>("capture");
@@ -705,6 +707,7 @@ export default function LabsSolo() {
           onBarcode={handleBarcode}
           onCollectionSelect={handleCollectionSelect}
           onBack={goBack}
+          hideBack={isEmbedded}
         />
       </>
     );

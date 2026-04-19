@@ -10,6 +10,7 @@ import {
   ChevronUp, FileSpreadsheet, Image, MessageSquare, Wine, Check, X, BarChart3
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { friendsApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -55,6 +56,7 @@ export default function LabsBottleSharing() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const goBackToHome = useBackNavigation("/labs/tastings");
+  const isEmbedded = useIsEmbeddedInTastings();
 
   const [publicSharings, setPublicSharings] = useState<any[]>([]);
   const [mySharings, setMySharings] = useState<any[]>([]);
@@ -104,15 +106,17 @@ export default function LabsBottleSharing() {
   if (!currentParticipant) {
     return (
       <div className="labs-page labs-fade-in">
-        <button
-          onClick={goBackToHome}
-          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-          style={{ color: "var(--labs-text-muted)" }}
-          data-testid="labs-sharing-preview-back"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t("common.back", "Back")}
-        </button>
+        {!isEmbedded && (
+          <button
+            onClick={goBackToHome}
+            className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+            style={{ color: "var(--labs-text-muted)" }}
+            data-testid="labs-sharing-preview-back"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t("common.back", "Back")}
+          </button>
+        )}
 
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <Share2 className="w-10 h-10" style={{ color: "var(--labs-accent)", marginBottom: 12 }} />
@@ -901,9 +905,11 @@ export default function LabsBottleSharing() {
 
   return (
     <div className="labs-page labs-fade-in">
-      <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-bs-back-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
-        <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
-      </button>
+      {!isEmbedded && (
+        <button onClick={goBackToHome} className="labs-btn-ghost" data-testid="button-bs-back-home" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+          <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
+        </button>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--labs-space-lg)" }}>
         <div>

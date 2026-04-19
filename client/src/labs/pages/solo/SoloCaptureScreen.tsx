@@ -25,11 +25,12 @@ interface Props {
   onBarcode: (barcode: string) => void;
   onCollectionSelect: (w: CapturedWhisky) => void;
   onBack: () => void;
+  hideBack?: boolean;
 }
 
 type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barcode-scanning" | "barcode-lookup";
 
-export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack }: Props) {
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -499,15 +500,17 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
         data-testid="solo-gallery-input"
       />
 
-      <button
-        onClick={onBack}
-        data-testid="solo-back-btn"
-        className="labs-btn-ghost"
-        style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
-      >
-        <ArrowLeft size={18} />
-        {t("v2.back", "Back")}
-      </button>
+      {!hideBack && (
+        <button
+          onClick={onBack}
+          data-testid="solo-back-btn"
+          className="labs-btn-ghost"
+          style={{ padding: 0, marginBottom: "var(--labs-space-lg)", display: "flex", alignItems: "center", gap: "var(--labs-space-sm)" }}
+        >
+          <ArrowLeft size={18} />
+          {t("v2.back", "Back")}
+        </button>
+      )}
 
       <h2 className="labs-h2" data-testid="solo-title" style={{ marginBottom: "var(--labs-space-sm)" }}>
         {t("v2.solo.title", "Log a Dram")}
