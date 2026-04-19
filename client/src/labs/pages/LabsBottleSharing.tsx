@@ -411,9 +411,6 @@ export default function LabsBottleSharing() {
         >
           {t("bottleSharing.subtitle")}
         </p>
-        <div style={{ display: "flex", gap: 4, marginBottom: "var(--labs-space-lg)" }}>
-          {steps.map((s, i) => (<div key={s} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= stepIdx ? "var(--labs-accent)" : "var(--labs-border)" }} />))}
-        </div>
 
         {step === "bottles" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--labs-space-md)" }}>
