@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
@@ -52,6 +53,7 @@ function fmtDate(d: Date | string | null | undefined): string {
 }
 
 export default function LabsHandoutLibrary() {
+  const { t } = useTranslation();
   const hostId = getParticipantId() || "";
   const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("mine");
@@ -471,9 +473,9 @@ export default function LabsHandoutLibrary() {
                     style={{ marginTop: 2 }}
                   />
                   <span style={{ display: "grid", gap: 2 }}>
-                    <span>Nach dem Upload Seiten Whiskys zuordnen (Programmheft splitten)</span>
+                    <span>{t("labs.handoutSplitter.uploadOption")}</span>
                     <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                      Verfügbar bei mehrseitigen PDFs.
+                      {t("labs.handoutSplitter.uploadOptionHint")}
                     </span>
                   </span>
                 </label>
@@ -658,9 +660,9 @@ export default function LabsHandoutLibrary() {
                         <span
                           style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-warning-bg, #3a2f15)", color: "var(--labs-warning, #f5b25c)" }}
                           data-testid={`badge-programme-${entry.id}`}
-                          title="Mehrseitiges Programmheft"
+                          title={t("labs.handoutSplitter.programmeBadge")}
                         >
-                          <Library style={{ width: 10, height: 10 }} /> Programmheft
+                          <Library style={{ width: 10, height: 10 }} /> {t("labs.handoutSplitter.programmeBadge")}
                         </span>
                       )}
                       {entry.isShared && (
@@ -739,7 +741,7 @@ export default function LabsHandoutLibrary() {
                         onClick={() => { setSplitTarget(entry); setError(null); setInfo(null); }}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                         data-testid={`button-handout-split-${entry.id}`}
-                        title="Programmheft seitenweise aufteilen"
+                        title={t("labs.handoutSplitter.title")}
                       >
                         <Scissors style={{ width: 12, height: 12 }} />
                       </button>

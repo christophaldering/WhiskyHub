@@ -4,11 +4,10 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Scissors, Trash2, X } from "lucide-react";
 import { handoutLibraryApi } from "@/lib/api";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
-import * as pdfjsLib from "pdfjs-dist";
-// @ts-ignore - vite-resolved worker URL
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-(pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface RangeMeta {
   from: number;
@@ -60,22 +59,22 @@ export default function HandoutLibraryPdfSplitterDialog({ open, onClose, entry, 
     const localCancel = cancelLoadRef.current;
     (async () => {
       try {
-        const loadingTask = (pdfjsLib as any).getDocument({ url: entry.fileUrl });
+        const loadingTask = getDocument({ url: entry.fileUrl });
         const pdf = await loadingTask.promise;
-        const pageCount = pdf.numPages as number;
+        const pageCount = pdf.numPages;
         const out: string[] = [];
         for (let i = 1; i <= pageCount; i++) {
           if (localCancel.cancelled) return;
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1 });
-          const scale = THUMB_WIDTH / viewport.width;
-          const scaled = page.getViewport({ scale });
+          const baseViewport = page.getViewport({ scale: 1 });
+          const scale = THUMB_WIDTH / baseViewport.width;
+          const viewport = page.getViewport({ scale });
           const canvas = document.createElement("canvas");
-          canvas.width = Math.ceil(scaled.width);
-          canvas.height = Math.ceil(scaled.height);
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("canvas context");
-          await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          const canvasContext = canvas.getContext("2d");
+          if (!canvasContext) throw new Error("canvas context");
+          await page.render({ canvasContext, canvas, viewport }).promise;
           out.push(canvas.toDataURL("image/png"));
           if (!localCancel.cancelled) setThumbs([...out]);
         }
