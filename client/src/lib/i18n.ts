@@ -7348,6 +7348,7 @@ const resources = {
         },
         circle: {
           title: "Circle",
+          yourShare: "Your Share",
           subtitle: "Connect with fellow whisky enthusiasts",
           signInPrompt: "Sign in to join the community",
           tasteTwins: "Twins",
@@ -16774,6 +16775,7 @@ const resources = {
         },
         circle: {
           title: "Circle",
+          yourShare: "Dein Anteil",
           subtitle: "Vernetze dich mit Whisky-Enthusiasten",
           signInPrompt: "Melde dich an, um der Community beizutreten",
           tasteTwins: "Twins",

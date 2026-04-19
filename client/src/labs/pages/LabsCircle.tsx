@@ -665,7 +665,7 @@ export default function LabsCircle() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                  Your Rank {"\u00B7"} {activeCat.label}
+                  {t("m2.circle.yourShare", "Your Share")} {"\u00B7"} {activeCat.label}
                 </p>
                 <p className="text-lg font-bold labs-serif" style={{ color: "var(--labs-accent)" }}>
                   #{yourRank} <span className="text-sm font-normal" style={{ color: "var(--labs-text-secondary)" }}>of {yourTotal}</span>
