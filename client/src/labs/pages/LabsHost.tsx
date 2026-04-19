@@ -2618,7 +2618,9 @@ function LabsSegmentedSelect({ value, options, onChange }: {
                 WebkitHyphens: "none",
                 MozHyphens: "none",
                 msHyphens: "none",
-                overflowWrap: "normal",
+                // Long single words (z. B. „Benutzerdefiniert") dürfen
+                // notfalls am Zeichen brechen — aber ohne Bindestrich.
+                overflowWrap: "anywhere",
                 wordBreak: "normal",
                 lineHeight: 1.15,
               }}
