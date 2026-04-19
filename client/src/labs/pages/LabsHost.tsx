@@ -30,6 +30,7 @@ import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import WhiskyHandoutManager from "@/labs/components/WhiskyHandoutManager";
 import TastingHandoutManager from "@/labs/components/TastingHandoutManager";
+import AutoHandoutManager from "@/labs/components/AutoHandoutManager";
 import { downloadDataUrl } from "@/lib/download";
 import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -5213,6 +5214,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           )}
           {tasting && (
             <TastingHandoutManager tasting={tasting} hostId={tasting.hostId} />
+          )}
+          {tasting && (
+            <AutoHandoutManager tasting={tasting} hostId={tasting.hostId} />
           )}
           {editTastingError && (
             <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-edit-tasting-error">{editTastingError}</p>

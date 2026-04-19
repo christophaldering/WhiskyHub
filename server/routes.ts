@@ -2253,6 +2253,340 @@ export async function registerRoutes(
     }
   });
 
+  // ===== AUTO-HANDOUT GENERATOR =====
+  // Researches whiskies + distilleries via Wikipedia / web search and condenses
+  // findings into structured chapters via AI. Co-exists with the host's uploaded
+  // handout (the upload remains primary; auto-handout shows as "Zusatzinfos" below).
+  app.get("/api/tastings/:id/auto-handout", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
+      const isHost = requesterId === tasting.hostId;
+      const isMember = requesterId ? await storage.isParticipantInTasting(req.params.id, requesterId) : false;
+      if (!isHost && !isMember) return res.status(403).json({ message: "Forbidden" });
+      const { getOrCreateTastingHandout, assembleHandout } = await import("./auto-handout/index.js");
+      const binding = await getOrCreateTastingHandout(req.params.id);
+      const assembled = await assembleHandout(req.params.id);
+
+      // Gate full chapter content for non-hosts:
+      //  - When visibility = "after_first_reveal" and the host has not yet
+      //    reveal-ed the tasting (tasting.revealedAt is null), strip content.
+      //  - Until the host has explicitly acknowledged the AI notice, never
+      //    expose chapter content to guests (host-only review phase).
+      const revealUnlocked = !!tasting.revealedAt;
+      const guestVisible =
+        binding.acknowledgedNotice &&
+        binding.status === "ready" &&
+        (binding.visibility === "always" || revealUnlocked);
+
+      const sanitizedChapters = isHost
+        ? assembled.chapterRefs
+        : assembled.chapterRefs.map((c) => guestVisible ? c : ({
+            ...c,
+            chapter: { ...c.chapter, content: "", sources: [] },
+            customContent: undefined,
+            sources: [],
+          }));
+
+      // Build a guest-safe binding: even when the chapter list is hidden,
+      // binding.selection contains per-chapter customContent strings the host
+      // wrote into the editor, so we have to strip those out as well. We also
+      // hide the chosen-image picks, since those expose host research choices
+      // before the reveal.
+      const guestSafeBinding = (() => {
+        if (isHost) return binding;
+        const stripped = { ...binding, errorMessage: null };
+        if (!guestVisible) {
+          const selection = (binding.selection || {}) as { distilleries?: Record<string, Record<string, { enabled?: boolean; customContent?: string }>>; whiskies?: Record<string, Record<string, { enabled?: boolean; customContent?: string }>> };
+          const stripCustom = (group?: Record<string, Record<string, { enabled?: boolean; customContent?: string }>>) => {
+            if (!group) return undefined;
+            const out: typeof group = {};
+            for (const [subj, chMap] of Object.entries(group)) {
+              const inner: Record<string, { enabled?: boolean }> = {};
+              for (const [chId, entry] of Object.entries(chMap)) inner[chId] = { enabled: entry.enabled };
+              out[subj] = inner;
+            }
+            return out;
+          };
+          stripped.selection = {
+            distilleries: stripCustom(selection.distilleries),
+            whiskies: stripCustom(selection.whiskies),
+          };
+          stripped.selectedImages = [];
+        }
+        return stripped;
+      })();
+
+      const hostParticipant = await storage.getParticipant(tasting.hostId);
+      res.json({
+        binding: guestSafeBinding,
+        guestVisible: isHost ? true : guestVisible,
+        hostName: hostParticipant?.name || null,
+        chapters: sanitizedChapters,
+        distilleries: assembled.distilleries.map((d) => ({
+          nameKey: d.profile.nameKey,
+          displayName: d.profile.displayName,
+          images: isHost ? d.profile.images : [],
+          selectedImage: isHost || guestVisible ? d.selectedImage : null,
+          sources: isHost ? d.profile.sources : [],
+          generatedAt: d.profile.generatedAt,
+          refreshedAt: d.profile.refreshedAt,
+        })),
+        whiskies: assembled.whiskyProfilesArr.map((w) => ({
+          whiskyKey: w.whiskyKey,
+          name: w.name,
+          distillery: w.distillery,
+          whiskybaseId: w.whiskybaseId,
+          sources: isHost ? w.sources : [],
+          generatedAt: w.generatedAt,
+        })),
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Cost guard: rolling 24h limit on full generations per tasting. A "full"
+  // run can fan out into many whisky/distillery research calls and AI prompts,
+  // so we cap how often a host can retrigger it. The map is in-memory and
+  // resets on server restart, which is acceptable for an MVP cost guard.
+  const AUTO_HANDOUT_GEN_LIMIT = 5;
+  const AUTO_HANDOUT_GEN_WINDOW_MS = 24 * 60 * 60 * 1000;
+  const autoHandoutGenLog = new Map<string, number[]>();
+  function checkAndRecordAutoHandoutGen(tastingId: string): { allowed: boolean; remaining: number; retryAfterMs: number } {
+    const now = Date.now();
+    const cutoff = now - AUTO_HANDOUT_GEN_WINDOW_MS;
+    const arr = (autoHandoutGenLog.get(tastingId) || []).filter((t) => t > cutoff);
+    if (arr.length >= AUTO_HANDOUT_GEN_LIMIT) {
+      const oldest = Math.min(...arr);
+      return { allowed: false, remaining: 0, retryAfterMs: AUTO_HANDOUT_GEN_WINDOW_MS - (now - oldest) };
+    }
+    arr.push(now);
+    autoHandoutGenLog.set(tastingId, arr);
+    return { allowed: true, remaining: AUTO_HANDOUT_GEN_LIMIT - arr.length, retryAfterMs: 0 };
+  }
+
+  app.post("/api/tastings/:id/auto-handout/generate", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Auto-Handouts generieren" });
+      }
+      const guard = checkAndRecordAutoHandoutGen(req.params.id);
+      if (!guard.allowed) {
+        const retryHours = Math.ceil(guard.retryAfterMs / (60 * 60 * 1000));
+        return res.status(429).json({
+          message: `Generations-Limit erreicht (max ${AUTO_HANDOUT_GEN_LIMIT} / 24h). Bitte in ca. ${retryHours} h erneut versuchen.`,
+          limit: AUTO_HANDOUT_GEN_LIMIT,
+          retryAfterMs: guard.retryAfterMs,
+        });
+      }
+      const { client, error: aiError, quotaInfo } = await getAIClient(requesterId, "auto_handout");
+      if (aiError) return res.status(503).json({ message: aiError, quotaInfo });
+      if (!client) return res.status(503).json({ message: "AI nicht verfügbar" });
+
+      const language = (req.body.language === "en" ? "en" : "de");
+      const tone = ["sachlich", "erzaehlerisch", "locker"].includes(req.body.tone) ? req.body.tone : "erzaehlerisch";
+      const lengthPref = ["compact", "medium", "long"].includes(req.body.length) ? req.body.length : "medium";
+      const forceRefresh = req.body.forceRefresh === true;
+
+      const { getOrCreateTastingHandout, updateTastingHandout, ensureDistilleryProfile, ensureWhiskyProfile, assembleHandout } = await import("./auto-handout/index.js");
+      await getOrCreateTastingHandout(req.params.id);
+
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const distilleryNames = Array.from(new Set(tastingWhiskies.map((w) => w.distillery).filter(Boolean) as string[]));
+      const total = distilleryNames.length + tastingWhiskies.length;
+
+      await updateTastingHandout(req.params.id, {
+        status: "generating", progress: 0, progressTotal: total, errorMessage: null,
+        language, tone, lengthPref,
+      });
+
+      // Fire-and-forget background job: respond immediately so the host UI can poll.
+      (async () => {
+        let progress = 0;
+        try {
+          for (const d of distilleryNames) {
+            await ensureDistilleryProfile(client, d, { language, tone, lengthPref, forceRefresh });
+            progress++;
+            await updateTastingHandout(req.params.id, { progress });
+          }
+          for (const w of tastingWhiskies) {
+            await ensureWhiskyProfile(client, {
+              name: w.name,
+              distillery: w.distillery,
+              whiskybaseId: w.whiskybaseId,
+            }, { language, tone, lengthPref, forceRefresh });
+            progress++;
+            await updateTastingHandout(req.params.id, { progress });
+          }
+          await updateTastingHandout(req.params.id, {
+            status: "ready", progress, progressTotal: total, generatedAt: new Date(),
+          });
+        } catch (e: any) {
+          console.error("[auto-handout] generate failed:", e);
+          await updateTastingHandout(req.params.id, {
+            status: "error", errorMessage: e?.message || "Fehler bei der Generierung",
+          });
+        }
+      })();
+
+      res.json({ ok: true, total });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/tastings/:id/auto-handout", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann das Auto-Handout bearbeiten" });
+      }
+      const { updateTastingHandout } = await import("./auto-handout/index.js");
+      type AutoHandoutPatch = {
+        language?: "de" | "en";
+        tone?: "sachlich" | "erzaehlerisch" | "locker";
+        lengthPref?: "compact" | "medium" | "long";
+        visibility?: "always" | "after_first_reveal";
+        selection?: import("@shared/schema").AutoHandoutSelection;
+        selectedImages?: import("@shared/schema").AutoHandoutSelectedImage[];
+        chapterOrder?: string[];
+        acknowledgedNotice?: boolean;
+      };
+      const patch: AutoHandoutPatch = {};
+      // Accept both legacy `length` and canonical `lengthPref` from the client.
+      const lengthInput = req.body.lengthPref ?? req.body.length;
+      if (req.body.language === "de" || req.body.language === "en") patch.language = req.body.language;
+      if (["sachlich", "erzaehlerisch", "locker"].includes(req.body.tone)) patch.tone = req.body.tone as AutoHandoutPatch["tone"];
+      if (["compact", "medium", "long"].includes(lengthInput)) patch.lengthPref = lengthInput as AutoHandoutPatch["lengthPref"];
+      if (req.body.visibility === "always" || req.body.visibility === "after_first_reveal") patch.visibility = req.body.visibility;
+      if (req.body.selection && typeof req.body.selection === "object") patch.selection = req.body.selection as AutoHandoutPatch["selection"];
+      if (Array.isArray(req.body.selectedImages)) patch.selectedImages = req.body.selectedImages as AutoHandoutPatch["selectedImages"];
+      if (Array.isArray(req.body.chapterOrder)) patch.chapterOrder = (req.body.chapterOrder as unknown[]).filter((s): s is string => typeof s === "string");
+      if (typeof req.body.acknowledgedNotice === "boolean") patch.acknowledgedNotice = req.body.acknowledgedNotice;
+      const updated = await updateTastingHandout(req.params.id, patch);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/auto-handout/regenerate-chapter", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Kapitel regenerieren" });
+      }
+      const { kind, subjectKey, chapterId, tone, length, language } = req.body || {};
+      if (!kind || !subjectKey || !chapterId) {
+        return res.status(400).json({ message: "kind, subjectKey, chapterId sind Pflicht" });
+      }
+      const { client, error: aiError } = await getAIClient(requesterId, "auto_handout");
+      if (aiError || !client) return res.status(503).json({ message: aiError || "AI nicht verfügbar" });
+
+      const lang = language === "en" ? "en" : "de";
+      const t = ["sachlich", "erzaehlerisch", "locker"].includes(tone) ? tone : "erzaehlerisch";
+      const lp = ["compact", "medium", "long"].includes(length) ? length : "medium";
+      const { regenerateDistilleryChapter, regenerateWhiskyChapter, getWhiskyProfile } = await import("./auto-handout/index.js");
+
+      if (kind === "distillery") {
+        const updated = await regenerateDistilleryChapter(client, subjectKey, chapterId, { language: lang, tone: t, lengthPref: lp });
+        return res.json({ profile: updated });
+      } else if (kind === "whisky") {
+        // subjectKey is the whisky_key. Look up the existing profile to get name/distillery.
+        const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+        const match = tastingWhiskies.find((w) => {
+          const k = (w.whiskybaseId ? `wb:${w.whiskybaseId}` : `${(w.distillery || "").toLowerCase().trim()}|${w.name.toLowerCase().trim()}`);
+          return k === subjectKey;
+        });
+        if (!match) return res.status(404).json({ message: "Whisky nicht im Tasting" });
+        const updated = await regenerateWhiskyChapter(client, {
+          name: match.name, distillery: match.distillery, whiskybaseId: match.whiskybaseId,
+        }, chapterId, { language: lang, tone: t, lengthPref: lp });
+        return res.json({ profile: updated });
+      }
+      res.status(400).json({ message: "Unbekannter kind" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/auto-handout/refresh-distillery", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur Host" });
+      const distillery: string = req.body.distillery;
+      if (!distillery) return res.status(400).json({ message: "distillery erforderlich" });
+      const { client, error: aiError } = await getAIClient(requesterId, "auto_handout");
+      if (aiError || !client) return res.status(503).json({ message: aiError || "AI nicht verfügbar" });
+      const { ensureDistilleryProfile, getOrCreateTastingHandout } = await import("./auto-handout/index.js");
+      const binding = await getOrCreateTastingHandout(req.params.id);
+      const updated = await ensureDistilleryProfile(client, distillery, {
+        language: binding.language, tone: binding.tone, lengthPref: binding.lengthPref, forceRefresh: true,
+      });
+      res.json({ profile: updated });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/auto-handout", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur Host" });
+      const { db } = await import("./db");
+      const { tastingAutoHandouts } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.delete(tastingAutoHandouts).where(eq(tastingAutoHandouts.tastingId, req.params.id));
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Source-library view: list distillery profiles that the requester has
+  // actually used in one of their hosted tastings. Distillery profiles are a
+  // shared cache, but exposing the full list to every authenticated user would
+  // leak research timing across hosts. We therefore filter to distilleries
+  // whose name appears as a whisky in a tasting hosted by the requester.
+  app.get("/api/distillery-profiles", async (req, res) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
+      if (!requesterId) return res.status(401).json({ message: "Auth required" });
+      const { db } = await import("./db");
+      const { distilleryProfiles, tastings, whiskies } = await import("@shared/schema");
+      const { inArray, eq, and, sql: dsql } = await import("drizzle-orm");
+      const hostedTastings = await db.select({ id: tastings.id }).from(tastings).where(eq(tastings.hostId, requesterId));
+      if (hostedTastings.length === 0) return res.json([]);
+      const tastingIds = hostedTastings.map((t) => t.id);
+      const distilleryRows = await db.select({ name: whiskies.distillery })
+        .from(whiskies)
+        .where(and(inArray(whiskies.tastingId, tastingIds), dsql`${whiskies.distillery} IS NOT NULL`));
+      const usedKeys = Array.from(new Set(distilleryRows.map((r) => (r.name || "").trim().toLowerCase().replace(/\s+/g, " "))));
+      if (usedKeys.length === 0) return res.json([]);
+      const rows = await db.select().from(distilleryProfiles).where(inArray(distilleryProfiles.nameKey, usedKeys));
+      res.json(rows.map((r) => ({
+        nameKey: r.nameKey, displayName: r.displayName, language: r.language,
+        sourcesCount: (r.sources || []).length, chaptersCount: (r.chapters || []).length,
+        refreshedAt: r.refreshedAt,
+      })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/tastings/:id/transfer-host", async (req: Request, res: Response) => {
     try {
       const { hostId, newHostId } = req.body;

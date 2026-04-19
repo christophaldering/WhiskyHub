@@ -1173,3 +1173,129 @@ export const dailyReportLog = pgTable("daily_report_log", {
   sentAt: timestamp("sent_at").notNull().defaultNow(),
 });
 export type DailyReportLog = typeof dailyReportLog.$inferSelect;
+
+// --- Auto-Handout: Distillery Profiles (encyclopedia cache per distillery) ---
+//
+// These rows feed the Auto-Handout-Generator. One profile per distillery name
+// (lower-cased, whitespace-collapsed). Sources and chapter texts are produced
+// once via web research + AI and reused for every future tasting that
+// references the same distillery. The host can force a refresh.
+export const distilleryProfiles = pgTable("distillery_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nameKey: text("name_key").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  language: text("language").notNull().default("de"), // de | en
+  tone: text("tone").notNull().default("erzaehlerisch"), // sachlich | erzaehlerisch | locker
+  lengthPref: text("length_pref").notNull().default("medium"), // compact | medium | long
+  chapters: jsonb("chapters").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutChapter[]>(),
+  sources: jsonb("sources").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutSource[]>(),
+  images: jsonb("images").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutImage[]>(),
+  generatedAt: timestamp("generated_at").defaultNow(),
+  refreshedAt: timestamp("refreshed_at").defaultNow(),
+});
+export type DistilleryProfile = typeof distilleryProfiles.$inferSelect;
+
+// --- Auto-Handout: Whisky Profiles (encyclopedia cache per whisky) ---
+export const whiskyProfiles = pgTable("whisky_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  whiskyKey: text("whisky_key").notNull().unique(), // wb:<id> or "<distillery>|<name>" (lowercased)
+  name: text("name").notNull(),
+  distillery: text("distillery"),
+  whiskybaseId: text("whiskybase_id"),
+  language: text("language").notNull().default("de"),
+  tone: text("tone").notNull().default("erzaehlerisch"),
+  lengthPref: text("length_pref").notNull().default("medium"),
+  chapters: jsonb("chapters").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutChapter[]>(),
+  sources: jsonb("sources").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutSource[]>(),
+  generatedAt: timestamp("generated_at").defaultNow(),
+});
+export type WhiskyProfile = typeof whiskyProfiles.$inferSelect;
+
+// --- Auto-Handout: per-tasting binding (host customizations + status) ---
+export const tastingAutoHandouts = pgTable("tasting_auto_handouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull().unique(),
+  language: text("language").notNull().default("de"),
+  tone: text("tone").notNull().default("erzaehlerisch"),
+  lengthPref: text("length_pref").notNull().default("medium"), // compact | medium | long
+  visibility: text("visibility").notNull().default("always"), // always | after_first_reveal
+  // selection: { distilleries: { [nameKey]: { [chapterId]: { enabled, customContent? } } },
+  //              whiskies:    { [whiskyKey]: { [chapterId]: { enabled, customContent? } } } }
+  selection: jsonb("selection").notNull().default(sql`'{}'::jsonb`).$type<AutoHandoutSelection>(),
+  // selectedImages: array of { subjectKey, url, title, source, license }
+  selectedImages: jsonb("selected_images").notNull().default(sql`'[]'::jsonb`).$type<AutoHandoutSelectedImage[]>(),
+  // chapterOrder: ordered list of "{kind}:{key}:{chapterId}" identifiers
+  chapterOrder: jsonb("chapter_order").notNull().default(sql`'[]'::jsonb`).$type<string[]>(),
+  status: text("status").notNull().default("idle"), // idle | generating | ready | error
+  progress: integer("progress").notNull().default(0),
+  progressTotal: integer("progress_total").notNull().default(0),
+  errorMessage: text("error_message"),
+  generatedAt: timestamp("generated_at"),
+  acknowledgedNotice: boolean("acknowledged_notice").notNull().default(false),
+});
+export type TastingAutoHandout = typeof tastingAutoHandouts.$inferSelect;
+
+// JSON shapes for the auto-handout system (kept here so client and server share them)
+export interface AutoHandoutSource {
+  url: string;
+  title: string;
+  snippet?: string;
+  source: "wikipedia" | "whiskybase" | "distillery" | "web" | "forum" | "blog" | "news";
+}
+
+export interface AutoHandoutImage {
+  url: string;
+  title?: string;
+  source: string;
+  license?: string;
+  pageUrl?: string;
+}
+
+export interface AutoHandoutChapter {
+  id: string;
+  type: string; // see CHAPTER_TYPES below
+  title: string;
+  content: string; // markdown text (may contain inline [n] citation markers)
+  sources: number[]; // indices into the parent profile's sources[]
+  confidence: "high" | "medium" | "low";
+  tone?: string;
+  length?: string;
+}
+
+export interface AutoHandoutSelectionEntry {
+  enabled: boolean;
+  customContent?: string;
+}
+
+export interface AutoHandoutSelection {
+  distilleries?: Record<string, Record<string, AutoHandoutSelectionEntry>>;
+  whiskies?: Record<string, Record<string, AutoHandoutSelectionEntry>>;
+}
+
+export interface AutoHandoutSelectedImage {
+  subjectKind: "distillery" | "whisky";
+  subjectKey: string;
+  url: string;
+  title?: string;
+  source: string;
+  license?: string;
+}
+
+export const AUTO_HANDOUT_CHAPTER_TYPES = {
+  distillery: [
+    { id: "steckbrief", title: "Steckbrief" },
+    { id: "geschichte", title: "Geschichte in 3 Minuten" },
+    { id: "stil", title: "Stil & Charakter" },
+    { id: "weniger_bekannt", title: "Was man eher nicht weiß" },
+    { id: "geheimtipps", title: "Geheimtipps & Insider-Wissen" },
+    { id: "stories", title: "Stories & Anekdoten" },
+    { id: "aktuelles", title: "Aktuelles" },
+    { id: "kontroversen", title: "Kontroversen & Mythen" },
+  ],
+  whisky: [
+    { id: "steckbrief", title: "Steckbrief" },
+    { id: "besonderes", title: "Das Besondere an dieser Abfüllung" },
+    { id: "sensorik", title: "Sensorik-Erwartung" },
+    { id: "sammler", title: "Sammler-Notiz" },
+  ],
+} as const;

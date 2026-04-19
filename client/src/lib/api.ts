@@ -192,6 +192,55 @@ export const tastingHandoutApi = {
     fetchJSON(`/tastings/${tastingId}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
 };
 
+// ===== Auto-Handout Generator =====
+import type { AutoHandoutSelection, AutoHandoutSelectedImage } from "@shared/schema";
+
+export type AutoHandoutLanguage = "de" | "en";
+export type AutoHandoutTone = "sachlich" | "erzaehlerisch" | "locker";
+export type AutoHandoutLength = "compact" | "medium" | "long";
+export type AutoHandoutVisibility = "always" | "after_first_reveal";
+
+export interface AutoHandoutGenerateOpts {
+  language?: AutoHandoutLanguage;
+  tone?: AutoHandoutTone;
+  length?: AutoHandoutLength;
+  forceRefresh?: boolean;
+}
+
+export interface AutoHandoutUpdatePatch {
+  language?: AutoHandoutLanguage;
+  tone?: AutoHandoutTone;
+  lengthPref?: AutoHandoutLength;
+  visibility?: AutoHandoutVisibility;
+  selection?: AutoHandoutSelection;
+  selectedImages?: AutoHandoutSelectedImage[];
+  chapterOrder?: string[];
+  acknowledgedNotice?: boolean;
+}
+
+export interface AutoHandoutRegenerateBody {
+  kind: "distillery" | "whisky";
+  subjectKey: string;
+  chapterId: string;
+  tone?: AutoHandoutTone;
+  length?: AutoHandoutLength;
+  language?: AutoHandoutLanguage;
+}
+
+export const autoHandoutApi = {
+  get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/auto-handout`),
+  generate: (tastingId: string, opts: AutoHandoutGenerateOpts) =>
+    fetchJSON(`/tastings/${tastingId}/auto-handout/generate`, { method: "POST", body: JSON.stringify(opts) }),
+  update: (tastingId: string, patch: AutoHandoutUpdatePatch) =>
+    fetchJSON(`/tastings/${tastingId}/auto-handout`, { method: "PATCH", body: JSON.stringify(patch) }),
+  regenerateChapter: (tastingId: string, body: AutoHandoutRegenerateBody) =>
+    fetchJSON(`/tastings/${tastingId}/auto-handout/regenerate-chapter`, { method: "POST", body: JSON.stringify(body) }),
+  refreshDistillery: (tastingId: string, distillery: string) =>
+    fetchJSON(`/tastings/${tastingId}/auto-handout/refresh-distillery`, { method: "POST", body: JSON.stringify({ distillery }) }),
+  delete: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/auto-handout`, { method: "DELETE" }),
+  listDistilleryProfiles: () => fetchJSON(`/distillery-profiles`),
+};
+
 // ===== Flight Import =====
 export const importApi = {
   parse: async (tastingId: string, spreadsheet: File, imageFiles?: File[]) => {

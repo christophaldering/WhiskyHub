@@ -20,6 +20,7 @@ import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { WhiskyHandoutViewer } from "@/labs/components/WhiskyHandoutManager";
 import { TastingHandoutViewer } from "@/labs/components/TastingHandoutManager";
+import { AutoHandoutViewer } from "@/labs/components/AutoHandoutManager";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
@@ -1149,6 +1150,19 @@ export default function LabsLive({ params }: LabsLiveProps) {
       {tasting?.handoutUrl && (
         <div className="mb-4">
           <TastingHandoutViewer tasting={tasting as Tasting} />
+        </div>
+      )}
+
+      {tasting && (
+        <div className="mb-4">
+          <AutoHandoutViewer
+            tasting={tasting as Tasting}
+            // Align with server-side gating: a tasting counts as "revealed"
+            // once the host has triggered the global reveal (tasting.revealedAt).
+            // The server enforces the same condition before returning content.
+            anyRevealed={Boolean((tasting as Tasting | undefined)?.revealedAt)}
+            hasHostUpload={Boolean(tasting?.handoutUrl)}
+          />
         </div>
       )}
 
