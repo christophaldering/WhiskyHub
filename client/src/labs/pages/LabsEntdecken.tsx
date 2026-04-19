@@ -542,23 +542,6 @@
                       </div>
                     </div>
                   ))}
-                  <Link
-                    href="/labs/bibliothek"
-                    data-testid="link-explore-bibliothek-view-all"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      alignSelf: "flex-end",
-                      fontSize: 13,
-                      color: "var(--labs-text-muted)",
-                      textDecoration: "none",
-                      padding: "6px 4px",
-                    }}
-                  >
-                    {t("bibliothek.viewAll", "View all")}
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
                 </div>
               )}
 
