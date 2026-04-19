@@ -32,9 +32,10 @@ interface WhiskyImageProps {
   testId?: string;
   whiskyId?: string;
   galleryCount?: number;
+  priority?: boolean;
 }
 
-export default function WhiskyImage({ imageUrl, name, size = 44, height, className = "", testId, whiskyId, galleryCount }: WhiskyImageProps) {
+export default function WhiskyImage({ imageUrl, name, size = 44, height, className = "", testId, whiskyId, galleryCount, priority = false }: WhiskyImageProps) {
   const [broken, setBroken] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [fetchedCount, setFetchedCount] = useState<number>(whiskyId ? (galleryCountCache.get(whiskyId) ?? -1) : 0);
@@ -124,12 +125,18 @@ export default function WhiskyImage({ imageUrl, name, size = 44, height, classNa
           <img
             src={imageUrl}
             alt={name}
+            width={size}
+            height={h}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            {...(priority ? ({ fetchPriority: "high" } as any) : {})}
             className={`flex-shrink-0 object-cover ${className}`}
             style={{
               width: size,
               height: h,
               borderRadius: radius,
               border: "1px solid var(--labs-border)",
+              backgroundColor: "var(--labs-surface-elevated, #2a2a2a)",
             }}
             onError={() => setBroken(true)}
           />

@@ -176,16 +176,55 @@ const docUpload = multer({
   },
 });
 
+const COMPRESSIBLE_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "image/tiff",
+]);
+const MAX_IMAGE_EDGE = 1600;
+const WEBP_QUALITY = 82;
+
+async function maybeCompressImage(
+  buffer: Buffer,
+  contentType: string
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const lower = (contentType || "").toLowerCase();
+  if (!COMPRESSIBLE_IMAGE_TYPES.has(lower)) return { buffer, contentType };
+  try {
+    const sharp = (await import("sharp")).default;
+    const out = await sharp(buffer, { failOn: "none" })
+      .rotate()
+      .resize({ width: MAX_IMAGE_EDGE, height: MAX_IMAGE_EDGE, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
+      .toBuffer();
+    if (out.length > 0 && out.length < buffer.length) {
+      return { buffer: out, contentType: "image/webp" };
+    }
+    if (out.length > 0) {
+      return { buffer: out, contentType: "image/webp" };
+    }
+    return { buffer, contentType };
+  } catch (err) {
+    console.warn("[image-compress] failed, uploading original:", err);
+    return { buffer, contentType };
+  }
+}
+
 async function uploadBufferToObjectStorage(
   objectStorage: ObjectStorageService,
   buffer: Buffer,
   contentType: string
 ): Promise<string> {
+  const compressed = await maybeCompressImage(buffer, contentType);
   const uploadURL = await objectStorage.getObjectEntityUploadURL();
   const resp = await fetch(uploadURL, {
     method: "PUT",
-    body: buffer,
-    headers: { "Content-Type": contentType },
+    body: compressed.buffer,
+    headers: { "Content-Type": compressed.contentType },
   });
   if (!resp.ok) {
     throw new Error(`Object storage upload failed (${resp.status})`);

@@ -95,20 +95,22 @@ export class ObjectStorageService {
   }
 
   // Downloads an object to the response.
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
+  async downloadObject(file: File, res: Response, cacheTtlSec: number = 31536000) {
     try {
       // Get file metadata
       const [metadata] = await file.getMetadata();
       // Get the ACL policy for the object.
       const aclPolicy = await getObjectAclPolicy(file);
       const isPublic = aclPolicy?.visibility === "public";
-      // Set appropriate headers
+      // Set appropriate headers. Object IDs are immutable per upload, so we
+      // serve with a long cache and the immutable directive for public files.
+      const cacheControl = isPublic
+        ? `public, max-age=${cacheTtlSec}, immutable`
+        : `private, max-age=${cacheTtlSec}`;
       res.set({
         "Content-Type": metadata.contentType || "application/octet-stream",
         "Content-Length": metadata.size,
-        "Cache-Control": `${
-          isPublic ? "public" : "private"
-        }, max-age=${cacheTtlSec}`,
+        "Cache-Control": cacheControl,
       });
 
       // Stream the file to the response
