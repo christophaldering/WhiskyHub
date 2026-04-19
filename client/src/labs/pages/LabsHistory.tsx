@@ -424,14 +424,16 @@ export function LabsHistoryInsights() {
               const isTop3 = i < 3;
               const medalColor = i === 0 ? "#d4a256" : i === 1 ? "#a8a8a8" : i === 2 ? "#cd7f32" : "var(--labs-text-muted)";
               const whiskyLabel = [w.distillery, w.name].filter(Boolean).join(" \u2014 ") || "\u2014";
+              const tastingLabel = (lang.startsWith("de") ? w.titleDe : w.titleEn) || w.titleDe || (w.tastingNumber ? `#${w.tastingNumber}` : "");
               return (
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 10, fontSize: 13,
-                  padding: "8px 6px",
-                  background: isTop3 ? "var(--labs-accent-muted)" : "transparent",
+                  padding: "8px 8px 8px 9px",
                   borderRadius: 8,
+                  position: "relative",
+                  borderLeft: isTop3 ? `3px solid ${medalColor}` : "3px solid transparent",
                 }} data-testid={`insights-top-whisky-${i}`}>
-                  <span style={{ width: 26, textAlign: "right", color: medalColor, fontWeight: isTop3 ? 700 : 400, fontVariantNumeric: "tabular-nums", fontSize: isTop3 ? 15 : 13, flexShrink: 0 }}>{i + 1}.</span>
+                  <span style={{ width: 22, textAlign: "right", color: medalColor, fontWeight: isTop3 ? 700 : 400, fontVariantNumeric: "tabular-nums", fontSize: isTop3 ? 14 : 13, flexShrink: 0 }}>{i + 1}.</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: "var(--labs-text)", fontWeight: isTop3 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{whiskyLabel}</div>
                   </div>
@@ -441,7 +443,27 @@ export function LabsHistoryInsights() {
                       : "\u2014"}
                     {(w.normalizedTotal ?? w.totalScore) != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 400, marginLeft: 2 }}>/100</span>}
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", background: "var(--labs-accent-muted)", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>{(lang.startsWith("de") ? w.titleDe : w.titleEn) || w.titleDe || (w.tastingNumber ? `#${w.tastingNumber}` : "")}</span>
+                  {tastingLabel && (
+                    <span
+                      title={tastingLabel}
+                      style={{
+                        fontSize: 11,
+                        color: "var(--labs-text-muted)",
+                        background: "transparent",
+                        border: "1px solid var(--labs-border)",
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        flexShrink: 0,
+                        maxWidth: "min(40%, 140px)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontWeight: 400,
+                      }}
+                    >
+                      {tastingLabel}
+                    </span>
+                  )}
                 </div>
               );
             })}
