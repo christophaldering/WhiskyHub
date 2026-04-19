@@ -149,7 +149,9 @@ export default function LabsHandoutLibrary() {
   const uploadMut = useMutation<any, Error, void, { wantsSplit: boolean; isPdf: boolean }>({
     onMutate: () => ({
       wantsSplit: !!uploadForm.splitProgramme,
-      isPdf: (uploadForm.file?.type || "").toLowerCase() === "application/pdf",
+      isPdf:
+        (uploadForm.file?.type || "").toLowerCase() === "application/pdf" ||
+        (uploadForm.file?.name || "").toLowerCase().endsWith(".pdf"),
     }),
     mutationFn: async () => {
       if (!uploadForm.file) throw new Error("Bitte eine Datei auswählen");
