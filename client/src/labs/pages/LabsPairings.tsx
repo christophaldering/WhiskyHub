@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import {
-  ChevronLeft, Wine, Sparkles, MapPin, Flame, Package,
+  Sparkles, MapPin, Flame, Package,
   ChevronDown, Utensils,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -90,11 +90,7 @@ export default function LabsPairings() {
 
   return (
     <div className="labs-page" data-testid="labs-pairings">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-pairings">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Utensils className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
@@ -8,7 +8,7 @@ import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistK
 import WishlistBadge from "@/labs/components/WishlistBadge";
 import CollectionBadge from "@/labs/components/CollectionBadge";
 import {
-  ChevronLeft, Upload, FileText, Loader2, Check, X, Trash2, Save, Brain,
+  Upload, FileText, Loader2, Check, X, Trash2, Save, Brain,
   AlertCircle, ChevronDown, ChevronUp, Search, Database, User, Clock,
   BookOpen, Heart, GlassWater, BarChart3, Newspaper, MoreHorizontal,
 } from "lucide-react";
@@ -247,11 +247,7 @@ export default function LabsBenchmark() {
 
   return (
     <div className="labs-page" data-testid="labs-benchmark">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-benchmark">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useRoute, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { formatScore } from "@/lib/utils";
@@ -617,15 +618,19 @@ export default function LabsHistory() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-history-page">
-      <button
-        onClick={goBack}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-history-back"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        {isHostRoute ? t("history.backToDashboard", "Dashboard") : t("bibliothek.title", "Library")}
-      </button>
+      {isHostRoute ? (
+        <button
+          onClick={goBack}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-history-back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("history.backToDashboard", "Dashboard")}
+        </button>
+      ) : (
+        <DiscoverActionBar active="bibliothek" />
+      )}
       <h1
         className="labs-serif"
         style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}
