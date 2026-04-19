@@ -4662,6 +4662,7 @@ const resources = {
         tileAiInsightsDesc: "Connoisseur, DNA & recommendations",
         tileProfileAnalytics: "Profile & Analytics",
         tileProfileAnalyticsDesc: "Analytics, flavor wheel & exports",
+        viewAll: "View all",
         collectionHub: {
           title: "My Collection",
           subtitle: "Your drams, bottles & wishlist",
@@ -13526,6 +13527,7 @@ const resources = {
         tileAiInsightsDesc: "Connoisseur, DNA & Empfehlungen",
         tileProfileAnalytics: "Profil & Auswertungen",
         tileProfileAnalyticsDesc: "Analytics, Aromenrad & Exporte",
+        viewAll: "Alle ansehen",
         collectionHub: {
           title: "Meine Sammlung",
           subtitle: "Deine Drams, Flaschen & Wunschliste",
