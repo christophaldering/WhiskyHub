@@ -1,6 +1,4 @@
-import { db } from "./db";
-import { ratings, whiskies, journalEntries } from "@shared/schema";
-import { eq, and, isNull, ne, inArray } from "drizzle-orm";
+import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 
 export interface Insight {
   type: string;
@@ -38,78 +36,14 @@ function msg(type: keyof typeof INSIGHT_MESSAGES, language: InsightLanguage): st
   return entry[language] ?? entry.en;
 }
 
-interface ScoredDataPoint {
-  normalizedScore: number;
-  peatLevel: string | null;
-  abv: number | null;
-}
-
 export async function generateParticipantInsights(participantId: string, language: InsightLanguage = "en"): Promise<Insight[]> {
   const lang: InsightLanguage = language === "de" ? "de" : "en";
-  const allRatings = await db
-    .select({
-      normalizedScore: ratings.normalizedScore,
-      whiskyId: ratings.whiskyId,
-    })
-    .from(ratings)
-    .where(eq(ratings.participantId, participantId));
 
-  const scoredRatings = allRatings.filter(r => r.normalizedScore != null) as { normalizedScore: number; whiskyId: string }[];
-
-  const whiskyIds = [...new Set(scoredRatings.map(r => r.whiskyId))];
-  const whiskyRows = whiskyIds.length > 0
-    ? await db
-        .select({
-          id: whiskies.id,
-          abv: whiskies.abv,
-          peatLevel: whiskies.peatLevel,
-        })
-        .from(whiskies)
-        .where(inArray(whiskies.id, whiskyIds))
-    : [];
-  const whiskyMap = new Map(whiskyRows.map(w => [w.id, w]));
-
-  const ratingDataPoints: ScoredDataPoint[] = scoredRatings.map(r => {
-    const w = whiskyMap.get(r.whiskyId);
-    return {
-      normalizedScore: r.normalizedScore,
-      peatLevel: w?.peatLevel ?? null,
-      abv: w?.abv ?? null,
-    };
-  });
-
-  const journal = await db
-    .select({
-      personalScore: journalEntries.personalScore,
-      peatLevel: journalEntries.peatLevel,
-      abv: journalEntries.abv,
-    })
-    .from(journalEntries)
-    .where(
-      and(
-        eq(journalEntries.participantId, participantId),
-        ne(journalEntries.status, "draft"),
-        isNull(journalEntries.deletedAt)
-      )
-    );
-
-  const journalDataPoints: ScoredDataPoint[] = journal
-    .filter(j => j.personalScore != null && j.personalScore > 0)
-    .map(j => {
-      const parsedAbv = j.abv != null ? (typeof j.abv === "number" ? j.abv : parseFloat(String(j.abv).replace(/[%\s]/g, ""))) : null;
-      return {
-        normalizedScore: j.personalScore!,
-        peatLevel: j.peatLevel ?? null,
-        abv: parsedAbv != null && !isNaN(parsedAbv) ? parsedAbv : null,
-      };
-    });
-
-  const scored = [...ratingDataPoints, ...journalDataPoints];
+  const scored = await getParticipantOverallScores(participantId);
   if (scored.length < 3) return [];
 
   const allScores = scored.map(r => r.normalizedScore);
   const globalAvg = avg(allScores);
-  const globalStdDev = stddev(allScores);
 
   const insights: Insight[] = [];
 
@@ -170,16 +104,17 @@ export async function generateParticipantInsights(participantId: string, languag
     }
   }
 
-  if (allScores.length >= 5) {
-    if (globalStdDev < 5) {
-      const confidence = Math.min(0.95, 0.6 + (5 - globalStdDev) / 10);
+  if (allScores.length >= 8) {
+    const stabilityScore = computeStabilityScore(allScores);
+    if (stabilityScore != null && stabilityScore >= 8) {
+      const confidence = Math.min(0.95, 0.6 + (stabilityScore - 8) / 10);
       insights.push({
         type: "rating_stability_high",
         message: msg("rating_stability_high", lang),
         confidence: round2(confidence),
       });
-    } else if (globalStdDev > 20) {
-      const confidence = Math.min(0.95, 0.5 + (globalStdDev - 20) / 40);
+    } else if (stabilityScore != null && stabilityScore <= 4) {
+      const confidence = Math.min(0.95, 0.5 + (4 - stabilityScore) / 10);
       insights.push({
         type: "rating_stability_low",
         message: msg("rating_stability_low", lang),
@@ -194,13 +129,6 @@ export async function generateParticipantInsights(participantId: string, languag
 function avg(arr: number[]): number {
   if (arr.length === 0) return 0;
   return arr.reduce((s, v) => s + v, 0) / arr.length;
-}
-
-function stddev(arr: number[]): number {
-  if (arr.length < 2) return 0;
-  const m = avg(arr);
-  const variance = arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length;
-  return Math.sqrt(variance);
 }
 
 function round2(n: number): number {

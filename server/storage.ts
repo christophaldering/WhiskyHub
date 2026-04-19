@@ -1,6 +1,7 @@
 import { eq, ne, and, asc, desc, sql, inArray, gte, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
+import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
@@ -1537,32 +1538,9 @@ export class DatabaseStorage implements IStorage {
       )
     );
 
-    const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
-    const tastingRows = tastingIds.length > 0
-      ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
-      : [];
-    const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
-
-    const allOverallScores: number[] = [];
-    for (const r of allRatings) {
-      const scale = tastingScaleMap.get(r.tastingId) ?? 100;
-      const norm = 100 / scale;
-      allOverallScores.push(r.normalizedScore ?? r.overall * norm);
-    }
-    for (const j of journalRows) {
-      if (j.personalScore != null && j.personalScore > 0) {
-        allOverallScores.push(j.personalScore);
-      }
-    }
-
-    let ratingStabilityScore: number | null = null;
-    if (allOverallScores.length >= 3) {
-      const mean = allOverallScores.reduce((a, b) => a + b, 0) / allOverallScores.length;
-      const variance = allOverallScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / allOverallScores.length;
-      const stdDev = Math.sqrt(variance);
-      const maxStdDev = 30;
-      ratingStabilityScore = Math.round(Math.max(0, Math.min(10, 10 - (stdDev / maxStdDev) * 10)) * 10) / 10;
-    }
+    const overallScorePoints = await getParticipantOverallScores(participantId);
+    const allOverallScores = overallScorePoints.map(p => p.normalizedScore);
+    const ratingStabilityScore = computeStabilityScore(allOverallScores);
 
     const uniqueRegions = new Set<string>();
     const uniqueCategories = new Set<string>();
