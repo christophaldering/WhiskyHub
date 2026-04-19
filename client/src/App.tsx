@@ -84,6 +84,9 @@ const LabsCalendar = lazy(() => import("@/labs/pages/LabsCalendar"));
 const LabsHistory = lazy(() => import("@/labs/pages/LabsHistory"));
 const LabsHistoricalDetail = lazy(() => import("@/labs/pages/LabsHistoricalDetail"));
 const LabsTasteDrams = lazy(() => import("@/labs/pages/LabsTasteDrams"));
+const LabsCollectionHub = lazy(() => import("@/labs/pages/LabsCollectionHub"));
+const LabsAIInsights = lazy(() => import("@/labs/pages/LabsAIInsights"));
+const LabsAnalyticsHub = lazy(() => import("@/labs/pages/LabsAnalyticsHub"));
 const LabsTasteCollection = lazy(() => import("@/labs/pages/LabsTasteCollection"));
 const LabsTasteWishlist = lazy(() => import("@/labs/pages/LabsTasteWishlist"));
 const LabsTasteDownloads = lazy(() => import("@/labs/pages/LabsTasteDownloads"));
@@ -686,6 +689,9 @@ function Router() {
               <Route path="/labs/taste/collection-analysis" component={LabsCollectionAnalysis} />
               <Route path="/labs/taste/connoisseur" component={LabsConnoisseur} />
               <Route path="/labs/taste/ai-curation" component={LabsAICuration} />
+              <Route path="/labs/taste/collection-hub" component={LabsCollectionHub} />
+              <Route path="/labs/taste/ai-insights" component={LabsAIInsights} />
+              <Route path="/labs/taste/analytics-hub" component={LabsAnalyticsHub} />
               <Route path="/labs/invite/:token" component={LabsInvite} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/bottle-sharing/:id">{(params: any) => <LabsBottleSharingDetail id={params.id} />}</Route>
