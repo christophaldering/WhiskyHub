@@ -100,14 +100,17 @@ export default function LabsDistilleries() {
   return (
     <div className="labs-page" style={view === "map" ? { maxWidth: 1000 } : undefined} data-testid="labs-discover-distilleries-page">
       <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
+        <button className="labs-btn-ghost mb-6" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
           <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
         </button>
       </BackLink>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
+        <div className="flex flex-col gap-2 min-w-0">
+          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0, lineHeight: 1.15, letterSpacing: "-0.01em" }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
+          <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.4 }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:flex-shrink-0">
           {currentParticipant && <SuggestEntryDialog type="distillery" />}
           <div style={{ display: "flex", borderRadius: 10, border: "1px solid var(--labs-border)", overflow: "hidden", background: "var(--labs-surface-elevated)" }}>
             {(["list", "map"] as const).map((m) => (
@@ -118,7 +121,6 @@ export default function LabsDistilleries() {
           </div>
         </div>
       </div>
-      <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
 
       {view === "map" ? (
         <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--labs-text-muted)" }}>{t("discover.loadingMap", "Loading map...")}</div>}>
