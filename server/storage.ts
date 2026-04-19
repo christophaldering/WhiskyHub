@@ -1,4 +1,4 @@
-import { eq, ne, and, asc, desc, sql, inArray, gte, isNull, isNotNull, lt } from "drizzle-orm";
+import { eq, ne, and, or, asc, desc, sql, inArray, gte, isNull, isNotNull, lt, type SQL } from "drizzle-orm";
 import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
@@ -1126,7 +1126,11 @@ export class DatabaseStorage implements IStorage {
       const pattern = `%${search.toLowerCase()}%`;
       return db.select().from(whiskyHandoutLibrary).where(and(
         eq(whiskyHandoutLibrary.hostId, hostId),
-        sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${pattern} OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${pattern} OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${pattern})`
+        sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${pattern}
+          OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${pattern}
+          OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${pattern}
+          OR LOWER(COALESCE(${whiskyHandoutLibrary.author}, '')) LIKE ${pattern}
+          OR LOWER(COALESCE(${whiskyHandoutLibrary.whiskybaseId}, '')) LIKE ${pattern})`
       )).orderBy(desc(whiskyHandoutLibrary.createdAt));
     }
     return db.select().from(whiskyHandoutLibrary)
@@ -1139,14 +1143,15 @@ export class DatabaseStorage implements IStorage {
     const name = match.whiskyName?.trim().toLowerCase();
     const dist = match.distillery?.trim().toLowerCase();
     if (!wb && !name && !dist) return [];
-    const ors: any[] = [];
+    const ors: SQL[] = [];
     if (wb) ors.push(eq(whiskyHandoutLibrary.whiskybaseId, wb));
     if (name) ors.push(sql`LOWER(${whiskyHandoutLibrary.whiskyName}) = ${name}`);
     if (dist) ors.push(sql`LOWER(${whiskyHandoutLibrary.distillery}) = ${dist}`);
-    const orExpr = sql.join(ors, sql` OR `);
+    const matchClause = or(...ors);
+    if (!matchClause) return [];
     const rows = await db.select().from(whiskyHandoutLibrary).where(and(
       eq(whiskyHandoutLibrary.hostId, hostId),
-      sql`(${orExpr})`
+      matchClause,
     )).orderBy(desc(whiskyHandoutLibrary.createdAt));
     // Score: wb match = 3, name+dist = 2, name = 1.5, dist = 1
     const scored = rows.map((r) => {
