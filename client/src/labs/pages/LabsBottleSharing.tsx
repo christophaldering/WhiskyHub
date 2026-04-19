@@ -397,12 +397,20 @@ export default function LabsBottleSharing() {
             <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
           </button>
         )}
-        {!isEmbedded && (
-          <>
-            <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }} data-testid="text-sharing-title">{t("bottleSharing.title")}</h1>
-            <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-lg)" }}>{t("bottleSharing.subtitle")}</p>
-          </>
-        )}
+        <h1
+          className="labs-h2 mb-2"
+          style={{ color: "var(--labs-text)" }}
+          data-testid="text-sharing-title"
+        >
+          {t("bottleSharing.title")}
+        </h1>
+        <p
+          className="text-sm mb-6"
+          style={{ color: "var(--labs-text-secondary)" }}
+          data-testid="text-sharing-subtitle"
+        >
+          {t("bottleSharing.subtitle")}
+        </p>
         <div style={{ display: "flex", gap: 4, marginBottom: "var(--labs-space-lg)" }}>
           {steps.map((s, i) => (<div key={s} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= stepIdx ? "var(--labs-accent)" : "var(--labs-border)" }} />))}
         </div>

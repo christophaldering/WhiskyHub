@@ -478,29 +478,22 @@ export default function LabsJoin() {
           Tastings
         </button>
       )}
-      <div className="text-center mb-8">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: "var(--labs-accent-muted)" }}
-        >
-          <Wine className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
-        </div>
-        <h1
-          className="labs-h1 mb-2"
-          style={{ color: "var(--labs-text)" }}
-          data-testid="labs-join-title"
-        >
-          {t("m2.join.title", "Join a Tasting")}
-        </h1>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: "var(--labs-text-muted)" }}
-        >
-          {isLoggedIn
-            ? t("m2.join.subtitleLoggedIn", "Accept an invitation or enter the code from your host.")
-            : t("m2.join.subtitleGuest", "Enter the code your host shared with you.")}
-        </p>
-      </div>
+      <h1
+        className="labs-h2 mb-2"
+        style={{ color: "var(--labs-text)" }}
+        data-testid="labs-join-title"
+      >
+        {t("m2.join.title", "Join a Tasting")}
+      </h1>
+      <p
+        className="text-sm mb-6"
+        style={{ color: "var(--labs-text-secondary)" }}
+        data-testid="labs-join-subtitle"
+      >
+        {isLoggedIn
+          ? t("m2.join.subtitleLoggedIn", "Accept an invitation or enter the code from your host.")
+          : t("m2.join.subtitleGuest", "Enter the code your host shared with you.")}
+      </p>
 
       {isLoggedIn && (invitesLoading || myInvites.length > 0) && (
         <div className="mb-6 labs-stagger-1 labs-fade-in">
