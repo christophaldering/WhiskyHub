@@ -5774,6 +5774,10 @@ const resources = {
         whisky_plural: "whiskies",
       },
       labs: {
+        handoutCommunity: {
+          intro: "Here you'll find handouts that other hosts have shared with the community. Adopt an entry into your own library with a single click.",
+          takedownLink: "Notice & Takedown",
+        },
         handoutSplitter: {
           title: "Split programme PDF page by page",
           subtitle: "{{pages}} pages",
@@ -14720,6 +14724,10 @@ const resources = {
         whisky_plural: "Whiskys",
       },
       labs: {
+        handoutCommunity: {
+          intro: "Hier siehst du Handouts, die andere Hosts mit der Community geteilt haben. Übernimm einen Eintrag mit einem Klick in deine eigene Bibliothek.",
+          takedownLink: "Notice & Takedown",
+        },
         handoutSplitter: {
           title: "Programmheft seitenweise aufteilen",
           subtitle: "{{pages}} Seiten",

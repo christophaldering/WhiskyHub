@@ -816,14 +816,14 @@ export default function LabsHandoutLibrary() {
       {tab === "community" && (
         <>
           <p style={{ color: "var(--labs-text-muted)", fontSize: 12, margin: "0 0 12px" }}>
-            Hier siehst du Handouts, die andere Hosts mit der Community geteilt haben. Übernimm einen Eintrag mit einem Klick in deine eigene Bibliothek.
+            {t("labs.handoutCommunity.intro")}
             {" "}
             <Link
               href="/impressum"
               style={{ color: "var(--labs-accent)", textDecoration: "underline" }}
               data-testid="link-handout-community-takedown"
             >
-              Notice & Takedown
+              {t("labs.handoutCommunity.takedownLink")}
             </Link>
             .
           </p>
