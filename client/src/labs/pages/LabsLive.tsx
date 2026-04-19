@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, ChevronDown, Monitor, Sparkles, Settings } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -771,7 +771,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
-  const [calibrationOpen, setCalibrationOpen] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
 
   const hasUnsavedLiveRef = useRef(false);
@@ -1479,14 +1478,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
               {whiskies && whiskies.length > 1 && (
                 <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="calibration-overview">
-                  <button
-                    type="button"
-                    onClick={() => setCalibrationOpen(!calibrationOpen)}
+                  <div
                     style={{
-                      width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                      width: "100%", display: "flex", alignItems: "center",
+                      padding: "14px 16px",
                     }}
-                    data-testid="button-toggle-calibration"
+                    data-testid="calibration-header"
                   >
                     <div className="flex items-center gap-2">
                       <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
@@ -1497,10 +1494,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
                         ({myAllRatings.length}/{whiskies.length} rated)
                       </span>
                     </div>
-                    <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transform: calibrationOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-                  </button>
-                  {calibrationOpen && (
-                    <div style={{ padding: "0 16px 16px" }}>
+                  </div>
+                  <div style={{ padding: "0 16px 16px" }}>
                       <div className="space-y-2">
                         {whiskies.map((w: any, idx: number) => {
                           const rating = myAllRatings.find((r: any) => r.whiskyId === w.id);
@@ -1515,7 +1510,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                             <button
                               key={w.id}
                               type="button"
-                              onClick={() => { setCurrentIndex(idx); setCalibrationOpen(false); }}
+                              onClick={() => { setCurrentIndex(idx); }}
                               style={{
                                 width: "100%", display: "flex", alignItems: "center", gap: 10,
                                 padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
@@ -1560,7 +1555,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
                         );
                       })()}
                     </div>
-                  )}
                 </div>
               )}
 
