@@ -33,6 +33,7 @@ interface UploadFormState {
   author: string;
   description: string;
   splitProgramme: boolean;
+  programmeDate: string;
 }
 
 const emptyUploadForm: UploadFormState = {
@@ -44,6 +45,7 @@ const emptyUploadForm: UploadFormState = {
   author: "",
   description: "",
   splitProgramme: false,
+  programmeDate: "",
 };
 
 function fmtDate(d: Date | string | null | undefined, locale: string): string {
@@ -433,13 +435,17 @@ export default function LabsHandoutLibrary() {
         ? (uploadForm.whiskyName.trim() || fallbackName)
         : uploadForm.whiskyName.trim();
       if (!effectiveWhiskyName) throw new Error(t("labs.handoutLibrary.errWhiskyNameRequired"));
+      const datePrefix = sammelMode && uploadForm.programmeDate.trim()
+        ? `${t("labs.handoutLibrary.fieldProgrammeDate")}: ${uploadForm.programmeDate.trim()}\n\n`
+        : "";
+      const effectiveDescription = (datePrefix + uploadForm.description).trim();
       return handoutLibraryApi.upload(hostId, uploadForm.file, {
         whiskyName: effectiveWhiskyName,
         distillery: uploadForm.distillery.trim(),
         whiskybaseId: uploadForm.whiskybaseId.trim(),
         title: uploadForm.title.trim(),
         author: uploadForm.author.trim(),
-        description: uploadForm.description.trim(),
+        description: effectiveDescription,
       });
     },
     onSuccess: (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
@@ -754,6 +760,66 @@ export default function LabsHandoutLibrary() {
                   </label>
                 );
               })()}
+              {uploadForm.splitProgramme && (
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                    {t("labs.handoutLibrary.programmeMetaHint")}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldProgrammeTitle")}
+                      <input
+                        className="labs-input"
+                        placeholder={t("labs.handoutLibrary.fieldProgrammeTitlePlaceholder")}
+                        value={uploadForm.title}
+                        onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                        data-testid="input-upload-programme-title"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldProgrammeDate")}
+                      <input
+                        type="date"
+                        className="labs-input"
+                        value={uploadForm.programmeDate}
+                        onChange={(e) => setUploadForm({ ...uploadForm, programmeDate: e.target.value })}
+                        data-testid="input-upload-programme-date"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldAuthor")}
+                      <input
+                        className="labs-input"
+                        placeholder={t("labs.handoutLibrary.fieldAuthorPlaceholder")}
+                        value={uploadForm.author}
+                        onChange={(e) => setUploadForm({ ...uploadForm, author: e.target.value })}
+                        data-testid="input-upload-programme-author"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldDistillery")}
+                      <input
+                        className="labs-input"
+                        placeholder={t("labs.handoutLibrary.fieldProgrammeDistilleryPlaceholder")}
+                        value={uploadForm.distillery}
+                        onChange={(e) => setUploadForm({ ...uploadForm, distillery: e.target.value })}
+                        data-testid="input-upload-programme-distillery"
+                      />
+                    </label>
+                  </div>
+                  <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                    {t("labs.handoutLibrary.fieldProgrammeBackground")}
+                    <textarea
+                      className="labs-input"
+                      rows={2}
+                      placeholder={t("labs.handoutLibrary.fieldProgrammeBackgroundPlaceholder")}
+                      value={uploadForm.description}
+                      onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                      data-testid="input-upload-programme-description"
+                    />
+                  </label>
+                </div>
+              )}
               {!uploadForm.splitProgramme && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
