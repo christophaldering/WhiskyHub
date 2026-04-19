@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
@@ -9,6 +9,16 @@ import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
 import i18n from "i18next";
+import LabsJoin from "@/labs/pages/LabsJoin";
+import LabsSolo from "@/labs/pages/LabsSolo";
+import LabsHost from "@/labs/pages/LabsHost";
+import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
+
+type TastingsTab = "join" | "solo" | "host" | "share";
+
+function isTastingsTab(value: string | null): value is TastingsTab {
+  return value === "join" || value === "solo" || value === "host" || value === "share";
+}
 
 function getTimeGreetingKey(): string {
   const h = new Date().getHours();
@@ -47,6 +57,40 @@ export default function LabsTastings() {
   const { t } = useTranslation();
   const { currentParticipant, openAuthDialog } = useAppStore();
   const [, navigate] = useLocation();
+  const searchStr = useSearch();
+
+  const initialTab = useMemo<TastingsTab | null>(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      const v = params.get("tab");
+      if (isTastingsTab(v)) return v;
+    } catch {}
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      const current = params.get("tab");
+      const desired = activeTab ?? null;
+      if ((current ?? null) === desired) return;
+      if (!desired) {
+        params.delete("tab");
+      } else {
+        params.set("tab", desired);
+      }
+      const qs = params.toString();
+      navigate(`/labs/tastings${qs ? `?${qs}` : ""}`, { replace: true });
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const handleTabClick = (tab: TastingsTab) => {
+    setActiveTab((prev) => (prev === tab ? null : tab));
+  };
+
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -207,6 +251,16 @@ export default function LabsTastings() {
   }, [historyData, journalData]);
 
   if (!currentParticipant) {
+    if (activeTab) {
+      return (
+        <div data-testid={`labs-tastings-standalone-${activeTab}`}>
+          {activeTab === "join" && <LabsJoin />}
+          {activeTab === "solo" && <LabsSolo />}
+          {activeTab === "host" && <LabsHost />}
+          {activeTab === "share" && <LabsBottleSharing />}
+        </div>
+      );
+    }
     return (
       <div className="labs-home-container labs-fade-in">
         <div className="labs-home-header">
@@ -343,7 +397,13 @@ export default function LabsTastings() {
       </div>
 
       <div className="labs-hub-tile-grid labs-hub-tile-grid--auto labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
-        <Link href="/labs/join" className="labs-hub-tile" data-testid="labs-action-join">
+        <button
+          type="button"
+          onClick={() => handleTabClick("join")}
+          className={`labs-hub-tile labs-hub-tile--button${activeTab === "join" ? " labs-hub-tile--active" : ""}`}
+          data-testid="labs-action-join"
+          aria-pressed={activeTab === "join"}
+        >
           <div className="labs-hub-tile-icon">
             <Users className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
@@ -351,8 +411,14 @@ export default function LabsTastings() {
             <div className="labs-hub-tile-label">{t("tastingActions.join", "Join")}</div>
             <div className="labs-hub-tile-desc">{t("tastingActions.joinDesc", "Enter a tasting code")}</div>
           </div>
-        </Link>
-        <Link href="/labs/solo" className="labs-hub-tile" data-testid="labs-action-solo">
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabClick("solo")}
+          className={`labs-hub-tile labs-hub-tile--button${activeTab === "solo" ? " labs-hub-tile--active" : ""}`}
+          data-testid="labs-action-solo"
+          aria-pressed={activeTab === "solo"}
+        >
           <div className="labs-hub-tile-icon">
             <PenLine className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
@@ -360,8 +426,14 @@ export default function LabsTastings() {
             <div className="labs-hub-tile-label">{t("tastingActions.solo", "Solo")}</div>
             <div className="labs-hub-tile-desc">{t("tastingActions.soloDesc", "Taste & log on your own")}</div>
           </div>
-        </Link>
-        <Link href="/labs/host" className="labs-hub-tile" data-testid="labs-action-host">
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabClick("host")}
+          className={`labs-hub-tile labs-hub-tile--button${activeTab === "host" ? " labs-hub-tile--active" : ""}`}
+          data-testid="labs-action-host"
+          aria-pressed={activeTab === "host"}
+        >
           <div className="labs-hub-tile-icon">
             <Crown className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
@@ -369,8 +441,14 @@ export default function LabsTastings() {
             <div className="labs-hub-tile-label">{t("tastingActions.host", "Host")}</div>
             <div className="labs-hub-tile-desc">{t("tastingActions.hostDesc", "Create & run a tasting")}</div>
           </div>
-        </Link>
-        <Link href="/labs/bottle-sharing" className="labs-hub-tile" data-testid="labs-action-bottle-sharing">
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabClick("share")}
+          className={`labs-hub-tile labs-hub-tile--button${activeTab === "share" ? " labs-hub-tile--active" : ""}`}
+          data-testid="labs-action-bottle-sharing"
+          aria-pressed={activeTab === "share"}
+        >
           <div className="labs-hub-tile-icon">
             <Share2 className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
@@ -378,8 +456,20 @@ export default function LabsTastings() {
             <div className="labs-hub-tile-label">{t("tastingActions.share", "Share")}</div>
             <div className="labs-hub-tile-desc">{t("tastingActions.shareDesc", "Split a bottle with friends")}</div>
           </div>
-        </Link>
+        </button>
       </div>
+
+      {activeTab && (
+        <div
+          className="labs-tastings-inline-content labs-fade-in"
+          data-testid={`labs-tastings-inline-${activeTab}`}
+        >
+          {activeTab === "join" && <LabsJoin />}
+          {activeTab === "solo" && <LabsSolo />}
+          {activeTab === "host" && <LabsHost />}
+          {activeTab === "share" && <LabsBottleSharing />}
+        </div>
+      )}
 
       <div className="labs-tastings-search-wrapper labs-fade-in labs-stagger-1">
         <Search className="labs-tastings-search-icon w-4 h-4" />

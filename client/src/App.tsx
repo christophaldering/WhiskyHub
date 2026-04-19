@@ -629,7 +629,7 @@ function Router() {
             <Switch>
               <Route path="/labs/onboarding" component={LabsOnboarding} />
               <Route path="/labs/join/:code" component={LabsJoin} />
-              <Route path="/labs/join" component={LabsJoin} />
+              <Route path="/labs/join">{() => <RedirectWithQuery to="/labs/tastings" query="tab=join" />}</Route>
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/history/insights" component={LabsHistory} />
@@ -639,7 +639,7 @@ function Router() {
               <Route path="/labs/host/history/:id" component={LabsHistoricalDetail} />
               <Route path="/labs/host/history" component={LabsHistory} />
               <Route path="/labs/host/:id" component={LabsHost} />
-              <Route path="/labs/host" component={LabsHost} />
+              <Route path="/labs/host">{() => <RedirectWithQuery to="/labs/tastings" query="tab=host" />}</Route>
               <Route path="/labs/tastings/:id/scan" component={LabsPaperScan} />
               <Route path="/labs/tastings/:id/recap" component={LabsTastingRecap} />
               <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
@@ -694,11 +694,11 @@ function Router() {
               <Route path="/labs/invite/:token" component={LabsInvite} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/bottle-sharing/:id">{(params: any) => <LabsBottleSharingDetail id={params.id} />}</Route>
-              <Route path="/labs/bottle-sharing" component={LabsBottleSharing} />
+              <Route path="/labs/bottle-sharing">{() => <RedirectWithQuery to="/labs/tastings" query="tab=share" />}</Route>
               <Route path="/labs/splits/:id">{(params: any) => <LabsBottleSplitDetail id={params.id} />}</Route>
               <Route path="/labs/splits" component={LabsBottleSplit} />
               <Route path="/labs/circle" component={LabsCircle} />
-              <Route path="/labs/solo" component={LabsSolo} />
+              <Route path="/labs/solo">{() => <RedirectWithQuery to="/labs/tastings" query="tab=solo" />}</Route>
               <Route path="/labs/fair-mode" component={LabsFairMode} />
               <Route path="/labs/about" component={LabsAbout} />
               <Route path="/labs/donate" component={LabsDonate} />
