@@ -276,6 +276,20 @@ export const handoutLibraryApi = {
     }
     return res.json();
   },
+  replaceFile: async (id: string, hostId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/handout-library/${id}/replace-file`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
   bulkDelete: (ids: string[], hostId: string) =>
     fetchJSON(`/handout-library/bulk-delete`, {
       method: "POST",

@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
   ChevronLeft, FileText, Image as ImageIcon, Library, Search, Trash2,
-  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2,
+  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw,
 } from "lucide-react";
 import { getParticipantId, handoutLibraryApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
@@ -60,6 +60,9 @@ export default function LabsHandoutLibrary() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState<UploadFormState>(emptyUploadForm);
+  const [distilleryFilter, setDistilleryFilter] = useState<string>("");
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
 
   const listQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
     queryKey: ["handout-library", hostId, search],
@@ -73,7 +76,20 @@ export default function LabsHandoutLibrary() {
     enabled: !!hostId && tab === "community",
   });
 
-  const filtered = useMemo(() => listQuery.data || [], [listQuery.data]);
+  const allEntries = useMemo(() => listQuery.data || [], [listQuery.data]);
+  const distilleryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of allEntries) {
+      const d = (e.distillery || "").trim();
+      if (d) set.add(d);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "de"));
+  }, [allEntries]);
+  const filtered = useMemo(() => {
+    if (!distilleryFilter) return allEntries;
+    const f = distilleryFilter.trim().toLowerCase();
+    return allEntries.filter((e) => (e.distillery || "").trim().toLowerCase() === f);
+  }, [allEntries, distilleryFilter]);
   const community = useMemo(() => communityQuery.data || [], [communityQuery.data]);
 
   const updateMut = useMutation({
@@ -145,6 +161,20 @@ export default function LabsHandoutLibrary() {
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
     },
     onError: (e: any) => setError(e?.message || "Upload fehlgeschlagen"),
+  });
+
+  const replaceFileMut = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => handoutLibraryApi.replaceFile(id, hostId, file),
+    onSuccess: () => {
+      setError(null);
+      setInfo("Datei wurde ersetzt.");
+      setReplaceTargetId(null);
+      qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
+    },
+    onError: (e: any) => {
+      setReplaceTargetId(null);
+      setError(e?.message || "Datei ersetzen fehlgeschlagen");
+    },
   });
 
   const bulkDeleteMut = useMutation({
@@ -292,6 +322,19 @@ export default function LabsHandoutLibrary() {
                 data-testid="input-handout-library-search"
               />
             </div>
+            <select
+              className="labs-input"
+              value={distilleryFilter}
+              onChange={(e) => setDistilleryFilter(e.target.value)}
+              style={{ maxWidth: 220, fontSize: 12 }}
+              data-testid="select-handout-library-distillery"
+              aria-label="Filter nach Brennerei"
+            >
+              <option value="">Alle Brennereien</option>
+              {distilleryOptions.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
             <button
               type="button"
               className="labs-btn-primary text-xs"
@@ -302,6 +345,20 @@ export default function LabsHandoutLibrary() {
               <Upload style={{ width: 13, height: 13 }} /> Hochladen
             </button>
           </div>
+
+          <input
+            ref={replaceFileInputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              const target = replaceTargetId;
+              if (replaceFileInputRef.current) replaceFileInputRef.current.value = "";
+              if (file && target) replaceFileMut.mutate({ id: target, file });
+            }}
+            data-testid="input-handout-library-replace-file"
+          />
 
           {uploadOpen && (
             <div
@@ -612,6 +669,22 @@ export default function LabsHandoutLibrary() {
                       title={entry.isShared ? "Aus der Community zurückziehen" : "Mit anderen Hosts teilen"}
                     >
                       {entry.isShared ? <Lock style={{ width: 12, height: 12 }} /> : <Globe style={{ width: 12, height: 12 }} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary text-xs"
+                      onClick={() => {
+                        setReplaceTargetId(entry.id);
+                        replaceFileInputRef.current?.click();
+                      }}
+                      disabled={replaceFileMut.isPending}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+                      data-testid={`button-handout-replace-${entry.id}`}
+                      title="Datei ersetzen"
+                    >
+                      {replaceFileMut.isPending && replaceTargetId === entry.id
+                        ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
+                        : <RefreshCw style={{ width: 12, height: 12 }} />}
                     </button>
                     <button
                       type="button"

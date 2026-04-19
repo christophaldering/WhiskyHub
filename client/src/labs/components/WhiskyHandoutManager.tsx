@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download, Library, Check } from "lucide-react";
 import { handoutLibraryApi, whiskyApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
@@ -125,6 +126,16 @@ export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Prop
             {isPdf ? "PDF" : "Bild"}
           </span>
         )}
+        <span style={{ flex: 1 }} />
+        <Link
+          href="/labs/host/handout-library"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--labs-text-muted)", textDecoration: "none" }}
+          data-testid={`link-handout-library-${whisky.id}`}
+          title="Alle deine gespeicherten Handouts verwalten"
+        >
+          <Library style={{ width: 11, height: 11 }} />
+          Zur Bibliothek
+        </Link>
       </div>
 
       {hasHandout && (

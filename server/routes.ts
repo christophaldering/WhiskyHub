@@ -3463,6 +3463,65 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/handout-library/:id/replace-file", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        }
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+
+      const buffer = req.file.buffer;
+      let contentType = req.file.mimetype || "application/octet-stream";
+      const lowerName = (req.file.originalname || "").toLowerCase();
+      if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+
+      let storedUrl: string;
+      if (contentType === "application/pdf") {
+        const uploadURL = await objectStorage.getObjectEntityUploadURL();
+        const resp = await fetch(uploadURL, { method: "PUT", body: buffer, headers: { "Content-Type": contentType } });
+        if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
+        storedUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+      } else {
+        storedUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+      }
+
+      const oldUrl = entry.fileUrl;
+      let updated;
+      try {
+        updated = await storage.updateHandoutLibraryEntry(req.params.id, { fileUrl: storedUrl, contentType });
+      } catch (dbErr) {
+        try {
+          await deleteHandoutFileIfUnreferenced(objectStorage, storedUrl);
+        } catch (cleanupErr) {
+          console.error("[handout-library] orphan cleanup failed", cleanupErr);
+        }
+        throw dbErr;
+      }
+      // Best-effort old-file cleanup; fail-closed if still referenced anywhere.
+      try {
+        await deleteHandoutFileIfUnreferenced(objectStorage, oldUrl);
+      } catch (cleanupErr) {
+        console.warn("[handout-library] old file cleanup failed", cleanupErr);
+      }
+      res.json(updated);
+    } catch (e: any) {
+      console.error("[handout-library] replace-file failed", e);
+      res.status(500).json({ message: e?.message || "Upload fehlgeschlagen" });
+    }
+  });
+
   app.post("/api/handout-library/bulk-delete", async (req: any, res: any) => {
     try {
       const hostId = req.headers["x-participant-id"] as string | undefined;
