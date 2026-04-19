@@ -269,7 +269,8 @@
   transition: background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
   min-width: 0;
   overflow-wrap: break-word;
-  word-break: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 .labs-card:hover {
@@ -1385,6 +1386,9 @@
   transition: background-color 160ms ease;
   -webkit-tap-highlight-color: transparent;
   min-height: 56px;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 @media (hover: hover) {

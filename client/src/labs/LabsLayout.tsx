@@ -778,9 +778,11 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     }
   }, []);
 
+  const htmlLang = (i18n.language || "en").split("-")[0];
+
   if (isOnboarding) {
     return (
-      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`}>
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
         {children}
       </div>
     );
@@ -788,12 +790,12 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
   if (!autoResumeChecked || (!isPublicLabsRoute(location) && needsAuthRedirect)) {
     return (
-      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} />
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang} />
     );
   }
 
   return (
-    <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} onTouchStart={handleButtonHaptic}>
+    <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang} onTouchStart={handleButtonHaptic}>
       <header
         className="sticky top-0 z-40"
         style={{
