@@ -80,6 +80,7 @@ const LabsBottleDetail = lazy(() => import("@/labs/pages/LabsBottleDetail"));
 const LabsPaperScan = lazy(() => import("@/labs/pages/LabsPaperScan"));
 const LabsTastingRecap = lazy(() => import("@/labs/pages/LabsTastingRecap"));
 const LabsHostDashboard = lazy(() => import("@/labs/pages/LabsHostDashboard"));
+const LabsHandoutLibrary = lazy(() => import("@/labs/pages/LabsHandoutLibrary"));
 const LabsCalendar = lazy(() => import("@/labs/pages/LabsCalendar"));
 const LabsHistory = lazy(() => import("@/labs/pages/LabsHistory"));
 const LabsHistoricalDetail = lazy(() => import("@/labs/pages/LabsHistoricalDetail"));
@@ -632,6 +633,7 @@ function Router() {
               <Route path="/labs/join/:code" component={LabsJoin} />
               <Route path="/labs/join">{() => <RedirectWithQuery to="/labs/tastings" query="tab=join" />}</Route>
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
+              <Route path="/labs/host/handout-library" component={LabsHandoutLibrary} />
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/history/insights" component={LabsHistory} />
               <Route path="/labs/history/:id" component={LabsHistoricalDetail} />

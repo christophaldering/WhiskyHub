@@ -1189,9 +1189,15 @@ export class DatabaseStorage implements IStorage {
 
   async isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean> {
     if (!fileUrl) return false;
-    const [row] = await db.select({ id: whiskyHandoutLibrary.id }).from(whiskyHandoutLibrary)
+    const [libRow] = await db.select({ id: whiskyHandoutLibrary.id }).from(whiskyHandoutLibrary)
       .where(eq(whiskyHandoutLibrary.fileUrl, fileUrl)).limit(1);
-    return !!row;
+    if (libRow) return true;
+    const [whiskyRow] = await db.select({ id: whiskies.id }).from(whiskies)
+      .where(eq(whiskies.handoutUrl, fileUrl)).limit(1);
+    if (whiskyRow) return true;
+    const [tastingRow] = await db.select({ id: tastings.id }).from(tastings)
+      .where(eq(tastings.handoutUrl, fileUrl)).limit(1);
+    return !!tastingRow;
   }
 
   // --- Ratings ---

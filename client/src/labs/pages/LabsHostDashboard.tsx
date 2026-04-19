@@ -13,7 +13,7 @@ import {
   GlassWater, Users, Wine, Star, Calendar, Trophy,
   Plus, ChevronLeft, ChevronRight, Copy, Mail, QrCode,
   BarChart3, Check, Send, Loader2, Download,
-  Link as LinkIcon, ChevronDown, ClipboardList, Archive, Sparkles,
+  Link as LinkIcon, ChevronDown, ClipboardList, Archive, Sparkles, BookOpen,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import QRCodeLib from "qrcode";
@@ -981,6 +981,7 @@ export default function LabsHostDashboard() {
             { href: "/labs/host", icon: Plus, label: t("m2.hostDash.newTasting", "New Tasting"), desc: "Create a new session" },
             { href: "/labs/host/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
             { href: "/labs/host/history", icon: Archive, label: t("m2.hostDash.archive", "Archive"), desc: "Past events & insights" },
+            { href: "/labs/host/handout-library", icon: BookOpen, label: t("m2.hostDash.handoutLibrary", "Handout-Bibliothek"), desc: "Reusable whisky handouts" },
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href}>
               <div
