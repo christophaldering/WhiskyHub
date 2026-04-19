@@ -5847,6 +5847,8 @@ const resources = {
           errDelete: "Delete failed",
           errReplace: "Could not replace file",
           errShare: "Sharing failed",
+          selectModeOn: "Select",
+          selectModeOff: "Done",
         },
         handoutSplitter: {
           title: "Split programme PDF page by page",
@@ -14867,6 +14869,8 @@ const resources = {
           errDelete: "Löschen fehlgeschlagen",
           errReplace: "Datei konnte nicht ersetzt werden",
           errShare: "Teilen fehlgeschlagen",
+          selectModeOn: "Auswählen",
+          selectModeOff: "Fertig",
         },
         handoutSplitter: {
           title: "Programmheft seitenweise aufteilen",
