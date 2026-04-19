@@ -342,30 +342,42 @@ export default function LabsTastings() {
         </div>
       </div>
 
-      <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions">
-        <Link href="/labs/join" className="labs-action-bar-item" data-testid="labs-action-join">
-          <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-            <Users className="w-5 h-5 labs-icon-accent" />
+      <div className="labs-hub-tile-grid labs-hub-tile-grid--auto labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
+        <Link href="/labs/join" className="labs-hub-tile" data-testid="labs-action-join">
+          <div className="labs-hub-tile-icon">
+            <Users className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
-          <span className="labs-action-bar-label">Join</span>
+          <div className="labs-hub-tile-body">
+            <div className="labs-hub-tile-label">{t("tastingActions.join", "Join")}</div>
+            <div className="labs-hub-tile-desc">{t("tastingActions.joinDesc", "Enter a tasting code")}</div>
+          </div>
         </Link>
-        <Link href="/labs/solo" className="labs-action-bar-item" data-testid="labs-action-solo">
-          <div className="labs-action-bar-icon labs-action-bar-icon--surface">
-            <PenLine className="w-5 h-5 labs-icon-text-secondary" />
+        <Link href="/labs/solo" className="labs-hub-tile" data-testid="labs-action-solo">
+          <div className="labs-hub-tile-icon">
+            <PenLine className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
-          <span className="labs-action-bar-label">Solo</span>
+          <div className="labs-hub-tile-body">
+            <div className="labs-hub-tile-label">{t("tastingActions.solo", "Solo")}</div>
+            <div className="labs-hub-tile-desc">{t("tastingActions.soloDesc", "Taste & log on your own")}</div>
+          </div>
         </Link>
-        <Link href="/labs/host" className="labs-action-bar-item" data-testid="labs-action-host">
-          <div className="labs-action-bar-icon labs-action-bar-icon--success">
-            <Crown className="w-5 h-5 labs-icon-success" />
+        <Link href="/labs/host" className="labs-hub-tile" data-testid="labs-action-host">
+          <div className="labs-hub-tile-icon">
+            <Crown className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
-          <span className="labs-action-bar-label">Host</span>
+          <div className="labs-hub-tile-body">
+            <div className="labs-hub-tile-label">{t("tastingActions.host", "Host")}</div>
+            <div className="labs-hub-tile-desc">{t("tastingActions.hostDesc", "Create & run a tasting")}</div>
+          </div>
         </Link>
-        <Link href="/labs/bottle-sharing" className="labs-action-bar-item" data-testid="labs-action-bottle-sharing">
-          <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-            <Share2 className="w-5 h-5 labs-icon-accent" />
+        <Link href="/labs/bottle-sharing" className="labs-hub-tile" data-testid="labs-action-bottle-sharing">
+          <div className="labs-hub-tile-icon">
+            <Share2 className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
           </div>
-          <span className="labs-action-bar-label">Share</span>
+          <div className="labs-hub-tile-body">
+            <div className="labs-hub-tile-label">{t("tastingActions.share", "Share")}</div>
+            <div className="labs-hub-tile-desc">{t("tastingActions.shareDesc", "Split a bottle with friends")}</div>
+          </div>
         </Link>
       </div>
 

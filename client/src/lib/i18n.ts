@@ -8316,6 +8316,16 @@ const resources = {
           signInLink: "Sign in here",
         },
       },
+      tastingActions: {
+        join: "Join",
+        joinDesc: "Enter a tasting code",
+        solo: "Solo",
+        soloDesc: "Taste & log on your own",
+        host: "Host",
+        hostDesc: "Create & run a tasting",
+        share: "Share",
+        shareDesc: "Split a bottle with friends",
+      },
       ui: {
         notifications: "Notifications",
         noNewNotifications: "No new notifications",
@@ -17185,6 +17195,16 @@ const resources = {
           alreadyHaveAccount: "Schon ein Profil?",
           signInLink: "Hier anmelden",
         },
+      },
+      tastingActions: {
+        join: "Teilnehmen",
+        joinDesc: "Tasting-Code eingeben",
+        solo: "Solo",
+        soloDesc: "Allein verkosten & notieren",
+        host: "Host",
+        hostDesc: "Tasting erstellen & leiten",
+        share: "Teilen",
+        shareDesc: "Flasche mit Freunden teilen",
       },
       ui: {
         notifications: "Benachrichtigungen",
