@@ -45,15 +45,16 @@ const emptyUploadForm: UploadFormState = {
   splitProgramme: false,
 };
 
-function fmtDate(d: Date | string | null | undefined): string {
+function fmtDate(d: Date | string | null | undefined, locale: string): string {
   if (!d) return "";
   const date = typeof d === "string" ? new Date(d) : d;
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("de-DE", { year: "numeric", month: "2-digit", day: "2-digit" });
+  return date.toLocaleDateString(locale, { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 export default function LabsHandoutLibrary() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || "en";
   const hostId = getParticipantId() || "";
   const qc = useQueryClient();
   const searchStr = useSearch();
@@ -100,7 +101,7 @@ export default function LabsHandoutLibrary() {
       const d = (e.distillery || "").trim();
       if (d) set.add(d);
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "de"));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
   }, [allEntries]);
   const filtered = useMemo(() => {
     if (!distilleryFilter) return allEntries;
@@ -123,16 +124,17 @@ export default function LabsHandoutLibrary() {
       setError(null);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Speichern fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errUpdate")),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => handoutLibraryApi.delete(id, hostId),
     onSuccess: () => {
       setError(null);
+      setInfo(t("labs.handoutLibrary.msgDeleted"));
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Löschen fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errDelete")),
   });
 
   const shareMut = useMutation({
@@ -140,21 +142,21 @@ export default function LabsHandoutLibrary() {
       handoutLibraryApi.setShared(id, hostId, isShared),
     onSuccess: (_d, vars) => {
       setError(null);
-      setInfo(vars.isShared ? "Eintrag ist jetzt für andere Hosts sichtbar." : "Eintrag ist wieder privat.");
+      setInfo(vars.isShared ? t("labs.handoutLibrary.msgSharedOn") : t("labs.handoutLibrary.msgSharedOff"));
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       qc.invalidateQueries({ queryKey: ["handout-library-community", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Status konnte nicht geändert werden"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errShare")),
   });
 
   const cloneMut = useMutation({
     mutationFn: (id: string) => handoutLibraryApi.cloneFromCommunity(id, hostId),
     onSuccess: () => {
       setError(null);
-      setInfo("Eintrag in deine Bibliothek übernommen.");
+      setInfo(t("labs.handoutLibrary.msgAdopted"));
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Übernahme fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errAdopt")),
   });
 
   const uploadMut = useMutation<any, Error, void, { wantsSplit: boolean; isPdf: boolean }>({
@@ -165,8 +167,8 @@ export default function LabsHandoutLibrary() {
         (uploadForm.file?.name || "").toLowerCase().endsWith(".pdf"),
     }),
     mutationFn: async () => {
-      if (!uploadForm.file) throw new Error("Bitte eine Datei auswählen");
-      if (!uploadForm.whiskyName.trim()) throw new Error("Whisky-Name ist erforderlich");
+      if (!uploadForm.file) throw new Error(t("labs.handoutLibrary.errSelectFile"));
+      if (!uploadForm.whiskyName.trim()) throw new Error(t("labs.handoutLibrary.errWhiskyNameRequired"));
       return handoutLibraryApi.upload(hostId, uploadForm.file, {
         whiskyName: uploadForm.whiskyName.trim(),
         distillery: uploadForm.distillery.trim(),
@@ -178,7 +180,7 @@ export default function LabsHandoutLibrary() {
     },
     onSuccess: (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
       setError(null);
-      setInfo("Handout in deine Bibliothek hochgeladen.");
+      setInfo(t("labs.handoutLibrary.msgUploaded"));
       setUploadForm(emptyUploadForm);
       setUploadOpen(false);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
@@ -186,48 +188,48 @@ export default function LabsHandoutLibrary() {
         setSplitTarget(created);
       }
     },
-    onError: (e: any) => setError(e?.message || "Upload fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errUpload")),
   });
 
   const replaceFileMut = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => handoutLibraryApi.replaceFile(id, hostId, file),
     onSuccess: () => {
       setError(null);
-      setInfo("Datei wurde ersetzt.");
+      setInfo(t("labs.handoutLibrary.msgFileReplaced"));
       setReplaceTargetId(null);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
     },
     onError: (e: any) => {
       setReplaceTargetId(null);
-      setError(e?.message || "Datei ersetzen fehlgeschlagen");
+      setError(e?.message || t("labs.handoutLibrary.errReplace"));
     },
   });
 
   const bulkDeleteMut = useMutation({
     mutationFn: (ids: string[]) => handoutLibraryApi.bulkDelete(ids, hostId),
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       setError(null);
-      setInfo(`${data?.deleted ?? 0} Einträge gelöscht.`);
+      setInfo(t("labs.handoutLibrary.msgDeleted"));
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       qc.invalidateQueries({ queryKey: ["handout-library-community", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Löschen fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errDelete")),
   });
 
   const bulkShareMut = useMutation({
     mutationFn: ({ ids, isShared }: { ids: string[]; isShared: boolean }) =>
       handoutLibraryApi.bulkShare(ids, hostId, isShared),
-    onSuccess: (data: any, vars) => {
+    onSuccess: (_data, vars) => {
       setError(null);
       setInfo(vars.isShared
-        ? `${data?.updated ?? 0} Einträge mit der Community geteilt.`
-        : `${data?.updated ?? 0} Einträge wieder privat gesetzt.`);
+        ? t("labs.handoutLibrary.msgBulkSharedOn")
+        : t("labs.handoutLibrary.msgBulkSharedOff"));
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       qc.invalidateQueries({ queryKey: ["handout-library-community", hostId] });
     },
-    onError: (e: any) => setError(e?.message || "Aktualisierung fehlgeschlagen"),
+    onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errShare")),
   });
 
   const toggleSelected = (id: string) => {
@@ -246,8 +248,8 @@ export default function LabsHandoutLibrary() {
   if (!hostId) {
     return (
       <div className="labs-shell" style={{ padding: 24 }}>
-        <p>Bitte melde dich an, um deine Handout-Bibliothek zu sehen.</p>
-        <Link href="/labs/host" data-testid="link-back-host">Zurück</Link>
+        <p>{t("labs.handoutLibrary.loginRequired")}</p>
+        <Link href="/labs/host" data-testid="link-back-host">{t("labs.handoutLibrary.back")}</Link>
       </div>
     );
   }
@@ -261,18 +263,18 @@ export default function LabsHandoutLibrary() {
           data-testid="link-back-host"
         >
           <ChevronLeft style={{ width: 14, height: 14 }} />
-          Zurück
+          {t("labs.handoutLibrary.back")}
         </Link>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
-        <h1 style={{ fontSize: 22, margin: 0, fontWeight: 600 }} data-testid="text-handout-library-title">
-          Handout-Bibliothek
+        <h1 style={{ fontSize: 22, margin: 0, fontWeight: 600, color: "var(--labs-text)" }} data-testid="text-handout-library-title">
+          {t("labs.handoutLibrary.title")}
         </h1>
       </div>
       <p style={{ color: "var(--labs-text-muted)", fontSize: 13, margin: "0 0 16px" }}>
-        Alle Handouts, die du je zu einem Whisky hochgeladen hast. Beim Anlegen neuer Whiskys werden passende Einträge automatisch vorgeschlagen.
+        {t("labs.handoutLibrary.subtitle")}
       </p>
 
       <div role="tablist" style={{ display: "flex", gap: 4, marginBottom: 14, borderBottom: "1px solid var(--labs-border)" }}>
@@ -291,7 +293,7 @@ export default function LabsHandoutLibrary() {
           }}
           data-testid="tab-handout-library-mine"
         >
-          Meine Bibliothek
+          {t("labs.handoutLibrary.tabMine")}
         </button>
         <button
           type="button"
@@ -312,13 +314,13 @@ export default function LabsHandoutLibrary() {
           data-testid="tab-handout-library-community"
         >
           <Globe style={{ width: 13, height: 13 }} />
-          Community
+          {t("labs.handoutLibrary.tabCommunity")}
         </button>
       </div>
 
       {error && (
         <div
-          style={{ background: "var(--labs-error-bg, #3a1a1a)", color: "var(--labs-error, #ff6b6b)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13 }}
+          style={{ background: "var(--labs-error-muted, var(--labs-accent-muted))", color: "var(--labs-error, var(--labs-accent))", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13, border: "1px solid var(--labs-border)" }}
           data-testid="text-handout-library-error"
         >
           {error}
@@ -326,7 +328,7 @@ export default function LabsHandoutLibrary() {
       )}
       {info && (
         <div
-          style={{ background: "var(--labs-success-bg, #143a23)", color: "var(--labs-success, #6bd3a0)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13 }}
+          style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13, border: "1px solid var(--labs-border)" }}
           data-testid="text-handout-library-info"
         >
           {info}
@@ -342,7 +344,7 @@ export default function LabsHandoutLibrary() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Suche nach Whisky, Brennerei, Titel oder Whiskybase-ID …"
+                placeholder={t("labs.handoutLibrary.searchPlaceholder")}
                 className="labs-input"
                 style={{ width: "100%", paddingLeft: 32 }}
                 data-testid="input-handout-library-search"
@@ -354,9 +356,9 @@ export default function LabsHandoutLibrary() {
               onChange={(e) => setDistilleryFilter(e.target.value)}
               style={{ maxWidth: 220, fontSize: 12 }}
               data-testid="select-handout-library-distillery"
-              aria-label="Filter nach Brennerei"
+              aria-label={t("labs.handoutLibrary.filterDistilleryLabel")}
             >
-              <option value="">Alle Brennereien</option>
+              <option value="">{t("labs.handoutLibrary.filterDistilleryAll")}</option>
               {distilleryOptions.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
@@ -368,7 +370,7 @@ export default function LabsHandoutLibrary() {
               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", whiteSpace: "nowrap" }}
               data-testid="button-handout-library-upload"
             >
-              <Upload style={{ width: 13, height: 13 }} /> Hochladen
+              <Upload style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.uploadButton")}
             </button>
           </div>
 
@@ -392,13 +394,15 @@ export default function LabsHandoutLibrary() {
               data-testid="handout-library-upload-form"
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <strong style={{ fontSize: 13 }}>Neuen Bibliothekseintrag hochladen</strong>
+                <strong style={{ fontSize: 13, color: "var(--labs-text)" }}>{t("labs.handoutLibrary.uploadFormTitle")}</strong>
                 <button
                   type="button"
                   className="labs-btn-ghost text-xs"
                   onClick={() => { setUploadOpen(false); setUploadForm(emptyUploadForm); }}
                   data-testid="button-upload-form-close"
                   style={{ padding: 4 }}
+                  aria-label={t("labs.handoutLibrary.cancel")}
+                  title={t("labs.handoutLibrary.cancel")}
                 >
                   <X style={{ width: 14, height: 14 }} />
                 </button>
@@ -411,8 +415,8 @@ export default function LabsHandoutLibrary() {
                 style={{ fontSize: 12 }}
               />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                  Whisky-Name *
+                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                  {t("labs.handoutLibrary.fieldWhiskyName")} *
                   <input
                     className="labs-input"
                     value={uploadForm.whiskyName}
@@ -420,8 +424,8 @@ export default function LabsHandoutLibrary() {
                     data-testid="input-upload-whiskyname"
                   />
                 </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                  Brennerei
+                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                  {t("labs.handoutLibrary.fieldDistillery")}
                   <input
                     className="labs-input"
                     value={uploadForm.distillery}
@@ -429,8 +433,8 @@ export default function LabsHandoutLibrary() {
                     data-testid="input-upload-distillery"
                   />
                 </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                  Whiskybase-ID
+                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                  {t("labs.handoutLibrary.fieldWhiskybaseId")}
                   <input
                     className="labs-input"
                     value={uploadForm.whiskybaseId}
@@ -438,8 +442,8 @@ export default function LabsHandoutLibrary() {
                     data-testid="input-upload-wbid"
                   />
                 </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                  Titel
+                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                  {t("labs.handoutLibrary.fieldTitle")}
                   <input
                     className="labs-input"
                     value={uploadForm.title}
@@ -447,8 +451,8 @@ export default function LabsHandoutLibrary() {
                     data-testid="input-upload-title"
                   />
                 </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                  Autor
+                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                  {t("labs.handoutLibrary.fieldAuthor")}
                   <input
                     className="labs-input"
                     value={uploadForm.author}
@@ -457,8 +461,8 @@ export default function LabsHandoutLibrary() {
                   />
                 </label>
               </div>
-              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                Beschreibung
+              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                {t("labs.handoutLibrary.fieldDescription")}
                 <textarea
                   className="labs-input"
                   rows={2}
@@ -506,7 +510,7 @@ export default function LabsHandoutLibrary() {
                   onClick={() => { setUploadOpen(false); setUploadForm(emptyUploadForm); }}
                   data-testid="button-upload-cancel"
                 >
-                  Abbrechen
+                  {t("labs.handoutLibrary.cancel")}
                 </button>
                 <button
                   type="button"
@@ -517,7 +521,7 @@ export default function LabsHandoutLibrary() {
                   style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
                   {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
-                  Hochladen
+                  {uploadMut.isPending ? t("labs.handoutLibrary.uploading") : t("labs.handoutLibrary.uploadButton")}
                 </button>
               </div>
             </div>
@@ -525,11 +529,11 @@ export default function LabsHandoutLibrary() {
 
           {selected.size > 0 && (
             <div
-              style={{ position: "sticky", top: 8, zIndex: 5, border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 10, padding: "8px 12px", background: "var(--labs-surface)", display: "flex", alignItems: "center", gap: 10, marginBottom: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }}
+              style={{ position: "sticky", top: 8, zIndex: 5, border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 10, padding: "8px 12px", background: "var(--labs-surface)", display: "flex", alignItems: "center", gap: 10, marginBottom: 10, boxShadow: "0 4px 12px var(--labs-accent-glow)" }}
               data-testid="handout-library-bulk-bar"
             >
               <span style={{ fontSize: 12, color: "var(--labs-text)" }} data-testid="text-bulk-selected-count">
-                {selected.size} ausgewählt
+                {t("labs.handoutLibrary.selectedCount", { count: selected.size })}
               </span>
               <button
                 type="button"
@@ -539,7 +543,7 @@ export default function LabsHandoutLibrary() {
                 style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px" }}
                 data-testid="button-bulk-share"
               >
-                <Globe style={{ width: 12, height: 12 }} /> Teilen
+                <Globe style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkShare")}
               </button>
               <button
                 type="button"
@@ -549,21 +553,21 @@ export default function LabsHandoutLibrary() {
                 style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px" }}
                 data-testid="button-bulk-unshare"
               >
-                <Lock style={{ width: 12, height: 12 }} /> Privat
+                <Lock style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkUnshare")}
               </button>
               <button
                 type="button"
                 className="labs-btn-secondary text-xs"
                 onClick={() => {
-                  if (window.confirm(`${selected.size} Einträge aus deiner Bibliothek entfernen?`)) {
+                  if (window.confirm(t("labs.handoutLibrary.confirmBulkDelete", { count: selected.size }))) {
                     bulkDeleteMut.mutate(Array.from(selected));
                   }
                 }}
                 disabled={bulkDeleteMut.isPending}
-                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", color: "var(--labs-error, #ff6b6b)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", color: "var(--labs-error, var(--labs-accent))" }}
                 data-testid="button-bulk-delete"
               >
-                <Trash2 style={{ width: 12, height: 12 }} /> Löschen
+                <Trash2 style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkDelete")}
               </button>
               <span style={{ flex: 1 }} />
               <button
@@ -572,6 +576,8 @@ export default function LabsHandoutLibrary() {
                 onClick={() => setSelected(new Set())}
                 style={{ padding: "4px 8px" }}
                 data-testid="button-bulk-clear"
+                aria-label={t("labs.handoutLibrary.bulkClear")}
+                title={t("labs.handoutLibrary.bulkClear")}
               >
                 <X style={{ width: 12, height: 12 }} />
               </button>
@@ -586,27 +592,27 @@ export default function LabsHandoutLibrary() {
                 onChange={toggleSelectAll}
                 data-testid="checkbox-handout-select-all"
               />
-              Alle auswählen
+              {t("labs.handoutLibrary.selectAll")}
             </label>
           )}
 
           {listQuery.isLoading && (
-            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-library-loading">Lade …</p>
+            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-library-loading">{t("labs.handoutLibrary.loading")}</p>
           )}
 
           {!listQuery.isLoading && filtered.length === 0 && (
             <div
-              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)" }}
+              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)", background: "var(--labs-surface)" }}
               data-testid="text-handout-library-empty"
             >
               <Library style={{ width: 28, height: 28, opacity: 0.4, marginBottom: 8 }} />
               <p style={{ margin: 0, fontSize: 14 }}>
-                {search ? "Keine Treffer für deine Suche." : "Noch keine Handouts in deiner Bibliothek. Lade in einem Tasting ein Handout zu einem Whisky hoch — es erscheint dann automatisch hier."}
+                {search ? t("labs.handoutLibrary.emptyNoMatch") : t("labs.handoutLibrary.emptyNoEntries")}
               </p>
             </div>
           )}
 
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
             {filtered.map((entry) => {
               const isEditing = editing?.id === entry.id;
               const isPdf = entry.contentType === "application/pdf";
@@ -614,97 +620,131 @@ export default function LabsHandoutLibrary() {
                 return (
                   <div
                     key={entry.id}
-                    style={{ border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 12, padding: 14, background: "var(--labs-surface)", display: "grid", gap: 8 }}
+                    style={{ gridColumn: "1 / -1", border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 12, padding: 14, background: "var(--labs-surface)", display: "grid", gap: 8 }}
                     data-testid={`handout-library-edit-${entry.id}`}
                   >
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                        Whisky-Name
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldWhiskyName")}
                         <input className="labs-input" value={editing!.whiskyName} onChange={(e) => setEditing({ ...editing!, whiskyName: e.target.value })} data-testid={`input-edit-name-${entry.id}`} />
                       </label>
-                      <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                        Brennerei
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldDistillery")}
                         <input className="labs-input" value={editing!.distillery} onChange={(e) => setEditing({ ...editing!, distillery: e.target.value })} data-testid={`input-edit-distillery-${entry.id}`} />
                       </label>
-                      <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                        Whiskybase-ID
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldWhiskybaseId")}
                         <input className="labs-input" value={editing!.whiskybaseId} onChange={(e) => setEditing({ ...editing!, whiskybaseId: e.target.value })} data-testid={`input-edit-wbid-${entry.id}`} />
                       </label>
-                      <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                        Titel
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldTitle")}
                         <input className="labs-input" value={editing!.title} onChange={(e) => setEditing({ ...editing!, title: e.target.value })} data-testid={`input-edit-title-${entry.id}`} />
                       </label>
-                      <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                        Autor
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldAuthor")}
                         <input className="labs-input" value={editing!.author} onChange={(e) => setEditing({ ...editing!, author: e.target.value })} data-testid={`input-edit-author-${entry.id}`} />
                       </label>
                     </div>
-                    <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
-                      Beschreibung
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldDescription")}
                       <textarea className="labs-input" rows={2} value={editing!.description} onChange={(e) => setEditing({ ...editing!, description: e.target.value })} data-testid={`input-edit-desc-${entry.id}`} />
                     </label>
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                       <button type="button" className="labs-btn-secondary text-xs" onClick={() => setEditing(null)} data-testid={`button-edit-cancel-${entry.id}`}>
-                        <X style={{ width: 12, height: 12, marginRight: 4 }} /> Abbrechen
+                        <X style={{ width: 12, height: 12, marginRight: 4 }} /> {t("labs.handoutLibrary.cancel")}
                       </button>
                       <button type="button" className="labs-btn-primary text-xs" onClick={() => updateMut.mutate(editing!)} disabled={updateMut.isPending} data-testid={`button-edit-save-${entry.id}`}>
-                        <Save style={{ width: 12, height: 12, marginRight: 4 }} /> Speichern
+                        <Save style={{ width: 12, height: 12, marginRight: 4 }} /> {t("labs.handoutLibrary.save")}
                       </button>
                     </div>
                   </div>
                 );
               }
+              const metaParts = [
+                entry.distillery,
+                entry.whiskybaseId && `WB ${entry.whiskybaseId}`,
+                entry.author && t("labs.handoutLibrary.metaBy", { author: entry.author }),
+                fmtDate(entry.createdAt, locale),
+              ].filter(Boolean) as string[];
               return (
                 <div
                   key={entry.id}
-                  style={{ border: selected.has(entry.id) ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)", borderRadius: 12, padding: 12, background: "var(--labs-surface)", display: "flex", alignItems: "center", gap: 12 }}
+                  style={{
+                    border: selected.has(entry.id) ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                    borderRadius: 14,
+                    padding: 14,
+                    background: "var(--labs-surface)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    minHeight: 200,
+                    transition: "border-color 0.15s, box-shadow 0.15s",
+                    boxShadow: selected.has(entry.id) ? "0 0 0 3px var(--labs-accent-muted)" : "none",
+                  }}
                   data-testid={`handout-library-row-${entry.id}`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(entry.id)}
-                    onChange={() => toggleSelected(entry.id)}
-                    style={{ flexShrink: 0 }}
-                    data-testid={`checkbox-handout-${entry.id}`}
-                  />
-                  {isPdf ? (
-                    <FileText style={{ width: 22, height: 22, color: "var(--labs-text-muted)", flexShrink: 0 }} />
-                  ) : (
-                    <ImageIcon style={{ width: 22, height: 22, color: "var(--labs-text-muted)", flexShrink: 0 }} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      {entry.title || entry.whiskyName}
-                      {entry.isProgramme && (
-                        <span
-                          style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-warning-bg, #3a2f15)", color: "var(--labs-warning, #f5b25c)" }}
-                          data-testid={`badge-programme-${entry.id}`}
-                          title={t("labs.handoutSplitter.programmeBadge")}
-                        >
-                          <Library style={{ width: 10, height: 10 }} /> {t("labs.handoutSplitter.programmeBadge")}
-                        </span>
-                      )}
-                      {entry.isShared && (
-                        <span
-                          style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-accent-bg, #1d2c4d)", color: "var(--labs-accent, #7ba8ff)" }}
-                          data-testid={`badge-shared-${entry.id}`}
-                          title="Wird in der Community angezeigt"
-                        >
-                          <Globe style={{ width: 10, height: 10 }} /> geteilt
-                        </span>
-                      )}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(entry.id)}
+                      onChange={() => toggleSelected(entry.id)}
+                      style={{ flexShrink: 0, marginTop: 4 }}
+                      data-testid={`checkbox-handout-${entry.id}`}
+                    />
+                    <div
+                      style={{
+                        width: 40, height: 40, borderRadius: 10,
+                        background: "var(--labs-accent-muted)",
+                        color: "var(--labs-accent)",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {isPdf
+                        ? <FileText style={{ width: 20, height: 20 }} />
+                        : <ImageIcon style={{ width: 20, height: 20 }} />}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {[
-                        entry.whiskyName,
-                        entry.distillery,
-                        entry.whiskybaseId && `WB ${entry.whiskybaseId}`,
-                        entry.author && `von ${entry.author}`,
-                        fmtDate(entry.createdAt),
-                      ].filter(Boolean).join(" · ")}
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
+                        {entry.title || entry.whiskyName}
+                      </div>
+                      {(entry.isProgramme || entry.isShared) && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {entry.isProgramme && (
+                            <span
+                              style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                              data-testid={`badge-programme-${entry.id}`}
+                              title={t("labs.handoutSplitter.programmeBadge")}
+                            >
+                              <Library style={{ width: 10, height: 10 }} /> {t("labs.handoutSplitter.programmeBadge")}
+                            </span>
+                          )}
+                          {entry.isShared && (
+                            <span
+                              style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
+                              data-testid={`badge-shared-${entry.id}`}
+                              title={t("labs.handoutLibrary.badgeSharedTitle")}
+                            >
+                              <Globe style={{ width: 10, height: 10 }} /> {t("labs.handoutLibrary.badgeShared")}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
+                    <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>
+                      {entry.whiskyName}
+                    </div>
+                  )}
+                  {metaParts.length > 0 && (
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+                      {metaParts.join(" · ")}
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
                     <a
                       href={entry.fileUrl}
                       target="_blank"
@@ -712,7 +752,8 @@ export default function LabsHandoutLibrary() {
                       className="labs-btn-secondary text-xs"
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                       data-testid={`button-handout-open-${entry.id}`}
-                      title="Öffnen"
+                      title={t("labs.handoutLibrary.actionOpen")}
+                      aria-label={t("labs.handoutLibrary.actionOpen")}
                     >
                       <ExternalLink style={{ width: 12, height: 12 }} />
                     </a>
@@ -722,7 +763,8 @@ export default function LabsHandoutLibrary() {
                       onClick={() => downloadFromEndpoint(entry.fileUrl, entry.title || entry.whiskyName)}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                       data-testid={`button-handout-download-${entry.id}`}
-                      title="Download"
+                      title={t("labs.handoutLibrary.actionDownload")}
+                      aria-label={t("labs.handoutLibrary.actionDownload")}
                     >
                       <Download style={{ width: 12, height: 12 }} />
                     </button>
@@ -731,9 +773,10 @@ export default function LabsHandoutLibrary() {
                       className="labs-btn-secondary text-xs"
                       onClick={() => shareMut.mutate({ id: entry.id, isShared: !entry.isShared })}
                       disabled={shareMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: entry.isShared ? "var(--labs-accent, #7ba8ff)" : undefined }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: entry.isShared ? "var(--labs-accent)" : undefined }}
                       data-testid={`button-handout-share-${entry.id}`}
-                      title={entry.isShared ? "Aus der Community zurückziehen" : "Mit anderen Hosts teilen"}
+                      title={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
+                      aria-label={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
                     >
                       {entry.isShared ? <Lock style={{ width: 12, height: 12 }} /> : <Globe style={{ width: 12, height: 12 }} />}
                     </button>
@@ -747,7 +790,8 @@ export default function LabsHandoutLibrary() {
                       disabled={replaceFileMut.isPending}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                       data-testid={`button-handout-replace-${entry.id}`}
-                      title="Datei ersetzen"
+                      title={t("labs.handoutLibrary.actionReplace")}
+                      aria-label={t("labs.handoutLibrary.actionReplace")}
                     >
                       {replaceFileMut.isPending && replaceTargetId === entry.id
                         ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
@@ -761,6 +805,7 @@ export default function LabsHandoutLibrary() {
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                         data-testid={`button-handout-split-${entry.id}`}
                         title={t("labs.handoutSplitter.title")}
+                        aria-label={t("labs.handoutSplitter.title")}
                       >
                         <Scissors style={{ width: 12, height: 12 }} />
                       </button>
@@ -779,22 +824,25 @@ export default function LabsHandoutLibrary() {
                       })}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                       data-testid={`button-handout-edit-${entry.id}`}
-                      title="Bearbeiten"
+                      title={t("labs.handoutLibrary.actionEdit")}
+                      aria-label={t("labs.handoutLibrary.actionEdit")}
                     >
                       <Pencil style={{ width: 12, height: 12 }} />
                     </button>
+                    <span style={{ flex: 1 }} />
                     <button
                       type="button"
                       className="labs-btn-secondary text-xs"
                       onClick={() => {
-                        if (window.confirm("Eintrag aus deiner Bibliothek entfernen? Bestehende Tastings, die dieses Handout schon nutzen, behalten es.")) {
+                        if (window.confirm(t("labs.handoutLibrary.confirmDelete"))) {
                           deleteMut.mutate(entry.id);
                         }
                       }}
                       disabled={deleteMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-error, #ff6b6b)" }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-error, var(--labs-accent))" }}
                       data-testid={`button-handout-delete-${entry.id}`}
-                      title="Aus Bibliothek entfernen"
+                      title={t("labs.handoutLibrary.actionDelete")}
+                      aria-label={t("labs.handoutLibrary.actionDelete")}
                     >
                       <Trash2 style={{ width: 12, height: 12 }} />
                     </button>
@@ -834,7 +882,7 @@ export default function LabsHandoutLibrary() {
               type="text"
               value={communitySearch}
               onChange={(e) => setCommunitySearch(e.target.value)}
-              placeholder="Community durchsuchen — Whisky, Brennerei, Autor, Host …"
+              placeholder={t("labs.handoutLibrary.communitySearchPlaceholder")}
               className="labs-input"
               style={{ width: "100%", paddingLeft: 32 }}
               data-testid="input-handout-community-search"
@@ -842,50 +890,78 @@ export default function LabsHandoutLibrary() {
           </div>
 
           {communityQuery.isLoading && (
-            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-community-loading">Lade …</p>
+            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-community-loading">{t("labs.handoutLibrary.loading")}</p>
           )}
 
           {!communityQuery.isLoading && community.length === 0 && (
             <div
-              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)" }}
+              style={{ border: "1px dashed var(--labs-border)", borderRadius: 12, padding: 32, textAlign: "center", color: "var(--labs-text-muted)", background: "var(--labs-surface)" }}
               data-testid="text-handout-community-empty"
             >
               <Globe style={{ width: 28, height: 28, opacity: 0.4, marginBottom: 8 }} />
               <p style={{ margin: 0, fontSize: 14 }}>
-                {communitySearch ? "Keine Community-Handouts passen zu deiner Suche." : "Aktuell hat noch niemand ein Handout mit der Community geteilt."}
+                {communitySearch ? t("labs.handoutLibrary.communityEmptySearch") : t("labs.handoutLibrary.communityEmpty")}
               </p>
             </div>
           )}
 
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
             {community.map((entry) => {
               const isPdf = entry.contentType === "application/pdf";
+              const metaParts = [
+                entry.distillery,
+                entry.whiskybaseId && `WB ${entry.whiskybaseId}`,
+                entry.sharedByName ? t("labs.handoutLibrary.metaShared", { name: entry.sharedByName }) : null,
+                fmtDate(entry.sharedAt ?? entry.createdAt, locale),
+              ].filter(Boolean) as string[];
               return (
                 <div
                   key={entry.id}
-                  style={{ border: "1px solid var(--labs-border)", borderRadius: 12, padding: 12, background: "var(--labs-surface)", display: "flex", alignItems: "center", gap: 12 }}
+                  style={{
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: 14,
+                    padding: 14,
+                    background: "var(--labs-surface)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    minHeight: 200,
+                  }}
                   data-testid={`handout-community-row-${entry.id}`}
                 >
-                  {isPdf ? (
-                    <FileText style={{ width: 22, height: 22, color: "var(--labs-text-muted)", flexShrink: 0 }} />
-                  ) : (
-                    <ImageIcon style={{ width: 22, height: 22, color: "var(--labs-text-muted)", flexShrink: 0 }} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {entry.title || entry.whiskyName}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div
+                      style={{
+                        width: 40, height: 40, borderRadius: 10,
+                        background: "var(--labs-accent-muted)",
+                        color: "var(--labs-accent)",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {isPdf
+                        ? <FileText style={{ width: 20, height: 20 }} />
+                        : <ImageIcon style={{ width: 20, height: 20 }} />}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {[
-                        entry.whiskyName,
-                        entry.distillery,
-                        entry.whiskybaseId && `WB ${entry.whiskybaseId}`,
-                        entry.sharedByName ? `geteilt von ${entry.sharedByName}` : null,
-                        fmtDate(entry.sharedAt ?? entry.createdAt),
-                      ].filter(Boolean).join(" · ")}
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
+                        {entry.title || entry.whiskyName}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
+                    <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>
+                      {entry.whiskyName}
+                    </div>
+                  )}
+                  {metaParts.length > 0 && (
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+                      {metaParts.join(" · ")}
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  <div style={{ display: "flex", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
                     <a
                       href={entry.fileUrl}
                       target="_blank"
@@ -893,10 +969,12 @@ export default function LabsHandoutLibrary() {
                       className="labs-btn-secondary text-xs"
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
                       data-testid={`button-community-open-${entry.id}`}
-                      title="Vorschau"
+                      title={t("labs.handoutLibrary.communityPreview")}
+                      aria-label={t("labs.handoutLibrary.communityPreview")}
                     >
                       <ExternalLink style={{ width: 12, height: 12 }} />
                     </a>
+                    <span style={{ flex: 1 }} />
                     <button
                       type="button"
                       className="labs-btn-primary text-xs"
@@ -904,9 +982,9 @@ export default function LabsHandoutLibrary() {
                       disabled={cloneMut.isPending}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px" }}
                       data-testid={`button-community-clone-${entry.id}`}
-                      title="In deine Bibliothek übernehmen"
+                      title={t("labs.handoutLibrary.communityAdoptTitle")}
                     >
-                      <Plus style={{ width: 12, height: 12 }} /> Übernehmen
+                      <Plus style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.communityAdopt")}
                     </button>
                   </div>
                 </div>
