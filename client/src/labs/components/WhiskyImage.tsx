@@ -147,7 +147,7 @@ export default function WhiskyImage({ imageUrl: rawImageUrl, name, size = 44, he
             height={h}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            {...(priority ? ({ fetchPriority: "high" } as any) : {})}
+            fetchPriority={priority ? "high" : "auto"}
             className={`flex-shrink-0 object-cover ${className}`}
             style={{
               width: size,
