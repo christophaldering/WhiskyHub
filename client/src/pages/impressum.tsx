@@ -93,6 +93,24 @@ export default function Impressum() {
               {t("legal.impressum.projectNoteText")}
             </p>
           </section>
+
+          <section>
+            <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, marginBottom: 8 }}>
+              {t("legal.impressum.imageCreditsTitle")}
+            </h2>
+            <p style={{ color: c.muted, fontSize: 14, lineHeight: 1.7, margin: 0 }} data-testid="text-impressum-image-credits">
+              {t("legal.impressum.imageCreditsText")}{" "}
+              <a
+                href="https://www.whiskybase.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: c.accent, textDecoration: "underline" }}
+                data-testid="link-impressum-whiskybase"
+              >
+                whiskybase.com
+              </a>
+            </p>
+          </section>
         </div>
       </div>
     </SimpleShell>

@@ -5397,6 +5397,8 @@ const resources = {
           disclaimerText: "CaskSense is a private, non-commercial hobby project. The content of this website has been compiled with the greatest possible care. However, no guarantee can be given for the accuracy, completeness, or timeliness of the content.",
           projectNoteTitle: "About this Project",
           projectNoteText: "CaskSense is a passion project for whisky enthusiasts. It is not a commercial venture and does not generate revenue. No tracking, no advertising, no sale of user data.",
+          imageCreditsTitle: "Image Credits",
+          imageCreditsText: "Bottle images for imported collections are sourced from whiskybase.com and remain the property of their respective rights holders. CaskSense caches them locally for performance and serves them only within this app. If you are a rights holder and would like an image removed, please contact us using the email address above.",
         },
         privacy: {
           title: "Privacy Policy",
@@ -14291,6 +14293,8 @@ const resources = {
           disclaimerText: "CaskSense ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Inhalte dieser Webseite wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte kann jedoch keine Gewähr übernommen werden.",
           projectNoteTitle: "Über dieses Projekt",
           projectNoteText: "CaskSense ist ein Leidenschaftsprojekt für Whisky-Enthusiasten. Es handelt sich nicht um ein kommerzielles Angebot und es werden keine Einnahmen erzielt. Kein Tracking, keine Werbung, kein Verkauf von Nutzerdaten.",
+          imageCreditsTitle: "Bildnachweise",
+          imageCreditsText: "Flaschenbilder importierter Sammlungen stammen von whiskybase.com und bleiben Eigentum der jeweiligen Rechteinhaber. CaskSense speichert sie aus Performance-Gründen lokal zwischen und stellt sie ausschließlich innerhalb dieser Anwendung dar. Rechteinhaber können die Entfernung eines Bildes jederzeit über die oben angegebene E-Mail-Adresse anfordern.",
         },
         privacy: {
           title: "Datenschutzerklärung",
