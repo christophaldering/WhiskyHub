@@ -8,6 +8,7 @@ import {
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { tastingHistoryApi, journalApi } from "@/lib/api";
 import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
 import {
@@ -138,26 +139,6 @@ export default function LabsTaste() {
     );
   }
 
-  const renderTile = (tab: TabDef) => {
-    const isActive = activeTab === tab.key;
-    const Icon = tab.icon;
-    return (
-      <button
-        key={tab.key}
-        type="button"
-        onClick={() => setActiveTab(tab.key)}
-        className={`labs-action-bar-item labs-action-bar-item--button${isActive ? " labs-action-bar-item--active" : ""}`}
-        data-testid={tab.testId}
-      >
-        <div className={`labs-action-bar-icon labs-action-bar-icon--${tab.iconVariant}`}>
-          <Icon className={`w-5 h-5 ${tab.iconColorClass}`} />
-        </div>
-        <span className="labs-action-bar-label">{t(tab.labelKey, tab.labelFallback)}</span>
-        <span className="labs-action-bar-sublabel">{t(tab.descKey, tab.descFallback)}</span>
-      </button>
-    );
-  };
-
   const activeTab_ = TABS.find((tab) => tab.key === activeTab) ?? TABS[0];
 
   const renderInlineContent = () => {
@@ -202,11 +183,7 @@ export default function LabsTaste() {
         </p>
       </div>
 
-      <div className="labs-fade-in" style={{ marginBottom: 20 }}>
-        <div className="labs-action-bar">
-          {TABS.map(renderTile)}
-        </div>
-      </div>
+      <MeineWeltActionBar active={activeTab} onSelect={setActiveTab} />
 
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>
         <div className="labs-meine-welt-section-head">

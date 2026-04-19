@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearch, useLocation } from "wouter";
-import BackLink from "@/labs/components/BackLink";
-import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown, ChevronLeft } from "lucide-react";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown } from "lucide-react";
 import { lexiconData, categoryLabelsEn, categoryLabelsDe, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
 import { TemplatesContent } from "./LabsTemplates";
 import { VocabularyContent } from "./LabsVocabulary";
@@ -113,11 +113,7 @@ export default function LabsLexicon() {
 
   return (
     <div className="labs-page" data-testid="labs-discover-lexicon-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-lexicon">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />

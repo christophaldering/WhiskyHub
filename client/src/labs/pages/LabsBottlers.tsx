@@ -1,10 +1,10 @@
 import { useState, useMemo, lazy, Suspense } from "react";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
-import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink, ChevronLeft } from "lucide-react";
+import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink } from "lucide-react";
 
 const MiniMap = lazy(() => import("@/labs/components/MiniMap"));
 
@@ -107,11 +107,7 @@ export default function LabsBottlers() {
 
   return (
     <div className="labs-page" data-testid="labs-discover-bottlers-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-bottlers">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-bottlers-title">Independent Bottlers</h1>

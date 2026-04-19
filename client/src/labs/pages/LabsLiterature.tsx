@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BookMarked, ChevronLeft, Users, Brain, Microscope, Scale } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,6 +18,7 @@ export default function LabsLiterature() {
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: 700 }} data-testid="labs-discover-literature-page">
+      <DiscoverActionBar active="bibliothek" />
       <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-literature">
           <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}

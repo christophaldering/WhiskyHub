@@ -1,10 +1,10 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
-import { Building2, MapPin, Calendar, ChevronDown, ChevronLeft, List, Map as MapIcon, ExternalLink } from "lucide-react";
+import { Building2, MapPin, Calendar, ChevronDown, List, Map as MapIcon, ExternalLink } from "lucide-react";
 
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
 const MiniMap = lazy(() => import("@/labs/components/MiniMap"));
@@ -99,11 +99,7 @@ export default function LabsDistilleries() {
 
   return (
     <div className="labs-page" style={view === "map" ? { maxWidth: 1000 } : undefined} data-testid="labs-discover-distilleries-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-6" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-distilleries">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
         <div className="flex flex-col gap-2 min-w-0">

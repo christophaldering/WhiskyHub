@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -66,7 +66,6 @@ function Tag({ icon: Icon, label, variant }: { icon: React.ElementType; label: s
 export default function LabsAICuration() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const goBackToTaste = useBackNavigation("/labs/taste");
   const session = useSession();
   const pid = session.pid;
   const [selectedId, setSelectedId] = useState("");
@@ -99,9 +98,7 @@ export default function LabsAICuration() {
 
   return (
     <div className="labs-page" data-testid="labs-ai-curation">
-      <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="button-back-curation">
-        <ChevronLeft className="w-4 h-4" /> Taste
-      </button>
+      <MeineWeltActionBar active="ai" />
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

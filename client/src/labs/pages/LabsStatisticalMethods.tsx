@@ -5,6 +5,7 @@ import { TrendingUp, ChevronLeft, ChevronDown, ChevronUp, Wine } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 
 import conceptNormalization from "@/assets/images/concept-normalization.png";
 import conceptCorrelation from "@/assets/images/concept-correlation.png";
@@ -114,6 +115,7 @@ export default function LabsStatisticalMethods() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-statistical-methods-page">
+      <DiscoverActionBar active="bibliothek" />
       <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-statistical-methods">
           <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}

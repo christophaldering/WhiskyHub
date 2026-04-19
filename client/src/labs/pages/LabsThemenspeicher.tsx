@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronDown, Archive, Lightbulb, Layers, Sparkles, HelpCircle } from "lucide-react";
-import BackLink from "@/labs/components/BackLink";
+import { ChevronDown, Archive, Lightbulb, Layers, Sparkles, HelpCircle } from "lucide-react";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import type { ElementType } from "react";
 
 interface EntrySection {
@@ -46,11 +46,7 @@ export default function LabsThemenspeicher() {
 
   return (
     <div className="labs-page" data-testid="labs-themenspeicher-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-themenspeicher">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <Archive style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />

@@ -1,9 +1,8 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import {
   BookOpen, Building2, Package, Map,
-  ChevronLeft,
   Archive, SlidersHorizontal,
   Utensils, Brain, Factory,
   Microscope, Globe,
@@ -118,11 +117,7 @@ export default function LabsBibliothek() {
   const { t } = useTranslation();
   return (
     <div className="labs-page" data-testid="labs-bibliothek-page">
-      <BackLink href="/labs/explore" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-bibliothek">
-          <ChevronLeft className="w-4 h-4" /> {t("discoverHub.title", "Explore")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ marginBottom: 24 }}>
         <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }} data-testid="text-bibliothek-title">

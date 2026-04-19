@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import { Link , useLocation } from "wouter";
@@ -29,7 +29,6 @@ const EXPORT_CARDS: ExportCard[] = [
 export default function LabsTasteDownloads() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
-  const goBackToTaste = useBackNavigation("/labs/taste");
   const { toast } = useToast();
   const session = useSession();
   const participantId = session.pid;
@@ -90,12 +89,10 @@ export default function LabsTasteDownloads() {
     <div className="labs-page" data-testid="labs-taste-downloads-page">
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div className="flex items-center gap-3 mb-1">
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-taste"><ChevronLeft className="w-4 h-4" /> {t("downloads.backTaste", "My World")}</button>
-        <div className="flex items-center gap-2">
-          <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">{t("downloads.title", "Downloads & Export")}</h1>
-        </div>
+      <MeineWeltActionBar active="analytics" />
+      <div className="flex items-center gap-2 mb-1">
+        <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">{t("downloads.title", "Downloads & Export")}</h1>
       </div>
       <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>{t("downloads.subtitle", "Export your data and download templates")}</p>
 

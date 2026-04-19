@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch, useLocation } from "wouter";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import {
@@ -228,11 +228,7 @@ export default function LabsTasteCompare() {
 
   return (
     <div className="labs-page" data-testid="labs-taste-compare">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-compare">
-          <ChevronLeft className="w-4 h-4" /> {t("compare.backTaste", "My World")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="analytics" />
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <GitCompareArrows className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

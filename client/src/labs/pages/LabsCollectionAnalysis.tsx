@@ -1,7 +1,7 @@
 import { useState, Component, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
@@ -199,14 +199,7 @@ export default function LabsCollectionAnalysis() {
   if (items.length === 0) {
     return (
       <div className="labs-page">
-        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button style={{
-            display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-            color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
-          }} data-testid="button-back-empty">
-            <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
-          </button>
-        </BackLink>
+        <MeineWeltActionBar active="ai" />
         <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.xl, textAlign: "center" }}>
           <Library style={{ width: 40, height: 40, marginBottom: SP.md, color: th.faint }} />
           <p style={{ fontFamily: "Playfair Display, serif", color: th.text, fontSize: 16, fontWeight: 600 }}>{t("labs.collection.noCollection", "No Collection Yet")}</p>
@@ -304,11 +297,7 @@ export default function LabsCollectionAnalysis() {
 
   const errorFallback = (
     <div className="labs-page">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0 }} data-testid="button-back-error">
-          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="ai" />
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg, textAlign: "center" }}>
         <AlertCircle style={{ width: 40, height: 40, marginBottom: SP.md, color: "#e06060" }} />
         <p style={{ color: th.text, fontSize: 16, fontWeight: 600 }}>{t("labs.collection.analysisError", "Analysis Error")}</p>
@@ -320,14 +309,7 @@ export default function LabsCollectionAnalysis() {
   return (
     <AnalysisErrorBoundary fallback={errorFallback}>
     <div className="labs-page" data-testid="labs-collection-analysis">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button style={{
-          display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-          color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
-        }} data-testid="button-back-collection">
-          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("labs.collection.backTaste", "Taste")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="ai" />
 
       <div style={{ marginBottom: SP.lg }}>
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>

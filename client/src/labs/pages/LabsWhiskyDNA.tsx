@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders, wishlistApi } from "@/lib/api";
@@ -547,6 +548,7 @@ export default function LabsWhiskyDNA() {
   if (!pid) {
     return (
       <div className="labs-page" data-testid="labs-whisky-dna">
+        <MeineWeltActionBar active="ai" />
         <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
             <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}
@@ -579,6 +581,7 @@ export default function LabsWhiskyDNA() {
 
   return (
     <div className="labs-page" data-testid="labs-whisky-dna">
+      <MeineWeltActionBar active="ai" />
       <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
           <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}

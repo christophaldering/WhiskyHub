@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
@@ -377,11 +377,7 @@ export default function LabsRecommendations() {
 
   return (
     <div className="labs-page" data-testid="labs-recommendations">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-recommendations">
-          <ChevronLeft className="w-4 h-4" /> {t("labs.recommendations.backTaste", "Taste")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="ai" />
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Sparkles className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

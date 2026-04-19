@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
 import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
@@ -327,14 +327,7 @@ export default function LabsTasteAnalytics() {
 
   return (
     <div className="labs-page" data-testid="labs-taste-analytics">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button style={{
-          display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-          color: th.muted, cursor: "pointer", fontSize: 14, marginBottom: SP.md, padding: 0,
-        }} data-testid="button-back-analytics">
-          <ChevronLeft style={{ width: 16, height: 16 }} /> {t("myTastePage.title", "My World")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="analytics" />
 
       <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
         {t("analytics.title", "Analytics")}

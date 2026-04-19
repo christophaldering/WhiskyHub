@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import { useQuery } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -95,11 +95,7 @@ export default function LabsTasteWheel() {
 
   return (
     <div className="labs-page" data-testid="labs-taste-wheel">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-wheel">
-          <ChevronLeft className="w-4 h-4" /> {t("labs.wheel.backTaste", "My World")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="analytics" />
 
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-wheel-title">
         {t("labs.wheel.title", "Flavor Wheel")}

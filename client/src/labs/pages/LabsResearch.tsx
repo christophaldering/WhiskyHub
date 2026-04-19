@@ -1,8 +1,8 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { FlaskConical, ChevronLeft, BookOpen, GraduationCap, TrendingUp, BookMarked } from "lucide-react";
+import { FlaskConical, BookOpen, GraduationCap, TrendingUp, BookMarked } from "lucide-react";
 import type { ElementType } from "react";
-import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 
 interface HubLink {
   icon: ElementType;
@@ -25,11 +25,7 @@ export default function LabsResearch() {
   const { t } = useTranslation();
   return (
     <div className="labs-page" data-testid="labs-discover-research-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-research">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>

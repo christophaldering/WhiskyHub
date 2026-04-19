@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -168,11 +168,7 @@ export default function LabsTasteProfile() {
   if (isLoading) {
     return (
       <div className="labs-page">
-        <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back">
-            <ChevronLeft className="w-4 h-4" /> {t("labs.profile.backTaste", "My World")}
-          </button>
-        </BackLink>
+        <MeineWeltActionBar active="analytics" />
         <div className="labs-card p-8 text-center">
           <div className="labs-spinner mx-auto" />
         </div>
@@ -229,11 +225,7 @@ export default function LabsTasteProfile() {
 
   return (
     <div className="labs-page" data-testid="labs-taste-profile">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-profile">
-          <ChevronLeft className="w-4 h-4" /> {t("labs.profile.backTaste", "My World")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="analytics" />
 
       <div className="flex items-center gap-3 mb-1 labs-fade-in">
         <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

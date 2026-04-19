@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import BackLink from "@/labs/components/BackLink";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { pidHeaders, profileApi } from "@/lib/api";
 import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
@@ -965,11 +965,7 @@ export default function LabsConnoisseur() {
 
   return (
     <div className="labs-page" data-testid="labs-connoisseur">
-      <BackLink href="/labs/taste" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-connoisseur">
-          <ChevronLeft className="w-4 h-4" /> {t("common.back", "Back")}
-        </button>
-      </BackLink>
+      <MeineWeltActionBar active="ai" />
 
       {/* Cover Section */}
       <div className="labs-fade-in" style={{ marginBottom: 24 }}>

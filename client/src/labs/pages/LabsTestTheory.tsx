@@ -5,6 +5,7 @@ import { GraduationCap, ChevronLeft, ChevronDown, ChevronUp, Wine } from "lucide
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BackLink from "@/labs/components/BackLink";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 
 import conceptTesting from "@/assets/images/concept-testing.png";
 import conceptQualityCriteria from "@/assets/images/concept-quality-criteria.png";
@@ -112,6 +113,7 @@ export default function LabsTestTheory() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-test-theory-page">
+      <DiscoverActionBar active="bibliothek" />
       <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-test-theory">
           <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}

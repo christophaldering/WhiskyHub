@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation, Link } from "wouter";
-import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import {
@@ -133,7 +133,6 @@ export default function LabsTasteDrams() {
   const { t } = useTranslation();
   const session = useSession();
   const [, navigate] = useLocation();
-  const goBackToTaste = useBackNavigation("/labs/taste");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
   const [selectedEntry, setSelectedEntry] = useState<DramEntry | null>(null);
@@ -1054,10 +1053,8 @@ export default function LabsTasteDrams() {
 
   return (
     <div className="labs-page" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
+      <MeineWeltActionBar active="collection" />
       <div>
-        <button onClick={goBackToTaste} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-3" style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="button-labs-back-taste">
-          <ChevronLeft className="w-4 h-4" /> {t("drams.backTaste")}
-        </button>
         <div style={{ marginBottom: 16 }}>
           <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
           <button

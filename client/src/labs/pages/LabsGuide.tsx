@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Map, ChevronLeft } from "lucide-react";
-import BackLink from "@/labs/components/BackLink";
+import { Map } from "lucide-react";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import aboutNose from "@/assets/images/about-nose.png";
 import aboutTaste from "@/assets/images/about-taste.png";
 import aboutReflect from "@/assets/images/about-reflect.png";
@@ -14,11 +14,7 @@ export default function LabsGuide() {
 
   return (
     <div className="labs-page" data-testid="labs-discover-guide-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-guide">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
-        </button>
-      </BackLink>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 6 }}>
