@@ -80,6 +80,10 @@ export const SECTIONS: BibliothekSection[] = [
   },
 ];
 
+export function BibliothekTile({ link, t }: { link: BibliothekLink; t: (key: string, fallback: string) => string }) {
+  return <Tile link={link} t={t} />;
+}
+
 function Tile({ link, t }: { link: BibliothekLink; t: (key: string, fallback: string) => string }) {
   return (
     <Link href={link.href} style={{ textDecoration: "none" }}>

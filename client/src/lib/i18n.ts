@@ -269,6 +269,7 @@ const resources = {
       bibliothek: {
         title: "Library",
         subtitle: "Knowledge, guides & reference",
+        viewAll: "View all",
         sectionCommunity: "Community",
         communityInsights: "Community Insights",
         communityInsightsDesc: "Trends, top whiskies & regions",
@@ -9134,6 +9135,7 @@ const resources = {
       bibliothek: {
         title: "Bibliothek",
         subtitle: "Wissen, Guides & Nachschlagewerke",
+        viewAll: "Alle ansehen",
         sectionCommunity: "Community",
         communityInsights: "Community Insights",
         communityInsightsDesc: "Trends, Top-Whiskies & Regionen",

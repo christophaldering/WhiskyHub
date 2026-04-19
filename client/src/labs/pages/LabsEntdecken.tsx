@@ -1,8 +1,9 @@
         import { useState, useEffect, useMemo, useCallback, useRef } from "react";
         import { createPortal } from "react-dom";
         import { useTranslation } from "react-i18next";
-        import { useLocation, Link } from "wouter";
+        import { useLocation, useSearch, Link } from "wouter";
         import { useQuery } from "@tanstack/react-query";
+        import { SECTIONS as BIBLIOTHEK_SECTIONS, BibliothekTile } from "@/labs/pages/LabsBibliothek";
         import { useSession } from "@/lib/session";
         import { pidHeaders } from "@/lib/api";
         import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
@@ -133,6 +134,15 @@
         export default function LabsEntdecken() {
           const { t, i18n } = useTranslation();
           const [, navigate] = useLocation();
+          const searchStr = useSearch();
+          const initialTabFromUrl = useMemo<"whiskies" | "bibliothek" | null>(() => {
+            try {
+              const params = new URLSearchParams(searchStr);
+              const tab = params.get("tab");
+              if (tab === "whiskies" || tab === "bibliothek") return tab;
+            } catch {}
+            return null;
+          }, []);
           const { currentParticipant } = useSession();
           const pid = currentParticipant?.id;
           const savedKeys = useWishlistKeys(pid);
@@ -142,8 +152,20 @@
           const restoredFromSnapshotRef = useRef<boolean>(initialSnapshot !== null);
 
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">(
-            () => initialSnapshot?.activeView ?? "whiskies",
+            () => initialTabFromUrl ?? initialSnapshot?.activeView ?? "whiskies",
           );
+
+          useEffect(() => {
+            if (typeof window === "undefined") return;
+            try {
+              const params = new URLSearchParams(window.location.search);
+              if (params.get("tab") === activeView) return;
+              params.set("tab", activeView);
+              const qs = params.toString();
+              const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+              window.history.replaceState(window.history.state, "", newUrl);
+            } catch {}
+          }, [activeView]);
           const [search, setSearch] = useState<string>(() => initialSnapshot?.search ?? "");
           const [visibleCount, setVisibleCount] = useState<number>(() => initialSnapshot?.visibleCount ?? 20);
           const [sort, setSort] = useState<string>(() => initialSnapshot?.sort ?? "avg");
@@ -463,44 +485,82 @@
           }, [whiskies.length]);
 
           return (
-            <div className="labs-page" data-testid="labs-entdecken-page">
-              <h1 className="labs-serif labs-fade-in" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }}>
-                {t("explore.title", "Explore")}
-              </h1>
-              <p className="labs-fade-in labs-stagger-1" style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: "0 0 24px", opacity: 0.6 }}>
-                {t("explore.subtitle", "Find whiskies")}
-              </p>
-
-              <div className="labs-action-bar labs-fade-in labs-stagger-1" style={{ marginBottom: 24 }}>
-                {(() => {
-                  const isWhiskiesActive = activeView === "whiskies";
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setActiveView("whiskies")}
-                      data-testid="tab-explore-whiskies"
-                      className={`labs-action-bar-item labs-action-bar-item--button${isWhiskiesActive ? " labs-action-bar-item--active" : ""}`}
-                    >
-                      <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-                        <Wine className="w-5 h-5 labs-icon-accent" />
-                      </div>
-                      <span className="labs-action-bar-label">{t("discover.whiskies", "Whiskies")}</span>
-                      <span className="labs-action-bar-sublabel">
-                        {t("explore.whiskiesExploreDesc", "Explore {{count}} whiskies", { count: whiskies.length })}
-                      </span>
-                    </button>
-                  );
-                })()}
-                <Link href="/labs/bibliothek" className="labs-action-bar-item" data-testid="tab-explore-bibliothek">
-                  <div className="labs-action-bar-icon labs-action-bar-icon--surface">
-                    <BookOpen className="w-5 h-5 labs-icon-accent" />
-                  </div>
-                  <span className="labs-action-bar-label">{t("bibliothek.title", "Library")}</span>
-                  <span className="labs-action-bar-sublabel">
-                    {t("explore.libraryExploreDesc", "Knowledge, Reference & Deep Dive")}
-                  </span>
-                </Link>
+            <div className="labs-page labs-fade-in" data-testid="labs-entdecken-page">
+              <div style={{ marginBottom: 20 }}>
+                <h1 className="ty-h1" style={{ margin: 0 }} data-testid="labs-entdecken-title">
+                  {t("explore.title", "Explore")}
+                </h1>
+                <p className="ty-sub" style={{ margin: "2px 0 0" }}>
+                  {t("explore.subtitle", "Find whiskies")}
+                </p>
               </div>
+
+              <div className="labs-fade-in" style={{ marginBottom: 20 }}>
+                <div className="labs-action-bar">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("whiskies")}
+                    data-testid="tab-explore-whiskies"
+                    className={`labs-action-bar-item labs-action-bar-item--button${activeView === "whiskies" ? " labs-action-bar-item--active" : ""}`}
+                  >
+                    <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+                      <Wine className="w-5 h-5 labs-icon-accent" />
+                    </div>
+                    <span className="labs-action-bar-label">{t("discover.whiskies", "Whiskies")}</span>
+                    <span className="labs-action-bar-sublabel">
+                      {t("explore.whiskiesExploreDesc", "Explore {{count}} whiskies", { count: whiskies.length })}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("bibliothek")}
+                    data-testid="tab-explore-bibliothek"
+                    className={`labs-action-bar-item labs-action-bar-item--button${activeView === "bibliothek" ? " labs-action-bar-item--active" : ""}`}
+                  >
+                    <div className="labs-action-bar-icon labs-action-bar-icon--surface">
+                      <BookOpen className="w-5 h-5 labs-icon-accent" />
+                    </div>
+                    <span className="labs-action-bar-label">{t("bibliothek.title", "Library")}</span>
+                    <span className="labs-action-bar-sublabel">
+                      {t("explore.libraryExploreDesc", "Knowledge, Reference & Deep Dive")}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {activeView === "bibliothek" && (
+                <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {BIBLIOTHEK_SECTIONS.map((section) => (
+                    <div key={section.titleKey}>
+                      <div className="labs-section-label" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 8, paddingLeft: 4, textTransform: "uppercase" }}>
+                        {t(section.titleKey, section.titleFallback)}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        {section.links.map((link) => (
+                          <BibliothekTile key={link.testId} link={link} t={t} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <Link
+                    href="/labs/bibliothek"
+                    data-testid="link-explore-bibliothek-view-all"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      alignSelf: "flex-end",
+                      fontSize: 13,
+                      color: "var(--labs-text-muted)",
+                      textDecoration: "none",
+                      padding: "6px 4px",
+                    }}
+                  >
+                    {t("bibliothek.viewAll", "View all")}
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
 
               {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
