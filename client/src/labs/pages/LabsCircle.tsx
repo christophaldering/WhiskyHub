@@ -4,7 +4,7 @@ import { useLocation, useSearch } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
-  GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
+  GlassWater, Trophy, Radio, FileText, Compass, Check, X, Trash2, Wifi, Clock,
   Globe, Mail, Send, BarChart3, Plus,
 } from "lucide-react";
 import CommunityInsights from "@/labs/components/CommunityInsights";
@@ -372,7 +372,7 @@ export default function LabsCircle() {
       key: "leaderboard",
       label: t("m2.circle.navLeaderboard", "Resonanz"),
       sublabel: t("m2.circle.navLeaderboardSub", "Was im Kreis Wirkung zeigt"),
-      icon: Trophy,
+      icon: Radio,
       iconVariant: "success",
       iconColorClass: "labs-icon-success",
       testId: "labs-circle-tab-leaderboard",
@@ -568,7 +568,7 @@ export default function LabsCircle() {
       ("mostActive" in leaderboardData || "highestRated" in leaderboardData);
 
     if (!isStructured) {
-      return <EmptyState icon={Trophy} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />;
+      return <EmptyState icon={Radio} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />;
     }
 
     const structured = leaderboardData as LeaderboardData;
@@ -661,7 +661,7 @@ export default function LabsCircle() {
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: "var(--labs-accent-muted)" }}
               >
-                <Trophy className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+                <Radio className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
@@ -716,7 +716,7 @@ export default function LabsCircle() {
         </p>
 
         {activeCat.entries.length === 0 ? (
-          <EmptyState icon={Trophy} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />
+          <EmptyState icon={Radio} title={t("m2.circle.noLeaderboardTitle")} description={t("m2.circle.noLeaderboardDesc")} />
         ) : (
           <div className="labs-grouped-list">
             {activeCat.entries.map((entry, i) => {
