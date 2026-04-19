@@ -1475,6 +1475,31 @@
   line-height: 1;
 }
 
+.labs-action-bar-sublabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--labs-text-muted);
+  line-height: 1.2;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
+}
+
+.labs-action-bar-item--active .labs-action-bar-label {
+  color: var(--labs-accent);
+}
+
+.labs-action-bar-item--button {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  color: inherit;
+  width: 100%;
+}
+
 .labs-action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 140px), 1fr));

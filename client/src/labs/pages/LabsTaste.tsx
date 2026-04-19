@@ -56,32 +56,12 @@ const TILES: HubLink[] = [
 
 function HubTile({ link, t }: { link: HubLink; t: (key: string, fallback: string) => string }) {
   return (
-    <Link href={link.href} style={{ textDecoration: "none" }}>
-      <div
-        className="labs-card labs-card-interactive"
-        data-testid={link.testId}
-        style={{
-          minHeight: 110,
-          padding: "18px 18px",
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 14,
-          cursor: "pointer",
-          height: "100%",
-        }}
-      >
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <link.icon style={{ width: 22, height: 22, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="labs-serif" style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.2 }}>
-            {t(link.labelKey, link.labelFallback)}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 4, lineHeight: 1.4 }}>
-            {t(link.descKey, link.descFallback)}
-          </div>
-        </div>
+    <Link href={link.href} className="labs-action-bar-item" data-testid={link.testId}>
+      <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+        <link.icon className="w-5 h-5 labs-icon-accent" />
       </div>
+      <span className="labs-action-bar-label">{t(link.labelKey, link.labelFallback)}</span>
+      <span className="labs-action-bar-sublabel">{t(link.descKey, link.descFallback)}</span>
     </Link>
   );
 }
@@ -109,7 +89,7 @@ export default function LabsTaste() {
         {t("myTastePage.subtitle", "Your personal whisky collection & insights")}
       </p>
 
-      <div className="labs-fade-in labs-stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="labs-action-bar labs-fade-in labs-stagger-1">
         {TILES.map((link) => (
           <HubTile key={link.testId} link={link} t={t} />
         ))}
