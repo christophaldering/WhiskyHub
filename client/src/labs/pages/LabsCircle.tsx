@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useLocation, useSearch } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, ChevronLeft, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
-  Globe, Mail, Send,
+  Globe, Mail, Send, BarChart3,
 } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import CommunityInsights from "@/labs/components/CommunityInsights";
+import { LabsHistoryInsights } from "@/labs/pages/LabsHistory";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
@@ -17,7 +18,7 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
-type Tab = "friends" | "leaderboard" | "sessions" | "activity" | "community";
+type Tab = "friends" | "leaderboard" | "sessions" | "activity" | "stats" | "community";
 
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
@@ -83,30 +84,23 @@ export default function LabsCircle() {
   const pid = currentParticipant?.id || session.pid;
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>("friends");
+  const searchStr = useSearch();
+  const initialTab = useMemo<Tab>(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      const t = params.get("tab");
+      if (t === "friends" || t === "leaderboard" || t === "sessions" || t === "activity" || t === "stats") {
+        return t;
+      }
+    } catch {}
+    return "friends";
+  }, []);
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [lbCategory, setLbCategory] = useState("mostActive");
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [friendFirstName, setFriendFirstName] = useState("");
   const [friendLastName, setFriendLastName] = useState("");
   const [friendEmail, setFriendEmail] = useState("");
-  const tabsWrapperRef = useRef<HTMLDivElement>(null);
-  const tabsRef = useRef<HTMLDivElement>(null);
-
-  const checkTabsOverflow = useCallback(() => {
-    const wrapper = tabsWrapperRef.current;
-    const tabs = tabsRef.current;
-    if (wrapper && tabs) {
-      const hasOverflow = tabs.scrollWidth > tabs.clientWidth;
-      wrapper.classList.toggle("has-overflow", hasOverflow);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkTabsOverflow();
-    window.addEventListener("resize", checkTabsOverflow);
-    return () => window.removeEventListener("resize", checkTabsOverflow);
-  }, [checkTabsOverflow]);
-
   const { data: friends, isLoading: friendsLoading } = useQuery({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
@@ -121,10 +115,6 @@ export default function LabsCircle() {
   });
 
   const pendingList: Array<Record<string, unknown>> = Array.isArray(pendingRequests) ? pendingRequests as Array<Record<string, unknown>> : [];
-
-  useEffect(() => {
-    checkTabsOverflow();
-  }, [tab, pendingList.length, checkTabsOverflow]);
 
   const { data: onlineData } = useQuery<{ online: OnlineFriend[]; count: number }>({
     queryKey: ["friends-online", pid],
@@ -309,13 +299,132 @@ export default function LabsCircle() {
     );
   }
 
-  const tabs: Array<{ key: Tab; label: string; icon: typeof Users }> = [
-    { key: "friends", label: t("m2.circle.tabFriends"), icon: Users },
-    { key: "leaderboard", label: t("m2.circle.tabBoard"), icon: Trophy },
-    { key: "sessions", label: t("m2.circle.tabSessions"), icon: Wine },
-    { key: "activity", label: t("m2.circle.tabFeed"), icon: Activity },
-    { key: "community", label: t("m2.circle.tabCommunity"), icon: Globe },
+  type CircleTile = {
+    key: Tab;
+    label: string;
+    sublabel: string;
+    icon: typeof Users;
+    iconVariant: "accent" | "surface" | "success";
+    iconColorClass: string;
+    badge?: number;
+    onClick?: () => void;
+    testId: string;
+  };
+  const tiles: CircleTile[] = [
+    {
+      key: "friends",
+      label: t("m2.circle.navFriends", "Freunde"),
+      sublabel: t("m2.circle.navFriendsSub", "Kreis & Anfragen"),
+      icon: Users,
+      iconVariant: "accent",
+      iconColorClass: "labs-icon-accent",
+      badge: pendingList.length || undefined,
+      testId: "labs-circle-tab-friends",
+    },
+    {
+      key: "leaderboard",
+      label: t("m2.circle.navLeaderboard", "Leaderboard"),
+      sublabel: t("m2.circle.navLeaderboardSub", "Ranglisten & Plätze"),
+      icon: Trophy,
+      iconVariant: "success",
+      iconColorClass: "labs-icon-success",
+      testId: "labs-circle-tab-leaderboard",
+    },
+    {
+      key: "sessions",
+      label: t("m2.circle.navSessions", "Sessions"),
+      sublabel: t("m2.circle.navSessionsSub", "Gemeinsame Tastings"),
+      icon: Wine,
+      iconVariant: "accent",
+      iconColorClass: "labs-icon-accent",
+      testId: "labs-circle-tab-sessions",
+    },
+    {
+      key: "activity",
+      label: t("m2.circle.navActivity", "Aktivität"),
+      sublabel: t("m2.circle.navActivitySub", "Feed & Updates"),
+      icon: Activity,
+      iconVariant: "surface",
+      iconColorClass: "labs-icon-text-secondary",
+      testId: "labs-circle-tab-activity",
+    },
+    {
+      key: "stats",
+      label: t("m2.circle.navStats", "Statistiken & Trends"),
+      sublabel: t("m2.circle.navStatsSub", "Community Insights"),
+      icon: BarChart3,
+      iconVariant: "accent",
+      iconColorClass: "labs-icon-accent",
+      testId: "labs-circle-tab-stats",
+    },
+    {
+      key: "community",
+      label: t("m2.circle.navCommunity", "Community"),
+      sublabel: t("m2.circle.navCommunitySub", "Gruppen & Einladungen"),
+      icon: Globe,
+      iconVariant: "surface",
+      iconColorClass: "labs-icon-text-secondary",
+      badge: communityInviteCount || undefined,
+      onClick: () => navigate("/labs/community"),
+      testId: "labs-circle-tab-community",
+    },
   ];
+
+  const renderTile = (tile: CircleTile) => {
+    const isActive = tab === tile.key;
+    const Icon = tile.icon;
+    return (
+      <button
+        key={tile.key}
+        type="button"
+        onClick={() => {
+          if (tile.onClick) {
+            tile.onClick();
+            return;
+          }
+          setTab(tile.key);
+        }}
+        className={`labs-action-bar-item labs-action-bar-item--button${isActive ? " labs-action-bar-item--active" : ""}`}
+        data-testid={tile.testId}
+      >
+        <div
+          className={`labs-action-bar-icon labs-action-bar-icon--${tile.iconVariant}`}
+          style={{ position: "relative" }}
+        >
+          <Icon className={`w-5 h-5 ${tile.iconColorClass}`} />
+          {tile.badge && tile.badge > 0 ? (
+            <span
+              style={{
+                position: "absolute",
+                top: -4,
+                right: -4,
+                minWidth: 16,
+                height: 16,
+                padding: "0 4px",
+                borderRadius: 8,
+                background: "var(--labs-danger)",
+                color: "var(--labs-on-accent)",
+                fontSize: 10,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+              data-testid={`badge-${tile.testId}`}
+            >
+              {tile.badge}
+            </span>
+          ) : null}
+        </div>
+        <span className="labs-action-bar-label">{tile.label}</span>
+        <span className="labs-action-bar-sublabel">{tile.sublabel}</span>
+      </button>
+    );
+  };
+
+  const tilesRow1 = tiles.slice(0, 3);
+  const tilesRow2 = tiles.slice(3, 6);
 
   return (
     <div className="labs-page labs-fade-in">
@@ -368,51 +477,12 @@ export default function LabsCircle() {
         </p>
       </div>
 
-      <CommunityInsights compactOnly />
-
-      <div ref={tabsWrapperRef} className="labs-circle-tabs-wrapper" style={{ marginBottom: 20, position: "relative" }}>
-        <div ref={tabsRef} className="labs-circle-tabs flex overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              className={`labs-chip ${tab === t.key ? "labs-chip-active" : ""}`}
-              style={{ display: "flex", alignItems: "center" }}
-              onClick={() => {
-                if (t.key === "community") {
-                  navigate("/labs/community");
-                  return;
-                }
-                setTab(t.key);
-              }}
-              data-testid={`labs-circle-tab-${t.key}`}
-            >
-              <t.icon className="labs-circle-tab-icon" style={{ width: 14, height: 14, flexShrink: 0 }} />
-              {t.label}
-              {t.key === "friends" && pendingList.length > 0 && (
-                <span
-                  className="labs-circle-tab-badge inline-flex items-center justify-center rounded-full"
-                  style={{
-                    width: 16, height: 16, fontSize: 11, fontWeight: 700,
-                    background: "var(--labs-danger)", color: "var(--labs-on-accent)",
-                  }}
-                >
-                  {pendingList.length}
-                </span>
-              )}
-              {t.key === "community" && communityInviteCount > 0 && (
-                <span
-                  className="labs-circle-tab-badge inline-flex items-center justify-center rounded-full"
-                  style={{
-                    width: 16, height: 16, fontSize: 11, fontWeight: 700,
-                    background: "var(--labs-danger)", color: "var(--labs-on-accent)",
-                  }}
-                  data-testid="badge-community-invites"
-                >
-                  {communityInviteCount}
-                </span>
-              )}
-            </button>
-          ))}
+      <div className="labs-fade-in" style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div className="labs-action-bar">
+          {tilesRow1.map(renderTile)}
+        </div>
+        <div className="labs-action-bar">
+          {tilesRow2.map(renderTile)}
         </div>
       </div>
 
@@ -420,6 +490,7 @@ export default function LabsCircle() {
       {tab === "friends" && renderFriendsTab()}
       {tab === "sessions" && renderSessionsTab()}
       {tab === "activity" && renderActivityTab()}
+      {tab === "stats" && renderStatsTab()}
 
       {selectedFriend && (
         <FriendDetailSheet
@@ -1214,6 +1285,23 @@ export default function LabsCircle() {
               </div>
             );
           })}
+        </div>
+      </div>
+    );
+  }
+
+  function renderStatsTab() {
+    return (
+      <div className="labs-fade-in" data-testid="labs-circle-stats">
+        <CommunityInsights expandedByDefault />
+        <div style={{ marginTop: 8 }}>
+          <div
+            className="labs-section-label"
+            style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 12, paddingLeft: 4 }}
+          >
+            {t("bibliothek.crossTastingInsights", "Cross-Tasting Insights")}
+          </div>
+          <LabsHistoryInsights />
         </div>
       </div>
     );

@@ -104,7 +104,6 @@ const LabsBottleSplitDetail = lazy(() => import("@/labs/pages/LabsBottleSplitDet
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
 const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
 const LabsBibliothek = lazy(() => import("@/labs/pages/LabsBibliothek"));
-const LabsCommunityInsightsPage = lazy(() => import("@/labs/pages/LabsCommunityInsightsPage"));
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
@@ -649,7 +648,7 @@ function Router() {
               <Route path="/labs/results/:id" component={LabsResults} />
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
               <Route path="/labs/explore" component={LabsEntdecken} />
-              <Route path="/labs/bibliothek/insights" component={LabsCommunityInsightsPage} />
+              <Route path="/labs/bibliothek/insights">{() => <RedirectWithQuery to="/labs/circle" query="tab=stats" />}</Route>
               <Route path="/labs/bibliothek" component={LabsBibliothek} />
               <Route path="/labs/discover/lexicon" component={LabsLexicon} />
               <Route path="/labs/discover/distilleries" component={LabsDistilleries} />

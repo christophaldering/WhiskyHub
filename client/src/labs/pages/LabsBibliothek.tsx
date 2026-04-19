@@ -4,7 +4,7 @@ import BackLink from "@/labs/components/BackLink";
 import {
   BookOpen, Building2, Package, Map,
   BookMarked, ChevronLeft,
-  Archive, BarChart3, SlidersHorizontal,
+  Archive, SlidersHorizontal,
   Utensils, Brain, Lightbulb, GraduationCap, TrendingUp, Factory,
   Microscope,
 } from "lucide-react";
@@ -32,7 +32,6 @@ export const SECTIONS: BibliothekSection[] = [
     titleKey: "bibliothek.sectionCommunity",
     titleFallback: "Community",
     links: [
-      { icon: BarChart3, labelKey: "bibliothek.statisticsAndTrends", labelFallback: "Statistics & Trends", descKey: "bibliothek.statisticsAndTrendsDesc", descFallback: "Community insights & cross-tasting analytics", href: "/labs/bibliothek/insights", testId: "labs-link-bibliothek-insights" },
       { icon: Archive, labelKey: "bibliothek.archive", labelFallback: "Archive", descKey: "bibliothek.archiveDesc", descFallback: "Historical tastings & analytics", href: "/labs/history", testId: "labs-link-bibliothek-archive" },
     ],
   },
